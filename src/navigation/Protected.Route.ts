@@ -4,6 +4,7 @@ import type RouteType from "./RouteType";
 import Content from "@/modules/dashboard/screens/content"; // Necesitas crear este componente
 import { BarChart3Icon, DollarSignIcon, HomeIcon, LayoutDashboardIcon, PlusIcon, StoreIcon, UserCogIcon, UsersIcon } from "lucide-react";
 import CreateProduct from "@/modules/products/screens/CreateProduct";
+import CreateCategory from "@/modules/products/screens/Categories/CreateCategory";
 
 const protectedRoutes: RouteType[] = [
   {
@@ -33,6 +34,15 @@ const protectedRoutes: RouteType[] = [
     isAdmin: true,
     role: "admin",
     icon: HomeIcon
+  },
+  {
+    path: "/dashboard/create-category",
+    name: "Crear Categoría",
+    type: "protected",
+    element: CreateCategory,
+    isAdmin: true,
+    role: "admin",
+    icon: PlusIcon
   },
   //compras
   {
