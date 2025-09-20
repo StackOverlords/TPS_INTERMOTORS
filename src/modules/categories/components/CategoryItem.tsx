@@ -1,8 +1,8 @@
-import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/atoms/accordion";
+import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/atoms/accordion";
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
-import { Save, Edit, Trash2, Plus } from "lucide-react";
+import { Edit, Save, Trash2 } from "lucide-react";
 import type { Category } from "../types/Categories";
 
 interface Props {
@@ -37,33 +37,33 @@ const CategoryItem = ({
   onChangeEditName,
   onDelete,
 
-  addingSubId,
-  newSubName,
-  onAddSub,
-  onChangeSubName,
-  onSubmitSub,
-  onCancelSub,
+  // addingSubId,
+  // newSubName,
+  // onAddSub,
+  // onChangeSubName,
+  // onSubmitSub,
+  // onCancelSub,
 
   isSavingEdit,
   isDeleting,
-  isSavingSub,
+  // isSavingSub,
 }: Props) => {
   const isEditing = editingId === category.id;
-  const isAddingSub = addingSubId === category.id;
+  // const isAddingSub = addingSubId === category.id;
 
   return (
     <AccordionItem
       value={`cat-${category.id}`}
       className="border-b border-gray-100 last:border-b-0"
     >
-      <AccordionTrigger className="flex items-center justify-between p-4 text-left hover:bg-gray-50">
-        <div className="flex items-center gap-3">
+      <AccordionTrigger className="flex flex-wrap items-center justify-between p-4 text-left hover:bg-gray-50">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0 flex-1">
           {isEditing ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full min-w-0">
               <Input
                 value={editingName}
                 onChange={(e) => onChangeEditName(e.target.value)}
-                className="w-48 h-8"
+                className="flex-1 min-w-0 h-8"
                 onKeyDown={(e) => e.key === "Enter" && onSaveEdit()}
                 onClick={(e) => e.stopPropagation()}
               />
@@ -74,7 +74,7 @@ const CategoryItem = ({
                   onSaveEdit();
                 }}
                 disabled={isSavingEdit}
-                className="h-8 px-2"
+                className="h-8 px-2 flex-shrink-0 w-full sm:w-auto"
               >
                 <Save className="w-3 h-3" />
               </Button>
@@ -85,34 +85,34 @@ const CategoryItem = ({
                   e.stopPropagation();
                   onCancelEdit();
                 }}
-                className="h-8 px-2"
+                className="h-8 px-2 flex-shrink-0 w-full sm:w-auto"
               >
                 ✕
               </Button>
             </div>
           ) : (
-            <>
-              <span className="font-medium text-gray-900">{category.categoria}</span>
-              {category.subcategorias.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-gray-900 text-sm truncate">{category.categoria}</span>
+              {(category.subcategorias?.length ?? 0) > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {category.subcategorias.length} subcategorías
+                  {category.subcategorias?.length} subcategorías
                 </Badge>
               )}
-            </>
+            </div>
           )}
         </div>
       </AccordionTrigger>
 
       <AccordionContent className="px-4 pb-4">
-        {category.subcategorias.length > 0 && (
-          <div className="mb-4">
-            <p className="mb-2 text-sm font-medium text-gray-700">Subcategorías:</p>
+        {(category.subcategorias?.length ?? 0) > 0 && (
+          <div className="mb-2">
+            <p className="mb-1 text-sm font-medium text-gray-700">Subcategorías:</p>
             <div className="flex flex-wrap gap-2">
-              {category.subcategorias.map((sub) => (
+              {(category.subcategorias ?? []).map((sub) => (
                 <Badge
                   key={sub.id}
                   variant="outline"
-                  className="text-sm border border-gray-200 bg-gray-50 hover:bg-gray-100"
+                  className="text-xs border border-gray-200 bg-gray-50 hover:bg-gray-100"
                 >
                   {sub.subcategoria}
                 </Badge>
@@ -120,9 +120,8 @@ const CategoryItem = ({
             </div>
           </div>
         )}
-
-        {isAddingSub ? (
-          <div className="flex gap-2 mb-4">
+ {/* {isAddingSub ? (
+          <div className="flex gap-2 mb-4 mt-1">
             <Input
               value={newSubName}
               onChange={(e) => onChangeSubName(e.target.value)}
@@ -155,7 +154,7 @@ const CategoryItem = ({
             <Plus className="w-4 h-4" />
             Agregar subcategoría
           </button>
-        )}
+        )} */}
 
         <div className="flex justify-end gap-2">
           {!isEditing && (

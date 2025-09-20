@@ -575,14 +575,14 @@ const UserDetailScreen = () => {
                     >
                       Seleccionar todos
                     </Button>
-                    {/* <Button
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedPermissions(new Set())}
                       disabled={isSaving}
                     >
                       Deseleccionar todos
-                    </Button> */}
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -666,9 +666,9 @@ const UserDetailScreen = () => {
                                           onCheckedChange={() => togglePermission(permission.name)}
                                         />
                                         <div className="flex-1">
-                                          <h4 className="font-medium text-gray-900 text-sm">
+                                          {/* <h4 className="font-medium text-gray-900 text-sm">
                                             {permission.name}
-                                          </h4>
+                                          </h4> */}
                                           {permission.descripcion && (
                                             <p className="text-xs text-gray-600 mt-1">
                                               {permission.descripcion}

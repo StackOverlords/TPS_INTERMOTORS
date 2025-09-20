@@ -345,8 +345,8 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'contexto',
         header: 'Tipo',
-        size: 80,
-        minSize: 50,
+        size: 110,
+        minSize: 90,
         cell: ({ getValue }) => {
           const contexto = getValue<string>();
           const [tipo, estado] = contexto.split('|');
@@ -363,24 +363,29 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'comprobantes',
         header: 'Comprobantes',
-        size: 80,
-        minSize: 50,
+        size: 100,
+        minSize: 80,
         cell: ({ getValue }) => {
           const comprobantes = getValue<string>();
           const comprobantesList = comprobantes
             .split('|')
             .filter(c => c.trim());
           return (
-            <div className="space-y-1">
-              {comprobantesList.map((comprobante, index) => (
+            <div className="flex flex-wrap gap-1">
+              {comprobantesList.map((comprobante, index) => {
+              const isMediumLong = comprobante.length > 14; // ajusta el umbral si quieres
+              return (
                 <Badge
-                  key={index}
-                  variant="outline"
-                  className="text-xs font-mono border-gray-300"
+                key={index}
+                variant="outline"
+                className={`text-xs font-mono border-gray-300 ${
+                  isMediumLong ? 'basis-full' : 'basis-auto'
+                }`}
                 >
-                  {comprobante}
+                {comprobante}
                 </Badge>
-              ))}
+              );
+              })}
             </div>
           );
         },

@@ -112,6 +112,9 @@ export const PurchaseDetailSchema = z.object({
   responsable: ResponsableDetalleSchema.nullable(),
   cantidad_detalles: z.number(),
   detalles: z.array(DetalleCompraSchema),
+  comprobante: z.string().nullable(),
+  comprobante2: z.string().nullable(),
+  comentarios: z.string().nullable(), // Campo agregado
 })
 
 export const PurchaseDetailResponseSchema = z.object({

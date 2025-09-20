@@ -19,7 +19,7 @@ const CreatePurchase: React.FC = () => {
   return (
     <div className={'h-screen max-h-auto'}>
       <div className="bg-white rounded-lg h-full bg-red-200 w-full">
-        <h2 className="text-lg font-semibold mb-4 ml-4">Crear Producto</h2>
+        <h2 className="text-lg font-semibold mb-4 ml-4">Registrar Compra</h2>
         <div className="p-1 w-full h-full overflow-y-auto gap-4 flex flex-col">
           <FormCreatePurchase
             formData={formData}
