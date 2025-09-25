@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
-import { apiConstructor } from "@/modules/products/services/api";
 import { toast } from "@/hooks/use-toast";
+import { apiConstructor } from "@/modules/products/services/api";
+import { useCallback, useState } from "react";
 
 
 export interface FormData {
@@ -14,7 +14,7 @@ export interface FormData {
   usuario: number | null;
   sucursal: number | null;
   detalles: any[];
-  id_responsable?: number;
+  id_responsable: number | null;
 }
 
 interface FormErrors { [key: string]: string; }
@@ -33,13 +33,13 @@ export function usePurchaseForm(initialBranch: number) {
     usuario: 1, // ID por defecto
     sucursal: initialBranch || 1, // Usar branch inicial o 1 por defecto
     detalles: [],
-    id_responsable: 1 // ID por defecto
+    id_responsable: null // Se seleccionará desde el dropdown
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<FormTouched>({});
 
   const validateField = useCallback((field: keyof FormData, value: any): string => {
-    if (["tipo_compra", "forma_compra", "detalles", "id_proveedor"].includes(field)) {
+    if (["tipo_compra", "forma_compra", "detalles", "id_proveedor", "id_responsable"].includes(field)) {
       if (!value || (Array.isArray(value) ? value.length === 0 : value === 0)) return "Este campo es requerido.";
     }
     if (field === "fecha" && !value) return "La fecha de pedido es requerida.";
@@ -74,13 +74,13 @@ export function usePurchaseForm(initialBranch: number) {
       nro_comprobante: "",
       nro_comprobante2: "",
       id_proveedor: null,
-      tipo_compra: "CC",
-      forma_compra: "MY",
+      tipo_compra: "",
+      forma_compra: "",
       comentario: "",
       usuario: 1, // ID por defecto
       sucursal: initialBranch || 1, // Usar branch inicial o 1 por defecto
       detalles: [],
-      id_responsable: 1, // ID por defecto
+      id_responsable: null, // Se seleccionará desde el dropdown
     });
     setErrors({});
     setTouched({});

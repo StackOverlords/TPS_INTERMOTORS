@@ -25,4 +25,4 @@ export * from './services/userService';
 export type * from './types/User';
 
 // Schemas
-export * from './schemas/user.schema';
+export * from './screens/schemas/user.schema';

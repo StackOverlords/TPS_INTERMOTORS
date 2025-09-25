@@ -97,6 +97,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
     Math.round((num + Number.EPSILON) * 100) / 100;
   // Tipo con campos numéricos garantizados para edición/render
   type NormalizedPurchaseDetail = PurchaseDetail & {
+    id_detalle_compra: number;
     cantidad: number;
     costo: number;
     inc_p_venta: number;
@@ -112,6 +113,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
   ): NormalizedPurchaseDetail => {
     return {
       ...detail,
+      id_detalle_compra: detail.id || 0, // Asegurar que siempre haya un ID
       id_producto: detail.id_producto || detail.producto.id.toString(),
       cantidad:
         typeof detail.cantidad === 'string'
@@ -154,8 +156,82 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
   // console.log('Detalles normalizados:', normalizedDetalles);
   const [tempValue, setTempValue] = useState('');
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [selectedCol, setSelectedCol] = useState<number | null>(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+  const focusCell = (row: number | null, col: number | null) => {
+    if (row === null || col === null) return;
+    const el = tableRef.current?.querySelector(
+      `[data-row="${row}"][data-col="${col}"]`
+    ) as HTMLElement | null;
+    if (el) el.focus();
+  };
+
+  const moveSelection = (deltaRow: number, deltaCol: number) => {
+    if (normalizedDetalles.length === 0) return;
+    const curRow = selectedRow ?? 0;
+    const curCol = selectedCol ?? 0;
+    let nextRow = clamp(curRow + deltaRow, 0, normalizedDetalles.length - 1);
+    let nextCol = clamp(curCol + deltaCol, 0, totalEditableCols - 1);
+    setSelectedRow(nextRow);
+    setSelectedCol(nextCol);
+    // focus asynchronously after state updates
+    setTimeout(() => focusCell(nextRow, nextCol), 10);
+  };
+
+  const moveToNextCell = (forward = true) => {
+    if (normalizedDetalles.length === 0) return;
+    const curRow = selectedRow ?? 0;
+    const curCol = selectedCol ?? 0;
+    let nextCol = curCol + (forward ? 1 : -1);
+    let nextRow = curRow;
+    if (nextCol >= totalEditableCols) {
+      nextCol = 0;
+      nextRow = clamp(curRow + 1, 0, normalizedDetalles.length - 1);
+    } else if (nextCol < 0) {
+      nextCol = totalEditableCols - 1;
+      nextRow = clamp(curRow - 1, 0, normalizedDetalles.length - 1);
+    }
+    setSelectedRow(nextRow);
+    setSelectedCol(nextCol);
+    setTimeout(() => focusCell(nextRow, nextCol), 10);
+  };
+
+  const handleCellKeyDown = (e: React.KeyboardEvent, rowIndex: number, colIndex: number) => {
+    if (editing) return; // si se está editando, dejar que el input maneje teclas
+    switch (e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        moveSelection(0, 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        moveSelection(0, -1);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        moveSelection(1, 0);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        moveSelection(-1, 0);
+        break;
+      case 'Enter':
+      case 'F2':
+        e.preventDefault();
+        startEdit(rowIndex, colIndex);
+        break;
+      case 'Tab':
+        e.preventDefault();
+        moveToNextCell(!e.shiftKey);
+        break;
+      default:
+        break;
+    }
+  };
 
   // Utilidades para manejo de moneda en centavos
   // const toCents = (amount: number): number => Math.round(amount * 100);
@@ -246,6 +322,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
     'inc_p_venta_alt',
     'precio_venta_alt',
   ];
+
+  const totalEditableCols = editableColumns.length; // cantidad de columnas editables
 
   // Hotkeys para navegación y acciones globales - shortcuts simplificados
   useHotkeys(
@@ -517,8 +595,20 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
 
     return (
       <div
-        className="w-full h-6 flex items-center rounded-lg justify-center cursor-pointer hover:bg-white border border-gray-100 transition-colors duration-150 text-xs text-gray-700"
+        className={`w-full h-6 flex items-center rounded-lg justify-center cursor-pointer hover:bg-white border border-gray-100 transition-colors duration-150 text-xs text-gray-700 ${
+          selectedRow === rowIndex && selectedCol === colIndex ? 'ring-2 ring-blue-300 bg-blue-50' : ''
+        }`}
         onClick={() => startEdit(rowIndex, colIndex)}
+        tabIndex={0}
+        data-row={rowIndex}
+        data-col={colIndex}
+        onFocus={() => {
+          setSelectedRow(rowIndex);
+          setSelectedCol(colIndex);
+        }}
+        onKeyDown={(e) => handleCellKeyDown(e, rowIndex, colIndex)}
+        role="gridcell"
+        aria-selected={selectedRow === rowIndex && selectedCol === colIndex}
       >
         {formatValue(value, format)}
       </div>
@@ -620,7 +710,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
                     transition-colors duration-150 cursor-pointer
                     ${
                       selectedRow === rowIndex
-                        ? 'bg-blue-50 border-blue-200'
+                        ? 'bg-blue-100 border-blue-200'
                         : 'hover:bg-gray-50'
                     }
                   `}

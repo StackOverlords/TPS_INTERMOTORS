@@ -3,8 +3,9 @@ import { Label } from '@/components/atoms/label';
 import { ComboboxSelect } from '@/modules/products/components/SelectCombobox';
 import React from 'react';
 import { useProviders } from '../hooks/useProviders';
+import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
 import { type FormData } from '../hooks/usePurchaseForm';
-
+// Importación temporal deshabilitada 
 // const tipoCompra = [
 //   {
 //     id:1,
@@ -46,68 +47,70 @@ const FormCreatePurchase: React.FC<Props> = ({
   onBlur,
 }) => {
   const { data: proveedores = [], isLoading: isLoadingProviders } =
-    useProviders();
+    useProviders(); 
+  const {
+    purchaseTypes,
+    purchaseModalities,
+    responsibles,
+    loading,
+  } = usePurchaseCommons();
+
   const inputClass = (f: string) =>
     errors[f]
       ? 'h-8 text-sm border-red-500 focus:border-red-500'
       : 'h-8 text-sm';
+
+  // Helper para formatear la fecha a YYYY-MM-DD
+  const formatDate = (date: string) => {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+  };
+
   return (
-    <div className="p-4 bg-white border border-gray-200 rounded-lg">
-      <div className="grid gap-6 sm:grid-cols-2">
+    <div className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 items-end">
         <div className="flex flex-col">
-          <Label>Proveedor *</Label>
+          <Label className="text-xs font-medium mb-1">Proveedor *</Label>
           <ComboboxSelect
             value={formData.id_proveedor || undefined}
             onChange={v => onChange('id_proveedor', v)}
             options={proveedores}
             optionTag="nombre"
-            placeholder={
-              isLoadingProviders
-                ? 'Cargando proveedores...'
-                : 'Seleccionar proveedor'
-            }
+            placeholder={isLoadingProviders ? 'Cargando proveedores...' : 'Proveedor'}
             className={inputClass('id_proveedor')}
             disabled={isLoadingProviders}
           />
-          {errors.id_proveedor && (
-            <p className="text-red-500">{errors.id_proveedor}</p>
-          )}
+          {errors.id_proveedor && <p className="text-xs text-red-500 mt-1">{errors.id_proveedor}</p>}
         </div>
+
         <div className="flex flex-col">
-          <Label>Fecha *</Label>
+          <Label className="text-xs font-medium mb-1">Fecha *</Label>
           <Input
             type="date"
-            value={formData.fecha}
+            value={formatDate(formData.fecha)}
             onChange={e => onChange('fecha', e.target.value)}
             onBlur={() => onBlur('fecha')}
             className={inputClass('fecha')}
           />
-          {errors.fecha && <p className="text-red-500">{errors.fecha}</p>}
+          {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha}</p>}
         </div>
-        {/* Repite para nro_comprobante, nro_comprobante2, tipo_compra, forma_compra, comentario */}
-        <div className="flex flex-col space-y-2">
-          <Label className="text-sm font-medium text-gray-700">
-            Nro comprobante *
-          </Label>
+
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Nro comprobante *</Label>
           <Input
             type="text"
-            value={formData.nro_comprobante}
+            value={formData.nro_comprobante }
             onChange={e => onChange('nro_comprobante', e.target.value)}
             onBlur={() => onBlur('nro_comprobante')}
             placeholder="FA-01"
             className={inputClass('nro_comprobante')}
           />
-          {errors.nro_comprobante && (
-            <p className="text-sm text-red-500 mt-1">
-              {errors.nro_comprobante}
-            </p>
-          )}
+          {errors.nro_comprobante && <p className="text-xs text-red-500 mt-1">{errors.nro_comprobante}</p>}
         </div>
-        {/* Nro comprobante 2 */}
-        <div className="flex flex-col space-y-2">
-          <Label className="text-sm font-medium text-gray-700">
-            Nro comprobante 2 *
-          </Label>
+
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Nro comprobante 2</Label>
           <Input
             type="text"
             value={formData.nro_comprobante2}
@@ -115,59 +118,63 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur('nro_comprobante2')}
             className={inputClass('nro_comprobante2')}
           />
-          {errors.nro_comprobante2 && (
-            <p className="text-sm text-red-500 mt-1">
-              {errors.nro_comprobante2}
-            </p>
-          )}
+          {errors.nro_comprobante2 && <p className="text-xs text-red-500 mt-1">{errors.nro_comprobante2}</p>}
         </div>
 
-        {/* Método de pago */}
-        <div className="flex flex-col space-y-2">
-          <Label className="text-sm font-medium text-gray-700">
-            Tipo de compra *
-          </Label>
-          <Input
-            type="text"
-            value={formData.tipo_compra}
-            onChange={e => onChange('tipo_compra', e.target.value)}
-            onBlur={() => onBlur('tipo_compra')}
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Tipo *</Label>
+          <ComboboxSelect
+            value={formData.tipo_compra || undefined}
+            onChange={v => onChange('tipo_compra', v)}
+            options={purchaseTypes.map(pt => ({ id: pt.value, label: pt.label }))}
+            optionTag="label"
+            placeholder={loading.types ? 'Cargando...' : 'Tipo'}
             className={inputClass('tipo_compra')}
+            disabled={loading.types}
           />
-          {/* <ComboboxSelect
-            value={formData.tipo_compra}
-            onChange={(v) => onChange("tipo_compra", v)}
-            options={tipoCompra || []}
-            optionTag="tipo"
-            placeholder="Seleccionar el tipo de compra"
-            className={inputClass("tipo_compra")}
-          /> */}
-          {errors.tipo_compra && (
-            <p className="text-sm text-red-500 mt-1">{errors.tipo_compra}</p>
-          )}
+          {errors.tipo_compra && <p className="text-xs text-red-500 mt-1">{errors.tipo_compra}</p>}
         </div>
 
-        {/* Estado */}
-        <div className="flex flex-col space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Forma *</Label>
-          <Input
-            type="text"
-            value={formData.forma_compra}
-            onChange={e => onChange('forma_compra', e.target.value)}
-            onBlur={() => onBlur('forma_compra')}
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Forma *</Label>
+          <ComboboxSelect
+            value={formData.forma_compra || undefined}
+            onChange={v => onChange('forma_compra', v)}
+            options={purchaseModalities.map(pm => ({ id: pm.value, label: pm.label }))}
+            optionTag="label"
+            placeholder={loading.modalities ? 'Cargando...' : 'Forma'}
             className={inputClass('forma_compra')}
+            disabled={loading.modalities}
           />
-          {/* <ComboboxSelect
-            value={formData.forma_compra}
-            onChange={(v) => onChange("forma_compra", v)}
-            options={forma || []}
-            optionTag="forma"
-            placeholder="Seleccionar estado"
-            className={inputClass("forma_compra")}
-          /> */}
-          {errors.forma_compra && (
-            <p className="text-sm text-red-500 mt-1">{errors.forma_compra}</p>
-          )}
+          {errors.forma_compra && <p className="text-xs text-red-500 mt-1">{errors.forma_compra}</p>}
+        </div>
+
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Responsable *</Label>
+          <ComboboxSelect
+            value={formData.id_responsable || undefined}
+            onChange={v => onChange('id_responsable', v)}
+            options={responsibles.map(r => ({ id: r.value, label: r.label }))}
+            optionTag="label"
+            placeholder={loading.responsibles ? 'Cargando...' : 'Responsable'}
+            className={inputClass('id_responsable')}
+            disabled={loading.responsibles}
+          />
+          {errors.id_responsable && <p className="text-xs text-red-500 mt-1">{errors.id_responsable}</p>}
+        </div>
+      </div>
+
+      <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Comentarios</Label>
+          <textarea
+            value={formData.comentario}
+            onChange={e => onChange('comentario', e.target.value)}
+            onBlur={() => onBlur('comentario')}
+            placeholder="Comentarios adicionales"
+            rows={2}
+            className="p-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+          />
         </div>
       </div>
     </div>

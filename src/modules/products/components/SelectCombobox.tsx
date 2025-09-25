@@ -1,7 +1,7 @@
-import { useState, Fragment, useEffect, useRef } from 'react'
+import { cn } from '@/lib/utils'
 import { Combobox, Transition } from '@headlessui/react'
 import { Check, ChevronDown, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Fragment, useRef, useState } from 'react'
 
 interface Option {
   id: string | number
@@ -32,6 +32,7 @@ export function ComboboxSelect({
   disabled = false,
   error = false
 }: ComboboxSelectProps) {
+  console.log(options)
   const [query, setQuery] = useState('')
   const comboboxInputRef = useRef<HTMLInputElement>(null)
 

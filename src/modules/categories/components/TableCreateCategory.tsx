@@ -1,16 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
 import { Accordion } from "@/components/atoms/accordion";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import useDebounce from "../hooks/useDebounce";
 import categoriesService from "../services/categoriesService";
-import FormCreateCategory from "./FormCreateCategory";
-import SearchCategories from "./SearchCategories";
-import CategoryItem from "./CategoryItem";
-import PaginationControls from "./PaginationControls";
-import CategoryItemSkeleton from "./CategorySqueleton";
-import { getCachedPage, setCachedPage } from "../Utils/PageCache";
 import type { PaginatedResponse } from "../types/Categories";
+import CategoryItem from "./CategoryItem";
+import CategoryItemSkeleton from "./CategorySqueleton";
+import FormCreateCategory from "./FormCreateCategory";
+import PaginationControls from "./PaginationControls";
+import SearchCategories from "./SearchCategories";
 
 interface Category {
   id: number;
@@ -33,7 +32,7 @@ const TableCreateCategory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
-  // Reinicia a página 1 si cambian búsqueda o perPage
+  // Reinicia a página 1 se cambian búsqueda o perPage
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, perPage]);
@@ -43,25 +42,17 @@ const TableCreateCategory = () => {
     data,
     isLoading,
     isFetching,
-    isError,
     refetch,
   } = useQuery<PaginatedResponse<Category>, Error>({
     queryKey: ["categories", { search: debouncedSearchTerm, page: currentPage, perPage }],
     queryFn: async () => {
-      const cacheKey = `search=${debouncedSearchTerm}&page=${currentPage}&perPage=${perPage}`;
-      const cached = getCachedPage(cacheKey);
-      if (cached) return cached;
-
-      const data = await categoriesService.getCategories({
+      return await categoriesService.getCategories({
         page: currentPage,
         perPage,
         categoria: debouncedSearchTerm,
       });
-
-      setCachedPage(cacheKey, data);
-      return data;
     },
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     staleTime: 0,
   });
 
@@ -169,10 +160,10 @@ const TableCreateCategory = () => {
   };
 
   return (
-    <div className="max-w-4xl p-4 mx-auto space-y-6">
+    <div className="max-w-4xl p-4 mx-auto">
       <h1 className="text-2xl font-semibold text-gray-900">Gestión de Categorías</h1>
 
-      <div className="p-4 bg-white border border-gray-200 rounded-lg">
+      <div className="bg-white border border-gray-200 rounded-tl-lg rounded-tr-lg">
         <FormCreateCategory
           value={newCategory}
           onChange={setNewCategory}
@@ -185,10 +176,10 @@ const TableCreateCategory = () => {
         value={searchTerm}
         onChange={setSearchTerm}
         onRefresh={handleRefresh}
-        isLoading={isFetching}
+        isLoading={isLoading}
       />
 
-      <div className="bg-white border border-gray-200 rounded-lg">
+      <div className="bg-white border border-gray-200 rounded-bl-lg rounded-br-lg">
         <Accordion type="single" collapsible className="w-full">
           {isFetching ? (
             <CategoryItemSkeleton rows={perPage} />
