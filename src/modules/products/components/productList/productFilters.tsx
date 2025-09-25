@@ -4,8 +4,6 @@ import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCatego
 import { useCommonBrands } from "@/modules/shared/hooks/useCommonBrands";
 import { Search } from "lucide-react";
 import type { useProductFilters } from "../../hooks/useProductFilters";
-import { useEffect, useState } from "react";
-import { useDebounce } from "use-debounce";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useCommonSubcategories } from "@/modules/shared/hooks/useCommonSubcategories";
 
@@ -25,55 +23,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         categoria: filters.categoria,
         enabled: !!filters.categoria
     })
-
-    // Inputs locales
-    const [codigoOEM, setCodigoOEM] = useState("")
-    const [codigoUPC, setCodigoUPC] = useState("")
-    const [nroMotor, setNroMotor] = useState("")
-    const [medida, setMedida] = useState("")
-    const [searchDescription, setSearchDescription] = useState("");
-
-    // Debounce
-    const [debouncedSearchDescription] = useDebounce(searchDescription, 500);
-    const [debouncedCodigoOEM] = useDebounce(codigoOEM, 500)
-    const [debouncedCodigoUPC] = useDebounce(codigoUPC, 500)
-    const [debouncedNroMotor] = useDebounce(nroMotor, 500)
-    const [debouncedModelo] = useDebounce(medida, 500)
-
-    // Sync debounced values al filtro global
-    useEffect(() => {
-        updateFilter("descripcion", debouncedSearchDescription);
-    }, [debouncedSearchDescription, updateFilter]);
-
-    useEffect(() => {
-        updateFilter("codigo_oem", debouncedCodigoOEM)
-    }, [debouncedCodigoOEM, updateFilter])
-
-    useEffect(() => {
-        updateFilter("codigo_upc", debouncedCodigoUPC)
-    }, [debouncedCodigoUPC, updateFilter])
-
-    useEffect(() => {
-        updateFilter("nro_motor", debouncedNroMotor)
-    }, [debouncedNroMotor, updateFilter])
-
-    useEffect(() => {
-        updateFilter("medida", debouncedModelo)
-    }, [debouncedModelo, updateFilter])
-
-    useEffect(() => {
-        const { codigo_oem, codigo_upc, nro_motor, medida, descripcion } = filters;
-
-        const allEmpty = !codigo_oem && !codigo_upc && !nro_motor && !medida && !descripcion;
-
-        if (allEmpty) {
-            setCodigoOEM("");
-            setCodigoUPC("");
-            setNroMotor("");
-            setMedida("");
-            setSearchDescription("");
-        }
-    }, [filters]);
 
     return (
         <>
@@ -104,8 +53,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
                                 placeholder="Buscar por descripcion..."
-                                value={searchDescription}
-                                onChange={(e) => setSearchDescription(e.target.value)}
+                                value={filters.descripcion}
+                                onChange={(e) => updateFilter("descripcion", e.target.value)}
                                 className="pl-10 w-full"
                             />
                         </div>
@@ -117,20 +66,21 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
                                 placeholder="11122-10040-D..."
-                                value={codigoOEM}
-                                onChange={(e) => setCodigoOEM(e.target.value)}
+                                value={filters.codigo_oem}
+                                onChange={(e) => updateFilter("codigo_oem", e.target.value)}
                                 className="pl-10 font-mono text-xs"
                             />
                         </div>
                     </div>
+
                     <div className="space-y-2">
                         <Label>Buscar Código UPC</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
                                 placeholder="11122-10040..."
-                                value={codigoUPC}
-                                onChange={(e) => setCodigoUPC(e.target.value)}
+                                value={filters.codigo_upc}
+                                onChange={(e) => updateFilter("codigo_upc", e.target.value)}
                                 className="pl-10 font-mono text-xs"
                             />
                         </div>
@@ -179,8 +129,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
                                 placeholder="11X6X40.6..."
-                                value={medida}
-                                onChange={(e) => setMedida(e.target.value)}
+                                value={filters.medida}
+                                onChange={(e) => updateFilter("medida", e.target.value)}
                                 className="pl-10 font-mono text-xs"
                             />
                         </div>
@@ -192,8 +142,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
                                 placeholder="1ZZ-FE..."
-                                value={nroMotor}
-                                onChange={(e) => setNroMotor(e.target.value)}
+                                value={filters.nro_motor}
+                                onChange={(e) => updateFilter("nro_motor", e.target.value)}
                                 className="pl-10 font-mono text-xs"
                             />
                         </div>
