@@ -1,76 +1,88 @@
-import { io, Socket } from 'socket.io-client';
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
 import authSDK from './sdk-simple-auth';
+
+declare global {
+  interface Window {
+    Pusher: typeof Pusher;
+  }
+}
 
 type WebSocketEventListener = (data: any) => void;
 
 export class WebSocketService {
-  private socket: Socket | null = null;
+  private echo: Echo<any> | null = null;
   private url: string;
   private listeners: Map<string, WebSocketEventListener[]> = new Map();
+  private channels: Map<string, any> = new Map();
 
   constructor(url: string) {
     this.url = url;
+    window.Pusher = Pusher;
   }
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        console.log(this.url)
-        this.socket = io(this.url, {
-          autoConnect: false,
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-          timeout: 20000,
-          path: '/socket.io/',
+        this.echo = new Echo({
+          broadcaster: 'pusher',
+          key: import.meta.env.VITE_SOCKET_KEY,
+          wsHost: this.url.replace(/^https?:\/\//, '').split(':')[0],
+          wsPort: parseInt(this.url.split(':').pop() || '8589'),
+          wssPort: parseInt(this.url.split(':').pop() || '8589'),
+          forceTLS: false,
+          encrypted: false,
+          disableStats: true,
+          enabledTransports: ['ws', 'wss'],
+          cluster: 'mt1',
+          authEndpoint: `${import.meta.env.VITE_API_URL}/broadcasting/auth`,
           auth: {
-            key: import.meta.env.VITE_SOCKET_KEY,
-            Authorization: `Bearer ${authSDK.getAccessToken() || ''}`
+            headers: {
+              Authorization: `Bearer ${authSDK.getAccessToken() || ''}`,
+            },
           },
-          transports: ['websocket'],
-          forceNew: true,
-          withCredentials: true
         });
 
-        this.socket.on('connect', () => {
-          console.log('Socket.IO connected');
+        // Simulate connection event
+        setTimeout(() => {
+          console.log('Laravel Echo connected');
           resolve();
-        });
+        }, 1000);
 
-        this.socket.on('disconnect', (reason) => {
-          console.log('Socket.IO disconnected:', reason);
-        });
-
-        this.socket.on('connect_error', (error) => {
-          console.error('Socket.IO connection error:', error);
-          reject(error);
-        });
-
-        this.socket.onAny((event, data) => {
-          this.handleMessage({ type: event, data });
-        });
-
-        this.socket.connect();
       } catch (error) {
+        console.error('Laravel Echo connection error:', error);
         reject(error);
       }
     });
   }
 
   disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+    if (this.echo) {
+      this.echo.disconnect();
+      this.echo = null;
     }
+    this.channels.clear();
   }
 
   send(type: string, data: any): void {
-    if (this.socket?.connected) {
-      this.socket.emit(type, data);
+    if (this.echo) {
+      console.log(`Broadcasting event ${type}:`, data);
+      // Laravel Echo is primarily for listening, not sending
+      // Broadcasting is typically done via HTTP API
     } else {
-      console.warn('Socket.IO is not connected');
+      console.warn('Laravel Echo is not connected');
     }
+  }
+
+  listen(channel: string, event: string, listener: WebSocketEventListener): void {
+    if (!this.echo) {
+      console.warn('Laravel Echo is not connected');
+      return;
+    }
+
+    const channelInstance = this.echo.channel(channel);
+    channelInstance.listen(event, listener);
+    this.channels.set(`${channel}:${event}`, channelInstance);
   }
 
   on(event: string, listener: WebSocketEventListener): void {
@@ -90,15 +102,9 @@ export class WebSocketService {
     }
   }
 
-  private handleMessage(message: { type: string; data: any }): void {
-    const listeners = this.listeners.get(message.type);
-    if (listeners) {
-      listeners.forEach(listener => listener(message.data));
-    }
-  }
 
   get isConnected(): boolean {
-    return this.socket?.connected ?? false;
+    return this.echo !== null;
   }
 }
 

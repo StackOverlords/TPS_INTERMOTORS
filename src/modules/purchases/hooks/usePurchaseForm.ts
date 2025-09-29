@@ -108,5 +108,6 @@ export function usePurchaseForm(initialBranch: number) {
     handleBlur,
     handleSubmit,
     setFormData,
+    reset,
   };
 }

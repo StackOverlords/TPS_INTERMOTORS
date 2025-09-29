@@ -13,10 +13,10 @@ import RowsPerPageSelect from "@/components/common/RowsPerPageSelect"
 import ShortcutKey from "@/components/common/ShortcutKey"
 import TooltipButton from "@/components/common/TooltipButton"
 import { TooltipWrapper } from "@/components/common/TooltipWrapper"
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation"
 import { showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
-import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation"
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
 import authSDK from "@/services/sdk-simple-auth"
@@ -742,7 +742,7 @@ const ProductListScreen = () => {
                     <ResizableBox
                         direction="vertical"
                         minSize={10}
-                        initialSize={20}
+                        initialSize={30}
                     >
                         <div
                             className="overflow-auto h-full">

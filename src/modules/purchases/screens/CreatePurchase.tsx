@@ -1,9 +1,8 @@
 import ShortcutKey from '@/components/common/ShortcutKey';
 import TooltipButton from '@/components/common/TooltipButton';
 import { useBranchStore } from '@/states/branchStore';
-import { Save } from 'lucide-react';
+import { RotateCcw, Save } from 'lucide-react';
 import React from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
 import FormCreatePurchase from '../components/FormCreatePurchase';
 import PurchaseDetailsTable from '../components/PurchaseDetailsTable';
 import { usePurchaseForm } from '../hooks/usePurchaseForm';
@@ -17,16 +16,9 @@ const CreatePurchase: React.FC = () => {
     handleChange,
     handleBlur,
     handleSubmit,
+    reset,
   } = usePurchaseForm(Number(branchId));
-
-  // Shortcut Alt+S to save
-  useHotkeys('alt+s', (e) => {
-    e.preventDefault();
-    if (!isLoading) {
-      handleSubmit();
-    }
-  });
-
+ 
   return (
     <div className={'h-screen max-h-auto'}>
       <div className="bg-white rounded-lg h-full bg-red-200 w-full">
@@ -39,12 +31,33 @@ const CreatePurchase: React.FC = () => {
             onChange={handleChange}
             onBlur={handleBlur}
             onSubmit={handleSubmit}
+            onReset={reset}
+            onCancel={() => {
+              // Lógica para cancelar - podría navegar atrás
+              console.log('Cancelando creación de compra');
+            }}
           />
           <PurchaseDetailsTable
             detalles={formData.detalles}
             setDetalles={detalles => handleChange('detalles', detalles)}
           />
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex justify-end gap-2">
+            <TooltipButton
+              buttonProps={{
+                onClick: reset,
+                disabled: isLoading,
+                className: "bg-gray-500 hover:bg-gray-600 hover:text-white text-white"
+              }}
+              tooltip={
+                <span className="flex items-center gap-1">
+                  Limpiar formulario <ShortcutKey combo="ctrl+r" />
+                </span>
+              }
+            >
+              <RotateCcw className="mr-2" />
+              Limpiar
+            </TooltipButton>
+
             <TooltipButton
               buttonProps={{
                 onClick: handleSubmit,

@@ -2,10 +2,11 @@ import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
+// import { useFormKeybindings } from '@/hooks/useFormKeybindings';
+import { useBasicFormKeybindings } from '@/hooks/keyBindings/useBasicFormKeybindings';
 import { ComboboxSelect } from '@/modules/products/components/SelectCombobox';
 import { HelpCircle, ShoppingBag } from 'lucide-react';
 import React from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
 import { useProviders } from '../hooks/useProviders';
 import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
 import { type FormData } from '../hooks/usePurchaseForm';
@@ -42,6 +43,8 @@ interface Props {
   onChange: (field: keyof FormData, value: any) => void;
   onBlur: (field: keyof FormData) => void;
   onSubmit: () => void;
+  onReset?: () => void;
+  onCancel?: () => void;
 }
 
 const FormCreatePurchase: React.FC<Props> = ({
@@ -49,6 +52,9 @@ const FormCreatePurchase: React.FC<Props> = ({
   errors,
   onChange,
   onBlur,
+  onSubmit,
+  onReset,
+  onCancel,
 }) => {
   const { data: proveedores = [], isLoading: isLoadingProviders } =
     useProviders(); 
@@ -71,51 +77,17 @@ const FormCreatePurchase: React.FC<Props> = ({
     return d.toISOString().split('T')[0];
   };
 
-  // Keyboard navigation helpers
-  const focusNextField = () => {
-    const focusableElements = document.querySelectorAll(
-      'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
-    );
-    const currentIndex = Array.from(focusableElements).indexOf(
-      document.activeElement as Element
-    );
-    const nextIndex = (currentIndex + 1) % focusableElements.length;
-    (focusableElements[nextIndex] as HTMLElement)?.focus();
-  };
-
-  const focusPrevField = () => {
-    const focusableElements = document.querySelectorAll(
-      'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
-    );
-    const currentIndex = Array.from(focusableElements).indexOf(
-      document.activeElement as Element
-    );
-    const prevIndex =
-      currentIndex === 0 ? focusableElements.length - 1 : currentIndex - 1;
-    (focusableElements[prevIndex] as HTMLElement)?.focus();
-  };
-
-  // Navigation shortcuts
-  useHotkeys('ctrl+tab', (e) => {
-    e.preventDefault();
-    focusNextField();
+  // ✨ Versión básica que no depende del contexto complejo
+  const { formRef } = useBasicFormKeybindings({
+    onSave: onSubmit,
+    onReset: onReset,
+    onCancel: onCancel
   });
 
-  useHotkeys('ctrl+shift+tab', (e) => {
-    e.preventDefault();
-    focusPrevField();
-  });
-
-  // Enter key navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && e.target !== document.querySelector('button[type="submit"]')) {
-      e.preventDefault();
-      focusNextField();
-    }
-  };
+  // Ref simple para debug
 
   return (
-    <div className="p-3 bg-white border border-gray-200 rounded-lg" onKeyDown={handleKeyDown}>
+    <div ref={formRef as any} className="p-3 bg-white border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-3">
         <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
           <ShoppingBag className="w-4 h-4" />
@@ -147,7 +119,7 @@ const FormCreatePurchase: React.FC<Props> = ({
                   </p>
                   <p>
                     {' '}
-                    <ShortcutKey combo={'Enter'} /> Siguiente campo{' '}
+                    <ShortcutKey combo={'Enter'} /> Navegación automática{' '}
                   </p>
                   <p>
                     {' '}
@@ -155,7 +127,15 @@ const FormCreatePurchase: React.FC<Props> = ({
                   </p>
                   <p>
                     {' '}
-                    <ShortcutKey combo={'Alt + s'} /> Guardar compra{' '}
+                    <ShortcutKey combo={'Alt + S'} /> Guardar compra{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Ctrl + R'} /> Limpiar formulario{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Ctrl + Shift + ?'} /> Ver todos los atajos{' '}
                   </p>
                 </div>
               </div>
@@ -178,6 +158,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={isLoadingProviders ? 'Cargando proveedores...' : 'Proveedor'}
             className={inputClass('id_proveedor')}
             disabled={isLoadingProviders}
+            data-field="id_proveedor"
           />
           {errors.id_proveedor && <p className="text-xs text-red-500 mt-1">{errors.id_proveedor}</p>}
         </div>
@@ -203,6 +184,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur('nro_comprobante')}
             placeholder="FA-01"
             className={inputClass('nro_comprobante')}
+            data-field="nro_comprobante"
           />
           {errors.nro_comprobante && <p className="text-xs text-red-500 mt-1">{errors.nro_comprobante}</p>}
         </div>
