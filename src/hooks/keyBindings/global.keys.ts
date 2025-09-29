@@ -32,7 +32,7 @@ const keyBindings = {
   actions: {
     openCommandPalette: {
       keys: 'ctrl+k',
-      description: 'Abrir/cerrar paleta de comandos',
+      description: 'Abrir/cerrar menú',
     },
     closeModal: {
       keys: 'escape',

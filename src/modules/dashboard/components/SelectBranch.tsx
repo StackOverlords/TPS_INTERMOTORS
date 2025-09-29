@@ -4,10 +4,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/atoms/select";
-import authSDK from "@/services/sdk-simple-auth";
-import { useBranchStore } from "@/states/branchStore";
-import { useEffect, useState } from "react";
+} from '@/components/atoms/select';
+import authSDK from '@/services/sdk-simple-auth';
+import { useBranchStore } from '@/states/branchStore';
+import { useEffect, useState } from 'react';
 
 interface Branch {
   id: string | number;
@@ -38,10 +38,16 @@ const SelectBranch = () => {
     };
 
     // Agregar listener para el evento personalizado
-    document.addEventListener('toggleBranchSelector', handleToggleBranchSelector);
+    document.addEventListener(
+      'toggleBranchSelector',
+      handleToggleBranchSelector
+    );
 
     return () => {
-      document.removeEventListener('toggleBranchSelector', handleToggleBranchSelector);
+      document.removeEventListener(
+        'toggleBranchSelector',
+        handleToggleBranchSelector
+      );
     };
   }, []);
 
@@ -49,31 +55,31 @@ const SelectBranch = () => {
     setSelectedBranch(value);
   };
 
-  return ( 
-      <Select
-        value={selectedBranchId || ""}
-        onValueChange={handleChange}
-        open={isOpen}
-        onOpenChange={setIsOpen}
-      >
-        <SelectTrigger data-branch-selector>
-          <SelectValue
-            className="text-gray-200"
-            placeholder="Selecciona una sucursal"
-          />
-        </SelectTrigger>
-        <SelectContent className="border border-gray-200">
-          {branches.map((branch: Branch) => (
-            <SelectItem
-              className="hover:bg-gray-200"
-              key={branch.id}
-              value={String(branch.id)}
-            >
-              {branch.sucursal || `Sucursal ${branch.id}`}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select> 
+  return (
+    <Select
+      value={selectedBranchId || ''}
+      onValueChange={handleChange}
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
+      <SelectTrigger data-branch-selector>
+        <SelectValue
+          className="text-gray-200"
+          placeholder="Selecciona una sucursal"
+        />
+      </SelectTrigger>
+      <SelectContent className="border border-gray-200">
+        {branches.map((branch: Branch) => (
+          <SelectItem
+            className="hover:bg-gray-200"
+            key={branch.id}
+            value={String(branch.id)}
+          >
+            {branch.sucursal || `Sucursal ${branch.id}`}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };
 

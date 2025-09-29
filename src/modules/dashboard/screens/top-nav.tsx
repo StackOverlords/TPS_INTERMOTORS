@@ -10,7 +10,7 @@ import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
-import { Bell, ShoppingCart } from 'lucide-react';
+import { Bell, HelpCircle, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 import { Link, matchPath, useLocation } from 'react-router';
 import SelectBranch from '../components/SelectBranch';
@@ -150,102 +150,110 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
       </div>
 
       <div className="flex items-center gap-2 ml-auto sm:gap-3 sm:ml-0">
-        <TooltipWrapper
-          tooltip={
-            <p>
-              Presiona{' '}
-              <ShortcutKey combo={keyBindings.actions.openCommandPalette.keys} />{' '}
-              {keyBindings.actions.openCommandPalette.description}
-            </p>
-          }
+        <div className="flex items-center gap-4">
+          <SearchButton onClick={() => setOpen(true)} />
+          <CommandPalette open={open} setOpen={setOpen} />
+        </div>
+
+        <div className="flex items-center gap-4 w-full">
+          <SelectBranch></SelectBranch>
+        </div>
+        <Button
+          variant="outline"
+          className="relative size-8 cursor-pointer"
+          size={'sm'}
+          onClick={onOpenCartChange}
         >
-          <div className="flex items-center gap-4">
-            <SearchButton onClick={() => setOpen(true)} />
-            <CommandPalette open={open} setOpen={setOpen} />
-          </div>
-        </TooltipWrapper>
-        <TooltipWrapper
-          tooltip={
-            <p>
-              Presiona <ShortcutKey combo={keyBindings.actions.changeBranch.keys} />
-              {keyBindings.actions.changeBranch.description}
-            </p>
-          }
+          <ShoppingCart className="h-4 w-4" />
+          {cartLength() > 0 && (
+            <Badge
+              variant="destructive"
+              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            >
+              {cartLength()}
+            </Badge>
+          )}
+        </Button>
+        <Button
+          variant={'outline'}
+          type="button"
+          className="flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
+          onClick={() => {
+            console.log('Abriendo notificaciones...');
+            // Lógica para notificaciones
+          }}
         >
-          <div className="flex items-center gap-4 w-full">
-            <SelectBranch></SelectBranch>
-          </div>
-        </TooltipWrapper>
+          <Bell className="w-4 h-4 text-gray-600 sm:h-5 sm:w-5" />
+        </Button>
         <TooltipWrapper
+          tooltipContentProps={{
+            align: 'end',
+            className: 'max-w-xs',
+          }}
           tooltip={
-            <p>
-              Presiona <ShortcutKey combo={keyBindings.actions.openCart.keys} />
-              {keyBindings.actions.openCart.description}
-            </p>
-          }
-        >
-          <Button
-            variant="outline"
-            className="relative size-8 cursor-pointer"
-            size={'sm'}
-            onClick={onOpenCartChange}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {cartLength() > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              >
-                {cartLength()}
-              </Badge>
-            )}
-          </Button>
-        </TooltipWrapper>
-        <TooltipWrapper
-          tooltip={
-            <p>
-              Presiona <ShortcutKey combo={keyBindings.actions.openNotifications.keys} />
-              {keyBindings.actions.openNotifications.description}
-            </p>
-          }
-        >
-          <Button
-            variant={'outline'}
-            type="button"
-            className="flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
-            onClick={() => {
-              console.log('Abriendo notificaciones...');
-              // Lógica para notificaciones
-            }}
-          >
-            <Bell className="w-4 h-4 text-gray-600 sm:h-5 sm:w-5" />
-          </Button>
-        </TooltipWrapper>
-        <TooltipWrapper
-          tooltip={
-            <p>
-              Presiona <ShortcutKey combo="ctrl+shift+?" /> para ver atajos de
-              teclado
-            </p>
-          }
-        >
-          <div
-            className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer"
-            onClick={() => {
-              // Aquí podrías abrir un modal con la información del usuario o un menú desplegable
-              console.log('Clic en el nombre de usuario');
-            }}
-          >
-            <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-gray-600 font-semibold">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-              </span>
+            <div className="flex flex-col space-y-3">
+              <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                Atajos de teclado
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  Navegación
+                </h4>
+                <div className="space-y-1 text-gray-600 text-xs">
+                  <p>
+                    {' '}
+                    <ShortcutKey
+                      combo={keyBindings.actions.openCommandPalette.keys}
+                    />
+                    {keyBindings.actions.openCommandPalette.description}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey
+                      combo={keyBindings.actions.changeBranch.keys}
+                    />{' '}
+                    {keyBindings.actions.changeBranch.description}{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey
+                      combo={keyBindings.actions.openCart.keys}
+                    />{' '}
+                    {keyBindings.actions.openCart.description}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey
+                      combo={keyBindings.actions.openNotifications.keys}
+                    />{' '}
+                    {keyBindings.actions.openNotifications.description}
+                  </p>
+                </div>
+              </div>
             </div>
-            <span className="text-sm font-medium text-gray-700">
-              {user?.name || 'Usuario'}
+          }
+        >
+          <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+            <HelpCircle className="w-4 h-4" />
+          </span>
+        </TooltipWrapper>
+        <div
+          className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer"
+          onClick={() => {
+            // Aquí podrías abrir un modal con la información del usuario o un menú desplegable
+            console.log('Clic en el nombre de usuario');
+          }}
+        >
+          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+            <span className="text-gray-600 font-semibold">
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </span>
           </div>
-        </TooltipWrapper>
+          <span className="text-sm font-medium text-gray-700">
+            {user?.name || 'Usuario'}
+          </span>
+        </div>
       </div>
     </nav>
   );
