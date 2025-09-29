@@ -13,6 +13,7 @@ import RowsPerPageSelect from "@/components/common/RowsPerPageSelect"
 import ShortcutKey from "@/components/common/ShortcutKey"
 import TooltipButton from "@/components/common/TooltipButton"
 import { TooltipWrapper } from "@/components/common/TooltipWrapper"
+import keyBindings from "@/hooks/keyBindings/global.keys"
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation"
 import { showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
@@ -586,6 +587,36 @@ const ProductListScreen = () => {
                                         "Mostrar filtros"
                                 }
                             </Button>
+                            <TooltipWrapper
+                            tooltipContentProps={{
+                                align: 'end',
+                                className: 'max-w-xs'
+                            }}
+                            tooltip={
+                                <div className="flex flex-col space-y-3">
+                                    {/* Título del tooltip */}
+                                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                        Atajos de teclado
+                                    </div>
+
+                                    {/* Sección de navegación básica */}
+                                    <div className="space-y-1.5">
+                                        <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
+                                        <div className="space-y-1 text-gray-600 text-xs">
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter1.keys} />{keyBindings.tableAndFilters.filter1.description}: Categoria</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter2.keys} />{keyBindings.tableAndFilters.filter2.description}: Descripción</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter3.keys} />{keyBindings.tableAndFilters.filter3.description}: Cod. OEM</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter4.keys} />{keyBindings.tableAndFilters.filter4.description}: Cod. Upc</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.nextFilter.keys} />{keyBindings.tableAndFilters.nextFilter.description}</p>
+                                        </div>
+                                    </div> 
+                                </div>
+                            }
+                        >
+                            <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                                <HelpCircle />
+                            </span>
+                        </TooltipWrapper>
                         </div>
                     </section>
                 </header>

@@ -60,7 +60,7 @@ const PurchaseListScreen = () => {
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const { filters, updateFilter, setPage, resetFilters } = usePurchaseFilters(
     Number(selectedBranchId) || 1
-  );
+  );  
 
   const {
     data: purchaseData,
@@ -551,19 +551,18 @@ const PurchaseListScreen = () => {
 
         {/* Results Info */}
         <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
-          {purchases.length > 0 ? (
+          {isLoading || isFetching ? (
+            <span>Cargando...</span>
+          ) : isError ? (
+            <span className="text-red-600">Error al cargar los datos</span>
+          ) : purchases.length > 0 ? (
             isInfiniteScroll ? (
-              `Mostrando ${purchases.length} de ${purchaseData?.meta.total} compras`
+              `Mostrando ${purchases.length} de ${purchaseData?.meta.total || 0} compras`
             ) : (
-              `Mostrando ${(filters.pagina ?? 1) * (filters.pagina_registros ?? 1) -
-              ((filters.pagina_registros ?? 1) - 1)
-              } 
-                            - ${(filters.pagina ?? 1) *
-              (filters.pagina_registros ?? 1)
-              } de ${purchaseData?.meta.total} compras`
+              `Mostrando ${(purchaseData?.meta.from || 0)} - ${(purchaseData?.meta.to || 0)} de ${purchaseData?.meta.total || 0} compras`
             )
           ) : (
-            <span>Cargando...</span>
+            <span className="text-amber-600">No se encontraron compras para la sucursal actual</span>
           )}
 
           <div className="flex items-center gap-2">
@@ -640,10 +639,10 @@ const PurchaseListScreen = () => {
             <CustomizableTable
               table={table}
               isError={isError}
-              errorMessage="Ocurrió un error al cargar las compras"
+              errorMessage="Ocurrió un error al cargar las compras. Verifica tu conexión o intenta con otra sucursal."
               isLoading={isLoading}
               rows={filters.pagina_registros}
-              noDataMessage="No se encontraron compras"
+              noDataMessage="No se encontraron compras para la sucursal seleccionada. Prueba cambiar a otra sucursal o ajusta los filtros de búsqueda."
               selectedRowIndex={selectedIndex}
               onRowClick={handleRowClick}
               onRowDoubleClick={handleRowDoubleClick}
@@ -661,9 +660,9 @@ const PurchaseListScreen = () => {
                   isError={isError}
                   isFetching={isFetching}
                   isLoading={isLoading}
-                  errorMessage="Ocurrió un error al cargar las compras"
+                  errorMessage="Ocurrió un error al cargar las compras. Verifica tu conexión o intenta con otra sucursal."
                   rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron compras"
+                  noDataMessage="No se encontraron compras para la sucursal seleccionada. Prueba cambiar a otra sucursal o ajusta los filtros de búsqueda."
                   selectedRowIndex={selectedIndex}
                   onRowClick={handleRowClick}
                   onRowDoubleClick={handleRowDoubleClick}

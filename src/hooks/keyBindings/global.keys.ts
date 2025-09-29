@@ -29,6 +29,56 @@ const keyBindings = {
       description: 'Cerrar modales o diálogos',
     },
   },
+  tableAndFilters:{
+    nextRow: {
+      keys: 'down',
+      description: 'Mover selección a la fila siguiente en tablas',
+    },
+    prevRow: {
+      keys: 'up',
+      description: 'Mover selección a la fila anterior en tablas',
+    },
+    firstRow: {
+      keys: 'home',
+      description: 'Mover selección a la primera fila en tablas',
+    },
+    lastRow: {
+      keys: 'end',
+      description: 'Mover selección a la última fila en tablas',
+    },
+    nextFilter: {
+      keys: 'tab',
+      description: 'Mover foco al siguiente filtro',
+    },
+    prevFilter: {
+      keys: 'ctrl+shift+tab',
+      description: 'Mover foco al filtro anterior',
+    },
+    filter1:{
+      keys: 'ctrl+1',
+      description: 'Foco en filtro 1',
+    },
+    filter2:{
+      keys: 'ctrl+2',
+      description: 'Foco en filtro 2',
+    },
+    filter3:{
+      keys: 'ctrl+3',
+      description: 'Foco en filtro 3',
+    },
+    filter4:{
+      keys: 'ctrl+4',
+      description: 'Foco en filtro 4',
+    },
+    filter5:{
+      keys: 'ctrl+5',
+      description: 'Foco en filtro 5',
+    },
+    filter6:{
+      keys: 'ctrl+6',
+      description: 'Foco en filtro 6',
+    },
+  },
   actions: {
     openCommandPalette: {
       keys: 'ctrl+k',
