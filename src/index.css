@@ -82,6 +82,96 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
+/* version para light-dark (descomentar para usar) */
+/* @layer base {
+  :root {
+    color-scheme: light dark;
+    
+    --border: light-dark(214.3 31.8% 91.4%, 217 12% 16%);
+    --input: light-dark(214.3 31.8% 91.4%, 217 12% 16%);
+    --ring: light-dark(222.2 84% 4.9%, 212.7 26.8% 83.9%);
+    --background: light-dark(0 0% 100%, 222.2 84% 4.9%);
+    --foreground: light-dark(222.2 84% 4.9%, 210 40% 98%);
+    --primary: light-dark(222.2 47.4% 11.2%, 210 40% 98%);
+    --primary-foreground: light-dark(210 40% 98%, 222.2 47.4% 11.2%);
+    --secondary: light-dark(210 40% 96%, 217.2 32.6% 17.5%);
+    --secondary-foreground: light-dark(222.2 47.4% 11.2%, 210 40% 98%);
+    --destructive: light-dark(0 84.2% 60.2%, 0 62.8% 30.6%);
+    --destructive-foreground: light-dark(210 40% 98%, 210 40% 98%);
+    --muted: light-dark(210 40% 96%, 217.2 32.6% 17.5%);
+    --muted-foreground: light-dark(215.4 16.3% 46.9%, 215 20.2% 65.1%);
+    --accent: light-dark(210 40% 96%, 217.2 32.6% 17.5%);
+    --accent-foreground: light-dark(222.2 47.4% 11.2%, 210 40% 98%);
+    --popover: light-dark(0 0% 100%, 222.2 84% 4.9%);
+    --popover-foreground: light-dark(222.2 84% 4.9%, 210 40% 98%);
+    --card: light-dark(0 0% 100%, 224 71% 4%);
+    --card-foreground: light-dark(222.2 84% 4.9%, 210 40% 98%);
+    --radius: 0.5rem;
+  }
+}
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-toast-info-bg: light-dark(
+    radial-gradient(ellipse at left, hsl(214 100% 97%) 0%, hsl(214 50% 98%) 50%, hsl(0 0% 100%) 100%),
+    radial-gradient(ellipse at left, hsl(214 30% 8%) 0%, hsl(214 15% 12%) 50%, hsl(224 71% 4%) 100%)
+  );
+  --color-toast-info-foreground: light-dark(hsl(220 13% 18%), hsl(210 40% 98%));
+  --color-toast-info-border: light-dark(hsl(214 32% 91%), hsl(214 20% 18%));
+  --color-toast-info-icon: light-dark(hsl(214 84% 56%), hsl(214 84% 76%));
+  --color-toast-info-icon-bg: light-dark(hsl(214 100% 97%), hsl(214 30% 8%));
+
+  --color-toast-success-bg: light-dark(
+    radial-gradient(ellipse at left, hsl(142 70% 96%) 0%, hsl(142 30% 98%) 50%, hsl(0 0% 100%) 100%),
+    radial-gradient(ellipse at left, hsl(142 25% 8%) 0%, hsl(142 15% 12%) 50%, hsl(224 71% 4%) 100%)
+  );
+  --color-toast-success-foreground: light-dark(hsl(220 13% 18%), hsl(210 40% 98%));
+  --color-toast-success-border: light-dark(hsl(142 34% 85%), hsl(142 20% 18%));
+  --color-toast-success-icon: light-dark(hsl(142 71% 45%), hsl(142 71% 65%));
+  --color-toast-success-icon-bg: light-dark(hsl(142 68% 95%), hsl(142 25% 8%));
+
+  --color-toast-warning-bg: light-dark(
+    radial-gradient(ellipse at left, hsl(48 100% 95%) 0%, hsl(48 50% 97%) 50%, hsl(0 0% 100%) 100%),
+    radial-gradient(ellipse at left, hsl(48 25% 8%) 0%, hsl(48 15% 12%) 50%, hsl(224 71% 4%) 100%)
+  );
+  --color-toast-warning-foreground: light-dark(hsl(220 13% 18%), hsl(210 40% 98%));
+  --color-toast-warning-border: light-dark(hsl(48 95% 76%), hsl(48 20% 18%));
+  --color-toast-warning-icon: light-dark(hsl(25 95% 53%), hsl(25 95% 73%));
+  --color-toast-warning-icon-bg: light-dark(hsl(48 100% 93%), hsl(48 25% 8%));
+
+  --color-toast-error-bg: light-dark(
+    radial-gradient(ellipse at left, hsl(0 100% 97%) 0%, hsl(0 50% 98%) 50%, hsl(0 0% 100%) 100%),
+    radial-gradient(ellipse at left, hsl(0 25% 8%) 0%, hsl(0 15% 12%) 50%, hsl(224 71% 4%) 100%)
+  );
+  --color-toast-error-foreground: light-dark(hsl(220 13% 18%), hsl(210 40% 98%));
+  --color-toast-error-border: light-dark(hsl(0 93% 94%), hsl(0 20% 18%));
+  --color-toast-error-icon: light-dark(hsl(0 84% 60%), hsl(0 84% 80%));
+  --color-toast-error-icon-bg: light-dark(hsl(0 100% 97%), hsl(0 25% 8%));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+} */
+
 /* Animaciones personalizadas */
 @keyframes fade-in {
   from {
