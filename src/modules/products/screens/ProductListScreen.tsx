@@ -59,6 +59,7 @@ const ProductListScreen = () => {
         updateFilter,
         setPage,
         resetFilters,
+        debouncedFilters,
     } = useProductFilters(Number(selectedBranchId) || 1);
 
     const {
@@ -69,7 +70,7 @@ const ProductListScreen = () => {
         isError,
         refetch: refetchProducts,
         isRefetching: isRefetchingProducts,
-    } = useProductsPaginated(filters);
+    } = useProductsPaginated(debouncedFilters);
 
     const { addItemToCart, addMultipleItems, decrementQuantity } = useCartWithUtils(user?.name ?? '', selectedBranchId ?? '')
     const [sorting, setSorting] = useState<SortingState>([])
