@@ -1,10 +1,10 @@
 // import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import TooltipButton from "@/components/common/TooltipButton";
-import FormCreateProduct from "../components/FormCreateProduct";
 import { Kbd } from "@/components/atoms/kbd";
-import { CornerUpLeft } from "lucide-react";
+import TooltipButton from "@/components/common/TooltipButton";
 import { useGoBack } from "@/hooks/useGoBack";
+import { CornerUpLeft } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
+import FormCreateProduct from "../components/FormCreateProduct";
 // import TableCreateProduct from "../components/TableCreateProduct";
 
 const CreateProduct = () => {
@@ -55,7 +55,6 @@ const CreateProduct = () => {
             </div >
           </div >
         </header >
-
         <FormCreateProduct
         />
       </div>

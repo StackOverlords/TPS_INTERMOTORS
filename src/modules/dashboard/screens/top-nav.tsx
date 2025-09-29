@@ -1,20 +1,20 @@
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import { SidebarTrigger } from "@/components/atoms/sidebar";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
+import protectedRoutes from "@/navigation/Protected.Route";
+import type RouteType from "@/navigation/RouteType";
+import authSDK from "@/services/sdk-simple-auth";
+import { useBranchStore } from "@/states/branchStore";
 import { Bell, ShoppingCart } from "lucide-react";
+import { useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import { Link, matchPath, useLocation } from "react-router";
+import SelectBranch from "../components/SelectBranch";
 import CommandPalette from "./CommandPalette/CommandPalette";
 import SearchButton from "./CommandPalette/SearchButton";
-import { useState } from "react";
-import protectedRoutes from "@/navigation/Protected.Route";
-import { Link, useLocation, matchPath } from "react-router";
-import { useHotkeys } from "react-hotkeys-hook";
-import SelectBranch from "../components/SelectBranch";
-import type RouteType from "@/navigation/RouteType";
-import { Button } from "@/components/atoms/button";
-import { Badge } from "@/components/atoms/badge";
-import authSDK from "@/services/sdk-simple-auth";
-import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
-import { TooltipWrapper } from "@/components/common/TooltipWrapper ";
-import ShortcutKey from "@/components/common/ShortcutKey";
-import { useBranchStore } from "@/states/branchStore";
-import { SidebarTrigger } from "@/components/atoms/sidebar";
 
 interface TopNavProps {
   onOpenCartChange: () => void

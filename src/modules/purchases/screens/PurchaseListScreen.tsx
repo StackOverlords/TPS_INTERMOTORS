@@ -13,6 +13,7 @@ import ResizableBox from '@/components/atoms/resizable-box';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
+import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
 import { formatCell } from '@/utils/formatCell';
@@ -47,7 +48,6 @@ import { usePurchaseDelete } from '../hooks/usePurchaseDelete';
 import { usePurchaseFilters } from '../hooks/usePurchaseFilters';
 import { usePurchasesPaginated } from '../hooks/usePurchasesPaginated';
 import type { PurchaseGet } from '../types/PurchaseGet';
-import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 
 const getColumnVisibilityKey = (userName: string) =>
   `purchase-columns-${userName}`;
@@ -122,7 +122,7 @@ const PurchaseListScreen = () => {
       console.error('Error saving column visibility:', error);
     }
   }, [columnVisibility, user?.name]);
-  console.log(authSDK.getAccessToken());
+  // console.log(authSDK.getAccessToken());
   useEffect(() => {
     // console.log('Filtros actualizados:', filters);
     if (!purchaseData?.data || error) return;
@@ -189,7 +189,7 @@ const PurchaseListScreen = () => {
     if (contexto.includes('Contado')) return 'success';
     return 'secondary';
   };
-  console.log(authSDK.getAccessToken());
+  // console.log(authSDK.getAccessToken());
   const columns = useMemo<ColumnDef<PurchaseGet>[]>(
     () => [
       {
@@ -471,7 +471,7 @@ const PurchaseListScreen = () => {
   const hasSelectedPurchases = Object.keys(rowSelection).length;
 
   const onPageChange = (page: number) => {
-    console.log('Cambiando a página:', page);
+    // console.log('Cambiando a página:', page);
     setPage(page);
   };
 

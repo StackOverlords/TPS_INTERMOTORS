@@ -1,7 +1,9 @@
-import { Button } from '@/components/atoms/button';
+import ShortcutKey from '@/components/common/ShortcutKey';
+import TooltipButton from '@/components/common/TooltipButton';
 import { useBranchStore } from '@/states/branchStore';
 import { Save } from 'lucide-react';
 import React from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import FormCreatePurchase from '../components/FormCreatePurchase';
 import PurchaseDetailsTable from '../components/PurchaseDetailsTable';
 import { usePurchaseForm } from '../hooks/usePurchaseForm';
@@ -16,6 +18,15 @@ const CreatePurchase: React.FC = () => {
     handleBlur,
     handleSubmit,
   } = usePurchaseForm(Number(branchId));
+
+  // Shortcut Alt+S to save
+  useHotkeys('alt+s', (e) => {
+    e.preventDefault();
+    if (!isLoading) {
+      handleSubmit();
+    }
+  });
+
   return (
     <div className={'h-screen max-h-auto'}>
       <div className="bg-white rounded-lg h-full bg-red-200 w-full">
@@ -34,14 +45,21 @@ const CreatePurchase: React.FC = () => {
             setDetalles={detalles => handleChange('detalles', detalles)}
           />
           <div className="mt-6 flex justify-end">
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+            <TooltipButton
+              buttonProps={{
+                onClick: handleSubmit,
+                disabled: isLoading,
+                className: "bg-gray-900 hover:bg-gray-800 hover:text-white text-white"
+              }}
+              tooltip={
+                <span className="flex items-center gap-1">
+                  Crear compra <ShortcutKey combo="alt+s" />
+                </span>
+              }
             >
               <Save className="mr-2" />
               {isLoading ? 'Guardando...' : 'Crear Compra'}
-            </Button>
+            </TooltipButton>
           </div>
         </div>
       </div>

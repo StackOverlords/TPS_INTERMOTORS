@@ -32,7 +32,7 @@ export function ComboboxSelect({
   disabled = false,
   error = false
 }: ComboboxSelectProps) {
-  console.log(options)
+  // console.log(options)
   const [query, setQuery] = useState('')
   const comboboxInputRef = useRef<HTMLInputElement>(null)
 

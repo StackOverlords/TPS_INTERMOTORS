@@ -1,10 +1,8 @@
-import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import * as React from "react"
 
-import { useIsMobile } from "@/hooks/use-mobile"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/atoms/button"
 import { Input } from "@/components/atoms/input"
 import { Separator } from "@/components/atoms/separator"
@@ -16,9 +14,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/atoms/tooltip"
-import { DialogTitle } from "./dialog"
-import { TooltipWrapper } from "../common/TooltipWrapper "
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 import ShortcutKey from "../common/ShortcutKey"
+import { TooltipWrapper } from "../common/TooltipWrapper"
+import { DialogTitle } from "./dialog"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -785,5 +785,5 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
-  useSidebar,
+  useSidebar
 }

@@ -36,10 +36,9 @@ export const fetchPurchases = async (filters: PurchaseFilters): Promise<Purchase
   // console.log("Parámetros enviados:", params);
   const response = await apiClient.get(PURCHASE_ENDPOINTS.all, { params });
   // console.log("Respuesta recibida:", response.data);
-  
   const result = PurchaseListResponseSchema.safeParse(response.data);
   if (!result.success) {
-    console.error("Zod error en fetchPurchases:", result.error.format());
+    // console.error("Zod error en fetchPurchases:", result.error.format());
     throw new Error("Respuesta inválida del servidor.");
   }
   return result.data;
