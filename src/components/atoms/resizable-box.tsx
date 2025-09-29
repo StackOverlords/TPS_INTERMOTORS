@@ -8,8 +8,8 @@ interface ResizableBoxProps {
     children: React.ReactNode
     className?: string
     direction?: ResizeDirection
-    initialSize?: number // porcentaje (1-100)
-    minSize?: number // porcentaje (1-100)
+    initialSize?: number | string // Acepta "300px" o 50
+    minSize?: number | string     // Acepta "100px" o 20
     onResize?: (size: number) => void
 }
 
@@ -21,6 +21,17 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
     minSize = 20,
     onResize,
 }) => {
+    const normalizeToPercent = (size: number | string): number => {
+        if (typeof size === 'string' && size.endsWith('px')) {
+            const pxValue = parseInt(size)
+            const base = direction === 'horizontal'
+                ? baseSizePx.current.width
+                : baseSizePx.current.height
+            return base > 0 ? (pxValue / base) * 100 : 100
+        }
+        return typeof size === 'number' ? size : parseFloat(size)
+    }
+
     const panelRef = useRef<HTMLDivElement | null>(null)
     const handleRef = useRef<HTMLDivElement | null>(null)
     const baseSizePx = useRef<{ width: number; height: number }>({ width: 0, height: 0 })
@@ -33,7 +44,12 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
     const currentMousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
 
     const [isExpanded, setIsExpanded] = useState<boolean>(initialSize === 100)
-    const [size, setSize] = useState<number>(initialSize)
+    const [size, setSize] = useState<number>(() => {
+        if (typeof initialSize === 'string' && initialSize.endsWith('px')) {
+            return parseInt(initialSize) // Temporal, se convertirá después
+        }
+        return typeof initialSize === 'number' ? initialSize : 100
+    })
     const [isResizing, setIsResizing] = useState(false)
 
     const measureNatural = useCallback(() => {
@@ -67,6 +83,13 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
         el.style.maxHeight = prevMaxHeight
         el.style.maxWidth = prevMaxWidth
     }, [])
+
+    useEffect(() => {
+        if (typeof initialSize === 'string' && initialSize.endsWith('px') && baseSizePx.current.height > 0) {
+            const percentSize = normalizeToPercent(initialSize)
+            setSize(percentSize)
+        }
+    }, [baseSizePx.current.height, baseSizePx.current.width])
 
     const recalculateResize = useCallback(() => {
         if (!isResizing || !panelRef.current) return
@@ -110,7 +133,8 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
                 ? (maxSizePx.current.height / baseSizePx.current.height) * 100
                 : 100)
 
-        newSize = Math.max(minSize, Math.min(maxAllowed, newSize))
+        const minSizePercent = normalizeToPercent(minSize)
+        newSize = Math.max(minSizePercent, Math.min(maxAllowed, newSize))
 
         setSize(newSize)
         onResize?.(newSize)
@@ -360,7 +384,8 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
     const handleToggleExpanded = () => {
         if (isExpanded) {
             userResized.current = true
-            setSize(minSize)
+            const minSizePercent = normalizeToPercent(minSize)
+            setSize(minSizePercent)
             setIsExpanded(false)
         } else {
             userResized.current = false

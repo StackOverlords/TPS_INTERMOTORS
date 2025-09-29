@@ -1,82 +1,97 @@
-import {
-    Settings2,
-    MapPin,
-    Tag,
-    FolderOpen,
-    Layers,
-    Car,
-    Ruler,
-} from "lucide-react"
-import ConfigCard from "../components/configCard"
-import { useNavigate } from "react-router"
+import { Settings as SettingsIcon, Database, Palette, Shield, HardDrive, Link, Bell, Code, Settings2 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
+import MasterDataSettings from "../components/settings/MasterDataSettings";
+import AppearanceSettings from "../components/settings/AppearanceSettings";
+import SystemSettings from "../components/settings/SystemSettings";
+import BackupSettings from "../components/settings/BackupSettings";
+import IntegrationSettings from "../components/settings/IntegrationSettings";
+import SecuritySettings from "../components/settings/SecuritySettings";
+import NotificationSettings from "../components/settings/NotificationSettings";
+import AdvancedSettings from "../components/settings/AdvancedSettings";
+import { useState } from "react";
+import { SettingsNavigation } from "../components/settings/SettingsNavigation";
 
-const configSections = [
+export type SettingsSection = {
+    id: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    description: string;
+    component: React.ComponentType;
+};
+
+const settingsSections: SettingsSection[] = [
+    // {
+    //     id: "navigation",
+    //     label: "Navegación",
+    //     icon: Database,
+    //     description: "Configura el estilo de navegación",
+    //     component: NavigationSettings,
+    // },
     {
-        key: "categorias",
-        href: "/dashboard/settings/categories",
-        title: "Categorías",
-        description: "Categorías principales",
-        icon: FolderOpen,
-        iconClassName: "bg-purple-100 text-purple-600",
+        id: "master-data",
+        label: "Datos Maestros",
+        icon: Database,
+        description: "Gestiona los datos maestros del sistema",
+        component: MasterDataSettings,
     },
     {
-        key: "subcategorias",
-        href: "/dashboard/settings/subcategories",
-        title: "Subcategorías",
-        description: "Subcategorías por categoría",
-        icon: Layers,
-        iconClassName: "bg-orange-100 text-orange-600",
+        id: "appearance",
+        label: "Apariencia",
+        icon: Palette,
+        description: "Personaliza el tema y colores",
+        component: AppearanceSettings,
     },
     {
-        key: "procedencias",
-        href: "/dashboard/settings/origins",
-        title: "Procedencias",
-        description: "Origen de los productos",
-        icon: MapPin,
-        iconClassName: "bg-blue-100 text-blue-600",
+        id: "system",
+        label: "Sistema",
+        icon: SettingsIcon,
+        description: "Configuraciones de cuenta y sistema",
+        component: SystemSettings,
     },
     {
-        key: "marcas",
-        href: "/dashboard/settings/brands",
-        title: "Marcas",
-        description: "Marcas de productos",
-        icon: Tag,
-        iconClassName: "bg-emerald-100 text-emerald-600",
+        id: "backups",
+        label: "Respaldos",
+        icon: HardDrive,
+        description: "Gestiona copias de seguridad",
+        component: BackupSettings,
     },
     {
-        key: "marcasVehiculo",
-        href: "/dashboard/settings/vehicle-brands",
-        title: "Marcas de Vehículo",
-        description: "Marcas de vehículos",
-        icon: Car,
-        iconClassName: "bg-red-100 text-red-600",
+        id: "integrations",
+        label: "Integraciones",
+        icon: Link,
+        description: "APIs y conexiones externas",
+        component: IntegrationSettings,
     },
     {
-        key: "medidas",
-        href: "/dashboard/settings/measurements",
-        title: "Medidas",
-        description: "Medidas de productos",
-        icon: Ruler,
-        iconClassName: "bg-yellow-100 text-yellow-600",
+        id: "security",
+        label: "Seguridad",
+        icon: Shield,
+        description: "Permisos y control de acceso",
+        component: SecuritySettings,
     },
-]
+    {
+        id: "notifications",
+        label: "Notificaciones",
+        icon: Bell,
+        description: "Alertas y notificaciones",
+        component: NotificationSettings,
+    },
+    {
+        id: "advanced",
+        label: "Avanzado",
+        icon: Code,
+        description: "Configuraciones avanzadas",
+        component: AdvancedSettings,
+    },
+];
 
 const SettingsScreen = () => {
-    const navigate = useNavigate()
+    const [activeSection, setActiveSection] = useState('master-data');
 
-    const handleOnView = (href: string) => {
-        navigate(href)
-    }
-
-    const handleOnAdd = (href: string) => {
-        navigate(href, {
-            state: {
-                openModal: true
-            }
-        })
-    }
+    const currentSection = settingsSections.find(section => section.id === activeSection);
+    const CurrentComponent = currentSection?.component || MasterDataSettings;
     return (
-        <main className="max-w-7xl mx-auto space-y-4">
+        <main className="max-w-7xl mx-auto space-y-2">
             {/* Header */}
             <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
                 <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -86,31 +101,34 @@ const SettingsScreen = () => {
                             <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
                                 Configuración
                             </h1>
-                            <p className="text-sm text-gray-500">Gestiona los datos maestros del sistema</p>
+                            <p className="text-sm text-gray-500">Gestiona la configuración del sistema</p>
                         </div>
                     </div >
                 </div >
             </header >
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {configSections.map((section) => {
-                    return (
-                        <ConfigCard
-                            key={section.key}
-                            title={section.title}
-                            description={section.description}
-                            icon={section.icon}
-                            iconClassName={section.iconClassName}
-                            count={5}
-                            onView={() => {
-                                handleOnView(section.href)
-                            }}
-                            onAdd={() => {
-                                handleOnAdd(section.href)
-                            }}
-                        />
-                    )
-                })}
+            <div className="flex flex-col space-y-4">
+                <SettingsNavigation
+                    sections={settingsSections}
+                    activeSection={activeSection}
+                    onSectionChange={setActiveSection}
+                />
+                
+                {/* Current Section Content */}
+                <Card className="shadow-none">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            {currentSection && <currentSection.icon className="size-4" />}
+                            {currentSection?.label}
+                        </CardTitle>
+                        <CardDescription className="">
+                            {currentSection?.description}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <CurrentComponent />
+                    </CardContent>
+                </Card>
             </div>
         </main>
     )
