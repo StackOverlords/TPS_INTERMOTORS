@@ -1,25 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { SaleGetAll, SalesGetAllResponse } from "../types/salesGetResponse";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
-import { Checkbox } from "@/components/atoms/checkbox";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { Badge } from "@/components/atoms/badge";
-import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Phone, Settings, Trash2 } from "lucide-react";
-import InfiniteScroll from "react-infinite-scroll-component";
-import CustomizableTable from "@/components/common/CustomizableTable";
-import type { useSalesFilters } from "../hooks/useSalesFilters";
-import Pagination from "@/components/common/pagination";
-import { TooltipWrapper } from "@/components/common/TooltipWrapper ";
-import { Kbd } from "@/components/atoms/kbd";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
 import { Button } from "@/components/atoms/button";
+import { Checkbox } from "@/components/atoms/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
+import { Kbd } from "@/components/atoms/kbd";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import Pagination from "@/components/common/pagination";
+import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import authSDK from "@/services/sdk-simple-auth";
 import { formatCurrency } from "@/utils/formaters";
+import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Phone, Settings, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
-import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
-import ShortcutKey from "@/components/common/ShortcutKey";
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
+import type { useSalesFilters } from "../hooks/useSalesFilters";
+import type { SaleGetAll, SalesGetAllResponse } from "../types/salesGetResponse";
 
 interface SalesListTableProps {
     data: SalesGetAllResponse

@@ -1,20 +1,20 @@
-import type { ProductFilters } from "../types/productFilters";
-import { PRODUCT_ENDPOINTS } from "./endpoints";
-import type { ProductDetail } from "../types/productDetail";
-import type { ProvOrdersParams, SalesParams, StockParams } from "../types/productDetailParams";
-import type { ProductStock } from "../types/productStock";
-import { ProductStockListSchema } from "../schemas/productStock.schema";
-import type { ProductSalesStats } from "../types/ProductSalesStats";
-import { ProductSalesSchema } from "../schemas/productTwoYaersSales.schema";
-import type { ProductProviderOrder } from "../types/ProductProviderOrder";
-import { ProductProviderOrderListSchema } from "../schemas/productProviderOrdersSchema";
-import { ProductListResponseSchema } from "../schemas/productResponse.schema";
-import type { ProductListResponse } from "../types/productListResponse ";
-import { ProductDetailSchema } from "../schemas/ProductDetail.schema";
 import { ApiService } from "@/lib/apiService";
 import { Logger } from "@/lib/logger";
-import type { ProductUpdate } from "../types/ProductUpdate.types";
+import { ProductDetailSchema } from "../schemas/ProductDetail.schema";
+import { ProductProviderOrderListSchema } from "../schemas/productProviderOrdersSchema";
+import { ProductListResponseSchema } from "../schemas/productResponse.schema";
+import { ProductStockListSchema } from "../schemas/productStock.schema";
+import { ProductSalesSchema } from "../schemas/productTwoYaersSales.schema";
 import type { ProductCreate } from "../types/ProductCreate.types";
+import type { ProductDetail } from "../types/productDetail";
+import type { ProvOrdersParams, SalesParams, StockParams } from "../types/productDetailParams";
+import type { ProductFilters } from "../types/productFilters";
+import type { ProductListResponse } from "../types/productListResponse ";
+import type { ProductProviderOrder } from "../types/ProductProviderOrder";
+import type { ProductSalesStats } from "../types/ProductSalesStats";
+import type { ProductStock } from "../types/productStock";
+import type { ProductUpdate } from "../types/ProductUpdate.types";
+import { PRODUCT_ENDPOINTS } from "./endpoints";
 
 const MODULE_NAME = "PRODUCTS_SERVICE";
 
@@ -135,7 +135,9 @@ export const productsService = {
 		 */
 	async create(data: ProductCreate): Promise<ProductDetail> {
 		Logger.info('Creating product', { data }, MODULE_NAME);
-
+    if(data.id_subcategoria === 0) {
+      delete data.id_subcategoria;
+    }
 		const response = await ApiService.post(
 			PRODUCT_ENDPOINTS.create,
 			data,

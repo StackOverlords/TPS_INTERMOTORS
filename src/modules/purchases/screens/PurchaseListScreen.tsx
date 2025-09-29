@@ -13,6 +13,7 @@ import ResizableBox from '@/components/atoms/resizable-box';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
+import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
 import { formatCell } from '@/utils/formatCell';
@@ -47,7 +48,6 @@ import { usePurchaseDelete } from '../hooks/usePurchaseDelete';
 import { usePurchaseFilters } from '../hooks/usePurchaseFilters';
 import { usePurchasesPaginated } from '../hooks/usePurchasesPaginated';
 import type { PurchaseGet } from '../types/PurchaseGet';
-import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 
 const getColumnVisibilityKey = (userName: string) =>
   `purchase-columns-${userName}`;
@@ -60,7 +60,7 @@ const PurchaseListScreen = () => {
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const { filters, updateFilter, setPage, resetFilters } = usePurchaseFilters(
     Number(selectedBranchId) || 1
-  );
+  );  
 
   const {
     data: purchaseData,
@@ -122,7 +122,7 @@ const PurchaseListScreen = () => {
       console.error('Error saving column visibility:', error);
     }
   }, [columnVisibility, user?.name]);
-  console.log(authSDK.getAccessToken());
+  // console.log(authSDK.getAccessToken());
   useEffect(() => {
     // console.log('Filtros actualizados:', filters);
     if (!purchaseData?.data || error) return;
@@ -189,7 +189,7 @@ const PurchaseListScreen = () => {
     if (contexto.includes('Contado')) return 'success';
     return 'secondary';
   };
-  console.log(authSDK.getAccessToken());
+  // console.log(authSDK.getAccessToken());
   const columns = useMemo<ColumnDef<PurchaseGet>[]>(
     () => [
       {
@@ -471,7 +471,7 @@ const PurchaseListScreen = () => {
   const hasSelectedPurchases = Object.keys(rowSelection).length;
 
   const onPageChange = (page: number) => {
-    console.log('Cambiando a página:', page);
+    // console.log('Cambiando a página:', page);
     setPage(page);
   };
 
@@ -551,19 +551,18 @@ const PurchaseListScreen = () => {
 
         {/* Results Info */}
         <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
-          {purchases.length > 0 ? (
+          {isLoading || isFetching ? (
+            <span>Cargando...</span>
+          ) : isError ? (
+            <span className="text-red-600">Error al cargar los datos</span>
+          ) : purchases.length > 0 ? (
             isInfiniteScroll ? (
-              `Mostrando ${purchases.length} de ${purchaseData?.meta.total} compras`
+              `Mostrando ${purchases.length} de ${purchaseData?.meta.total || 0} compras`
             ) : (
-              `Mostrando ${(filters.pagina ?? 1) * (filters.pagina_registros ?? 1) -
-              ((filters.pagina_registros ?? 1) - 1)
-              } 
-                            - ${(filters.pagina ?? 1) *
-              (filters.pagina_registros ?? 1)
-              } de ${purchaseData?.meta.total} compras`
+              `Mostrando ${(purchaseData?.meta.from || 0)} - ${(purchaseData?.meta.to || 0)} de ${purchaseData?.meta.total || 0} compras`
             )
           ) : (
-            <span>Cargando...</span>
+            <span className="text-amber-600">No se encontraron compras para la sucursal actual</span>
           )}
 
           <div className="flex items-center gap-2">
@@ -640,10 +639,10 @@ const PurchaseListScreen = () => {
             <CustomizableTable
               table={table}
               isError={isError}
-              errorMessage="Ocurrió un error al cargar las compras"
+              errorMessage="Ocurrió un error al cargar las compras. Verifica tu conexión o intenta con otra sucursal."
               isLoading={isLoading}
               rows={filters.pagina_registros}
-              noDataMessage="No se encontraron compras"
+              noDataMessage="No se encontraron compras para la sucursal seleccionada. Prueba cambiar a otra sucursal o ajusta los filtros de búsqueda."
               selectedRowIndex={selectedIndex}
               onRowClick={handleRowClick}
               onRowDoubleClick={handleRowDoubleClick}
@@ -661,9 +660,9 @@ const PurchaseListScreen = () => {
                   isError={isError}
                   isFetching={isFetching}
                   isLoading={isLoading}
-                  errorMessage="Ocurrió un error al cargar las compras"
+                  errorMessage="Ocurrió un error al cargar las compras. Verifica tu conexión o intenta con otra sucursal."
                   rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron compras"
+                  noDataMessage="No se encontraron compras para la sucursal seleccionada. Prueba cambiar a otra sucursal o ajusta los filtros de búsqueda."
                   selectedRowIndex={selectedIndex}
                   onRowClick={handleRowClick}
                   onRowDoubleClick={handleRowDoubleClick}

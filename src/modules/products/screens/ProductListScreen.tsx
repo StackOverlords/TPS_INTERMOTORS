@@ -1,49 +1,50 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-    Filter,
-    Settings,
-    Eye,
-    ShoppingCart,
-    Loader2,
-    RefreshCcw,
-    MoreVertical,
-    Edit,
-    Trash2,
-    HelpCircle,
-} from "lucide-react"
+import { Badge } from "@/components/atoms/badge"
 import { Button } from "@/components/atoms/button"
 import { Checkbox } from "@/components/atoms/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu"
-import type { ProductGet } from "../types/ProductGet"
-import { useProductFilters } from "../hooks/useProductFilters"
-import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState, type SortingState } from "@tanstack/react-table"
-import { Badge } from "@/components/atoms/badge"
-import Pagination from "@/components/common/pagination"
-import { Switch } from "@/components/atoms/switch"
+import { Kbd } from "@/components/atoms/kbd"
 import { Label } from "@/components/atoms/label"
+import ResizableBox from "@/components/atoms/resizable-box"
+import { Switch } from "@/components/atoms/switch"
+import ConfirmationModal from "@/components/common/confirmationModal"
 import CustomizableTable from "@/components/common/CustomizableTable"
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { useBranchStore } from "@/states/branchStore"
+import Pagination from "@/components/common/pagination"
+import RowsPerPageSelect from "@/components/common/RowsPerPageSelect"
+import ShortcutKey from "@/components/common/ShortcutKey"
+import TooltipButton from "@/components/common/TooltipButton"
+import { TooltipWrapper } from "@/components/common/TooltipWrapper"
+import keyBindings from "@/hooks/keyBindings/global.keys"
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation"
+import { showSuccessToast } from "@/hooks/use-toast-enhanced"
+import useConfirmMutation from "@/hooks/useConfirmMutation"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
+import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
 import authSDK from "@/services/sdk-simple-auth"
+import { useBranchStore } from "@/states/branchStore"
+import { formatCell } from "@/utils/formatCell"
+import { formatCurrency } from "@/utils/formaters"
+import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState, type SortingState } from "@tanstack/react-table"
+import {
+  Edit,
+  Eye,
+  Filter,
+  HelpCircle,
+  Loader2,
+  MoreVertical,
+  RefreshCcw,
+  Settings,
+  ShoppingCart,
+  Trash2,
+} from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import InfiniteScroll from 'react-infinite-scroll-component'
 import { useNavigate } from "react-router"
 import ProductFilters from "../components/productList/productFilters"
-import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
-import TooltipButton from "@/components/common/TooltipButton"
-import { TooltipWrapper } from "@/components/common/TooltipWrapper "
-import { Kbd } from "@/components/atoms/kbd"
-import { formatCell } from "@/utils/formatCell"
-import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
-import ResizableBox from "@/components/atoms/resizable-box"
-import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation"
-import { formatCurrency } from "@/utils/formaters"
-import { showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { useDeleteProduct } from "../hooks/mutations/useDeleteProduct"
-import useConfirmMutation from "@/hooks/useConfirmMutation"
-import ConfirmationModal from "@/components/common/confirmationModal"
-import ShortcutKey from "@/components/common/ShortcutKey"
-import { useErrorHandler } from "@/hooks/useErrorHandler"
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect"
+import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
+import { useProductFilters } from "../hooks/useProductFilters"
+import type { ProductGet } from "../types/ProductGet"
 
 const getColumnVisibilityKey = (userName: string) => `product-columns-${userName}`;
 
@@ -586,6 +587,36 @@ const ProductListScreen = () => {
                                         "Mostrar filtros"
                                 }
                             </Button>
+                            <TooltipWrapper
+                            tooltipContentProps={{
+                                align: 'end',
+                                className: 'max-w-xs'
+                            }}
+                            tooltip={
+                                <div className="flex flex-col space-y-3">
+                                    {/* Título del tooltip */}
+                                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                        Atajos de teclado
+                                    </div>
+
+                                    {/* Sección de navegación básica */}
+                                    <div className="space-y-1.5">
+                                        <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
+                                        <div className="space-y-1 text-gray-600 text-xs">
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter1.keys} />{keyBindings.tableAndFilters.filter1.description}: Categoria</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter2.keys} />{keyBindings.tableAndFilters.filter2.description}: Descripción</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter3.keys} />{keyBindings.tableAndFilters.filter3.description}: Cod. OEM</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter4.keys} />{keyBindings.tableAndFilters.filter4.description}: Cod. Upc</p>
+                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.nextFilter.keys} />{keyBindings.tableAndFilters.nextFilter.description}</p>
+                                        </div>
+                                    </div> 
+                                </div>
+                            }
+                        >
+                            <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                                <HelpCircle />
+                            </span>
+                        </TooltipWrapper>
                         </div>
                     </section>
                 </header>

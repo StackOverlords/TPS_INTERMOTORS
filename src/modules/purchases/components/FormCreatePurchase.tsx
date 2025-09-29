@@ -1,6 +1,11 @@
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
+import ShortcutKey from '@/components/common/ShortcutKey';
+import { TooltipWrapper } from '@/components/common/TooltipWrapper';
+// import { useFormKeybindings } from '@/hooks/useFormKeybindings';
+import { useBasicFormKeybindings } from '@/hooks/keyBindings/useBasicFormKeybindings';
 import { ComboboxSelect } from '@/modules/products/components/SelectCombobox';
+import { HelpCircle, ShoppingBag } from 'lucide-react';
 import React from 'react';
 import { useProviders } from '../hooks/useProviders';
 import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
@@ -38,6 +43,8 @@ interface Props {
   onChange: (field: keyof FormData, value: any) => void;
   onBlur: (field: keyof FormData) => void;
   onSubmit: () => void;
+  onReset?: () => void;
+  onCancel?: () => void;
 }
 
 const FormCreatePurchase: React.FC<Props> = ({
@@ -45,6 +52,9 @@ const FormCreatePurchase: React.FC<Props> = ({
   errors,
   onChange,
   onBlur,
+  onSubmit,
+  onReset,
+  onCancel,
 }) => {
   const { data: proveedores = [], isLoading: isLoadingProviders } =
     useProviders(); 
@@ -67,8 +77,76 @@ const FormCreatePurchase: React.FC<Props> = ({
     return d.toISOString().split('T')[0];
   };
 
+  // ✨ Versión básica que no depende del contexto complejo
+  const { formRef } = useBasicFormKeybindings({
+    onSave: onSubmit,
+    onReset: onReset,
+    onCancel: onCancel
+  });
+
+  // Ref simple para debug
+
   return (
-    <div className="p-3 bg-white border border-gray-200 rounded-lg">
+    <div ref={formRef as any} className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+          <ShoppingBag className="w-4 h-4" />
+          Información de Compra
+        </h2>
+        <TooltipWrapper
+          tooltipContentProps={{
+            align: 'end',
+            className: 'max-w-xs',
+          }}
+          tooltip={
+            <div className="flex flex-col space-y-3">
+              <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                Atajos de teclado
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  Navegación
+                </h4>
+                <div className="space-y-1 text-gray-600 text-xs">
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Tab'} /> Siguiente campo{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Shift + Tab'} /> Campo anterior{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Enter'} /> Navegación automática{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Ctrl + Tab'} /> Avanzar rápido{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Alt + S'} /> Guardar compra{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Ctrl + R'} /> Limpiar formulario{' '}
+                  </p>
+                  <p>
+                    {' '}
+                    <ShortcutKey combo={'Ctrl + Shift + ?'} /> Ver todos los atajos{' '}
+                  </p>
+                </div>
+              </div>
+            </div>
+          }
+        >
+          <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+            <HelpCircle className="w-4 h-4" />
+          </span>
+        </TooltipWrapper>
+      </div>
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 items-end">
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">Proveedor *</Label>
@@ -80,6 +158,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={isLoadingProviders ? 'Cargando proveedores...' : 'Proveedor'}
             className={inputClass('id_proveedor')}
             disabled={isLoadingProviders}
+            data-field="id_proveedor"
           />
           {errors.id_proveedor && <p className="text-xs text-red-500 mt-1">{errors.id_proveedor}</p>}
         </div>
@@ -105,12 +184,13 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur('nro_comprobante')}
             placeholder="FA-01"
             className={inputClass('nro_comprobante')}
+            data-field="nro_comprobante"
           />
           {errors.nro_comprobante && <p className="text-xs text-red-500 mt-1">{errors.nro_comprobante}</p>}
         </div>
 
         <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Nro comprobante 2</Label>
+          <Label className="text-xs font-medium mb-1">Nro comprobante 2 (Opcional)</Label>
           <Input
             type="text"
             value={formData.nro_comprobante2}
@@ -166,7 +246,7 @@ const FormCreatePurchase: React.FC<Props> = ({
 
       <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
         <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Comentarios</Label>
+          <Label className="text-xs font-medium mb-1">Comentarios (Opcional)</Label>
           <textarea
             value={formData.comentario}
             onChange={e => onChange('comentario', e.target.value)}

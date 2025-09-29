@@ -64,8 +64,8 @@ export const ProductDetailSchema = z.object({
     id_categoria: z.number(),
     categoria: ProductCategoriaSchema.nullable(),
 
-    id_subcategora: z.number(),
-    subcategoria: ProductSubcategoriaSchema,
+    id_subcategora: z.number().nullable(),
+    subcategoria: ProductSubcategoriaSchema.nullable(),
 
     id_marca: z.number(),
     marca: ProductMarcaSchema.nullable(),

@@ -20,7 +20,7 @@ const authSDK = new AuthSDK({
     },
     tokenRefresh: {
         enabled: true,
-        bufferTime: 1800
+        bufferTime: 900
     }
 })
 

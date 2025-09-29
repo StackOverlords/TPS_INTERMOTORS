@@ -9,7 +9,7 @@ export const ProductGetSchema = z.object({
     medida: z.string().nullable(),
     nro_motor: z.string().nullable(),
     categoria: z.string(),
-    subcategoria: z.string(),
+    subcategoria: z.string().nullable(),
     marca: z.string(),
     procedencia: z.string(),
     unidad_medida: z.string(),

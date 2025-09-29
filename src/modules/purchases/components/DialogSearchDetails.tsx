@@ -1,15 +1,15 @@
 import { AlertDialogHeader } from "@/components/atoms/alert-dialog";
-import { Badge } from "@/components/atoms/badge"; 
+import { Badge } from "@/components/atoms/badge";
 import {
   Dialog,
   DialogContent,
-  DialogTitle, 
+  DialogTitle,
 } from "@/components/atoms/dialog";
 import { Input } from "@/components/atoms/input";
 import { apiConstructor } from "@/modules/products/services/api";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Loader2 } from "lucide-react";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Loader2, Search } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Tipo de dato que responde el api
 interface ProductResponse {
@@ -174,6 +174,19 @@ export default function DialogSearchDetails({
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
+  // Auto-focus en el primer producto cuando se carguen
+  useEffect(() => {
+    if (allProducts.length > 0 && isSearchOpen) {
+      // Esperar un tick para que el DOM se actualice
+      setTimeout(() => {
+        const firstProduct = document.querySelector('[tabindex="0"]') as HTMLElement;
+        if (firstProduct) {
+          firstProduct.focus();
+        }
+      }, 100);
+    }
+  }, [allProducts.length, isSearchOpen]);
+
   return ( 
       <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}> 
         <DialogContent className="max-w-4xl border-gray-200">
@@ -187,13 +200,23 @@ export default function DialogSearchDetails({
                 placeholder="Buscar por descripción..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' && allProducts.length > 0) {
+                    e.preventDefault();
+                    const firstProduct = document.querySelector('[data-product-index="0"]') as HTMLElement;
+                    if (firstProduct) {
+                      firstProduct.focus();
+                    }
+                  }
+                }}
                 className="pl-10 border-gray-200 focus:border-gray-300"
               />
             </div>
 
-            <div 
+            <div
               ref={scrollContainerRef}
               className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg"
+              tabIndex={-1}
             >
               {isLoading && page === 1 ? (
                 <div className="flex items-center justify-center py-8">
@@ -209,11 +232,41 @@ export default function DialogSearchDetails({
                 </div>
               ) : allProducts.length > 0 ? (
                 <div className="space-y-1 p-2">
-                  {allProducts.map((product: ProductResponse) => (
+                  {allProducts.map((product: ProductResponse, index: number) => (
                     <div
                       key={product.id}
-                      className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer hover:border-gray-300 transition-colors"
+                      className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer hover:border-gray-300 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-blue-10 0"
                       onClick={() => addProduct(product)}
+                      tabIndex={index === 0 ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          addProduct(product);
+                        } else if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          const nextIndex = Math.min(index + 1, allProducts.length - 1);
+                          const nextElement = document.querySelector(`[data-product-index="${nextIndex}"]`) as HTMLElement;
+                          if (nextElement) {
+                            nextElement.focus();
+                          }
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          if (index === 0) {
+                            // Si estamos en el primer elemento, volver al input de búsqueda
+                            const searchInput = document.querySelector('input[placeholder*="Buscar"]') as HTMLElement;
+                            if (searchInput) {
+                              searchInput.focus();
+                            }
+                          } else {
+                            const prevIndex = Math.max(index - 1, 0);
+                            const prevElement = document.querySelector(`[data-product-index="${prevIndex}"]`) as HTMLElement;
+                            if (prevElement) {
+                              prevElement.focus();
+                            }
+                          }
+                        }
+                      }}
+                      data-product-index={index}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">

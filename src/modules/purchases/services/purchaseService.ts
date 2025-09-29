@@ -1,7 +1,6 @@
 import apiClient from "@/services/axios";
 import { ProviderResponseSchema, type ProviderOption } from "../schemas/provider.schema";
 import { PurchaseDetailResponseSchema } from "../schemas/purchase.schema";
-import { PurchaseListResponseSchema } from "../schemas/purchaseResponse.schema";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { PurchaseFilters } from "../types/purchaseFilters";
 import type { PurchaseListResponse } from "../types/purchaseListResponse";
@@ -36,13 +35,12 @@ export const fetchPurchases = async (filters: PurchaseFilters): Promise<Purchase
   // console.log("Parámetros enviados:", params);
   const response = await apiClient.get(PURCHASE_ENDPOINTS.all, { params });
   // console.log("Respuesta recibida:", response.data);
-  
-  const result = PurchaseListResponseSchema.safeParse(response.data);
-  if (!result.success) {
-    console.error("Zod error en fetchPurchases:", result.error.format());
+  // const result = PurchaseListResponseSchema.safeParse(response.data);
+  if (!response) {
+    // console.error("Zod error en fetchPurchases:", response.error.format());
     throw new Error("Respuesta inválida del servidor.");
   }
-  return result.data;
+  return response.data;
 };
 
 export const fetchPurchaseById = async (id: number): Promise<PurchaseDetail> => {
