@@ -1,6 +1,5 @@
 import Content from "@/modules/dashboard/screens/content";
 import { LayoutDashboardIcon } from "lucide-react";
-import categoryProtectedRoutes from "./Categorys.Route";
 import productosProtectedRoutes from "./Productos.Route";
 import purchasesProtectedRoutes from "./Purchases.Route";
 import quotationsProtectedRoutes from "./Quotations.Route";
@@ -22,7 +21,7 @@ const protectedRoutes: RouteType[] = [
   },
   ...usersProtectedRoutes,
   ...productosProtectedRoutes,
-  ...categoryProtectedRoutes,
+  // ...categoryProtectedRoutes,
   ...purchasesProtectedRoutes,
   ...salesProtectedRoutes,
   ...quotationsProtectedRoutes,

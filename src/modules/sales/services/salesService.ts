@@ -1,6 +1,5 @@
 import { ApiService } from "@/lib/apiService";
 import { Logger } from "@/lib/logger";
-import apiClient from "@/services/axios";
 import { SaleGetByIdSchema } from "../schemas/saleGetbyid.schema";
 import { salesGetAllResponseSchema } from "../schemas/salesGetAll.schema";
 import type { Sale } from "../types/sale";
@@ -8,13 +7,6 @@ import type { SalesFilters } from "../types/salesFilters";
 import type { SaleGetById, SalesGetAllResponse } from "../types/salesGetResponse";
 import type { SaleUpdate } from "../types/saleUpdate.type";
 import { SALE_ENDPOINTS } from "./saleEndpoints";
-
-export const postSale = async (data: Sale): Promise<any> => {
-    const res = await apiClient.post(SALE_ENDPOINTS.create, data)
-    console.log(res,' <--- Error crear venta')
-    console.log("Respuesta del servidor al crear la venta:", res.data);
-    return res.data
-};
 
 const MODULE_NAME = 'SALES_SERVICE';
 
