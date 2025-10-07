@@ -1,15 +1,16 @@
-import { Settings as SettingsIcon, Database, Palette, Shield, HardDrive, Link, Bell, Code, Settings2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
-import MasterDataSettings from "../components/settings/MasterDataSettings";
+import { Bell, Code, Database, HardDrive, Link, Palette, Settings2, Settings as SettingsIcon, Shield, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import AdvancedSettings from "../components/settings/AdvancedSettings";
 import AppearanceSettings from "../components/settings/AppearanceSettings";
-import SystemSettings from "../components/settings/SystemSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import IntegrationSettings from "../components/settings/IntegrationSettings";
-import SecuritySettings from "../components/settings/SecuritySettings";
+import MasterDataSettings from "../components/settings/MasterDataSettings";
 import NotificationSettings from "../components/settings/NotificationSettings";
-import AdvancedSettings from "../components/settings/AdvancedSettings";
-import { useState } from "react";
+import SecuritySettings from "../components/settings/SecuritySettings";
 import { SettingsNavigation } from "../components/settings/SettingsNavigation";
+import SystemSettings from "../components/settings/SystemSettings";
+import UpdateSettings from "../components/settings/UpdateSettings";
 
 export type SettingsSection = {
     id: string;
@@ -82,6 +83,13 @@ const settingsSections: SettingsSection[] = [
         icon: Code,
         description: "Configuraciones avanzadas",
         component: AdvancedSettings,
+    },
+    {
+        id: "updates",
+        label: "Actualizaciones",
+        icon: RefreshCw,
+        description: "Gestiona las actualizaciones de la aplicación",
+        component: UpdateSettings,
     },
 ];
 
