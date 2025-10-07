@@ -1,17 +1,20 @@
+import { Badge } from '@/components/atoms/badge';
 import { cn } from '@/lib/utils';
-import React from 'react'
+import React from 'react';
 import { Link, matchPath, useLocation } from 'react-router';
 
 const NavItem = ({
   href,
   icon: Icon,
   children,
-  handleNavigation
+  handleNavigation,
+  badge
 }: {
   href: string;
   icon: any;
   children: React.ReactNode;
-  handleNavigation: () => void
+  handleNavigation: () => void;
+  badge?: number | null;
 }) => {
   const { pathname } = useLocation();
   const match = matchPath({ path: href, end: href === "/dashboard" }, pathname);
@@ -31,7 +34,15 @@ const NavItem = ({
       {
         Icon && <Icon className="size-4 flex-shrink-0" />
       }
-      {children} 
+      <span className="flex-1">{children}</span>
+      {badge !== null && badge !== undefined && badge > 0 && (
+        <Badge
+          variant="destructive"
+          className="h-5 w-5 flex items-center justify-center p-0 text-xs"
+        >
+          {badge}
+        </Badge>
+      )}
     </Link>
   );
 }

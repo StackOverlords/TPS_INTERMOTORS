@@ -1,16 +1,18 @@
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, useSidebar } from "@/components/atoms/sidebar";
+import { useUpdateChecker } from "@/hooks/useUpdateChecker";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
-import { Settings, HelpCircle, LogOut, Package } from "lucide-react";
+import { HelpCircle, LogOut, Package, Settings } from "lucide-react";
 import { useState } from "react";
-import NavItem from "../components/NavItem";
-import HeaderTagRoute from "../components/HeaderTagRoute";
 import ButtonItem from "../components/ButtonItem";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, useSidebar } from "@/components/atoms/sidebar";
+import HeaderTagRoute from "../components/HeaderTagRoute";
+import NavItem from "../components/NavItem";
 
 const AppSidebar = () => {
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
-  const { setOpenMobile, isMobile } = useSidebar()
+  const { setOpenMobile, isMobile } = useSidebar();
+  const { available } = useUpdateChecker();
 
   const handleNavigation = () => {
     if (isMobile) {
@@ -83,6 +85,7 @@ const AppSidebar = () => {
                 href="/dashboard/settings"
                 handleNavigation={handleNavigation}
                 icon={Settings}
+                badge={available ? 1 : null}
               >
                 Configuración
               </NavItem>
