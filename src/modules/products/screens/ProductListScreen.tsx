@@ -541,7 +541,7 @@ const ProductListScreen = () => {
 
     return (
         <main
-            className="min-h-screen max-w-full">
+            className="max-w-full">
             <div className="bg-white rounded-lg shadow-sm">
                 {/* Header */}
                 <header className="p-2 border-b border-gray-200">

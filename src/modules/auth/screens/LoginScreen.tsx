@@ -133,11 +133,11 @@ const LoginScreen = ({
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                      required
                       id="clave"
                       type={showPassword ? "text" : "password"}
                       placeholder="Ingresa tu contraseña"
                       autoComplete="current-password"
+                      data-form-type="password"
                       className={`px-10 h-10 ${errors.clave ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}`}
                       disabled={isPending || isSubmitting}
                       {...register("clave")}

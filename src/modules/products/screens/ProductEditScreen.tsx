@@ -117,7 +117,7 @@ const ProductEditScreen = () => {
                 id_marca: productData.id_marca,
                 id_marca_vehiculo: productData.id_marca_vehiculo,
                 id_procedencia: productData.id_procedencia,
-                id_subcategoria: productData.id_subcategora,
+                id_subcategoria: productData.id_subcategora || 0,
                 id_unidad: productData.id_unidad_medida,
                 medida: productData.medida,
                 modelo: productData.modelo,
@@ -155,7 +155,7 @@ const ProductEditScreen = () => {
 
     // Generate auto description
     const autoDescription = useAutoDescription({
-        categoryName: selectedCategory?.categoria,
+        categoryName: selectedCategory?.categoria || '',
         vehicleBrandName: selectedVehicleBrand?.marca_vehiculo,
         motorNumber: nro_motor,
         measurement: medida,
@@ -167,12 +167,16 @@ const ProductEditScreen = () => {
         setValue("descripcion", autoDescription);
     }, [autoDescription, setValue]);
 
+    const prevCategoriaRef = useRef(id_categoria);
     useEffect(() => {
         if (isFirstLoad.current || (id_categoria === productData?.id_categoria && id_subcategoria === productData.id_subcategora)) return;
-        if (id_categoria && id_categoria !== 0) {
+
+        if (prevCategoriaRef.current !== id_categoria && id_categoria !== 0) {
             setValue("id_subcategoria", 0);
         }
-    }, [id_categoria, setValue, isFirstLoad, productData, id_subcategoria]);
+
+        prevCategoriaRef.current = id_categoria;
+    }, [id_categoria, id_subcategoria, setValue, isFirstLoad, productData]);
 
     const onSubmit = (data: ProductUpdate) => {
         handleUpdateProduct(
@@ -340,7 +344,7 @@ const ProductEditScreen = () => {
                                 control={control}
                                 render={({ field }) => (
                                     <ComboboxSelect
-                                        value={field.value}
+                                        value={id_categoria}
                                         onChange={(value) => field.onChange(Number(value))}
                                         options={(categoriesData || []).map(category => ({
                                             id: category.id,
