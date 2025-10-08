@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "TPS Intermotors",
-  "version": "1.0.3",
+  "version": "1.0.2",
   "identifier": "com.intermotors.tps",
   "build": {
     "frontendDist": "../dist",
@@ -47,9 +47,7 @@
       },
       "nsis": {
         "installerIcon": "icons/icon.ico",
-        "installMode": "currentUser",
-        "allowDowngrade": true,
-        "deleteAppDataOnUninstall": false
+        "installMode": "currentUser"
       }
     }
   },
