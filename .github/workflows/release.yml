@@ -1,0 +1,236 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create-release.outputs.result }}
+      release_upload_url: ${{ steps.create-release.outputs.upload_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create-release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${{ steps.get_version.outputs.VERSION }}`,
+              name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }}`,
+              body: `## 🚀 Nueva version v${{ steps.get_version.outputs.VERSION }}
+
+              ### 📋 Cambios
+              - Ver commits para detalles completos
+
+              ### 📦 Instalacion
+              - **Windows MSI**: Descarga \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
+              - **Windows NSIS**: Descarga \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
+
+              ### 🔄 Actualizacion
+              Si ya tienes la app instalada, usa el boton "Buscar actualizaciones" en Configuracion.
+
+              ---
+
+              🤖 Generado automaticamente por GitHub Actions`,
+              draft: false,
+              prerelease: false
+            });
+            return data.id;
+
+  build-tauri:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev wget file
+
+          # Instalar linuxdeploy
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          sudo mv linuxdeploy-x86_64.AppImage /usr/local/bin/linuxdeploy
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0.5.15
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_BRANCH_STORAGE_KEY: ${{ vars.VITE_BRANCH_STORAGE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          tagName: ${{ github.ref_name }}
+          releaseName: 'TPS Intermotors __VERSION__'
+          releaseBody: 'Ver release notes arriba'
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: false
+  generate-update-manifest:
+    needs: [create-release, build-tauri]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Download and process release assets
+        id: get_assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const crypto = require('crypto');
+
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', '')
+            });
+
+            const assets = release.data.assets;
+            const msiAsset = assets.find(a => a.name.endsWith('.msi') && !a.name.endsWith('.sig'));
+            const msiSigAsset = assets.find(a => a.name.endsWith('.msi.sig'));
+            const appImageAsset = assets.find(a => a.name.endsWith('.AppImage') && !a.name.endsWith('.sig'));
+            const appImageSigAsset = assets.find(a => a.name.endsWith('.AppImage.sig'));
+
+            let result = {
+              msiUrl: msiAsset?.browser_download_url || null,
+              msiSig: null,
+              appImageUrl: appImageAsset?.browser_download_url || null,
+              appImageSig: null
+            };
+
+            // Download signature contents if they exist
+            if (msiSigAsset) {
+              try {
+                const msiSigResponse = await fetch(msiSigAsset.browser_download_url);
+                result.msiSig = await msiSigResponse.text();
+              } catch (e) {
+                console.log('No MSI signature found');
+              }
+            }
+
+            if (appImageSigAsset) {
+              try {
+                const appImageSigResponse = await fetch(appImageSigAsset.browser_download_url);
+                result.appImageSig = await appImageSigResponse.text();
+              } catch (e) {
+                console.log('No AppImage signature found');
+              }
+            }
+
+            return result;
+
+      - name: Generate latest.json
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const assets = ${{ steps.get_assets.outputs.result }};
+
+            const manifest = {
+              version: "v${{ steps.get_version.outputs.VERSION }}",
+              notes: "Ver changelog completo en GitHub Releases",
+              pub_date: new Date().toISOString(),
+              platforms: {}
+            };
+
+            // Only add platforms that have valid URLs
+            // Note: Signatures are required by Tauri updater
+            if (assets.msiUrl && assets.msiSig) {
+              manifest.platforms["windows-x86_64"] = {
+                url: assets.msiUrl,
+                signature: assets.msiSig
+              };
+            }
+
+            if (assets.appImageUrl && assets.appImageSig) {
+              manifest.platforms["linux-x86_64"] = {
+                url: assets.appImageUrl,
+                signature: assets.appImageSig
+              };
+            }
+
+            fs.writeFileSync('latest.json', JSON.stringify(manifest, null, 2));
+            console.log('Generated latest.json:');
+            console.log(fs.readFileSync('latest.json', 'utf8'));
+
+      - name: Upload latest.json to release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', '')
+            });
+
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: 'latest.json',
+              data: fs.readFileSync('latest.json')
+            });
+
+## Configuracion de actualizaciones automaticas con Tauri
