@@ -1,4 +1,5 @@
 import UpdateSettings from "@/modules/settings/components/settings/UpdateSettings";
+import BranchesScreen from "@/modules/settings/screens/branchesScreen";
 import OriginsScreen from "@/modules/settings/screens/OriginsScreen";
 import BrandsScreen from "@/modules/settings/screens/brandsScreen";
 import CategoriesScreen from "@/modules/settings/screens/categoriesScreen";
@@ -6,7 +7,7 @@ import MeasurementsScreen from "@/modules/settings/screens/measurementScreen";
 import SettingsScreen from "@/modules/settings/screens/settingsScreen";
 import SubcategoriesScreen from "@/modules/settings/screens/subcategoriesScreen";
 import VehicleBrandsScreen from "@/modules/settings/screens/vehicleBrandScreen";
-import { Car, FolderOpen, Layers, MapPin, RefreshCw, Ruler, Settings, Tag } from "lucide-react";
+import { Car, FolderOpen, GitBranchIcon, Layers, MapPin, RefreshCw, Ruler, Settings, Tag } from "lucide-react";
 import type RouteType from "./RouteType";
 
 const settingsProtectedRoutes: RouteType[] = [
@@ -100,11 +101,23 @@ const settingsProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UpdateSettings,
         isAdmin: false,
-        role: ["user"],
+        role: ["admin"],
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
         icon: RefreshCw
+      },
+      {
+        path: "/dashboard/settings/branches",
+        name: "Sucursales",
+        type: "protected",
+        element: BranchesScreen,
+        isAdmin: true,
+        role: ["admin"],
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+        icon: GitBranchIcon
       },
     ]
   },
