@@ -16,23 +16,13 @@ const EditPurchase: React.FC = () => {
   const navigate = useNavigate();
   const { purchaseId } = useParams();
 
-  if (!Number(purchaseId)) {
-    return (
-      <ErrorDataComponent
-        errorMessage="ID de compra inválido."
-        showButtonIcon={false}
-        buttonText="Ir a lista de compras"
-        onRetry={() => navigate("/dashboard/list-purchases")}
-      />
-    );
-  }
-
+  // ✅ IMPORTANTE: Todos los hooks deben estar ANTES de cualquier return condicional
   const {
     data: purchase,
     isLoading: isLoadingPurchase,
     isError: isErrorPurchase,
     refetch: refetchPurchase,
-  } = usePurchaseById(Number(purchaseId));
+  } = usePurchaseById(Number(purchaseId) || 0);
 
   const {
     formData,
@@ -60,6 +50,18 @@ const EditPurchase: React.FC = () => {
     scopes: ["esc-key"],
     enabled: true
   });
+
+  // ✅ Ahora validamos DESPUÉS de todos los hooks
+  if (!Number(purchaseId)) {
+    return (
+      <ErrorDataComponent
+        errorMessage="ID de compra inválido."
+        showButtonIcon={false}
+        buttonText="Ir a lista de compras"
+        onRetry={() => navigate("/dashboard/list-purchases")}
+      />
+    );
+  }
 
   if (isLoadingPurchase) {
     return <PurchaseDetailSkeleton />;

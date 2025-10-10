@@ -3,7 +3,7 @@ import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import { useTabStore } from '@/states/tabStore';
 import { useMemo } from 'react';
-import { useLocation } from 'react-router';
+import { matchPath } from 'react-router';
 import TabContent from './TabContent';
 
 /**
@@ -12,7 +12,6 @@ import TabContent from './TabContent';
  */
 const TabContainer: React.FC = () => {
   const { tabs } = useTabStore();
-  const location = useLocation();
 
   // Aplanar todas las rutas protegidas
   const flatRoutes = useMemo(() => {
@@ -33,8 +32,22 @@ const TabContainer: React.FC = () => {
   }, []);
 
   // Encontrar la ruta que coincide con el path actual
+  // Soporte para rutas dinámicas con parámetros (ej: /purchases/:id)
   const findMatchingRoute = (path: string): RouteType | undefined => {
-    return flatRoutes.find(route => route.path === path);
+    return flatRoutes.find(route => {
+      if (!route.path) return false;
+
+      // Intentar match exacto primero (más rápido para rutas estáticas)
+      if (route.path === path) return true;
+
+      // Intentar match con parámetros dinámicos usando matchPath de React Router
+      const match = matchPath(
+        { path: route.path, end: true },
+        path
+      );
+
+      return match !== null;
+    });
   };
 
   return (

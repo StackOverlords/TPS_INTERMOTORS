@@ -17,33 +17,13 @@ const PurchaseDetailScreen = () => {
   const navigate = useNavigate();
   const { purchaseId } = useParams();
 
-  if (!Number(purchaseId)) {
-    return (
-      <ErrorDataComponent
-        errorMessage="No se pudo cargar la compra."
-        showButtonIcon={false}
-        buttonText="Ir a lista de compras"
-        onRetry={() => {
-          navigate('/dashboard/list-purchases');
-        }}
-      />
-    );
-  }
-
+  // ✅ IMPORTANTE: Todos los hooks deben estar ANTES de cualquier return condicional
   const {
     data: purchase,
     isLoading: isLoadingPurchase,
     isError: isErrorPurchase,
     refetch: refetchPurchase,
-  } = usePurchaseById(Number(purchaseId));
-
-  const handleRetry = useCallback(() => {
-    refetchPurchase();
-  }, [refetchPurchase]);
-
-  const handleGoBack = useCallback(() => {
-    navigate('/dashboard/list-purchases');
-  }, [navigate]);
+  } = usePurchaseById(Number(purchaseId) || 0);
 
   const {
     showDeleteDialog,
@@ -52,6 +32,14 @@ const PurchaseDetailScreen = () => {
     cancelDeletion,
     confirmDeletion,
   } = usePurchaseDelete();
+
+  const handleRetry = useCallback(() => {
+    refetchPurchase();
+  }, [refetchPurchase]);
+
+  const handleGoBack = useCallback(() => {
+    navigate('/dashboard/list-purchases');
+  }, [navigate]);
 
   const handleEdit = useCallback(() => {
     navigate(`/dashboard/purchases/${purchaseId}/editar`);
@@ -73,6 +61,20 @@ const PurchaseDetailScreen = () => {
     scopes: ['esc-key'],
     enabled: true,
   });
+
+  // ✅ Ahora validamos DESPUÉS de todos los hooks
+  if (!Number(purchaseId)) {
+    return (
+      <ErrorDataComponent
+        errorMessage="No se pudo cargar la compra."
+        showButtonIcon={false}
+        buttonText="Ir a lista de compras"
+        onRetry={() => {
+          navigate('/dashboard/list-purchases');
+        }}
+      />
+    );
+  }
   return (
     <>
       {isLoadingPurchase ? (
