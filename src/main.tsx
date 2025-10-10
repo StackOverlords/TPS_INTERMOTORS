@@ -11,23 +11,33 @@ import { Toaster } from './components/atoms/toaster.tsx';
 import { KeybindingProvider } from './contexts/KeybindingContext.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
 import { queryClient } from './lib/reactQueryConfig.ts';
+import { testDatabaseConnection } from './database/test-connection';
+
+// Probar la conexión a la base de datos al iniciar la app
+testDatabaseConnection().then((success) => {
+  if (success) {
+    console.log('✅ Database ready!');
+  } else {
+    console.warn('⚠️ Database connection failed, app will continue without local storage');
+  }
+});
 
 createRoot(document.getElementById('root')!).render(
   <WebSocketProvider>
-      <QueryClientProvider client={queryClient}>
-        <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
-          <TooltipProvider>
-            <Toaster />
-            {/* <Sonner /> */}
-    <KeybindingProvider>
+    <QueryClientProvider client={queryClient}>
+      <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
+        <TooltipProvider>
+          <Toaster />
+          {/* <Sonner /> */}
+          <KeybindingProvider>
             <BrowserRouter>
               {/* <SidebarProvider> */}
               <Navigation />
               {/* </SidebarProvider> */}
             </BrowserRouter>
-    </KeybindingProvider>
-          </TooltipProvider>
-        </HotkeysProvider>
-      </QueryClientProvider>
+          </KeybindingProvider>
+        </TooltipProvider>
+      </HotkeysProvider>
+    </QueryClientProvider>
   </WebSocketProvider>
 );

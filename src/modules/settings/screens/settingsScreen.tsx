@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Bell, Code, Database, HardDrive, Link, Palette, RefreshCw, Settings2, Settings as SettingsIcon, Shield } from "lucide-react";
+import { Bell, Code, Database, HardDrive, Keyboard, Link, Palette, RefreshCw, Settings2, Settings as SettingsIcon, Shield } from "lucide-react";
 import { useState } from "react";
 import AdvancedSettings from "../components/settings/AdvancedSettings";
 import AppearanceSettings from "../components/settings/AppearanceSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import IntegrationSettings from "../components/settings/IntegrationSettings";
+import KeybindingsSettings from "../components/settings/KeybindingsSettings";
 import MasterDataSettings from "../components/settings/MasterDataSettings";
 import NotificationSettings from "../components/settings/NotificationSettings";
 import SecuritySettings from "../components/settings/SecuritySettings";
@@ -41,6 +42,13 @@ const settingsSections: SettingsSection[] = [
         icon: Palette,
         description: "Personaliza el tema y colores",
         component: AppearanceSettings,
+    },
+    {
+        id: "keybindings",
+        label: "Atajos",
+        icon: Keyboard,
+        description: "Personaliza los atajos de teclado",
+        component: KeybindingsSettings,
     },
     {
         id: "system",

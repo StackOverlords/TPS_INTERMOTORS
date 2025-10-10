@@ -90,7 +90,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     onCloseCommandPalette: () => setOpen(false),
     onOpenCart: onOpenCartChange,
     onOpenNotifications: () => {
-      console.log('Abriendo notificaciones... adadawdadw');
+      // console.log('Abriendo notificaciones... adadawdadw');
       // Aquí lógica para mostrar notificaciones
     },
     onChangeBranch: () => {
@@ -141,7 +141,6 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
 
     return <div className="hidden sm:flex">{breadcrumbItems}</div>;
   };
-  console.log(user);
   return (
     <nav className="flex items-center justify-between h-full px-2 bg-white border-b border-gray-200 sm:px-4">
       <div className="font-medium text-sm flex items-center space-x-1 truncate w-full">
@@ -179,7 +178,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           type="button"
           className="flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
           onClick={() => {
-            console.log('Abriendo notificaciones...');
+            // console.log('Abriendo notificaciones...');
             // Lógica para notificaciones
           }}
         >
@@ -242,7 +241,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer"
           onClick={() => {
             // Aquí podrías abrir un modal con la información del usuario o un menú desplegable
-            console.log('Clic en el nombre de usuario');
+            // console.log('Clic en el nombre de usuario');
           }}
         >
           <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
