@@ -1,0 +1,5 @@
+import type z from "zod";
+import type { OrderCreateSchema, OrderDetailCreateSchema } from "../schemas/orderCreateSchema";
+
+export type OrderCreate = z.infer<typeof OrderCreateSchema>;
+export type OrderDetailCreate = z.infer<typeof OrderDetailCreateSchema>;
