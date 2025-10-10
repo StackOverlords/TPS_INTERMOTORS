@@ -32,6 +32,7 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
         return typeof size === 'number' ? size : parseFloat(size)
     }
 
+    const isFirstLoad = useRef(false)
     const panelRef = useRef<HTMLDivElement | null>(null)
     const handleRef = useRef<HTMLDivElement | null>(null)
     const baseSizePx = useRef<{ width: number; height: number }>({ width: 0, height: 0 })
@@ -55,6 +56,11 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
     const measureNatural = useCallback(() => {
         const el = panelRef.current
         if (!el) return
+        if (isFirstLoad.current && !isResizing && !userResized.current) return
+
+        if (!isFirstLoad.current) {
+            isFirstLoad.current = true
+        }
 
         const prevHeight = el.style.height
         const prevWidth = el.style.width
@@ -82,7 +88,7 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
         el.style.width = prevWidth
         el.style.maxHeight = prevMaxHeight
         el.style.maxWidth = prevMaxWidth
-    }, [])
+    }, [isResizing])
 
     useEffect(() => {
         if (typeof initialSize === 'string' && initialSize.endsWith('px') && baseSizePx.current.height > 0) {
