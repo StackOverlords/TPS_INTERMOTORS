@@ -6,6 +6,8 @@ import {
   MapPin,
   Ruler,
   Tag,
+  Truck,
+  Users,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import ConfigCard from '../configCard';
@@ -66,6 +68,22 @@ const configSections = [
     description: 'Medidas de productos',
     icon: Ruler,
     iconClassName: 'bg-yellow-100 text-yellow-600',
+  },
+  {
+    key: 'proveedores',
+    href: '/dashboard/settings/providers',
+    title: 'Proveedores',
+    description: 'Proveedores de productos',
+    icon: Truck,
+    iconClassName: 'bg-yellow-100 text-yellow-600',
+  },
+  {
+    key: 'clientes',
+    href: '/dashboard/settings/customers',
+    title: 'Clientes',
+    description: 'Gestiona los clientes',
+    icon: Users,
+    iconClassName: 'bg-cyan-100 text-cyan-600',
   },
 ];
 
