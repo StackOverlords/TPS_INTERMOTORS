@@ -32,7 +32,7 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
     const renderTabsNavigation = () => (
         <Tabs value={activeSection} onValueChange={onSectionChange} className="space-y-6">
             <div className="border-b border-border">
-                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 bg-transparent h-auto p-0 space-x-0">
+                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-10 bg-transparent h-auto p-0 space-x-0">
                     {sections.map((section) => {
                         const Icon = section.icon;
                         const isUpdateSection = section.id === 'updates';

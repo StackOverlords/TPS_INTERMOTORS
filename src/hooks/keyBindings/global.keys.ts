@@ -109,6 +109,20 @@ const keyBindings = {
       description: 'Cerrar modales o diálogos',
     },
   },
+  tabs: {
+    previous: {
+      keys: 'ctrl+shift+tab',
+      description: 'Navegar al tab anterior',
+    },
+    next: {
+      keys: 'ctrl+tab',
+      description: 'Navegar al siguiente tab',
+    },
+    closeCurrent: {
+      keys: 'ctrl+w',
+      description: 'Cerrar el tab actual',
+    },
+  },
 };
 
 export default keyBindings;
