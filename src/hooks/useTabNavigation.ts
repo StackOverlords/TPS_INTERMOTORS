@@ -2,7 +2,7 @@ import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import { useTabStore } from '@/states/tabStore';
 import { useCallback, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { matchPath, useLocation, useNavigate } from 'react-router';
 
 
 //Hook para manejar la navegación con el sistema de tabs
@@ -13,12 +13,32 @@ export const useTabNavigation = () => {
   const { addTab, setActiveTab, findTabByPath, activeTabId, tabs, removeTab } = useTabStore();
 
   // Función para encontrar el nombre e icono de una ruta
+  // Soporta rutas dinámicas y extrae parámetros para mostrar en el título
   const findRouteInfo = useCallback((path: string): { name: string; icon?: any } => {
     const findInRoutes = (routes: RouteType[], targetPath: string): { name: string; icon?: any } | null => {
       for (const route of routes) {
+        if (!route.path) continue;
+
+        // Intentar match exacto
         if (route.path === targetPath) {
           return { name: route.name, icon: route.icon };
         }
+
+        // Intentar match con parámetros dinámicos
+        const match = matchPath({ path: route.path, end: true }, targetPath);
+        if (match && match.params) {
+          // Si tiene parámetros, agregarlos al nombre del tab
+          const params = match.params;
+          const paramValues = Object.values(params).filter(Boolean);
+
+          // Crear un nombre descriptivo con el ID
+          const displayName = paramValues.length > 0
+            ? `${route.name} #${paramValues[0]}`
+            : route.name;
+
+          return { name: displayName, icon: route.icon };
+        }
+
         if (route.subRoutes) {
           const found = findInRoutes(route.subRoutes, targetPath);
           if (found) return found;
