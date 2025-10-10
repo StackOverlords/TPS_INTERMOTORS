@@ -1,12 +1,15 @@
 import UpdateSettings from "@/modules/settings/components/settings/UpdateSettings";
-import OriginsScreen from "@/modules/settings/screens/OriginsScreen";
+import BranchesScreen from "@/modules/settings/screens/branchesScreen";
 import BrandsScreen from "@/modules/settings/screens/brandsScreen";
 import CategoriesScreen from "@/modules/settings/screens/categoriesScreen";
+import CustomersScreen from "@/modules/settings/screens/customersScreen";
 import MeasurementsScreen from "@/modules/settings/screens/measurementScreen";
+import OriginsScreen from "@/modules/settings/screens/OriginsScreen";
+import ProvidersScreen from "@/modules/settings/screens/providersScreen";
 import SettingsScreen from "@/modules/settings/screens/settingsScreen";
 import SubcategoriesScreen from "@/modules/settings/screens/subcategoriesScreen";
 import VehicleBrandsScreen from "@/modules/settings/screens/vehicleBrandScreen";
-import { Car, FolderOpen, Layers, MapPin, RefreshCw, Ruler, Settings, Tag } from "lucide-react";
+import { Car, FolderOpen, GitBranchIcon, Layers, MapPin, RefreshCw, Ruler, Settings, Tag, Truck, Users } from "lucide-react";
 import type RouteType from "./RouteType";
 
 const settingsProtectedRoutes: RouteType[] = [
@@ -100,11 +103,47 @@ const settingsProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UpdateSettings,
         isAdmin: false,
-        role: ["user"],
+        role: ["admin"],
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
         icon: RefreshCw
+      },
+      {
+        path: "/dashboard/settings/branches",
+        name: "Sucursales",
+        type: "protected",
+        element: BranchesScreen,
+        isAdmin: true,
+        role: ["admin"],
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+        icon: GitBranchIcon
+      },
+      {
+        path: "/dashboard/settings/providers",
+        name: "Proveedores",
+        type: "protected",
+        element: ProvidersScreen,
+        isAdmin: true,
+        role: ["admin"],
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+        icon: Truck
+      },
+      {
+        path: "/dashboard/settings/customers",
+        name: "Clientes",
+        type: "protected",
+        element: CustomersScreen,
+        isAdmin: true,
+        role: ["admin"],
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+        icon: Users
       },
     ]
   },

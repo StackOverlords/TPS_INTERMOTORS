@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Bell, Code, Database, HardDrive, Link, Palette, Settings2, Settings as SettingsIcon, Shield, RefreshCw } from "lucide-react";
+import { Bell, Code, Database, HardDrive, Link, Palette, RefreshCw, Settings2, Settings as SettingsIcon, Shield } from "lucide-react";
 import { useState } from "react";
 import AdvancedSettings from "../components/settings/AdvancedSettings";
 import AppearanceSettings from "../components/settings/AppearanceSettings";
@@ -90,7 +90,7 @@ const settingsSections: SettingsSection[] = [
         icon: RefreshCw,
         description: "Gestiona las actualizaciones de la aplicación",
         component: UpdateSettings,
-    },
+    }
 ];
 
 const SettingsScreen = () => {
