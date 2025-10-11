@@ -1,6 +1,5 @@
 import { Badge } from "@/components/atoms/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { TabsContent } from "@/components/atoms/tabs";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import type { ProductSalesItem, ProductSalesStats } from "../../types/ProductSalesStats";
@@ -37,10 +36,14 @@ const ProductSales: React.FC<ProductSalesProps> = ({
             accessorKey: "mes",
             header: "Mes",
             enableHiding: false,
+            size:80,
+            minSize: 60,
         },
         {
             accessorKey: "gestion_1",
             header: `Gestion ${gestion_1}`,
+            size:80,
+            minSize: 60,
             cell: ({ getValue }) => {
                 const value = getValue<number>();
                 return (
@@ -53,6 +56,8 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         {
             accessorKey: "gestion_2",
             header: `Gestion ${gestion_2}`,
+            size:80,
+            minSize: 60,
             cell: ({ getValue }) => {
                 const value = getValue<number>();
                 return (
@@ -65,6 +70,8 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         {
             id: "diferencia",
             header: "Diferencia",
+            size:80,
+            minSize: 60,
             cell: ({ row }) => {
                 const diferencia = row.original.gestion_2 - row.original.gestion_1;
                 return (
@@ -84,6 +91,8 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         {
             id: "porcentaje_cambio",
             header: "% Cambio",
+            size:80,
+            minSize: 60,
             cell: ({ row }) => {
                 const porcentajeCambio = row.original.gestion_1 > 0 ? ((row.original.gestion_2 - row.original.gestion_1) / row.original.gestion_1 * 100) : 0.00;
                 return (
@@ -114,76 +123,74 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         enableRowSelection: true,
     })
     return (
-        <TabsContent value="sales" className="space-y-8">
-            <Card className="bg-white border border-gray-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                        <TrendingUp className="h-5 w-5 text-gray-700" />
-                        Análisis de Ventas Anuales
-                        <div className="flex items-center ml-auto gap-4">
-                            <YearSelector
-                                value={gestion_1.toString()}
-                                onValueChange={handleChangeGestion1}
-                            />
-                            <YearSelector
-                                value={gestion_2.toString()}
-                                onValueChange={handleChangeGestion2}
-                            />
-                            <Badge variant={diferenciaTotalVentas >= 0 ? "default" : "danger"}>
-                                {diferenciaTotalVentas >= 0 ? "+" : ""}
-                                {diferenciaTotalVentas} vs año anterior
-                            </Badge>
-                        </div>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto">
-                        <CustomizableTable
-                            table={table}
-                            isLoading={isLoadingData}
-                            isError={isErrorData}
-                            isFetching={isFetchingData}
-                            renderBottomRow={() => (
-                                !isErrorData && !isLoadingData && !isFetchingData &&
-                                <TableRow className="bg-gray-50 font-bold">
-                                    <TableCell className="font-bold p-1">TOTAL</TableCell>
-                                    <TableCell className="font-bold p-1 text-gray-900 text-end">
-                                        {totalVentasAnterior.toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="font-bold p-1  text-gray-600 text-end">
-                                        {totalVentasActual.toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="px-0">
-                                        <div className="flex items-center justify-end gap-1 p-1">
-                                            <Badge
-                                                variant={diferenciaTotalVentas > 0 ? "success" : diferenciaTotalVentas === 0 ? "secondary" : "danger"}
-                                                className="font-bold"
-                                            >
-                                                {Math.abs(diferenciaTotalVentas)}
-                                            </Badge>
-                                            {diferenciaTotalVentas >= 0 ? (
-                                                <TrendingUp className="h-4 w-4 text-green-600" />
-                                            ) : (
-                                                <TrendingDown className="h-4 w-4 text-red-600" />
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right p-1">
-                                        <Badge variant={diferenciaTotalVentas > 0 ? "success" : diferenciaTotalVentas === 0 ? "secondary" : "danger"} className="font-bold">
-                                            {diferenciaTotalVentas >= 0 ? "+" : ""}
-                                            {totalVentasAnterior > 0
-                                                ? ((diferenciaTotalVentas / totalVentasAnterior) * 100).toFixed(2)
-                                                : 0.00.toFixed(2)}
-                                            %
-                                        </Badge>
-                                    </TableCell>
-                                </TableRow>
-                            )}
+        <Card className="bg-white border border-gray-200">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                    <TrendingUp className="size-4 text-gray-700" />
+                    Análisis de Ventas Anuales
+                    <div className="flex items-center ml-auto gap-4">
+                        <YearSelector
+                            value={gestion_1.toString()}
+                            onValueChange={handleChangeGestion1}
                         />
+                        <YearSelector
+                            value={gestion_2.toString()}
+                            onValueChange={handleChangeGestion2}
+                        />
+                        <Badge variant={diferenciaTotalVentas >= 0 ? "default" : "danger"}>
+                            {diferenciaTotalVentas >= 0 ? "+" : ""}
+                            {diferenciaTotalVentas} vs año anterior
+                        </Badge>
                     </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="overflow-x-auto">
+                    <CustomizableTable
+                        table={table}
+                        isLoading={isLoadingData}
+                        isError={isErrorData}
+                        isFetching={isFetchingData}
+                        renderBottomRow={() => (
+                            !isErrorData && !isLoadingData && !isFetchingData &&
+                            <TableRow className="bg-gray-50 font-bold">
+                                <TableCell className="font-bold p-1">TOTAL</TableCell>
+                                <TableCell className="font-bold p-1 text-gray-900 text-end">
+                                    {totalVentasAnterior.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="font-bold p-1  text-gray-600 text-end">
+                                    {totalVentasActual.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="px-0">
+                                    <div className="flex items-center justify-end gap-1 p-1">
+                                        <Badge
+                                            variant={diferenciaTotalVentas > 0 ? "success" : diferenciaTotalVentas === 0 ? "secondary" : "danger"}
+                                            className="font-bold"
+                                        >
+                                            {Math.abs(diferenciaTotalVentas)}
+                                        </Badge>
+                                        {diferenciaTotalVentas >= 0 ? (
+                                            <TrendingUp className="h-4 w-4 text-green-600" />
+                                        ) : (
+                                            <TrendingDown className="h-4 w-4 text-red-600" />
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right p-1">
+                                    <Badge variant={diferenciaTotalVentas > 0 ? "success" : diferenciaTotalVentas === 0 ? "secondary" : "danger"} className="font-bold">
+                                        {diferenciaTotalVentas >= 0 ? "+" : ""}
+                                        {totalVentasAnterior > 0
+                                            ? ((diferenciaTotalVentas / totalVentasAnterior) * 100).toFixed(2)
+                                            : 0.00.toFixed(2)}
+                                        %
+                                    </Badge>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    />
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 
