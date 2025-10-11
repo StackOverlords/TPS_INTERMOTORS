@@ -36,19 +36,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false
-      },
-      // {
-      //   path: "/dashboard/user/:iuserId/permisions",
-      //   name: "Permisos de Usuario",
-      //   type: "protected",
-      //   element: UserPermissionsScreen,
-      //   isAdmin: true,
-      //   role: ["admin"],
-      //   icon: BoxIcon,
-
-      //   isHeader: false,
-      //   showSidebar: false
-      // },
+      }, 
     ]
   }  
 ];

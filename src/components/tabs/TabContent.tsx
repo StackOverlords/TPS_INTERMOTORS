@@ -5,12 +5,7 @@ interface TabContentProps {
   children: ReactNode;
   tabId: string;
 }
-
-/**
- * Componente optimizado que preserva el contenido de cada tab
- * Usa display: none en lugar de unmount para mantener el estado
- * Memoización agresiva para evitar re-renders
- */
+ 
 const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => {
   // Selectores específicos para evitar re-renders innecesarios
   const activeTabId = useTabStore(state => state.activeTabId);

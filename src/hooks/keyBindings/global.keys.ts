@@ -1,5 +1,5 @@
 const keyBindings = {
-  forms: {
+  forms: { //forms.save
     save: {
       keys: 'alt+s',
       description: 'Guardar formulario',
@@ -108,6 +108,10 @@ const keyBindings = {
       keys: 'escape',
       description: 'Cerrar modales o diálogos',
     },
+    sidebar:{
+      keys: 'ctrl+b',
+      description: 'Mostrar/ocultar barra lateral',
+    }
   },
   tabs: {
     previous: {
@@ -123,6 +127,8 @@ const keyBindings = {
       description: 'Cerrar el tab actual',
     },
   },
+
+
 };
 
 export default keyBindings;
