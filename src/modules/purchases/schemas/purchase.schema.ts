@@ -5,7 +5,7 @@ export const CategoriaSchema = z.object({
   categoria: z.string(),
   id_estado: z.string(),
   codigo_interno: z.number(),
-  version: z.number(),
+  version: z.number().optional(),
 })
 
 export const SubcategoriaSchema = z.object({
@@ -49,27 +49,27 @@ export const ProductoDetalleSchema = z.object({
   codigo_interno: z.number(),
   descripcion: z.string(),
   descripcion_alt: z.string().nullable(),
-  codigo_oem: z.string().nullable(),
-  codigo_upc: z.string().nullable(),
+  codigo_oem: z.string(),
+  codigo_upc: z.string(),
   modelo: z.string().nullable(),
-  medida: z.string().nullable(),
-  nro_motor: z.string().nullable(),
+  medida: z.string(),
+  nro_motor: z.string(),
   id_categoria: z.number(),
   categoria: CategoriaSchema.nullable(), // Puede ser objeto o null
   id_subcategora: z.number(),
-  subcategoria: SubcategoriaSchema.nullable(),
+  subcategoria: SubcategoriaSchema,
   id_marca: z.number(),
-  marca: MarcaSchema.nullable(),
+  marca: MarcaSchema,
   id_procedencia: z.number(),
-  procedencia: ProcedenciaSchema.nullable(),
+  procedencia: ProcedenciaSchema,
   id_unidad_medida: z.number(),
-  unidad_medida: UnidadMedidaSchema.nullable(),
+  unidad_medida: UnidadMedidaSchema,
   costo_referencia: z.string(),
-  stock_minimo: z.string().nullable(),
+  stock_minimo: z.string(),
   precio_venta: z.string(),
   precio_venta_alt: z.string(),
   id_marca_vehiculo: z.number(),
-  marca_vehiculo: MarcaVehiculoSchema.nullable(),
+  marca_vehiculo: MarcaVehiculoSchema,
 })
 
 export const DetalleCompraSchema = z.object({
@@ -98,7 +98,7 @@ export const ResponsableDetalleSchema = z.object({
   nombre: z.string(),
   apellido_paterno: z.string(),
   apellido_materno: z.string().nullable(),
-  dni: z.number(),
+  dni: z.number().nullable(),
   celular: z.string().nullable(),
 })
 

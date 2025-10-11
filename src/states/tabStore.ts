@@ -39,12 +39,12 @@ const safeStorage = createJSONStorage<TabState>(() => ({
       JSON.parse(value);
       return value;
     } catch (error) {
-      console.error('Error leyendo tab storage, limpiando datos corruptos:', error);
+      // console.error('Error leyendo tab storage, limpiando datos corruptos:', error);
       // Limpiar datos corruptos
       try {
         localStorage.removeItem(name);
       } catch (e) {
-        console.error('Error limpiando storage:', e);
+        // console.error('Error limpiando storage:', e);
       }
       return null;
     }
@@ -53,13 +53,12 @@ const safeStorage = createJSONStorage<TabState>(() => ({
     try {
       localStorage.setItem(name, value);
     } catch (error) {
-      console.error('Error guardando tab storage:', error);
       // Si falla por quota, limpiar storage antiguo
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
         try {
           localStorage.removeItem(name);
         } catch (e) {
-          console.error('Error limpiando storage por quota:', e);
+          // console.error('Error limpiando storage por quota:', e);
         }
       }
     }
@@ -68,22 +67,22 @@ const safeStorage = createJSONStorage<TabState>(() => ({
     try {
       localStorage.removeItem(name);
     } catch (error) {
-      console.error('Error removiendo tab storage:', error);
+      // console.error('Error removiendo tab storage:', error);
     }
   }
 }));
 
 // Helper para debounce
-const debounce = <T extends (...args: any[]) => any>(
-  fn: T,
-  delay: number
-): ((...args: Parameters<T>) => void) => {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-};
+// const debounce = <T extends (...args: any[]) => any>(
+//   fn: T,
+//   delay: number
+// ): ((...args: Parameters<T>) => void) => {
+//   let timeoutId: ReturnType<typeof setTimeout> | null = null;
+//   return (...args: Parameters<T>) => {
+//     if (timeoutId) clearTimeout(timeoutId);
+//     timeoutId = setTimeout(() => fn(...args), delay);
+//   };
+// };
 
 export const useTabStore = create<TabState>()(
   persist(
@@ -123,25 +122,40 @@ export const useTabStore = create<TabState>()(
 
       removeTab: (tabId: string) => {
         const state = get();
+        console.log('🔴 removeTab llamado con:', tabId);
+        console.log('📊 Estado actual:', {
+          tabs: state.tabs.map(t => ({ id: t.id, title: t.title })),
+          activeTabId: state.activeTabId
+        });
+
         const tabIndex = state.tabs.findIndex(tab => tab.id === tabId);
 
-        if (tabIndex === -1) return;
+        if (tabIndex === -1) {
+          console.log('⚠️ Tab no encontrado, abortando');
+          return;
+        }
 
         const newTabs = state.tabs.filter(tab => tab.id !== tabId);
+        console.log('📋 Tabs después de filtrar:', newTabs.map(t => ({ id: t.id, title: t.title })));
 
         // Si estamos cerrando el tab activo, activar otro
         let newActiveTabId = state.activeTabId;
-
         if (state.activeTabId === tabId && newTabs.length > 0) {
-          // Activar el tab a la derecha, o el de la izquierda si es el último
           const newIndex = tabIndex < newTabs.length ? tabIndex : tabIndex - 1;
           newActiveTabId = newTabs[newIndex]?.id || null;
+          console.log('✅ Nueva tab activa será:', newActiveTabId, 'en índice:', newIndex);
         } else if (newTabs.length === 0) {
           newActiveTabId = null;
+          console.log('⚠️ No quedan tabs');
         }
 
         set({
           tabs: newTabs,
+          activeTabId: newActiveTabId
+        });
+
+        console.log('✅ removeTab completado. Nuevo estado:', {
+          tabs: newTabs.map(t => ({ id: t.id, title: t.title })),
           activeTabId: newActiveTabId
         });
       },
@@ -151,8 +165,7 @@ export const useTabStore = create<TabState>()(
         const tab = state.tabs.find(t => t.id === tabId);
 
         if (tab) {
-          // Usar shallow update para evitar re-renders innecesarios
-          set({ activeTabId: tabId }, false, 'setActiveTab');
+          set({ activeTabId: tabId });
         }
       },
 
@@ -202,21 +215,33 @@ export const useTabStore = create<TabState>()(
     {
       name: 'tab-storage',
       storage: safeStorage,
-      version: 1,
-      // Optimización: solo persistir cambios estructurales, no activeTabId
+      version: 4, // Incrementar versión para forzar limpieza de tabs con iconos
       partialize: (state) => ({
-        tabs: state.tabs,
-        // No persistir activeTabId para evitar escrituras constantes
+        // NO persistir los iconos porque son componentes de React y no se pueden serializar
+        tabs: state.tabs.map(tab => ({
+          id: tab.id,
+          path: tab.path,
+          title: tab.title,
+          scrollPosition: tab.scrollPosition,
+          metadata: tab.metadata,
+          // Omitir icon intencionalmente
+        })),
       }),
-      // Manejar errores de migración
+      migrate: (persistedState: any, version: number) => {
+        if (version < 4 && persistedState?.tabs) {
+          return {
+            tabs: [],
+            activeTabId: null
+          } as any;
+        }
+        return persistedState;
+      },
       onRehydrateStorage: () => (_state, error) => {
         if (error) {
-          console.error('Error rehidratando tab storage:', error);
           // Limpiar storage corrupto
           try {
             localStorage.removeItem('tab-storage');
           } catch (e) {
-            console.error('Error limpiando tab storage corrupto:', e);
           }
         }
       }

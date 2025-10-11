@@ -1,8 +1,14 @@
 import { Badge } from '@/components/atoms/badge';
 import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
+import { Label } from '@/components/atoms/label';
 import CustomizableTable from '@/components/common/CustomizableTable';
-import { apiConstructor } from '@/modules/products/services/api';
+import Pagination from '@/components/common/pagination';
+import { ComboboxSelect } from '@/components/common/SelectCombobox';
+import { productsService } from '@/modules/products/services/productService';
+import type { ProductGet } from '@/modules/products/types/ProductGet';
+import { useCategoriesWithSubcategories } from '@/modules/shared/hooks/useCategories';
+import { useCommonBrands } from '@/modules/shared/hooks/useCommonBrands';
 import { formatCurrency } from '@/utils/formaters';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -12,36 +18,12 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { Loader2, Plus, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { useDebounce } from 'use-debounce';
-
-interface ProductResponse {
-  id: number;
-  descripcion: string;
-  codigo_oem: string;
-  codigo_upc: string;
-  modelo: string;
-  medida: string | null;
-  nro_motor: string;
-  categoria: string;
-  subcategoria: string;
-  marca: string;
-  procedencia: string;
-  unidad_medida: string;
-  stock_actual: string;
-  stock_resto: string;
-  pedido_transito: string;
-  pedido_almacen: string;
-  precio_venta: string;
-  precio_venta_alt: string;
-  sucursal: string;
-}
+import { Loader2, Plus, RotateCcw, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface ProductSearchPanelProps {
   selectedProducts: any[];
-  onProductSelect: (product: ProductResponse) => void;
+  onProductSelect: (product: ProductGet) => void;
 }
 
 const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
@@ -49,72 +31,55 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   onProductSelect,
 }) => {
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(50);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
-  const [allProducts, setAllProducts] = useState<ProductResponse[]>([]);
-  const [hasNextPage, setHasNextPage] = useState(true);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Filtros locales
+  const [localFilters, setLocalFilters] = useState({
+    descripcion: '',
+    codigo_oem: '',
+    categoria: undefined as number | undefined,
+    marca: '' as string | undefined,
+  });
+
+  // Filtros aplicados (los que se envían al API)
+  const [appliedFilters, setAppliedFilters] = useState(localFilters);
+
   const [sorting, setSorting] = useState<SortingState>([]);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Obtener datos de filtros
+  const { data: categoriesData } = useCategoriesWithSubcategories();
+  const { data: brandsData } = useCommonBrands();
 
   const {
     data: productsResponse,
     isLoading,
-    isFetching,
     error,
   } = useQuery({
-    queryKey: ['products', page, pageSize, debouncedSearchTerm],
+    queryKey: ['products', page, pageSize, appliedFilters],
     queryFn: () => {
-      const searchParam = debouncedSearchTerm
-        ? `&descripcion=${encodeURIComponent(debouncedSearchTerm)}`
-        : '';
-      return apiConstructor({
-        url: `/products?pagina=${page}&pagina_registros=${pageSize}&sucursal=1${searchParam}`,
-        method: 'GET',
-      });
+      const filters = {
+        pagina: page,
+        pagina_registros: pageSize,
+        sucursal: 1,
+        ...(appliedFilters.descripcion && { descripcion: appliedFilters.descripcion }),
+        ...(appliedFilters.codigo_oem && { codigo_oem: appliedFilters.codigo_oem }),
+        ...(appliedFilters.categoria && { categoria: appliedFilters.categoria }),
+        ...(appliedFilters.marca && { marca: appliedFilters.marca }),
+      };
+
+      return productsService.getAll(filters);
     },
     staleTime: 5 * 60 * 1000,
   });
 
-  // Reset cuando cambia el término de búsqueda
+  // Reset cuando cambian los filtros aplicados
   useEffect(() => {
     setPage(1);
-    setAllProducts([]);
-    setHasNextPage(true);
-  }, [debouncedSearchTerm]);
+  }, [appliedFilters]);
 
-  // Manejar los productos cuando llega nueva data
-  useEffect(() => {
-    if (productsResponse) {
-      if (page === 1) {
-        setAllProducts(productsResponse);
-      } else {
-        setAllProducts(prev => [...prev, ...productsResponse]);
-      }
-
-      setHasNextPage(productsResponse.length === pageSize);
-    }
-  }, [productsResponse, page, pageSize]);
-
-  // Función para manejar el scroll infinito
-  const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current || isFetching || !hasNextPage) return;
-
-    const { scrollTop, scrollHeight, clientHeight } =
-      scrollContainerRef.current;
-
-    if (scrollHeight - scrollTop - clientHeight < 100) {
-      setPage(prev => prev + 1);
-    }
-  }, [isFetching, hasNextPage]);
-
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return;
-
-    scrollContainer.addEventListener('scroll', handleScroll);
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+  // Obtener productos y meta información
+  const products = productsResponse?.data || [];
+  const totalProducts = productsResponse?.meta?.total || 0;
 
   // Verificar si un producto ya está seleccionado
   const isProductSelected = useCallback(
@@ -126,14 +91,39 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
     [selectedProducts]
   );
 
-  const columns = useMemo<ColumnDef<ProductResponse>[]>(
+  // Manejar búsqueda
+  const handleSearch = () => {
+    setAppliedFilters(localFilters);
+  };
+
+  // Limpiar filtros
+  const handleClearFilters = () => {
+    const emptyFilters = {
+      descripcion: '',
+      codigo_oem: '',
+      categoria: undefined,
+      marca: undefined,
+    };
+    setLocalFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
+  };
+
+  // Actualizar filtro local
+  const updateLocalFilter = <K extends keyof typeof localFilters>(
+    key: K,
+    value: typeof localFilters[K]
+  ) => {
+    setLocalFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
       {
         accessorKey: 'descripcion',
         header: 'Producto',
-        size: 200,
+        size: 150,
         cell: ({ getValue }) => (
-          <div className="font-medium text-xs text-gray-900 truncate max-w-[200px]">
+          <div className="font-bold text-xs text-gray-900 truncate ">
             {getValue() as string}
           </div>
         ),
@@ -235,7 +225,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   );
 
   const table = useReactTable({
-    data: allProducts,
+    data: products,
     columns,
     state: {
       sorting,
@@ -243,33 +233,125 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    columnResizeMode: "onChange",
   });
+
+  // Manejadores de paginación
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleShowRowsChange = (rows: number) => {
+    setPageSize(rows);
+    setPage(1);
+  };
 
   return (
     <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
-      {/* Header */}
-      <div className="p-3 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">
-          Buscar Productos
-        </h3>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar por descripción..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 h-9 text-sm border-gray-200"
-          />
+      {/* Header con Filtros */}
+      <div className="p-3 border-b border-gray-200 space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-900">
+            Buscar Productos
+          </h3>
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleClearFilters}
+              className="h-7 text-xs"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Limpiar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSearch}
+              className="h-7 text-xs bg-gray-900 hover:bg-gray-800"
+            >
+              <Search className="h-3 w-3 mr-1" />
+              Buscar
+            </Button>
+          </div>
+        </div>
+
+        {/* Filtros en Grid */}
+        <div className="grid grid-cols-4 gap-2">
+          {/* Descripción */}
+          <div className="space-y-1">
+            <Label className="text-xs">Descripción</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+              <Input
+                placeholder="Buscar..."
+                value={localFilters.descripcion}
+                onChange={e => updateLocalFilter('descripcion', e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* OEM */}
+          <div className="space-y-1">
+            <Label className="text-xs">Código OEM</Label>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+              <Input
+                placeholder="OEM..."
+                value={localFilters.codigo_oem}
+                onChange={e => updateLocalFilter('codigo_oem', e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                className="pl-8 h-8 text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Categoría */}
+          <div className="space-y-1">
+            <Label className="text-xs">Categoría</Label>
+            <ComboboxSelect
+              value={localFilters.categoria}
+              onChange={(value: string | number) => {
+                const parsed = value === 'all' ? undefined : Number(value);
+                updateLocalFilter('categoria', parsed);
+              }}
+              options={(categoriesData || []).map(cat => ({
+                id: String(cat.id),
+                categoria: cat.categoria,
+              }))}
+              optionTag="categoria"
+              enableAllOption={true}
+              placeholder="Todas"
+              className="h-8 text-xs"
+            />
+          </div>
+
+          {/* Marca */}
+          <div className="space-y-1">
+            <Label className="text-xs">Marca</Label>
+            <ComboboxSelect
+              value={localFilters.marca || 'all'}
+              onChange={(value: string | number) => {
+                const strValue = String(value);
+                updateLocalFilter('marca', strValue === 'all' ? undefined : strValue);
+              }}
+              options={(brandsData || []).map(brand => ({
+                id: brand.id,
+                marca: brand.marca,
+              }))}
+              optionTag="marca"
+              enableAllOption={true}
+              placeholder="Todas"
+              className="h-8 text-xs"
+            />
+          </div>
         </div>
       </div>
 
       {/* Table Container */}
-      <div
-        ref={scrollContainerRef}
-        id="product-scroll-container"
-        className="flex-1 overflow-auto"
-      >
-        {isLoading && page === 1 ? (
+      <div className="flex-1 overflow-auto">
+        {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             <span className="ml-2 text-sm text-gray-500">
@@ -281,34 +363,11 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
             <p>Error al cargar los productos</p>
             <p className="text-xs mt-1">Intenta nuevamente</p>
           </div>
-        ) : allProducts.length > 0 ? (
-          <InfiniteScroll
-            dataLength={allProducts.length}
-            next={() => setPage(prev => prev + 1)}
-            hasMore={hasNextPage}
-            loader={
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                <span className="ml-2 text-gray-500 text-xs">
-                  Cargando más...
-                </span>
-              </div>
-            }
-            scrollableTarget="product-scroll-container"
-            endMessage={
-              allProducts.length > 10 && (
-                <div className="text-center py-4 text-gray-500 text-xs">
-                  No hay más productos
-                </div>
-              )
-            }
-          >
-            <CustomizableTable
-              table={table}
-              errorMessage="Ocurrió un error al cargar los productos."
-              isLoading={false}
-            />
-          </InfiniteScroll>
+        ) : products.length > 0 ? (
+          <CustomizableTable
+            table={table}
+            isLoading={false}
+          />
         ) : (
           <div className="text-center py-8 text-gray-500 text-sm">
             No se encontraron productos
@@ -316,12 +375,16 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         )}
       </div>
 
-      {/* Footer con contador */}
-      {allProducts.length > 0 && (
-        <div className="p-2 border-t border-gray-200 bg-gray-50">
-          <p className="text-xs text-gray-600 text-center">
-            {allProducts.length} productos encontrados
-          </p>
+      {/* Footer con Paginación */}
+      {products.length > 0 && (
+        <div className="border-t border-gray-200 bg-gray-50">
+          <Pagination
+            currentPage={page}
+            onPageChange={handlePageChange}
+            totalData={totalProducts}
+            onShowRowsChange={handleShowRowsChange}
+            showRows={pageSize}
+          />
         </div>
       )}
     </div>

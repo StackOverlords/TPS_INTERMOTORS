@@ -218,7 +218,7 @@ const FormCreatePurchase: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="p-3 bg-white rounded-lg">
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">Comentarios (Opcional)</Label>
           <textarea
