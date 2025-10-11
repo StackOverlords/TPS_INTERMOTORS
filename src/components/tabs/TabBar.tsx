@@ -25,7 +25,8 @@ const TabItem = React.memo(({
   onTabClick,
   onCloseTab,
   onCloseOthers,
-  onCloseAll
+  onCloseAll,
+  canClose
 }: {
   tab: Tab;
   isActive: boolean;
@@ -33,11 +34,20 @@ const TabItem = React.memo(({
   onCloseTab: (e: React.MouseEvent, tabId: string) => void;
   onCloseOthers: (tabId: string) => void;
   onCloseAll: () => void;
+  canClose: boolean;
 }) => {
+  // Mostrar título completo + ruta en el tooltip
+  const tooltipContent = (
+    <div className="flex flex-col gap-1">
+      <span className="font-medium">{tab.title}</span>
+      <span className="text-xs text-gray-400">{tab.path}</span>
+    </div>
+  );
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <TooltipWrapper tooltip={tab.path}>
+        <TooltipWrapper tooltip={tooltipContent}>
           <Button
             variant="ghost"
             onClick={() => onTabClick(tab)}
@@ -50,19 +60,22 @@ const TabItem = React.memo(({
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
+            {tab.icon && <tab.icon className="h-4 w-4 flex-shrink-0" />}
             <span className="truncate flex-1 text-left">
-              {tab.title}
+              {tab.title || tab.path.split('/').pop() || 'Sin título'}
             </span>
-            <div
-              onClick={(e) => onCloseTab(e, tab.id)}
-              className={cn(
-                'flex-shrink-0 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-gray-200 p-0.5 transition-opacity',
-                isActive && 'opacity-100'
-              )}
-              aria-label="Cerrar pestaña"
-            >
-              <X className="h-3 w-3" />
-            </div>
+            {canClose && (
+              <div
+                onClick={(e) => onCloseTab(e, tab.id)}
+                className={cn(
+                  'flex-shrink-0 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-gray-200 p-0.5 transition-opacity',
+                  isActive && 'opacity-100'
+                )}
+                aria-label="Cerrar pestaña"
+              >
+                <X className="h-3 w-3" />
+              </div>
+            )}
             {isActive && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
@@ -147,7 +160,8 @@ const TabBar: React.FC<TabBarProps> = ({ className }) => {
                 onCloseTab={handleCloseTab}
                 onCloseOthers={handleCloseOthers}
                 onCloseAll={handleCloseAll}
-              />
+                canClose={tabs.length > 1}
+              /> 
             </Tabs.Trigger>
           ))}
         </Tabs.List>

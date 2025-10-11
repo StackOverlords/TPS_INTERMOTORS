@@ -6,10 +6,6 @@ import { useMemo } from 'react';
 import { matchPath } from 'react-router';
 import TabContent from './TabContent';
 
-/**
- * Componente que renderiza todas las vistas de tabs activos
- * Cada tab mantiene su propia instancia del componente
- */
 const TabContainer: React.FC = () => {
   const { tabs } = useTabStore();
 

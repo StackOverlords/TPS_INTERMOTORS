@@ -1,3 +1,4 @@
+import ResizableBox from '@/components/atoms/resizable-box';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import TooltipButton from '@/components/common/TooltipButton';
 import { useBranchStore } from '@/states/branchStore';
@@ -82,17 +83,23 @@ const CreatePurchase: React.FC = () => {
         </div>
 
         {/* Layout horizontal (en filas) */}
-        <div className="flex-1 px-4 py-4 overflow-hidden flex flex-col gap-4">
+        <div className="flex-1 px-4 py-4 overflow-auto flex flex-col gap-4">
           {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
-          <div className="h-[300px] flex-shrink-0">
-            <ProductSearchPanel
-              selectedProducts={formData.detalles}
-              onProductSelect={handleProductSelect}
-            />
+          <div className="flex-shrink-0">
+            <ResizableBox
+              direction="vertical"
+              minSize={'200px'}
+              initialSize={'600px'}
+            >
+              <ProductSearchPanel
+                selectedProducts={formData.detalles}
+                onProductSelect={handleProductSelect}
+              />
+            </ResizableBox>
           </div>
 
           {/* Tabla de detalles - Inferior (ocupa el espacio restante) */}
-          <div className="flex-1 min-h-0 overflow-auto">
+          <div className="flex-shrink-0 min-h-[400px] bg-white rounded-lg p-4 border border-gray-200 flex flex-col flex-1">
             <PurchaseDetailsTable
               detalles={formData.detalles}
               setDetalles={detalles => handleChange('detalles', detalles)}

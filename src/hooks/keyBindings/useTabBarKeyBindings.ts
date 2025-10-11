@@ -7,10 +7,11 @@ interface BasicFormKeybindingOptions {
   previousTab?: () => void;
   nextTab?: () => void;
   closeCurrentTab?: () => void;
+  canCloseCurrentTab?: boolean; // Nueva propiedad para controlar si se puede cerrar
 }
 
 export const useTabBarKeybindings = (options: BasicFormKeybindingOptions = {}) => {
-  const { previousTab, nextTab, closeCurrentTab } = options;
+  const { previousTab, nextTab, closeCurrentTab, canCloseCurrentTab = true } = options;
   const formRef = useRef<HTMLFormElement>(null);
 
   // Estado reactivo para las teclas (se actualiza cuando cambian)
@@ -34,7 +35,6 @@ export const useTabBarKeybindings = (options: BasicFormKeybindingOptions = {}) =
   }, []);
 
   useHotkeys(previousTabKeys, (e) => {
-    console.log('⏮️ Previous Tab hotkey presionado:', previousTabKeys);
     e.preventDefault();
     if (previousTab) {
       previousTab();
@@ -45,7 +45,6 @@ export const useTabBarKeybindings = (options: BasicFormKeybindingOptions = {}) =
   }, [previousTabKeys, previousTab]) // Agregar previousTabKeys como dependencia
 
   useHotkeys(nextTabKeys, (e) => {
-    console.log('⏭️ Next Tab hotkey presionado:', nextTabKeys);
     e.preventDefault();
     if (nextTab) {
       nextTab();
@@ -56,15 +55,14 @@ export const useTabBarKeybindings = (options: BasicFormKeybindingOptions = {}) =
   }, [nextTabKeys, nextTab]) // Agregar nextTabKeys como dependencia
 
   useHotkeys(closeCurrentTabKeys, (e) => {
-    console.log('❌ Close Current Tab hotkey presionado:', closeCurrentTabKeys);
     e.preventDefault();
-    if (closeCurrentTab) {
+    if (closeCurrentTab && canCloseCurrentTab) {
       closeCurrentTab();
     }
   }, {
     enableOnFormTags: false,
-    enabled: !!closeCurrentTab
-  }, [closeCurrentTabKeys, closeCurrentTab]) // Agregar closeCurrentTabKeys como dependencia
+    enabled: !!closeCurrentTab && canCloseCurrentTab // Deshabilitar si no se puede cerrar
+  }, [closeCurrentTabKeys, closeCurrentTab, canCloseCurrentTab]) // Agregar canCloseCurrentTab como dependencia
  
   return {
     formRef

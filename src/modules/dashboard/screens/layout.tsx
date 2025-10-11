@@ -18,12 +18,13 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { isOpen, close, toggle, open } = useCartUiStore();
   const [mounted, setMounted] = useState(false);
-  const { nextTab, previousTab, closeCurrentTab } = useTabNavigation();
+  const { nextTab, previousTab, closeCurrentTab, tabs } = useTabNavigation();
 
   const { formRef } = useTabBarKeybindings({
     previousTab: previousTab,
     nextTab: nextTab,
     closeCurrentTab: closeCurrentTab,
+    canCloseCurrentTab: tabs.length > 1, // Solo permitir cerrar si hay más de 1 tab
   });
 
   useEffect(() => {
