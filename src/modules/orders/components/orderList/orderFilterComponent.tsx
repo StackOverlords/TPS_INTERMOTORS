@@ -9,22 +9,24 @@ import { Calendar } from "@/components/atoms/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
-import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
-import type { useSalesFilters } from "@/modules/sales/hooks/useSalesFilters";
+import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
+import { useOrderProvider } from "../../hooks/commons/useOrderProviders";
+import { useOrderStatus } from "../../hooks/commons/useOrderStatus";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
 
-interface QuotationsFiltersProps {
-    filters: ReturnType<typeof useSalesFilters>["filters"]
-    updateFilter: ReturnType<typeof useSalesFilters>["updateFilter"]
+interface OrdersFiltersProps {
+    filters: ReturnType<typeof useOrdersFilters>["filters"]
+    updateFilter: ReturnType<typeof useOrdersFilters>["updateFilter"]
 }
 
-const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
+const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
     filters,
     updateFilter
 }) => {
     // Inputs locales
     const [codigoInterno, setCodigoInterno] = useState<number | undefined>(undefined)
     const [codigoOEM, setCodigoOEM] = useState<string>("")
-    const [clientId, setClientId] = useState<number | undefined>(undefined)
+    const [providerId, setProviderId] = useState<number | undefined>(undefined)
     const [fechaInicio, setFechaInicio] = useState<Date | undefined>(
         filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined
     );
@@ -37,13 +39,18 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
     // Debounce
     const [debouncedCodigoOEM] = useDebounce(codigoOEM, 500)
     const [debouncedCodigoInterno] = useDebounce(codigoInterno, 500)
-    const [debouncedClientId] = useDebounce(clientId, 500)
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
+    const [debouncedProviderId] = useDebounce(providerId, 500)
+    const [debouncedProviderSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     const {
-        data: saleCustomersData,
-        isLoading: isSaleCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+        data: orderProvidersData,
+        isLoading: isOrdersProvidersLoading
+    } = useOrderProvider(debouncedProviderSearchTerm)
+
+    const {
+        data: orderStatusData,
+        isLoading: isOrderStatusLoading
+    } = useOrderStatus()
 
 
     // Función auxiliar para formatear fecha de manera segura
@@ -125,18 +132,18 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
     }, [debouncedCodigoInterno, updateFilter])
 
     useEffect(() => {
-        updateFilter("cliente", debouncedClientId)
-    }, [debouncedClientId, updateFilter])
+        updateFilter("proveedor", debouncedProviderId)
+    }, [debouncedProviderId, updateFilter])
 
     useEffect(() => {
-        const { codigo_oem_producto, codigo_interno, cliente, fecha_inicio, fecha_fin } = filters;
+        const { codigo_oem_producto, codigo_interno, proveedor, fecha_inicio, fecha_fin } = filters;
 
-        const allEmpty = !codigo_oem_producto && !codigo_interno && !cliente && !fecha_inicio && !fecha_fin;
+        const allEmpty = !codigo_oem_producto && !codigo_interno && !proveedor && !fecha_inicio && !fecha_fin;
 
         if (allEmpty) {
             setCodigoOEM("");
             setCodigoInterno(undefined);
-            setClientId(undefined);
+            setProviderId(undefined);
             setFechaInicio(undefined);
             setFechaFin(undefined);
         }
@@ -144,9 +151,9 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
 
     return (
         <section className="space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="space-y-2">
-                    <Label className="text-gray-700 text-sm font-medium">Nro. de Cotizacion</Label>
+                    <Label className="text-gray-700 text-sm font-medium">Nro. de pedido</Label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
@@ -159,21 +166,21 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-gray-700 text-sm font-medium">Buscar por Cliente</Label>
+                    <Label className="text-gray-700 text-sm font-medium">Buscar por proveedor</Label>
                     <PaginatedCombobox
-                        value={clientId}
-                        onChange={(value) => setClientId(value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                        optionsData={saleCustomersData?.data || []}
+                        value={providerId}
+                        onChange={(value) => setProviderId(value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+                        optionsData={orderProvidersData?.data || []}
                         displayField="nombre"
-                        isLoading={isSaleCustomersLoading}
+                        isLoading={isOrdersProvidersLoading}
                         updatePage={(page) => { console.log("Update page:", page) }}
                         updateSearch={setCustomerSearchTerm}
                         metaData={
                             {
-                                current_page: saleCustomersData?.meta.current_page || 1,
-                                last_page: saleCustomersData?.meta.last_page || 1,
-                                total: saleCustomersData?.meta.total || 0,
-                                per_page: saleCustomersData?.meta.per_page || 10,
+                                current_page: orderProvidersData?.meta?.current_page || 1,
+                                last_page: orderProvidersData?.meta?.last_page || 1,
+                                total: orderProvidersData?.meta?.total || 0,
+                                per_page: orderProvidersData?.meta?.per_page || 10,
                             }
                         }
                     />
@@ -190,10 +197,38 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
                         />
                     </div>
                 </div>
+                <div className="space-y-2">
+                    <Label>Estado</Label>
+                    <Select
+                        defaultValue="all"
+                        value={filters.situacion_actual?.toString() || "all"}
+                        disabled={isOrderStatusLoading}
+                        onValueChange={(val) => {
+                            val === "all" ? updateFilter('situacion_actual', '') :
+                                updateFilter('situacion_actual', val)
+                        }}
+                    >
+                        <SelectTrigger className={cn(
+                            "space-x-2 w-full",
+                        )}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className={cn(
+                            "shadow-lg",
+                        )}>
+                            <SelectItem value="all">Todos</SelectItem>
+                            {orderStatusData?.map(({ id, label }) => (
+                                <SelectItem key={id} value={label}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* Date Range */}
-            <div className="flex justify-between gap-2">
+            <div className="flex flex-col md:flex-row justify-between gap-2">
                 {/* Fecha Inicio */}
                 <div className="flex gap-2 grow">
                     <div className="space-y-2 w-full">
@@ -370,4 +405,4 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
     );
 }
 
-export default QuotationsFiltersComponent;
+export default OrdersFiltersComponent;

@@ -24,18 +24,19 @@ import authSDK from "@/services/sdk-simple-auth"
 import { useBranchStore } from "@/states/branchStore"
 import { formatCell } from "@/utils/formatCell"
 import { formatCurrency } from "@/utils/formaters"
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState, type SortingState } from "@tanstack/react-table"
+import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState, type SortingState, type VisibilityState } from "@tanstack/react-table"
 import {
-  Edit,
-  Eye,
-  Filter,
-  HelpCircle,
-  Loader2,
-  MoreVertical,
-  RefreshCcw,
-  Settings,
-  ShoppingCart,
-  Trash2,
+    Edit,
+    Eye,
+    Filter,
+    HelpCircle,
+    Loader2,
+    MoreVertical,
+    RefreshCcw,
+    Settings,
+    ShoppingCart,
+    Trash2,
+    TrendingUp,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import InfiniteScroll from 'react-infinite-scroll-component'
@@ -45,6 +46,8 @@ import { useDeleteProduct } from "../hooks/mutations/useDeleteProduct"
 import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
 import { useProductFilters } from "../hooks/useProductFilters"
 import type { ProductGet } from "../types/ProductGet"
+import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
+import { useHotkeys } from "react-hotkeys-hook"
 
 const getColumnVisibilityKey = (userName: string) => `product-columns-${userName}`;
 
@@ -55,6 +58,9 @@ const ProductListScreen = () => {
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
     const [showFilters, setShowFilters] = useState<boolean>(true)
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
+    const [modalOpen, setModalOpen] = useState(false)
+
     const {
         filters,
         updateFilter,
@@ -77,7 +83,9 @@ const ProductListScreen = () => {
     const [sorting, setSorting] = useState<SortingState>([])
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
     const [products, setProducts] = useState<ProductGet[]>([]);
-    const [columnVisibility, setColumnVisibility] = useState({})
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+        Select: false
+    })
 
     const { handleError } = useErrorHandler()
 
@@ -185,6 +193,11 @@ const ProductListScreen = () => {
         [addItemToCart]
     );
 
+    const handleViewDetails = useCallback((productId: number) => {
+        setSelectedProductId(productId.toString())
+        setModalOpen(true)
+    }, [])
+
     const columns = useMemo<ColumnDef<ProductGet>[]>(() => [
         {
             id: "Select",
@@ -213,6 +226,22 @@ const ProductListScreen = () => {
             enableHiding: true,
             size: 40,
             minSize: 40,
+        },
+        {
+            accessorKey: 'id',
+            header: "ID",
+            enableSorting: true,
+            enableHiding: true,
+            size: 60,
+            minSize: 40,
+            cell: ({ getValue }) => {
+                const id = getValue<number>()
+                return (
+                    <div className="text-center font-medium">
+                        {id}
+                    </div>
+                )
+            }
         },
         {
             accessorKey: "descripcion",
@@ -256,6 +285,12 @@ const ProductListScreen = () => {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
+                                    onClick={() => handleViewDetails(row.original.id)}>
+                                    <TrendingUp className="mr-2 h-4 w-4" />
+                                    Ver estadisticas
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleAddItemCart(row.original)}>
                                     <ShoppingCart className="mr-2 h-4 w-4" />
                                     Agregar al carrito
@@ -289,7 +324,6 @@ const ProductListScreen = () => {
                             <h3 className="font-medium text-gray-900 leading-tigh hover:underline truncate">{getValue<string>()}</h3>
                         </TooltipWrapper>
                         <div className="text-gray-500 flex gap-4">
-                            <span className="text-blue-600 font-medium">ID: {row.original.id}</span>
                             <span>UPC: {formatCell(row.original.codigo_upc)}</span>
                         </div>
                     </div>
@@ -299,11 +333,11 @@ const ProductListScreen = () => {
         {
             accessorKey: "codigo_oem",
             header: "Cód. OEM",
-            size: 180,
-            minSize: 150,
+            size: 150,
+            minSize: 130,
             cell: ({ getValue }) => (
                 <div className="flex items-center justify-center">
-                    <Badge className="font-mono rounded font-normal w-full" variant="secondary">{formatCell(getValue<string>())}</Badge>
+                    <Badge className="rounded font-normal w-full" variant="secondary">{formatCell(getValue<string>())}</Badge>
                 </div>
             ),
         },
@@ -381,7 +415,7 @@ const ProductListScreen = () => {
             cell: ({ row, getValue }) => (
                 <div className="space-y-1">
                     <div className="font-medium">{formatCell(getValue<string>())}</div>
-                    <div className="text-gray-500 font-mono">Modelo: {formatCell(row.original.modelo)}</div>
+                    <div className="text-gray-500">Modelo: {formatCell(row.original.modelo)}</div>
                 </div>
             ),
         },
@@ -446,7 +480,7 @@ const ProductListScreen = () => {
                 </div>
             ),
         },
-    ], [handleAddItemCart, handleProductDetail, handleOpenDeleteAlert, handleUpdateProduct]);
+    ], [handleAddItemCart, handleProductDetail, handleOpenDeleteAlert, handleUpdateProduct, handleViewDetails]);
 
     const table = useReactTable<ProductGet>({
         data: products,
@@ -539,6 +573,37 @@ const ProductListScreen = () => {
         setShowFilters(!showFilters)
     }
 
+    useHotkeys(
+        'ctrl+d',
+        (e) => {
+            e.preventDefault();
+
+            // Si el modal está abierto, agregar al carrito y cerrar
+            if (modalOpen && selectedProductId) {
+                const product = products.find(p => p.id === Number(selectedProductId));
+                if (product) {
+                    handleAddItemCart(product);
+                    setModalOpen(false);
+                    setSelectedProductId(null);
+                }
+            }
+            else if (!modalOpen && selectedIndex !== -1 && isFocused) {
+                const selectedRow = table.getRowModel().rows[selectedIndex];
+                if (selectedRow) {
+                    const selectedProduct = selectedRow.original;
+                    setSelectedProductId(selectedProduct.id.toString());
+                    setModalOpen(true);
+                }
+            }
+        },
+        {
+            enableOnFormTags: false,
+            preventDefault: true,
+            enabled: isFocused || modalOpen,
+        },
+        [modalOpen, selectedProductId, selectedIndex, table, handleAddItemCart, isFocused]
+    );
+
     return (
         <main
             className="max-w-full">
@@ -588,35 +653,35 @@ const ProductListScreen = () => {
                                 }
                             </Button>
                             <TooltipWrapper
-                            tooltipContentProps={{
-                                align: 'end',
-                                className: 'max-w-xs'
-                            }}
-                            tooltip={
-                                <div className="flex flex-col space-y-3">
-                                    {/* Título del tooltip */}
-                                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                                        Atajos de teclado
-                                    </div>
-
-                                    {/* Sección de navegación básica */}
-                                    <div className="space-y-1.5">
-                                        <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
-                                        <div className="space-y-1 text-gray-600 text-xs">
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter1.keys} />{keyBindings.tableAndFilters.filter1.description}: Categoria</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter2.keys} />{keyBindings.tableAndFilters.filter2.description}: Descripción</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter3.keys} />{keyBindings.tableAndFilters.filter3.description}: Cod. OEM</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter4.keys} />{keyBindings.tableAndFilters.filter4.description}: Cod. Upc</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.nextFilter.keys} />{keyBindings.tableAndFilters.nextFilter.description}</p>
+                                tooltipContentProps={{
+                                    align: 'end',
+                                    className: 'max-w-xs'
+                                }}
+                                tooltip={
+                                    <div className="flex flex-col space-y-3">
+                                        {/* Título del tooltip */}
+                                        <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                            Atajos de teclado
                                         </div>
-                                    </div> 
-                                </div>
-                            }
-                        >
-                            <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
-                                <HelpCircle />
-                            </span>
-                        </TooltipWrapper>
+
+                                        {/* Sección de navegación básica */}
+                                        <div className="space-y-1.5">
+                                            <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
+                                            <div className="space-y-1 text-gray-600 text-xs">
+                                                <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter1.keys} />{keyBindings.tableAndFilters.filter1.description}: Categoria</p>
+                                                <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter2.keys} />{keyBindings.tableAndFilters.filter2.description}: Descripción</p>
+                                                <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter3.keys} />{keyBindings.tableAndFilters.filter3.description}: Cod. OEM</p>
+                                                <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter4.keys} />{keyBindings.tableAndFilters.filter4.description}: Cod. Upc</p>
+                                                <p> <ShortcutKey combo={keyBindings.tableAndFilters.nextFilter.keys} />{keyBindings.tableAndFilters.nextFilter.description}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            >
+                                <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                                    <HelpCircle />
+                                </span>
+                            </TooltipWrapper>
                         </div>
                     </section>
                 </header>
@@ -828,6 +893,12 @@ const ProductListScreen = () => {
                 onClose={handleCloseDeleteAlert}
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeletingProduct}
+            />
+
+            <ProductDetailModal
+                productId={Number(selectedProductId) || 1}
+                open={modalOpen}
+                onOpenChange={setModalOpen}
             />
         </main>
     )

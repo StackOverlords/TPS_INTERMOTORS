@@ -1,4 +1,5 @@
-import { saleGetAllSchema, salesGetAllResponseSchema } from "@/modules/sales/schemas/salesGetAll.schema";
+import { saleGetAllSchema } from "@/modules/sales/schemas/salesGetAll.schema";
+import { paginatedResponseSchema } from "@/modules/shared/schemas/paginatedResponse.schema";
 import z from "zod";
 
 export const QuotationGetSchema = saleGetAllSchema
@@ -7,8 +8,4 @@ export const QuotationGetSchema = saleGetAllSchema
         nro_cotizacion: z.string(),
     })
 
-export const QuotationGetAllResponseSchema = salesGetAllResponseSchema
-    .omit({ data: true })
-    .extend({
-        data: z.array(QuotationGetSchema),
-    })
+export const QuotationGetAllResponseSchema = paginatedResponseSchema(QuotationGetSchema)

@@ -149,8 +149,7 @@ export const SaleDetailsEditingTable = forwardRef<
                             variant="outline"
                             size="sm"
                             onClick={() => removeItem(product.id)}
-                            className="text-red-500 hover:text-red-500 size-7
-                    "
+                            className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
                         >
                             <Trash2 className="size-3" />
                         </Button>

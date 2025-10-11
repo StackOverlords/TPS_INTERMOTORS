@@ -8,7 +8,7 @@ import {
     ShoppingCart,
     CornerUpLeft,
 } from "lucide-react"
-import { Tabs, TabsList, TabsTrigger } from "@/components/atoms/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/atoms/tabs"
 import { Button } from "@/components/atoms/button"
 import { useNavigate, useParams } from "react-router"
 import { useProductById } from "../hooks/queries/useProductById"
@@ -266,23 +266,27 @@ const ProductDetailScreen = () => {
                     />
 
                     {/* Sales Tab */}
-                    <ProductSales
-                        isLoadingData={isLoadingTwoYearSalesData}
-                        gestion_1={gestiones.gestion_1}
-                        gestion_2={gestiones.gestion_2}
-                        handleChangeGestion1={handleChangeGestion1}
-                        handleChangeGestion2={handleChangeGestion2}
-                        productSalesData={twoYearSalesData ?? { meta: { getion_1: "", getion_2: "" }, data: [] }}
-                        isErrorData={isErrorTwoYearSalesData}
-                        isFetchingData={isFetchingTwoYearSalesData}
-                    />
+                    <TabsContent value="sales" className="space-y-8">
+                        <ProductSales
+                            isLoadingData={isLoadingTwoYearSalesData}
+                            gestion_1={gestiones.gestion_1}
+                            gestion_2={gestiones.gestion_2}
+                            handleChangeGestion1={handleChangeGestion1}
+                            handleChangeGestion2={handleChangeGestion2}
+                            productSalesData={twoYearSalesData ?? { meta: { getion_1: "", getion_2: "" }, data: [] }}
+                            isErrorData={isErrorTwoYearSalesData}
+                            isFetchingData={isFetchingTwoYearSalesData}
+                        />
+                    </TabsContent>
 
                     {/* Logistics Tab */}
-                    <ProductLogistics
-                        ProductProviderOrders={productProviderOrders ?? []}
-                        isErrorData={isErrorProviderOrders}
-                        isLoadingData={isLoadingProviderOrders}
-                    />
+                    <TabsContent value="logistics" className="space-y-8">
+                        <ProductLogistics
+                            ProductProviderOrders={productProviderOrders ?? []}
+                            isErrorData={isErrorProviderOrders}
+                            isLoadingData={isLoadingProviderOrders}
+                        />
+                    </TabsContent>
 
                 </Tabs>
             </div>

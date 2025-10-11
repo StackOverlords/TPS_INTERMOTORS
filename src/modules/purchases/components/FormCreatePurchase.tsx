@@ -10,32 +10,6 @@ import React from 'react';
 import { useProviders } from '../hooks/useProviders';
 import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
 import { type FormData } from '../hooks/usePurchaseForm';
-// Importación temporal deshabilitada 
-// const tipoCompra = [
-//   {
-//     id:1,
-//     tipo:"Credito"
-//   },
-//   {
-//     id:2,
-//     tipo:"Contado"
-//   },
-//   {
-//     id:3,
-//     tipo:"Cuenta corriente"
-//   }
-// ]
-
-// const forma = [
-//   {
-//     id:1,
-//     forma:"Mayor"
-//   },
-//   {
-//     id:2,
-//     forma:"Menor"
-//   }
-// ]
 interface Props {
   formData: FormData;
   errors: Record<string, string>;

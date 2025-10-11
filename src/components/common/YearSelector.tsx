@@ -67,7 +67,7 @@ export const YearSelector: React.FC<YearSelectorProps> = ({
                         size={'sm'}
                         variant="outline"
                         className={cn(
-                            "w-[200px] justify-between text-left font-normal bg-background",
+                            "max-w-[200px] w-full justify-between text-left font-normal bg-background",
                             !value && "text-muted-foreground"
                         )}
                     >
