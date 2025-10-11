@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useDebounce } from "use-debounce";
 import type { ProductFilters } from "../types/productFilters";
 
@@ -14,22 +14,21 @@ export const useProductFilters = (defaultSucursal: number) => {
         nro_motor: "",
     });
 
-    // Debounce de campos de texto
-    const [debouncedDescripcion] = useDebounce(filters.descripcion ?? "", 500);
-    const [debouncedCodigoOEM] = useDebounce(filters.codigo_oem ?? "", 500);
-    const [debouncedCodigoUPC] = useDebounce(filters.codigo_upc ?? "", 500);
-    const [debouncedMedida] = useDebounce(filters.medida ?? "", 500);
-    const [debouncedNroMotor] = useDebounce(filters.nro_motor ?? "", 500);
+    // Snapshot de filtros para búsqueda manual
+    const [appliedFilters, setAppliedFilters] = useState<ProductFilters>(filters);
 
-    // Filtros con valores debounced para la query
-    const debouncedFilters: ProductFilters = {
-        ...filters,
-        descripcion: debouncedDescripcion || undefined,
-        codigo_oem: debouncedCodigoOEM || undefined,
-        codigo_upc: debouncedCodigoUPC || undefined,
-        medida: debouncedMedida || undefined,
-        nro_motor: debouncedNroMotor || undefined,
-    };
+    // Debounce del objeto completo en lugar de campos individuales
+    const [debouncedFilters] = useDebounce(filters, 500);
+
+    // Filtros con valores limpios para la query (modo realtime)
+    const cleanedDebouncedFilters: ProductFilters = useMemo(() => ({
+        ...debouncedFilters,
+        descripcion: debouncedFilters.descripcion || undefined,
+        codigo_oem: debouncedFilters.codigo_oem || undefined,
+        codigo_upc: debouncedFilters.codigo_upc || undefined,
+        medida: debouncedFilters.medida || undefined,
+        nro_motor: debouncedFilters.nro_motor || undefined,
+    }), [debouncedFilters]);
 
     const updateFilter = useCallback((key: keyof ProductFilters, value: unknown) => {
         setFilters((prev) => ({
@@ -41,10 +40,16 @@ export const useProductFilters = (defaultSucursal: number) => {
 
     const setPage = useCallback((page: number) => {
         setFilters((prev) => ({ ...prev, pagina: page }));
+        setAppliedFilters((prev) => ({ ...prev, pagina: page }));
+    }, []);
+
+    const setPageSize = useCallback((pageSize: number) => {
+        setFilters((prev) => ({ ...prev, pagina_registros: pageSize, pagina: 1 }));
+        setAppliedFilters((prev) => ({ ...prev, pagina_registros: pageSize, pagina: 1 }));
     }, []);
 
     const resetFilters = useCallback(() => {
-        setFilters({
+        const emptyFilters = {
             pagina: 1,
             pagina_registros: 25,
             sucursal: defaultSucursal,
@@ -53,15 +58,25 @@ export const useProductFilters = (defaultSucursal: number) => {
             codigo_upc: "",
             medida: "",
             nro_motor: "",
-        });
+        };
+        setFilters(emptyFilters);
+        setAppliedFilters(emptyFilters);
     }, [defaultSucursal]);
+
+    // Función para aplicar filtros (modo manual)
+    const applyFilters = useCallback(() => {
+        setAppliedFilters({ ...filters });
+    }, [filters]);
 
     return {
         filters,           // Para binding con inputs (valores inmediatos)
-        debouncedFilters,  // Para queries (valores con debounce)
+        debouncedFilters: cleanedDebouncedFilters,  // Para queries en modo realtime (valores con debounce)
+        appliedFilters,    // Para queries en modo manual (snapshot cuando se hace clic en buscar)
         updateFilter,
         setPage,
         resetFilters,
         setFilters,
+        applyFilters,      // Función para aplicar los filtros actuales
+        setPageSize,
     };
 };
