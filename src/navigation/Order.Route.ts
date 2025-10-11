@@ -1,9 +1,9 @@
-import QuotationDetailScreen from "@/modules/quotations/screens/quotationDetailScreen";
 import { Package, ShoppingBag, Table2, Truck } from "lucide-react";
 import type RouteType from "./RouteType";
 import OrderListScreen from "@/modules/orders/screens/orderListScreen";
 import OrderCreateScreen from "@/modules/orders/screens/orderCreateScreen";
 import OrderEditScreen from "@/modules/orders/screens/orderEditScreen";
+import OrderDetailScreen from "@/modules/orders/screens/orderDetailScreen";
 
 const ordersProtectedRoutes: RouteType[] = [
     {
@@ -41,9 +41,9 @@ const ordersProtectedRoutes: RouteType[] = [
             },
             {
                 path: "/dashboard/orders/:id",
-                name: "Detalle de cotizacion",
+                name: "Detalle de Pedido",
                 type: "protected",
-                element: QuotationDetailScreen,
+                element: OrderDetailScreen,
                 isAdmin: true,
                 role: ["admin"],
                 icon: Package,

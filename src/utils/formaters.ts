@@ -13,10 +13,10 @@ export const formatCurrency = (
     } = {}
 ): string => {
     if (amount == null) return fallback;
-
+    const cleanCurrency = currency.replace(/[^A-Z]/g, '');
     return new Intl.NumberFormat(locale, {
         style: "currency",
-        currency,
+        currency: cleanCurrency,
         minimumFractionDigits: 2,
     }).format(amount);
 };

@@ -6,6 +6,7 @@ import {
   getKeybindingsByContext,
   hasPermission
 } from '../config/keybindings.config';
+import { loadKeybindings } from '../services/keybindingsService';
 
 interface KeybindingProviderState {
   // Current active context (e.g., 'forms', 'tables', 'purchases')
@@ -44,6 +45,20 @@ export const KeybindingProvider: React.FC<KeybindingProviderProps> = ({
   const [activeContext, setActiveContext] = useState<string>(initialContext);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [dynamicActions, setDynamicActions] = useState<Record<string, () => void>>({});
+
+  // Cargar keybindings desde DB al iniciar
+  useEffect(() => {
+    const initKeybindings = async () => {
+      try {
+        await loadKeybindings();
+        console.log('✅ Keybindings cargados y migrados');
+      } catch (error) {
+        console.error('❌ Error cargando keybindings:', error);
+      }
+    };
+
+    initKeybindings();
+  }, []);
 
   // Register dynamic action
   const registerAction = useCallback((actionId: string, action: () => void) => {

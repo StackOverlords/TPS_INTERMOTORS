@@ -8,12 +8,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/atoms/dropdown-menu';
 import { Input } from '@/components/atoms/input';
+import { Kbd } from '@/components/atoms/kbd';
 import { Label } from '@/components/atoms/label';
 import ResizableBox from '@/components/atoms/resizable-box';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
 import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
+import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
 import { formatCell } from '@/utils/formatCell';
@@ -60,7 +62,7 @@ const PurchaseListScreen = () => {
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const { filters, updateFilter, setPage, resetFilters } = usePurchaseFilters(
     Number(selectedBranchId) || 1
-  );  
+  );
 
   const {
     data: purchaseData,
@@ -227,7 +229,7 @@ const PurchaseListScreen = () => {
         minSize: 50,
         enableHiding: false,
         cell: ({ row, getValue }) => (
-          <div className="flex items-center gap-1">
+          <div className="flex font-semibold items-center gap-1">
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -262,7 +264,7 @@ const PurchaseListScreen = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
-                    onClick={() => { }}
+                    onClick={() => {}}
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Ver comprobantes
@@ -286,9 +288,20 @@ const PurchaseListScreen = () => {
               </DropdownMenu>
             </div>
             <div className="flex flex-col">
-              <h3 className="font-medium text-gray-900 leading-tight hover:underline truncate">
-                {getValue<string>()}
-              </h3>
+              <TooltipWrapper
+                tooltipContentProps={{
+                  align: 'start',
+                }}
+                tooltip={
+                  <p className="flex gap-1">
+                    Presiona <Kbd>enter</Kbd> para ver los detalles de la compra
+                  </p>
+                }
+              >
+                <h3 className="font-medium text-gray-900 leading-tight hover:underline truncate">
+                  {getValue<string>()}
+                </h3>
+              </TooltipWrapper>
               <span className="text-xs text-gray-500">
                 ID: {row.original.id}
               </span>
@@ -314,12 +327,15 @@ const PurchaseListScreen = () => {
         minSize: 180,
         cell: ({ row }) => {
           const proveedor = row.original.proveedor;
+          if (!proveedor) {
+            return <div className="text-gray-400 italic">Sin proveedor</div>;
+          }
           return (
-            <div className="space-y-1">
-              <div className="font-medium text-blue-600">
+            <div className="space-y-1 font-bold">
+              <div className="text-blue-600">
                 {proveedor.proveedor}
               </div>
-              <div className="text-xs text-gray-500">ID: {proveedor.id}</div>
+              <div className="text-xs text-gray-800">ID: {proveedor.id}</div>
               {proveedor.nit && (
                 <div className="text-xs text-gray-500 font-mono">
                   NIT: {proveedor.nit}
@@ -373,18 +389,18 @@ const PurchaseListScreen = () => {
           return (
             <div className="flex flex-wrap gap-1">
               {comprobantesList.map((comprobante, index) => {
-              const isMediumLong = comprobante.length > 14; // ajusta el umbral si quieres
-              return (
-                <Badge
-                key={index}
-                variant="outline"
-                className={`text-xs font-mono border-gray-300 ${
-                  isMediumLong ? 'basis-full' : 'basis-auto'
-                }`}
-                >
-                {comprobante}
-                </Badge>
-              );
+                const isMediumLong = comprobante.length > 14; // ajusta el umbral si quieres
+                return (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className={`text-xs font-mono border-gray-300 ${
+                      isMediumLong ? 'basis-full' : 'basis-auto'
+                    }`}
+                  >
+                    {comprobante}
+                  </Badge>
+                );
               })}
             </div>
           );
@@ -421,8 +437,9 @@ const PurchaseListScreen = () => {
           const comentarios = getValue<string>();
           return (
             <div
-              className={`text-xs ${!comentarios ? 'italic text-gray-400' : ''
-                }`}
+              className={`text-xs ${
+                !comentarios ? 'italic text-gray-400' : ''
+              }`}
             >
               {formatCell(comentarios, 'Sin comentarios')}
             </div>
@@ -528,8 +545,9 @@ const PurchaseListScreen = () => {
                 className="w-8"
               >
                 <RefreshCcw
-                  className={`size-4 ${isRefetchingPurchases || isFetching ? 'animate-spin' : ''
-                    }`}
+                  className={`size-4 ${
+                    isRefetchingPurchases || isFetching ? 'animate-spin' : ''
+                  }`}
                 />
               </Button>
 
@@ -557,12 +575,18 @@ const PurchaseListScreen = () => {
             <span className="text-red-600">Error al cargar los datos</span>
           ) : purchases.length > 0 ? (
             isInfiniteScroll ? (
-              `Mostrando ${purchases.length} de ${purchaseData?.meta.total || 0} compras`
+              `Mostrando ${purchases.length} de ${
+                purchaseData?.meta.total || 0
+              } compras`
             ) : (
-              `Mostrando ${(purchaseData?.meta.from || 0)} - ${(purchaseData?.meta.to || 0)} de ${purchaseData?.meta.total || 0} compras`
+              `Mostrando ${purchaseData?.meta.from || 0} - ${
+                purchaseData?.meta.to || 0
+              } de ${purchaseData?.meta.total || 0} compras`
             )
           ) : (
-            <span className="text-amber-600">No se encontraron compras para la sucursal actual</span>
+            <span className="text-amber-600">
+              No se encontraron compras para la sucursal actual
+            </span>
           )}
 
           <div className="flex items-center gap-2">

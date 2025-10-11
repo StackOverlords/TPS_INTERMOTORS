@@ -34,7 +34,8 @@ export const OrderDetailGetByIdSchema = z.object({
 
 export const OrderByIdSchema = z.object({
     id: z.number(),
-    fecha: z.coerce.date(),
+    // fecha: z.coerce.date(),
+    fecha: z.string(),
     nro: z.string(),
     tipo_pedido: z.string(),
     forma_pedido: z.string(),

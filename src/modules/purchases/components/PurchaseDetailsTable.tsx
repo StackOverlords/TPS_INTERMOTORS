@@ -1,9 +1,8 @@
 import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
-import { Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import DialogSearchDetails from './DialogSearchDetails';
 
 interface PurchaseDetail {
   id?: number; // ID del detalle (para edición)
@@ -88,8 +87,6 @@ interface Props {
 }
 
 const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [editing, setEditing] = useState<{ row: number; col: number } | null>(
     null
   );
@@ -327,20 +324,6 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
 
   // Hotkeys para navegación y acciones globales - shortcuts simplificados
   useHotkeys(
-    'ctrl+m',
-    e => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsSearchOpen(true);
-    },
-    {
-      enableOnFormTags: true,
-      preventDefault: true,
-      enableOnContentEditable: true,
-    }
-  );
-
-  useHotkeys(
     'escape',
     () => {
       if (editing) {
@@ -541,16 +524,6 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
     }
   };
 
-  const handleProductAdded = (productId: string) => {
-    // Encontrar el índice del producto recién agregado
-    const newProductIndex = normalizedDetalles.findIndex(
-      d => d.id_producto === productId
-    );
-    if (newProductIndex !== -1) {
-      setSelectedRow(newProductIndex);
-    }
-  };
-
   const formatValue = (
     value: number,
     format: 'currency' | 'percentage' | 'number'
@@ -629,41 +602,19 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
 
   return (
     <div
-      className="p-4 bg-white border border-gray-200 rounded-lg"
+      className="p-4 bg-white border border-gray-200 rounded-lg h-full flex flex-col"
       ref={tableRef}
     >
-      <DialogSearchDetails
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        details={normalizedDetalles}
-        setDetails={setDetalles}
-        isSearchOpen={isSearchOpen}
-        setIsSearchOpen={setIsSearchOpen}
-        onProductAdded={handleProductAdded}
-      />
-
       {/* Header con indicadores de shortcuts */}
-      <div className="p-2 border-b border-gray-200">
+      <div className="p-2 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className="text-sm font-semibold text-gray-900">
             Detalle de Compra
           </span>
           <div className="flex items-center gap-2">
             <div className="text-xs text-gray-500 hidden sm:block">
-              Ctrl+M: Agregar | ↑↓: Navegar | Ctrl+Enter: Editar | Del: Eliminar
+              ↑↓: Navegar | Ctrl+Enter: Editar | Del: Eliminar
             </div>
-            <Button
-              onClick={() => setIsSearchOpen(true)}
-              variant="outline"
-              size="sm"
-              className="bg-black text-white"
-            >
-              <Plus className="w-4 h-4 mr-2 text-white" />
-              Agregar Producto{' '}
-              <span className="text-xs text-white ml-1 opacity-60">
-                (Ctrl+M)
-              </span>
-            </Button>
           </div>
         </div>
       </div>
@@ -835,16 +786,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
           <p className="text-sm text-gray-600">
             No hay productos en el detalle.
           </p>
-          <Button
-            onClick={() => setIsSearchOpen(true)}
-            variant="outline"
-            size="sm"
-            className="mt-4 hover:bg-gray-50"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Agregar Producto{' '}
-            <span className="text-xs ml-1 opacity-60">(Ctrl+M)</span>
-          </Button>
+          <p className="text-xs text-gray-500 mt-2">
+            Usa el panel de la izquierda para buscar y agregar productos
+          </p>
         </div>
       )}
     </div>

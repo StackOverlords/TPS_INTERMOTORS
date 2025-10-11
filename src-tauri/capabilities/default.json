@@ -11,6 +11,10 @@
     "updater:default",
     "updater:allow-check",
     "updater:allow-download-and-install",
-    "process:default"
+    "process:default",
+    "sql:allow-load",
+    "sql:default",
+    "sql:allow-execute",
+    "sql:allow-select"
   ]
 }

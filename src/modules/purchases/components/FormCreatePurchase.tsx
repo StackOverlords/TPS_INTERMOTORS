@@ -2,8 +2,9 @@ import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
+// import { useFormKeybindings } from '@/hooks/useFormKeybindings';
+import { ComboboxSelect } from '@/components/common/SelectCombobox';
 import { useBasicFormKeybindings } from '@/hooks/keyBindings/useBasicFormKeybindings';
-import { ComboboxSelect } from '@/modules/products/components/SelectCombobox';
 import { HelpCircle, ShoppingBag } from 'lucide-react';
 import React from 'react';
 import { useProviders } from '../hooks/useProviders';
@@ -40,8 +41,8 @@ const FormCreatePurchase: React.FC<Props> = ({
 
   const inputClass = (f: string) =>
     errors[f]
-      ? 'h-8 text-sm border-red-500 focus:border-red-500'
-      : 'h-8 text-sm';
+      ? 'text-sm border-red-500 focus:border-red-500'
+      : 'text-sm';
 
   // Helper para formatear la fecha a YYYY-MM-DD
   const formatDate = (date: string) => {
@@ -120,7 +121,18 @@ const FormCreatePurchase: React.FC<Props> = ({
           </span>
         </TooltipWrapper>
       </div>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 items-end">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end">
+        <div className="flex flex-col">
+          <Label className="text-xs font-medium mb-1">Fecha *</Label>
+          <Input
+            type="date"
+            value={formatDate(formData.fecha)}
+            onChange={e => onChange('fecha', e.target.value)}
+            onBlur={() => onBlur('fecha')}
+            className={inputClass('fecha')}
+          />
+          {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha}</p>}
+        </div>
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">Proveedor *</Label>
           <ComboboxSelect
@@ -136,17 +148,6 @@ const FormCreatePurchase: React.FC<Props> = ({
           {errors.id_proveedor && <p className="text-xs text-red-500 mt-1">{errors.id_proveedor}</p>}
         </div>
 
-        <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Fecha *</Label>
-          <Input
-            type="date"
-            value={formatDate(formData.fecha)}
-            onChange={e => onChange('fecha', e.target.value)}
-            onBlur={() => onBlur('fecha')}
-            className={inputClass('fecha')}
-          />
-          {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha}</p>}
-        </div>
 
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">Nro comprobante *</Label>
@@ -225,7 +226,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             onChange={e => onChange('comentario', e.target.value)}
             onBlur={() => onBlur('comentario')}
             placeholder="Comentarios adicionales"
-            rows={2}
+            rows={1}
             className="p-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
           />
         </div>
