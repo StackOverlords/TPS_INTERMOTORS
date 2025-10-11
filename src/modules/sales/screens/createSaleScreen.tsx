@@ -8,7 +8,6 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import TableShoppingCart from "@/modules/shoppingCart/components/tableShoppingCart";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
@@ -30,6 +29,8 @@ import { useSaleResponsibles } from "../hooks/useSaleResponsibles";
 import { useSaleTypes } from "../hooks/useSaleTypes";
 import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
+import ResizableBox from "@/components/atoms/resizable-box";
 
 const CreateSaleScreen = () => {
     const navigate = useNavigate();
@@ -99,7 +100,6 @@ const CreateSaleScreen = () => {
         formState: { errors }
     } = methods
 
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const {
         items,
         getCartSubtotal,
@@ -110,7 +110,6 @@ const CreateSaleScreen = () => {
         setDiscountPercent,
         clearCart,
         addItemToCart,
-        addMultipleItems,
         validateCartWithToast
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
     const subtotal = getCartSubtotal();
@@ -265,9 +264,6 @@ const CreateSaleScreen = () => {
         addItemToCart(product)
     };
 
-    const handleAddMultipleProducts = (products: ProductGet[]) => {
-        addMultipleItems(products);
-    };
 
     // FUNCIÓN onSubmit corregida
     const onSubmit = (data: Sale) => {
@@ -583,19 +579,36 @@ const CreateSaleScreen = () => {
                     </Card>
 
                     {/* 2. Productos */}
+                    <div className="flex-1 overflow-auto flex flex-col">
+                        {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
+                        <div className="flex-shrink-0">
+                            <ResizableBox
+                                direction="vertical"
+                                minSize={'100px'}
+                                initialSize={'350px'}
+                            >
+                                <ProductSearchPanel
+                                    selectedProducts={items}
+                                    onProductSelect={handleAddProductItem}
+                                />
+                            </ResizableBox>
+                        </div>
+                    </div>
+
                     <Card className="shadow-none">
-                        <CardHeader className="pb-4">
-                            <CardTitle>
-                                <ProductSelectorModal
+                        <CardHeader>
+                            <CardTitle className="text-base">
+                                Detalle de Venta
+                                {/* <ProductSelectorModal
                                     isSearchOpen={isSearchOpen}
                                     setIsSearchOpen={setIsSearchOpen}
                                     addItem={handleAddProductItem}
                                     onlyWithStock={true}
                                     addMultipleItem={handleAddMultipleProducts}
-                                />
+                                /> */}
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="-mt-4">
                             <div className="space-y-2">
                                 {items.length === 0 ? (
                                     <div className="text-center py-8 text-gray-500">

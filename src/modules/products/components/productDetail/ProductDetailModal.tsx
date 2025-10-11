@@ -122,7 +122,7 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
                 {
                     isErrorProduct || !(Number(productId)) ? (
                         <ErrorDataComponent
-                            errorMessage="No se pudo cargar el producto de dialogo. Por favor, inténtalo de nuevo más tarde."
+                            errorMessage="No se pudo cargar el producto. Por favor, inténtalo de nuevo más tarde."
                             showButtonIcon={false}
                             onRetry={handleRetry}
                         />

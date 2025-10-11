@@ -476,6 +476,7 @@ const ResizableBox: React.FC<ResizableBoxProps> = ({
                 >
                     <div
                         className={cn(
+                            "z-50",
                             `${direction === "both" ? "rounded-xs group opacity-80" : "rounded-full transition-all duration-200"}`,
                             isResizing ? "bg-gray-700 shadow-lg scale-105 opacity-100" : "bg-gray-400 hover:bg-gray-500 hover:shadow-md",
                         )}

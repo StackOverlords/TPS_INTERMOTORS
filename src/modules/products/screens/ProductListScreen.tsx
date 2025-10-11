@@ -791,6 +791,7 @@ const ProductListScreen = () => {
                                         <div className="space-y-1 text-gray-600 text-xs">
                                             <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de producto </p>
                                             <p> <ShortcutKey combo={hotkeys.secondaryAction ?? ''} /> Agregar al carrito </p>
+                                            <p> <ShortcutKey combo={'ctrl+d'} /> Abrir modal de producto </p>
                                             {/* <p className="text-red-600">
                                                 <ShortcutKey combo={hotkeys.deleteAction ?? ''} /> Eliminar del carrito
                                             </p> */}
