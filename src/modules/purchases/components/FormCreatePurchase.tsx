@@ -2,7 +2,6 @@ import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-// import { useFormKeybindings } from '@/hooks/useFormKeybindings';
 import { useBasicFormKeybindings } from '@/hooks/keyBindings/useBasicFormKeybindings';
 import { ComboboxSelect } from '@/modules/products/components/SelectCombobox';
 import { HelpCircle, ShoppingBag } from 'lucide-react';
@@ -10,32 +9,6 @@ import React from 'react';
 import { useProviders } from '../hooks/useProviders';
 import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
 import { type FormData } from '../hooks/usePurchaseForm';
-// Importación temporal deshabilitada 
-// const tipoCompra = [
-//   {
-//     id:1,
-//     tipo:"Credito"
-//   },
-//   {
-//     id:2,
-//     tipo:"Contado"
-//   },
-//   {
-//     id:3,
-//     tipo:"Cuenta corriente"
-//   }
-// ]
-
-// const forma = [
-//   {
-//     id:1,
-//     forma:"Mayor"
-//   },
-//   {
-//     id:2,
-//     forma:"Menor"
-//   }
-// ]
 interface Props {
   formData: FormData;
   errors: Record<string, string>;

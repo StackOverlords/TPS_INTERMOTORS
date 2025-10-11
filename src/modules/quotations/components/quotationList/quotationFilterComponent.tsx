@@ -215,11 +215,14 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
                                             {fechaInicio ? format(fechaInicio, "dd/MM/yyyy") : "Seleccionar fecha"}
                                         </div>
                                         {fechaInicio && (
-                                            <span className="border border-gray-200 rounded hover:scale-110 transition-all hover:bg-red-200 hover:text-red-400"
+                                            <Button
+                                                type="button"
+                                                variant="outline"
                                                 onClick={() => clearDateFilter('inicio')}
+                                                className="size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
                                             >
-                                                <X className="size-4" />
-                                            </span>
+                                                <X className="size-3" />
+                                            </Button>
                                         )}
                                     </Button>
                                 </PopoverTrigger>
@@ -263,11 +266,14 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
                                             {fechaFin ? format(fechaFin, "dd/MM/yyyy") : "Seleccionar fecha"}
                                         </div>
                                         {fechaFin && (
-                                            <span className="border border-gray-200 rounded hover:scale-110 transition-all hover:bg-red-200 hover:text-red-400"
+                                            <Button
+                                                type="button"
+                                                variant="outline"
                                                 onClick={() => clearDateFilter('fin')}
+                                                className="size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
                                             >
-                                                <X className="size-4" />
-                                            </span>
+                                                <X className="size-3" />
+                                            </Button>
                                         )}
                                     </Button>
                                 </PopoverTrigger>

@@ -15,6 +15,8 @@ import type { OrderGetAll } from "../types/orderGet.types";
 import { useOrdersFilters } from "../hooks/useOrdersFilters";
 import { useOrdersGetAll } from "../hooks/useOrdersGetAll";
 import { useDeleteOrder } from "../hooks/useDeleteOrder";
+import OrdersFiltersComponent from "../components/orderList/orderFilterComponent";
+import OrdersListTable from "../components/orderList/orderListTable";
 
 const OrderListScreen = () => {
     const { selectedBranchId } = useBranchStore()
@@ -165,7 +167,7 @@ const OrderListScreen = () => {
                     showFilters && (
                         <>
                             <Separator />
-                            <QuotationsFiltersComponent
+                            <OrdersFiltersComponent
                                 filters={filters}
                                 updateFilter={updateFilter}
                             />
@@ -175,7 +177,7 @@ const OrderListScreen = () => {
             </header>
 
             <div className="bg-white rounded-lg border border-gray-200 space-y-2">
-                <QuotationsListTable
+                <OrdersListTable
                     data={orderData || { data: [], meta: null, links: null }}
                     filters={filters}
                     isError={isError}

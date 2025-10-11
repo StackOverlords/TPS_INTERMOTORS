@@ -3,3 +3,12 @@ import type { OrderCreateSchema, OrderDetailCreateSchema } from "../schemas/orde
 
 export type OrderCreate = z.infer<typeof OrderCreateSchema>;
 export type OrderDetailCreate = z.infer<typeof OrderDetailCreateSchema>;
+export interface UIOrderDetailCreate extends OrderDetailCreate {
+    product: {
+        id: number
+        descripcion: string
+        codigo_oem: string | null,
+        codigo_upc: string | null,
+        precio_venta: number,
+    };
+}

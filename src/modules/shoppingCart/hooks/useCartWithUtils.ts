@@ -33,7 +33,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
     const incrementQuantity = useCallback((productId: number) => {
         const currentQuantity = state.getItemQuantity(productId);
         state.updateQuantity(productId, currentQuantity + 1);
-    }, [state]);
+    }, [state.getItemQuantity, state.updateQuantity]);
 
     const decrementQuantity = useCallback((productId: number) => {
         const currentQuantity = state.getItemQuantity(productId);
@@ -42,7 +42,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         } else {
             state.removeItem(productId);
         }
-    }, [state]);
+    }, [state.getItemQuantity, state.updateQuantity, state.removeItem]);
 
     const addItemToCart = useCallback((product: ProductGet): CartOperationResult => {
         const productForCart = CartProductSchema.parse(product)
@@ -63,7 +63,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state]);
+    }, [state.addItem]);
 
     const updateQuantity = useCallback((productId: number, quantity: number): CartOperationResult => {
         const result = state.updateQuantity(productId, quantity);
@@ -77,15 +77,15 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state]);
+    }, [state.updateQuantity]);
 
     const updateCustomDescription = useCallback((productId: number, description: string) => {
         state.updateCustomDescription(productId, description);
-    }, [state]);
+    }, [state.updateCustomDescription]);
 
     const updateCustomBrand = useCallback((productId: number, brand: string) => {
         state.updateCustomBrand(productId, brand)
-    }, [state])
+    }, [state.updateCustomBrand])
 
     const addMultipleItems = useCallback((products: ProductGet[]): BulkAddResult => {
         let totalAdded = 0;
@@ -139,7 +139,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return bulkResult;
-    }, [state]);
+    }, [state.addItem]);
 
     const addItemWithQuantity = useCallback((product: ProductGet, quantity: number): CartOperationResult => {
         const productForCart = CartProductSchema.parse(product)
@@ -209,7 +209,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state]);
+    }, [state.addItem, state.getItemQuantity]);
 
     const validateCartWithToast = useCallback(() => {
         const validation = state.validateCart();
@@ -227,7 +227,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return validation;
-    }, [state]);
+    }, [state.validateCart]);
 
     const removeOutOfStockItems = useCallback((): CartOperationResult => {
         const validation = state.validateCart();
@@ -249,7 +249,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             success: true,
             message: `Se removieron ${outOfStockItems.length} productos sin stock`
         };
-    }, [state]);
+    }, [state.validateCart, state.removeItem]);
 
     const adjustQuantitiesToStock = useCallback((): CartOperationResult => {
         const validation = state.validateCart();
@@ -275,7 +275,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             success: true,
             message: `Se ajustaron ${adjustedCount} productos`
         };
-    }, [state]);
+    }, [state.validateCart, state.updateQuantity]);
 
     const getCartSummary = useCallback((): CartSummary => {
         return {
@@ -285,7 +285,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             total: state.getCartTotal(),
             itemsLength: state.items.length
         };
-    }, [state]);
+    }, [state.getCartCount, state.getCartSubtotal, state.getDiscountAmount, state.getCartTotal, state.items.length]);
 
     return {
         // Estado original

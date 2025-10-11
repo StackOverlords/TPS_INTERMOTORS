@@ -1,5 +1,5 @@
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema";
-import { moneySchema, requiredMoneySchema } from "@/modules/shared/schemas/numberSchemas";
+import { requiredMoneySchema, toNumberOrNull } from "@/modules/shared/schemas/numberSchemas";
 import z from "zod";
 
 export const SupplierSchema = z.object({
@@ -10,16 +10,25 @@ export const SupplierSchema = z.object({
     contacto: z.string().nullable(),
 });
 
+const ResponsableSchema = z.object({
+    apellido_materno: z.string().nullable(),
+    apellido_paterno: z.string().nullable(),
+    celular: z.string().nullable(),
+    dni: z.number().nullable(),
+    id: z.number(),
+    nombre: z.string(),
+});
+
 export const OrderDetailGetByIdSchema = z.object({
     id: z.number(),
     producto: ProductDetailSchema,
-    cantidad: moneySchema,
-    costo: moneySchema,
+    cantidad: requiredMoneySchema,
+    costo: requiredMoneySchema,
     inc_precio_venta: requiredMoneySchema,
     precio_venta: requiredMoneySchema,
     inc_precio_venta_alt: requiredMoneySchema,
     precio_venta_alt: requiredMoneySchema,
-    orden: z.number().nullable(),
+    orden: toNumberOrNull,
     moneda: z.string()
 })
 
@@ -33,7 +42,7 @@ export const OrderByIdSchema = z.object({
     comentarios: z.string().nullable(),
     situacion_actual: z.string(),
     proveedor: SupplierSchema,
-    responsable: z.string().nullable(),
+    responsable: ResponsableSchema.nullable(),
     cantidad_detalles: z.number(),
     detalles: z.array(OrderDetailGetByIdSchema)
 });

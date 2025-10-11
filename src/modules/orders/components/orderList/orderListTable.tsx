@@ -9,36 +9,52 @@ import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
-import type { useSalesFilters } from "@/modules/sales/hooks/useSalesFilters";
 import authSDK from "@/services/sdk-simple-auth";
 import { formatCurrency } from "@/utils/formaters";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Settings, Trash2 } from "lucide-react";
+import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, User, Settings, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
-import type { QuotationGetAll, QuotationGetAllResponse } from "../../types/quotationGet.types";
+import type { OrderGetAll, OrderGetAllResponse } from "../../types/orderGet.types";
+import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
 
-interface QuotationsListTableProps {
-    data: QuotationGetAllResponse
-    quotations: QuotationGetAll[]
-    filters: ReturnType<typeof useSalesFilters>["filters"]
-    setPage: ReturnType<typeof useSalesFilters>["setPage"]
-    updateFilter: ReturnType<typeof useSalesFilters>["updateFilter"]
+interface OrdersListTableProps {
+    data: OrderGetAllResponse
+    orders: OrderGetAll[]
+    filters: ReturnType<typeof useOrdersFilters>["filters"]
+    setPage: ReturnType<typeof useOrdersFilters>["setPage"]
+    updateFilter: ReturnType<typeof useOrdersFilters>["updateFilter"]
     isInfiniteScroll: boolean
     isLoading: boolean
     isFetching: boolean,
     isError: boolean,
-    handleDeleteSale: (quotationId: number) => void
+    handleDeleteSale: (id: number) => void
 }
 
-const getColumnVisibilityKey = (userName: string) => `quotations-columns-${userName}`;
+const getColumnVisibilityKey = (userName: string) => `orders-columns-${userName}`;
+const getStatusBadge = (estado: string) => {
+    switch (estado) {
+        case 'Preparación':
+            return "secondary"
+        case 'Cotización':
+            return "info"
+        case 'Tránsito':
+            return "warning"
+        case 'Almacén':
+            return "accent"
+        case 'Disponible':
+            return "success"
+        default:
+            return "default"
+    }
+};
 
-const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
+const OrdersListTable: React.FC<OrdersListTableProps> = ({
     data,
-    quotations,
+    orders,
     filters,
     setPage,
     updateFilter,
@@ -79,15 +95,15 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         }
     }, [columnVisibility, user?.name]);
 
-    const handleSeeDetails = useCallback((quotationId: number) => {
-        navigate(`/dashboard/quotations/${quotationId}`)
+    const handleSeeDetails = useCallback((id: number) => {
+        navigate(`/dashboard/orders/${id}`)
     }, [navigate])
 
-    const handleUpdateQuotation = useCallback((quotationId: number) => {
-        navigate(`/dashboard/quotations/${quotationId}/update`)
+    const handleUpdateOrder = useCallback((id: number) => {
+        navigate(`/dashboard/orders/${id}/update`)
     }, [navigate])
 
-    const columns = useMemo<ColumnDef<QuotationGetAll>[]>(() => [
+    const columns = useMemo<ColumnDef<OrderGetAll>[]>(() => [
         {
             id: "Select",
             header: ({ table }) => (
@@ -117,8 +133,8 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             minSize: 40,
         },
         {
-            accessorKey: "nro_cotizacion",
-            header: "Nro. Cotizacion",
+            accessorKey: "nro_pedido",
+            header: "Nro. Pedido",
             size: 120,
             minSize: 100,
             enableHiding: false,
@@ -158,9 +174,9 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateQuotation(row.original.id)}>
+                                    onClick={() => handleUpdateOrder(row.original.id)}>
                                     <Edit className="size-4 mr-2" />
-                                    Editar cotizacion
+                                    Editar pedido
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={e => e.stopPropagation()}
@@ -168,7 +184,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                     <Trash2 className="size-4 mr-2" />
-                                    Eliminar cotizacion
+                                    Eliminar pedido
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -178,7 +194,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                             align: 'start'
                         }}
                         tooltip={
-                            <p className="flex gap-1">Presiona <Kbd>enter</Kbd> para ver los detalles de la cotizacion</p>
+                            <p className="flex gap-1">Presiona <Kbd>enter</Kbd> para ver los detalles del pedido</p>
                         }
                     >
                         <div className="space-y-1 flex flex-col">
@@ -192,8 +208,8 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         {
             accessorKey: "fecha",
             header: "Fecha",
-            size: 140,
-            minSize: 120,
+            size: 100,
+            minSize: 90,
             cell: ({ getValue }) => {
                 const dateString = getValue<string>();
 
@@ -218,22 +234,72 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             },
         },
         {
-            accessorKey: "cliente",
-            header: "Cliente",
+            accessorKey: "fecha_transito",
+            header: "Fecha Tránsito",
+            size: 100,
+            minSize: 90,
+            cell: ({ getValue }) => {
+                let dateString = getValue<string>();
+                dateString = dateString ?? "Pendiente"
+
+                try {
+                    const date = new Date(dateString);
+                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+                    return (
+                        <div className="text-center text-xs">
+                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
+                                {format(date, "dd/MM/yyyy", { locale: es })}
+                            </div>
+                        </div>
+                    );
+                } catch {
+                    return <div className="text-xs text-muted-foreground italic text-center">{dateString}</div>;
+                }
+            },
+        },
+        {
+            accessorKey: "fecha_llegada",
+            header: "Fecha Llegada",
+            size: 100,
+            minSize: 90,
+            cell: ({ getValue }) => {
+                let dateString = getValue<string>();
+                dateString = dateString ?? "Pendiente"
+
+                try {
+                    const date = new Date(dateString);
+                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+                    return (
+                        <div className="text-center text-xs">
+                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
+                                {format(date, "dd/MM/yyyy", { locale: es })}
+                            </div>
+                        </div>
+                    );
+                } catch {
+                    return <div className="text-xs text-muted-foreground italic text-center">{dateString}</div>;
+                }
+            },
+        },
+        {
+            accessorKey: "proveedor",
+            header: "Proveedor",
             size: 250,
             minSize: 200,
             cell: ({ row }) => {
-                const cliente = row.original.cliente;
+                const proveedor = row.original.proveedor;
                 return (
                     <div className="space-y-1 flex flex-col">
-                        <span className={`${!cliente ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>
-                            {cliente?.cliente || "Sin cliente"}
+                        <span className={`${!proveedor ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>
+                            {proveedor?.proveedor || "Sin proveedor"}
                         </span>
                         {
-                            cliente &&
-                            <div className="text-xs text-muted-foreground space-y-0.5">
-                                {cliente.nit && <div>NIT: {cliente.nit}</div>}
-                                {cliente.contacto && <div>Tel: {cliente.contacto}</div>}
+                            proveedor &&
+                            <div className="text-xs text-muted-foreground flex items-center gap-3">
+                                {proveedor.nit && <div>NIT: {proveedor.nit}</div>}
+                                {proveedor.contacto && <div className="flex gap-1 items-center"><User className="size-3"/> {proveedor.contacto}</div>}
                             </div>
                         }
                     </div>
@@ -260,6 +326,35 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             },
         },
         {
+            accessorKey: "total",
+            header: "Total",
+            size: 120,
+            minSize: 100,
+            cell: ({ getValue, row }) => {
+                const items = row.original.numero_items;
+                return (
+                    <div className="flex flex-col space-y-0.5 items-end">
+                        <span className=" font-medium text-green-600">{formatCurrency(getValue<number>())}</span>
+                        <span className="text-muted-foreground">{items} items</span>
+                    </div>
+                )
+            }
+        },
+        {
+            accessorKey: "situacion_actual",
+            header: "Estado",
+            size: 110,
+            minSize: 100,
+            cell: ({ getValue }) => {
+                const situacion = getValue<string>();
+                return (
+                    <Badge variant={getStatusBadge(situacion)} className="w-max">
+                        {situacion}
+                    </Badge>
+                );
+            },
+        },
+        {
             accessorKey: "contexto",
             header: "Contexto",
             size: 120,
@@ -276,17 +371,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                     </div>
                 );
             },
-        },
-        {
-            accessorKey: "total",
-            header: "Total",
-            size: 120,
-            minSize: 100,
-            cell: ({ getValue }) => (
-                <div className="text-right font-medium text-green-600">
-                    {formatCurrency(getValue<number>())}
-                </div>
-            ),
         },
         {
             accessorKey: "comprobantes",
@@ -337,10 +421,10 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                 );
             },
         },
-    ], [handleSeeDetails, handleUpdateQuotation, handleDeleteSale]);
+    ], [handleSeeDetails, handleUpdateOrder, handleDeleteSale]);
 
-    const table = useReactTable<QuotationGetAll>({
-        data: quotations,
+    const table = useReactTable<OrderGetAll>({
+        data: orders,
         columns,
         state: {
             columnVisibility,
@@ -362,8 +446,8 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         isFocused,
         // setIsFocused: setIsFocusedTable,
         hotkeys
-    } = useKeyboardNavigation<QuotationGetAll, HTMLTableElement>({
-        items: quotations,
+    } = useKeyboardNavigation<OrderGetAll, HTMLTableElement>({
+        items: orders,
         containerRef: tableRef,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)
@@ -374,7 +458,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         setSelectedIndex(index);
     };
 
-    const handleRowDoubleClick = (quotation: QuotationGetAll) => {
+    const handleRowDoubleClick = (quotation: OrderGetAll) => {
         handleSeeDetails(quotation.id)
     };
 
@@ -393,9 +477,9 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             {/* Results Info */}
             <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
                 {
-                    quotations.length > 0 ? (
+                    orders.length > 0 ? (
                         isInfiniteScroll ? (
-                            `Mostrando ${quotations.length} de ${data?.meta?.total} cotizaciones`
+                            `Mostrando ${orders.length} de ${data?.meta?.total} pedidos`
                         ) : (
                             (() => {
                                 const pagina = filters.pagina ?? 1;
@@ -404,7 +488,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                 const inicio = (pagina - 1) * porPagina + 1;
                                 const fin = pagina * porPagina;
 
-                                return `Mostrando ${inicio} - ${fin} de ${data?.meta?.total} cotizaciones`;
+                                return `Mostrando ${inicio} - ${fin} de ${data?.meta?.total} pedidos`;
                             })()
                         )
                     ) : (
@@ -486,7 +570,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                 <div className="space-y-1.5">
                                     <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
                                     <div className="space-y-1 text-gray-600 text-xs">
-                                        <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de cotizacion </p>
+                                        <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de pedido </p>
                                     </div>
                                 </div>
                             </div>
@@ -501,13 +585,13 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
 
             {isInfiniteScroll ? (
                 <InfiniteScroll
-                    dataLength={quotations.length}
+                    dataLength={orders.length}
                     next={() => setPage((filters.pagina || 1) + 1)}
-                    hasMore={quotations.length < ((data?.meta?.total ?? 0))}
+                    hasMore={orders.length < ((data?.meta?.total ?? 0))}
                     loader={
                         <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
                             <Loader2 className="size-4 animate-spin" />
-                            Cargando más cotizaciones...
+                            Cargando más pedidos...
                         </div>
                     }
                     scrollableTarget="main-scroll-container"
@@ -515,10 +599,10 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                     <CustomizableTable
                         table={table}
                         isError={isError}
-                        errorMessage="Ocurrió un error al cargar las cotizaciones"
+                        errorMessage="Ocurrió un error al cargar los pedidos"
                         isLoading={isLoading}
                         rows={filters.pagina_registros}
-                        noDataMessage="No se encontraron cotizaciones"
+                        noDataMessage="No se encontraron pedidos"
                         selectedRowIndex={selectedIndex}
                         onRowClick={handleRowClick}
                         onRowDoubleClick={handleRowDoubleClick}
@@ -537,8 +621,8 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                             isError={isError}
                             isFetching={isFetching}
                             isLoading={isLoading}
-                            errorMessage="Ocurrió un error al cargar las cotizaciones"
-                            noDataMessage="No se encontraron cotizaciones"
+                            errorMessage="Ocurrió un error al cargar los pedidos"
+                            noDataMessage="No se encontraron pedidos"
                             rows={filters.pagina_registros}
                             selectedRowIndex={selectedIndex}
                             onRowClick={handleRowClick}
@@ -568,4 +652,4 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     );
 }
 
-export default QuotationsListTable;
+export default OrdersListTable;

@@ -140,6 +140,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
     setError('');
     onEditConfirm?.(parsedValue);
     onSubmit(parsedValue);
+    inputRef.current?.blur();
   };
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import type RouteType from "./RouteType";
 import salesProtectedRoutes from "./Sales.Route";
 import settingsProtectedRoutes from "./Settings.Route";
 import usersProtectedRoutes from "./Users.Route";
+import ordersProtectedRoutes from "./Order.Route";
 
 const protectedRoutes: RouteType[] = [
   {
@@ -25,7 +26,8 @@ const protectedRoutes: RouteType[] = [
   ...purchasesProtectedRoutes,
   ...salesProtectedRoutes,
   ...quotationsProtectedRoutes,
-  ...settingsProtectedRoutes
+  ...settingsProtectedRoutes,
+  ...ordersProtectedRoutes,
 ];
 
 export default protectedRoutes;
