@@ -94,6 +94,7 @@ const Pagination: React.FC<PaginationProps> = ({
             <div className="flex items-center gap-1 text-xs sm:text-sm">
                 {/* Previous button */}
                 <Button
+                    type='button'
                     variant="outline"
                     onClick={handlePrevious}
                     disabled={currentPage === 1}
@@ -111,6 +112,7 @@ const Pagination: React.FC<PaginationProps> = ({
                             </span>
                         ) : (
                             <Button
+                                type='button'
                                 variant={page === currentPage ? "default" : 'outline'} size="sm"
                                 onClick={() => handlePageClick(page)}
                                 className="cursor-pointer min-w-8"
@@ -123,6 +125,7 @@ const Pagination: React.FC<PaginationProps> = ({
 
                 {/* Next button */}
                 <Button
+                    type='button'
                     variant="outline"
                     onClick={handleNext}
                     disabled={currentPage === totalPages}
