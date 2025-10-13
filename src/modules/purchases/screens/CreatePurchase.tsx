@@ -83,7 +83,7 @@ const CreatePurchase: React.FC = () => {
         </div>
 
         {/* Layout horizontal (en filas) */}
-        <div className="flex-1 px-4 py-4 overflow-auto flex flex-col gap-4">
+        <div className="flex-1 px-4 py-4 flex flex-col gap-4">
           {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
           <div className="flex-shrink-0">
             <ResizableBox

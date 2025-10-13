@@ -1,6 +1,6 @@
 import { getDB } from './db';
-import { saveKeybinding, getAllKeybindings } from './schemas/keybindings.schema';
-import { savePreference, getPreference } from './schemas/preferences.schema';
+import { getAllKeybindings, saveKeybinding } from './schemas/keybindings.schema';
+import { getPreference, savePreference } from './schemas/preferences.schema';
 
 /**
  * Prueba la conexión a la base de datos y operaciones básicas
@@ -10,7 +10,7 @@ export const testDatabaseConnection = async () => {
 
   try {
     // 1. Probar conexión
-    const db = await getDB();
+    await getDB();
     console.log('✅ Database connection successful');
 
     // 2. Probar inserción de keybinding
