@@ -1,6 +1,5 @@
 import apiClient from "@/services/axios";
 import { ProviderResponseSchema, type ProviderOption } from "../schemas/provider.schema";
-import { PurchaseDetailResponseSchema } from "../schemas/purchase.schema";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { PurchaseFilters } from "../types/purchaseFilters";
 import type { PurchaseListResponse } from "../types/purchaseListResponse";
@@ -45,18 +44,18 @@ export const fetchPurchases = async (filters: PurchaseFilters): Promise<Purchase
 
 export const fetchPurchaseById = async (id: number): Promise<PurchaseDetail> => {
   const response = await apiClient.get(PURCHASE_ENDPOINTS.byId(id));
-  const result = PurchaseDetailResponseSchema.safeParse(response.data);
-  // console.log(result,' <result> TO SAFEPARSE')
-  if (!result.success) {
-    console.error("Zod error en fetchPurchaseById:", result.error.format());
-    console.error("Datos recibidos:", response.data);
-    throw new Error("Respuesta inválida del servidor.");
-  }
+  // const result = PurchaseDetailResponseSchema.safeParse(response.data);
+  // // console.log(result,' <result> TO SAFEPARSE')
+  // if (!result.success) {
+  //   // console.error("Zod error en fetchPurchaseById:", result.error.format());
+  //   // console.error("Datos recibidos:", response.data);
+  //   throw new Error("Respuesta inválida del servidor.");
+  // }
   // console.log("RESPONSE DATA //// ")
   let obj = {
-    ...result.data.data,
-    nro_comprobante:result.data.data.comprobante,
-    nro_comprobante2:result.data.data.comprobante2,
+    ...response.data.data,
+    nro_comprobante:response.data.data.comprobante,
+    nro_comprobante2:response.data.data.comprobante2,
   }
   return obj
 };

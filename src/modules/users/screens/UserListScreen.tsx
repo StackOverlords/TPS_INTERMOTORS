@@ -13,6 +13,7 @@ import ResizableBox from '@/components/atoms/resizable-box';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
+import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import authSDK from '@/services/sdk-simple-auth';
 import { formatCell } from '@/utils/formatCell';
 import {
@@ -44,7 +45,6 @@ import DeleteUserDialog from '../components/DeleteUserDialog';
 import { useUserFilters } from '../hooks/useUserFilters';
 import { useUsersPaginated } from '../hooks/useUsersPaginated';
 import type { User } from '../types/User';
-import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 
 const getColumnVisibilityKey = (userName: string) =>
   `users-columns-${userName}`;
@@ -225,7 +225,6 @@ const UserListScreen = () => {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="size-6 px-0"
                     onClick={e => {
                       e.stopPropagation();
                     }}

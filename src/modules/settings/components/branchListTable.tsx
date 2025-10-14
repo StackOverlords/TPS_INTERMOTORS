@@ -214,7 +214,6 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                 return (
                     <div className="flex items-center gap-2">
                         <Button
-                            className="w-8 cursor-pointer"
                             variant={"outline"}
                             onClick={() => handleEditBranch(id)}
                         >

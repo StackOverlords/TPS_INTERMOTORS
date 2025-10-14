@@ -1,7 +1,7 @@
 import { Button } from '@/components/atoms/button';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
-import { AlertCircle, Loader2, RefreshCw, Download } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
+import { AlertCircle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function UpdateSettings() {
@@ -80,7 +80,7 @@ export default function UpdateSettings() {
               disabled={isChecking}
               variant="ghost"
               size="sm"
-              className="text-xs text-gray-600 hover:text-gray-900"
+              // className="text-xs text-gray-600 hover:text-gray-900"
             >
               {isChecking ? (
                 <>
@@ -101,7 +101,7 @@ export default function UpdateSettings() {
               <Button
                 onClick={downloadAndInstall}
                 size="sm"
-                className="text-xs bg-gray-900 hover:bg-gray-800"
+                variant={"default"}
               >
                 <Download className="mr-1.5 h-3 w-3" />
                 Actualizar
@@ -110,7 +110,6 @@ export default function UpdateSettings() {
                 onClick={dismissUpdate}
                 variant="ghost"
                 size="sm"
-                className="text-xs text-gray-500 hover:text-gray-700"
               >
                 Más tarde
               </Button>
