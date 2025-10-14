@@ -24,7 +24,7 @@ import authSDK from "@/services/sdk-simple-auth"
 import { useBranchStore } from "@/states/branchStore"
 import { formatCell } from "@/utils/formatCell"
 import { formatCurrency } from "@/utils/formaters"
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState, type SortingState, type VisibilityState } from "@tanstack/react-table"
+import { type ColumnDef } from "@tanstack/react-table"
 import {
     Edit,
     Eye,
@@ -48,8 +48,7 @@ import { useProductFilters } from "../hooks/useProductFilters"
 import type { ProductGet } from "../types/ProductGet"
 import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
 import { useHotkeys } from "react-hotkeys-hook"
-
-const getColumnVisibilityKey = (userName: string) => `product-columns-${userName}`;
+import { useCustomTable } from "@/hooks/useCustomTable"
 
 const ProductListScreen = () => {
     const [isInfiniteScroll, setIsInfiniteScroll] = useState(false)
@@ -80,43 +79,13 @@ const ProductListScreen = () => {
     } = useProductsPaginated(debouncedFilters);
 
     const { addItemToCart, addMultipleItems, decrementQuantity } = useCartWithUtils(user?.name ?? '', selectedBranchId ?? '')
-    const [sorting, setSorting] = useState<SortingState>([])
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
     const [products, setProducts] = useState<ProductGet[]>([]);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-        Select: false
-    })
 
     const { handleError } = useErrorHandler()
 
     useEffect(() => {
         updateFilter("sucursal", Number(selectedBranchId))
     }, [selectedBranchId, updateFilter])
-
-    useEffect(() => {
-        if (!user?.name) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-        if (savedVisibility) {
-            try {
-                const parsed = JSON.parse(savedVisibility);
-                setColumnVisibility(parsed);
-            } catch (error) {
-                console.error('Error parsing column visibility:', error);
-                localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-            }
-        }
-    }, [user?.name]);
-
-    useEffect(() => {
-        if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        try {
-            localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-        } catch (error) {
-            console.error('Error saving column visibility:', error);
-        }
-    }, [columnVisibility, user?.name]);
 
     useEffect(() => {
         if (!productData?.data || error || isFetching) return;
@@ -482,24 +451,38 @@ const ProductListScreen = () => {
         },
     ], [handleAddItemCart, handleProductDetail, handleOpenDeleteAlert, handleUpdateProduct, handleViewDetails]);
 
-    const table = useReactTable<ProductGet>({
+    const {
+        table,
+        rowSelection,
+        resetAll,
+    } = useCustomTable({
         data: products,
         columns,
-        state: {
-            sorting,
-            columnVisibility,
-            rowSelection,
-        },
-        onSortingChange: setSorting,
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
         enableRowSelection: true,
-    })
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Columnas ocultas por defecto
+        hiddenColumns: ['Select'],
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `products-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+
+        // Callbacks
+        // onRowSelectionChange: (selection) => {
+        //     console.log('Productos seleccionados:', Object.keys(selection).length);
+        // },
+    });
 
     const {
         selectedIndex,
@@ -573,6 +556,10 @@ const ProductListScreen = () => {
         setShowFilters(!showFilters)
     }
 
+    const handleResetTableConfig = () => {
+        resetAll();
+    }
+
     useHotkeys(
         'ctrl+d',
         (e) => {
@@ -639,6 +626,18 @@ const ProductListScreen = () => {
                                 tooltip={"Recargar productos"}
                             >
                                 <RefreshCcw className={`size-4 ${isRefetchingProducts || isFetching ? 'animate-spin' : ''}`} />
+                            </TooltipButton>
+
+                            <TooltipButton
+                                onClick={handleResetTableConfig}
+                                buttonProps={{
+                                    variant: 'outline',
+                                    size: 'sm',
+                                }}
+                                tooltip="Resetear orden y visibilidad de columnas"
+                            >
+                                <Settings className="h-4 w-4" />
+                                Resetear Tabla
                             </TooltipButton>
 
                             <Button variant="outline" size="sm" onClick={handleResetFilters}>
@@ -833,6 +832,7 @@ const ProductListScreen = () => {
                             tableRef={tableRef}
                             focused={isFocused}
                             keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
                         />
                     </InfiniteScroll>
                 ) : (
@@ -859,6 +859,7 @@ const ProductListScreen = () => {
                                     tableRef={containerRef}
                                     focused={isFocused}
                                     keyboardNavigationEnabled={true}
+                                    enableColumnReordering={true}
                                 />
 
                             </div>
