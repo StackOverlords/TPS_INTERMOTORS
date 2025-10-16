@@ -16,7 +16,7 @@ import { MapPin, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/atoms/button';
 
 interface ProductDetailModalProps {
-    productId: number
+    productId: number | null
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }

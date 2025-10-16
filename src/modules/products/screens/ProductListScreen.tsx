@@ -57,8 +57,9 @@ const ProductListScreen = () => {
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
     const [showFilters, setShowFilters] = useState<boolean>(true)
-    const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
+    const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 
     const {
         filters,
@@ -163,7 +164,7 @@ const ProductListScreen = () => {
     );
 
     const handleViewDetails = useCallback((productId: number) => {
-        setSelectedProductId(productId.toString())
+        setSelectedProductId(productId)
         setModalOpen(true)
     }, [])
 
@@ -477,23 +478,18 @@ const ProductListScreen = () => {
         persistenceKey: `products-table-${user?.name}`,
         persistColumnVisibility: true,
         persistColumnOrder: true,
-
-        // Callbacks
-        // onRowSelectionChange: (selection) => {
-        //     console.log('Productos seleccionados:', Object.keys(selection).length);
-        // },
     });
 
     const {
         selectedIndex,
         setSelectedIndex,
         isFocused,
-        containerRef,
         setIsFocused: setIsFocusedTable,
         hotkeys
     } = useKeyboardNavigation<ProductGet, HTMLTableElement>({
         items: products,
         containerRef: tableRef,
+        isDragging: isDraggingColumn,
         onPrimaryAction: (product) => {
             handleProductDetail(product.id);
         },
@@ -560,6 +556,14 @@ const ProductListScreen = () => {
         resetAll();
     }
 
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
+
     useHotkeys(
         'ctrl+d',
         (e) => {
@@ -578,7 +582,7 @@ const ProductListScreen = () => {
                 const selectedRow = table.getRowModel().rows[selectedIndex];
                 if (selectedRow) {
                     const selectedProduct = selectedRow.original;
-                    setSelectedProductId(selectedProduct.id.toString());
+                    setSelectedProductId(selectedProduct.id);
                     setModalOpen(true);
                 }
             }
@@ -833,6 +837,9 @@ const ProductListScreen = () => {
                             focused={isFocused}
                             keyboardNavigationEnabled={true}
                             enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
                         />
                     </InfiniteScroll>
                 ) : (
@@ -856,10 +863,13 @@ const ProductListScreen = () => {
                                     selectedRowIndex={selectedIndex}
                                     onRowClick={handleRowClick}
                                     onRowDoubleClick={handleRowDoubleClick}
-                                    tableRef={containerRef}
+                                    tableRef={tableRef}
                                     focused={isFocused}
                                     keyboardNavigationEnabled={true}
                                     enableColumnReordering={true}
+                                    enableSorting={false} //pendiente para usar configuraciones
+                                    onDragEnd={handleDragEnd}
+                                    onDragStart={handleDragStart}
                                 />
 
                             </div>
@@ -898,7 +908,7 @@ const ProductListScreen = () => {
             />
 
             <ProductDetailModal
-                productId={Number(selectedProductId) || 1}
+                productId={Number(selectedProductId)}
                 open={modalOpen}
                 onOpenChange={setModalOpen}
             />
