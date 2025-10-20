@@ -30,7 +30,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     return (
         <div ref={containerRef}>
             {/* Búsquedas individuales */}
-            <div className="p-2">
+            <div className="p-2  border-b border-border">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <div data-filter="categoria">
                         <Label>Categorias</Label>
@@ -51,7 +51,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     </div>
 
                     <div className="space-y-2" data-filter="descripcion">
-                        <Label>Buscar por Descripción</Label>
+                        <Label>Descripción</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
@@ -64,7 +64,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     </div>
 
                     <div className="space-y-2" data-filter="codigo_oem">
-                        <Label>Buscar Código OEM</Label>
+                        <Label>Código OEM</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
@@ -77,7 +77,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     </div>
 
                     <div className="space-y-2" data-filter="codigo_upc">
-                        <Label>Buscar Código UPC</Label>
+                        <Label>Código UPC</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
@@ -88,12 +88,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                             />
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="px-2 pb-2 border-b border-gray-200">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
 
                     <div>
                         <Label>Subcategorias</Label>
@@ -127,7 +121,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Buscar Medida</Label>
+                        <Label>Medida</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
@@ -140,7 +134,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Buscar Número de Motor</Label>
+                        <Label>Número de Motor</Label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input

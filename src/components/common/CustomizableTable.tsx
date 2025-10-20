@@ -111,7 +111,7 @@ const DraggableTableHeader = <T,>({
         opacity: isDragging ? 0.9 : 1,
         position: 'relative',
         transform: CSS.Translate.toString(transform),
-        transition: 'width transform 0.2s ease-in-out',
+        transition: isDragging ? 'none' : 'width transform 0.2s ease-in-out',
         width: header.column.getSize(),
         zIndex: isDragging ? 1 : 0,
     };
@@ -121,26 +121,33 @@ const DraggableTableHeader = <T,>({
             ref={setNodeRef}
             style={style}
             colSpan={header.colSpan}
-            className={`relative group select-none text-left border-b border-gray-200 ${isDragging ? 'bg-blue-50 shadow-lg cursor-grabbing' : ''
-                }`}
+            className={cn(
+                `relative group select-none text-left border-b border-gray-200`,
+                isDragging && "bg-blue-50 shadow-lg cursor-grabbing"
+            )}
         >
             {header.isPlaceholder ? null : (
                 <div className="flex items-center gap-1 justify-between">
                     <Button
                         {...attributes}
                         {...listeners}
+                        aria-label="Reordenar columna"
+                        type="button"
                         variant={'ghost'}
                         className={cn(
-                            "cursor-grab active:cursor-grabbing size-5 p-0.5 touch-none hidden group-hover:block transition-all duration-700 ease-in-out",
+                            "cursor-grab active:cursor-grabbing touch-none size-0 group-hover:size-5 p-0 group-hover:p-0.5 overflox-hidden opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out",
                             isDragging && "cursor-grabbing"
                         )}
                     >
-                        <GripVertical className={`size-3 transition-colors ${isDragging ? 'text-blue-600' : ''
-                            }`} />
+                        <GripVertical className={cn(
+                            `size-3 transition-colors`,
+                            isDragging && "text-blue-600"
+                        )} />
                     </Button>
                     <div
                         className={cn(
-                            `flex items-center gap-1 justify-between flex-1 ${header.column.getCanSort() ? "cursor-pointer select-none" : ""}`,
+                            `flex items-center gap-1 justify-between flex-1`,
+                            header.column.getCanSort() && !isDragging && "cursor-pointer select-none",
                             isDragging && "cursor-grabbing"
                         )}
                         onClick={header.column.getToggleSortingHandler()}
@@ -303,8 +310,10 @@ const CustomizableTable = <T,>({
                                         >
                                             {header.isPlaceholder ? null : (
                                                 <div
-                                                    className={`flex items-center gap-1 justify-between ${header.column.getCanSort() ? "cursor-pointer select-none" : ""
-                                                        }`}
+                                                    className={cn(
+                                                        `flex items-center gap-1 justify-between`,
+                                                        header.column.getCanSort() && "cursor-pointer select-none"
+                                                    )}
                                                     onClick={header.column.getToggleSortingHandler()}
                                                 >
                                                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -340,6 +349,7 @@ const CustomizableTable = <T,>({
                                 <TableRow key={`skeleton-row-${rowIndex}`}>
                                     {table.getVisibleFlatColumns().map((column, colIndex) => (
                                         <TableCell
+                                        className="p-1"
                                             key={`skeleton-cell-${rowIndex}-${colIndex}`}
                                             style={{ width: column.getSize() }}
                                         >

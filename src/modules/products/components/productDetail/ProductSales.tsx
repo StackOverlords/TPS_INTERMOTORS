@@ -36,13 +36,13 @@ const ProductSales: React.FC<ProductSalesProps> = ({
             accessorKey: "mes",
             header: "Mes",
             enableHiding: false,
-            size:80,
+            size: 80,
             minSize: 60,
         },
         {
             accessorKey: "gestion_1",
             header: `Gestion ${gestion_1}`,
-            size:80,
+            size: 80,
             minSize: 60,
             cell: ({ getValue }) => {
                 const value = getValue<number>();
@@ -56,7 +56,7 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         {
             accessorKey: "gestion_2",
             header: `Gestion ${gestion_2}`,
-            size:80,
+            size: 80,
             minSize: 60,
             cell: ({ getValue }) => {
                 const value = getValue<number>();
@@ -70,7 +70,7 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         {
             id: "diferencia",
             header: "Diferencia",
-            size:80,
+            size: 80,
             minSize: 60,
             cell: ({ row }) => {
                 const diferencia = row.original.gestion_2 - row.original.gestion_1;
@@ -91,7 +91,7 @@ const ProductSales: React.FC<ProductSalesProps> = ({
         {
             id: "porcentaje_cambio",
             header: "% Cambio",
-            size:80,
+            size: 80,
             minSize: 60,
             cell: ({ row }) => {
                 const porcentajeCambio = row.original.gestion_1 > 0 ? ((row.original.gestion_2 - row.original.gestion_1) / row.original.gestion_1 * 100) : 0.00;
@@ -151,6 +151,7 @@ const ProductSales: React.FC<ProductSalesProps> = ({
                         isLoading={isLoadingData}
                         isError={isErrorData}
                         isFetching={isFetchingData}
+                        rows={13}
                         renderBottomRow={() => (
                             !isErrorData && !isLoadingData && !isFetchingData &&
                             <TableRow className="bg-gray-50 font-bold">

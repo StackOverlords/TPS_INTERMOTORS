@@ -1,7 +1,7 @@
 import type { OrdersFilters } from "../types/orderFilters.types";
 
 export const ORDER_QUERY_KEYS = {
-    all: ["brands"] as const,
+    all: ["orders"] as const,
     lists: () => [...ORDER_QUERY_KEYS.all, "list"] as const,
     list: (filters?: OrdersFilters) =>
         [...ORDER_QUERY_KEYS.lists(), { filters }] as const,
