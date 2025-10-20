@@ -16,7 +16,7 @@ import { MapPin, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/atoms/button';
 
 interface ProductDetailModalProps {
-    productId: number
+    productId: number | null
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
@@ -118,7 +118,7 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-7xl h-full md:h-[90vh] overflow-auto p-2">
+            <DialogContent className="max-w-7xl md:max-h-[90vh] overflow-auto p-2">
                 {
                     isErrorProduct || !(Number(productId)) ? (
                         <ErrorDataComponent
@@ -175,7 +175,7 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
                             <Separator />
 
                             <div className='grid grid-cols-1 md:grid-cols-5 gap-2'>
-                                <div className='md:col-span-3 grid'>
+                                <div className='md:col-span-3'>
                                     <ProductSales
                                         isLoadingData={isLoadingTwoYearSalesData}
                                         gestion_1={gestiones.gestion_1}

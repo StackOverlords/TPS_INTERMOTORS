@@ -26,5 +26,3 @@ export const OrderUpdateSchema = z.object({
     id_responsable: z.number(),
     detalles: z.array(OrderDetailUpdateSchema).min(1),
 });
-
-export type OrderUpdateInput = z.infer<typeof OrderUpdateSchema>;

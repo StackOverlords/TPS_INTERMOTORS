@@ -97,7 +97,7 @@ const OrderListScreen = () => {
         updateFilter("keywords", debouncedSearchKeywords);
     }, [debouncedSearchKeywords, updateFilter]);
 
-    const handleRefetchQuotations = () => {
+    const handleRefetchReturns = () => {
         refetchOrders();
     }
 
@@ -139,7 +139,7 @@ const OrderListScreen = () => {
                         </div>
 
                         <TooltipButton
-                            onClick={handleRefetchQuotations}
+                            onClick={handleRefetchReturns}
                             buttonProps={{
                                 className: 'w-8',
                                 disabled: isRefetchingOrders || isFetching,

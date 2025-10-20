@@ -172,6 +172,8 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                         onChange={(value) => setProviderId(value && typeof value === "string" ? parseInt(value, 10) : undefined)}
                         optionsData={orderProvidersData?.data || []}
                         displayField="nombre"
+                        allOptionLabel="TODOS"
+                        enableAllOption={true}
                         isLoading={isOrdersProvidersLoading}
                         updatePage={(page) => { console.log("Update page:", page) }}
                         updateSearch={setCustomerSearchTerm}

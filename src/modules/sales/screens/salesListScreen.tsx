@@ -4,7 +4,6 @@ import { useSalesFilters } from "../hooks/useSalesFilters";
 import { useEffect, useState } from "react";
 import { Filter, RefreshCcw, Search } from "lucide-react";
 import { Input } from "@/components/atoms/input";
-import { useDebounce } from "use-debounce";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
 import TooltipButton from "@/components/common/TooltipButton";
@@ -20,14 +19,13 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 
 const SalesListScreen = () => {
     const { selectedBranchId } = useBranchStore()
-    const [searchKeywords, setSearchKeywords] = useState("");
-    const [debouncedSearchKeywords] = useDebounce(searchKeywords, 500);
     const [isInfiniteScroll, setIsInfiniteScroll] = useState<boolean>(false)
     const [showFilters, setShowFilters] = useState<boolean>(true)
     const [sales, setSales] = useState<SaleGetAll[]>([]);
 
     const {
         filters,
+        debouncedFilters,
         updateFilter,
         setPage,
         resetFilters,
@@ -41,7 +39,7 @@ const SalesListScreen = () => {
         isError,
         refetch: refetchSales,
         isRefetching: isRefetchingSales,
-    } = useSalesPaginated(filters)
+    } = useSalesPaginated(debouncedFilters)
 
     useEffect(() => {
         if (!salesData?.data || error || isFetching) return;
@@ -61,7 +59,6 @@ const SalesListScreen = () => {
 
     const handleResetFilters = () => {
         resetFilters()
-        setSearchKeywords("")
     }
 
     const handleDeleteSuccess = (_data: unknown, saleId: number) => {
@@ -93,10 +90,6 @@ const SalesListScreen = () => {
         variables: saleToDelete
     } = useConfirmMutation(deleteSale, handleDeleteSuccess, handleDeleteError)
 
-    useEffect(() => {
-        updateFilter("keywords", debouncedSearchKeywords);
-    }, [debouncedSearchKeywords, updateFilter]);
-
     const handleRefetchSales = () => {
         refetchSales();
     }
@@ -116,8 +109,8 @@ const SalesListScreen = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
                                 placeholder="Buscar por palabras clave..."
-                                value={searchKeywords}
-                                onChange={(e) => setSearchKeywords(e.target.value)}
+                                value={filters.keywords}
+                                onChange={(e) => updateFilter("keywords", e.target.value)}
                                 className="pl-10 w-full"
                             />
                         </div>

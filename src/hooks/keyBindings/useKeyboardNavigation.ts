@@ -8,7 +8,8 @@ interface UseKeyboardNavigationProps<T, E extends HTMLElement = HTMLElement> {
     onDeleteAction?: (item: T) => void;
     getItemId?: (item: T) => string | number;
     enableHotkeys?: boolean;
-    containerRef?: React.RefObject<E | null>; // 🆕 Ref externa opcional
+    containerRef?: React.RefObject<E | null>;
+    isDragging?: boolean;
     hotkeys?: {
         activate?: string;
         deactivate?: string;
@@ -28,7 +29,8 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     onDeleteAction,
     getItemId,
     enableHotkeys = true,
-    containerRef: externalRef, // 🆕 Ref externa renombrada
+    containerRef: externalRef,
+    isDragging = false,
     hotkeys = {
         activate: 'alt+t',
         deactivate: 'escape',
@@ -44,14 +46,17 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     const [isFocused, setIsFocused] = useState(false);
     const [isNavigatingWithinRow, setIsNavigatingWithinRow] = useState(false);
     const [currentElementIndex, setCurrentElementIndex] = useState(-1);
-    // 🆕 Usar ref externa o crear una interna
+
     const internalRef = useRef<E>(null);
     const containerRef = externalRef || internalRef;
     const selectedItem = items[selectedIndex];
 
+    // 🆕 Desactivar hotkeys durante drag
+    const isHotkeysEnabled = enableHotkeys && !isDragging;
+
     // Auto-scroll al elemento seleccionado
     useEffect(() => {
-        if (!isFocused) return;
+        if (!isFocused || isDragging) return;
         if (containerRef.current) {
             const selectedRow = containerRef.current.querySelector(
                 `[data-row-index="${selectedIndex}"]`
@@ -64,14 +69,22 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                 });
             }
         }
-    }, [selectedIndex, isFocused, containerRef]);
+    }, [selectedIndex, isFocused, containerRef, isDragging]);
 
     // Resetear índice cuando cambien los items
     useEffect(() => {
         if (items.length > 0 && selectedIndex >= items.length) {
-            setSelectedIndex(0);
+            setSelectedIndex(Math.max(0, items.length - 1));
         }
     }, [items.length, selectedIndex]);
+
+    // 🆕 Desactivar navegación durante drag
+    useEffect(() => {
+        if (isDragging && isNavigatingWithinRow) {
+            setIsNavigatingWithinRow(false);
+            setCurrentElementIndex(-1);
+        }
+    }, [isDragging, isNavigatingWithinRow]);
 
     // Función para obtener elementos focuseables en la fila seleccionada
     const getFocusableElementsInSelectedRow = useCallback((): HTMLElement[] => {
@@ -81,154 +94,186 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         if (!selectedRow) return [];
 
         const focusableElements = selectedRow.querySelectorAll(
-            'button, input, textarea, select, a, [tabindex]:not([tabindex="-1"])'
+            'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"]):not([disabled])'
         );
 
         return Array.from(focusableElements) as HTMLElement[];
     }, [selectedIndex, containerRef]);
 
-    // Función para verificar si debemos bloquear las hotkeys
-    const isInRestrictedContext = (): boolean => {
+    // Función mejorada para verificar contexto restringido
+    const isInRestrictedContext = useCallback((): boolean => {
         const activeElement = document.activeElement as HTMLElement;
 
         if (!activeElement) return false;
+
+        // 🆕 Agregar verificación de drag
+        if (isDragging) return true;
 
         return (
             activeElement.tagName === 'INPUT' ||
             activeElement.tagName === 'TEXTAREA' ||
             activeElement.contentEditable === 'true' ||
             activeElement.closest('[role="menu"]') !== null ||
+            activeElement.closest('[role="dialog"]') !== null ||
             activeElement.closest('[data-radix-popper-content-wrapper]') !== null ||
-            activeElement.closest('.dropdown-content') !== null
+            activeElement.closest('.dropdown-content') !== null ||
+            activeElement.hasAttribute('data-dragging') // 🆕 Verificar atributo drag
         );
-    };
+    }, [isDragging]);
 
     // Activar navegación por teclado
-    useHotkeys(hotkeys.activate!, () => {
-        if (!enableHotkeys) return;
-        setIsFocused(true);
-        setIsNavigatingWithinRow(false);
-        setCurrentElementIndex(-1);
-        containerRef.current?.focus();
-    });
+    useHotkeys(
+        hotkeys.activate!,
+        () => {
+            setIsFocused(true);
+            setIsNavigatingWithinRow(false);
+            setCurrentElementIndex(-1);
+            containerRef.current?.focus();
+        },
+        { enabled: isHotkeysEnabled }
+    );
 
     // Desactivar navegación por teclado
-    useHotkeys(hotkeys.deactivate!, () => {
-        if (!enableHotkeys) return;
-        setIsFocused(false);
-        setIsNavigatingWithinRow(false);
-        setCurrentElementIndex(-1);
-    }, {
-        enabled: isFocused && enableHotkeys
-    });
+    useHotkeys(
+        hotkeys.deactivate!,
+        () => {
+            setIsFocused(false);
+            setIsNavigatingWithinRow(false);
+            setCurrentElementIndex(-1);
+        },
+        { enabled: isFocused && isHotkeysEnabled }
+    );
 
     // Navegación hacia arriba
-    useHotkeys(hotkeys.moveUp!, () => {
-        if (!enableHotkeys || !isInRestrictedContext() && isFocused) {
-            setSelectedIndex(prev => Math.max(0, prev - 1));
-            setIsNavigatingWithinRow(false);
-            setCurrentElementIndex(-1);
+    useHotkeys(
+        hotkeys.moveUp!,
+        (e) => {
+            if (!isInRestrictedContext()) {
+                e.preventDefault();
+                setSelectedIndex(prev => Math.max(0, prev - 1));
+                setIsNavigatingWithinRow(false);
+                setCurrentElementIndex(-1);
+            }
+        },
+        {
+            enableOnFormTags: false,
+            preventDefault: true,
+            enabled: isFocused && isHotkeysEnabled
         }
-    }, {
-        enableOnFormTags: false,
-        preventDefault: true,
-        enabled: isFocused && enableHotkeys
-    });
+    );
 
     // Navegación hacia abajo
-    useHotkeys(hotkeys.moveDown!, () => {
-        if (!enableHotkeys || !isInRestrictedContext() && isFocused) {
-            setSelectedIndex(prev => Math.min(items.length - 1, prev + 1));
-            setIsNavigatingWithinRow(false);
-            setCurrentElementIndex(-1);
+    useHotkeys(
+        hotkeys.moveDown!,
+        (e) => {
+            if (!isInRestrictedContext()) {
+                e.preventDefault();
+                setSelectedIndex(prev => Math.min(items.length - 1, prev + 1));
+                setIsNavigatingWithinRow(false);
+                setCurrentElementIndex(-1);
+            }
+        },
+        {
+            enableOnFormTags: false,
+            preventDefault: true,
+            enabled: isFocused && isHotkeysEnabled
         }
-    }, {
-        enableOnFormTags: false,
-        preventDefault: true,
-        enabled: isFocused && enableHotkeys
-    });
+    );
 
     // TAB - Navegar elementos dentro de la fila seleccionada
-    useHotkeys(hotkeys.navigate!, (e) => {
-        if (!enableHotkeys || !isInRestrictedContext() && isFocused) {
-            e.preventDefault();
+    useHotkeys(
+        hotkeys.navigate!,
+        (e) => {
+            if (!isInRestrictedContext()) {
+                e.preventDefault();
 
-            const focusableElements = getFocusableElementsInSelectedRow();
+                const focusableElements = getFocusableElementsInSelectedRow();
 
-            if (focusableElements.length === 0) return;
+                if (focusableElements.length === 0) return;
 
-            if (!isNavigatingWithinRow) {
-                // Primera vez presionando Tab - enfocar primer elemento
-                setIsNavigatingWithinRow(true);
-                setCurrentElementIndex(0);
-                focusableElements[0].focus();
-            } else {
-                // Ya estamos navegando dentro de la fila
-                if (e.shiftKey) {
-                    // Shift+Tab - ir hacia atrás
-                    const newIndex = currentElementIndex - 1;
-                    if (newIndex >= 0) {
-                        setCurrentElementIndex(newIndex);
-                        focusableElements[newIndex].focus();
-                    } else {
-                        // Salir del modo navegación dentro de fila
-                        setIsNavigatingWithinRow(false);
-                        setCurrentElementIndex(-1);
-                        containerRef.current?.focus();
-                    }
+                if (!isNavigatingWithinRow) {
+                    setIsNavigatingWithinRow(true);
+                    setCurrentElementIndex(0);
+                    focusableElements[0].focus();
                 } else {
-                    // Tab - ir hacia adelante
-                    const newIndex = currentElementIndex + 1;
-                    if (newIndex < focusableElements.length) {
-                        setCurrentElementIndex(newIndex);
-                        focusableElements[newIndex].focus();
+                    if (e.shiftKey) {
+                        const newIndex = currentElementIndex - 1;
+                        if (newIndex >= 0) {
+                            setCurrentElementIndex(newIndex);
+                            focusableElements[newIndex].focus();
+                        } else {
+                            setIsNavigatingWithinRow(false);
+                            setCurrentElementIndex(-1);
+                            containerRef.current?.focus();
+                        }
                     } else {
-                        // Salir del modo navegación dentro de fila
-                        setIsNavigatingWithinRow(false);
-                        setCurrentElementIndex(-1);
-                        containerRef.current?.focus();
+                        const newIndex = currentElementIndex + 1;
+                        if (newIndex < focusableElements.length) {
+                            setCurrentElementIndex(newIndex);
+                            focusableElements[newIndex].focus();
+                        } else {
+                            setIsNavigatingWithinRow(false);
+                            setCurrentElementIndex(-1);
+                            containerRef.current?.focus();
+                        }
                     }
                 }
             }
+        },
+        {
+            enableOnFormTags: true,
+            preventDefault: false,
+            enabled: isFocused && isHotkeysEnabled
         }
-    }, {
-        enableOnFormTags: true,
-        preventDefault: false,
-        enabled: isFocused && enableHotkeys
-    });
+    );
 
     // Acción primaria
-    useHotkeys(hotkeys.primaryAction!, () => {
-        if (!enableHotkeys || !isInRestrictedContext() && isFocused && !isNavigatingWithinRow && selectedItem && onPrimaryAction) {
-            onPrimaryAction?.(selectedItem);
+    useHotkeys(
+        hotkeys.primaryAction!,
+        (e) => {
+            if (!isInRestrictedContext() && !isNavigatingWithinRow && selectedItem && onPrimaryAction) {
+                e.preventDefault();
+                onPrimaryAction(selectedItem);
+            }
+        },
+        {
+            enableOnFormTags: false,
+            preventDefault: true,
+            enabled: isFocused && isHotkeysEnabled
         }
-    }, {
-        enableOnFormTags: false,
-        preventDefault: true,
-        enabled: isFocused && enableHotkeys
-    });
+    );
 
     // Acción secundaria
-    useHotkeys(hotkeys.secondaryAction!, () => {
-        if (!enableHotkeys || !isInRestrictedContext() && isFocused && selectedItem && onSecondaryAction) {
-            onSecondaryAction?.(selectedItem);
+    useHotkeys(
+        hotkeys.secondaryAction!,
+        (e) => {
+            if (!isInRestrictedContext() && selectedItem && onSecondaryAction) {
+                e.preventDefault();
+                onSecondaryAction(selectedItem);
+            }
+        },
+        {
+            enableOnFormTags: false,
+            preventDefault: true,
+            enabled: isFocused && isHotkeysEnabled
         }
-    }, {
-        enableOnFormTags: false,
-        preventDefault: true,
-        enabled: isFocused && enableHotkeys
-    });
+    );
 
     // Acción de eliminar
-    useHotkeys(hotkeys.deleteAction!, () => {
-        if (!enableHotkeys || !isInRestrictedContext() && isFocused && onDeleteAction) {
-            onDeleteAction?.(selectedItem);
+    useHotkeys(
+        hotkeys.deleteAction!,
+        (e) => {
+            if (!isInRestrictedContext() && selectedItem && onDeleteAction) {
+                e.preventDefault();
+                onDeleteAction(selectedItem);
+            }
+        },
+        {
+            enableOnFormTags: false,
+            preventDefault: true,
+            enabled: isFocused && isHotkeysEnabled
         }
-    }, {
-        enableOnFormTags: false,
-        preventDefault: true,
-        enabled: isFocused && enableHotkeys
-    });
+    );
 
     // Resetear navegación dentro de fila cuando cambia la fila seleccionada
     useEffect(() => {
@@ -239,20 +284,20 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     // Manejar clics para activar/desactivar foco
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
+            // 🆕 Ignorar clicks durante drag
+            if (isDragging) return;
+
             const target = e.target as HTMLElement;
 
             if (containerRef.current && containerRef.current.contains(target)) {
-                // Clic dentro del contenedor
                 setIsFocused(true);
 
-                // Si hicimos clic en un elemento dentro de una fila, actualizar selectedIndex
                 const clickedRow = target.closest('[data-row-index]') as HTMLElement;
                 if (clickedRow) {
                     const rowIndex = parseInt(clickedRow.getAttribute('data-row-index') || '0');
                     setSelectedIndex(rowIndex);
                 }
 
-                // Si hicimos clic en un elemento focuseable, entrar en modo navegación dentro de fila
                 const focusableElement = target.closest('button, input, textarea, select, a') as HTMLElement;
                 if (focusableElement && clickedRow) {
                     const focusableElements = getFocusableElementsInSelectedRow();
@@ -263,7 +308,6 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                     }
                 }
             } else {
-                // Clic fuera del contenedor
                 setIsFocused(false);
                 setIsNavigatingWithinRow(false);
                 setCurrentElementIndex(-1);
@@ -272,24 +316,23 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
 
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [getFocusableElementsInSelectedRow, containerRef]);
+    }, [getFocusableElementsInSelectedRow, containerRef, isDragging]);
 
     // Funciones de utilidad
-
-    const navigateToItem = (index: number) => {
+    const navigateToItem = useCallback((index: number) => {
         if (index >= 0 && index < items.length) {
             setSelectedIndex(index);
         }
-    };
+    }, [items.length]);
 
-    const navigateToItemById = (id: string | number) => {
+    const navigateToItemById = useCallback((id: string | number) => {
         if (!getItemId) return;
 
         const index = items.findIndex(item => getItemId(item) === id);
         if (index !== -1) {
             setSelectedIndex(index);
         }
-    };
+    }, [items, getItemId]);
 
     return {
         // Estado
@@ -317,7 +360,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         isFirstItem: selectedIndex === 0,
         isLastItem: selectedIndex === items.length - 1,
 
-        // atajos de teclado
+        // Atajos de teclado
         hotkeys,
     };
 };
