@@ -1,11 +1,9 @@
 import { Label } from "@/components/atoms/label";
-import { AlertCircle, CalendarIcon, Search, X } from "lucide-react";
+import { AlertCircle, Search, X } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/atoms/popover";
 import { Button } from "@/components/atoms/button";
-import { Calendar } from "@/components/atoms/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
@@ -13,6 +11,7 @@ import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
 import { useOrderProvider } from "../../hooks/commons/useOrderProviders";
 import { useOrderStatus } from "../../hooks/commons/useOrderStatus";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 
 interface OrdersFiltersProps {
     filters: ReturnType<typeof useOrdersFilters>["filters"]
@@ -102,18 +101,6 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
         updateFilter('fecha_fin', date ? formatDateSafe(date) : undefined);
     };
 
-    const clearDateFilter = (type: 'inicio' | 'fin') => {
-        setDateError(null); // Limpiar errores al resetear
-
-        if (type === 'inicio') {
-            setFechaInicio(undefined);
-            updateFilter('fecha_inicio', undefined);
-        } else {
-            setFechaFin(undefined);
-            updateFilter('fecha_fin', undefined);
-        }
-    };
-
     // Función para limpiar ambas fechas
     const clearAllDateFilters = () => {
         setDateError(null);
@@ -153,7 +140,7 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
         <section className="space-y-2">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="space-y-2">
-                    <Label className="text-gray-700 text-sm font-medium">Nro. de pedido</Label>
+                    <Label>Nro. de pedido</Label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
@@ -166,7 +153,7 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-gray-700 text-sm font-medium">Buscar por proveedor</Label>
+                    <Label>Buscar por proveedor</Label>
                     <PaginatedCombobox
                         value={providerId}
                         onChange={(value) => setProviderId(value && typeof value === "string" ? parseInt(value, 10) : undefined)}
@@ -188,7 +175,7 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-gray-700 text-sm font-medium">Buscar Código OEM Producto</Label>
+                    <Label>Buscar Código OEM Producto</Label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
@@ -234,107 +221,46 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                 {/* Fecha Inicio */}
                 <div className="flex gap-2 grow">
                     <div className="space-y-2 w-full">
-                        <Label className="text-sm font-medium">Fecha Inicio</Label>
+                        <Label>Fecha Inicio</Label>
                         <div className="flex gap-2">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size={"sm"}
-                                        className={cn(
-                                            "flex-1 justify-between text-left font-normal",
-                                            !fechaInicio && "text-muted-foreground",
-                                            dateError && "border-red-500 focus:border-red-500"
-                                        )}
-                                    >
-                                        <div className="flex items-center">
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {fechaInicio ? format(fechaInicio, "dd/MM/yyyy") : "Seleccionar fecha"}
-                                        </div>
-                                        {fechaInicio && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => clearDateFilter('inicio')}
-                                                className="size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                                            >
-                                                <X className="size-3" />
-                                            </Button>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={fechaInicio}
-                                        onSelect={handleFechaInicioChange}
-                                        disabled={(date: Date) => {
-                                            // Deshabilitar fechas futuras
-                                            const today = new Date();
-                                            today.setHours(0, 0, 0, 0);
-                                            if (fechaFin && date > fechaFin) return true;
-                                            return date > today;
-                                        }}
-                                        className="p-3 pointer-events-auto"
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <PopoverDatePicker
+                                value={filters.fecha_inicio}
+                                onChange={(date) => handleFechaInicioChange(date)}
+                                hasError={dateError}
+                                disabled={(date) => {
+                                    // Deshabilitar fechas futuras
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
 
+                                    const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
+                                    if (fechaFin && date > fechaFin) return true;
+                                    return date > today;
+                                }}
+                            />
                         </div>
                     </div>
 
                     {/* Fecha Fin */}
                     <div className="space-y-2 w-full">
-                        <Label className="text-sm font-medium">Fecha Fin</Label>
+                        <Label>Fecha Fin</Label>
                         <div className="flex gap-2">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size={"sm"}
-                                        className={cn(
-                                            "flex-1 justify-between text-left font-normal",
-                                            !fechaFin && "text-muted-foreground",
-                                            dateError && "border-red-500 focus:border-red-500"
-                                        )}
-                                    >
-                                        <div className="flex items-center">
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {fechaFin ? format(fechaFin, "dd/MM/yyyy") : "Seleccionar fecha"}
-                                        </div>
-                                        {fechaFin && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => clearDateFilter('fin')}
-                                                className="size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                                            >
-                                                <X className="size-3" />
-                                            </Button>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={fechaFin}
-                                        onSelect={handleFechaFinChange}
-                                        disabled={(date: Date) => {
-                                            // Deshabilitar fechas futuras
-                                            const today = new Date();
-                                            today.setHours(0, 0, 0, 0);
-                                            if (date > today) return true;
+                            <PopoverDatePicker
+                                value={filters.fecha_fin}
+                                onChange={(date) => handleFechaFinChange(date)}
+                                hasError={dateError}
+                                disabled={(date) => {
+                                    // Deshabilitar fechas futuras
+                                    const today = new Date();
+                                    today.setHours(0, 0, 0, 0);
+                                    if (date > today) return true;
 
-                                            // Deshabilitar fechas anteriores a la fecha de inicio
-                                            if (fechaInicio && date < fechaInicio) return true;
+                                    const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
+                                    // Deshabilitar fechas anteriores a la fecha de inicio
+                                    if (fechaInicio && date < fechaInicio) return true;
 
-                                            return false;
-                                        }}
-                                        className="pointer-events-auto p-3"
-                                    />
-                                </PopoverContent>
-                            </Popover>
-
+                                    return false;
+                                }}
+                            />
                         </div>
                     </div>
                 </div>

@@ -8,7 +8,7 @@ import { formatCurrency } from '@/utils/formaters';
 import {
     type ColumnDef,
 } from '@tanstack/react-table';
-import { AlertCircle, CalendarIcon, Clock, Phone, Plus, RotateCcw, Search, X, Zap } from 'lucide-react';
+import { AlertCircle, Clock, Phone, Plus, RotateCcw, Search, Zap } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useBranchStore } from '@/states/branchStore';
 import type { SaleGetAll } from '@/modules/sales/types/salesGetResponse';
@@ -23,9 +23,7 @@ import authSDK from '@/services/sdk-simple-auth';
 import { useDebounce } from 'use-debounce';
 import { useSaleCustomers } from '@/modules/sales/hooks/useSaleCustomers';
 import { PaginatedCombobox } from '@/components/common/paginatedCombobox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/atoms/popover';
-import { cn } from '@/lib/utils';
-import { Calendar } from '@/components/atoms/calendar';
+import PopoverDatePicker from '@/components/common/PopoverDatePicker';
 
 type BaseWithId = { sale_id: number };
 
@@ -383,17 +381,6 @@ function SaleReturnList<T extends BaseWithId>({
         updateFilter('fecha_fin', date ? formatDateSafe(date) : undefined);
     };
 
-    const clearDateFilter = (type: 'inicio' | 'fin') => {
-        setDateError(null); // Limpiar errores al resetear
-
-        if (type === 'inicio') {
-            updateFilter('fecha_inicio', undefined);
-        } else {
-            updateFilter('fecha_fin', undefined);
-        }
-    };
-
-
     return (
         <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden">
             {/* Header con Filtros */}
@@ -494,106 +481,46 @@ function SaleReturnList<T extends BaseWithId>({
                         </div>
 
                         <div className="space-y-2 w-full">
-                            <Label className="text-sm font-medium">Fecha Inicio</Label>
+                            <Label>Fecha Inicio</Label>
                             <div className="flex gap-2">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size={"sm"}
-                                            className={cn(
-                                                "flex-1 justify-between text-left font-normal",
-                                                !filters.fecha_inicio && "text-muted-foreground",
-                                                dateError && "border-red-500 focus:border-red-500"
-                                            )}
-                                        >
-                                            <div className="flex items-center">
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {filters.fecha_inicio ? format(filters.fecha_inicio, "dd/MM/yyyy") : "Seleccionar fecha"}
-                                            </div>
-                                            {filters.fecha_inicio && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() => clearDateFilter('inicio')}
-                                                    className="size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                                                >
-                                                    <X className="size-3" />
-                                                </Button>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={filters.fecha_inicio}
-                                            onSelect={handleFechaInicioChange}
-                                            disabled={(date: Date) => {
-                                                // Deshabilitar fechas futuras
-                                                const today = new Date();
-                                                today.setHours(0, 0, 0, 0);
-                                                if (filters.fecha_fin && date > filters.fecha_fin) return true;
-                                                return date > today;
-                                            }}
-                                            className="p-3 pointer-events-auto"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                <PopoverDatePicker
+                                    value={filters.fecha_inicio}
+                                    onChange={(date) => handleFechaInicioChange(date)}
+                                    hasError={dateError}
+                                    disabled={(date) => {
+                                        // Deshabilitar fechas futuras
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
 
+                                        const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
+                                        if (fechaFin && date > fechaFin) return true;
+                                        return date > today;
+                                    }}
+                                />
                             </div>
                         </div>
 
                         {/* Fecha Fin */}
                         <div className="space-y-2 w-full">
-                            <Label className="text-sm font-medium">Fecha Fin</Label>
+                            <Label>Fecha Fin</Label>
                             <div className="flex gap-2">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size={"sm"}
-                                            className={cn(
-                                                "flex-1 justify-between text-left font-normal",
-                                                !filters.fecha_fin && "text-muted-foreground",
-                                                dateError && "border-red-500 focus:border-red-500"
-                                            )}
-                                        >
-                                            <div className="flex items-center">
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {filters.fecha_fin ? format(filters.fecha_fin, "dd/MM/yyyy") : "Seleccionar fecha"}
-                                            </div>
-                                            {filters.fecha_fin && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() => clearDateFilter('fin')}
-                                                    className="size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                                                >
-                                                    <X className="size-3" />
-                                                </Button>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={filters.fecha_fin}
-                                            onSelect={handleFechaFinChange}
-                                            disabled={(date: Date) => {
-                                                // Deshabilitar fechas futuras
-                                                const today = new Date();
-                                                today.setHours(0, 0, 0, 0);
-                                                if (date > today) return true;
+                                <PopoverDatePicker
+                                    value={filters.fecha_fin}
+                                    onChange={(date) => handleFechaFinChange(date)}
+                                    hasError={dateError}
+                                    disabled={(date) => {
+                                        // Deshabilitar fechas futuras
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        if (date > today) return true;
 
-                                                // Deshabilitar fechas anteriores a la fecha de inicio
-                                                if (filters.fecha_inicio && date < filters.fecha_inicio) return true;
+                                        const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
+                                        // Deshabilitar fechas anteriores a la fecha de inicio
+                                        if (fechaInicio && date < fechaInicio) return true;
 
-                                                return false;
-                                            }}
-                                            className="pointer-events-auto p-3"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                        return false;
+                                    }}
+                                />
                             </div>
                         </div>
 

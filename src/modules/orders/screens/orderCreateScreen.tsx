@@ -103,11 +103,13 @@ const OrderCreateScreen = () => {
         setValue,
         getValues,
         setError,
+        watch,
         clearErrors,
         formState: { errors }
     } = methods;
 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const currentStatus = watch("estado_actual");
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -118,6 +120,25 @@ const OrderCreateScreen = () => {
             clearErrors("detalles");
         }
     }, [orderDetailsHook.details, setValue, clearErrors]);
+
+    // Validaciones de fechas según estado
+    const statusesDisablingTransit = ["P", "C"];
+    const statusesDisablingArrival = ["P", "C", "T"];
+
+    useEffect(() => {
+        if (!currentStatus) return;
+
+
+        // Si el estado no permite fecha de tránsito, limpiarla
+        if (statusesDisablingTransit.includes(currentStatus)) {
+            setValue("fecha_inicio_transito", "");
+        }
+
+        // Si el estado no permite fecha de llegada, limpiarla
+        if (statusesDisablingArrival.includes(currentStatus)) {
+            setValue("fecha_llegada", "");
+        }
+    }, [currentStatus, setValue]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -436,6 +457,7 @@ const OrderCreateScreen = () => {
                                             id="fechaTransito"
                                             type="date"
                                             {...register("fecha_inicio_transito")}
+                                            disabled={statusesDisablingTransit.includes(currentStatus)}
                                         />
                                     </div>
                                     <div>
@@ -446,6 +468,7 @@ const OrderCreateScreen = () => {
                                             id="fechaLlegada"
                                             type="date"
                                             {...register("fecha_llegada")}
+                                            disabled={statusesDisablingArrival.includes(currentStatus)}
                                         />
                                     </div>
                                     <div>
@@ -527,7 +550,7 @@ const OrderCreateScreen = () => {
                                             id="comentario"
                                             {...register("comentario")}
                                             placeholder="Comentarios adicionales sobre el pedido"
-                                            className="min-h-[50px]"
+                                            rows={1}
                                         />
                                     </div>
                                 </div>
