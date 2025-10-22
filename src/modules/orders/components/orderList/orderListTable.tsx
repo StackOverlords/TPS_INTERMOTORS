@@ -20,6 +20,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import type { OrderGetAll, OrderGetAllResponse } from "../../types/orderGet.types";
 import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
+import { formatInTimeZone } from "date-fns-tz";
 
 interface OrdersListTableProps {
     data: OrderGetAllResponse
@@ -69,6 +70,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     useEffect(() => {
         if (!user?.name) return;
@@ -220,7 +222,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     return (
                         <div className="text-center text-xs">
                             <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
-                                {format(date, "dd/MM/yyyy", { locale: es })}
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
                             </div>
                             <div className="text-muted-foreground flex items-center justify-center gap-1">
                                 <Clock className="size-3" />
@@ -249,7 +251,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     return (
                         <div className="text-center text-xs">
                             <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
-                                {format(date, "dd/MM/yyyy", { locale: es })}
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
                             </div>
                         </div>
                     );
@@ -274,7 +276,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     return (
                         <div className="text-center text-xs">
                             <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
-                                {format(date, "dd/MM/yyyy", { locale: es })}
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
                             </div>
                         </div>
                     );
@@ -299,7 +301,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                             proveedor &&
                             <div className="text-xs text-muted-foreground flex items-center gap-3">
                                 {proveedor.nit && <div>NIT: {proveedor.nit}</div>}
-                                {proveedor.contacto && <div className="flex gap-1 items-center"><User className="size-3"/> {proveedor.contacto}</div>}
+                                {proveedor.contacto && <div className="flex gap-1 items-center"><User className="size-3" /> {proveedor.contacto}</div>}
                             </div>
                         }
                     </div>

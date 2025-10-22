@@ -676,7 +676,7 @@ const QuotationEditScreen = () => {
                                                 id="comentarios"
                                                 {...register("comentarios")}
                                                 placeholder="Comentarios adicionales sobre la Cotización"
-                                                className="min-h-[50px]"
+                                                rows={1}
                                             />
                                         </div>
                                     </div>

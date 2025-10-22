@@ -37,6 +37,7 @@ import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import SaleEditSkeleton from "../components/saleEdit/saleEditSkeleton"
 import ShortcutKey from "@/components/common/ShortcutKey"
+import { Textarea } from "@/components/atoms/textarea"
 
 const SaleEditScreen = () => {
     const navigate = useNavigate()
@@ -610,10 +611,11 @@ const SaleEditScreen = () => {
                                     </div>
                                     <div>
                                         <Label htmlFor="comentarios">Comentarios</Label>
-                                        <Input
+                                        <Textarea
                                             id="comentarios"
                                             {...register("comentario")}
                                             placeholder="Comentarios adicionales sobre la venta"
+                                            rows={1}
                                         />
                                     </div>
                                 </div>

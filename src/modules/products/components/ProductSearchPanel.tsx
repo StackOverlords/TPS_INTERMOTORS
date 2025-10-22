@@ -16,23 +16,28 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
-import { Loader2, Plus, RotateCcw, Search, Zap } from 'lucide-react';
+import { Check, Plus, RotateCcw, Search, Zap } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useProductFilters } from '@/modules/products/hooks/useProductFilters';
 import { useBranchStore } from '@/states/branchStore';
 import { useProductsPaginated } from '../hooks/queries/useProductsPaginated';
+import type { CartItem } from '@/modules/shoppingCart/types/cart.types';
 
-interface ProductSearchPanelProps {
-  selectedProducts: any[];
+type BaseWithId = { id: number };
+
+interface ProductSearchPanelProps<T extends BaseWithId | CartItem> {
+  selectedProducts: T[];
   onProductSelect: (product: ProductGet) => void;
   defaultSearchMode?: 'realtime' | 'manual';
+  onlySelectWithStock?: boolean;
 }
 
-const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
+function ProductSearchPanel<T extends BaseWithId | CartItem>({
   selectedProducts,
   onProductSelect,
   defaultSearchMode = 'manual',
-}) => {
+  onlySelectWithStock = false,
+}: ProductSearchPanelProps<T>) {
   // Estado para el modo de búsqueda
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>(defaultSearchMode);
 
@@ -61,7 +66,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   const {
     data: productsResponse,
     isLoading,
-    error,
+    isError,
+    isFetching,
   } = useProductsPaginated(activeFilters);
 
   // Obtener productos y meta información
@@ -71,9 +77,14 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   // Verificar si un producto ya está seleccionado
   const isProductSelected = useCallback(
     (productId: number) => {
-      return selectedProducts.some(
-        p => p.id_producto === productId.toString() || p.producto?.id === productId
+      const item = selectedProducts.find(
+        p => ('id' in p ? p.id === productId : p.product.id === productId)
       );
+
+      return {
+        isSelected: !!item,
+        item,
+      };
     },
     [selectedProducts]
   );
@@ -94,6 +105,13 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   const toggleSearchMode = () => {
     setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
   };
+
+  const getStockColor = (stock: number, stock_min: number) => {
+    const stockMin: number = stock_min || 10
+    if (stock <= stockMin) return "danger"
+    if (stock <= (stockMin + 10)) return "warning"
+    return "success"
+  }
 
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
@@ -148,51 +166,64 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         ),
       },
       {
-        accessorKey: 'stock_actual',
-        header: 'Stock',
-        size: 70,
+        accessorKey: "stock_actual",
+        header: "Stock Actual",
+        size: 80,
+        minSize: 60,
         cell: ({ row, getValue }) => {
-          const stock = parseInt(getValue() as string, 10);
+          const stock = getValue<number>();
+          const stockMin = row.original.stock_minimo || 1;
           return (
-            <div className="text-xs text-center">
-              <span
-                className={
-                  stock > 0 ? 'text-gray-900 font-medium' : 'text-red-600'
-                }
-              >
-                {stock}
-              </span>
-              <span className="text-xs text-gray-500 ml-1">
-                {row.original.unidad_medida}
-              </span>
-            </div>
+            <Badge
+              variant={getStockColor(stock, stockMin)}
+              className={`flex flex-col justify-center rounded`}
+            >
+              <span className="font-bold">{getValue<number>().toFixed(0)}</span>
+              <span className="text-[10px] uppercase">{row.original.unidad_medida}</span>
+            </Badge>
           );
         },
       },
       {
         id: 'actions',
-        header: '',
+        header: 'Acciones',
         size: 90,
         cell: ({ row }) => {
-          const isSelected = isProductSelected(row.original.id);
+          const product = row.original
+
+          const {
+            isSelected,
+            item
+          } = isProductSelected(row.original.id);
+
+          const quantity = item && "quantity" in item ? item.quantity : null
+          const isOutOfStock = quantity != null ?
+            (isSelected && quantity >= product.stock_actual) :
+            isSelected
+
+          const isDisabled = onlySelectWithStock && product.stock_actual <= 0;
+
           return (
             <Button
               type='button'
               size="sm"
               variant={isSelected ? 'outline' : 'default'}
-              disabled={isSelected}
-              onClick={() => onProductSelect(row.original)}
-              className={
-                isSelected
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed h-7 text-xs'
-                  : 'bg-gray-900 hover:bg-gray-800 h-7 text-xs'
-              }
+              disabled={isOutOfStock || isDisabled}
+              onClick={() => onProductSelect(product)}
+              className='h-7 text-xs'
             >
-              {isSelected ? (
-                '✓ Agregado'
+              {isOutOfStock ? (
+                <>
+                  <Check className="size-3" />
+                  Agregado
+                </>
+              ) : isSelected && quantity != null ? (
+                <>
+                  {quantity} Agregados
+                </>
               ) : (
                 <>
-                  <Plus className="w-3 h-3 mr-1" />
+                  <Plus className="size-3" />
                   Agregar
                 </>
               )}
@@ -201,7 +232,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         },
       },
     ],
-    [isProductSelected, onProductSelect]
+    [isProductSelected, onProductSelect, onlySelectWithStock]
   );
 
   const table = useReactTable({
@@ -349,22 +380,15 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
 
       {/* Table Container */}
       <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-sm text-gray-500">
-              Cargando productos...
-            </span>
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-500 text-sm">
-            <p>Error al cargar los productos</p>
-            <p className="text-xs mt-1">Intenta nuevamente</p>
-          </div>
-        ) : products.length > 0 ? (
+        {products.length > 0 ? (
           <CustomizableTable
             table={table}
-            isLoading={false}
+            isLoading={isLoading}
+            isError={isError}
+            isFetching={isFetching}
+            rows={filters.pagina_registros}
+            errorMessage="Ocurrió un error al cargar los productos"
+            noDataMessage="No se encontraron productos"
           />
         ) : (
           <div className="text-center py-8 text-gray-500 text-sm">

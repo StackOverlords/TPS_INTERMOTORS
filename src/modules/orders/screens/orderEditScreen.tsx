@@ -116,8 +116,11 @@ const OrderEditScreen = () => {
         getValues,
         setError,
         clearErrors,
+        watch,
         formState: { errors }
     } = formMethods
+
+    const currentStatus = watch("estado_actual")
 
     useEffect(() => {
         if (orderData && orderTypesData && orderModalitiesData) {
@@ -173,6 +176,24 @@ const OrderEditScreen = () => {
             }
         }
     }, [orderDetailsHook.details, hasInitialized, setValue, clearErrors]);
+
+    // Validaciones de fechas según estado
+    const statusesDisablingTransit = ["P", "C"];
+    const statusesDisablingArrival = ["P", "C", "T"];
+
+    useEffect(() => {
+        if (!currentStatus || !hasInitialized) return;
+
+        // Si el estado no permite fecha de tránsito, limpiarla
+        if (statusesDisablingTransit.includes(currentStatus)) {
+            setValue("fecha_inicio_transito", "");
+        }
+
+        // Si el estado no permite fecha de llegada, limpiarla
+        if (statusesDisablingArrival.includes(currentStatus)) {
+            setValue("fecha_llegada", "");
+        }
+    }, [currentStatus, hasInitialized, setValue]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -508,6 +529,7 @@ const OrderEditScreen = () => {
                                                 id="fechaTransito"
                                                 type="date"
                                                 {...register("fecha_inicio_transito")}
+                                                disabled={statusesDisablingTransit.includes(currentStatus)}
                                             />
                                         </div>
                                         <div>
@@ -518,6 +540,7 @@ const OrderEditScreen = () => {
                                                 id="fechaLlegada"
                                                 type="date"
                                                 {...register("fecha_llegada")}
+                                                disabled={statusesDisablingArrival.includes(currentStatus)}
                                             />
                                         </div>
                                         <div>

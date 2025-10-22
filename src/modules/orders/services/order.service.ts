@@ -73,7 +73,7 @@ export const orderService = {
     /**
      * Actualizar un pedido por ID
      * @param id - ID del pedido
-     * @param data - Datos para actualizar la pedido
+     * @param data - Datos para actualizar el pedido
      */
     async update(id: number, data: OrderUpdate): Promise<OrderGetById> {
         Logger.info('Updating Order', { id, data }, MODULE_NAME);

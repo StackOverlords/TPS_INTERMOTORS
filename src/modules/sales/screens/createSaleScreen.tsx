@@ -31,6 +31,7 @@ import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import ResizableBox from "@/components/atoms/resizable-box";
+import { Textarea } from "@/components/atoms/textarea";
 
 const CreateSaleScreen = () => {
     const navigate = useNavigate();
@@ -567,10 +568,11 @@ const CreateSaleScreen = () => {
                                 </div>
                                 <div>
                                     <Label htmlFor="comentarios">Comentarios</Label>
-                                    <Input
+                                    <Textarea
                                         id="comentarios"
                                         {...register("comentario")}
                                         placeholder="Comentarios adicionales sobre la venta"
+                                        rows={1}
                                     />
                                 </div>
                             </div>
@@ -590,6 +592,7 @@ const CreateSaleScreen = () => {
                                 <ProductSearchPanel
                                     selectedProducts={items}
                                     onProductSelect={handleAddProductItem}
+                                    onlySelectWithStock={true}
                                 />
                             </ResizableBox>
                         </div>
