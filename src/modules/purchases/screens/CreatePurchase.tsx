@@ -89,7 +89,7 @@ const CreatePurchase: React.FC = () => {
             <ResizableBox
               direction="vertical"
               minSize={'200px'}
-              initialSize={'600px'}
+              initialSize={'300px'}
             >
               <ProductSearchPanel
                 selectedProducts={formData.detalles}

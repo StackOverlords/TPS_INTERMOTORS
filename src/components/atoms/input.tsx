@@ -18,7 +18,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         ref={ref}
         onFocus={(e) => {
           if (autoSelectOnFocus) {
-            e.target.select()
+            setTimeout(() => {
+              e.target.select()
+            }, 0)
           }
           onFocus?.(e) // por si el usuario pasa otro handler
         }}

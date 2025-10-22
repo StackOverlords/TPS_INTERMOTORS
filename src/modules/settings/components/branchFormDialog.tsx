@@ -1,18 +1,18 @@
-import { useForm } from 'react-hook-form';
 import { Button } from '@/components/atoms/button';
-import { ImageIcon, Loader2, Plus, Save, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/atoms/dialog';
-import { Label } from '@/components/atoms/label';
 import { Input } from '@/components/atoms/input';
-import type { CreateBranch, UpdateBranch } from '../types/branch.types';
-import { useGetBranchById } from '../hooks/branch/useGetBranchById';
-import { useCreateBranch } from '../hooks/branch/useCreateBranch';
-import { useUpdateBranch } from '../hooks/branch/useUpdateBranch';
+import { Label } from '@/components/atoms/label';
+import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ImageIcon, Loader2, Plus, Save, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useCreateBranch } from '../hooks/branch/useCreateBranch';
+import { useGetBranchById } from '../hooks/branch/useGetBranchById';
+import { useUpdateBranch } from '../hooks/branch/useUpdateBranch';
 import { CreateBranchSchema, UpdateBranchSchema } from '../schemas/branch.schema';
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
+import type { CreateBranch, UpdateBranch } from '../types/branch.types';
 
 interface BranchFormDialogProps {
     isOpen: boolean;
@@ -295,7 +295,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                     </div>
 
                     {/* Información de Contacto */}
-                    <div className="pt-2 border-t">
+                    <div className="pt-2">
                         <h3 className="text-sm font-semibold text-gray-700 mb-3">Información de Contacto</h3>
 
                         <div className="space-y-4">
@@ -383,7 +383,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
 
                     {/* Imagen */}
                     {(
-                        <div className="pt-2 border-t">
+                        <div className="pt-2">
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">Imagen</h3>
                             <div className="space-y-3">
                                 <div>

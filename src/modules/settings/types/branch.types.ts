@@ -6,7 +6,11 @@ import type {
     GetAllBranchesSchema,
     GetByIdBranchSchema,
     UpdateBranchSchema,
-    ContactInfoSchema
+    ContactInfoSchema,
+    BranchUserSchema,
+    GetBranchUsersSchema,
+    BranchRolesSchema,
+    AddUserToBranchSchema
 } from "../schemas/branch.schema";
 import type { PaginationParams } from "../../shared/types/paginationParams";
 
@@ -22,3 +26,9 @@ export interface BranchFilters extends PaginationParams {
     nombre?: string
     estado?: boolean
 }
+
+// Types para usuarios de sucursales
+export type BranchUser = z.infer<typeof BranchUserSchema>
+export type GetBranchUsers = z.infer<typeof GetBranchUsersSchema>
+export type BranchRoles = z.infer<typeof BranchRolesSchema>
+export type AddUserToBranch = z.infer<typeof AddUserToBranchSchema>

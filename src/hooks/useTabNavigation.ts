@@ -114,10 +114,12 @@ export const useTabNavigation = () => {
   }, [tabs, activeTabId, setActiveTab, navigate]);
 
 
-  //Cerrar tab actual
+  //Cerrar tab actual o una tab específica
 
-  const closeCurrentTab = useCallback(() => {
-    console.log('🔵 closeCurrentTab llamado');
+  const closeCurrentTab = useCallback((tabIdToClose?: string) => {
+    const targetTabId = tabIdToClose || activeTabId;
+
+    console.log('🔵 closeCurrentTab llamado con:', targetTabId);
     console.log('📊 Estado en closeCurrentTab:', {
       tabs: tabs.map(t => ({ id: t.id, title: t.title })),
       activeTabId
@@ -129,19 +131,19 @@ export const useTabNavigation = () => {
       return;
     }
 
-    if (!activeTabId) {
-      console.log('⚠️ No hay activeTabId');
+    if (!targetTabId) {
+      console.log('⚠️ No hay targetTabId');
       return;
     }
 
-    console.log('🗑️ Intentando cerrar tab:', activeTabId);
+    console.log('🗑️ Intentando cerrar tab:', targetTabId);
 
     // Activar bandera para prevenir recreación de tab
     isClosingTabRef.current = true;
 
-    // Remover la tab actual
+    // Remover la tab actual o específica
     // IMPORTANTE: removeTab actualiza automáticamente el activeTabId al siguiente tab disponible
-    removeTab(activeTabId);
+    removeTab(targetTabId);
 
     // Después de remover, obtener el nuevo activeTabId del store y navegar a esa tab
     setTimeout(() => {

@@ -41,12 +41,13 @@ export default function Layout({ children }: LayoutProps) {
     }
   );
 
-  // Atajos de teclado para tabs
-  useHotkeys('ctrl+t', e => {
-    e.preventDefault();
-    // El dashboard se abrirá automáticamente por el hook
-    window.location.hash = '#/dashboard';
-  });
+  // // Atajos de teclado para tabs
+  // useHotkeys('ctrl+t', e => {
+  //   e.preventDefault();
+  //   console.log("first")
+  //   // El dashboard se abrirá automáticamente por el hook
+  //   // window.location.hash = '#/dashboard';
+  // });
 
   // useHotkeys('ctrl+w', e => {
   //   e.preventDefault();
@@ -75,7 +76,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="h-16">
             <TopNav onOpenCartChange={toggle} />
           </div>
-          <TabBar />
+          <TabBar onCloseTab={closeCurrentTab} />
         </header>
         <div
           id="main-scroll-container"

@@ -4,14 +4,19 @@ import {
   exportKeybindings,
   getAllKeybindings,
   importKeybindings,
-  resetAllKeybindings
+  resetAllKeybindings,
+  validateImportFile,
+  type ImportValidationResult,
+  type ImportMode,
 } from "@/database/schemas/keybindings.schema";
 import keyBindings from "@/hooks/keyBindings/global.keys";
 import { cn } from "@/lib/utils";
 import { clearKeybindingsCache } from "@/services/keybindingsService";
 import { FileDown, FileUp, RotateCcw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import KeybindingRow from "../keyBindingRow";
+import ImportKeybindingsModal from "../ImportKeybindingsModal";
 
 // Nombres amigables para categorías
 const categoryNames: Record<string, string> = {
@@ -26,6 +31,10 @@ const KeybindingsSettings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [keybindings, setKeybindings] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importValidation, setImportValidation] = useState<ImportValidationResult | null>(null);
+  const [importFileContent, setImportFileContent] = useState<string>("");
+  const [importFileName, setImportFileName] = useState<string>("");
 
   // Estructura plana de todos los keybindings con sus defaults
   const allKeybindings = Object.entries(keyBindings).flatMap(([category, bindings]) =>
@@ -153,30 +162,97 @@ const KeybindingsSettings = () => {
 
   const handleExport = async () => {
     try {
+      console.log('Iniciando exportación...');
       const json = await exportKeybindings();
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `keybindings-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      console.log('JSON generado:', json.substring(0, 100));
+
+      // Usar la API de Tauri para guardar archivos
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+
+      const fileName = `keybindings-${new Date().toISOString().split('T')[0]}.json`;
+
+      // Mostrar diálogo para guardar archivo
+      const filePath = await save({
+        defaultPath: fileName,
+        filters: [{
+          name: 'JSON',
+          extensions: ['json']
+        }]
+      });
+
+      if (filePath) {
+        await writeTextFile(filePath, json);
+
+        toast.success('Atajos exportados correctamente', {
+          description: `Archivo guardado en: ${filePath}`
+        });
+      }
     } catch (error) {
-      // console.error('Error exporting keybindings:', error);
+      console.error('Error en exportación:', error);
+      toast.error('Error al exportar', {
+        description: error instanceof Error ? error.message : 'Error desconocido'
+      });
     }
   };
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImportFileSelect = async () => {
     try {
-      const text = await file.text();
-      await importKeybindings(text);
-      await loadKeybindings();
+      // Usar la API de Tauri para abrir archivos
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const { readTextFile } = await import('@tauri-apps/plugin-fs');
+
+      // Mostrar diálogo para abrir archivo
+      const filePath = await open({
+        multiple: false,
+        filters: [{
+          name: 'JSON',
+          extensions: ['json']
+        }]
+      });
+
+      if (!filePath) return;
+
+      // Leer el archivo
+      const text = await readTextFile(filePath as string);
+
+      // Validar el archivo
+      const validation = await validateImportFile(text);
+
+      // Guardar para usar después
+      setImportFileContent(text);
+      setImportFileName(typeof filePath === 'string' ? filePath.split(/[\\/]/).pop() || 'archivo.json' : 'archivo.json');
+      setImportValidation(validation);
+
+      // Mostrar modal de vista previa
+      setImportModalOpen(true);
     } catch (error) {
-      // console.error('Error importing keybindings:', error);
-      alert('Error al importar los atajos de teclado. Verifica el formato del archivo.');
+      toast.error('Error al leer el archivo', {
+        description: error instanceof Error ? error.message : 'El archivo no es válido'
+      });
+    }
+  };
+
+  const handleImportConfirm = async (mode: ImportMode) => {
+    try {
+      await importKeybindings(importFileContent, { mode });
+      await clearKeybindingsCache(); // Limpiar cache y notificar
+      await loadKeybindings(); // Recargar UI
+
+      setImportModalOpen(false);
+
+      const modeText =
+        mode === 'replace' ? 'reemplazados' :
+        mode === 'add-only' ? 'agregados' :
+        'combinados';
+
+      toast.success('Atajos importados correctamente', {
+        description: `Los atajos han sido ${modeText} exitosamente`
+      });
+    } catch (error) {
+      toast.error('Error al importar', {
+        description: error instanceof Error ? error.message : 'Error desconocido'
+      });
     }
   };
 
@@ -220,39 +296,29 @@ const KeybindingsSettings = () => {
             variant="ghost"
             size="sm"
             onClick={handleResetAll}
-            className="h-8 gap-1.5 text-xs"
             title="Restablecer todo"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3 h-3" />
             Reset
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleExport}
-            className="h-8 gap-1.5 text-xs"
             title="Exportar configuración"
           >
-            <FileDown className="w-3.5 h-3.5" />
+            <FileDown className="w-3 h-3" />
             Exportar
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => document.getElementById('import-keybindings')?.click()}
+            onClick={handleImportFileSelect}
             title="Importar configuración"
           >
-            <FileUp className="w-3.5 h-3.5" />
+            <FileUp className="w-3 h-3" />
             Importar
           </Button>
-          <input
-            id="import-keybindings"
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            className="hidden"
-          />
         </div>
       </div>
 
@@ -299,6 +365,15 @@ const KeybindingsSettings = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de importación */}
+      <ImportKeybindingsModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onConfirm={handleImportConfirm}
+        validation={importValidation}
+        fileName={importFileName}
+      />
     </div>
   );
 };
