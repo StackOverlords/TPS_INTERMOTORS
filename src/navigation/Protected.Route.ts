@@ -27,9 +27,9 @@ const protectedRoutes: RouteType[] = [
   ...purchasesProtectedRoutes,
   ...salesProtectedRoutes,
   ...quotationsProtectedRoutes,
-  ...settingsProtectedRoutes,
   ...ordersProtectedRoutes,
   ...returnsProtectedRoutes,
+  ...settingsProtectedRoutes,
 ];
 
 export default protectedRoutes;
