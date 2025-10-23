@@ -1,8 +1,8 @@
 import { Logger } from "@/lib/logger";
 import { ApiService } from "@/lib/apiService";
-import type { BranchFilters, CreateBranch, CreateBranchResponse, GetAllBranches, GetByIdBranch, UpdateBranch } from "../types/branch.types";
+import type { BranchFilters, CreateBranch, CreateBranchResponse, GetAllBranches, GetByIdBranch, UpdateBranch, GetBranchUsers, BranchRoles, AddUserToBranch } from "../types/branch.types";
 import { BRANCH_ENDPOINTS } from "./endpoints/branchEndpoints.service";
-import { CreateBranchResponseSchema, GetAllBranchesSchema, GetByIdBranchSchema } from "../schemas/branch.schema";
+import { CreateBranchResponseSchema, GetAllBranchesSchema, GetByIdBranchSchema, GetBranchUsersSchema, BranchRolesSchema } from "../schemas/branch.schema";
 
 const MODULE_NAME = 'BRANCH_SERVICE';
 
@@ -150,5 +150,78 @@ export const branchesService = {
         await ApiService.delete(BRANCH_ENDPOINTS.delete(id));
 
         Logger.info('Branch deleted successfully', { id }, MODULE_NAME);
+    },
+
+    /**
+     * Obtener usuarios de una sucursal
+     * @param branchId - ID de la sucursal
+     */
+    async getBranchUsers(branchId: number): Promise<GetBranchUsers> {
+        Logger.info('Fetching Branch Users', { branchId }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            BRANCH_ENDPOINTS.getUsers(branchId),
+            GetBranchUsersSchema
+        );
+
+        Logger.info('Branch Users fetched successfully', {
+            branchId,
+            count: response.data.length,
+        }, MODULE_NAME);
+
+        return response;
+    },
+
+    /**
+     * Obtener roles disponibles para usuarios de sucursales
+     */
+    async getBranchRoles(): Promise<BranchRoles> {
+        Logger.info('Fetching Branch Roles', {}, MODULE_NAME);
+
+        const response = await ApiService.get(
+            BRANCH_ENDPOINTS.getRoles,
+            BranchRolesSchema
+        );
+
+        Logger.info('Branch Roles fetched successfully', {}, MODULE_NAME);
+
+        return response;
+    },
+
+    /**
+     * Agregar un usuario a una sucursal
+     * @param branchId - ID de la sucursal
+     * @param data - Datos del usuario a agregar (usuario_id y rol)
+     */
+    async addUserToBranch(branchId: number, data: AddUserToBranch): Promise<void> {
+        Logger.info('Adding User to Branch', { branchId, data }, MODULE_NAME);
+
+        await ApiService.post(
+            BRANCH_ENDPOINTS.addUser(branchId),
+            data
+        );
+
+        Logger.info('User added to Branch successfully', {
+            branchId,
+            userId: data.usuario_id
+        }, MODULE_NAME);
+    },
+
+    /**
+     * Remover un usuario de una sucursal
+     * @param branchId - ID de la sucursal
+     * @param userId - ID del usuario
+     */
+    async removeUserFromBranch(branchId: number, userId: number): Promise<void> {
+        Logger.info('Removing User from Branch', { branchId, userId }, MODULE_NAME);
+
+        await ApiService.get(
+            BRANCH_ENDPOINTS.removeUser(branchId, userId)
+        );
+
+        Logger.info('User removed from Branch successfully', {
+            branchId,
+            userId
+        }, MODULE_NAME);
     },
 };

@@ -9,4 +9,10 @@ export const BRANCH_QUERY_KEYS = {
     details: () => [...BRANCH_QUERY_KEYS.all, "detail"] as const,
     detail: (id: string | number) =>
         [...BRANCH_QUERY_KEYS.details(), id] as const,
+
+    users: () => [...BRANCH_QUERY_KEYS.all, "users"] as const,
+    branchUsers: (branchId: string | number) =>
+        [...BRANCH_QUERY_KEYS.users(), branchId] as const,
+
+    roles: () => [...BRANCH_QUERY_KEYS.all, "roles"] as const,
 };

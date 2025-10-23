@@ -59,3 +59,31 @@ export const CreateBranchResponseSchema = z.object({
 
 // El endpoint getById devuelve el mismo formato que create/update
 export const GetByIdBranchSchema = CreateBranchResponseSchema;
+
+// Schemas para la gestión de usuarios en sucursales
+export const BranchUserSchema = z.object({
+    id_usuario: z.number(),
+    usuario: z.object({
+        nickname: z.string(),
+        fecha_creacion: z.string(),
+        email: z.string().nullable(),
+        data_empleado: z.object({
+            id: z.number(),
+            nombre: z.string(),
+        }),
+    }),
+    rol: z.string(),
+    rol_name: z.string(),
+    fecha_registro: z.string(),
+});
+
+export const GetBranchUsersSchema = z.object({
+    data: z.array(BranchUserSchema),
+});
+
+export const BranchRolesSchema = z.record(z.string(), z.string());
+
+export const AddUserToBranchSchema = z.object({
+    usuario_id: z.number(),
+    rol: z.string(),
+});

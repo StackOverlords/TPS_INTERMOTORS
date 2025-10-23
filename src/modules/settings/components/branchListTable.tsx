@@ -7,11 +7,12 @@ import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import authSDK from "@/services/sdk-simple-auth";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type VisibilityState } from "@tanstack/react-table";
-import { Edit, GitBranchIcon, Settings } from "lucide-react";
+import { Edit, GitBranchIcon, Settings, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { Branch } from "../types/branch.types";
 import BranchFormDialog from "./branchFormDialog";
+import { BranchUsersModal } from "./BranchUsersModal";
 
 const getColumnVisibilityKey = (userName: string) => `branches-columns-${userName}`;
 
@@ -46,6 +47,8 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+    const [usersModalOpen, setUsersModalOpen] = useState(false);
+    const [selectedBranch, setSelectedBranch] = useState<{ id: number; name: string } | null>(null);
 
     const isEditing = useMemo(() => editingId !== null, [editingId]);
 
@@ -71,6 +74,16 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         if (!open) {
             setEditingId(null);
         }
+    }, []);
+
+    const handleOpenUsersModal = useCallback((id: number, name: string) => {
+        setSelectedBranch({ id, name });
+        setUsersModalOpen(true);
+    }, []);
+
+    const handleCloseUsersModal = useCallback(() => {
+        setUsersModalOpen(false);
+        setSelectedBranch(null);
     }, []);
 
     useEffect(() => {
@@ -207,10 +220,11 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         {
             id: "actions",
             header: "Acciones",
-            size: 80,
-            minSize: 80,
+            size: 120,
+            minSize: 120,
             cell: ({ row }) => {
                 const id = row.original.id
+                const nombre = row.original.nombre
                 return (
                     <div className="flex items-center gap-2">
                         <Button
@@ -218,6 +232,13 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                             onClick={() => handleEditBranch(id)}
                         >
                             <Edit className="size-4" />
+                        </Button>
+
+                        <Button
+                            variant={"outline"}
+                            onClick={() => handleOpenUsersModal(id, nombre)}
+                        >
+                            <Users className="size-4" />
                         </Button>
 
                         {/* <Button
@@ -231,7 +252,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                 )
             },
         },
-    ], [handleEditBranch, handleOpenDeleteAlert]);
+    ], [handleEditBranch, handleOpenDeleteAlert, handleOpenUsersModal]);
 
     const table = useReactTable<Branch>({
         data: branches,
@@ -320,6 +341,15 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                     showRows={rows}
                 />
             </CardContent>
+
+            {selectedBranch && (
+                <BranchUsersModal
+                    branchId={selectedBranch.id}
+                    branchName={selectedBranch.name}
+                    open={usersModalOpen}
+                    onOpenChange={handleCloseUsersModal}
+                />
+            )}
         </Card>
     );
 }
