@@ -1,14 +1,15 @@
 import Content from "@/modules/dashboard/screens/content";
 import { LayoutDashboardIcon } from "lucide-react";
+import ordersProtectedRoutes from "./Order.Route";
 import productosProtectedRoutes from "./Productos.Route";
 import purchasesProtectedRoutes from "./Purchases.Route";
 import quotationsProtectedRoutes from "./Quotations.Route";
+import returnsProtectedRoutes from "./Returns.Route";
 import type RouteType from "./RouteType";
 import salesProtectedRoutes from "./Sales.Route";
 import settingsProtectedRoutes from "./Settings.Route";
+import transfersProtectedRoutes from "./Transfers.Route";
 import usersProtectedRoutes from "./Users.Route";
-import ordersProtectedRoutes from "./Order.Route";
-import returnsProtectedRoutes from "./Returns.Route";
 
 const protectedRoutes: RouteType[] = [
   {
@@ -30,6 +31,7 @@ const protectedRoutes: RouteType[] = [
   ...ordersProtectedRoutes,
   ...returnsProtectedRoutes,
   ...settingsProtectedRoutes,
+  ...transfersProtectedRoutes
 ];
 
 export default protectedRoutes;
