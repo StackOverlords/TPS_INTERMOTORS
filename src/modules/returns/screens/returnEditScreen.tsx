@@ -98,7 +98,7 @@ const ReturnEditScreen = () => {
             // Transformar detalles a UIReturnDetailUpdate
             const detallesUI: UIReturnDetailUpdate[] = returnData.detalles.map((detalle) => ({
                 almacen_out_det_id: detalle.almacen_out_det_id,
-                almacen_out_dev_det_id: detalle.almacen_out_dev_id,
+                almacen_out_dev_det_id: detalle.id,
                 cantidad: detalle.cantidad,
                 precio: detalle.costo ?? 0,
                 comentario: detalle.comentario ?? "",
