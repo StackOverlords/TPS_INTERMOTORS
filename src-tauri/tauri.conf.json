@@ -26,7 +26,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["appimage", "msi", "nsis"],
+    "targets": [
+      "appimage",
+      "msi",
+      "nsis"
+    ],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
@@ -59,10 +63,19 @@
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4N0RCRUYzNzRBODAzQ0YKUldUUEE2aDA4NzU5T1B5K0JYQ1Brcy9hZVRhQzltNXRkWjIwTWl1Y3BJWE1HSXphSndWMWNpcU4K"
     },
     "sql": {
-      "preload": ["sqlite:app.db"],
+      "preload": [
+        "sqlite:app.db"
+      ],
       "scope": {
-        "allowed": ["sqlite:app.db"]
+        "allowed": [
+          "sqlite:app.db"
+        ]
       }
-    }
+    },
+    "dialog": null,
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "shell": null
   }
 }

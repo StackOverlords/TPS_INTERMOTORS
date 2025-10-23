@@ -1,9 +1,9 @@
 import { useNavigate, useParams } from "react-router";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import TooltipButton from "@/components/common/TooltipButton";
 import { Kbd } from "@/components/atoms/kbd";
-import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, MapPin, Phone, Trash2, User } from "lucide-react";
+import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, MapPin, Phone, Printer, Trash2, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Label } from "@/components/atoms/label";
 import { formatCurrency, formatDate } from "@/utils/formaters";
@@ -17,10 +17,12 @@ import { useQuotationGetById } from "../hooks/useQuotationGetById";
 import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
 import SaleDetailSkeleton from "@/modules/sales/components/saleDetail/saleDetailSkeleton";
 import QuotationProductsSection from "../components/quotationDetail/SaleProductsSection";
+import { PDFViewer } from "../../../components/common/PDFViewer";
 
 const QuotationDetailScreen = () => {
     const navigate = useNavigate()
     const { id: quotationId } = useParams()
+    const [selectedQuotationId, setSelectedQuotationId] = useState<number | null>(null);
 
     const {
         data: quotationData,
@@ -149,6 +151,17 @@ const QuotationDetailScreen = () => {
                             >
                                 <Edit className="h-4 w-4" />
                                 Editar
+                            </TooltipButton>
+
+                            <TooltipButton
+                                onClick={() => setSelectedQuotationId(quotationData?.id || null)}
+                                tooltip="Imprimir cotizacion"
+                                buttonProps={{
+                                    variant: 'default',
+                                }}
+                            >
+                                <Printer className="h-4 w-4" />
+                                Imprimir
                             </TooltipButton>
 
                             <TooltipButton
@@ -328,6 +341,16 @@ const QuotationDetailScreen = () => {
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeleting}
             />
+            {/* Modal PDF Viewer */}
+            {selectedQuotationId && (
+                <PDFViewer
+                    id={selectedQuotationId}
+                    onClose={() => setSelectedQuotationId(null)}
+                    isDialogOpen={true}
+                    pdfName="cotizacion"
+                    title={`Cotizacion Nro. ${quotationData?.id}`}
+                />
+            )}
         </main >
     );
 }
