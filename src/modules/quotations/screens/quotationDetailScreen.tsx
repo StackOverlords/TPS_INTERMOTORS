@@ -22,7 +22,7 @@ import { PDFViewer } from "../../../components/common/PDFViewer";
 const QuotationDetailScreen = () => {
     const navigate = useNavigate()
     const { id: quotationId } = useParams()
-    const [selectedQuotationId, setSelectedQuotationId] = useState<number | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
 
     const {
         data: quotationData,
@@ -87,6 +87,14 @@ const QuotationDetailScreen = () => {
 
     const handleUpdateQuotation = () => {
         navigate(`/dashboard/quotations/${quotationData?.id}/update`)
+    }
+
+    const handleOpenPrintDialog = () => {
+        setIsDialogOpen(true)
+    }
+
+    const handleClosePrintDialog = () => {
+        setIsDialogOpen(false)
     }
 
     // Shortcuts
@@ -154,7 +162,7 @@ const QuotationDetailScreen = () => {
                             </TooltipButton>
 
                             <TooltipButton
-                                onClick={() => setSelectedQuotationId(quotationData?.id || null)}
+                                onClick={handleOpenPrintDialog}
                                 tooltip="Imprimir cotizacion"
                                 buttonProps={{
                                     variant: 'default',
@@ -342,15 +350,13 @@ const QuotationDetailScreen = () => {
                 isLoading={isDeleting}
             />
             {/* Modal PDF Viewer */}
-            {selectedQuotationId && (
-                <PDFViewer
-                    id={selectedQuotationId}
-                    onClose={() => setSelectedQuotationId(null)}
-                    isDialogOpen={true}
-                    pdfName="cotizacion"
-                    title={`Cotizacion Nro. ${quotationData?.id}`}
-                />
-            )}
+            <PDFViewer
+                id={Number(quotationId)}
+                onClose={handleClosePrintDialog}
+                isOpen={isDialogOpen}
+                pdfName="cotizacion"
+                title={`Cotizacion Nro. ${quotationData?.id}`}
+            />
         </main >
     );
 }

@@ -8,15 +8,15 @@ import { cn } from "@/lib/utils";
 
 interface PDFViewerProps {
     id: number;
-    isDialogOpen: boolean;
+    isOpen: boolean;
     onClose: (open: boolean) => void;
     title?: string;
     pdfName?: string;
 }
 
-export const PDFViewer = ({ id, isDialogOpen, onClose, title = "Detalle de impresión", pdfName = "archivo" }: PDFViewerProps) => {
+export const PDFViewer = ({ id, isOpen, onClose, title = "Detalle de impresión", pdfName = "archivo" }: PDFViewerProps) => {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-    const { data: pdfBlob, isLoading, isError } = useQuotationPDF(id, true);
+    const { data: pdfBlob, isLoading, isError } = useQuotationPDF(id, isOpen && !!id);
     const [expandedView, setExpandedView] = useState(false)
     // const environment = getEnvironment();
 
@@ -51,9 +51,9 @@ export const PDFViewer = ({ id, isDialogOpen, onClose, title = "Detalle de impre
     // };
 
     return (
-        <Dialog open={isDialogOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className={cn(
-                "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col",
+                "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col gap-2",
                 (isLoading || isError) && "max-w-max max-h-max",
                 expandedView && "max-w-full max-h-full",
             )} aria-description="pdf-viewer">
@@ -79,7 +79,7 @@ export const PDFViewer = ({ id, isDialogOpen, onClose, title = "Detalle de impre
                         <>
                             <DialogHeader className="h-max">
                                 <DialogTitle className="flex items-center justify-between">
-                                    <div className="flex items-center">
+                                    <div className="flex items-center text-base">
                                         {title}
                                     </div>
                                     <div className="flex items-center gap-2 pr-4">
