@@ -15,19 +15,13 @@ import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
 import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
+import TooltipButton from '@/components/common/TooltipButton';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
+import { useCustomTable } from '@/hooks/useCustomTable';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
 import { formatCell } from '@/utils/formatCell';
-import {
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type RowSelectionState,
-  type SortingState,
-} from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import {
   Edit,
   Eye,
@@ -51,9 +45,6 @@ import { usePurchaseFilters } from '../hooks/usePurchaseFilters';
 import { usePurchasesPaginated } from '../hooks/usePurchasesPaginated';
 import type { PurchaseGet } from '../types/PurchaseGet';
 
-const getColumnVisibilityKey = (userName: string) =>
-  `purchase-columns-${userName}`;
-
 const PurchaseListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
   const { selectedBranchId } = useBranchStore();
@@ -74,10 +65,7 @@ const PurchaseListScreen = () => {
     isRefetching: isRefetchingPurchases,
   } = usePurchasesPaginated(filters);
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [purchases, setPurchases] = useState<PurchaseGet[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState({});
   const [searchKeywords, setSearchKeywords] = useState('');
   const [debouncedSearchKeywords] = useDebounce(searchKeywords, 500);
 
@@ -97,33 +85,6 @@ const PurchaseListScreen = () => {
     }
   }, [isInfiniteScroll]);
 
-  useEffect(() => {
-    if (!user?.name) return;
-    const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-    const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-    if (savedVisibility) {
-      try {
-        const parsed = JSON.parse(savedVisibility);
-        setColumnVisibility(parsed);
-      } catch (error) {
-        console.error('Error parsing column visibility:', error);
-        localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-      }
-    }
-  }, [user?.name]);
-
-  useEffect(() => {
-    if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-    const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-    try {
-      localStorage.setItem(
-        COLUMN_VISIBILITY_KEY,
-        JSON.stringify(columnVisibility)
-      );
-    } catch (error) {
-      console.error('Error saving column visibility:', error);
-    }
-  }, [columnVisibility, user?.name]);
   // console.log(authSDK.getAccessToken());
   useEffect(() => {
     // console.log('Filtros actualizados:', filters);
@@ -450,23 +411,32 @@ const PurchaseListScreen = () => {
     []
   );
 
-  const table = useReactTable<PurchaseGet>({
+  const {
+    table,
+    rowSelection,
+    resetAll,
+  } = useCustomTable({
     data: purchases,
     columns,
-    state: {
-      sorting,
-      columnVisibility,
-      rowSelection,
-    },
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    columnResizeMode: 'onChange',
+
+    // Configuración de características
+    enableSorting: false, // ✅ Habilitar ordenamiento
     enableColumnResizing: true,
     enableRowSelection: true,
+    enableColumnVisibility: true,
+    enableColumnOrdering: true, // ✅ Habilitar reordenamiento de columnas
+    enablePagination: false,
+
+    // Columnas ocultas por defecto
+    hiddenColumns: ['Select'],
+
+    // Configuración de resize
+    columnResizeMode: 'onChange',
+
+    // Persistencia con key única por usuario
+    persistenceKey: `purchases-table-${user?.name}`,
+    persistColumnVisibility: true,
+    persistColumnOrder: true,
   });
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -505,6 +475,10 @@ const PurchaseListScreen = () => {
     setShowFilters(!showFilters);
   };
 
+  const handleResetTableConfig = () => {
+    resetAll();
+  };
+
   return (
     <main className="min-h-screen max-w-full">
       <div className="bg-white rounded-lg shadow-sm">
@@ -537,19 +511,30 @@ const PurchaseListScreen = () => {
                 <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
               </div>
 
-              <Button
+              <TooltipButton
                 onClick={handleRefetchPurchases}
-                variant="outline"
-                size="sm"
-                disabled={isRefetchingPurchases || isFetching}
-                className="w-8"
+                buttonProps={{
+                  className: 'w-8',
+                  disabled: isRefetchingPurchases || isFetching,
+                }}
+                tooltip={"Recargar compras"}
               >
                 <RefreshCcw
-                  className={`size-4 ${
-                    isRefetchingPurchases || isFetching ? 'animate-spin' : ''
-                  }`}
+                  className={`size-4 ${isRefetchingPurchases || isFetching ? 'animate-spin' : ''}`}
                 />
-              </Button>
+              </TooltipButton>
+
+              <TooltipButton
+                onClick={handleResetTableConfig}
+                buttonProps={{
+                  variant: 'outline',
+                  size: 'sm',
+                }}
+                tooltip="Resetear orden y visibilidad de columnas"
+              >
+                <Settings className="h-4 w-4" />
+                Resetear Tabla
+              </TooltipButton>
 
               <Button variant="outline" size="sm" onClick={resetFilters}>
                 <Filter className="h-4 w-4 mr-2" />
@@ -673,6 +658,8 @@ const PurchaseListScreen = () => {
               tableRef={tableRef}
               focused={isFocused}
               keyboardNavigationEnabled={true}
+              enableColumnReordering={true}
+              enableSorting={true}
             />
           </InfiniteScroll>
         ) : (
@@ -693,6 +680,8 @@ const PurchaseListScreen = () => {
                   tableRef={tableRef}
                   focused={isFocused}
                   keyboardNavigationEnabled={true}
+                  enableColumnReordering={true}
+                  enableSorting={true}
                 />
               </div>
 
