@@ -15,6 +15,12 @@
     "sql:allow-load",
     "sql:default",
     "sql:allow-execute",
-    "sql:allow-select"
+    "sql:allow-select",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "fs:allow-write-file",
+    "fs:allow-temp-read",
+    "fs:allow-temp-write",
+    "shell:default"
   ]
 }

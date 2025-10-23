@@ -103,4 +103,28 @@ export const quotationService = {
 
         Logger.info('Quotation deleted successfully', { id }, MODULE_NAME);
     },
+
+    /**
+    * Obtener PDF de cotización
+    * @param id - ID de la cotización
+    * @returns Blob del PDF
+    */
+    async getPDF(id: number): Promise<Blob> {
+        Logger.info('Fetching quotation PDF', { id }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            QUOTATION_ENDPOINTS.actions.pdf(id),
+            undefined,
+            {
+                responseType: 'blob',
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            }
+        );
+
+        Logger.info('Quotation PDF fetched successfully', { id }, MODULE_NAME);
+
+        return response as Blob;
+    },
 };
