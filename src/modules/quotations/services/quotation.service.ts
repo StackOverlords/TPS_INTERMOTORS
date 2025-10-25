@@ -105,6 +105,18 @@ export const quotationService = {
     },
 
     /**
+    * Eliminar detalle de una cotización por ID
+    * @param id - ID del detalle de cotización
+    */
+    async deleteDetail(id: number): Promise<void> {
+        Logger.info('Deleting quotation detail', { id }, MODULE_NAME);
+
+        await ApiService.delete(QUOTATION_ENDPOINTS.details.delete(id));
+
+        Logger.info('Quotation detail deleted successfully', { id }, MODULE_NAME);
+    },
+
+    /**
     * Obtener PDF de cotización
     * @param id - ID de la cotización
     * @returns Blob del PDF

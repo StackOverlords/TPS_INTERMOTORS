@@ -98,48 +98,47 @@ const TabItem = React.memo(({
                   : 'text-gray-600 hover:text-gray-900'
               )}
             >
-            {tab.icon && <tab.icon className="h-4 w-4 flex-shrink-0" />}
-            <span className="truncate flex-1 text-left">
-              {tab.title || tab.path.split('/').pop() || 'Sin título'}
-            </span>
-            {canClose && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onCloseTab(e, tab.id);
-                }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                }}
-                className={cn(
-                  'flex-shrink-0 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-gray-200 p-0.5 transition-opacity',
-                  isActive && 'opacity-100'
-                )}
-                aria-label="Cerrar pestaña"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-            {isActive && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </Button>
-        </TooltipWrapper>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onClick={() => onCloseTab({} as React.MouseEvent, tab.id)}>
-          Cerrar
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => onCloseOthers(tab.id)}>
-          Cerrar otras pestañas
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => onCloseAll()}>
-          Cerrar todas las pestañas
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+              {tab.icon && <tab.icon className="h-4 w-4 flex-shrink-0" />}
+              <span className="truncate flex-1 text-left">
+                {tab.title || tab.path.split('/').pop() || 'Sin título'}
+              </span>
+              {canClose && (
+                <span
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCloseTab(e, tab.id);
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className={cn(
+                    'flex-shrink-0 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-gray-200 p-0.5 transition-opacity cursor-pointer',
+                    isActive && 'opacity-100'
+                  )}
+                  aria-label="Cerrar pestaña"
+                >
+                  <X className="h-3 w-3" />
+                </span>
+              )}
+              {isActive && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              )}
+            </Button>
+          </TooltipWrapper>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={() => onCloseTab({} as React.MouseEvent, tab.id)}>
+            Cerrar
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => onCloseOthers(tab.id)}>
+            Cerrar otras pestañas
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => onCloseAll()}>
+            Cerrar todas las pestañas
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
     </div>
   );
 });
@@ -227,7 +226,7 @@ const TabBar: React.FC<TabBarProps> = ({ className, onCloseTab: externalOnCloseT
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
-      modifiers={[restrictToHorizontalAxis,restrictToParentElement]}
+      modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
     >
       <Tabs.Root
         value={activeTabId || undefined}
@@ -257,19 +256,19 @@ const TabBar: React.FC<TabBarProps> = ({ className, onCloseTab: externalOnCloseT
           </SortableContext>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
-      <div className="flex-shrink-0 border-l border-gray-200 px-2">
-        <TooltipWrapper tooltip="Nueva pestaña (Ctrl+T)">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleNewTab}
-            className="h-8 w-8 p-0"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-        </TooltipWrapper>
-      </div>
-    </Tabs.Root>
+        <div className="flex-shrink-0 border-l border-gray-200 px-2">
+          <TooltipWrapper tooltip="Nueva pestaña (Ctrl+T)">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNewTab}
+              className="h-8 w-8 p-0"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </TooltipWrapper>
+        </div>
+      </Tabs.Root>
     </DndContext>
   );
 };

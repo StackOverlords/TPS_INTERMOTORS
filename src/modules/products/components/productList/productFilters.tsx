@@ -7,14 +7,22 @@ import type { useProductFilters } from "../../hooks/useProductFilters";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useCommonSubcategories } from "@/modules/shared/hooks/useCommonSubcategories";
 import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
+import { Button } from "@/components/atoms/button";
+import { cn } from "@/lib/utils";
 
 interface ProductFiltersProps {
     filters: ReturnType<typeof useProductFilters>["filters"]
     updateFilter: ReturnType<typeof useProductFilters>["updateFilter"]
+    showSubcategories: boolean
+    searchMode: 'realtime' | 'manual'
+    handleManualSearch: () => void
 }
 const ProductFilters: React.FC<ProductFiltersProps> = ({
     filters,
     updateFilter,
+    showSubcategories,
+    searchMode,
+    handleManualSearch,
 }) => {
     const { data: categoriesData } = useCategoriesWithSubcategories();
     const { data: brandsData } = useCommonBrands()
@@ -31,7 +39,10 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         <div ref={containerRef}>
             {/* Búsquedas individuales */}
             <div className="p-2  border-b border-border">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className={cn(
+                    "grid grid-cols-2 gap-2",
+                    searchMode === 'manual' ? 'md:grid-cols-5' : 'md:grid-cols-4'
+                )}>
                     <div data-filter="categoria">
                         <Label>Categorias</Label>
                         <ComboboxSelect
@@ -89,63 +100,94 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                         </div>
                     </div>
 
-                    <div>
-                        <Label>Subcategorias</Label>
-                        <ComboboxSelect
-                            disabled={filters.categoria === undefined}
-                            value={filters.subcategoria !== undefined ? String(filters.subcategoria) : "all"}
-                            onChange={(value) => {
-                                const parsedValue = value === "all" ? undefined : Number(value);
-                                updateFilter("subcategoria", parsedValue);
-                            }}
-                            options={subcategoriesData || []}
-                            optionTag={"subcategoria"}
-                            enableAllOption={true}
-                        />
-                    </div>
-
-                    <div>
-                        <Label>Marca</Label>
-                        <ComboboxSelect
-                            value={filters.marca}
-                            onChange={(value) => {
-                                updateFilter("marca", value === "all" ? "" : value);
-                            }}
-                            options={(brandsData || []).map((brand) => ({
-                                id: brand.id,
-                                marca: brand.marca,
-                            }))}
-                            optionTag={"marca"}
-                            enableAllOption={true}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Medida</Label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                                placeholder="11X6X40.6..."
-                                value={filters.medida}
-                                onChange={(e) => updateFilter("medida", e.target.value)}
-                                className="pl-10 font-mono text-xs"
-                            />
+                    {searchMode === 'manual' && (
+                        <div className="flex items-end justify-end">
+                            <Button
+                                onClick={handleManualSearch}
+                                className="w-ful"
+                            >
+                                <Search className="size-4" />
+                                Buscar
+                            </Button>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-2">
-                        <Label>Número de Motor</Label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                                placeholder="1ZZ-FE..."
-                                value={filters.nro_motor}
-                                onChange={(e) => updateFilter("nro_motor", e.target.value)}
-                                className="pl-10 font-mono text-xs"
-                            />
-                        </div>
-                    </div>
+                    {
+                        showSubcategories && (
+                            <>
+                                <div>
+                                    <Label>Subcategorias</Label>
+                                    <ComboboxSelect
+                                        disabled={filters.categoria === undefined}
+                                        value={filters.subcategoria !== undefined ? String(filters.subcategoria) : "all"}
+                                        onChange={(value) => {
+                                            const parsedValue = value === "all" ? undefined : Number(value);
+                                            updateFilter("subcategoria", parsedValue);
+                                        }}
+                                        options={subcategoriesData || []}
+                                        optionTag={"subcategoria"}
+                                        enableAllOption={true}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label>Marca</Label>
+                                    <ComboboxSelect
+                                        value={filters.marca}
+                                        onChange={(value) => {
+                                            updateFilter("marca", value === "all" ? "" : value);
+                                        }}
+                                        options={(brandsData || []).map((brand) => ({
+                                            id: brand.id,
+                                            marca: brand.marca,
+                                        }))}
+                                        optionTag={"marca"}
+                                        enableAllOption={true}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Medida</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                        <Input
+                                            placeholder="11X6X40.6..."
+                                            value={filters.medida}
+                                            onChange={(e) => updateFilter("medida", e.target.value)}
+                                            className="pl-10 font-mono text-xs"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Número de Motor</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                        <Input
+                                            placeholder="1ZZ-FE..."
+                                            value={filters.nro_motor}
+                                            onChange={(e) => updateFilter("nro_motor", e.target.value)}
+                                            className="pl-10 font-mono text-xs"
+                                        />
+                                    </div>
+                                </div>
+                            </>
+
+                        )
+                    }
                 </div>
+                {/* Botón de búsqueda solo visible en modo manual */}
+                {/* <div className="mt-2 flex justify-end gap-2">
+                    {searchMode === 'manual' && (
+                        <Button
+                            onClick={handleManualSearch}
+                            className="w-full sm:w-auto"
+                        >
+                            <Search className="size-4" />
+                            Buscar
+                        </Button>
+                    )}
+                </div> */}
             </div>
         </div>
     );

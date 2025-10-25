@@ -60,14 +60,14 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
                     variant="outline"
                     size="sm"
                     className={cn(
-                        "flex-1 justify-between text-left font-normal",
+                        "flex-1 justify-between text-left font-normal px-2",
                         !value && "text-muted-foreground",
                         hasError && "border-red-500 focus:border-red-500",
                         className
                     )}
                 >
-                    <div className="flex items-center">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                    <div className="flex items-center truncate">
+                        <CalendarIcon className="mr-1 size-4" />
                         {formattedDate}
                     </div>
 
