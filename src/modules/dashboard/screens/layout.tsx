@@ -5,17 +5,12 @@ import { useTabBarKeybindings } from '@/hooks/keyBindings/useTabBarKeyBindings';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import CartSidebar from '@/modules/shoppingCart/components/CartSidebar';
 import { useCartUiStore } from '@/modules/shoppingCart/store/cartUiStore';
-import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import AppSidebar from './appSidebar';
 import TopNav from './top-nav';
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export default function Layout({ children }: LayoutProps) {
+export default function Layout() {
   const { isOpen, close, toggle, open } = useCartUiStore();
   const [mounted, setMounted] = useState(false);
   const { nextTab, previousTab, closeCurrentTab, tabs } = useTabNavigation();
@@ -71,8 +66,8 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider ref={formRef as any}>
       <AppSidebar />
-      <SidebarInset className="min-w-0">
-        <header className="border-b border-gray-200 sticky top-0 z-10 bg-white">
+      <SidebarInset className="min-w-0 flex flex-col h-screen">
+        <header className="border-b border-border sticky top-0 z-10 bg-background flex-shrink-0">
           <div className="h-16">
             <TopNav onOpenCartChange={toggle} />
           </div>
@@ -80,11 +75,9 @@ export default function Layout({ children }: LayoutProps) {
         </header>
         <div
           id="main-scroll-container"
-          className="flex-1 overflow-hidden bg-gray-50"
+          className="flex-1 bg-gray-50 overflow-auto"
         >
-          <div className="h-full p-2">
-            <TabContainer />
-          </div>
+          <TabContainer />
         </div>
       </SidebarInset>
       <CartSidebar open={isOpen} onOpenChange={close} />

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SalesFilters } from "../types/salesFilters";
 import { useDebounce } from "use-debounce";
 
@@ -36,6 +36,19 @@ export const useSalesFilters = (defaultSucursal: number) => {
         () => cleanFilters(debouncedFilters),
         [debouncedFilters]
     );
+
+    useEffect(() => {
+        setFilters((prev) => ({
+            ...prev,
+            sucursal: defaultSucursal,
+            pagina: 1,
+        }));
+        setAppliedFilters((prev) => ({
+            ...prev,
+            sucursal: defaultSucursal,
+            pagina: 1,
+        }));
+    }, [defaultSucursal]);
 
     const updateFilter = useCallback(
         (key: keyof SalesFilters, value: SalesFilters[keyof SalesFilters]) => {

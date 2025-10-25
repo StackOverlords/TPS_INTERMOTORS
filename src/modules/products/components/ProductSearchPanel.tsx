@@ -23,7 +23,7 @@ import { useBranchStore } from '@/states/branchStore';
 import { useProductsPaginated } from '../hooks/queries/useProductsPaginated';
 import type { CartItem } from '@/modules/shoppingCart/types/cart.types';
 
-type BaseWithId = { id: number };
+type BaseWithId = { id_producto: number };
 
 interface ProductSearchPanelProps<T extends BaseWithId | CartItem> {
   selectedProducts: T[];
@@ -78,7 +78,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
   const isProductSelected = useCallback(
     (productId: number) => {
       const item = selectedProducts.find(
-        p => ('id' in p ? p.id === productId : p.product.id === productId)
+        p => ('id_producto' in p ? p.id_producto === productId : p.product.id === productId)
       );
 
       return {
