@@ -81,7 +81,7 @@ const TabItem = React.memo(({
     <div ref={setNodeRef} style={style}>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <TooltipWrapper tooltip={tooltipContent}>
+          {/* <TooltipWrapper tooltip={tooltipContent}> */}
             <Button
               variant="ghost"
               onClick={() => onTabClick(tab)}
@@ -126,7 +126,7 @@ const TabItem = React.memo(({
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </Button>
-        </TooltipWrapper>
+        {/* </TooltipWrapper> */}
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onClick={() => onCloseTab({} as React.MouseEvent, tab.id)}>

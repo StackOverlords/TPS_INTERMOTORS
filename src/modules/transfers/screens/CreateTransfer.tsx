@@ -4,7 +4,6 @@ import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import ResizableBox from "@/components/atoms/resizable-box";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
 import { Separator } from "@/components/atoms/separator";
 import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
@@ -289,20 +288,20 @@ const CreateTransfer = () => {
                     {/* 1. Datos de la transferencia */}
                     <Card className="shadow-none h-full">
                         <CardContent className="py-3">
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-7 xl:grid-cols-7 gap-y-3 gap-x-2">
-                                <div className="col-span-1">
-                                    <Label htmlFor="fecha">Fecha *</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                                <div className="w-full">
+                                    <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
                                     <Input
-                                        id="fecha"
+                                        id="fecha"  
                                         type="date"
                                         {...register("fecha")}
-                                        className="w-full"
+                                        className="w-full text-xs h-8"
                                         autoFocus
                                     />
-                                    {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                    {errors.fecha && <p className="text-red-500 text-xs mt-0.5">{errors.fecha.message}</p>}
                                 </div>
-                                <div className="col-span-1">
-                                    <Label htmlFor="responsable">Responsable *</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="responsable" className="text-xs">Responsable *</Label>
                                     <Controller
                                         name="responsable"
                                         control={control}
@@ -317,62 +316,65 @@ const CreateTransfer = () => {
                                             />
                                         )}
                                     />
-                                    {errors.responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                    {errors.responsable && <p className="text-red-500 text-xs mt-0.5">El campo es requerido</p>}
                                 </div>
 
-                                <div className="col-span-1">
-                                    <Label htmlFor="sucursal_origen">Sucursal Origen *</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="sucursal_origen" className="text-xs">Sucursal Origen *</Label>
                                     <Input
                                         id="sucursal_origen"
                                         value={`Sucursal ${sucursalOrigen}`}
                                         disabled
-                                        className="bg-gray-100"
+                                        className="bg-gray-100 text-xs h-8"
                                     />
                                 </div>
 
-                                <div className="col-span-1">
-                                    <Label htmlFor="sucursal_destino">Sucursal Destino *</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="sucursal_destino" className="text-xs">Sucursal Destino *</Label>
                                     <Controller
                                         name="sucursal_destino"
                                         control={control}
                                         render={({ field }) => (
-                                            <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona sucursal destino" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {
-                                                        transferBranchesData?.data && transferBranchesData.data
-                                                            .filter(branch => branch.activo === "SI")
-                                                            .map((branch) => (
-                                                                <SelectItem key={branch.id} value={branch.id.toString()}>
-                                                                    {branch.nombre} ({branch.sigla})
-                                                                </SelectItem>
-                                                            ))
-                                                    }
-                                                </SelectContent>
-                                            </Select>
+                                            <ComboboxSelect
+                                                value={field.value}
+                                                onChange={(value) => {
+                                                    field.onChange(Number(value));
+                                                }}
+                                                options={
+                                                    transferBranchesData?.data
+                                                        ?.filter(branch => branch.activo === "SI")
+                                                        .map(branch => ({
+                                                            id: branch.id,
+                                                            nombre: branch.nombre,
+                                                            sigla: branch.sigla
+                                                        })) || []
+                                                }
+                                                optionTag={"nombre"}
+                                                placeholder="Selecciona destino"
+                                            />
                                         )}
                                     />
-                                    {errors.sucursal_destino && <p className="text-red-500 text-sm mt-1">{errors.sucursal_destino.message}</p>}
+                                    {errors.sucursal_destino && <p className="text-red-500 text-xs mt-0.5">{errors.sucursal_destino.message}</p>}
                                 </div>
 
-                                <div className="col-span-1">
-                                    <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="nroComprobante" className="text-xs">N° Comprobante</Label>
                                     <Input
                                         id="nroComprobante"
                                         {...register("nro_comprobante")}
-                                        placeholder="Número de comprobante"
+                                        placeholder="N° Comprobante"
+                                        className="w-full text-xs h-8"
                                     />
                                 </div>
 
-                                <div className="col-span-2">
-                                    <Label htmlFor="comentarios">Comentarios</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="comentarios" className="text-xs">Comentarios</Label>
                                     <Textarea
                                         id="comentarios"
                                         {...register("comentarios")}
-                                        placeholder="Comentarios adicionales sobre la transferencia"
+                                        placeholder="Comentarios adicionales"
                                         rows={1}
+                                        className="w-full text-xs min-h-8"
                                     />
                                 </div>
                             </div>
