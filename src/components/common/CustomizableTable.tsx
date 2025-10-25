@@ -35,7 +35,7 @@ import {
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useRef, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import { Button } from "../atoms/button";
 import { cn } from "@/lib/utils";
 
@@ -91,6 +91,7 @@ interface Props<T> {
     keyboardNavigationEnabled?: boolean;
     enableColumnReordering?: boolean;
     enableSorting?: boolean;
+    stickyHeader?: boolean;
     onDragStart?: () => void;
     onDragEnd?: () => void
 }
@@ -115,6 +116,8 @@ const DraggableTableHeader = <T,>({
         width: header.column.getSize(),
         zIndex: isDragging ? 1 : 0,
     };
+
+    const canSort = header.column.getCanSort() && enableSorting;
 
     return (
         <TableHead
@@ -147,13 +150,14 @@ const DraggableTableHeader = <T,>({
                     <div
                         className={cn(
                             `flex items-center gap-1 justify-between flex-1`,
-                            header.column.getCanSort() && !isDragging && "cursor-pointer select-none",
+                            canSort && !isDragging && "cursor-pointer select-none",
+                            !canSort && "cursor-auto",
                             isDragging && "cursor-grabbing"
                         )}
-                        onClick={header.column.getToggleSortingHandler()}
+                        onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                     >
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && enableSorting && !isDragging && (
+                        {canSort && !isDragging && (
                             <div className="flex flex-col text-blue-400">
                                 {header.column.getIsSorted() === "asc" ? (
                                     <ArrowUp className="w-3 h-3" />
@@ -226,11 +230,11 @@ const CustomizableTable = <T,>({
     focused = false,
     keyboardNavigationEnabled = false,
     enableColumnReordering = false,
-    enableSorting = true,
+    enableSorting = false,
+    stickyHeader = true,
     onDragStart,
     onDragEnd,
 }: Props<T>) => {
-    const tableContainerRef = useRef<HTMLDivElement>(null);
 
     const sensors = useSensors(
         useSensor(MouseSensor, {
@@ -264,45 +268,46 @@ const CustomizableTable = <T,>({
     };
 
     return (
-        <div ref={tableContainerRef} className="relative w-full overflow-auto">
-            <DndContext
-                sensors={sensors}
-                onDragStart={() => {
-                    onDragStart?.()
-                }}
-                onDragEnd={(event) => {
-                    handleDragEnd(event);
-                    onDragEnd?.()
-                }}
-                onDragCancel={() => {
-                    onDragEnd?.()
-                }}
-                collisionDetection={closestCenter}
-                modifiers={[restrictToHorizontalAxis, restrictToTableContainer]}
+        <DndContext
+            sensors={sensors}
+            onDragStart={() => {
+                onDragStart?.()
+            }}
+            onDragEnd={(event) => {
+                handleDragEnd(event);
+                onDragEnd?.()
+            }}
+            onDragCancel={() => {
+                onDragEnd?.()
+            }}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToHorizontalAxis, restrictToTableContainer]}
+        >
+            <AtomTable
+                ref={tableRef}
+                className="w-full table-fixed text-xs relative"
+                tabIndex={keyboardNavigationEnabled ? 0 : -1}
             >
-                <AtomTable
-                    ref={tableRef}
-                    className="w-full table-fixed text-xs"
-                    tabIndex={keyboardNavigationEnabled ? 0 : -1}
-                >
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {enableColumnReordering ? (
-                                    <SortableContext
-                                        items={columnOrder}
-                                        strategy={horizontalListSortingStrategy}
-                                    >
-                                        {headerGroup.headers.map((header) => (
-                                            <DraggableTableHeader
-                                                key={header.id}
-                                                header={header}
-                                                enableSorting={enableSorting}
-                                            />
-                                        ))}
-                                    </SortableContext>
-                                ) : (
-                                    headerGroup.headers.map((header) => (
+                <TableHeader className={cn(stickyHeader && "sticky top-0 z-10 bg-background shadow-sm")}>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                            {enableColumnReordering ? (
+                                <SortableContext
+                                    items={columnOrder}
+                                    strategy={horizontalListSortingStrategy}
+                                >
+                                    {headerGroup.headers.map((header) => (
+                                        <DraggableTableHeader
+                                            key={header.id}
+                                            header={header}
+                                            enableSorting={enableSorting}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            ) : (
+                                headerGroup.headers.map((header) => {
+                                    const canSort = header.column.getCanSort() && enableSorting;
+                                    return (
                                         <TableHead
                                             key={header.id}
                                             className="relative group select-none text-left border-b border-gray-200"
@@ -312,12 +317,13 @@ const CustomizableTable = <T,>({
                                                 <div
                                                     className={cn(
                                                         `flex items-center gap-1 justify-between`,
-                                                        header.column.getCanSort() && "cursor-pointer select-none"
+                                                        canSort && "cursor-pointer select-none",
+                                                        !canSort && "cursor-auto"
                                                     )}
-                                                    onClick={header.column.getToggleSortingHandler()}
+                                                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                                                 >
                                                     {flexRender(header.column.columnDef.header, header.getContext())}
-                                                    {header.column.getCanSort() && enableSorting && (
+                                                    {canSort && (
                                                         <div className="flex flex-col text-blue-400">
                                                             {header.column.getIsSorted() === "asc" ? (
                                                                 <ArrowUp className="w-3 h-3" />
@@ -338,91 +344,91 @@ const CustomizableTable = <T,>({
                                                 />
                                             )}
                                         </TableHead>
-                                    ))
-                                )}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody className="divide-y divide-gray-200">
-                        {isLoading || isFetching ? (
-                            [...Array(rows || 10)].map((_, rowIndex) => (
-                                <TableRow key={`skeleton-row-${rowIndex}`}>
-                                    {table.getVisibleFlatColumns().map((column, colIndex) => (
-                                        <TableCell
-                                        className="p-1"
-                                            key={`skeleton-cell-${rowIndex}-${colIndex}`}
-                                            style={{ width: column.getSize() }}
-                                        >
-                                            <Skeleton className="h-6 w-full rounded" />
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : isError ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={table.getVisibleFlatColumns().length}
-                                    className="text-center"
-                                >
-                                    <ErrorDataComponent errorMessage={errorMessage} />
-                                </TableCell>
-                            </TableRow>
-                        ) : table.getRowModel().rows.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={table.getVisibleFlatColumns().length}
-                                    className="text-center"
-                                >
-                                    <NoDataComponent message={noDataMessage} />
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            <>
-                                {table.getRowModel().rows.map((row, index) => {
-                                    const isSelected = selectedRowIndex === index;
-                                    return (
-                                        <TableRow
-                                            key={row.id}
-                                            data-row-index={index}
-                                            className={`${isSelected && focused
-                                                ? 'bg-blue-100 hover:bg-blue-100'
-                                                : ''
-                                                }`}
-                                            onClick={() => onRowClick?.(index)}
-                                            onDoubleClick={() => onRowDoubleClick?.(row.original)}
-                                        >
-                                            {enableColumnReordering ? (
-                                                <SortableContext
-                                                    items={columnOrder}
-                                                    strategy={horizontalListSortingStrategy}
-                                                >
-                                                    {row.getVisibleCells().map((cell) => (
-                                                        <DragAlongCell
-                                                            key={cell.id}
-                                                            cell={cell}
-                                                        />
-                                                    ))}
-                                                </SortableContext>
-                                            ) : (
-                                                row.getVisibleCells().map((cell) => (
-                                                    <TableCell key={cell.id} className="p-1 truncate">
-                                                        {flexRender(
-                                                            cell.column.columnDef.cell,
-                                                            cell.getContext()
-                                                        )}
-                                                    </TableCell>
-                                                ))
-                                            )}
-                                        </TableRow>
                                     );
-                                })}
-                                {renderBottomRow && renderBottomRow()}
-                            </>
-                        )}
-                    </TableBody>
-                </AtomTable>
-            </DndContext>
-        </div>
+                                })
+                            )}
+                        </TableRow>
+                    ))}
+                </TableHeader>
+                <TableBody className="divide-y divide-gray-200">
+                    {isLoading || isFetching ? (
+                        [...Array(rows || 10)].map((_, rowIndex) => (
+                            <TableRow key={`skeleton-row-${rowIndex}`}>
+                                {table.getVisibleFlatColumns().map((column, colIndex) => (
+                                    <TableCell
+                                        className="p-1"
+                                        key={`skeleton-cell-${rowIndex}-${colIndex}`}
+                                        style={{ width: column.getSize() }}
+                                    >
+                                        <Skeleton className="h-6 w-full rounded" />
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    ) : isError ? (
+                        <TableRow>
+                            <TableCell
+                                colSpan={table.getVisibleFlatColumns().length}
+                                className="text-center"
+                            >
+                                <ErrorDataComponent errorMessage={errorMessage} />
+                            </TableCell>
+                        </TableRow>
+                    ) : table.getRowModel().rows.length === 0 ? (
+                        <TableRow>
+                            <TableCell
+                                colSpan={table.getVisibleFlatColumns().length}
+                                className="text-center"
+                            >
+                                <NoDataComponent message={noDataMessage} />
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        <>
+                            {table.getRowModel().rows.map((row, index) => {
+                                const isSelected = selectedRowIndex === index;
+                                return (
+                                    <TableRow
+                                        key={row.id}
+                                        data-row-index={index}
+                                        className={`${isSelected && focused
+                                            ? 'bg-blue-100 hover:bg-blue-100'
+                                            : ''
+                                            }`}
+                                        onClick={() => onRowClick?.(index)}
+                                        onDoubleClick={() => onRowDoubleClick?.(row.original)}
+                                    >
+                                        {enableColumnReordering ? (
+                                            <SortableContext
+                                                items={columnOrder}
+                                                strategy={horizontalListSortingStrategy}
+                                            >
+                                                {row.getVisibleCells().map((cell) => (
+                                                    <DragAlongCell
+                                                        key={cell.id}
+                                                        cell={cell}
+                                                    />
+                                                ))}
+                                            </SortableContext>
+                                        ) : (
+                                            row.getVisibleCells().map((cell) => (
+                                                <TableCell key={cell.id} className="p-1 truncate">
+                                                    {flexRender(
+                                                        cell.column.columnDef.cell,
+                                                        cell.getContext()
+                                                    )}
+                                                </TableCell>
+                                            ))
+                                        )}
+                                    </TableRow>
+                                );
+                            })}
+                            {renderBottomRow && renderBottomRow()}
+                        </>
+                    )}
+                </TableBody>
+            </AtomTable>
+        </DndContext>
     );
 };
 

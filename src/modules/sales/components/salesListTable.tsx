@@ -11,22 +11,23 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import authSDK from "@/services/sdk-simple-auth";
 import { formatCurrency } from "@/utils/formaters";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Phone, Settings, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import type { useSalesFilters } from "../hooks/useSalesFilters";
 import type { SaleGetAll, SalesGetAllResponse } from "../types/salesGetResponse";
+import { useCustomTable } from "@/hooks/useCustomTable";
 
 interface SalesListTableProps {
     data: SalesGetAllResponse
     sales: SaleGetAll[]
     filters: ReturnType<typeof useSalesFilters>["filters"]
-    setPage: ReturnType<typeof useSalesFilters>["setPage"]
-    updateFilter: ReturnType<typeof useSalesFilters>["updateFilter"]
+    setPage: (page: number) => void
+    setPageSize: (rows: number) => void
     isInfiniteScroll: boolean
     isLoading: boolean
     isFetching: boolean,
@@ -34,14 +35,12 @@ interface SalesListTableProps {
     handleDeleteSale: (saleId: number) => void
 }
 
-const getColumnVisibilityKey = (userName: string) => `sales-columns-${userName}`;
-
 const SalesListTable: React.FC<SalesListTableProps> = ({
     data,
     sales,
     filters,
     setPage,
-    updateFilter,
+    setPageSize,
     isInfiniteScroll,
     isError,
     isFetching,
@@ -49,35 +48,9 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     handleDeleteSale
 }) => {
     const navigate = useNavigate()
-    const [columnVisibility, setColumnVisibility] = useState({})
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
-
-    useEffect(() => {
-        if (!user?.name) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-        if (savedVisibility) {
-            try {
-                const parsed = JSON.parse(savedVisibility);
-                setColumnVisibility(parsed);
-            } catch (error) {
-                console.error('Error parsing column visibility:', error);
-                localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-            }
-        }
-    }, [user?.name]);
-
-    useEffect(() => {
-        if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        try {
-            localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-        } catch (error) {
-            console.error('Error saving column visibility:', error);
-        }
-    }, [columnVisibility, user?.name]);
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 
     const handleSeeDetails = useCallback((saleId: number) => {
         navigate(`/dashboard/sales/${saleId}`)
@@ -343,21 +316,32 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
         },
     ], [handleDeleteSale, handleSeeDetails, handleUpdateSale]);
 
-    const table = useReactTable<SaleGetAll>({
+    const {
+        table,
+        rowSelection,
+        // resetAll,
+    } = useCustomTable({
         data: sales,
         columns,
-        state: {
-            columnVisibility,
-            rowSelection,
-        },
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
         enableRowSelection: true,
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Columnas ocultas por defecto
+        hiddenColumns: ['Select'],
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `sales-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
     });
 
     const {
@@ -369,6 +353,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     } = useKeyboardNavigation<SaleGetAll, HTMLTableElement>({
         items: sales,
         containerRef: tableRef,
+        isDragging: isDraggingColumn,
         onPrimaryAction: (sale) => {
             handleSeeDetails(sale.id)
         },
@@ -389,13 +374,20 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     };
 
     const onShowRowsChange = (rows: number) => {
-        updateFilter("pagina_registros", rows);
+        setPageSize(rows)
     };
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
 
     return (
-        <section>
-            {/* Results Info */}
-            <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
+        <section className="flex flex-col h-full">
+            {/* Results Info - FIJO */}
+            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
                 {
                     sales.length > 0 ? (
                         isInfiniteScroll ? (
@@ -453,9 +445,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     </DropdownMenu>
                     {
                         table && hasSalesSelected > 0 && (
-                            <Button size={'sm'} className="relative"
-                            // onClick={handleAddSelectedToCart}
-                            >
+                            <Button size={'sm'} className="relative">
                                 Proximamente...
                                 <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
                                     {hasSalesSelected}
@@ -470,12 +460,9 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                         }}
                         tooltip={
                             <div className="flex flex-col space-y-3">
-                                {/* Título del tooltip */}
                                 <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
                                     Atajos de teclado
                                 </div>
-
-                                {/* Sección de navegación básica */}
                                 <div className="space-y-1.5">
                                     <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación</h4>
                                     <div className="space-y-1 text-gray-600 text-xs">
@@ -485,8 +472,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                                         <p> <ShortcutKey combo={hotkeys.navigate ?? ''} /> Cambiar columna</p>
                                     </div>
                                 </div>
-
-                                {/* Sección de acciones */}
                                 <div className="space-y-1.5">
                                     <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
                                     <div className="space-y-1 text-gray-600 text-xs">
@@ -503,39 +488,46 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                 </div>
             </div>
 
-            {isInfiniteScroll ? (
-                <InfiniteScroll
-                    dataLength={sales.length}
-                    next={() => setPage((filters.pagina || 1) + 1)}
-                    hasMore={sales.length < ((data?.meta?.total ?? 0))}
-                    loader={
-                        <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                            <Loader2 className="size-4 animate-spin" />
-                            Cargando más ventas...
-                        </div>
-                    }
-                    scrollableTarget="main-scroll-container"
-                >
-                    <CustomizableTable
-                        table={table}
-                        isError={isError}
-                        errorMessage="Ocurrió un error al cargar las ventas"
-                        isLoading={isLoading}
-                        rows={filters.pagina_registros}
-                        noDataMessage="No se encontraron ventas"
-                        selectedRowIndex={selectedIndex}
-                        onRowClick={handleRowClick}
-                        onRowDoubleClick={handleRowDoubleClick}
-                        tableRef={tableRef}
-                        focused={isFocused}
-                        keyboardNavigationEnabled={true}
-                    />
-                </InfiniteScroll>
-            ) : (
-                <div
-                    className="overflow-auto h-full">
+            {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+            <div className="flex-1 min-h-0">
+                {isInfiniteScroll ? (
                     <div
-                        className="overflow-x-hidden">
+                        id="sales-list-scroll-container"
+                        className="h-full overflow-auto relative">
+                        <InfiniteScroll
+                            dataLength={sales.length}
+                            next={() => setPage((filters.pagina || 1) + 1)}
+                            hasMore={sales.length < ((data?.meta?.total ?? 0))}
+                            loader={
+                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                                    <Loader2 className="size-4 animate-spin" />
+                                    Cargando más ventas...
+                                </div>
+                            }
+                            scrollableTarget="sales-list-scroll-container"
+                        >
+                            <CustomizableTable
+                                table={table}
+                                isError={isError}
+                                errorMessage="Ocurrió un error al cargar las ventas"
+                                isLoading={isLoading}
+                                rows={filters.pagina_registros}
+                                noDataMessage="No se encontraron ventas"
+                                selectedRowIndex={selectedIndex}
+                                onRowClick={handleRowClick}
+                                onRowDoubleClick={handleRowDoubleClick}
+                                tableRef={tableRef}
+                                focused={isFocused}
+                                keyboardNavigationEnabled={true}
+                                enableColumnReordering={true}
+                                enableSorting={false}
+                                onDragEnd={handleDragEnd}
+                                onDragStart={handleDragStart}
+                            />
+                        </InfiniteScroll>
+                    </div>
+                ) : (
+                    <div className="h-full overflow-auto">
                         <CustomizableTable
                             table={table}
                             isError={isError}
@@ -550,24 +542,29 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                             tableRef={tableRef}
                             focused={isFocused}
                             keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
                         />
-
                     </div>
+                )}
+            </div>
 
-                    {/* Pagination */}
-                    {
-                        (data?.data?.length ?? 0) > 0 && (
-                            <Pagination
-                                currentPage={filters.pagina || 1}
-                                onPageChange={onPageChange}
-                                totalData={data?.meta?.total ?? 1}
-                                onShowRowsChange={onShowRowsChange}
-                                showRows={filters.pagina_registros}
-                            />
-                        )
-                    }
-                </div>
-            )}
+            {/* Pagination - FIJO en la parte inferior */}
+            {
+                !isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
+                    <div className="flex-shrink-0 border-t border-border bg-background">
+                        <Pagination
+                            currentPage={filters.pagina || 1}
+                            onPageChange={onPageChange}
+                            totalData={data?.meta?.total ?? 1}
+                            onShowRowsChange={onShowRowsChange}
+                            showRows={filters.pagina_registros}
+                        />
+                    </div>
+                )
+            }
         </section>
     );
 }

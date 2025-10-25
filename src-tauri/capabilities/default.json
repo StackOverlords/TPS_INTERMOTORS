@@ -21,6 +21,6 @@
     "fs:allow-write-file",
     "fs:allow-temp-read",
     "fs:allow-temp-write",
-    "shell:default"
+    "shell:allow-open"
   ]
 }

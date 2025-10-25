@@ -18,6 +18,7 @@ import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
 import SaleDetailSkeleton from "@/modules/sales/components/saleDetail/saleDetailSkeleton";
 import QuotationProductsSection from "../components/quotationDetail/SaleProductsSection";
 import { PDFViewer } from "../../../components/common/PDFViewer";
+import { useQuotationPDF } from "../hooks/useQuotationPDF";
 
 const QuotationDetailScreen = () => {
     const navigate = useNavigate()
@@ -29,6 +30,12 @@ const QuotationDetailScreen = () => {
         isLoading: isLoadingQuotation,
         isError: isErrorQuotation
     } = useQuotationGetById(Number(quotationId))
+
+    const {
+        data: pdfBlob,
+        isLoading: isLoadingPdf,
+        isError: isErrorPdf,
+    } = useQuotationPDF(Number(quotationId), isDialogOpen && !!quotationId);
 
     const handleDeleteSuccess = (_data: unknown, quotationId: number) => {
         showSuccessToast({
@@ -352,6 +359,9 @@ const QuotationDetailScreen = () => {
             {/* Modal PDF Viewer */}
             <PDFViewer
                 id={Number(quotationId)}
+                pdfBlob={pdfBlob}
+                isLoading={isLoadingPdf}
+                isError={isErrorPdf}
                 onClose={handleClosePrintDialog}
                 isOpen={isDialogOpen}
                 pdfName="cotizacion"

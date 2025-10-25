@@ -28,15 +28,16 @@ import { type ColumnDef } from "@tanstack/react-table"
 import {
     Edit,
     Eye,
-    Filter,
+    // Filter,
     HelpCircle,
     Loader2,
     MoreVertical,
     RefreshCcw,
     Settings,
-    ShoppingCart,
-    Trash2,
+    // ShoppingCart,
+    // Trash2,
     TrendingUp,
+    Zap,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import InfiniteScroll from 'react-infinite-scroll-component'
@@ -53,21 +54,28 @@ import { useCustomTable } from "@/hooks/useCustomTable"
 const ProductListScreen = () => {
     const [isInfiniteScroll, setIsInfiniteScroll] = useState(false)
     const tableRef = useRef<HTMLTableElement>(null)
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
     const [showFilters, setShowFilters] = useState<boolean>(true)
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    // Estado para el modo de búsqueda
+    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
 
     const {
         filters,
+        debouncedFilters,
+        appliedFilters,
         updateFilter,
         setPage,
-        resetFilters,
-        debouncedFilters,
+        // resetFilters,
+        applyFilters,
+        setPageSize
     } = useProductFilters(Number(selectedBranchId) || 1);
+
+    const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
 
     const {
         data: productData,
@@ -77,16 +85,12 @@ const ProductListScreen = () => {
         isError,
         refetch: refetchProducts,
         isRefetching: isRefetchingProducts,
-    } = useProductsPaginated(debouncedFilters);
+    } = useProductsPaginated(activeFilters);
 
     const { addItemToCart, addMultipleItems, decrementQuantity } = useCartWithUtils(user?.name ?? '', selectedBranchId ?? '')
     const [products, setProducts] = useState<ProductGet[]>([]);
 
     const { handleError } = useErrorHandler()
-
-    useEffect(() => {
-        updateFilter("sucursal", Number(selectedBranchId))
-    }, [selectedBranchId, updateFilter])
 
     useEffect(() => {
         if (!productData?.data || error || isFetching) return;
@@ -104,9 +108,9 @@ const ProductListScreen = () => {
         }
     }, [productData?.data, isInfiniteScroll, filters.pagina, error, isFetching]);
 
-    const handleResetFilters = () => {
-        resetFilters()
-    }
+    // const handleResetFilters = () => {
+    //     resetFilters()
+    // }
 
     const handleDeleteSuccess = (_data: unknown, productId: number) => {
         showSuccessToast({
@@ -259,26 +263,26 @@ const ProductListScreen = () => {
                                     <TrendingUp className="mr-2 h-4 w-4" />
                                     Ver estadisticas
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
+                                {/* <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleAddItemCart(row.original)}>
                                     <ShoppingCart className="mr-2 h-4 w-4" />
                                     Agregar al carrito
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> */}
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleUpdateProduct(row.original.id)}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Editar producto
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
+                                {/* <DropdownMenuItem
                                     onKeyDown={e => e.stopPropagation()}
                                     onClick={() => handleOpenDeleteAlert(row.original.id)}
                                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                     <Trash2 className="size-4 mr-2" />
                                     Eliminar producto
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> */}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -293,9 +297,6 @@ const ProductListScreen = () => {
                         >
                             <h3 className="font-medium text-gray-900 leading-tigh hover:underline truncate">{getValue<string>()}</h3>
                         </TooltipWrapper>
-                        <div className="text-gray-500 flex gap-4">
-                            <span>UPC: {formatCell(row.original.codigo_upc)}</span>
-                        </div>
                     </div>
                 </div>
             ),
@@ -303,11 +304,22 @@ const ProductListScreen = () => {
         {
             accessorKey: "codigo_oem",
             header: "Cód. OEM",
-            size: 150,
-            minSize: 130,
+            size: 135,
+            minSize: 120,
             cell: ({ getValue }) => (
                 <div className="flex items-center justify-center">
-                    <Badge className="rounded font-normal w-full" variant="secondary">{formatCell(getValue<string>())}</Badge>
+                    <Badge className="rounded font-normal w-full flex justify-center items-center" variant="secondary">{formatCell(getValue<string>())}</Badge>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "codigo_upc",
+            header: "Cód. UPC",
+            size: 115,
+            minSize: 100,
+            cell: ({ getValue }) => (
+                <div className="flex items-center justify-center">
+                    <span>{formatCell(getValue<string>())}</span>
                 </div>
             ),
         },
@@ -541,7 +553,7 @@ const ProductListScreen = () => {
     };
 
     const onShowRowsChange = (rows: number) => {
-        updateFilter("pagina_registros", rows);
+        setPageSize(rows)
     };
 
     const handleRefetchProducts = () => {
@@ -555,6 +567,18 @@ const ProductListScreen = () => {
     const handleResetTableConfig = () => {
         resetAll();
     }
+
+    // Manejar búsqueda manual
+    const handleManualSearch = () => {
+        if (searchMode === 'manual') {
+            applyFilters();
+        }
+    };
+
+    // Toggle del modo de búsqueda
+    const toggleSearchMode = () => {
+        setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
+    };
 
     const handleDragStart = useCallback(() => {
         setIsDraggingColumn(true);
@@ -600,13 +624,24 @@ const ProductListScreen = () => {
             className="max-w-full">
             <div className="bg-white rounded-lg shadow-sm">
                 {/* Header */}
-                <header className="p-2 border-b border-gray-200">
+                <header className="p-2 border-b border-border">
                     <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
                         <div className="flex items-center gap-2 md:gap-4 grow">
-                            <h1 className="text-lg font-bold text-gray-900">Productos</h1>
+                            <h1 className="text-lg font-bold text-primary">Productos</h1>
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap">
+                            {/* Toggle de modo de búsqueda */}
+                            <Button
+                                variant="ghost"
+                                onClick={toggleSearchMode}
+                                className="text-xs h-7"
+                                title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+                            >
+                                <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                                {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+                            </Button>
+
                             <div className="flex items-center space-x-2">
                                 <Switch
                                     id="infinite-scroll"
@@ -644,10 +679,10 @@ const ProductListScreen = () => {
                                 Resetear Tabla
                             </TooltipButton>
 
-                            <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                            {/* <Button variant="outline" size="sm" onClick={handleResetFilters}>
                                 <Filter className="h-4 w-4" />
                                 Limpiar Filtros
-                            </Button>
+                            </Button> */}
                             <Button size={'sm'} onClick={toggleShowFilters}>
                                 {
                                     showFilters ?
@@ -694,6 +729,9 @@ const ProductListScreen = () => {
                     <ProductFilters
                         filters={filters}
                         updateFilter={updateFilter}
+                        showSubcategories={false}
+                        handleManualSearch={handleManualSearch}
+                        searchMode={searchMode}
                     />
                 }
                 {/* Results Info */}
@@ -821,7 +859,7 @@ const ProductListScreen = () => {
                                 Cargando más productos...
                             </div>
                         }
-                        scrollableTarget="main-scroll-container"
+                    // scrollableTarget="main-scroll-container"
                     >
                         <CustomizableTable
                             table={table}

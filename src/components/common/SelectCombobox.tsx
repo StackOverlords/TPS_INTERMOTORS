@@ -1,4 +1,5 @@
-import { useState, Fragment, useRef, useMemo, useEffect } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions, Transition } from '@headlessui/react'
 import { Check, ChevronDown, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -51,13 +52,16 @@ export function ComboboxSelect({
 
     const [query, setQuery] = useState('')
     const [dropdownPosition, setDropdownPosition] = useState({
-        top: true,
-        left: true,
-        maxHeight: 288 // 18rem por defecto
+        showBelow: true,
+        left: 0,
+        top: 0,
+        width: 0,
+        maxHeight: 288
     })
 
     const comboboxInputRef = useRef<HTMLInputElement>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
 
     const baseOptions = useMemo(() => {
         return enableAllOption
@@ -86,6 +90,20 @@ export function ComboboxSelect({
             })
     }, [enableExternalSearch, baseOptions, query, optionTag])
 
+    useEffect(() => {
+        // Crear el contenedor del portal
+        const container = document.createElement('div')
+        container.style.position = 'fixed'
+        container.style.zIndex = '9999'
+        container.style.pointerEvents = 'none'
+        document.body.appendChild(container)
+        setPortalContainer(container)
+
+        return () => {
+            document.body.removeChild(container)
+        }
+    }, [])
+
     const calculatePosition = () => {
         if (!comboboxInputRef.current) return
 
@@ -97,24 +115,30 @@ export function ComboboxSelect({
 
         const spaceBelow = viewport.height - inputRect.bottom
         const spaceAbove = inputRect.top
-        const spaceRight = viewport.width - inputRect.left
-        const spaceLeft = inputRect.left
 
-        const estimatedDropdownHeight = Math.min(288, filteredOptions.length * 36 + 16) // ~36px por opción + padding
+        // Estimar altura del dropdown
+        const estimatedDropdownHeight = Math.min(288, filteredOptions.length * 36 + 16)
 
-        const shouldShowAbove = spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow
-
-        const shouldShowLeft = spaceRight < 200 && spaceLeft > spaceRight
+        // Determinar si mostrar arriba o abajo
+        // Priorizar mostrar abajo, pero si no hay espacio, mostrar arriba
+        const showBelow = spaceBelow >= estimatedDropdownHeight || spaceBelow > spaceAbove
 
         // Calcular altura máxima disponible
-        const maxHeight = shouldShowAbove
-            ? Math.min(spaceAbove - 8, 288)
-            : Math.min(spaceBelow - 8, 288)
+        const availableSpace = showBelow ? spaceBelow : spaceAbove
+        const maxHeight = Math.min(availableSpace - 8, 288) // 8px de margen
+
+        // Calcular posición
+        const left = inputRect.left
+        const top = showBelow
+            ? inputRect.bottom + 4 // 4px de separación debajo
+            : inputRect.top - maxHeight - 4 // 4px de separación arriba
 
         setDropdownPosition({
-            top: !shouldShowAbove,
-            left: !shouldShowLeft,
-            maxHeight: maxHeight
+            showBelow,
+            left,
+            top,
+            width: inputRect.width,
+            maxHeight
         })
     }
 
@@ -124,9 +148,16 @@ export function ComboboxSelect({
 
     useEffect(() => {
         const handleResize = () => calculatePosition()
+        const handleScroll = () => calculatePosition()
+
         window.addEventListener('resize', handleResize)
-        return () => window.removeEventListener('resize', handleResize)
-    }, [])
+        window.addEventListener('scroll', handleScroll, true) // true para capturar scroll en cualquier contenedor
+
+        return () => {
+            window.removeEventListener('resize', handleResize)
+            window.removeEventListener('scroll', handleScroll, true)
+        }
+    }, [filteredOptions.length])
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(event.target.value)
@@ -214,80 +245,85 @@ export function ComboboxSelect({
                         </ComboboxButton>
                     </div>
 
-                    <Transition
-                        show={open}
-                        as={Fragment}
-                        leave="transition ease-in duration-100"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
-                        afterLeave={() => {
-                            setQuery('')
-                            // Limpiar búsqueda externa al cerrar
-                            if (enableExternalSearch && onSearch) {
-                                onSearch('')
-                            }
-                        }}
-                        beforeEnter={calculatePosition}
-                    >
-                        <ComboboxOptions
-                            ref={dropdownRef}
-                            static
-                            className={cn(
-                                "absolute z-[9999] w-full overflow-auto rounded-md bg-popover p-1 text-sm shadow-lg border border-gray-200 focus:outline-none sm:text-sm",
-                                dropdownPosition.top ? "mt-1" : "mb-1 bottom-full"
-                            )}
-                            style={{
-                                maxHeight: `${dropdownPosition.maxHeight}px`
+                    {portalContainer && open && createPortal(
+                        <Transition
+                            show={open}
+                            as="div"
+                            leave="transition ease-in duration-100"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                            afterLeave={() => {
+                                setQuery('')
+                                // Limpiar búsqueda externa al cerrar
+                                if (enableExternalSearch && onSearch) {
+                                    onSearch('')
+                                }
                             }}
+                            beforeEnter={calculatePosition}
                         >
-                            {
-                                showLoading ? (
-                                    <div className="relative cursor-default select-none px-4 py-2 text-muted-foreground text-center flex justify-center items-center gap-2">
-                                        <Loader2 className='size-4 animate-spin' />
-                                        {enableExternalSearch && isSearching ? 'Buscando...' : 'Cargando datos'}
-                                    </div>
-                                ) : filteredOptions.length === 0 ? (
-                                    <div className="relative cursor-default select-none px-4 py-2 text-muted-foreground text-center">
-                                        {query ? (
-                                            <>
-                                                No se encontraron resultados para "{query}"
-                                            </>
-                                        ) : (
-                                            'No hay opciones disponibles'
-                                        )}
-                                    </div>
-                                ) : (
-                                    filteredOptions.map((option: Option) => (
-                                        <ComboboxOption
-                                            key={option.id}
-                                            value={option.id.toString()}
-                                            className={({ focus }) =>
-                                                cn(
-                                                    'relative cursor-pointer select-none py-1.5 pl-10 pr-4 transition-colors rounded',
-                                                    focus ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-gray-50'
-                                                )
-                                            }
-                                        >
-                                            {({ selected }) => (
+                            <ComboboxOptions
+                                ref={dropdownRef}
+                                static
+                                className="overflow-auto rounded-md bg-popover p-1 text-sm shadow-lg border border-border focus:outline-none"
+                                style={{
+                                    position: 'fixed',
+                                    left: `${dropdownPosition.left}px`,
+                                    top: `${dropdownPosition.top}px`,
+                                    width: `${dropdownPosition.width}px`,
+                                    maxHeight: `${dropdownPosition.maxHeight}px`,
+                                    pointerEvents: 'auto'
+                                }}
+                            >
+                                {
+                                    showLoading ? (
+                                        <div className="relative cursor-default select-none px-4 py-2 text-muted-foreground text-center flex justify-center items-center gap-2">
+                                            <Loader2 className='size-4 animate-spin' />
+                                            {enableExternalSearch && isSearching ? 'Buscando...' : 'Cargando datos'}
+                                        </div>
+                                    ) : filteredOptions.length === 0 ? (
+                                        <div className="relative cursor-default select-none px-4 py-2 text-muted-foreground text-center">
+                                            {query ? (
                                                 <>
-                                                    <span className={cn(
-                                                        'block truncate',
-                                                        selected ? 'font-medium' : 'font-normal'
-                                                    )}>
-                                                        {option[optionTag]}
-                                                    </span>
-                                                    {selected && (
-                                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary">
-                                                            <Check className="h-4 w-4" />
-                                                        </span>
-                                                    )}
+                                                    No se encontraron resultados para "{query}"
                                                 </>
+                                            ) : (
+                                                'No hay opciones disponibles'
                                             )}
-                                        </ComboboxOption>
-                                    ))
-                                )}
-                        </ComboboxOptions>
-                    </Transition>
+                                        </div>
+                                    ) : (
+                                        filteredOptions.map((option: Option) => (
+                                            <ComboboxOption
+                                                key={option.id}
+                                                value={option.id.toString()}
+                                                className={({ focus }) =>
+                                                    cn(
+                                                        'relative cursor-pointer select-none py-1.5 pl-10 pr-4 transition-colors rounded',
+                                                        focus ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-gray-50'
+                                                    )
+                                                }
+                                            >
+                                                {({ selected }) => (
+                                                    <>
+                                                        <span className={cn(
+                                                            'block truncate',
+                                                            selected ? 'font-medium' : 'font-normal'
+                                                        )}>
+                                                            {option[optionTag]}
+                                                        </span>
+                                                        {selected && (
+                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary">
+                                                                <Check className="h-4 w-4" />
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </ComboboxOption>
+                                        ))
+                                    )}
+                            </ComboboxOptions>
+                        </Transition>,
+                        portalContainer
+                    )}
                 </div>
             )}
         </Combobox>

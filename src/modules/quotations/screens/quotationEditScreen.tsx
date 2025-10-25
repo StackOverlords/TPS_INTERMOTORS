@@ -39,6 +39,8 @@ import { Textarea } from "@/components/atoms/textarea"
 import useQuotationProductDetails from "../hooks/useQuotationProductDetails"
 import QuotationDetailsEditingTable from "../components/quotationDetailsEditingTable"
 import { Switch } from "@/components/atoms/switch"
+import ResizableBox from "@/components/atoms/resizable-box"
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel"
 
 const QuotationEditScreen = () => {
     const navigate = useNavigate()
@@ -687,19 +689,30 @@ const QuotationEditScreen = () => {
                     </form>
 
                     {/* 2. Productos */}
-                    <Card className="border-0 shadow-sm">
-                        <CardHeader className="pb-4">
-                            <CardTitle>
-                                <ProductSelectorModal
-                                    isSearchOpen={isSearchOpen}
-                                    setIsSearchOpen={setIsSearchOpen}
-                                    addItem={addProduct}
-                                    onlyWithStock={true}
-                                    addMultipleItem={addProduct}
+                    <div className="flex-1 overflow-auto flex flex-col">
+                        {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
+                        <div className="flex-shrink-0">
+                            <ResizableBox
+                                direction="vertical"
+                                minSize={'100px'}
+                                initialSize={'350px'}
+                            >
+                                <ProductSearchPanel
+                                    selectedProducts={watch("detalles")}
+                                    onProductSelect={addProduct}
+                                    onlySelectWithStock={true}
                                 />
+                            </ResizableBox>
+                        </div>
+                    </div>
+
+                    <Card className="shadow-none">
+                        <CardHeader>
+                            <CardTitle className="text-base">
+                                Detalle de Venta
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="-mt-4">
                             <div className="space-y-2">
                                 {quotationData?.detalles.length === 0 ? (
                                     <div className="text-center py-8 text-gray-500">

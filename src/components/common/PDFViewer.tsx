@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useQuotationPDF } from "../../modules/quotations/hooks/useQuotationPDF";
 import { createObjectURL, revokeObjectURL, downloadPDF } from "@/lib/pdfUtils";
 import { Loader2, Download, Maximize2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../atoms/dialog";
@@ -8,15 +7,26 @@ import { cn } from "@/lib/utils";
 
 interface PDFViewerProps {
     id: number;
+    pdfBlob: Blob | undefined;
+    isLoading: boolean;
+    isError: boolean;
     isOpen: boolean;
     onClose: (open: boolean) => void;
     title?: string;
     pdfName?: string;
 }
 
-export const PDFViewer = ({ id, isOpen, onClose, title = "Detalle de impresión", pdfName = "archivo" }: PDFViewerProps) => {
+export const PDFViewer = ({
+    id,
+    pdfBlob,
+    isLoading,
+    isError,
+    isOpen,
+    onClose,
+    title = "Detalle de impresión",
+    pdfName = "archivo",
+}: PDFViewerProps) => {
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-    const { data: pdfBlob, isLoading, isError } = useQuotationPDF(id, isOpen && !!id);
     const [expandedView, setExpandedView] = useState(false)
     // const environment = getEnvironment();
 
