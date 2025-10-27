@@ -79,13 +79,13 @@ const usuariosProtectedRoutes: RouteType[] = [
           },
 
           behaviors: {
-            openDetailsIn: 'same-page',
+            openDetailsIn: 'same-page', // 'same-page' | 'new-tab' | 'modal' | 'window'
             persistFilters: true,
             persistColumnOrder: true,
             persistColumnVisibility: true,
             persistColumnSizes: true,
-            defaultRowsPerPage: 15,
-            defaultSearchMode: 'realtime',
+            defaultRowsPerPage: 15, // Número de filas por página
+            defaultSearchMode: 'realtime', // 'realtime' | 'manual'
             requireConfirmationOnDelete: true,
             allowBulkActions: true,
           }
@@ -102,8 +102,30 @@ const usuariosProtectedRoutes: RouteType[] = [
 
         isHeader: false,
         showSidebar: false,
-        showInCommandPalette: false
-      }, 
+        showInCommandPalette: false,
+        
+        viewConfig: {
+          id: 'user-detail',
+          name: 'Detalle de Usuario',
+          module: 'Usuarios',
+          path: '/dashboard/user/:nickname',
+          features: {
+            permissions: {
+              enabled: true,
+              label: 'Gestión de Permisos',
+              description: 'Gestiona los permisos del usuario'
+            },
+            saveButton: {
+              enabled: true,
+              label: 'Guardar Permisos',
+              description: 'Guardar cambios en los permisos del usuario'
+            }
+          },
+          behaviors: {
+            // No specific behaviors for detail view for now
+          }
+        }
+      },
     ]
   }  
 ];

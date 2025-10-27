@@ -22,6 +22,9 @@ export interface ViewFeaturesConfig {
   editButton?: ViewFeatureConfig;
   deleteButton?: ViewFeatureConfig;
   duplicateButton?: ViewFeatureConfig;
+
+  permissions?: ViewFeatureConfig;
+  saveButton?: ViewFeatureConfig;
 }
 
 // ====================================
