@@ -1,61 +1,91 @@
 import { Button } from '@/components/atoms/button';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/atoms/accordion';
+import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/select';
 import { Switch } from '@/components/atoms/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/atoms/select';
+import type { ViewBehaviorsConfig, ViewConfiguration, ViewFeaturesConfig } from '@/config/viewConfigTypes';
 import { useAllRouteConfigs } from '@/hooks/useAllRouteConfigs';
 import { useUserViewConfig } from '@/hooks/useRouteViewConfig';
-import type { ViewConfiguration, ViewFeaturesConfig, ViewBehaviorsConfig } from '@/config/viewConfigTypes';
-import { RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { ChevronRight, RotateCcw, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 const ViewSettings = () => {
   const routeConfigs = useAllRouteConfigs();
-  const [, setRefreshKey] = useState(0);
+  const [selectedViewId, setSelectedViewId] = useState<string | null>(
+    routeConfigs[0]?.id || null
+  );
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Cache de configuraciones - este es el estado que controla el render
+  const [configCache, setConfigCache] = useState<Record<string, any>>({});
 
   // Agrupar vistas por módulo
-  const viewsByModule = routeConfigs.reduce(
-    (acc, config) => {
-      const module = config.module || 'Sin Módulo';
-      if (!acc[module]) {
-        acc[module] = [];
-      }
+  const viewsByModule = useMemo(() => {
+    return routeConfigs.reduce((acc, config) => {
+      const module = config.module || 'Otros';
+      if (!acc[module]) acc[module] = [];
       acc[module].push(config);
       return acc;
-    },
-    {} as Record<string, ViewConfiguration[]>
-  );
+    }, {} as Record<string, ViewConfiguration[]>);
+  }, [routeConfigs]);
 
-  const handleFeatureToggle = (
-    viewId: string,
-    featureName: keyof ViewFeaturesConfig
-  ) => {
+  // Filtrar por búsqueda
+  const filteredModules = useMemo(() => {
+    if (!searchQuery) return viewsByModule;
+
+    const filtered: Record<string, ViewConfiguration[]> = {};
+    Object.entries(viewsByModule).forEach(([module, views]) => {
+      const matchingViews = views.filter(v =>
+        v.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      if (matchingViews.length > 0) {
+        filtered[module] = matchingViews;
+      }
+    });
+    return filtered;
+  }, [viewsByModule, searchQuery]);
+
+  const selectedView = routeConfigs.find(v => v.id === selectedViewId);
+
+  const toggleModule = (moduleName: string) => {
+    setExpandedModules(prev => {
+      const newSet = new Set(prev);
+      newSet.has(moduleName) ? newSet.delete(moduleName) : newSet.add(moduleName);
+      return newSet;
+    });
+  };
+
+  const handleFeatureToggle = (viewId: string, featureName: keyof ViewFeaturesConfig) => {
     const { getUserConfig, updateUserConfig } = useUserViewConfig(viewId);
+    const routeConfig = routeConfigs.find(c => c.id === viewId);
     const userConfig = getUserConfig() || {};
-    const currentEnabled = userConfig.features?.[featureName]?.enabled ?? false;
 
+    // Obtener valor actual desde cache o desde config
+    const currentEnabled = configCache[`${viewId}-${featureName}`]
+      ?? userConfig.features?.[featureName]?.enabled
+      ?? routeConfig?.features?.[featureName]?.enabled
+      ?? false;
+
+    const newEnabled = !currentEnabled;
+
+    // Actualizar localStorage
     updateUserConfig({
       features: {
         ...userConfig.features,
         [featureName]: {
           ...userConfig.features?.[featureName],
-          enabled: !currentEnabled,
+          enabled: newEnabled,
         },
       },
     });
 
-    setRefreshKey(prev => prev + 1); // Force re-render
+    // Actualizar cache inmediatamente
+    setConfigCache(prev => ({
+      ...prev,
+      [`${viewId}-${featureName}`]: newEnabled
+    }));
   };
 
   const handleBehaviorChange = (
@@ -73,272 +103,311 @@ const ViewSettings = () => {
       },
     });
 
-    setRefreshKey(prev => prev + 1);
+    // Actualizar cache inmediatamente
+    setConfigCache(prev => ({
+      ...prev,
+      [`${viewId}-behavior-${behaviorName}`]: value
+    }));
   };
 
   const handleResetView = (viewId: string) => {
     const { resetUserConfig } = useUserViewConfig(viewId);
     resetUserConfig();
-    setRefreshKey(prev => prev + 1);
-  };
 
-  const handleResetAll = () => {
-    routeConfigs.forEach(config => {
-      if (config.id) {
-        const { resetUserConfig } = useUserViewConfig(config.id);
-        resetUserConfig();
-      }
+    // Limpiar cache para esta vista
+    setConfigCache(prev => {
+      const newCache = { ...prev };
+      Object.keys(newCache).forEach(key => {
+        if (key.startsWith(`${viewId}-`)) {
+          delete newCache[key];
+        }
+      });
+      return newCache;
     });
-    setRefreshKey(prev => prev + 1);
   };
 
-  // Helper para obtener el valor actual (route config + user config)
   const getFeatureEnabled = (viewId: string, featureName: keyof ViewFeaturesConfig): boolean => {
+    const cacheKey = `${viewId}-${featureName}`;
+
+    // Si está en cache, usar ese valor
+    if (configCache[cacheKey] !== undefined) {
+      return configCache[cacheKey];
+    }
+
+    // Si no, obtener de configs
     const routeConfig = routeConfigs.find(c => c.id === viewId);
     const { getUserConfig } = useUserViewConfig(viewId);
     const userConfig = getUserConfig();
-
-    // User config tiene prioridad
-    if (userConfig?.features?.[featureName]?.enabled !== undefined) {
-      return userConfig.features[featureName].enabled;
-    }
-
-    // Fallback a route config
-    return routeConfig?.features?.[featureName]?.enabled ?? false;
+    return userConfig?.features?.[featureName]?.enabled ?? routeConfig?.features?.[featureName]?.enabled ?? false;
   };
 
   const getBehaviorValue = (viewId: string, behaviorName: keyof ViewBehaviorsConfig): any => {
+    const cacheKey = `${viewId}-behavior-${behaviorName}`;
+
+    // Si está en cache, usar ese valor
+    if (configCache[cacheKey] !== undefined) {
+      return configCache[cacheKey];
+    }
+
+    // Si no, obtener de configs
     const routeConfig = routeConfigs.find(c => c.id === viewId);
     const { getUserConfig } = useUserViewConfig(viewId);
     const userConfig = getUserConfig();
-
-    // User config tiene prioridad
-    if (userConfig?.behaviors?.[behaviorName] !== undefined) {
-      return userConfig.behaviors[behaviorName];
-    }
-
-    // Fallback a route config
-    return routeConfig?.behaviors?.[behaviorName];
+    return userConfig?.behaviors?.[behaviorName] ?? routeConfig?.behaviors?.[behaviorName];
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium">Configuración de Vistas</h3>
-          <p className="text-sm text-muted-foreground">
-            Personaliza la funcionalidad y comportamiento de cada vista. Los cambios se guardan automáticamente.
-          </p>
+    <div className="flex gap-3 h-[600px]">
+      {/* LEFT SIDEBAR */}
+      <div className="w-64 flex border border-gray-200 flex-col rounded-lg bg-white overflow-hidden">
+        {/* Search */}
+        <div className="p-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <Input
+              placeholder="Buscar vista..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-8 text-sm"
+            />
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleResetAll}
-          className="gap-2"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Resetear Todo
-        </Button>
+
+        {/* Tree */}
+        <div className="flex-1 overflow-auto p-1.5">
+          {Object.entries(filteredModules).map(([moduleName, views]) => (
+            <div key={moduleName} className="mb-1">
+              <button
+                onClick={() => toggleModule(moduleName)}
+                className="w-full flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-xs font-medium text-gray-700"
+              >
+                <ChevronRight
+                  className={cn(
+                    "h-3 w-3 transition-transform",
+                    expandedModules.has(moduleName) && "rotate-90"
+                  )}
+                />
+                <span className="flex-1 text-left">{moduleName}</span>
+                <span className="text-[10px] text-gray-400">{views.length}</span>
+              </button>
+
+              {expandedModules.has(moduleName) && (
+                <div className="ml-4 mt-0.5 space-y-0.5">
+                  {views.map((view) => (
+                    <button
+                      key={view.id}
+                      onClick={() => setSelectedViewId(view.id!)}
+                      className={cn(
+                        "w-full text-left px-2 py-1 rounded text-xs transition-colors",
+                        selectedViewId === view.id
+                          ? "bg-blue-50 text-blue-500 font-medium"
+                          : "hover:bg-gray-50 text-gray-600"
+                      )}
+                    >
+                      {view.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="p-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              routeConfigs.forEach(c => c.id && useUserViewConfig(c.id).resetUserConfig());
+              setConfigCache({}); // Limpiar todo el cache
+            }}
+            className="w-full h-7 text-xs gap-1.5"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Resetear Todo
+          </Button>
+        </div>
       </div>
 
-      <Accordion type="multiple" className="w-full">
-        {Object.entries(viewsByModule).map(([moduleName, views]) => (
-          <AccordionItem key={moduleName} value={moduleName}>
-            <AccordionTrigger className="text-base font-semibold">
-              {moduleName}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-6 pt-4">
-                {views.map((view) => {
-                  if (!view.id) return null;
-
-                  return (
-                    <div key={view.id} className="space-y-4 pb-6 border-b last:border-b-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{view.name}</h4>
-                          <p className="text-sm text-muted-foreground">{view.path}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleResetView(view.id!)}
-                          className="gap-2"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          Resetear
-                        </Button>
-                      </div>
-
-                      {/* Features */}
-                      {view.features && Object.keys(view.features).length > 0 && (
-                        <div className="space-y-3">
-                          <h5 className="text-sm font-medium text-muted-foreground">
-                            Funcionalidades
-                          </h5>
-                          <div className="grid gap-3">
-                            {Object.entries(view.features).map(([key, feature]) => {
-                              if (!feature) return null;
-
-                              const featureKey = key as keyof ViewFeaturesConfig;
-                              const isEnabled = getFeatureEnabled(view.id!, featureKey);
-
-                              return (
-                                <div
-                                  key={key}
-                                  className="flex items-center justify-between space-x-2 rounded-lg border p-3"
-                                >
-                                  <div className="space-y-0.5">
-                                    <Label htmlFor={`${view.id}-${key}`} className="text-sm font-medium">
-                                      {feature.label}
-                                    </Label>
-                                    {feature.description && (
-                                      <p className="text-xs text-muted-foreground">
-                                        {feature.description}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <Switch
-                                    id={`${view.id}-${key}`}
-                                    checked={isEnabled}
-                                    onCheckedChange={() => handleFeatureToggle(view.id!, featureKey)}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Behaviors */}
-                      {view.behaviors && Object.keys(view.behaviors).length > 0 && (
-                        <div className="space-y-3">
-                          <h5 className="text-sm font-medium text-muted-foreground">
-                            Comportamientos
-                          </h5>
-                          <div className="grid gap-3">
-                            {/* Product Selector Mode */}
-                            {view.behaviors.productSelectorMode !== undefined && (
-                              <div className="space-y-2 rounded-lg border p-3">
-                                <Label className="text-sm font-medium">
-                                  Modo de Selector de Productos
-                                </Label>
-                                <Select
-                                  value={getBehaviorValue(view.id!, 'productSelectorMode')}
-                                  onValueChange={(value) =>
-                                    handleBehaviorChange(view.id!, 'productSelectorMode', value)
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="embedded">Integrado</SelectItem>
-                                    <SelectItem value="modal">Modal</SelectItem>
-                                    <SelectItem value="window">Ventana</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-
-                            {/* Open Details In */}
-                            {view.behaviors.openDetailsIn !== undefined && (
-                              <div className="space-y-2 rounded-lg border p-3">
-                                <Label className="text-sm font-medium">Abrir Detalles En</Label>
-                                <Select
-                                  value={getBehaviorValue(view.id!, 'openDetailsIn')}
-                                  onValueChange={(value) =>
-                                    handleBehaviorChange(view.id!, 'openDetailsIn', value)
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="same-page">Misma Página</SelectItem>
-                                    <SelectItem value="new-tab">Nueva Pestaña</SelectItem>
-                                    <SelectItem value="modal">Modal</SelectItem>
-                                    <SelectItem value="window">Ventana</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-
-                            {/* Persist Filters */}
-                            {view.behaviors.persistFilters !== undefined && (
-                              <div className="flex items-center justify-between space-x-2 rounded-lg border p-3">
-                                <Label className="text-sm font-medium">
-                                  Guardar Filtros entre Sesiones
-                                </Label>
-                                <Switch
-                                  checked={getBehaviorValue(view.id!, 'persistFilters')}
-                                  onCheckedChange={(checked) =>
-                                    handleBehaviorChange(view.id!, 'persistFilters', checked)
-                                  }
-                                />
-                              </div>
-                            )}
-
-                            {/* Default Rows Per Page */}
-                            {view.behaviors.defaultRowsPerPage !== undefined && (
-                              <div className="space-y-2 rounded-lg border p-3">
-                                <Label className="text-sm font-medium">
-                                  Filas por Página por Defecto
-                                </Label>
-                                <Select
-                                  value={String(getBehaviorValue(view.id!, 'defaultRowsPerPage'))}
-                                  onValueChange={(value) =>
-                                    handleBehaviorChange(view.id!, 'defaultRowsPerPage', Number(value))
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="10">10</SelectItem>
-                                    <SelectItem value="15">15</SelectItem>
-                                    <SelectItem value="20">20</SelectItem>
-                                    <SelectItem value="25">25</SelectItem>
-                                    <SelectItem value="50">50</SelectItem>
-                                    <SelectItem value="100">100</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-
-                            {/* Default Search Mode */}
-                            {view.behaviors.defaultSearchMode !== undefined && (
-                              <div className="space-y-2 rounded-lg border p-3">
-                                <Label className="text-sm font-medium">
-                                  Modo de Búsqueda por Defecto
-                                </Label>
-                                <Select
-                                  value={getBehaviorValue(view.id!, 'defaultSearchMode')}
-                                  onValueChange={(value) =>
-                                    handleBehaviorChange(view.id!, 'defaultSearchMode', value)
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="realtime">Tiempo Real</SelectItem>
-                                    <SelectItem value="manual">Manual</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+      {/* RIGHT PANEL */}
+      <div className="flex-1 border border-gray-200 rounded-lg bg-white overflow-hidden flex flex-col">
+        {selectedView ? (
+          <>
+            {/* Header */}
+            <div className="px-4 py-3 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-sm">{selectedView.name}</h3>
+                <p className="text-xs text-gray-500">{selectedView.path}</p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleResetView(selectedView.id!)}
+                className="h-7 text-xs gap-1.5"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Resetear
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-4 space-y-6">
+              {/* Features */}
+              {selectedView.features && Object.keys(selectedView.features).length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Funcionalidades
+                  </h4>
+                  <div className="space-y-2">
+                    {Object.entries(selectedView.features).map(([key, feature]) => {
+                      if (!feature) return null;
+                      const featureKey = key as keyof ViewFeaturesConfig;
+                      const isEnabled = getFeatureEnabled(selectedView.id!, featureKey);
+
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between py-2 px-3 rounded hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex-1 pr-3">
+                            <Label htmlFor={`${selectedView.id}-${key}`} className="text-sm font-medium cursor-pointer">
+                              {feature.label}
+                            </Label>
+                            {feature.description && (
+                              <p className="text-[11px] text-gray-500 mt-0.5">
+                                {feature.description}
+                              </p>
+                            )}
+                          </div>
+                          <Switch
+                            id={`${selectedView.id}-${key}`}
+                            checked={isEnabled}
+                            onCheckedChange={() => handleFeatureToggle(selectedView.id!, featureKey)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Behaviors */}
+              {selectedView.behaviors && Object.keys(selectedView.behaviors).length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Comportamientos
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedView.behaviors.productSelectorMode !== undefined && (
+                      <div className="space-y-1.5 p-3 rounded">
+                        <Label className="text-xs font-medium">Modo Selector de Productos</Label>
+                        <Select
+                          value={getBehaviorValue(selectedView.id!, 'productSelectorMode')}
+                          onValueChange={(value) =>
+                            handleBehaviorChange(selectedView.id!, 'productSelectorMode', value)
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="embedded">Integrado</SelectItem>
+                            <SelectItem value="modal">Modal</SelectItem>
+                            <SelectItem value="window">Ventana</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {selectedView.behaviors.openDetailsIn !== undefined && (
+                      <div className="space-y-1.5 p-3 border border-gray-200 rounded">
+                        <Label className="text-xs font-medium">Abrir Detalles En</Label>
+                        <Select
+                          value={getBehaviorValue(selectedView.id!, 'openDetailsIn')}
+                          onValueChange={(value) =>
+                            handleBehaviorChange(selectedView.id!, 'openDetailsIn', value)
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="same-page">Misma Página</SelectItem>
+                            <SelectItem value="new-tab">Nueva Pestaña</SelectItem>
+                            <SelectItem value="modal">Modal</SelectItem>
+                            <SelectItem value="window">Ventana</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {selectedView.behaviors.persistFilters !== undefined && (
+                      <div className="flex items-center justify-between py-2 px-3 border border-gray-200 rounded">
+                        <Label className="text-xs font-medium">Guardar Filtros</Label>
+                        <Switch
+                          checked={getBehaviorValue(selectedView.id!, 'persistFilters')}
+                          onCheckedChange={(checked) =>
+                            handleBehaviorChange(selectedView.id!, 'persistFilters', checked)
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {selectedView.behaviors.defaultRowsPerPage !== undefined && (
+                      <div className="space-y-1.5 p-3 border border-gray-200 rounded">
+                        <Label className="text-xs font-medium">Filas por Página</Label>
+                        <Select
+                          value={String(getBehaviorValue(selectedView.id!, 'defaultRowsPerPage'))}
+                          onValueChange={(value) =>
+                            handleBehaviorChange(selectedView.id!, 'defaultRowsPerPage', Number(value))
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="15">15</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="25">25</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {selectedView.behaviors.defaultSearchMode !== undefined && (
+                      <div className="space-y-1.5 p-3 border border-gray-200 rounded">
+                        <Label className="text-xs font-medium">Modo de Búsqueda</Label>
+                        <Select
+                          value={getBehaviorValue(selectedView.id!, 'defaultSearchMode')}
+                          onValueChange={(value) =>
+                            handleBehaviorChange(selectedView.id!, 'defaultSearchMode', value)
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="realtime">Tiempo Real</SelectItem>
+                            <SelectItem value="manual">Manual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-400">
+            <p className="text-sm">Selecciona una vista</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
