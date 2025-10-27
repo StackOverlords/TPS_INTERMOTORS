@@ -1,17 +1,22 @@
-import { Routes, Route } from "react-router-dom";
+import SplashScreen from "@/components/common/SplashScreen";
+import { useCloseSecondaryWindowsOnExit } from "@/hooks/useCloseSecondaryWindowsOnExit";
+import BranchSelection from "@/modules/auth/screens/BranchScreen";
+import NotFound from "@/modules/shared/screens/NotFound";
+import authSDK from "@/services/sdk-simple-auth";
+import { environment } from "@/utils/environment";
 import { useEffect, useState } from "react";
+import { Route, Routes } from "react-router-dom";
 import type { AuthState, AuthUser } from "sdk-simple-auth";
+import protectedRoutes from "./Protected.Route";
 import { publicRoutes } from "./Public.Route";
 import RouteRenderer from "./RouteRenderer";
-import authSDK from "@/services/sdk-simple-auth";
-import protectedRoutes from "./Protected.Route";
-import BranchSelection from "@/modules/auth/screens/BranchScreen";
-import { environment } from "@/utils/environment";
 import type RouteType from "./RouteType";
-import SplashScreen from "@/components/common/SplashScreen";
-import NotFound from "@/modules/shared/screens/NotFound";
 
 const Navigation = () => {
+  // Auto-cerrar ventanas secundarias cuando se cierra la app
+  useCloseSecondaryWindowsOnExit();
+
+  // Estado de autenticación
   const [authState, setAuthState] = useState<{
     user: AuthUser | null;
     selectedBranch: string | null;
@@ -20,6 +25,7 @@ const Navigation = () => {
     selectedBranch: localStorage.getItem(environment.branch_selected_key),
   });
 
+  // Estado de carga e inicialización
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -76,6 +82,7 @@ const Navigation = () => {
         <Route
           key={`${route.type}-${index}`}
           path={route.path}
+          handle={route}
           element={
             <RouteRenderer
               route={route}

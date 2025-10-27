@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
-import ResizableBox from "@/components/atoms/resizable-box";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
 import { Separator } from "@/components/atoms/separator";
 import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
@@ -12,6 +10,7 @@ import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { usePurchaseSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { DetalleCompra } from "@/modules/purchases/schemas/purchase.schema";
 import type { PurchaseGet } from "@/modules/purchases/types/PurchaseGet";
 import authSDK from "@/services/sdk-simple-auth";
@@ -19,12 +18,11 @@ import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { ArrowLeftRight, CornerUpLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeftRight, CornerUpLeft, Loader2, Maximize2, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import PurchaseTransferList from "../components/PurchaseTransferList";
 import SelectPurchaseTransferModal from "../components/SelectPurchaseTransferModal";
 import type { TransferDetailTableRef } from "../components/TransferDetailTable";
 import TransferDetailTable from "../components/TransferDetailTable";
@@ -254,7 +252,22 @@ const CreateTransfer = () => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     });
-
+    
+    // Window Purchase Selector
+    const purchaseWindow = usePurchaseSelectorWindow({
+        context: 'transfer',
+        instanceId: 'create-transfer',
+        onPurchaseSelect: (purchase: PurchaseGet) => {
+            handleSelectPurchase(purchase);
+        },
+        onlyWithStock: false,
+    });
+    const toggleSelectorMode = () => {
+      if(purchaseWindow.isOpen){
+        purchaseWindow.close();
+      }
+      purchaseWindow.open();
+    }
     return (
         <main>
             <FormProvider {...methods}>
@@ -284,25 +297,36 @@ const CreateTransfer = () => {
                                 </div>
                             </div>
                         </div>
+                        <Button
+                                    type="button"
+                                    // variant={selectorMode === 'window' ? 'default' : 'outline'}
+                                    variant={"outline"}
+                                    size="sm"
+                                    onClick={toggleSelectorMode}
+                                    className="gap-2"
+                                  >
+                                    <Maximize2 className="h-4 w-4" />
+                                        Agregar producto 
+                                  </Button>
                     </header>
 
                     {/* 1. Datos de la transferencia */}
                     <Card className="shadow-none h-full">
                         <CardContent className="py-3">
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-7 xl:grid-cols-7 gap-y-3 gap-x-2">
-                                <div className="col-span-1">
-                                    <Label htmlFor="fecha">Fecha *</Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                                <div className="w-full">
+                                    <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
                                     <Input
-                                        id="fecha"
+                                        id="fecha"  
                                         type="date"
                                         {...register("fecha")}
-                                        className="w-full"
+                                        className="w-full text-xs h-8"
                                         autoFocus
                                     />
-                                    {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                    {errors.fecha && <p className="text-red-500 text-xs mt-0.5">{errors.fecha.message}</p>}
                                 </div>
-                                <div className="col-span-1">
-                                    <Label htmlFor="responsable">Responsable *</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="responsable" className="text-xs">Responsable *</Label>
                                     <Controller
                                         name="responsable"
                                         control={control}
@@ -317,62 +341,65 @@ const CreateTransfer = () => {
                                             />
                                         )}
                                     />
-                                    {errors.responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                    {errors.responsable && <p className="text-red-500 text-xs mt-0.5">El campo es requerido</p>}
                                 </div>
 
-                                <div className="col-span-1">
-                                    <Label htmlFor="sucursal_origen">Sucursal Origen *</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="sucursal_origen" className="text-xs">Sucursal Origen *</Label>
                                     <Input
                                         id="sucursal_origen"
                                         value={`Sucursal ${sucursalOrigen}`}
                                         disabled
-                                        className="bg-gray-100"
+                                        className="bg-gray-100 text-xs h-8"
                                     />
                                 </div>
 
-                                <div className="col-span-1">
-                                    <Label htmlFor="sucursal_destino">Sucursal Destino *</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="sucursal_destino" className="text-xs">Sucursal Destino *</Label>
                                     <Controller
                                         name="sucursal_destino"
                                         control={control}
                                         render={({ field }) => (
-                                            <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona sucursal destino" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {
-                                                        transferBranchesData?.data && transferBranchesData.data
-                                                            .filter(branch => branch.activo === "SI")
-                                                            .map((branch) => (
-                                                                <SelectItem key={branch.id} value={branch.id.toString()}>
-                                                                    {branch.nombre} ({branch.sigla})
-                                                                </SelectItem>
-                                                            ))
-                                                    }
-                                                </SelectContent>
-                                            </Select>
+                                            <ComboboxSelect
+                                                value={field.value}
+                                                onChange={(value) => {
+                                                    field.onChange(Number(value));
+                                                }}
+                                                options={
+                                                    transferBranchesData?.data
+                                                        ?.filter(branch => branch.activo === "SI")
+                                                        .map(branch => ({
+                                                            id: branch.id,
+                                                            nombre: branch.nombre,
+                                                            sigla: branch.sigla
+                                                        })) || []
+                                                }
+                                                optionTag={"nombre"}
+                                                placeholder="Selecciona destino"
+                                            />
                                         )}
                                     />
-                                    {errors.sucursal_destino && <p className="text-red-500 text-sm mt-1">{errors.sucursal_destino.message}</p>}
+                                    {errors.sucursal_destino && <p className="text-red-500 text-xs mt-0.5">{errors.sucursal_destino.message}</p>}
                                 </div>
 
-                                <div className="col-span-1">
-                                    <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="nroComprobante" className="text-xs">N° Comprobante</Label>
                                     <Input
                                         id="nroComprobante"
                                         {...register("nro_comprobante")}
-                                        placeholder="Número de comprobante"
+                                        placeholder="N° Comprobante"
+                                        className="w-full text-xs h-8"
                                     />
                                 </div>
 
-                                <div className="col-span-2">
-                                    <Label htmlFor="comentarios">Comentarios</Label>
+                                <div className="w-full">
+                                    <Label htmlFor="comentarios" className="text-xs">Comentarios</Label>
                                     <Textarea
                                         id="comentarios"
                                         {...register("comentarios")}
-                                        placeholder="Comentarios adicionales sobre la transferencia"
+                                        placeholder="Comentarios adicionales"
                                         rows={1}
+                                        className="w-full text-xs min-h-8"
                                     />
                                 </div>
                             </div>
@@ -380,8 +407,7 @@ const CreateTransfer = () => {
                     </Card>
 
                     {/* Purchases */}
-                    <div className="flex-1 overflow-auto flex flex-col">
-                        {/* Panel de búsqueda de compras - Superior */}
+                    {/* <div className="flex-1 overflow-auto flex flex-col">
                         <div className="flex-shrink-0">
                             <ResizableBox
                                 direction="vertical"
@@ -394,7 +420,7 @@ const CreateTransfer = () => {
                                 />
                             </ResizableBox>
                         </div>
-                    </div>
+                    </div> */}
 
                     <Card className="shadow-none">
                         <CardHeader>

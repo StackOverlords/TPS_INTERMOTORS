@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -19,6 +20,10 @@ export default defineConfig({
     minify: 'esbuild',
     cssMinify: true,
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        window: resolve(__dirname, 'window.html'),
+      },
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router', 'react-router-dom'],

@@ -419,25 +419,25 @@ function PurchaseTransferList<T extends BaseWithId>({
         </div>
 
         {/* Filtros en Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <div className="flex flex-col gap-1.5 lg:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+          <div className="flex flex-col gap-1 sm:col-span-2 lg:col-span-2 xl:col-span-2">
             <Label htmlFor="search-keywords" className="text-xs font-medium">
               Buscar
             </Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
               <Input
                 id="search-keywords"
-                placeholder="Comentarios, comprobantes..."
+                placeholder="Comentarios..."
                 value={keywords}
                 onChange={e => setKeywords(e.target.value)}
-                className="pl-10 h-9"
+                className="pl-8 h-8 text-xs"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 col-span-1">
-            <Label htmlFor="fecha-inicio" className="text-xs font-medium">
+          <div className="flex flex-col gap-1 w-full min-w-0">
+            <Label htmlFor="fecha-inicio" className="text-xs font-medium truncate">
               Fecha Inicio
             </Label>
             <PopoverDatePicker
@@ -472,8 +472,8 @@ function PurchaseTransferList<T extends BaseWithId>({
             />
           </div>
 
-          <div className="flex flex-col gap-1.5  col-span-1">
-            <Label htmlFor="fecha-fin" className="text-xs font-medium">
+          <div className="flex flex-col gap-1 w-full min-w-0">
+            <Label htmlFor="fecha-fin" className="text-xs font-medium truncate">
               Fecha Fin
             </Label>
             <PopoverDatePicker
@@ -514,46 +514,44 @@ function PurchaseTransferList<T extends BaseWithId>({
               hasError={dateError}
             />
           </div>
-          <div className="lg:col-span-2 flex gap-3">
-            <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium opacity-0">Acción</Label>
-            <Button
-              variant="outline"
-              type="button"
-              size="sm"
-              onClick={() => {
-                const today = new Date();
-                const lastWeek = new Date(today);
-                lastWeek.setDate(today.getDate() - 7);
-                updateFilter('fecha_inicio', formatDateSafe(lastWeek));
-                updateFilter('fecha_fin', formatDateSafe(today));
-              }}
-              className="h-9 text-xs w-full"
-            >
-              Última semana
-            </Button>
-          </div>
-          <div className="flex flex-col gap-1.5 col-span-1">
-            <Label className="text-xs font-medium opacity-0">Acción</Label>
-            <Button
-              variant="outline"
-              type="button"
-              size="sm"
-              onClick={() => {
-                const today = new Date();
-                const lastMonth = new Date(today);
-                lastMonth.setMonth(today.getMonth() - 1);
-                setDateError(null);
-                updateFilter('fecha_inicio', formatDateSafe(lastMonth));
-                updateFilter('fecha_fin', formatDateSafe(today));
-              }}
-              className="h-9 text-xs w-full"
-            >
-              Último mes
-            </Button>
+
+          <div className="flex flex-col gap-1 w-full min-w-0 sm:col-span-2 lg:col-span-4 xl:col-span-1">
+            <Label className="text-xs font-medium opacity-0 hidden lg:block">Acción</Label>
+            <div className="flex gap-2 sm:flex-row">
+              <Button
+                variant="outline"
+                type="button"
+                size="sm"
+                onClick={() => {
+                  const today = new Date();
+                  const lastWeek = new Date(today);
+                  lastWeek.setDate(today.getDate() - 7);
+                  updateFilter('fecha_inicio', formatDateSafe(lastWeek));
+                  updateFilter('fecha_fin', formatDateSafe(today));
+                }}
+                className="h-8 text-xs px-2 whitespace-nowrap flex-1 sm:flex-initial"
+              >
+                Última semana
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                size="sm"
+                onClick={() => {
+                  const today = new Date();
+                  const lastMonth = new Date(today);
+                  lastMonth.setMonth(today.getMonth() - 1);
+                  setDateError(null);
+                  updateFilter('fecha_inicio', formatDateSafe(lastMonth));
+                  updateFilter('fecha_fin', formatDateSafe(today));
+                }}
+                className="h-8 text-xs px-2 whitespace-nowrap flex-1 sm:flex-initial"
+              >
+                Último mes
+              </Button>
+            </div>
           </div>
         </div>
-          </div>
 
         {/* Mostrar error de validación */}
         {dateError && (

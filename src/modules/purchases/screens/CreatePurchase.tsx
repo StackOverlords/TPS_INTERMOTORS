@@ -1,9 +1,10 @@
 import ResizableBox from '@/components/atoms/resizable-box';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import TooltipButton from '@/components/common/TooltipButton';
+import { useProductSelectorWindow } from '@/hooks/useSecondaryWindow';
 import { useBranchStore } from '@/states/branchStore';
 import { RotateCcw, Save } from 'lucide-react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import FormCreatePurchase from '../components/FormCreatePurchase';
 import ProductSearchPanel from '../components/ProductSearchPanel';
 import PurchaseDetailsTable from '../components/PurchaseDetailsTable';
@@ -20,6 +21,11 @@ const CreatePurchase: React.FC = () => {
     handleSubmit,
     reset,
   } = usePurchaseForm(Number(branchId));
+
+  // Estado para controlar el modo de visualización del selector de productos
+  const [selectorMode, setSelectorMode] = useState<'embedded' | 'window'>('window');
+
+  
 
   // Función para agregar producto desde el panel de búsqueda
   const handleProductSelect = useCallback(
@@ -55,15 +61,42 @@ const CreatePurchase: React.FC = () => {
     },
     [formData.detalles, handleChange]
   );
+  
+  // Hook para manejar la ventana secundaria de productos
+  const productWindow = useProductSelectorWindow({
+    context: 'purchase',
+    instanceId: 'create',
+    onProductSelect: (product: any) => {
+      handleProductSelect(product);
+    },
+    onlyWithStock: false,
+  });
+  // Toggle entre modo embedded y window
+  const toggleSelectorMode = () => {
+    if(productWindow.isOpen){
+      productWindow.close();
+    }
+    productWindow.open();
+    // if (selectorMode === 'embedded') {
+    //   setSelectorMode('window');
+    //   // Abrir ventana de Tauri
+    //   productWindow.open();
+    // } else {
+    //   setSelectorMode('embedded');
+    //   // Cerrar ventana si está abierta
+    //   if (productWindow.isOpen) {
+    //     productWindow.close();
+    //   }
+    // }
+  };
 
   return (
-    <div className="h-screen max-h-auto">
+    <div className="max-h-auto">
       <div className="bg-gray-50 rounded-lg h-full w-full flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
             Registrar Compra
-          </h2>
+          </h2> 
         </div>
 
         {/* Formulario superior */}
@@ -85,23 +118,47 @@ const CreatePurchase: React.FC = () => {
         {/* Layout horizontal (en filas) */}
         <div className="flex-1 px-4 py-4 flex flex-col gap-4">
           {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
-          <div className="flex-shrink-0">
-            <ResizableBox
-              direction="vertical"
-              minSize={'200px'}
-              initialSize={'300px'}
-            >
-              <ProductSearchPanel
-                selectedProducts={formData.detalles}
-                onProductSelect={handleProductSelect}
-              />
-            </ResizableBox>
-          </div>
+          {/* Solo mostrar si el modo es 'embedded' */}
+          {selectorMode === 'embedded' && (
+            <div className="flex-shrink-0">
+              <ResizableBox
+                direction="vertical"
+                minSize={'200px'}
+                initialSize={'300px'}
+              >
+                <ProductSearchPanel
+                  selectedProducts={formData.detalles}
+                  onProductSelect={handleProductSelect}
+                />
+              </ResizableBox>
+            </div>
+          )}
+
+          {/* Indicador cuando está en modo ventana */}
+          {/* {selectorMode === 'window' && (
+            <div className="flex-shrink-0 bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-center justify-center gap-4">
+              <div className="flex items-center gap-3">
+                <ExternalLink className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-semibold text-blue-900">
+                    Modo Ventana Secundaria Activo
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    El selector de productos está abierto en una ventana separada
+                  </p>
+                </div>
+              </div>
+              <Badge variant="default" className="bg-blue-600">
+                {productWindow.isOpen ? 'Ventana Abierta' : 'Ventana Cerrada'}
+              </Badge>
+            </div>
+          )} */}
 
           {/* Tabla de detalles - Inferior (ocupa el espacio restante) */}
-          <div className="flex-shrink-0 min-h-[400px] bg-white rounded-lg p-4 border border-gray-200 flex flex-col flex-1">
+          <div className="flex-shrink-0 bg-white rounded-lg p-4 border border-gray-200 flex flex-col flex-1">
             <PurchaseDetailsTable
               detalles={formData.detalles}
+              toggleSelectorMode={toggleSelectorMode}
               setDetalles={detalles => handleChange('detalles', detalles)}
             />
           </div>

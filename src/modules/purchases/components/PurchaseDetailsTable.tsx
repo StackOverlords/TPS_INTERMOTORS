@@ -8,7 +8,7 @@ import {
   useReactTable,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { Edit3, Trash2 } from 'lucide-react';
+import { Edit3, Maximize2, Trash2 } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -90,6 +90,7 @@ interface PurchaseDetail {
 interface Props {
   detalles: PurchaseDetail[];
   setDetalles: (d: PurchaseDetail[]) => void;
+  toggleSelectorMode: () => void;
 }
 
 type NormalizedPurchaseDetail = PurchaseDetail & {
@@ -113,7 +114,7 @@ type EditableNumericKey = keyof Pick<
   | 'precio_venta_alt'
 >;
 
-const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
+const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSelectorMode }) => {
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
   const [tempValue, setTempValue] = useState('');
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
@@ -626,8 +627,32 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles }) => {
           <span className="text-sm font-semibold text-gray-900">
             Detalle de Compra
           </span>
-          <div className="text-xs text-gray-500 hidden sm:block">
-            Click para editar | Esc: Cancelar | Del: Eliminar
+          <div className='flex flex-row justify-center items-center gap-4'>
+            {/* <div className="text-xs text-gray-500 hidden sm:block">
+              Click para editar | Esc: Cancelar | Del: Eliminar
+            </div> */}
+            <Button
+              type="button"
+              // variant={selectorMode === 'window' ? 'default' : 'outline'}
+              variant={"outline"}
+              size="sm"
+              onClick={toggleSelectorMode}
+              className="gap-2"
+            >
+              <Maximize2 className="h-4 w-4" />
+                  Agregar producto
+              {/* {selectorMode === 'window' ? (
+                <>
+                  <ExternalLink className="h-4 w-4" />
+                  Modo Ventana
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="h-4 w-4" />
+                  Abrir en Ventana
+                </>
+              )} */}
+            </Button>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import LoginScreen from "@/modules/auth/screens/LoginScreen";
+import { LogIn } from "lucide-react";
 import type RouteType from "./RouteType";
-import { LogIn } from "lucide-react"
 
 export const publicRoutes: RouteType[] = [
   {
