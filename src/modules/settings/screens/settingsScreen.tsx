@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Bell, Code, Database, HardDrive, Keyboard, Link, Palette, RefreshCw, Settings2, Settings as SettingsIcon, Shield } from "lucide-react";
+import { Bell, Code, Database, Eye, HardDrive, Keyboard, Link, Palette, RefreshCw, Settings2, Settings as SettingsIcon, Shield } from "lucide-react";
 import { useState } from "react";
 import AdvancedSettings from "../components/settings/AdvancedSettings";
 import AppearanceSettings from "../components/settings/AppearanceSettings";
@@ -12,6 +12,7 @@ import SecuritySettings from "../components/settings/SecuritySettings";
 import { SettingsNavigation } from "../components/settings/SettingsNavigation";
 import SystemSettings from "../components/settings/SystemSettings";
 import UpdateSettings from "../components/settings/UpdateSettings";
+import ViewSettings from "../components/settings/ViewSettings";
 
 export type SettingsSection = {
     id: string;
@@ -35,6 +36,13 @@ const settingsSections: SettingsSection[] = [
         icon: Database,
         description: "Gestiona los datos maestros del sistema",
         component: MasterDataSettings,
+    },
+    {
+        id: "views",
+        label: "Vistas",
+        icon: Eye,
+        description: "Personaliza la funcionalidad de cada vista",
+        component: ViewSettings,
     },
     {
         id: "appearance",

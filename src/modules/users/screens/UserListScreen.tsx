@@ -16,6 +16,7 @@ import Pagination from '@/components/common/pagination';
 import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import TooltipButton from '@/components/common/TooltipButton';
 import { useCustomTable } from '@/hooks/useCustomTable';
+import { useRouteViewConfig } from '@/hooks/useRouteViewConfig';
 import authSDK from '@/services/sdk-simple-auth';
 import { formatCell } from '@/utils/formatCell';
 import { type ColumnDef } from '@tanstack/react-table';
@@ -45,6 +46,10 @@ const UserListScreen = () => {
   const user = authSDK.getCurrentUser();
   const { filters, updateFilter, setPage, resetFilters } = useUserFilters();
 
+  // Configuración de vista desde la ruta (3 capas: Ruta → Sistema → Usuario)
+  const viewConfig = useRouteViewConfig();
+
+  // Datos de usuarios paginados
   const {
     data: userData,
     isLoading,
@@ -379,46 +384,56 @@ const UserListScreen = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="infinite-scroll"
-                  checked={isInfiniteScroll}
-                  onCheckedChange={checked => {
-                    setIsInfiniteScroll(checked);
-                    setPage(1);
+              {viewConfig?.features?.infiniteScroll?.enabled && (
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="infinite-scroll"
+                    checked={isInfiniteScroll}
+                    onCheckedChange={checked => {
+                      setIsInfiniteScroll(checked);
+                      setPage(1);
+                    }}
+                  />
+                  <Label htmlFor="infinite-scroll">
+                    {viewConfig?.features?.infiniteScroll?.label || 'Scroll Infinito'}
+                  </Label>
+                </div>
+              )}
+
+              {viewConfig?.features?.refreshButton?.enabled && (
+                <TooltipButton
+                  onClick={handleRefetchUsers}
+                  buttonProps={{
+                    className: 'w-8',
+                    disabled: isRefetchingUsers || isFetching,
                   }}
-                />
-                <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
-              </div>
+                  tooltip={viewConfig?.features?.refreshButton?.description || "Recargar usuarios"}
+                >
+                  <RefreshCcw
+                    className={`size-4 ${isRefetchingUsers || isFetching ? 'animate-spin' : ''}`}
+                  />
+                </TooltipButton>
+              )}
 
-              <TooltipButton
-                onClick={handleRefetchUsers}
-                buttonProps={{
-                  className: 'w-8',
-                  disabled: isRefetchingUsers || isFetching,
-                }}
-                tooltip={"Recargar usuarios"}
-              >
-                <RefreshCcw
-                  className={`size-4 ${isRefetchingUsers || isFetching ? 'animate-spin' : ''}`}
-                />
-              </TooltipButton>
+              {viewConfig?.features?.resetTableButton?.enabled && (
+                <TooltipButton
+                  onClick={handleResetTableConfig}
+                  buttonProps={{
+                    variant: 'outline',
+                    size: 'sm',
+                  }}
+                  tooltip={viewConfig?.features?.resetTableButton?.description || "Resetear orden y visibilidad de columnas"}
+                >
+                  <Settings className="h-4 w-4" />
+                  {viewConfig?.features?.resetTableButton?.label || 'Resetear Tabla'}
+                </TooltipButton>
+              )}
 
-              <TooltipButton
-                onClick={handleResetTableConfig}
-                buttonProps={{
-                  variant: 'outline',
-                  size: 'sm',
-                }}
-                tooltip="Resetear orden y visibilidad de columnas"
-              >
-                <Settings className="h-4 w-4" />
-                Resetear Tabla
-              </TooltipButton>
-
-              <Button variant="outline" size="sm" onClick={resetFilters}>
-                Reset Filters
-              </Button>
+              {viewConfig?.features?.filters?.enabled && (
+                <Button variant="outline" size="sm" onClick={resetFilters}>
+                  Reset Filters
+                </Button>
+              )}
             </div>
           </section>
 
@@ -455,52 +470,56 @@ const UserListScreen = () => {
           )}
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center">
-              <RowsPerPageSelect
-                value={filters.pagina_registros ?? 10}
-                onChange={onShowRowsChange}
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="w-4 h-4" />
-                  Columnas
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-56 max-h-96 overflow-y-auto border border-gray-200"
-              >
-                {table
-                  .getAllColumns()
-                  .filter(column => column.getCanHide())
-                  .map(column => (
-                    <DropdownMenuItem
-                      key={column.id}
-                      className="flex items-center space-x-2 cursor-pointer"
-                      onSelect={e => e.preventDefault()}
-                      onClick={() =>
-                        column.toggleVisibility(!column.getIsVisible())
-                      }
-                    >
-                      <Checkbox
-                        className="border border-gray-400"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={value =>
-                          column.toggleVisibility(!!value)
+            {viewConfig?.features?.pagination?.enabled && (
+              <div className="flex items-center">
+                <RowsPerPageSelect
+                  value={filters.pagina_registros ?? viewConfig?.behaviors?.defaultRowsPerPage ?? 10}
+                  onChange={onShowRowsChange}
+                />
+              </div>
+            )}
+            {viewConfig?.features?.columnSelector?.enabled && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4" />
+                    {viewConfig?.features?.columnSelector?.label || 'Columnas'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+                >
+                  {table
+                    .getAllColumns()
+                    .filter(column => column.getCanHide())
+                    .map(column => (
+                      <DropdownMenuItem
+                        key={column.id}
+                        className="flex items-center space-x-2 cursor-pointer"
+                        onSelect={e => e.preventDefault()}
+                        onClick={() =>
+                          column.toggleVisibility(!column.getIsVisible())
                         }
-                      />
-                      <span className="flex-1">
-                        {typeof column.columnDef.header === 'string'
-                          ? column.columnDef.header
-                          : column.id}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {table && hasSelectedUsers > 0 && (
+                      >
+                        <Checkbox
+                          className="border border-gray-400"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={value =>
+                            column.toggleVisibility(!!value)
+                          }
+                        />
+                        <span className="flex-1">
+                          {typeof column.columnDef.header === 'string'
+                            ? column.columnDef.header
+                            : column.id}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {viewConfig?.features?.multiSelect?.enabled && table && hasSelectedUsers > 0 && (
               <Button size={'sm'} className="relative">
                 Acciones
                 <Badge
@@ -565,14 +584,14 @@ const UserListScreen = () => {
                   onRowDoubleClick={handleRowDoubleClick}
                   tableRef={tableRef}
                   focused={isFocused}
-                  keyboardNavigationEnabled={true}
+                  keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
                   enableColumnReordering={true}
                   enableSorting={true}
                 />
               </div>
 
               {/* Pagination */}
-              {(userData?.data?.length ?? 0) > 0 && (
+              {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
                 <Pagination
                   currentPage={filters.pagina || 1}
                   onPageChange={onPageChange}

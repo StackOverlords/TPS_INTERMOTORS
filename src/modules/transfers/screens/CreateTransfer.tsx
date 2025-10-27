@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
-import ResizableBox from "@/components/atoms/resizable-box";
 import { Separator } from "@/components/atoms/separator";
 import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
@@ -11,6 +10,7 @@ import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { usePurchaseSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { DetalleCompra } from "@/modules/purchases/schemas/purchase.schema";
 import type { PurchaseGet } from "@/modules/purchases/types/PurchaseGet";
 import authSDK from "@/services/sdk-simple-auth";
@@ -18,12 +18,11 @@ import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { ArrowLeftRight, CornerUpLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeftRight, CornerUpLeft, Loader2, Maximize2, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import PurchaseTransferList from "../components/PurchaseTransferList";
 import SelectPurchaseTransferModal from "../components/SelectPurchaseTransferModal";
 import type { TransferDetailTableRef } from "../components/TransferDetailTable";
 import TransferDetailTable from "../components/TransferDetailTable";
@@ -253,7 +252,22 @@ const CreateTransfer = () => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     });
-
+    
+    // Window Purchase Selector
+    const purchaseWindow = usePurchaseSelectorWindow({
+        context: 'transfer',
+        instanceId: 'create-transfer',
+        onPurchaseSelect: (purchase: PurchaseGet) => {
+            handleSelectPurchase(purchase);
+        },
+        onlyWithStock: false,
+    });
+    const toggleSelectorMode = () => {
+      if(purchaseWindow.isOpen){
+        purchaseWindow.close();
+      }
+      purchaseWindow.open();
+    }
     return (
         <main>
             <FormProvider {...methods}>
@@ -283,6 +297,17 @@ const CreateTransfer = () => {
                                 </div>
                             </div>
                         </div>
+                        <Button
+                                    type="button"
+                                    // variant={selectorMode === 'window' ? 'default' : 'outline'}
+                                    variant={"outline"}
+                                    size="sm"
+                                    onClick={toggleSelectorMode}
+                                    className="gap-2"
+                                  >
+                                    <Maximize2 className="h-4 w-4" />
+                                        Agregar producto 
+                                  </Button>
                     </header>
 
                     {/* 1. Datos de la transferencia */}
@@ -382,8 +407,7 @@ const CreateTransfer = () => {
                     </Card>
 
                     {/* Purchases */}
-                    <div className="flex-1 overflow-auto flex flex-col">
-                        {/* Panel de búsqueda de compras - Superior */}
+                    {/* <div className="flex-1 overflow-auto flex flex-col">
                         <div className="flex-shrink-0">
                             <ResizableBox
                                 direction="vertical"
@@ -396,7 +420,7 @@ const CreateTransfer = () => {
                                 />
                             </ResizableBox>
                         </div>
-                    </div>
+                    </div> */}
 
                     <Card className="shadow-none">
                         <CardHeader>

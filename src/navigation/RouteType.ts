@@ -1,3 +1,4 @@
+import type { ViewConfiguration } from "@/config/viewConfigTypes";
 import type React from "react";
 
 export default interface RouteType {
@@ -14,4 +15,6 @@ export default interface RouteType {
     isHeader?: boolean;
     showSidebar?: boolean
     showInCommandPalette?: boolean;
+
+    viewConfig?: ViewConfiguration;
 }
