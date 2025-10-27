@@ -10,8 +10,8 @@ import { HotkeysProvider } from 'react-hotkeys-hook';
 import { Toaster } from './components/atoms/toaster.tsx';
 import { KeybindingProvider } from './contexts/KeybindingContext.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
-import { queryClient } from './lib/reactQueryConfig.ts';
 import { testDatabaseConnection } from './database/test-connection';
+import { queryClient } from './lib/reactQueryConfig.ts';
 
 // Probar la conexión a la base de datos al iniciar la app
 testDatabaseConnection().then((success) => {

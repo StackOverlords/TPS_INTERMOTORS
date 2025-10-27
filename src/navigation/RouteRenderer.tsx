@@ -1,7 +1,7 @@
+import Layout from "@/modules/dashboard/screens/layout";
 import type React from "react";
 import { Navigate, useLocation } from "react-router";
 import type RouteType from "./RouteType";
-import Layout from "@/modules/dashboard/screens/layout";
 
 interface RouteRendererProps {
   route: RouteType;
@@ -42,11 +42,7 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   }
 
   if (route.type === "protected") {
-    return (
-      <Layout>
-        <Component />
-      </Layout>
-    );
+    return <Layout />;
   }
 
   return <Component />;

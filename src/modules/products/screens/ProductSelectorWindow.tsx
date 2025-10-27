@@ -1,0 +1,752 @@
+/**
+ * ProductSelectorWindow - Ventana Standalone para Selección de Productos
+ *
+ * Usa la misma estructura visual y filtros que ProductListScreen
+ */
+
+import { Badge } from '@/components/atoms/badge';
+import { Button } from '@/components/atoms/button';
+import { Checkbox } from '@/components/atoms/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/atoms/dropdown-menu';
+import CustomizableTable from '@/components/common/CustomizableTable';
+import Pagination from '@/components/common/pagination';
+import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
+import TooltipButton from '@/components/common/TooltipButton';
+import { useCustomTable } from '@/hooks/useCustomTable';
+import ProductFilters from '@/modules/products/components/productList/productFilters';
+import { useProductsPaginated } from '@/modules/products/hooks/queries/useProductsPaginated';
+import { useProductFilters } from '@/modules/products/hooks/useProductFilters';
+import type { ProductGet } from '@/modules/products/types/ProductGet';
+import { useBranchStore } from '@/states/branchStore';
+import { formatCell } from '@/utils/formatCell';
+import { formatCurrency } from '@/utils/formaters';
+import { emitToWindow } from '@/utils/tauriWindows';
+import { type ColumnDef } from '@tanstack/react-table';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import {
+  Check,
+  Package,
+  Plus,
+  RefreshCcw,
+  Settings,
+  X,
+  Zap,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+type ProductSelectorContext =
+  | 'purchase'
+  | 'sale'
+  | 'transfer'
+  | 'sale-edit'
+  | 'purchase-edit'
+  | 'inventory'
+  | string; // Permitir contextos personalizados
+
+interface WindowConfig {
+  windowId: string;
+  context: ProductSelectorContext;
+  onlyWithStock?: boolean;
+  multiSelect?: boolean;
+  initialFilters?: Record<string, any>;
+}
+
+interface SelectedProduct {
+  product: ProductGet;
+  quantity: number;
+}
+
+const ProductSelectorWindow: React.FC = () => {
+  const currentWindow = getCurrentWebviewWindow();
+  const selectedBranchId = useBranchStore(s => s.selectedBranchId);
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  // Extraer configuración de query params
+  const config: WindowConfig = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      windowId: params.get('windowId') || 'product-selector-default',
+      context: params.get('context') || 'default',
+      onlyWithStock: params.get('onlyWithStock') === 'true',
+      multiSelect: params.get('multiSelect') === 'true',
+    };
+  }, []);
+
+  // Estados
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
+    []
+  );
+  const [showSelectionPanel, setShowSelectionPanel] = useState(false);
+  const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
+  const [showFilters, setShowFilters] = useState<boolean>(true);
+
+  // Filtros de productos
+  const {
+    filters,
+    debouncedFilters,
+    appliedFilters,
+    updateFilter,
+    setPage,
+    applyFilters,
+    setPageSize,
+  } = useProductFilters(Number(selectedBranchId) || 1);
+
+  const activeFilters =
+    searchMode === 'realtime' ? debouncedFilters : appliedFilters;
+
+  // Query de productos
+  const {
+    data: productData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch: refetchProducts,
+  } = useProductsPaginated(activeFilters);
+
+  const products = productData?.data || [];
+
+  // Función para determinar el color del stock
+  const getStockColor = (stock: number, stock_min: number) => {
+    const stockMin: number = stock_min || 10;
+    if (stock <= stockMin) return 'danger';
+    if (stock <= stockMin + 10) return 'warning';
+    return 'success';
+  };
+
+  // Helper para verificar si un producto está seleccionado
+  const isProductSelected = useCallback(
+    (productId: number) => {
+      return selectedProducts.some(sp => sp.product.id === productId);
+    },
+    [selectedProducts]
+  );
+
+  /**
+   * Maneja la selección de un producto
+   */
+  const handleProductSelect = useCallback(
+    async (product: ProductGet) => {
+      if (config.multiSelect) {
+        // Modo multi-select: agregar a lista temporal
+        setSelectedProducts(prev => {
+          const existing = prev.find(p => p.product.id === product.id);
+          if (existing) {
+            // Incrementar cantidad
+            return prev.map(p =>
+              p.product.id === product.id
+                ? { ...p, quantity: p.quantity + 1 }
+                : p
+            );
+          } else {
+            // Agregar nuevo
+            return [...prev, { product, quantity: 1 }];
+          }
+        });
+
+        // Mostrar panel de selección si está oculto
+        if (!showSelectionPanel) {
+          setShowSelectionPanel(true);
+        }
+      } else {
+        // Modo single-select: emitir inmediatamente y cerrar
+        await emitToWindow(config.windowId, 'product-selected', product);
+        await currentWindow.close();
+      }
+    },
+    [config.multiSelect, config.windowId, currentWindow, showSelectionPanel]
+  );
+
+  /**
+   * Confirma la multi-selección y envía todos los productos
+   */
+  const handleConfirmMultiSelect = async () => {
+    if (selectedProducts.length === 0) return;
+
+    // Emitir evento con todos los productos seleccionados
+    await emitToWindow(
+      config.windowId,
+      'product-multi-selected',
+      selectedProducts.map(sp => ({
+        ...sp.product,
+        quantity: sp.quantity,
+      }))
+    );
+
+    await currentWindow.close();
+  };
+
+  /**
+   * Elimina un producto de la selección temporal
+   */
+  const handleRemoveFromSelection = (productId: number) => {
+    setSelectedProducts(prev => prev.filter(p => p.product.id !== productId));
+  };
+
+  /**
+   * Cambia la cantidad de un producto seleccionado
+   */
+  const handleQuantityChange = (productId: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      handleRemoveFromSelection(productId);
+      return;
+    }
+
+    setSelectedProducts(prev =>
+      prev.map(p =>
+        p.product.id === productId ? { ...p, quantity: newQuantity } : p
+      )
+    );
+  };
+
+  /**
+   * Definición de columnas (similar a ProductListScreen)
+   */
+  const columns = useMemo<ColumnDef<ProductGet>[]>(
+    () => [
+      {
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: true,
+        enableHiding: true,
+        size: 60,
+        minSize: 40,
+        cell: ({ getValue }) => {
+          const id = getValue<number>();
+          return <div className="text-center font-medium">{id}</div>;
+        },
+      },
+      {
+        accessorKey: 'descripcion',
+        header: 'Producto',
+        size: 300,
+        minSize: 30,
+        enableHiding: false,
+        cell: ({ getValue }) => (
+          <div className="flex flex-col">
+            <h3 className="font-medium text-gray-900 leading-tight truncate">
+              {getValue<string>()}
+            </h3>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'codigo_oem',
+        header: 'Cód. OEM',
+        size: 135,
+        minSize: 30,
+        cell: ({ getValue }) => (
+          <div className="flex items-center justify-center">
+            <Badge
+              className="rounded font-normal w-full flex justify-center items-center"
+              variant="secondary"
+            >
+              {formatCell(getValue<string>())}
+            </Badge>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'codigo_upc',
+        header: 'Cód. UPC',
+        size: 115,
+        minSize: 100,
+        cell: ({ getValue }) => (
+          <div className="flex items-center justify-center">
+            <span>{formatCell(getValue<string>())}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'precio_venta',
+        header: 'Precio',
+        size: 120,
+        minSize: 100,
+        cell: ({ row, getValue }) => {
+          const precioAlt = row.original.precio_venta_alt;
+          return (
+            <div className="space-y-1 flex items-end flex-col">
+              <div className="font-bold text-green-600">
+                {formatCurrency(getValue<number>())}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">
+                  Alt: {formatCurrency(precioAlt)}
+                </span>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'stock_actual',
+        header: 'Stock',
+        size: 110,
+        minSize: 100,
+        cell: ({ row, getValue }) => {
+          const stock = getValue<number>();
+          const stockMin = row.original.stock_minimo || 1;
+          return (
+            <Badge
+              variant={getStockColor(stock, stockMin)}
+              className="flex flex-col justify-center rounded"
+            >
+              <span className="font-bold">{getValue<number>().toFixed(0)}</span>
+              <span className="text-[10px] uppercase">
+                {row.original.unidad_medida}
+              </span>
+            </Badge>
+          );
+        },
+      },
+      {
+        accessorKey: 'marca',
+        header: 'Marca',
+        size: 100,
+        minSize: 80,
+      },
+      {
+        accessorKey: 'categoria',
+        header: 'Categoría',
+        size: 150,
+        minSize: 120,
+        cell: ({ row, getValue }) => (
+          <div className="space-y-1">
+            <span className="text-blue-600 font-medium">
+              {getValue<string>()}
+            </span>
+            <div className="text-gray-500">{row.original.subcategoria}</div>
+          </div>
+        ),
+      },
+      {
+        id: 'acciones',
+        header: 'Acción',
+        size: 120,
+        minSize: 100,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const product = row.original;
+          const selected = isProductSelected(product.id);
+          const disabled = config.onlyWithStock && product.stock_actual <= 0;
+
+          return (
+            <div className="flex items-center justify-center">
+              <Button
+                onClick={() => handleProductSelect(product)}
+                disabled={disabled}
+                size="sm"
+                variant={selected ? 'default' : 'outline'}
+                className="gap-2"
+              >
+                {selected ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Seleccionado
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Seleccionar
+                  </>
+                )}
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [
+      config.onlyWithStock,
+      getStockColor,
+      handleProductSelect,
+      isProductSelected,
+    ]
+  );
+
+  /**
+   * Tabla customizable setup
+   */
+  const { table } = useCustomTable({
+    data: products,
+    columns,
+    enableSorting: true,
+    enableColumnResizing: true,
+    enableRowSelection: false,
+    enableColumnVisibility: true,
+    enableColumnOrdering: true,
+    enablePagination: false,
+    columnResizeMode: 'onChange',
+    persistenceKey: `product-selector-${config.context}`,
+    persistColumnVisibility: true,
+    persistColumnOrder: true,
+  });
+
+  /**
+   * Cierra la ventana
+   */
+  const handleClose = async () => {
+    // Emitir evento de cancelación (opcional)
+    await emitToWindow(config.windowId, 'window-closed', { canceled: true });
+    await currentWindow.close();
+  };
+
+  /**
+   * Manejo de paginación y filtros
+   */
+  const onPageChange = (page: number) => {
+    setPage(page);
+  };
+
+  const onShowRowsChange = (rows: number) => {
+    setPageSize(rows);
+  };
+
+  const handleRefetchProducts = () => {
+    refetchProducts();
+  };
+
+  const toggleShowFilters = () => {
+    setShowFilters(!showFilters);
+  };
+
+  const handleManualSearch = () => {
+    if (searchMode === 'manual') {
+      applyFilters();
+    }
+  };
+
+  const toggleSearchMode = () => {
+    setSearchMode(prev => (prev === 'realtime' ? 'manual' : 'realtime'));
+  };
+
+  /**
+   * Listener para eventos de teclado (Escape para cerrar)
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Calcular total de productos seleccionados
+  const totalSelectedProducts = selectedProducts.reduce(
+    (sum, p) => sum + p.quantity,
+    0
+  );
+
+  // Título contextual || En que vista usaremos esto:
+  const contextTitle = useMemo(() => {
+    const titles: Record<string, string> = {
+      purchase: 'Agregar a Compra',
+      sale: 'Agregar a Venta',
+      transfer: 'Agregar a Transferencia',
+      'sale-edit': 'Agregar a Venta',
+      'purchase-edit': 'Agregar a Compra',
+      inventory: 'Seleccionar Productos',
+    };
+    return titles[config.context] || 'Seleccionar Productos';
+  }, [config.context]);
+
+  return (
+    <main className="h-screen">
+      <div className="bg-white rounded-lg shadow-sm">
+        {/* Header */}
+        <header className="p-2 border-b border-border">
+          <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-4 grow">
+              <Package className="h-5 w-5 text-primary" />
+              <div>
+                <h1 className="text-lg font-bold text-primary">
+                  {contextTitle}
+                </h1>
+                <p className="text-xs text-gray-500">
+                  Contexto: <span className="font-mono">{config.context}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Indicador de multi-select */}
+              {config.multiSelect && selectedProducts.length > 0 && (
+                <Badge variant="default" className="text-sm">
+                  {totalSelectedProducts} seleccionados
+                </Badge>
+              )}
+
+              {/* Toggle de modo de búsqueda */}
+              <Button
+                variant="ghost"
+                onClick={toggleSearchMode}
+                className="text-xs h-7"
+                title={
+                  searchMode === 'realtime'
+                    ? 'Cambiar a búsqueda manual'
+                    : 'Cambiar a búsqueda en tiempo real'
+                }
+              >
+                <Zap
+                  className={`h-3 w-3 ${
+                    searchMode === 'realtime'
+                      ? 'text-yellow-500'
+                      : 'text-gray-500'
+                  }`}
+                />
+                {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+              </Button>
+
+              <TooltipButton
+                onClick={handleRefetchProducts}
+                buttonProps={{
+                  className: 'w-8',
+                  disabled: isFetching,
+                }}
+                tooltip="Recargar productos"
+              >
+                <RefreshCcw
+                  className={`size-4 ${isFetching ? 'animate-spin' : ''}`}
+                />
+              </TooltipButton>
+
+              <Button size="sm" onClick={toggleShowFilters}>
+                {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+              </Button>
+
+              {/* Botón confirmar (solo en multi-select) */}
+              {config.multiSelect && selectedProducts.length > 0 && (
+                <Button
+                  onClick={handleConfirmMultiSelect}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Confirmar Selección
+                </Button>
+              )}
+
+              {/* Botón cerrar */}
+              {/* <Button
+                  onClick={handleClose}
+                  size="sm"
+                  variant="ghost"
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Cerrar
+                </Button> */}
+            </div>
+          </section>
+        </header>
+
+        {/* Filtros */}
+        {showFilters && (
+          <ProductFilters
+            filters={filters}
+            updateFilter={updateFilter}
+            showSubcategories={false}
+            handleManualSearch={handleManualSearch}
+            searchMode={searchMode}
+          />
+        )}
+
+        {/* Results Info */}
+        <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
+          {products.length > 0 ? (
+            (() => {
+              const pagina = filters.pagina ?? 1;
+              const porPagina = filters.pagina_registros ?? 1;
+              const inicio = (pagina - 1) * porPagina + 1;
+              const fin = pagina * porPagina;
+              return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
+            })()
+          ) : (
+            <span>Cargando...</span>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center">
+              <RowsPerPageSelect
+                value={filters.pagina_registros ?? 10}
+                onChange={onShowRowsChange}
+              />
+            </div>
+            <div className="flex items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4" />
+                    Columnas
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+                >
+                  {table
+                    .getAllColumns()
+                    .filter(column => column.getCanHide())
+                    .map(column => (
+                      <DropdownMenuItem
+                        key={column.id}
+                        className="flex items-center space-x-2 cursor-pointer"
+                        onSelect={e => e.preventDefault()}
+                        onClick={() =>
+                          column.toggleVisibility(!column.getIsVisible())
+                        }
+                      >
+                        <Checkbox
+                          className="border border-gray-400"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={value =>
+                            column.toggleVisibility(!!value)
+                          }
+                        />
+                        <span className="flex-1">
+                          {typeof column.columnDef.header === 'string'
+                            ? column.columnDef.header
+                            : column.id}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabla con productos */}
+        <div className="overflow-auto h-screen">
+          <div className="overflow-x-hidden">
+            <CustomizableTable
+              table={table}
+              isError={isError}
+              isFetching={isFetching}
+              isLoading={isLoading}
+              errorMessage="Ocurrió un error al cargar los productos"
+              rows={filters.pagina_registros}
+              noDataMessage="No se encontraron productos"
+              tableRef={tableRef}
+              enableColumnReordering={true}
+              enableSorting={false}
+            />
+          </div>
+
+          {/* Pagination */}
+          {(productData?.data?.length ?? 0) > 0 && (
+            <Pagination
+              currentPage={filters.pagina || 1}
+              onPageChange={onPageChange}
+              totalData={productData?.meta.total || 1}
+              onShowRowsChange={onShowRowsChange}
+              showRows={filters.pagina_registros}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Panel lateral de productos seleccionados (solo multi-select) */}
+      {config.multiSelect &&
+        showSelectionPanel &&
+        selectedProducts.length > 0 && (
+          <div className="fixed right-4 bottom-4 w-80 max-h-96 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="font-semibold text-sm text-gray-900">
+                Productos Seleccionados ({selectedProducts.length})
+              </h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowSelectionPanel(false)}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+
+            <div className="overflow-y-auto max-h-64 divide-y divide-gray-200">
+              {selectedProducts.map(sp => (
+                <div
+                  key={sp.product.id}
+                  className="p-3 flex items-center gap-3 hover:bg-gray-50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 truncate">
+                      {sp.product.descripcion}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono">
+                      {sp.product.codigo_oem}
+                    </p>
+                  </div>
+
+                  {/* Control de cantidad */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 w-6 p-0"
+                      onClick={() =>
+                        handleQuantityChange(sp.product.id, sp.quantity - 1)
+                      }
+                    >
+                      -
+                    </Button>
+                    <span className="text-sm font-semibold w-8 text-center">
+                      {sp.quantity}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 w-6 p-0"
+                      onClick={() =>
+                        handleQuantityChange(sp.product.id, sp.quantity + 1)
+                      }
+                      disabled={
+                        config.onlyWithStock &&
+                        sp.quantity >= sp.product.stock_actual
+                      }
+                    >
+                      +
+                    </Button>
+                  </div>
+
+                  {/* Botón eliminar */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleRemoveFromSelection(sp.product.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer con botón confirmar */}
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+              <Button
+                onClick={handleConfirmMultiSelect}
+                className="w-full gap-2"
+                size="sm"
+              >
+                <Check className="h-4 w-4" />
+                Confirmar {totalSelectedProducts} producto
+                {totalSelectedProducts !== 1 ? 's' : ''}
+              </Button>
+            </div>
+          </div>
+        )}
+    </main>
+  );
+};
+
+export default ProductSelectorWindow;

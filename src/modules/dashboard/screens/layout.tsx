@@ -36,29 +36,6 @@ export default function Layout() {
     }
   );
 
-  // // Atajos de teclado para tabs
-  // useHotkeys('ctrl+t', e => {
-  //   e.preventDefault();
-  //   console.log("first")
-  //   // El dashboard se abrirá automáticamente por el hook
-  //   // window.location.hash = '#/dashboard';
-  // });
-
-  // useHotkeys('ctrl+w', e => {
-  //   e.preventDefault();
-  //   closeCurrentTab();
-  // });
-
-  // useHotkeys('ctrl+tab', e => {
-  //   e.preventDefault();
-  //   nextTab();
-  // });
-
-  // useHotkeys('ctrl+shift+tab', e => {
-  //   e.preventDefault();
-  //   previousTab();
-  // });
-
   if (!mounted) {
     return null;
   }
