@@ -5,29 +5,29 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import authSDK from "@/services/sdk-simple-auth";
 import { formatCurrency } from "@/utils/formaters";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, User, Settings, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import type { OrderGetAll, OrderGetAllResponse } from "../../types/orderGet.types";
 import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
 import { formatInTimeZone } from "date-fns-tz";
+import { useCustomTable } from "@/hooks/useCustomTable";
 
 interface OrdersListTableProps {
     data: OrderGetAllResponse
     orders: OrderGetAll[]
     filters: ReturnType<typeof useOrdersFilters>["filters"]
-    setPage: ReturnType<typeof useOrdersFilters>["setPage"]
-    updateFilter: ReturnType<typeof useOrdersFilters>["updateFilter"]
+    setPage: (page: number) => void
+    setPageSize: (rows: number) => void
     isInfiniteScroll: boolean
     isLoading: boolean
     isFetching: boolean,
@@ -35,7 +35,6 @@ interface OrdersListTableProps {
     handleDeleteSale: (id: number) => void
 }
 
-const getColumnVisibilityKey = (userName: string) => `orders-columns-${userName}`;
 const getStatusBadge = (estado: string) => {
     switch (estado) {
         case 'Preparación':
@@ -58,7 +57,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     orders,
     filters,
     setPage,
-    updateFilter,
+    setPageSize,
     isInfiniteScroll,
     isError,
     isFetching,
@@ -66,36 +65,10 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     handleDeleteSale
 }) => {
     const navigate = useNavigate()
-    const [columnVisibility, setColumnVisibility] = useState({})
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    useEffect(() => {
-        if (!user?.name) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-        if (savedVisibility) {
-            try {
-                const parsed = JSON.parse(savedVisibility);
-                setColumnVisibility(parsed);
-            } catch (error) {
-                console.error('Error parsing column visibility:', error);
-                localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-            }
-        }
-    }, [user?.name]);
-
-    useEffect(() => {
-        if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        try {
-            localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-        } catch (error) {
-            console.error('Error saving column visibility:', error);
-        }
-    }, [columnVisibility, user?.name]);
 
     const handleSeeDetails = useCallback((id: number) => {
         navigate(`/dashboard/orders/${id}`)
@@ -425,21 +398,32 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
         },
     ], [handleSeeDetails, handleUpdateOrder, handleDeleteSale]);
 
-    const table = useReactTable<OrderGetAll>({
+    const {
+        table,
+        rowSelection,
+        // resetAll,
+    } = useCustomTable({
         data: orders,
         columns,
-        state: {
-            columnVisibility,
-            rowSelection,
-        },
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
         enableRowSelection: true,
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Columnas ocultas por defecto
+        hiddenColumns: ['Select'],
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `orders-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
     });
 
     const {
@@ -451,6 +435,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     } = useKeyboardNavigation<OrderGetAll, HTMLTableElement>({
         items: orders,
         containerRef: tableRef,
+        isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)
         },
@@ -471,13 +456,20 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     };
 
     const onShowRowsChange = (rows: number) => {
-        updateFilter("pagina_registros", rows);
+        setPageSize(rows)
     };
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
 
     return (
-        <section>
+        <section className="flex flex-col h-full">
             {/* Results Info */}
-            <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
+            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
                 {
                     orders.length > 0 ? (
                         isInfiniteScroll ? (
@@ -499,10 +491,6 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                 }
 
                 <div className="flex items-center gap-2">
-                    <RowsPerPageSelect
-                        value={filters.pagina_registros ?? 10}
-                        onChange={onShowRowsChange}
-                    />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm">
@@ -578,46 +566,53 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                             </div>
                         }
                     >
-                        <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                        <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
                             <HelpCircle />
                         </span>
                     </TooltipWrapper>
                 </div>
             </div>
 
-            {isInfiniteScroll ? (
-                <InfiniteScroll
-                    dataLength={orders.length}
-                    next={() => setPage((filters.pagina || 1) + 1)}
-                    hasMore={orders.length < ((data?.meta?.total ?? 0))}
-                    loader={
-                        <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                            <Loader2 className="size-4 animate-spin" />
-                            Cargando más pedidos...
-                        </div>
-                    }
-                    scrollableTarget="main-scroll-container"
-                >
-                    <CustomizableTable
-                        table={table}
-                        isError={isError}
-                        errorMessage="Ocurrió un error al cargar los pedidos"
-                        isLoading={isLoading}
-                        rows={filters.pagina_registros}
-                        noDataMessage="No se encontraron pedidos"
-                        selectedRowIndex={selectedIndex}
-                        onRowClick={handleRowClick}
-                        onRowDoubleClick={handleRowDoubleClick}
-                        tableRef={tableRef}
-                        focused={isFocused}
-                        keyboardNavigationEnabled={true}
-                    />
-                </InfiniteScroll>
-            ) : (
-                <div
-                    className="overflow-auto h-full">
+            {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+            <div className="flex-1 min-h-0">
+                {isInfiniteScroll ? (
                     <div
-                        className="overflow-x-hidden">
+                        id="orders-list-scroll-container"
+                        className="h-full overflow-auto relative">
+                        <InfiniteScroll
+                            dataLength={orders.length}
+                            next={() => setPage((filters.pagina || 1) + 1)}
+                            hasMore={orders.length < ((data?.meta?.total ?? 0))}
+                            loader={
+                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                                    <Loader2 className="size-4 animate-spin" />
+                                    Cargando más pedidos...
+                                </div>
+                            }
+                            scrollableTarget="orders-list-scroll-container"
+                        >
+                            <CustomizableTable
+                                table={table}
+                                isError={isError}
+                                errorMessage="Ocurrió un error al cargar los pedidos"
+                                isLoading={isLoading}
+                                rows={filters.pagina_registros}
+                                noDataMessage="No se encontraron pedidos"
+                                selectedRowIndex={selectedIndex}
+                                onRowClick={handleRowClick}
+                                onRowDoubleClick={handleRowDoubleClick}
+                                tableRef={tableRef}
+                                focused={isFocused}
+                                keyboardNavigationEnabled={true}
+                                enableColumnReordering={true}
+                                enableSorting={false}
+                                onDragEnd={handleDragEnd}
+                                onDragStart={handleDragStart}
+                            />
+                        </InfiniteScroll>
+                    </div>
+                ) : (
+                    <div className="h-full overflow-auto">
                         <CustomizableTable
                             table={table}
                             isError={isError}
@@ -632,24 +627,29 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                             tableRef={tableRef}
                             focused={isFocused}
                             keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
                         />
-
                     </div>
+                )}
+            </div>
 
-                    {/* Pagination */}
-                    {
-                        (data?.data?.length ?? 0) > 0 && (
-                            <Pagination
-                                currentPage={filters.pagina || 1}
-                                onPageChange={onPageChange}
-                                totalData={data?.meta?.total ?? 1}
-                                onShowRowsChange={onShowRowsChange}
-                                showRows={filters.pagina_registros}
-                            />
-                        )
-                    }
-                </div>
-            )}
+            {/* Pagination - FIJO en la parte inferior */}
+            {
+                !isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
+                    <div className="flex-shrink-0 border-t border-border bg-card">
+                        <Pagination
+                            currentPage={filters.pagina || 1}
+                            onPageChange={onPageChange}
+                            totalData={data?.meta?.total ?? 1}
+                            onShowRowsChange={onShowRowsChange}
+                            showRows={filters.pagina_registros}
+                        />
+                    </div>
+                )
+            }
         </section>
     );
 }

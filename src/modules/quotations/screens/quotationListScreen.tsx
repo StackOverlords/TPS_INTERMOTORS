@@ -1,6 +1,6 @@
 import { useBranchStore } from "@/states/branchStore";
 import { useEffect, useState } from "react";
-import { Filter, RefreshCcw, Search } from "lucide-react";
+import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
@@ -18,18 +18,25 @@ import QuotationsFiltersComponent from "../components/quotationList/quotationFil
 import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
 
 const QuotationListScreen = () => {
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const [isInfiniteScroll, setIsInfiniteScroll] = useState<boolean>(false)
     const [showFilters, setShowFilters] = useState<boolean>(true)
     const [quotations, setQuotations] = useState<QuotationGetAll[]>([]);
+    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
 
     const {
         filters,
         debouncedFilters,
+        appliedFilters,
         updateFilter,
         setPage,
         resetFilters,
+        applyFilters,
+        setPageSize,
     } = useSalesFilters(Number(selectedBranchId) || 1)
+
+    // Determinar qué filtros usar según el modo
+    const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
 
     const {
         data: quotationData,
@@ -39,7 +46,7 @@ const QuotationListScreen = () => {
         isError,
         refetch: refetchQuotations,
         isRefetching: isRefetchingQuotations,
-    } = useQuotationsPaginated(debouncedFilters)
+    } = useQuotationsPaginated(activeFilters)
 
     useEffect(() => {
         if (!quotationData?.data || error || isFetching) return;
@@ -60,6 +67,18 @@ const QuotationListScreen = () => {
     const handleResetFilters = () => {
         resetFilters()
     }
+
+    // Manejar búsqueda manual
+    const handleManualSearch = () => {
+        if (searchMode === 'manual') {
+            applyFilters();
+        }
+    };
+
+    // Toggle del modo de búsqueda
+    const toggleSearchMode = () => {
+        setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
+    };
 
     const handleDeleteSuccess = (_data: unknown, quotationId: number) => {
         showSuccessToast({
@@ -99,9 +118,9 @@ const QuotationListScreen = () => {
     }
 
     return (
-        <main className="min-h-screen space-y-2">
-            <header className="bg-white rounded-lg p-2 space-y-2 border border-gray-200">
-                <h1 className="text-lg font-bold text-gray-900">Cotizaciones</h1>
+        <main className="h-full p-2 gap-2 flex flex-col">
+            <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+                <h1 className="text-lg font-bold text-primary">Cotizaciones</h1>
                 <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
                     <div className="flex items-center gap-2 md:gap-4 grow">
 
@@ -110,13 +129,25 @@ const QuotationListScreen = () => {
                             <Input
                                 placeholder="Buscar por palabras clave..."
                                 value={filters.keywords}
-                                onChange={(e) => updateFilter("keywords",e.target.value)}
+                                onChange={(e) => updateFilter("keywords", e.target.value)}
                                 className="pl-10 w-full"
                             />
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                        {/* Toggle de modo de búsqueda */}
+                        <Button
+                            type='button'
+                            size="sm"
+                            variant="ghost"
+                            onClick={toggleSearchMode}
+                            className="text-xs h-7"
+                            title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+                        >
+                            <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                            {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+                        </Button>
                         <div className="flex items-center space-x-2">
                             <Switch
                                 id="infinite-scroll"
@@ -163,13 +194,15 @@ const QuotationListScreen = () => {
                             <QuotationsFiltersComponent
                                 filters={filters}
                                 updateFilter={updateFilter}
+                                handleManualSearch={handleManualSearch}
+                                searchMode={searchMode}
                             />
                         </>
                     )
                 }
             </header>
 
-            <div className="bg-white rounded-lg border border-gray-200 space-y-2">
+            <div className="bg-card rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
                 <QuotationsListTable
                     data={quotationData || { data: [], meta: null, links: null }}
                     filters={filters}
@@ -179,14 +212,14 @@ const QuotationListScreen = () => {
                     isLoading={isLoading}
                     quotations={quotations}
                     setPage={setPage}
-                    updateFilter={updateFilter}
+                    setPageSize={setPageSize}
                     handleDeleteSale={handleOpenDeleteAlert}
                 />
             </div>
             <ConfirmationModal
                 isOpen={showDeleteAlert}
-                title="Eliminar cotizacion"
-                message={`¿Estás seguro de que deseas eliminar la cotizacion #${quotationToDelete}?`}
+                title="Eliminar cotización"
+                message={`¿Estás seguro de que deseas eliminar la cotización #${quotationToDelete}?`}
                 onClose={handleCloseDeleteAlert}
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeleting}
