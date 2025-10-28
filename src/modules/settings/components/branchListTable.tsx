@@ -6,15 +6,15 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import authSDK from "@/services/sdk-simple-auth";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type VisibilityState } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, GitBranchIcon, Settings, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { Branch } from "../types/branch.types";
 import BranchFormDialog from "./branchFormDialog";
 import { BranchUsersModal } from "./BranchUsersModal";
-
-const getColumnVisibilityKey = (userName: string) => `branches-columns-${userName}`;
+import { useCustomTable } from "@/hooks/useCustomTable";
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 
 interface BranchListTableProps {
     branches: Branch[]
@@ -46,9 +46,10 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
     const location = useLocation();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
     const [usersModalOpen, setUsersModalOpen] = useState(false);
     const [selectedBranch, setSelectedBranch] = useState<{ id: number; name: string } | null>(null);
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    const tableRef = useRef<HTMLTableElement>(null)
 
     const isEditing = useMemo(() => editingId !== null, [editingId]);
 
@@ -85,31 +86,6 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         setUsersModalOpen(false);
         setSelectedBranch(null);
     }, []);
-
-    useEffect(() => {
-        if (!user?.name) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-        if (savedVisibility) {
-            try {
-                const parsed = JSON.parse(savedVisibility);
-                setColumnVisibility(parsed);
-            } catch (error) {
-                console.error('Error parsing column visibility:', error);
-                localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-            }
-        }
-    }, [user?.name]);
-
-    useEffect(() => {
-        if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        try {
-            localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-        } catch (error) {
-            console.error('Error saving column visibility:', error);
-        }
-    }, [columnVisibility, user?.name]);
 
     const columns = useMemo<ColumnDef<Branch>[]>(() => [
         {
@@ -254,26 +230,60 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         },
     ], [handleEditBranch, handleOpenDeleteAlert, handleOpenUsersModal]);
 
-    const table = useReactTable<Branch>({
+    const {
+        table,
+    } = useCustomTable({
         data: branches,
         columns,
-        state: {
-            columnVisibility
-        },
-        onColumnVisibilityChange: setColumnVisibility,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: false,
         enableColumnResizing: true,
-        enableRowSelection: false,
-    })
+        enableRowSelection: true,
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `branches-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
+
+    const {
+        selectedIndex,
+        setSelectedIndex,
+        isFocused,
+        // hotkeys
+    } = useKeyboardNavigation<Branch, HTMLTableElement>({
+        items: branches,
+        containerRef: tableRef,
+        isDragging: isDraggingColumn,
+        onPrimaryAction: (branch) => {
+            handleEditBranch(branch.id)
+        },
+        getItemId: (branch) => branch.id
+    });
+    const handleRowClick = (index: number) => {
+        setSelectedIndex(index);
+    };
+
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
 
     return (
-        <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                 <div>
-                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
                         <GitBranchIcon className="size-5 text-gray-700" />
                         Gestionar Sucursales
                     </CardTitle>
@@ -290,7 +300,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                                 Columnas
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                             {table
                                 .getAllColumns()
                                 .filter((column) => column.getCanHide())
@@ -321,25 +331,41 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                     />
                 </div>
             </CardHeader>
-            <CardContent>
-                <div className="border rounded-lg border-gray-200">
-                    <CustomizableTable
-                        table={table}
-                        isLoading={isLoadingBranchesData}
-                        isError={isErrorBranchesData}
-                        isFetching={isFetchingBranchesData}
-                        rows={rows}
-                    />
+            <CardContent className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0">
+                    <div className="h-full overflow-auto">
+                        <CustomizableTable
+                            table={table}
+                            isLoading={isLoadingBranchesData}
+                            isError={isErrorBranchesData}
+                            isFetching={isFetchingBranchesData}
+                            rows={rows}
+                            errorMessage="Ocurrió un error al cargar los sucursales."
+                            noDataMessage="No se encontraron sucursales."
+                            selectedRowIndex={selectedIndex}
+                            onRowClick={handleRowClick}
+                            tableRef={tableRef}
+                            focused={isFocused}
+                            keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
+                        />
+                    </div>
                 </div>
 
-                <Pagination
-                    className="border-0 px-0 pt-3 pb-0"
-                    currentPage={page}
-                    onPageChange={onPageChange}
-                    totalData={totalRecords}
-                    onShowRowsChange={handleRowsChange}
-                    showRows={rows}
-                />
+                {/* Pagination - FIJO en la parte inferior */}
+                <div className="flex-shrink-0 border-t border-border bg-card">
+                    <Pagination
+                        className="border-0 px-0 pt-2 pb-0"
+                        currentPage={page}
+                        onPageChange={onPageChange}
+                        totalData={totalRecords}
+                        onShowRowsChange={handleRowsChange}
+                        showRows={rows}
+                    />
+                </div>
             </CardContent>
 
             {selectedBranch && (

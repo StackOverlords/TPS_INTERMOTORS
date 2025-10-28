@@ -11,7 +11,6 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { showSuccessToast } from "@/hooks/use-toast-enhanced";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
 import { useCategoryFilters } from "../hooks/category/useCategoryFilters";
 import { useGetAllCategories } from "../hooks/category/useGetAllCategories";
 import { useDeleteCategory } from "../hooks/category/useDeleteCategory";
@@ -117,7 +116,7 @@ const CategoriesScreen = () => {
                                 <CornerUpLeft />
                             </TooltipButton>
                             <div>
-                                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                                     Categorías
                                 </h1>
                                 <p className="text-sm text-gray-500">Categorías principales</p>
@@ -128,7 +127,7 @@ const CategoriesScreen = () => {
 
                 <Card className="shadow-none">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
                             <Filter className="size-5 text-gray-700" />
                             Filtros
                         </CardTitle>
@@ -186,11 +185,6 @@ const CategoriesScreen = () => {
                                 >
                                     <RefreshCcw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                                 </TooltipButton>
-
-                                <RowsPerPageSelect
-                                    value={filters.pagina_registros}
-                                    onChange={handleRowsChange}
-                                />
 
                                 <Button onClick={handleResetFilters}>
                                     <Filter className="size-4" />

@@ -6,14 +6,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import authSDK from "@/services/sdk-simple-auth";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type VisibilityState } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, Settings, Trash2, Users } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { Customer } from "../types/customer.types";
 import CustomerFormDialog from "./customerFormDialog";
-
-const getColumnVisibilityKey = (userName: string) => `customers-columns-${userName}`;
+import { useCustomTable } from "@/hooks/useCustomTable";
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 
 interface CustomerListTableProps {
     customers: Customer[]
@@ -45,7 +45,8 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
     const location = useLocation();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    const tableRef = useRef<HTMLTableElement>(null)
 
     const isEditing = useMemo(() => editingId !== null, [editingId]);
 
@@ -72,31 +73,6 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             setEditingId(null);
         }
     }, []);
-
-    useEffect(() => {
-        if (!user?.name) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-        if (savedVisibility) {
-            try {
-                const parsed = JSON.parse(savedVisibility);
-                setColumnVisibility(parsed);
-            } catch (error) {
-                console.error('Error parsing column visibility:', error);
-                localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-            }
-        }
-    }, [user?.name]);
-
-    useEffect(() => {
-        if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        try {
-            localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-        } catch (error) {
-            console.error('Error saving column visibility:', error);
-        }
-    }, [columnVisibility, user?.name]);
 
     const columns = useMemo<ColumnDef<Customer>[]>(() => [
         {
@@ -241,26 +217,60 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
         },
     ], [handleEditCustomer, handleOpenDeleteAlert]);
 
-    const table = useReactTable<Customer>({
+    const {
+        table,
+    } = useCustomTable({
         data: customers,
         columns,
-        state: {
-            columnVisibility
-        },
-        onColumnVisibilityChange: setColumnVisibility,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: false,
         enableColumnResizing: true,
-        enableRowSelection: false,
-    })
+        enableRowSelection: true,
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `customers-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
+
+    const {
+        selectedIndex,
+        setSelectedIndex,
+        isFocused,
+        // hotkeys
+    } = useKeyboardNavigation<Customer, HTMLTableElement>({
+        items: customers,
+        containerRef: tableRef,
+        isDragging: isDraggingColumn,
+        onPrimaryAction: (customer) => {
+            handleEditCustomer(customer.id)
+        },
+        getItemId: (customer) => customer.id
+    });
+    const handleRowClick = (index: number) => {
+        setSelectedIndex(index);
+    };
+
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
 
     return (
-        <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                 <div>
-                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                    <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
                         <Users className="size-5 text-gray-700" />
                         Gestionar Clientes
                     </CardTitle>
@@ -308,25 +318,41 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
                     />
                 </div>
             </CardHeader>
-            <CardContent>
-                <div className="border rounded-lg border-gray-200">
-                    <CustomizableTable
-                        table={table}
-                        isLoading={isLoadingCustomersData}
-                        isError={isErrorCustomersData}
-                        isFetching={isFetchingCustomersData}
-                        rows={rows}
-                    />
+            <CardContent className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0">
+                    <div className="h-full overflow-auto">
+                        <CustomizableTable
+                            table={table}
+                            isLoading={isLoadingCustomersData}
+                            isError={isErrorCustomersData}
+                            isFetching={isFetchingCustomersData}
+                            rows={rows}
+                            errorMessage="Ocurrió un error al cargar los clientes."
+                            noDataMessage="No se encontraron clientes."
+                            selectedRowIndex={selectedIndex}
+                            onRowClick={handleRowClick}
+                            tableRef={tableRef}
+                            focused={isFocused}
+                            keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
+                        />
+                    </div>
                 </div>
 
-                <Pagination
-                    className="border-0 px-0 pt-3 pb-0"
-                    currentPage={page}
-                    onPageChange={onPageChange}
-                    totalData={totalRecords}
-                    onShowRowsChange={handleRowsChange}
-                    showRows={rows}
-                />
+                {/* Pagination - FIJO en la parte inferior */}
+                <div className="flex-shrink-0 border-t border-border bg-card">
+                    <Pagination
+                        className="border-0 px-0 pt-2 pb-0"
+                        currentPage={page}
+                        onPageChange={onPageChange}
+                        totalData={totalRecords}
+                        onShowRowsChange={handleRowsChange}
+                        showRows={rows}
+                    />
+                </div>
             </CardContent>
         </Card>
     );

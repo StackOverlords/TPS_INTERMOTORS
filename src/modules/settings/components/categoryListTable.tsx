@@ -419,7 +419,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
                                 Columnas
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                             {table
                                 .getAllColumns()
                                 .filter((column) => column.getCanHide())
