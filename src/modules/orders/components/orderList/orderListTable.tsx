@@ -458,6 +458,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     const onShowRowsChange = (rows: number) => {
         setPageSize(rows)
     };
+    
     const handleDragStart = useCallback(() => {
         setIsDraggingColumn(true);
     }, []);

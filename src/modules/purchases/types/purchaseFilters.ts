@@ -5,7 +5,7 @@ export interface PurchaseFilters {
     keywords?: string;
     codigo_interno?: number;
     proveedor?: number;
-    fecha_inicio?: string;
-    fecha_fin?: string;
+    fecha_inicio?: Date;
+    fecha_fin?: Date;
     codigo_oem_producto?: string;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 import type { TransfersFilters } from "../types/transferFilters.types";
 
@@ -29,8 +29,8 @@ export const useTransfersFilters = (defaultSucursal: number) => {
         sucursal: defaultSucursal,
         codigo_oem_producto: "",
         keywords: "",
-        fecha_fin: defaultDates.today.toISOString().split('T')[0],
-        fecha_inicio: defaultDates.lastMonth.toISOString().split('T')[0]
+        fecha_fin: defaultDates.today,
+        fecha_inicio: defaultDates.lastMonth
     });
 
     const [appliedFilters, setAppliedFilters] = useState<TransfersFilters>(filters);
@@ -40,6 +40,19 @@ export const useTransfersFilters = (defaultSucursal: number) => {
         () => cleanFilters(debouncedFilters),
         [debouncedFilters]
     );
+
+    useEffect(() => {
+        setFilters((prev) => ({
+            ...prev,
+            sucursal: defaultSucursal,
+            pagina: 1,
+        }));
+        setAppliedFilters((prev) => ({
+            ...prev,
+            sucursal: defaultSucursal,
+            pagina: 1,
+        }));
+    }, [defaultSucursal]);
 
     const updateFilter = useCallback(
         (key: keyof TransfersFilters, value: TransfersFilters[keyof TransfersFilters]) => {

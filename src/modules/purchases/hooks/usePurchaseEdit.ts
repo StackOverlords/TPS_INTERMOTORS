@@ -1,8 +1,8 @@
 import { toast } from "@/hooks/use-toast";
 import { useCallback, useEffect, useState } from "react";
-import { updatePurchase } from "../services/purchaseService";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { FormData } from "./usePurchaseForm";
+import { purchaseService } from "../services/purchaseService";
 
 export function usePurchaseEdit(initialData?: PurchaseDetail) {
   const [isLoading, setIsLoading] = useState(false);
@@ -104,7 +104,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
         detalles: formData.detalles.map((detalle, index) => {
           // Detectar si es un detalle existente por la presencia de id o id_detalle_compra
           const isExistingDetail = detalle.id || detalle.id_detalle_compra;
-          
+
           if (isExistingDetail) {
             // Detalle existente - incluir id_detalle_compra y producto completo
             const transformedDetalle = {
@@ -120,7 +120,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               moneda: detalle.moneda || 'BOB ',
               fecha_mod_precio: detalle.fecha_mod_precio || new Date().toISOString()
             };
-            
+
             // Validar que los campos numéricos no sean NaN
             if (isNaN(transformedDetalle.inc_p_venta)) transformedDetalle.inc_p_venta = 0;
             if (isNaN(transformedDetalle.inc_p_venta_alt)) transformedDetalle.inc_p_venta_alt = 0;
@@ -128,7 +128,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             if (isNaN(transformedDetalle.costo)) transformedDetalle.costo = 0;
             if (isNaN(transformedDetalle.precio_venta)) transformedDetalle.precio_venta = 0;
             if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
-            
+
             console.log(`🔍 Detalle existente ${index} (ID: ${transformedDetalle.id_detalle_compra}):`, transformedDetalle);
             return transformedDetalle;
           } else {
@@ -153,7 +153,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               moneda: detalle.moneda || 'BOB ',
             };
             // Usar null para productos nuevos
-            
+
             // Validar que los campos numéricos no sean NaN
             if (isNaN(transformedDetalle.inc_p_venta)) transformedDetalle.inc_p_venta = 0;
             if (isNaN(transformedDetalle.inc_p_venta_alt)) transformedDetalle.inc_p_venta_alt = 0;
@@ -161,15 +161,15 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             if (isNaN(transformedDetalle.costo)) transformedDetalle.costo = 0;
             if (isNaN(transformedDetalle.precio_venta)) transformedDetalle.precio_venta = 0;
             if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
-            
+
             console.log(`🆕 Detalle nuevo ${index} (ID: null, Producto ID: ${transformedDetalle.id_producto}):`, transformedDetalle);
             return transformedDetalle;
           }
         })
       };
-      
+
       console.log('📤 Payload completo a enviar:', dataToSend);
-      await updatePurchase(purchaseId, dataToSend);
+      await purchaseService.update(purchaseId, dataToSend);
       toast({
         title: "Compra actualizada",
         description: "La compra se ha actualizado correctamente.",

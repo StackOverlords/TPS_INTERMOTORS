@@ -14,14 +14,18 @@ import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
 interface TransferFiltersProps {
     filters: ReturnType<typeof useTransfersFilters>["filters"]
     updateFilter: ReturnType<typeof useTransfersFilters>["updateFilter"]
+    searchMode: 'realtime' | 'manual'
+    handleManualSearch: () => void
 }
 
 const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
     filters,
-    updateFilter
+    updateFilter,
+    searchMode,
+    handleManualSearch,
 }) => {
     const [dateError, setDateError] = useState<string | null>(null);
-    const { selectedBranchId } = useBranchStore();
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
 
     const {
         data: transferResponsiblesData,
@@ -89,7 +93,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
 
     return (
         <section className="space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
                 <div className="space-y-2">
                     <Label>Nro. de transferencia</Label>
                     <div className="relative">
@@ -137,7 +141,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label>Código OEM Producto</Label>
+                    <Label>Código OEM</Label>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <Input
@@ -149,99 +153,111 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                     </div>
                 </div>
                 <div className="space-y-2 w-full">
-                        <Label>Fecha Inicio</Label>
-                        <div className="flex gap-2">
-                            <PopoverDatePicker
-                                value={filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined}
-                                onChange={(date) => handleFechaInicioChange(date)}
-                                hasError={dateError}
-                                disabled={(date) => {
-                                    // Deshabilitar fechas futuras
-                                    const today = new Date();
-                                    today.setHours(0, 0, 0, 0);
+                    <Label>Fecha Inicio</Label>
+                    <div className="flex gap-2">
+                        <PopoverDatePicker
+                            value={filters.fecha_inicio}
+                            onChange={(date) => handleFechaInicioChange(date)}
+                            hasError={dateError}
+                            disabled={(date) => {
+                                // Deshabilitar fechas futuras
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
 
-                                    const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
-                                    if (fechaFin && date > fechaFin) return true;
-                                    return date > today;
-                                }}
-                            />
-                        </div>
+                                const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
+                                if (fechaFin && date > fechaFin) return true;
+                                return date > today;
+                            }}
+                        />
                     </div>
+                </div>
 
-                    {/* Fecha Fin */}
-                    <div className="space-y-2 w-full">
-                        <Label>Fecha Fin</Label>
-                        <div className="flex gap-2">
-                            <PopoverDatePicker
-                                value={filters.fecha_fin ? new Date(filters.fecha_fin) : undefined}
-                                onChange={(date) => handleFechaFinChange(date)}
-                                hasError={dateError}
-                                disabled={(date) => {
-                                    // Deshabilitar fechas futuras
-                                    const today = new Date();
-                                    today.setHours(0, 0, 0, 0);
-                                    if (date > today) return true;
+                {/* Fecha Fin */}
+                <div className="space-y-2 w-full">
+                    <Label>Fecha Fin</Label>
+                    <div className="flex gap-2">
+                        <PopoverDatePicker
+                            value={filters.fecha_fin}
+                            onChange={(date) => handleFechaFinChange(date)}
+                            hasError={dateError}
+                            disabled={(date) => {
+                                // Deshabilitar fechas futuras
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                if (date > today) return true;
 
-                                    const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
-                                    // Deshabilitar fechas anteriores a la fecha de inicio
-                                    if (fechaInicio && date < fechaInicio) return true;
+                                const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
+                                // Deshabilitar fechas anteriores a la fecha de inicio
+                                if (fechaInicio && date < fechaInicio) return true;
 
-                                    return false;
-                                }}
-                            />
-                        </div>
+                                return false;
+                            }}
+                        />
                     </div>
-                    <div className="flex gap-2 items-end justify-end">
-                    {(filters.fecha_inicio || filters.fecha_fin) && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={clearAllDateFilters}
-                            className="text-xs"
-                        >
-                            <X className="h-3 w-3" />
-                            Limpiar todas las fechas
-                        </Button>
-                    )}
-
-                    {/* Botón para establecer rango de última semana */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            const today = new Date();
-                            const lastWeek = new Date(today);
-                            lastWeek.setDate(today.getDate() - 7);
-
-                            setDateError(null);
-                            updateFilter('fecha_inicio', formatDateSafe(lastWeek));
-                            updateFilter('fecha_fin', formatDateSafe(today));
-                        }}
-                        className="text-xs"
-                    >
-                        Última semana
-                    </Button>
-
-                    {/* Botón para establecer rango del último mes */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            const today = new Date();
-                            const lastMonth = new Date(today);
-                            lastMonth.setMonth(today.getMonth() - 1);
-
-                            setDateError(null);
-                            updateFilter('fecha_inicio', formatDateSafe(lastMonth));
-                            updateFilter('fecha_fin', formatDateSafe(today));
-                        }}
-                        className="text-xs"
-                    >
-                        Último mes
-                    </Button>
                 </div>
             </div>
- 
+
+            {/* Botones de acción adicionales */}
+            <div className="flex gap-2 items-end justify-end flex-wrap">
+                {/* Botón de búsqueda solo visible en modo manual */}
+                {searchMode === 'manual' && (
+                    <Button
+                        onClick={handleManualSearch}
+                        className="w-full sm:w-auto"
+                    >
+                        <Search className="size-4" />
+                        Buscar
+                    </Button>
+                )}
+
+                {(filters.fecha_inicio || filters.fecha_fin) && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllDateFilters}
+                        className="text-xs"
+                    >
+                        <X className="h-3 w-3" />
+                        Limpiar todas las fechas
+                    </Button>
+                )}
+
+                {/* Botón para establecer rango de última semana */}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        const today = new Date();
+                        const lastWeek = new Date(today);
+                        lastWeek.setDate(today.getDate() - 7);
+
+                        setDateError(null);
+                        updateFilter('fecha_inicio', formatDateSafe(lastWeek));
+                        updateFilter('fecha_fin', formatDateSafe(today));
+                    }}
+                    className="text-xs"
+                >
+                    Última semana
+                </Button>
+
+                {/* Botón para establecer rango del último mes */}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        const today = new Date();
+                        const lastMonth = new Date(today);
+                        lastMonth.setMonth(today.getMonth() - 1);
+
+                        setDateError(null);
+                        updateFilter('fecha_inicio', formatDateSafe(lastMonth));
+                        updateFilter('fecha_fin', formatDateSafe(today));
+                    }}
+                    className="text-xs"
+                >
+                    Último mes
+                </Button>
+            </div>
 
             {/* Mostrar error de validación */}
             {dateError && (

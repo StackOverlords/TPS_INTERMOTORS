@@ -13,7 +13,7 @@ export const ResponsableSchema = z.object({
     nombre: z.string(),
     apellido_paterno: z.string(),
     apellido_materno: z.string().nullable(),
-    dni: z.number(),
+    dni: z.number().nullable(),
     celular: z.string().nullable(),
 })
 
