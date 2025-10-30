@@ -12,6 +12,8 @@ import ShortcutKey from '@/components/common/ShortcutKey';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useRef } from 'react';
 import { formatCurrency } from '@/utils/formaters';
+import { Switch } from '@/components/atoms/switch';
+import { Badge } from '@/components/atoms/badge';
 
 interface ShoppingCartProps {
     callback?: () => void;
@@ -22,7 +24,7 @@ const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
 }) => {
     const tableRef = useRef<{ focusFirstQuantityInput: () => void }>(null);
     const user = authSDK.getCurrentUser()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const navigate = useNavigate()
     const {
         items: cart,
@@ -33,6 +35,8 @@ const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
         setDiscountAmount,
         setDiscountPercent,
         clearCart,
+        mode,
+        setCartMode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
 
     const subtotal = getCartSubtotal();
@@ -59,7 +63,6 @@ const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
                         <CreditCard className="h-4 w-4" />
                         Carrito de Venta
                     </div>
-
                     <ShortcutKey combo='alt+f' variant="dark" />
                 </h3>
             </header>
@@ -76,81 +79,93 @@ const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
                     )}
                 </div>
             </div>
-            {
-                cart.length > 0 && (
-                    <footer className='p-2 flex flex-col gap-0.5 flex-shrink-0'>
+            <footer className='p-2 flex flex-col gap-2 flex-shrink-0'>
+                {
+                    cart.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
-
                             <div className="space-y-1">
-                                <Label className="text-xs text-gray-500">Desc. Porcentaje (%)</Label>
+                                <Label className="text-xs">Desc. Porcentaje (%)</Label>
                                 <EditablePercentage
                                     key={discountPercent}
                                     value={discountPercent}
                                     onSubmit={(value) => setDiscountPercent(value as number)}
                                     className="w-full"
                                     buttonClassName="w-full"
-                                    showEditIcon={false}
                                 />
                             </div>
 
                             <div className="space-y-1">
-                                <Label className="text-xs text-gray-500">Desc. Monto ($)</Label>
+                                <Label className="text-xs">Desc. Monto (Bs)</Label>
                                 <EditablePrice
                                     key={discountAmount}
                                     value={discountAmount}
                                     onSubmit={(value) => setDiscountAmount(value as number)}
                                     className="w-full"
                                     buttonClassName="w-full"
-                                    showEditIcon={false}
                                 />
                             </div>
-
-                            <div className="flex gap-2 text-xs lg:text-lg font-medium items-end h-full justify-end">
-                                <span className="text-gray-500 font-medium">Subtotal:</span>
-                                <span className="">{formatCurrency(subtotal)}</span>
+                            <div className="space-y-1">
+                                <Label className="text-xs">Subtotal</Label>
+                                <Badge
+                                    variant={'secondary'}
+                                    className="w-full h-8 rounded-sm text-sm font-normal"
+                                >
+                                    {formatCurrency(subtotal)}
+                                </Badge>
                             </div>
-                            <div className="flex gap-2 font-medium text-xs lg:text-lg h-full items-end justify-end">
-                                <span>Total:</span>
-                                <span className='text-emerald-600 font-bold'>{formatCurrency(total)}</span>
+                            <div className="space-y-1">
+                                <Label className="text-xs">Total</Label>
+                                <Badge
+                                    variant={'success'}
+                                    className="w-full h-8 rounded-sm text-sm font-bold"
+                                >
+                                    {formatCurrency(total)}
+                                </Badge>
                             </div>
                         </div>
+                    )
+                }
 
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                className="cursor-pointer"
-                                onClick={() => {
-                                    navigate('/dashboard/create-sale')
-                                }}>
-                                <CreditCard className="size-4" />
-                                Proceder a la Venta
-                            </Button>
-                            <Button
-                                onClick={() => {
-                                    navigate('/dashboard/create-quotation')
-                                }}
-                                variant="outline"
-                                className="cursor-pointer">
-                                <FileText className="size-4" />
-                                Proceder a la Cotización
-                            </Button>
-
+                <div className="flex justify-between gap-2">
+                    <div className="flex items-center gap-2 h-8 px-2 rounded-sm border-border border">
+                        <Switch
+                            id="cart-mode-switch"
+                            checked={mode === 'quote'}
+                            onCheckedChange={(checked) => setCartMode(checked ? 'quote' : 'sale')}
+                        >
+                            {mode === 'sale' ? 'Venta' : 'Cotización'}
+                        </Switch>
+                        <Label htmlFor="cart-mode-switch">Cotización</Label>
+                    </div>
+                    <div className="flex justify-end items-center gap-2">
+                        <Button
+                            className="cursor-pointer"
+                            onClick={() => {
+                                navigate(mode === "sale" ? '/dashboard/create-sale' : '/dashboard/create-quotation')
+                            }}
+                        >
                             {
-                                cart.length > 0 && (
-                                    <Button
-                                        className="cursor-pointer"
-                                        size={'sm'}
-                                        onClick={clearCart}
-                                        variant={'destructive'}
-                                    >
-                                        <BrushCleaning />
-                                        Limpiar
-                                    </Button>
-                                )
+                                mode === "sale" ? <CreditCard className="size-4" /> : <FileText className="size-4" />
                             }
-                        </div>
-                    </footer>
-                )
-            }
+                            {mode === "sale" ? 'Proceder a la Venta' : 'Proceder a la Cotización'}
+                        </Button>
+
+                        {
+                            cart.length > 0 && (
+                                <Button
+                                    className="cursor-pointer"
+                                    size={'sm'}
+                                    onClick={clearCart}
+                                    variant={'destructive'}
+                                >
+                                    <BrushCleaning />
+                                    Limpiar
+                                </Button>
+                            )
+                        }
+                    </div>
+                </div>
+            </footer>
         </section>
     );
 };

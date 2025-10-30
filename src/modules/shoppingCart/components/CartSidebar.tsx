@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/atoms/button"
-import { Separator } from "@/components/atoms/separator"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/atoms/sheet"
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/atoms/sheet"
 import { cn } from "@/lib/utils"
-import { BrushCleaning, CreditCard, FileText, Maximize2, ShoppingCart } from "lucide-react"
+import { BrushCleaning, CreditCard, FileText, Maximize2, ShoppingCart, X } from "lucide-react"
 import CartItemComponent from "./cartItemComponent"
 import { Label } from "@/components/atoms/label"
 import { useNavigate } from "react-router"
@@ -14,6 +13,8 @@ import { useBranchStore } from "@/states/branchStore"
 import { EditablePercentage } from "./EditablePercentage"
 import { EditablePrice } from "./editablePrice"
 import { formatCurrency } from "@/utils/formaters"
+import { Badge } from "@/components/atoms/badge"
+import { Switch } from "@/components/atoms/switch"
 
 const CartSidebar = ({
     open,
@@ -24,7 +25,7 @@ const CartSidebar = ({
 }) => {
     const user = authSDK.getCurrentUser()
     const { enableScope, disableScope } = useHotkeysContext();
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
     const [expandedView, setExpandedView] = useState(false)
     const navigate = useNavigate()
@@ -41,6 +42,8 @@ const CartSidebar = ({
         setDiscountAmount,
         setDiscountPercent,
         clearCart,
+        mode,
+        setCartMode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
 
     useHotkeys('escape',
@@ -83,131 +86,141 @@ const CartSidebar = ({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange} >
-            <SheetContent className={cn("w-[400px] sm:w-[600px] sm:max-w-7xl", expandedView && "sm:w-[800px] lg:w-[1000px]")}>
-                <SheetHeader>
+            <SheetContent hasButtonClose={false} className={cn("w-[400px] sm:w-[600px] sm:max-w-7xl h-full sm:h-[98vh] sm:mr-2 sm:my-auto sm:rounded-lg flex flex-col p-3 gap-2", expandedView && "sm:w-[800px] lg:w-[1000px]")}>
+                <SheetHeader className="flex flex-col flex-shrink-0">
                     <SheetTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <ShoppingCart className="w-5 h-5" />
                             Carrito de ventas
                         </div>
-                        {
-                            cart.length > 0 && (
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        className="cursor-pointer"
-                                        size={'sm'}
-                                        onClick={clearCart}
-                                        variant={'destructive'}
-                                    >
-                                        <BrushCleaning />
-                                        Limpiar Carrito
-                                    </Button>
-                                    <Button className="size-8 mr-4 cursor-pointer" variant="outline" size="sm" onClick={() => setExpandedView(!expandedView)}>
-                                        <Maximize2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            )
-                        }
+                        <div className="flex items-center gap-2">
+                            {
+                                cart.length > 0 && (
+                                    <>
+                                        <Button
+                                            className="cursor-pointer"
+                                            onClick={clearCart}
+                                            variant={'destructive'}
+                                        >
+                                            <BrushCleaning />
+                                            Limpiar
+                                        </Button>
+                                        <Button
+                                            className="size-8 cursor-pointer"
+                                            variant="outline"
+                                            onClick={() => setExpandedView(!expandedView)}
+                                        >
+                                            <Maximize2 className="w-4 h-4" />
+                                        </Button>
+                                    </>
+                                )
+                            }
+                            <SheetClose className="size-8 rounded-sm ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary flex items-center justify-center" >
+                                <X className="w-4 h-4" />
+                            </SheetClose>
+                        </div>
                     </SheetTitle>
-                    <SheetDescription className="-mt-2" >
+                    <SheetDescription className="-mt-2 text-left" >
                         {cart.length} productos en el carrito
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="mt-2 max-h-[87vh] h-full">
+                <div className="flex-1 min-h-0 overflow-hidden">
                     {cart.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-500 h-full flex flex-col justify-center items-center">
                             <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
                             <p>El carrito está vacío</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-2 justify-between h-full">
-                            <div className="space-y-2 grow overflow-y-auto">
-                                {cart.map((item) => (
-                                    <CartItemComponent
-                                        key={`item-${item.product.id}`}
-                                        item={item}
-                                        removeItem={removeItem}
-                                        updateQuantity={updateQuantity}
-                                        updateCustomPrice={updateCustomPrice}
-                                        updateCustomSubtotal={updateCustomSubtotal}
-                                    />
-                                ))}
-                            </div>
-
-                            <div className="h-max">
-                                <Separator />
-
-                                <div className="pt-2 space-y-2">
-                                    <div className="space-y-2">
-
-                                        <div className="space-y-3">
-                                            <Label className="text-sm font-medium text-text-primary">Descuentos Globales</Label>
-
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1">
-                                                    <Label className="text-xs text-gray-500">Desc. Porcentaje (%)</Label>
-                                                    <EditablePercentage
-                                                        key={discountPercent}
-                                                        value={discountPercent}
-                                                        onSubmit={(value) => setDiscountPercent(value as number)}
-                                                        className="w-full"
-                                                        buttonClassName="w-full"
-                                                        showEditIcon={false}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    <Label className="text-xs text-gray-500">Desc. Monto ($)</Label>
-                                                    <EditablePrice
-                                                        key={discountAmount}
-                                                        value={discountAmount}
-                                                        onSubmit={(value) => setDiscountAmount(value as number)}
-                                                        className="w-full"
-                                                        buttonClassName="w-full"
-                                                        showEditIcon={false}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                        </div>
-
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-500 font-medium">Subtotal:</span>
-                                            <span className="">{formatCurrency(subtotal)}</span>
-                                        </div>
-                                        <div className="flex justify-between font-medium text-lg">
-                                            <span>Total:</span>
-                                            <span>{formatCurrency(total)}</span>
-                                        </div>
-                                    </div>
-                                    <Separator />
-
-                                    <div className="grid sm:grid-cols-2 gap-2">
-                                        <Button
-                                            className="w-full cursor-pointer" size={"sm"} onClick={() => {
-                                                navigate('/dashboard/create-sale')
-                                                onOpenChange(false)
-                                            }}>
-                                            <CreditCard className="size-4" />
-                                            Proceder a la Venta
-                                        </Button>
-                                        <Button
-                                            size={'sm'}
-                                            onClick={() => {
-                                                navigate('/dashboard/create-quotation')
-                                                onOpenChange(false)
-                                            }}
-                                            variant="outline" className="w-full cursor-pointer">
-                                            <FileText className="size-4" />
-                                            Proceder a la Cotización
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="overflow-y-auto h-full flex flex-col gap-2">
+                            {cart.map((item) => (
+                                <CartItemComponent
+                                    key={`item-${item.product.id}`}
+                                    item={item}
+                                    removeItem={removeItem}
+                                    updateQuantity={updateQuantity}
+                                    updateCustomPrice={updateCustomPrice}
+                                    updateCustomSubtotal={updateCustomSubtotal}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>
+                <SheetFooter className="flex flex-col flex-shrink-0 border-t border-border pt-2">
+                    <div className="space-y-2 w-full">
+
+                        {
+                            cart.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Desc. Porcentaje (%)</Label>
+                                        <EditablePercentage
+                                            key={discountPercent}
+                                            value={discountPercent}
+                                            onSubmit={(value) => setDiscountPercent(value as number)}
+                                            className="w-full"
+                                            buttonClassName="w-full"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Desc. Monto (Bs)</Label>
+                                        <EditablePrice
+                                            key={discountAmount}
+                                            value={discountAmount}
+                                            onSubmit={(value) => setDiscountAmount(value as number)}
+                                            className="w-full"
+                                            buttonClassName="w-full"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Subtotal</Label>
+                                        <Badge
+                                            variant={'secondary'}
+                                            className="w-full h-8 rounded-sm text-sm font-normal"
+                                        >
+                                            {formatCurrency(subtotal)}
+                                        </Badge>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs">Total</Label>
+                                        <Badge
+                                            variant={'success'}
+                                            className="w-full h-8 rounded-sm text-sm font-bold"
+                                        >
+                                            {formatCurrency(total)}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            )
+                        }
+
+                        <div className="flex justify-between items-center gap-2">
+                            <div className="flex items-center gap-2 h-8 px-2 rounded-sm border-border border">
+                                <Switch
+                                    id="cart-mode-switch"
+                                    checked={mode === 'quote'}
+                                    onCheckedChange={(checked) => setCartMode(checked ? 'quote' : 'sale')}
+                                >
+                                    {mode === 'sale' ? 'Venta' : 'Cotización'}
+                                </Switch>
+                                <Label htmlFor="cart-mode-switch">Cotización</Label>
+                            </div>
+                            <Button
+                                className="cursor-pointer"
+                                onClick={() => {
+                                    navigate(mode === "sale" ? '/dashboard/create-sale' : '/dashboard/create-quotation')
+                                    onOpenChange(false)
+                                }}
+                            >
+                                {
+                                    mode === "sale" ? <CreditCard className="size-4" /> : <FileText className="size-4" />
+                                }
+                                {mode === "sale" ? 'Proceder a la Venta' : 'Proceder a la Cotización'}
+                            </Button>
+                        </div>
+                    </div>
+                </SheetFooter>
             </SheetContent>
         </Sheet>
     )
