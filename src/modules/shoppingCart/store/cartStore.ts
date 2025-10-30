@@ -1,38 +1,118 @@
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import type { CartItem, CartState } from "../types/cart.types";
+import type { CartItem, CartState, ConversionAdjustment, ConversionResult } from "../types/cart.types";
 import { CART_CONSTANTS } from "../constants/cart.constants";
 import { createStore } from "zustand";
 
 // Tipo para el store con middleware
 export type CartStore = ReturnType<typeof createCartStore>;
+
 export const createCartStore = (user: string) => {
     return createStore<CartState>()(
         devtools(
             persist(
                 (set, get) => ({
                     items: [],
+                    mode: 'sale',
                     discountAmount: 0,
                     discountPercent: 0,
                     discountMode: null,
+                    lastConversion: null,
+
+                    // ==================== GESTIÓN DE MODO ====================
+
+                    setMode: (mode) => {
+                        set({ mode });
+                    },
+
+                    convertToSale: () => {
+                        const currentItems = get().items;
+                        const removedItems: CartItem[] = [];
+                        const adjustedItems: ConversionAdjustment[] = [];
+                        const keptItems: CartItem[] = [];
+
+                        currentItems.forEach(item => {
+                            const hasStock = item.product.stock_actual && item.product.stock_actual > 0;
+
+                            if (!hasStock) {
+                                // Item sin stock - se remueve
+                                removedItems.push(item);
+                            } else if (item.quantity > item.product.stock_actual) {
+                                // Item con cantidad que excede stock - se ajusta
+                                const adjustedItem = {
+                                    ...item,
+                                    quantity: item.product.stock_actual,
+                                    customSubtotal: calculateSubtotalByItem(
+                                        item.customPrice,
+                                        item.product.stock_actual
+                                    )
+                                };
+                                keptItems.push(adjustedItem);
+                                adjustedItems.push({
+                                    productId: item.product.id,
+                                    productName: item.product.descripcion,
+                                    originalQuantity: item.quantity,
+                                    adjustedQuantity: item.product.stock_actual,
+                                    reason: 'QUANTITY_ADJUSTED'
+                                });
+                            } else {
+                                // Item válido - se mantiene
+                                keptItems.push(item);
+                            }
+                        });
+
+                        const result: ConversionResult = {
+                            success: true,
+                            removedItems,
+                            adjustedItems,
+                            keptItems,
+                            message: generateConversionMessage(removedItems.length, adjustedItems.length)
+                        };
+
+                        set({
+                            items: keptItems,
+                            mode: 'sale',
+                            lastConversion: result
+                        });
+
+                        get().recalculateDiscount();
+
+                        return result;
+                    },
+
+                    convertToQuote: () => {
+                        set({
+                            mode: 'quote',
+                            lastConversion: null
+                        });
+                    },
+
+                    clearLastConversion: () => {
+                        set({ lastConversion: null });
+                    },
+
+                    // ==================== GESTIÓN DE ITEMS ====================
 
                     addItem: (product) => {
+                        const mode = get().mode;
                         const existing = get().items.find((i) => i.product.id === product.id);
                         const basePrice = product.precio_venta;
 
-                        // Validar stock disponible
-                        if (!product.stock_actual || product.stock_actual <= 0) {
-                            return {
-                                success: false,
-                                error: 'NO_STOCK',
-                                message: `${product.descripcion} no tiene stock disponible`
-                            };
+                        // Validar stock solo en modo VENTA
+                        if (mode === 'sale') {
+                            if (!product.stock_actual || product.stock_actual <= 0) {
+                                return {
+                                    success: false,
+                                    error: 'NO_STOCK',
+                                    message: `${product.descripcion} no tiene stock disponible`
+                                };
+                            }
                         }
 
                         if (existing) {
                             const newQuantity = existing.quantity + 1;
 
-                            // Validar que no exceda el stock
-                            if (newQuantity > product.stock_actual) {
+                            // Validar cantidad vs stock solo en modo VENTA
+                            if (mode === 'sale' && newQuantity > product.stock_actual) {
                                 return {
                                     success: false,
                                     error: 'INSUFFICIENT_STOCK',
@@ -56,6 +136,25 @@ export const createCartStore = (user: string) => {
                                         : i
                                 ),
                             });
+
+                            // Warning para cotizaciones sin stock
+                            if (mode === 'quote' && (!product.stock_actual || product.stock_actual <= 0)) {
+                                get().recalculateDiscount();
+                                return {
+                                    success: true,
+                                    warning: 'NO_STOCK',
+                                    message: `${product.descripcion} agregado sin stock disponible`
+                                };
+                            }
+
+                            if (mode === 'quote' && newQuantity > product.stock_actual) {
+                                get().recalculateDiscount();
+                                return {
+                                    success: true,
+                                    warning: 'EXCEEDS_STOCK',
+                                    message: `${product.descripcion} agregado (cantidad supera stock: ${product.stock_actual})`
+                                };
+                            }
                         } else {
                             const quantity = 1;
                             const subtotal = calculateSubtotalByItem(basePrice, quantity);
@@ -69,6 +168,16 @@ export const createCartStore = (user: string) => {
                             };
 
                             set({ items: [...get().items, newItem] });
+
+                            // Warning para cotizaciones sin stock
+                            if (mode === 'quote' && (!product.stock_actual || product.stock_actual <= 0)) {
+                                get().recalculateDiscount();
+                                return {
+                                    success: true,
+                                    warning: 'NO_STOCK',
+                                    message: `${product.descripcion} agregado sin stock disponible`
+                                };
+                            }
                         }
 
                         get().recalculateDiscount();
@@ -79,13 +188,21 @@ export const createCartStore = (user: string) => {
                     },
 
                     removeItem: (productId) => {
-                        set({ items: get().items.filter(i => i.product.id !== productId) })
+                        set({ items: get().items.filter(i => i.product.id !== productId) });
                         get().recalculateDiscount();
                     },
 
                     updateQuantity: (productId, quantity) => {
-                        if (quantity < 1) return { success: false, message: 'La cantidad debe ser de 1 o mas productos' };
+                        if (quantity < 1) {
+                            return {
+                                success: false,
+                                message: 'La cantidad debe ser de 1 o más productos'
+                            };
+                        }
+
+                        const mode = get().mode;
                         const item = get().items.find(i => i.product.id === productId);
+
                         if (!item) {
                             return {
                                 success: false,
@@ -94,8 +211,8 @@ export const createCartStore = (user: string) => {
                             };
                         }
 
-                        // Validar stock
-                        if (quantity > item.product.stock_actual) {
+                        // Validar stock solo en modo VENTA
+                        if (mode === 'sale' && quantity > item.product.stock_actual) {
                             return {
                                 success: false,
                                 error: 'INSUFFICIENT_STOCK',
@@ -119,6 +236,16 @@ export const createCartStore = (user: string) => {
                         });
 
                         get().recalculateDiscount();
+
+                        // Warning para cotizaciones que exceden stock
+                        if (mode === 'quote' && quantity > item.product.stock_actual) {
+                            return {
+                                success: true,
+                                warning: 'EXCEEDS_STOCK',
+                                message: `Cantidad supera el stock disponible (${item.product.stock_actual} unidades)`
+                            };
+                        }
+
                         return {
                             success: true,
                             message: 'Cantidad actualizada correctamente'
@@ -141,8 +268,8 @@ export const createCartStore = (user: string) => {
                     },
 
                     updateCustomSubtotal: (productId, subtotal) => {
-                        const item = get().items.find(i => i.product.id === productId)
-                        if (!item || item.quantity < 1) return
+                        const item = get().items.find(i => i.product.id === productId);
+                        if (!item || item.quantity < 1) return;
 
                         set({
                             items: get().items.map((i) =>
@@ -184,10 +311,18 @@ export const createCartStore = (user: string) => {
                         });
                     },
 
-                    clearCart: () => set({ items: [], discountAmount: 0, discountPercent: 0, discountMode: null }),
+                    clearCart: () => set({
+                        items: [],
+                        discountAmount: 0,
+                        discountPercent: 0,
+                        discountMode: null,
+                        lastConversion: null
+                    }),
+
+                    // ==================== GESTIÓN DE DESCUENTOS ====================
 
                     setDiscountAmount: (amount) => {
-                        const subtotal = get().getCartSubtotal()
+                        const subtotal = get().getCartSubtotal();
                         const validAmount = Math.min(Math.max(0, amount), subtotal);
                         const percent = subtotal > 0 ? (validAmount / subtotal) * 100 : 0;
 
@@ -199,7 +334,7 @@ export const createCartStore = (user: string) => {
                     },
 
                     setDiscountPercent: (percent) => {
-                        const subtotal = get().getCartSubtotal()
+                        const subtotal = get().getCartSubtotal();
                         const validPercent = Math.min(Math.max(0, percent), 100);
                         const amount = (validPercent / 100) * subtotal;
 
@@ -210,18 +345,42 @@ export const createCartStore = (user: string) => {
                         });
                     },
 
+                    recalculateDiscount: () => {
+                        const state = get();
+                        const { discountMode, discountAmount, discountPercent } = state;
+                        const newSubtotal = calculateSubtotal(state.items);
+
+                        if (discountMode === null || (discountAmount === 0 && discountPercent === 0)) {
+                            return;
+                        }
+
+                        if (discountMode === 'percent') {
+                            const newAmount = (discountPercent / 100) * newSubtotal;
+                            set({ discountAmount: newAmount });
+                        } else if (discountMode === 'amount') {
+                            const validAmount = Math.min(discountAmount, newSubtotal);
+                            const newPercent = newSubtotal > 0 ? (validAmount / newSubtotal) * 100 : 0;
+                            set({
+                                discountAmount: validAmount,
+                                discountPercent: newPercent
+                            });
+                        }
+                    },
+
+                    // ==================== CONSULTAS ====================
+
                     getItemSubtotal: (productId) => {
                         const item = get().items.find((i) => i.product.id === productId);
                         return item ? item.customSubtotal : 0;
                     },
 
                     getCartSubtotal: () => {
-                        return calculateSubtotal(get().items)
+                        return calculateSubtotal(get().items);
                     },
 
                     getCartTotal: () => {
-                        const subtotal = get().getCartSubtotal()
-                        const { discountAmount, discountPercent } = get()
+                        const subtotal = get().getCartSubtotal();
+                        const { discountAmount, discountPercent } = get();
 
                         if (discountAmount && discountAmount > 0) {
                             return Math.max(0, subtotal - discountAmount);
@@ -230,7 +389,7 @@ export const createCartStore = (user: string) => {
                             return Math.max(0, subtotal * (1 - discountPercent / 100));
                         }
 
-                        return subtotal
+                        return subtotal;
                     },
 
                     getCartCount: () => {
@@ -253,33 +412,21 @@ export const createCartStore = (user: string) => {
                         const item = get().items.find(i => i.product.id === productId);
                         return item ? item.quantity : 0;
                     },
-                    recalculateDiscount: () => {
-                        const state = get();
-                        const { discountMode, discountAmount, discountPercent } = state;
-                        const newSubtotal = calculateSubtotal(state.items);
 
-                        // Solo recalcular si hay un descuento activo
-                        if (discountMode === null || (discountAmount === 0 && discountPercent === 0)) {
-                            return;
-                        }
+                    // ==================== VALIDACIONES ====================
 
-                        if (discountMode === 'percent') {
-                            // Si se editó el porcentaje, mantenerlo y recalcular el monto
-                            const newAmount = (discountPercent / 100) * newSubtotal;
-                            set({
-                                discountAmount: newAmount
-                            });
-                        } else if (discountMode === 'amount') {
-                            // Si se editó el monto, mantenerlo pero validar que no sea mayor al subtotal
-                            const validAmount = Math.min(discountAmount, newSubtotal);
-                            const newPercent = newSubtotal > 0 ? (validAmount / newSubtotal) * 100 : 0;
-                            set({
-                                discountAmount: validAmount,
-                                discountPercent: newPercent
-                            });
-                        }
-                    },
                     validateCart: () => {
+                        const mode = get().mode;
+
+                        // En modo cotización, el carrito siempre es válido
+                        if (mode === 'quote') {
+                            return {
+                                isValid: true,
+                                issues: []
+                            };
+                        }
+
+                        // En modo venta, validar stock
                         const issues = get().items.filter(item => {
                             return !item.product.stock_actual ||
                                 item.product.stock_actual <= 0 ||
@@ -299,7 +446,16 @@ export const createCartStore = (user: string) => {
                             }))
                         };
                     },
+
                     canAddProduct: (productId: number, quantityToAdd: number = 1) => {
+                        const mode = get().mode;
+
+                        // En modo cotización, siempre se puede agregar
+                        if (mode === 'quote') {
+                            return { canAdd: true };
+                        }
+
+                        // En modo venta, validar stock
                         const product = get().items.find(i => i.product.id === productId)?.product;
                         if (!product) return { canAdd: false, reason: 'PRODUCT_NOT_FOUND' };
 
@@ -326,9 +482,11 @@ export const createCartStore = (user: string) => {
                     storage: createJSONStorage(() => sessionStorage),
                     partialize: (state) => ({
                         items: state.items,
+                        mode: state.mode,
                         discountAmount: state.discountAmount,
                         discountPercent: state.discountPercent,
                         discountMode: state.discountMode
+                        // lastConversion NO se persiste, es temporal
                     }),
                 }
             ),
@@ -336,15 +494,17 @@ export const createCartStore = (user: string) => {
                 name: `cart-storage-${user}`
             }
         )
-    )
-}
+    );
+};
+
+// ==================== FUNCIONES AUXILIARES ====================
 
 export const calculateSubtotal = (items: CartItem[]) => {
     return items.reduce((sum, item) => {
-        const subtotal = calculateSubtotalByItem(item.customPrice, item.quantity)
-        return sum + subtotal
-    }, 0)
-}
+        const subtotal = calculateSubtotalByItem(item.customPrice, item.quantity);
+        return sum + subtotal;
+    }, 0);
+};
 
 export const calculateSubtotalByItem = (price: number, qty: number) =>
     Number((price * qty).toFixed(2));
@@ -362,4 +522,22 @@ export const calculateDiscountAmount = (
     }
 
     return 0;
+};
+
+const generateConversionMessage = (removedCount: number, adjustedCount: number): string => {
+    if (removedCount === 0 && adjustedCount === 0) {
+        return 'Todos los productos fueron convertidos exitosamente a venta';
+    }
+
+    const parts: string[] = [];
+
+    if (removedCount > 0) {
+        parts.push(`${removedCount} producto${removedCount > 1 ? 's' : ''} sin stock ${removedCount > 1 ? 'fueron removidos' : 'fue removido'}`);
+    }
+
+    if (adjustedCount > 0) {
+        parts.push(`${adjustedCount} producto${adjustedCount > 1 ? 's' : ''} ${adjustedCount > 1 ? 'tuvieron' : 'tuvo'} su cantidad ajustada`);
+    }
+
+    return parts.join(' y ');
 };

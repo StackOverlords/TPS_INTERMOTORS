@@ -5,7 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -409,10 +408,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                 }
 
                 <div className="flex items-center gap-2">
-                    <RowsPerPageSelect
-                        value={filters.pagina_registros ?? 10}
-                        onChange={onShowRowsChange}
-                    />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm">
@@ -420,7 +415,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                                 Columnas
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                             {table
                                 .getAllColumns()
                                 .filter((column) => column.getCanHide())
@@ -481,7 +476,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                             </div>
                         }
                     >
-                        <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                        <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
                             <HelpCircle />
                         </span>
                     </TooltipWrapper>
@@ -554,7 +549,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             {/* Pagination - FIJO en la parte inferior */}
             {
                 !isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
-                    <div className="flex-shrink-0 border-t border-border bg-background">
+                    <div className="flex-shrink-0 border-t border-border bg-card">
                         <Pagination
                             currentPage={filters.pagina || 1}
                             onPageChange={onPageChange}

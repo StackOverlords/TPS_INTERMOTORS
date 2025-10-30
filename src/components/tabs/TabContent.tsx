@@ -5,7 +5,7 @@ interface TabContentProps {
   children: ReactNode;
   tabId: string;
 }
- 
+
 const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => {
   // Selectores específicos para evitar re-renders innecesarios
   const activeTabId = useTabStore(state => state.activeTabId);
@@ -13,7 +13,13 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => 
   const getTab = useTabStore(state => state.getTab);
 
   const isActive = tabId === activeTabId;
+  const hasBeenActiveRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ Solo marcar como activa sin causar re-render
+  if (isActive && !hasBeenActiveRef.current) {
+    hasBeenActiveRef.current = true;
+  }
 
   // Guardar la posición del scroll cuando el tab se vuelve inactivo
   useEffect(() => {
@@ -32,6 +38,11 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => 
       }
     }
   }, [isActive, tabId, getTab]);
+
+  // ✅ Solo renderiza si ya fue activada alguna vez (lazy load)
+  if (!hasBeenActiveRef.current) {
+    return null;
+  }
 
   return (
     <div

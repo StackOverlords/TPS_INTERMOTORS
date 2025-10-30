@@ -2,20 +2,19 @@ import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
 import { Label } from "@/components/atoms/label";
 import { Loader2, Save } from "lucide-react";
-import type { UseFormReset } from "react-hook-form";
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import { EditablePercentage } from "@/modules/shoppingCart/components/EditablePercentage";
 import TooltipButton from "@/components/common/TooltipButton";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { formatCurrency } from "@/utils/formaters";
-import { Separator } from "@/components/atoms/separator";
-import type { QuotationCreate } from "../types/quotationCreate.types";
+import { Badge } from "@/components/atoms/badge";
 interface SalesSummaryProps {
+    isReadOnly?: boolean
     isPending: boolean
     clearCart: () => void
     setDiscountPercent: (percent: number) => void
     setDiscountAmount: (amount: number) => void
-    reset: UseFormReset<QuotationCreate>
+    handleNewQuotation: () => void
     discountPercent: number
     discountAmount: number
     subtotal: number
@@ -23,124 +22,103 @@ interface SalesSummaryProps {
     hasProducts?: boolean
 }
 const QuotationsSummary: React.FC<SalesSummaryProps> = ({
+    isReadOnly = false,
     isPending,
     clearCart,
     setDiscountPercent,
     setDiscountAmount,
-    reset,
+    handleNewQuotation,
     discountPercent,
     discountAmount,
     subtotal,
     total,
     hasProducts = false
 }) => {
+
+    const newQuotation = () => {
+        clearCart();
+        handleNewQuotation();
+    }
+
     return (
-        <Card className="border border-gray-200 shadow-none pt-3">
-            <CardContent className="space-y-2">
-                <div className={`grid gap-3 ${hasProducts ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
-                    {/* Descuento */}
-                    {
-                        hasProducts && (
-                            <section className="space-y-2 bg-gray-50 p-3 rounded-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-sm font-medium text-gray-700">Descuento</span>
-                                </div>
+        <Card className="border border-border shadow-none flex-shrink-0">
+            <CardContent className="space-y-2 p-2 sm:p-3">
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label className="text-xs text-gray-600">Porcentaje (%)</Label>
-                                        <EditablePercentage
-                                            value={discountPercent}
-                                            onSubmit={(value) => setDiscountPercent(value as number)}
-                                            className="w-full"
-                                            buttonClassName="w-full"
-                                            showEditIcon={false}
-                                        />
-                                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
+                    <div className="space-y-1">
+                        <Label className="text-xs">Desc. Porcentaje (%)</Label>
+                        <EditablePercentage
+                            key={discountPercent}
+                            value={discountPercent}
+                            onSubmit={(value) => setDiscountPercent(value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            disabled={isReadOnly}
+                        />
+                    </div>
 
-                                    <div>
-                                        <Label className="text-xs text-gray-600">Monto (Bs)</Label>
-                                        <EditablePrice
-                                            value={discountAmount}
-                                            onSubmit={(value) => setDiscountAmount(value as number)}
-                                            className="w-full"
-                                            buttonClassName="w-full"
-                                            showEditIcon={false}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-1">
-                                    {[0, 5, 10, 15, 20].map((percentage) => (
-                                        <Button
-                                            key={percentage}
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-xs h-7 px-2 border-orange-300 text-orange-700 hover:bg-orange-100 hover:text-orange-600 transition-colors duration-300"
-                                            onClick={() => setDiscountPercent(percentage)}
-                                        >
-                                            {percentage}%
-                                        </Button>
-                                    ))}
-                                </div>
-                            </section>
-                        )
-                    }
-
-                    {/* Totales - DERECHA */}
-                    <section className="space-y-4">
-                        <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
-                            <div className="flex justify-between">
-                                <Label>Subtotal:</Label>
-                                <span className="font-medium">{formatCurrency(subtotal)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <Label>Descuento ({discountPercent?.toFixed(2)}%):</Label>
-                                <span className="font-medium text-orange-600">-{formatCurrency(discountAmount)}</span>
-                            </div>
-
-                            <Separator className="my-2" />
-
-                            <div className="flex justify-between items-center bg-white rounded-lg p-2 border border-green-200">
-                                <Label className="text-base font-bold text-gray-700">TOTAL:</Label>
-                                <span className="text-xl font-bold text-green-600 tabular-nums">{formatCurrency(total)}</span>
-                            </div>
-                        </div>
-                    </section>
-
+                    <div className="space-y-1">
+                        <Label className="text-xs">Desc. Monto (Bs)</Label>
+                        <EditablePrice
+                            key={discountAmount}
+                            value={discountAmount}
+                            onSubmit={(value) => setDiscountAmount(value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            disabled={isReadOnly}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Subtotal</Label>
+                        <Badge
+                            variant={'secondary'}
+                            className="w-full h-8 rounded-sm text-sm font-normal"
+                        >
+                            {formatCurrency(subtotal)}
+                        </Badge>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Total</Label>
+                        <Badge
+                            variant={'success'}
+                            className="w-full h-8 rounded-sm text-sm font-bold"
+                        >
+                            {formatCurrency(total)}
+                        </Badge>
+                    </div>
                 </div>
 
-                <footer className="flex gap-3 items-center justify-between">
-                    <span className="text-xs text-gray-500">* Campos requeridos</span>
-                    <div className="flex gap-2">
+                <footer className="flex gap-2 items-center justify-between flex-wrap">
+                    <div className="flex gap-1">
+                        {[0, 5, 10, 15, 20].map((percentage) => (
+                            <Button
+                                key={percentage}
+                                type="button"
+                                variant="outline"
+                                className="text-xs h-7 px-2 border-orange-300 text-orange-700 hover:bg-orange-100 hover:text-orange-600 transition-colors duration-300"
+                                onClick={() => setDiscountPercent(percentage)}
+                                disabled={isReadOnly}
+                            >
+                                {percentage}%
+                            </Button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 w-full md:w-auto md:flex gap-2">
                         <Button
                             type="button"
-                            size={'sm'}
                             variant="outline"
                             className="w-full py-3 font-medium"
-                            onClick={() => {
-                                reset();
-                                clearCart();
-                            }}
+                            onClick={newQuotation}
                         >
                             Nueva Cotización
                         </Button>
 
-                        {/* <Button
-                        size={'sm'}
-                        type="button"
-                        disabled
-                        variant="ghost"
-                        className="w-full py-3 font-medium text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                        Eliminar
-                    </Button> */}
                         {/* Botón de submit */}
                         <TooltipButton
                             buttonProps={{
                                 type: 'submit',
-                                disabled: isPending || !hasProducts,
+                                disabled: isPending || !hasProducts || isReadOnly,
                                 variant: 'default',
                                 className: "w-full"
                             }}

@@ -3,6 +3,23 @@ import type { CartProductSchema } from "../schemas/cartProduct.schema";
 
 export type CartProduct = z.infer<typeof CartProductSchema>
 
+export interface ConversionAdjustment {
+    productId: number;
+    productName: string;
+    originalQuantity: number;
+    adjustedQuantity: number;
+    reason: 'QUANTITY_ADJUSTED' | 'REMOVED_NO_STOCK';
+}
+
+export interface ConversionResult {
+    success: boolean;
+    removedItems: CartItem[];
+    adjustedItems: ConversionAdjustment[];
+    keptItems: CartItem[];
+    message: string;
+}
+
+export type CartMode = 'sale' | 'quote';
 
 export type CartItem = {
     product: CartProduct;
@@ -16,6 +33,7 @@ export type CartItem = {
 export interface CartOperationResult {
     success: boolean;
     error?: 'NO_STOCK' | 'INSUFFICIENT_STOCK' | 'ITEM_NOT_FOUND' | 'UNKNOWN_ERROR';
+    warning?: 'NO_STOCK' | 'EXCEEDS_STOCK'; // ← NUEVO
     message: string;
 }
 
@@ -42,26 +60,35 @@ type DiscountMode = 'amount' | 'percent' | null
 
 export type CartState = {
     items: CartItem[];
-    discountAmount: number
-    discountPercent: number
-    discountMode: DiscountMode
+    mode: CartMode; // ← NUEVO
+    discountAmount: number;
+    discountPercent: number;
+    discountMode: DiscountMode;
+    lastConversion: ConversionResult | null; // ← NUEVO
 
-    addItem: (item: CartProduct) => CartOperationResult
-    removeItem: (productId: number) => void
-    updateQuantity: (productId: number, quantity: number) => CartOperationResult
-    updateCustomPrice: (productId: number, price: number) => void
-    updateCustomSubtotal: (productId: number, subtotal: number) => void
-    updateCustomDescription: (productId: number, description: string) => void
-    updateCustomBrand: (productId: number, brand: string) => void
-    clearCart: () => void
+    // ← NUEVO: Gestión de modo
+    setMode: (mode: CartMode) => void;
+    convertToSale: () => ConversionResult;
+    convertToQuote: () => void;
+    clearLastConversion: () => void;
 
-    setDiscountAmount: (amount: number) => void
-    setDiscountPercent: (percent: number) => void
+    // Resto de métodos existentes...
+    addItem: (item: CartProduct) => CartOperationResult;
+    removeItem: (productId: number) => void;
+    updateQuantity: (productId: number, quantity: number) => CartOperationResult;
+    updateCustomPrice: (productId: number, price: number) => void;
+    updateCustomSubtotal: (productId: number, subtotal: number) => void;
+    updateCustomDescription: (productId: number, description: string) => void;
+    updateCustomBrand: (productId: number, brand: string) => void;
+    clearCart: () => void;
+
+    setDiscountAmount: (amount: number) => void;
+    setDiscountPercent: (percent: number) => void;
     recalculateDiscount: () => void;
 
-    getItemSubtotal: (productId: number) => number
-    getCartSubtotal: () => number
-    getCartTotal: () => number
+    getItemSubtotal: (productId: number) => number;
+    getCartSubtotal: () => number;
+    getCartTotal: () => number;
     getCartCount: () => number;
     getDiscountAmount: () => number;
     isItemInCart: (productId: number) => boolean;
@@ -81,7 +108,8 @@ export interface CartSummary {
 
 export interface StoreItem {
     items: CartItem[];
-    discountAmount: number
-    discountPercent: number
-    discountMode: DiscountMode
+    mode: CartMode; // ← NUEVO
+    discountAmount: number;
+    discountPercent: number;
+    discountMode: DiscountMode;
 }

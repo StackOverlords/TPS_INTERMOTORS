@@ -120,7 +120,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
             cell: ({ getValue }) => {
                 return (
                     <div className="text-center">
-                        <span className="text-xs font-medium">{getValue<number>().toFixed(2)}%</span>
+                        <span className="text-xs font-medium">{getValue<number>()?.toFixed(2)}%</span>
                     </div>
                 )
             },
@@ -154,7 +154,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
             cell: ({ getValue }) => {
                 return (
                     <div className="text-center">
-                        <span className="text-xs font-medium">{getValue<number>().toFixed(2)}%</span>
+                        <span className="text-xs font-medium">{getValue<number>()?.toFixed(2)}%</span>
                     </div>
                 )
             },

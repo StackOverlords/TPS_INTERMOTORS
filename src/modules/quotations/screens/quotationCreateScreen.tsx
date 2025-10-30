@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ShoppingCart, CornerUpLeft } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ShoppingCart, CornerUpLeft, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Label } from "@/components/atoms/label";
 import { Input } from "@/components/atoms/input";
@@ -33,14 +33,38 @@ import ProductDetailTable from "../components/productDetailTable";
 import { Textarea } from "@/components/atoms/textarea";
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import { Switch } from "@/components/atoms/switch";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
+import { PDFViewer } from "@/components/common/PDFViewer";
+import { useQuotationPDF } from "../hooks/useQuotationPDF";
+import { Badge } from "@/components/atoms/badge";
+import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
+
+const SCREEN_PATH = "/dashboard/create-quotation"
 
 const QuotationCreateScreen = () => {
+    const [createdQuotationId, setCreatedQuotationId] = useState<number | null>(null);
+    const [createdQuotationDetails, setCreatedQuotationDetails] = useState<CartItem[] | null>(null);
+    const [createdQuotationSummary, setCreatedQuotationSummary] = useState<{
+        subtotal: number;
+        total: number;
+        discount: number;
+        discountPercent: number;
+    } | null>(null);
+    const isReadOnly = useMemo(() => createdQuotationId !== null && createdQuotationDetails !== null, [createdQuotationId, createdQuotationDetails]);
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
     const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
 
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
+
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+
+    const {
+        data: pdfBlob,
+        isLoading: isLoadingPdf,
+        isError: isErrorPdf,
+    } = useQuotationPDF(createdQuotationId || 0, isDialogOpen && !!createdQuotationId);
 
     const {
         data: saleTypesData,
@@ -81,7 +105,6 @@ const QuotationCreateScreen = () => {
             nro_motor: "",
             cliente_nombre: "",
             cliente_nit: "",
-            usuario: 1,
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: Number(user?._id) || undefined,
             detalles: [],
@@ -118,13 +141,25 @@ const QuotationCreateScreen = () => {
         clearCart,
         addItemToCart,
         addMultipleItems,
-        validateCartWithToast
+        validateCartWithToast,
+        setCartMode,
+        mode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
-    const subtotal = getCartSubtotal();
-    const total = getCartTotal();
 
-    useEffect(() => {
-        const detalles: QuotationDetail[] = items.map((item, index) => ({
+    useTabEffect(SCREEN_PATH, () => {
+        if (mode !== 'quote' && !isReadOnly) {
+            setCartMode('quote')
+        }
+    }, [mode]);
+
+    const subtotal = useMemo(() => getCartSubtotal(), [items, discountPercent]);
+    const total = useMemo(() => getCartTotal(), [items, discountPercent, discountAmount]);
+
+    const formValues = watch();
+    const { tipo_cotizacion, plazo_pago } = formValues;
+
+    const detalles = useMemo((): QuotationDetail[] => {
+        return items.map((item, index) => ({
             id_producto: item.product.id,
             cantidad: item.quantity,
             precio: item.customPrice,
@@ -134,16 +169,16 @@ const QuotationCreateScreen = () => {
             nueva_marca: item.customBrand,
             orden: index + 1,
         }));
+    }, [items, discountPercent]);
 
+    useEffect(() => {
         if (detalles.length > 0) {
             setValue("detalles", detalles);
             clearErrors("detalles");
-        } else {
-            // setValue("detalles", []);
         }
-    }, [items, discountAmount, discountPercent, setValue, clearErrors]);
+    }, [detalles, setValue, clearErrors]);
 
-    const validateBeforeSubmit = (): boolean => {
+    const validateBeforeSubmit = useCallback((): boolean => {
         let isValid = true;
 
         if (items.length === 0) {
@@ -168,9 +203,7 @@ const QuotationCreateScreen = () => {
             isValid = false;
         }
 
-        const formData = getValues();
-
-        if (!formData.id_cliente) {
+        if (!formValues.id_cliente) {
             setError("id_cliente", {
                 type: "manual",
                 message: "Debes seleccionar un cliente"
@@ -183,7 +216,7 @@ const QuotationCreateScreen = () => {
             isValid = false;
         }
 
-        if (!formData.tipo_cotizacion) {
+        if (!formValues.tipo_cotizacion) {
             setError("tipo_cotizacion", {
                 type: "manual",
                 message: "Debes seleccionar un tipo de cotización"
@@ -191,7 +224,7 @@ const QuotationCreateScreen = () => {
             isValid = false;
         }
 
-        if (!formData.forma_cotizacion) {
+        if (!formValues.forma_cotizacion) {
             setError("forma_cotizacion", {
                 type: "manual",
                 message: "Debes seleccionar una forma de cotización"
@@ -199,7 +232,7 @@ const QuotationCreateScreen = () => {
             isValid = false;
         }
 
-        if (formData.tipo_cotizacion === "VC" && !formData.plazo_pago) {
+        if (formValues.tipo_cotizacion === "VC" && !formValues.plazo_pago) {
             setError("plazo_pago", {
                 type: "manual",
                 message: "Debes especificar la fecha de plazo para cotización a crédito"
@@ -213,43 +246,47 @@ const QuotationCreateScreen = () => {
         }
 
         return isValid;
-    };
+    }, [items.length, validateCartWithToast, formValues, setError]);
 
     // VALIDACIÓN DE FECHA DE PLAZO
-    const tipoCotizacion = watch("tipo_cotizacion");
-    const plazoPago = watch("plazo_pago");
     useEffect(() => {
-
-        if (tipoCotizacion === "VC" && plazoPago) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const plazoDate = parse(plazoPago, "yyyy-MM-dd", new Date());
-            plazoDate.setHours(0, 0, 0, 0);
-
-            if (plazoDate <= today) {
-                setError("plazo_pago", {
-                    type: "manual",
-                    message: "La fecha de plazo debe ser posterior a hoy"
-                });
-                showErrorToast({
-                    title: "Fecha inválida",
-                    description: "La fecha de plazo debe ser posterior a hoy",
-                    duration: 5000
-                });
-                resetField("plazo_pago");
-            } else {
-                clearErrors("plazo_pago");
-            }
+        // Early return si no es crédito
+        if (tipo_cotizacion !== "VC") {
+            clearErrors("plazo_pago");
+            return;
         }
-        if (tipoCotizacion !== "VC") {
+
+        // Solo validar si hay plazo
+        if (!plazo_pago) {
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
+        plazoDate.setHours(0, 0, 0, 0);
+
+        if (plazoDate <= today) {
+            setError("plazo_pago", {
+                type: "manual",
+                message: "La fecha de plazo debe ser posterior a hoy"
+            });
+            showErrorToast({
+                title: "Fecha inválida",
+                description: "La fecha de plazo debe ser posterior a hoy",
+                duration: 5000
+            });
             resetField("plazo_pago");
+        } else {
+            clearErrors("plazo_pago");
         }
-    }, [tipoCotizacion, plazoPago, resetField, setError, clearErrors, watch]);
+    }, [tipo_cotizacion, plazo_pago, resetField, setError, clearErrors]);
 
-    const handleCheckout = () => {
-        clearCart();
-
+    const handleNewQuotation = useCallback(() => {
+        setCreatedQuotationId(null);
+        setCreatedQuotationDetails(null);
+        setCreatedQuotationSummary(null);
         const currentValues = getValues();
         reset({
             fecha: format(new Date(), "yyyy-MM-dd"),
@@ -262,10 +299,9 @@ const QuotationCreateScreen = () => {
             plazo_pago: "",
             vehiculo: "",
             nro_motor: "",
-            cliente_nombre: currentValues.cliente_nombre,
-            cliente_nit: currentValues.cliente_nit,
-            usuario: currentValues.usuario,
-            sucursal: currentValues.sucursal,
+            cliente_nombre: "",
+            cliente_nit: "",
+            sucursal: Number(selectedBranchId) || 1,
             id_responsable: currentValues.id_responsable,
             detalles: [],
             cliente_contacto: "",
@@ -273,38 +309,71 @@ const QuotationCreateScreen = () => {
             anticipo: 0,
             pedido: false,
         });
-    };
+    }, [getValues, reset]);
 
-    const handleAddProductItem = (product: ProductGet) => {
-        addItemToCart(product)
-    };
+    const handleAddProductItem = useCallback((product: ProductGet) => {
+        addItemToCart(product);
+    }, [addItemToCart]);
 
-    const handleAddMultipleProducts = (products: ProductGet[]) => {
+    const handleAddMultipleProducts = useCallback((products: ProductGet[]) => {
         addMultipleItems(products);
-    };
+    }, [addMultipleItems]);
 
-    // FUNCIÓN onSubmit corregida
-    const onSubmit = (data: QuotationCreate) => {
+    const onSubmit = useCallback((data: QuotationCreate) => {
         if (!validateBeforeSubmit()) {
             return;
         }
         createQuotation(data, {
-            onSuccess: () => {
-                // console.log('Cotización creada:', response);
+            onSuccess: (createdQuotation) => {
+
+                const finalSubtotal = subtotal;
+                const finalTotal = total;
+                const finalDiscountAmount = discountAmount || 0;
+                const finalDiscountPercent = discountPercent || 0;
+
+                setCreatedQuotationSummary({
+                    subtotal: finalSubtotal,
+                    total: finalTotal,
+                    discount: finalDiscountAmount,
+                    discountPercent: finalDiscountPercent
+                });
+
+                clearCart();
                 showSuccessToast({
                     title: "Cotización Exitosa",
                     description: `Cotización realizada con éxito`,
                     duration: 5000
                 });
-                handleCheckout();
+
+                setCreatedQuotationId(createdQuotation.id);
+                const details: CartItem[] = createdQuotation.detalles.map((det) => ({
+                    product: {
+                        id: det.producto.id,
+                        descripcion: det.producto.descripcion,
+                        codigo_oem: det.producto.codigo_oem,
+                        codigo_upc: det.producto.codigo_upc,
+                        precio_venta: det.producto.precio_venta,
+                        precio_venta_alt: det.producto.precio_venta_alt,
+                        stock_actual: 0,
+                        marca: det.producto.marca?.marca || '',
+                        unidad_medida: det.producto.unidad_medida.unidad_medida,
+                        sucursal: ''
+                    },
+                    quantity: det.cantidad,
+                    customDescription: det.descripcion || '',
+                    customPrice: det.precio,
+                    customSubtotal: det.cantidad * det.precio,
+                    customBrand: det.marca || '',
+                }));
+                setCreatedQuotationDetails(details);
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear la cotización" });
             }
         });
-    };
+    }, [validateBeforeSubmit, createQuotation, handleError]);
 
-    const onError = (errors: FieldErrors<QuotationCreate>) => {
+    const onError = useCallback((errors: FieldErrors<QuotationCreate>) => {
         console.log("Errores de validación:", errors);
         if (errors.id_cliente || errors.tipo_cotizacion || errors.forma_cotizacion || errors.id_responsable) {
             showErrorToast({
@@ -328,11 +397,11 @@ const QuotationCreateScreen = () => {
         if (errors.detalles) {
             validateBeforeSubmit();
         }
-    };
+    }, [validateBeforeSubmit]);
 
-    const handleGoBack = () => {
-        navigate('/dashboard/productos')
-    }
+    const handleGoBack = useCallback(() => {
+        navigate('/dashboard/productos');
+    }, [navigate]);
 
     useEffect(() => {
         if (!user?._id && saleResponsiblesData && saleResponsiblesData.length > 0) {
@@ -347,8 +416,6 @@ const QuotationCreateScreen = () => {
         if (saleCustomersData?.data && saleCustomersData.data.length > 0) {
             const firstCustomer = saleCustomersData.data[0];
             setValue("id_cliente", firstCustomer.id);
-            setValue("cliente_nombre", firstCustomer.nombre);
-            setValue("cliente_nit", firstCustomer.nit?.toString() || "");
         }
     }, [saleCustomersData, setValue, getValues]);
 
@@ -362,6 +429,14 @@ const QuotationCreateScreen = () => {
             }
         }
     }, [saleTypesData, saleModalitiesData, getValues, setValue])
+
+    const handleOpenPrintDialog = () => {
+        setIsDialogOpen(true)
+    }
+
+    const handleClosePrintDialog = () => {
+        setIsDialogOpen(false)
+    }
 
     // Shortcuts
     useHotkeys('escape', (e) => {
@@ -378,11 +453,11 @@ const QuotationCreateScreen = () => {
     })
 
     return (
-        <main>
+        <main className="p-2 h-full">
             <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit, onError)} className="w-full mx-auto flex flex-col gap-3">
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2">
                     {/* Header */}
-                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3">
+                    <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
                         <div className="flex flex-wrap gap-2 items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <TooltipButton
@@ -399,7 +474,7 @@ const QuotationCreateScreen = () => {
                                     <CornerUpLeft />
                                 </TooltipButton>
                                 <div>
-                                    <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                                         Nueva Cotización
                                     </h1>
                                     <p className="text-sm text-gray-500">Registra una nueva cotización en el sistema</p>
@@ -408,18 +483,40 @@ const QuotationCreateScreen = () => {
 
                             {/* Action Buttons */}
                             < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
+                                {
+                                    createdQuotationId && (
+                                        <>
+                                            <TooltipButton
+                                                onClick={handleOpenPrintDialog}
+                                                tooltip="Imprimir cotizacion"
+                                                buttonProps={{
+                                                    variant: 'default',
+                                                }}
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                                Imprimir
+                                            </TooltipButton>
 
+                                            <Badge
+                                                className="h-8 rounded-sm font-bold text-base border border-emerald-500"
+                                                variant={'success'}
+                                            >
+                                                {createdQuotationId}
+                                            </Badge>
+                                        </>
+                                    )
+                                }
                             </div >
                         </div >
                     </header >
 
                     {/* Formulario de información de cotización*/}
-                    <div className="grid md:grid-cols-3 gap-3">
+                    <div className="grid md:grid-cols-3 gap-2 flex-shrink-0">
                         {/* 1. Datos de la cotización */}
                         <Card className="shadow-none h-full md:col-span-2">
 
-                            <CardContent className="py-3">
-                                <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-y-3 gap-x-2">
+                            <CardContent className="p-2 sm:p-3">
+                                <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
                                     <div>
                                         <Label htmlFor="fechaCotizacion">Fecha *</Label>
                                         <Input
@@ -428,6 +525,7 @@ const QuotationCreateScreen = () => {
                                             {...register("fecha")}
                                             className="w-full"
                                             autoFocus
+                                            disabled={isReadOnly}
                                         />
                                         {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
                                     </div>
@@ -444,6 +542,7 @@ const QuotationCreateScreen = () => {
                                                     }}
                                                     options={saleResponsiblesData || []}
                                                     optionTag={"nombre"}
+                                                    disabled={isReadOnly}
                                                 />
                                             )}
                                         />
@@ -456,7 +555,9 @@ const QuotationCreateScreen = () => {
                                             name="forma_cotizacion"
                                             control={control}
                                             render={({ field }) => (
-                                                <Select onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
+                                                <Select
+                                                    disabled={isReadOnly}
+                                                    onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Selecciona una forma" />
                                                     </SelectTrigger>
@@ -476,12 +577,14 @@ const QuotationCreateScreen = () => {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="tipoCotizacion">Tipo de Cotización *</Label>
+                                        <Label htmlFor="tipo_cotizacion">Tipo de Cotización *</Label>
                                         <Controller
                                             name="tipo_cotizacion"
                                             control={control}
                                             render={({ field }) => (
-                                                <Select onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
+                                                <Select
+                                                    disabled={isReadOnly}
+                                                    onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Selecciona un tipo" />
                                                     </SelectTrigger>
@@ -505,6 +608,7 @@ const QuotationCreateScreen = () => {
                                             id="nroComprobante"
                                             {...register("nro_comprobante")}
                                             placeholder="Número de comprobante"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -513,6 +617,7 @@ const QuotationCreateScreen = () => {
                                             id="nroComprobanteSecundario"
                                             {...register("nro_comprobante2")}
                                             placeholder="Comprobante secundario"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -524,7 +629,7 @@ const QuotationCreateScreen = () => {
                                             id="fechaPlazo"
                                             type="date"
                                             {...register("plazo_pago")}
-                                            disabled={watch("tipo_cotizacion") !== "VC"}
+                                            disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -533,6 +638,7 @@ const QuotationCreateScreen = () => {
                                             id="vehiculo"
                                             {...register("vehiculo")}
                                             placeholder="Modelo del vehículo"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -541,6 +647,7 @@ const QuotationCreateScreen = () => {
                                             id="motor"
                                             {...register("nro_motor")}
                                             placeholder="Tipo de motor"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -555,6 +662,7 @@ const QuotationCreateScreen = () => {
                                                     className="w-full"
                                                     buttonClassName="w-full"
                                                     numberProps={{ min: 0, step: 0.01 }}
+                                                    disabled={isReadOnly}
                                                 />
                                             )}
                                         />
@@ -569,6 +677,7 @@ const QuotationCreateScreen = () => {
                                                     <Switch
                                                         checked={field.value}
                                                         onCheckedChange={(checked) => field.onChange(checked)}
+                                                        disabled={isReadOnly}
                                                     />
                                                 )}
                                             />
@@ -580,8 +689,8 @@ const QuotationCreateScreen = () => {
 
                         <Card className="shadow-none h-full">
 
-                            <CardContent className="space-y-3 py-3">
-                                <div className="grid sm:grid-cols-2 gap-y-3 gap-x-2">
+                            <CardContent className="p-2 sm:p-3">
+                                <div className="grid sm:grid-cols-2 gap-2">
 
                                     <div>
                                         <Label htmlFor="cliente">Cliente *</Label>
@@ -591,19 +700,14 @@ const QuotationCreateScreen = () => {
                                             render={({ field }) => (
                                                 <PaginatedCombobox
                                                     value={field.value}
-                                                    onChange={(value) => {
-                                                        field.onChange(Number(value));
-                                                        const selected = saleCustomersData?.data.find((c) => c.id.toString() === value);
-                                                        if (selected) {
-                                                            setValue("cliente_nombre", selected.nombre);
-                                                            setValue("cliente_nit", selected.nit?.toString() || "");
-                                                        }
-                                                    }}
+                                                    onChange={(value) => field.onChange(Number(value))}
                                                     optionsData={saleCustomersData?.data || []}
                                                     displayField="nombre"
                                                     isLoading={isSaleCustomersLoading}
                                                     updatePage={(page) => { console.log("Update page:", page) }}
                                                     updateSearch={setCustomerSearchTerm}
+                                                    disabled={isReadOnly}
+                                                    placeholder="Buscar cliente por nombre"
                                                     metaData={
                                                         {
                                                             current_page: saleCustomersData?.meta.current_page || 1,
@@ -618,11 +722,12 @@ const QuotationCreateScreen = () => {
                                         {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
                                     </div>
                                     <div>
-                                        <Label htmlFor="altClie">Alt. Cliente</Label>
+                                        <Label htmlFor="altClie">Cliente Alt.</Label>
                                         <Input
                                             id="altClie"
                                             {...register("cliente_nombre")}
                                             placeholder="Cliente alternativo"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -631,6 +736,7 @@ const QuotationCreateScreen = () => {
                                             id="contacto"
                                             {...register("cliente_contacto")}
                                             placeholder="Nombre de contacto"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                     <div>
@@ -639,6 +745,7 @@ const QuotationCreateScreen = () => {
                                             id="telefono"
                                             {...register("cliente_telefono")}
                                             placeholder="Teléfono del cliente"
+                                            disabled={isReadOnly}
                                         />
                                     </div>
 
@@ -649,6 +756,7 @@ const QuotationCreateScreen = () => {
                                             {...register("comentarios")}
                                             placeholder="Comentarios adicionales sobre la Cotización"
                                             rows={1}
+                                            disabled={isReadOnly}
                                         />
                                     </div>
                                 </div>
@@ -657,47 +765,63 @@ const QuotationCreateScreen = () => {
                     </div>
 
                     {/* 2. Productos */}
-                    <Card className="shadow-none">
-                        <CardHeader>
+                    <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                        <CardHeader className="flex-shrink-0">
                             <CardTitle>
                                 <ProductSelectorModal
                                     isSearchOpen={isSearchOpen}
                                     setIsSearchOpen={setIsSearchOpen}
                                     addItem={handleAddProductItem}
-                                    onlyWithStock={true}
                                     addMultipleItem={handleAddMultipleProducts}
+                                    disabled={isSaving || isReadOnly}
                                 />
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                {items.length === 0 ? (
+                        <CardContent className="flex-1 min-h-0">
+                            <div className="h-full overflow-auto">
+                                {items.length === 0 && !createdQuotationDetails ? (
                                     <div className="text-center py-8 text-gray-500">
                                         <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                         <p>No hay productos agregados</p>
                                         <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
                                     </div>
                                 ) :
-                                    <ProductDetailTable />
+                                    <ProductDetailTable
+                                        details={createdQuotationDetails}
+                                        isReadOnly={isReadOnly}
+                                    />
                                 }
                             </div>
                         </CardContent>
                     </Card>
                     {/* Resumen de Cotización  */}
                     <QuotationsSummary
+                        isReadOnly={isReadOnly}
                         clearCart={clearCart}
-                        discountAmount={discountAmount || 0}
-                        discountPercent={discountPercent || 0}
+                        discountAmount={isReadOnly ? createdQuotationSummary?.discount ?? 0 : discountAmount}
+                        discountPercent={isReadOnly ? createdQuotationSummary?.discountPercent ?? 0 : discountPercent}
+                        subtotal={isReadOnly ? createdQuotationSummary?.subtotal ?? 0 : subtotal}
+                        total={isReadOnly ? createdQuotationSummary?.total ?? 0 : total}
                         isPending={isSaving}
-                        reset={reset}
+                        handleNewQuotation={handleNewQuotation}
                         setDiscountAmount={setDiscountAmount}
                         setDiscountPercent={setDiscountPercent}
-                        subtotal={subtotal}
-                        total={total}
                         hasProducts={items.length > 0}
                     />
                 </form>
             </FormProvider>
+
+            {/* Modal PDF Viewer */}
+            <PDFViewer
+                id={createdQuotationId}
+                pdfBlob={pdfBlob}
+                isLoading={isLoadingPdf}
+                isError={isErrorPdf}
+                onClose={handleClosePrintDialog}
+                isOpen={isDialogOpen}
+                pdfName="cotizacion"
+                title={`Cotizacion Nro. ${createdQuotationId}`}
+            />
         </main>
     );
 };

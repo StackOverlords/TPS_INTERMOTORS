@@ -1,5 +1,5 @@
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema";
-import { requiredMoneySchema, toNumberOrNull } from "@/modules/shared/schemas/numberSchemas";
+import { moneySchema, requiredMoneySchema, toNumberOrNull } from "@/modules/shared/schemas/numberSchemas";
 import z from "zod";
 
 export const SupplierSchema = z.object({
@@ -24,10 +24,10 @@ export const OrderDetailGetByIdSchema = z.object({
     producto: ProductDetailSchema,
     cantidad: requiredMoneySchema,
     costo: requiredMoneySchema,
-    inc_precio_venta: requiredMoneySchema,
-    precio_venta: requiredMoneySchema,
-    inc_precio_venta_alt: requiredMoneySchema,
-    precio_venta_alt: requiredMoneySchema,
+    inc_precio_venta: moneySchema,
+    precio_venta: moneySchema,
+    inc_precio_venta_alt: moneySchema,
+    precio_venta_alt: moneySchema,
     orden: toNumberOrNull,
     moneda: z.string()
 })

@@ -1,11 +1,13 @@
 import { apiConstructor } from '@/modules/products/services/api';
 import { PURCHASE_ENDPOINTS } from './endpoints';
-import type { 
-  PurchaseType, 
-  PurchaseModality, 
-  ResponsibleData, 
-  ResponsiblesResponse 
+import type {
+  PurchaseType,
+  PurchaseModality,
+  ResponsibleData,
 } from '../types/purchaseCommons';
+import type { ProviderOption } from '../types/ProviderOption';
+import apiClient from '@/services/axios';
+import { ProviderResponseSchema } from '../schemas/provider.schema';
 
 export const purchaseCommonsService = {
   /**
@@ -57,4 +59,17 @@ export const purchaseCommonsService = {
       throw error;
     }
   },
+};
+
+export const fetchProviders = async (searchTerm: string = "TODO"): Promise<ProviderOption[]> => {
+  const response = await apiClient.get(PURCHASE_ENDPOINTS.providers, {
+    params: { proveedor: searchTerm }
+  });
+
+  const result = ProviderResponseSchema.safeParse(response.data);
+  if (!result.success) {
+    console.error("Zod error en fetchProviders:", result.error.format());
+    throw new Error("Respuesta inválida del servidor.");
+  }
+  return result.data.data;
 };

@@ -1,101 +1,120 @@
-import apiClient from "@/services/axios";
-import { ProviderResponseSchema, type ProviderOption } from "../schemas/provider.schema";
-import type { PurchaseDetail } from "../types/PurchaseDetail";
+import { Logger } from "@/lib/logger";
+import { ApiService } from "@/lib/apiService";
+import { PURCHASE_ENDPOINTS } from "./endpoints";
 import type { PurchaseFilters } from "../types/purchaseFilters";
 import type { PurchaseListResponse } from "../types/purchaseListResponse";
-import { PURCHASE_ENDPOINTS } from "./endpoints";
+import { PurchaseListResponseSchema } from "../schemas/purchaseResponse.schema";
+import type { PurchaseDetail } from "../types/PurchaseDetail";
+import { PurchaseDetailSchema } from "../schemas/purchase.schema";
 
-export const fetchPurchases = async (filters: PurchaseFilters): Promise<PurchaseListResponse> => {
-  const params: any = {
-    pagina: filters.pagina || 1,
-    pagina_registros: filters.pagina_registros || 10,
-    sucursal: filters.sucursal,
-  };
+const MODULE_NAME = 'PURCHASE_SERVICE';
 
-  if (filters.keywords && filters.keywords.trim()) {
-    params.keywords = filters.keywords.trim();
-  }
-  if (filters.codigo_interno) {
-    params.codigo_interno = filters.codigo_interno;
-  }
-  if (filters.proveedor) {
-    params.proveedor = filters.proveedor;
-  }
-  if (filters.fecha_inicio && filters.fecha_inicio.trim()) {
-    params.fecha_inicio = filters.fecha_inicio.trim();
-  }
-  if (filters.fecha_fin && filters.fecha_fin.trim()) {
-    params.fecha_fin = filters.fecha_fin.trim();
-  }
-  if (filters.codigo_oem_producto && filters.codigo_oem_producto.trim()) {
-    params.codigo_oem_producto = filters.codigo_oem_producto.trim();
-  }
+export const purchaseService = {
+  /**
+   * Crear una nueva compra
+   * @param data - Datos de la compra a crear
+  */
+  // async create(data: PurchaseCreate): Promise<unknown> { -- falta definir PurchaseCreate
+  async create(data: any): Promise<unknown> {
+    Logger.info('Creating purchase', { data }, MODULE_NAME);
 
-  // console.log("Parámetros enviados:", params);
-  const response = await apiClient.get(PURCHASE_ENDPOINTS.all, { params });
-  // console.log("Respuesta recibida:", response.data);
-  // const result = PurchaseListResponseSchema.safeParse(response.data);
-  if (!response) {
-    // console.error("Zod error en fetchPurchases:", response.error.format());
-    throw new Error("Respuesta inválida del servidor.");
-  }
-  return response.data;
-};
+    const response = await ApiService.post(
+      PURCHASE_ENDPOINTS.create,
+      data,
+    );
 
-export const fetchPurchaseById = async (id: number): Promise<PurchaseDetail> => {
-  const response = await apiClient.get(PURCHASE_ENDPOINTS.byId(id));
-  // const result = PurchaseDetailResponseSchema.safeParse(response.data);
-  // // console.log(result,' <result> TO SAFEPARSE')
-  // if (!result.success) {
-  //   // console.error("Zod error en fetchPurchaseById:", result.error.format());
-  //   // console.error("Datos recibidos:", response.data);
-  //   throw new Error("Respuesta inválida del servidor.");
-  // }
-  // console.log("RESPONSE DATA //// ")
-  let obj = {
-    ...response.data.data,
-    nro_comprobante:response.data.data.comprobante,
-    nro_comprobante2:response.data.data.comprobante2,
-  }
-  return obj
-};
+    Logger.info(
+      "Purchase created successfully",
+      undefined,
+      // response.data.id && { id: response.data.id },
+      MODULE_NAME
+    );
+    return response
+  },
 
-export const fetchProviders = async (searchTerm: string = "TODO"): Promise<ProviderOption[]> => {
-  const response = await apiClient.get(PURCHASE_ENDPOINTS.providers, {
-    params: { proveedor: searchTerm }
-  });
+  /**
+   * Obtener todas las compras con filtros opcionales
+   */
+  async getAll(filters: Partial<PurchaseFilters>): Promise<PurchaseListResponse> {
+    Logger.info('Fetching purchases', { filters }, MODULE_NAME);
 
-  const result = ProviderResponseSchema.safeParse(response.data);
-  if (!result.success) {
-    console.error("Zod error en fetchProviders:", result.error.format());
-    throw new Error("Respuesta inválida del servidor.");
-  }
-  return result.data.data;
-};
+    const response = await ApiService.get(
+      PURCHASE_ENDPOINTS.all,
+      PurchaseListResponseSchema,
+      { params: filters }
+    );
 
-export const updatePurchase = async (id: number, data: any): Promise<void> => {
-  try {
-    // console.log('🚀 Enviando datos al servidor:', data);
-    await apiClient.put(PURCHASE_ENDPOINTS.update(id), data);
-    // console.log('✅ Respuesta del servidor:', response.data);
-  } catch (error: any) {
-    console.error("❌ Error al actualizar compra:", error);
-    if (error.response?.status === 422 && error.response?.data?.error?.validation_errors) {
-      // console.group('🔍 Errores de validación:');
-      // error.response.data.error.validation_errors.forEach((validationError: any, index: number) => {
-      //   // console.log(`${index + 1}. Campo: ${validationError.field} - ${validationError.message}`);
-      // });
-      // console.groupEnd();
-    }
-    throw new Error("Error al actualizar la compra");
-  }
-};
+    Logger.info('Purchases fetched successfully', {
+      count: response.data.length,
+    }, MODULE_NAME);
 
-export const deletePurchase = async (id: number): Promise<void> => {
-  try {
-    await apiClient.delete(PURCHASE_ENDPOINTS.delete(id));
-  } catch (error) {
-    console.error("Error al eliminar compra:", error);
-    throw new Error("Error al eliminar la compra");
-  }
+    return response;
+  },
+
+  /**
+   * Obtener una compra por ID
+   * @param id - ID de la compra
+   */
+  async getById(id: number): Promise<PurchaseDetail> {
+    Logger.info('Fetching purchase detail', { id }, MODULE_NAME);
+
+    const response = await ApiService.get(
+      PURCHASE_ENDPOINTS.byId(id),
+      PurchaseDetailSchema,
+      undefined,
+      { unwrapData: true }
+    );
+
+    Logger.info('Purchase detail fetched successfully', { id }, MODULE_NAME);
+
+    return response as PurchaseDetail;
+  },
+
+  /**
+   * Actualizar una cotizacion por ID
+   * @param id - ID de la cotizacion
+   * @param data - Datos para actualizar la cotizacion
+   */
+  // async update(id: number, data: QuotationUpdate): Promise<PurchaseDetail> { -- falta definir QuotationUpdate
+  async update(id: number, data: any): Promise<PurchaseDetail> {
+    Logger.info('Updating purchase', { id, data }, MODULE_NAME);
+
+    const response = await ApiService.put(
+      PURCHASE_ENDPOINTS.update(id),
+      data,
+      PurchaseDetailSchema,
+      undefined,
+      { unwrapData: true }
+    );
+
+    Logger.info('Purchase updated successfully', {
+      id
+    }, MODULE_NAME);
+    return response as PurchaseDetail;
+  },
+
+  /**
+   * Eliminar una compra por ID
+   * @param id - ID de la compra
+   */
+  async delete(id: number): Promise<void> {
+    Logger.info('Deleting purchase', { id }, MODULE_NAME);
+
+    await ApiService.delete(PURCHASE_ENDPOINTS.delete(id));
+
+    Logger.info('Purchase deleted successfully', { id }, MODULE_NAME);
+  },
+
+  // /**
+  // * Eliminar detalle de una compra por ID
+  // * @param id - ID del detalle de compra
+  // */
+  // async deleteDetail(id: number): Promise<void> {
+  //   Logger.info('Deleting purchase detail', { id }, MODULE_NAME);
+
+  //   await ApiService.delete(PURCHASE_ENDPOINTS.details.delete(id));
+
+  //   Logger.info('Purchase detail deleted successfully', { id }, MODULE_NAME);
+  // },
+
 };

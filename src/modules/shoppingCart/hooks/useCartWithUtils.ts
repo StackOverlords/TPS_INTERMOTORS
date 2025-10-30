@@ -1,5 +1,5 @@
 import { useCartStore } from "./useCartStore";
-import type { CartProduct, CartSummary } from "../types/cart.types";
+import type { CartProduct, CartSummary, ConversionResult } from "../types/cart.types";
 import { useStore } from "zustand";
 import { showErrorToast, showInfoToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { CartProductSchema } from "../schemas/cartProduct.schema";
@@ -26,14 +26,87 @@ export interface BulkAddResult {
 }
 
 export const useCartWithUtils = (user: string, branch: string) => {
-    if (!user) user = "guest"
+    if (!user) user = "guest";
     const cartStore = useCartStore(`${user}-${branch}`);
-    const state = useStore(cartStore, (state) => state)
+    const state = useStore(cartStore, (state) => state);
+
+    // ==================== GESTIÓN DE MODO ====================
+
+    const setCartMode = useCallback((mode: 'sale' | 'quote') => {
+        state.setMode(mode);
+        showInfoToast({
+            title: "Modo cambiado",
+            description: mode === 'sale' ? "Modo: Venta" : "Modo: Cotización",
+            duration: 3000
+        });
+    }, [state.setMode]);
+
+    const convertToSaleWithToast = useCallback((): ConversionResult => {
+        const result = state.convertToSale();
+
+        if (result.removedItems.length === 0 && result.adjustedItems.length === 0) {
+            showSuccessToast({
+                title: "Convertido a Venta",
+                description: result.message,
+                duration: 5000
+            });
+        } else {
+            // Construir mensaje detallado
+            const details: string[] = [];
+            
+            if (result.removedItems.length > 0) {
+                details.push(
+                    `${result.removedItems.length} producto${result.removedItems.length > 1 ? 's removido' : ' removido'} sin stock`
+                );
+            }
+            
+            if (result.adjustedItems.length > 0) {
+                details.push(
+                    `${result.adjustedItems.length} producto${result.adjustedItems.length > 1 ? 's con cantidad ajustada' : ' con cantidad ajustada'}`
+                );
+            }
+
+            showWarningToast({
+                title: "Carrito convertido a Venta",
+                description: details.join('\n'),
+                duration: 7000
+            });
+        }
+
+        return result;
+    }, [state.convertToSale]);
+
+    const convertToQuoteWithToast = useCallback(() => {
+        state.convertToQuote();
+        showInfoToast({
+            title: "Convertido a Cotización",
+            description: "Ahora puedes agregar productos sin restricción de stock",
+            duration: 5000
+        });
+    }, [state.convertToQuote]);
+
+    // ==================== GESTIÓN DE ITEMS ====================
 
     const incrementQuantity = useCallback((productId: number) => {
         const currentQuantity = state.getItemQuantity(productId);
-        state.updateQuantity(productId, currentQuantity + 1);
-    }, [state.getItemQuantity, state.updateQuantity]);
+        const result = state.updateQuantity(productId, currentQuantity + 1);
+
+        if (result.warning) {
+            showWarningToast({
+                title: "Advertencia de stock",
+                description: result.message,
+                duration: 5000,
+            });
+        } else if (!result.success) {
+            showErrorToast({
+                title: "Error al incrementar",
+                description: result.message,
+                duration: 5000,
+            });
+        }
+
+        return result;
+    }, [state.getItemQuantity, state.updateQuantity, state.mode]);
 
     const decrementQuantity = useCallback((productId: number) => {
         const currentQuantity = state.getItemQuantity(productId);
@@ -45,15 +118,24 @@ export const useCartWithUtils = (user: string, branch: string) => {
     }, [state.getItemQuantity, state.updateQuantity, state.removeItem]);
 
     const addItemToCart = useCallback((product: ProductGet): CartOperationResult => {
-        const productForCart = CartProductSchema.parse(product)
+        const productForCart = CartProductSchema.parse(product);
         const result = state.addItem(productForCart);
 
         if (result.success) {
-            showSuccessToast({
-                title: "Producto agregado",
-                description: result.message,
-                duration: 5000,
-            })
+            if (result.warning) {
+                // Es cotización con warning de stock
+                showWarningToast({
+                    title: "Producto agregado con advertencia",
+                    description: result.message,
+                    duration: 5000,
+                });
+            } else {
+                showSuccessToast({
+                    title: "Producto agregado",
+                    description: result.message,
+                    duration: 5000,
+                });
+            }
         } else {
             showErrorToast({
                 title: "No se pudo agregar producto",
@@ -63,12 +145,18 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state.addItem]);
+    }, [state.addItem, state.mode]);
 
     const updateQuantity = useCallback((productId: number, quantity: number): CartOperationResult => {
         const result = state.updateQuantity(productId, quantity);
 
-        if (!result.success) {
+        if (result.warning) {
+            showWarningToast({
+                title: "Advertencia de stock",
+                description: result.message,
+                duration: 5000
+            });
+        } else if (!result.success) {
             showErrorToast({
                 title: "Error al actualizar cantidad",
                 description: result.message,
@@ -77,31 +165,37 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state.updateQuantity]);
+    }, [state.updateQuantity, state.mode]);
 
     const updateCustomDescription = useCallback((productId: number, description: string) => {
         state.updateCustomDescription(productId, description);
     }, [state.updateCustomDescription]);
 
     const updateCustomBrand = useCallback((productId: number, brand: string) => {
-        state.updateCustomBrand(productId, brand)
-    }, [state.updateCustomBrand])
+        state.updateCustomBrand(productId, brand);
+    }, [state.updateCustomBrand]);
+
+    // ==================== OPERACIONES MÚLTIPLES ====================
 
     const addMultipleItems = useCallback((products: ProductGet[]): BulkAddResult => {
         let totalAdded = 0;
         let totalFailed = 0;
         const failedProducts: BulkAddResult['failedProducts'] = [];
+        let hasWarnings = false;
 
         products.forEach(product => {
-            const productForCart = CartProductSchema.parse(product)
+            const productForCart = CartProductSchema.parse(product);
             const result = state.addItem(productForCart);
 
             if (result.success) {
                 totalAdded++;
+                if (result.warning) {
+                    hasWarnings = true;
+                }
             } else {
                 totalFailed++;
                 failedProducts.push({
-                    product,
+                    product: productForCart,
                     reason: result.error || 'UNKNOWN_ERROR',
                     message: result.message
                 });
@@ -118,18 +212,26 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
         // Toast con resumen
         if (totalAdded > 0) {
-            showSuccessToast({
-                title: "Productos agregados",
-                description: bulkResult.message,
-                duration: 5000,
-            });
+            if (hasWarnings && state.mode === 'quote') {
+                showWarningToast({
+                    title: "Productos agregados con advertencias",
+                    description: `${bulkResult.message} Algunos productos no tienen stock disponible.`,
+                    duration: 5000,
+                });
+            } else {
+                showSuccessToast({
+                    title: "Productos agregados",
+                    description: bulkResult.message,
+                    duration: 5000,
+                });
+            }
         }
 
         // Toast con errores específicos si los hay
         if (totalFailed > 0) {
             const errorMessage = failedProducts.length === 1
                 ? failedProducts[0].message
-                : `${totalFailed} productos no se pudieron agregar por problemas de stock`;
+                : `${totalFailed} productos no se pudieron agregar`;
 
             showErrorToast({
                 title: "Algunos productos no se agregaron",
@@ -139,53 +241,61 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return bulkResult;
-    }, [state.addItem]);
+    }, [state.addItem, state.mode]);
 
     const addItemWithQuantity = useCallback((product: ProductGet, quantity: number): CartOperationResult => {
-        const productForCart = CartProductSchema.parse(product)
+        const productForCart = CartProductSchema.parse(product);
         const existingQuantity = state.getItemQuantity(product.id);
         const totalQuantity = existingQuantity + quantity;
 
-        if (!product.stock_actual || product.stock_actual <= 0) {
-            const result = {
-                success: false,
-                error: 'NO_STOCK',
-                message: `${product.descripcion} no tiene stock disponible`
-            };
+        // En modo venta, validar stock
+        if (state.mode === 'sale') {
+            if (!product.stock_actual || product.stock_actual <= 0) {
+                const result = {
+                    success: false,
+                    error: 'NO_STOCK',
+                    message: `${product.descripcion} no tiene stock disponible`
+                };
 
-            showErrorToast({
-                title: "Sin stock",
-                description: result.message,
-                duration: 5000,
-            });
+                showErrorToast({
+                    title: "Sin stock",
+                    description: result.message,
+                    duration: 5000,
+                });
 
-            return result;
-        }
+                return result;
+            }
 
-        if (totalQuantity > product.stock_actual) {
-            const available = product.stock_actual - existingQuantity;
-            const result = {
-                success: false,
-                error: 'INSUFFICIENT_STOCK',
-                message: `Solo hay ${available} unidades adicionales disponibles de ${product.descripcion}`
-            };
+            if (totalQuantity > product.stock_actual) {
+                const available = product.stock_actual - existingQuantity;
+                const result = {
+                    success: false,
+                    error: 'INSUFFICIENT_STOCK',
+                    message: `Solo hay ${available} unidades adicionales disponibles de ${product.descripcion}`
+                };
 
-            showErrorToast({
-                title: "Stock insuficiente",
-                description: result.message,
-                duration: 5000,
-            });
+                showErrorToast({
+                    title: "Stock insuficiente",
+                    description: result.message,
+                    duration: 5000,
+                });
 
-            return result;
+                return result;
+            }
         }
 
         let addedCount = 0;
+        let hasWarning = false;
+        
         for (let i = 0; i < quantity; i++) {
             const result = state.addItem(productForCart);
             if (result.success) {
                 addedCount++;
+                if (result.warning) {
+                    hasWarning = true;
+                }
             } else {
-                break; // Si falla uno, parar
+                break;
             }
         }
 
@@ -195,11 +305,19 @@ export const useCartWithUtils = (user: string, branch: string) => {
         };
 
         if (addedCount === quantity) {
-            showSuccessToast({
-                title: "Productos agregados",
-                description: result.message,
-                duration: 5000
-            });
+            if (hasWarning && state.mode === 'quote') {
+                showWarningToast({
+                    title: "Productos agregados con advertencia",
+                    description: `${result.message} (sin stock disponible)`,
+                    duration: 5000
+                });
+            } else {
+                showSuccessToast({
+                    title: "Productos agregados",
+                    description: result.message,
+                    duration: 5000
+                });
+            }
         } else {
             showWarningToast({
                 title: "Agregado parcial",
@@ -209,7 +327,9 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state.addItem, state.getItemQuantity]);
+    }, [state.addItem, state.getItemQuantity, state.mode]);
+
+    // ==================== VALIDACIONES ====================
 
     const validateCartWithToast = useCallback(() => {
         const validation = state.validateCart();
@@ -224,10 +344,16 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 description: issueMessages.join(', '),
                 duration: 5000
             });
+        } else if (state.mode === 'sale') {
+            showSuccessToast({
+                title: "Carrito válido",
+                description: "Todos los productos tienen stock disponible",
+                duration: 3000
+            });
         }
 
         return validation;
-    }, [state.validateCart]);
+    }, [state.validateCart, state.mode]);
 
     const removeOutOfStockItems = useCallback((): CartOperationResult => {
         const validation = state.validateCart();
@@ -277,6 +403,8 @@ export const useCartWithUtils = (user: string, branch: string) => {
         };
     }, [state.validateCart, state.updateQuantity]);
 
+    // ==================== UTILIDADES ====================
+
     const getCartSummary = useCallback((): CartSummary => {
         return {
             itemCount: state.getCartCount(),
@@ -287,23 +415,51 @@ export const useCartWithUtils = (user: string, branch: string) => {
         };
     }, [state.getCartCount, state.getCartSubtotal, state.getDiscountAmount, state.getCartTotal, state.items.length]);
 
+    const getStockWarnings = useCallback(() => {
+        if (state.mode !== 'quote') return [];
+
+        return state.items
+            .filter(item => {
+                return !item.product.stock_actual || 
+                       item.product.stock_actual <= 0 || 
+                       item.quantity > item.product.stock_actual;
+            })
+            .map(item => ({
+                productId: item.product.id,
+                productName: item.product.descripcion,
+                currentQuantity: item.quantity,
+                availableStock: item.product.stock_actual || 0,
+                warning: !item.product.stock_actual || item.product.stock_actual <= 0
+                    ? 'NO_STOCK'
+                    : 'EXCEEDS_STOCK'
+            }));
+    }, [state.items, state.mode]);
+
     return {
         // Estado original
         ...state,
 
-        // Métodos con utilidades
+        // Nuevos métodos de modo
+        setCartMode,
+        convertToSaleWithToast,
+        convertToQuoteWithToast,
+        getStockWarnings,
+
+        // Métodos actualizados con soporte de modo
         incrementQuantity,
         decrementQuantity,
         addItemToCart,
         addMultipleItems,
         addItemWithQuantity,
+        updateQuantity,
+
+        // Métodos sin cambios
+        updateCustomDescription,
+        updateCustomBrand,
         validateCartWithToast,
         removeOutOfStockItems,
         adjustQuantitiesToStock,
         getCartSummary,
-        updateQuantity,
-        updateCustomDescription,
-        updateCustomBrand,
 
         // Store reference
         useCartStore: cartStore

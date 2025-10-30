@@ -5,7 +5,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -15,7 +14,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Settings, Trash2 } from "lucide-react";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import type { ReturnGetAll, ReturnsGetAllResponse } from "../../types/returnGet.types";
@@ -26,8 +25,8 @@ interface ReturnsListTableProps {
     data: ReturnsGetAllResponse
     returns: ReturnGetAll[]
     filters: ReturnType<typeof useReturnsFilters>["filters"]
-    setPage: ReturnType<typeof useReturnsFilters>["setPage"]
-    setPageSize: ReturnType<typeof useReturnsFilters>["setPageSize"]
+    setPage: (page: number) => void
+    setPageSize: (rows: number) => void
     isInfiniteScroll: boolean
     isLoading: boolean
     isFetching: boolean,
@@ -50,6 +49,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 
     const handleSeeDetails = useCallback((id: number) => {
         navigate(`/dashboard/returns/${id}`)
@@ -325,6 +325,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
     } = useKeyboardNavigation<ReturnGetAll, HTMLTableElement>({
         items: returns,
         containerRef: tableRef,
+        isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)
         },
@@ -348,10 +349,18 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
         setPageSize(rows);
     };
 
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
+
     return (
-        <section>
+        <section className="flex flex-col h-full">
             {/* Results Info */}
-            <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
+            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
                 {
                     returns.length > 0 ? (
                         isInfiniteScroll ? (
@@ -373,10 +382,6 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                 }
 
                 <div className="flex items-center gap-2">
-                    <RowsPerPageSelect
-                        value={filters.pagina_registros ?? 10}
-                        onChange={onShowRowsChange}
-                    />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm">
@@ -452,46 +457,53 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                             </div>
                         }
                     >
-                        <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                        <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
                             <HelpCircle />
                         </span>
                     </TooltipWrapper>
                 </div>
             </div>
 
-            {isInfiniteScroll ? (
-                <InfiniteScroll
-                    dataLength={returns.length}
-                    next={() => setPage((filters.pagina || 1) + 1)}
-                    hasMore={returns.length < ((data?.meta?.total ?? 0))}
-                    loader={
-                        <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                            <Loader2 className="size-4 animate-spin" />
-                            Cargando más devoluciones...
-                        </div>
-                    }
-                    scrollableTarget="main-scroll-container"
-                >
-                    <CustomizableTable
-                        table={table}
-                        isError={isError}
-                        errorMessage="Ocurrió un error al cargar las devoluciones"
-                        isLoading={isLoading}
-                        rows={filters.pagina_registros}
-                        noDataMessage="No se encontraron devoluciones"
-                        selectedRowIndex={selectedIndex}
-                        onRowClick={handleRowClick}
-                        onRowDoubleClick={handleRowDoubleClick}
-                        tableRef={tableRef}
-                        focused={isFocused}
-                        keyboardNavigationEnabled={true}
-                    />
-                </InfiniteScroll>
-            ) : (
-                <div
-                    className="overflow-auto h-full">
+            {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+            <div className="flex-1 min-h-0">
+                {isInfiniteScroll ? (
                     <div
-                        className="overflow-x-hidden">
+                        id="returns-list-scroll-container"
+                        className="h-full overflow-auto relative">
+                        <InfiniteScroll
+                            dataLength={returns.length}
+                            next={() => setPage((filters.pagina || 1) + 1)}
+                            hasMore={returns.length < ((data?.meta?.total ?? 0))}
+                            loader={
+                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                                    <Loader2 className="size-4 animate-spin" />
+                                    Cargando más devoluciones...
+                                </div>
+                            }
+                            scrollableTarget="returns-list-scroll-container"
+                        >
+                            <CustomizableTable
+                                table={table}
+                                isError={isError}
+                                errorMessage="Ocurrió un error al cargar las devoluciones"
+                                isLoading={isLoading}
+                                rows={filters.pagina_registros}
+                                noDataMessage="No se encontraron devoluciones"
+                                selectedRowIndex={selectedIndex}
+                                onRowClick={handleRowClick}
+                                onRowDoubleClick={handleRowDoubleClick}
+                                tableRef={tableRef}
+                                focused={isFocused}
+                                keyboardNavigationEnabled={true}
+                                enableColumnReordering={true}
+                                enableSorting={false}
+                                onDragEnd={handleDragEnd}
+                                onDragStart={handleDragStart}
+                            />
+                        </InfiniteScroll>
+                    </div>
+                ) : (
+                    <div className="h-full overflow-auto">
                         <CustomizableTable
                             table={table}
                             isError={isError}
@@ -506,24 +518,29 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                             tableRef={tableRef}
                             focused={isFocused}
                             keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
                         />
-
                     </div>
+                )}
+            </div>
 
-                    {/* Pagination */}
-                    {
-                        (data?.data?.length ?? 0) > 0 && (
-                            <Pagination
-                                currentPage={filters.pagina || 1}
-                                onPageChange={onPageChange}
-                                totalData={data?.meta?.total ?? 1}
-                                onShowRowsChange={onShowRowsChange}
-                                showRows={filters.pagina_registros}
-                            />
-                        )
-                    }
-                </div>
-            )}
+            {/* Pagination - FIJO en la parte inferior */}
+            {
+                !isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
+                    <div className="flex-shrink-0 border-t border-border bg-card">
+                        <Pagination
+                            currentPage={filters.pagina || 1}
+                            onPageChange={onPageChange}
+                            totalData={data?.meta?.total ?? 1}
+                            onShowRowsChange={onShowRowsChange}
+                            showRows={filters.pagina_registros}
+                        />
+                    </div>
+                )
+            }
         </section>
     );
 }

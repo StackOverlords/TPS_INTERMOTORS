@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import type { ReturnsFilters } from "../types/returnFilters.types";
 
@@ -36,6 +36,19 @@ export const useReturnsFilters = (defaultSucursal: number) => {
         () => cleanFilters(debouncedFilters),
         [debouncedFilters]
     );
+
+    useEffect(() => {
+        setFilters((prev) => ({
+            ...prev,
+            sucursal: defaultSucursal,
+            pagina: 1,
+        }));
+        setAppliedFilters((prev) => ({
+            ...prev,
+            sucursal: defaultSucursal,
+            pagina: 1,
+        }));
+    }, [defaultSucursal]);
 
     const updateFilter = useCallback(
         (key: keyof ReturnsFilters, value: ReturnsFilters[keyof ReturnsFilters]) => {
