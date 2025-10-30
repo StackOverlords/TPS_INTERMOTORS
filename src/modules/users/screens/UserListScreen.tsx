@@ -16,7 +16,7 @@ import Pagination from '@/components/common/pagination';
 import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import TooltipButton from '@/components/common/TooltipButton';
 import { useCustomTable } from '@/hooks/useCustomTable';
-import { useRouteViewConfig } from '@/hooks/useRouteViewConfig';
+import { useRouteViewConfigWithSync } from '@/hooks/useRouteViewConfig';
 import authSDK from '@/services/sdk-simple-auth';
 import { formatCell } from '@/utils/formatCell';
 import { type ColumnDef } from '@tanstack/react-table';
@@ -46,8 +46,8 @@ const UserListScreen = () => {
   const user = authSDK.getCurrentUser();
   const { filters, updateFilter, setPage, resetFilters } = useUserFilters();
 
-  // Configuración de vista desde la ruta (3 capas: Ruta → Sistema → Usuario)
-  const viewConfig = useRouteViewConfig();
+  // Configuración de vista con sincronización en tiempo real (optimizado)
+  const viewConfig = useRouteViewConfigWithSync();
 
   // Datos de usuarios paginados
   const {

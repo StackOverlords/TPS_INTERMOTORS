@@ -1,27 +1,3 @@
-/**
- * Utilidad genérica para manejar ventanas secundarias de Tauri
- *
- * Este sistema permite crear ventanas nativas del SO que pueden comunicarse
- * con la ventana principal mediante eventos.
- *
- * @example
- * ```typescript
- * // Crear ventana
- * const window = await createSecondaryWindow({
- *   windowId: 'product-selector-purchase-1',
- *   route: '/product-selector-window',
- *   title: 'Seleccionar Productos',
- *   width: 1200,
- *   height: 800,
- * });
- *
- * // Escuchar eventos
- * const unlisten = await listenToWindowEvent('product-selector-purchase-1', 'product-selected', (data) => {
- *   console.log('Producto seleccionado:', data);
- * });
- * ```
- */
-
 import { emit, listen } from '@tauri-apps/api/event';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
@@ -78,14 +54,33 @@ export async function createSecondaryWindow(
   } = config;
 
   // Verificar si ya existe una ventana con este ID
-  const existingWindow = await WebviewWindow.getByLabel(windowId);
+  // Esto puede pasar cuando:
+  // 1. Hot-reload durante desarrollo (ventana queda abierta pero React reinicia)
+  // 2. Usuario recarga la página pero la ventana secundaria sigue abierta
+  // 3. Error en cierre anterior dejó la ventana en estado inconsistente
+  let existingWindow = await WebviewWindow.getByLabel(windowId);
   if (existingWindow) {
     try {
+      // Intentar enfocar la ventana existente
       await existingWindow.setFocus();
+      console.log(`[TauriWindows] Ventana "${windowId}" ya existe, enfocándola`);
+      return existingWindow;
     } catch (err) {
-      console.warn(`[TauriWindows] No se pudo enfocar ventana "${windowId}":`, err);
+      // Si falla el focus, la ventana podría estar en mal estado (zombie)
+      console.warn(`[TauriWindows] Ventana "${windowId}" existe pero no responde, cerrándola...`, err);
+      try {
+        await existingWindow.close();
+        // Esperar para que se cierre completamente y libere el label
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (closeErr) {
+        console.error(`[TauriWindows] No se pudo cerrar ventana zombie "${windowId}":`, closeErr);
+      }
+      // Verificar que se cerró correctamente
+      existingWindow = await WebviewWindow.getByLabel(windowId);
+      if (existingWindow) {
+        throw new Error(`La ventana "${windowId}" no se pudo cerrar correctamente. Por favor ciérrala manualmente.`);
+      }
     }
-    return existingWindow;
   }
 
   // Construir URL con query params
@@ -96,37 +91,116 @@ export async function createSecondaryWindow(
 
   const url = `${route}?${queryString}`;
 
-  // Crear nueva ventana
-  const window = new WebviewWindow(windowId, {
-    url,
-    title,
-    width,
-    height,
-    resizable,
-    center,
-    x: !center ? x : undefined,
-    y: !center ? y : undefined,
-    fullscreen,
-    alwaysOnTop,
-    decorations,
-    transparent,
-  });
+  // Crear nueva ventana con manejo de errores mejorado
+  let window: WebviewWindow;
+
+  try {
+    window = new WebviewWindow(windowId, {
+      url,
+      title,
+      width,
+      height,
+      resizable,
+      center,
+      x: !center ? x : undefined,
+      y: !center ? y : undefined,
+      fullscreen,
+      alwaysOnTop,
+      decorations,
+      transparent,
+    });
+  } catch (constructorError: any) {
+    // Si el constructor falla, probablemente la ventana ya existe pero getByLabel() no la encontró
+    // Esto es un bug conocido de Tauri durante hot-reload
+    console.error(`[TauriWindows] Error en constructor de ventana "${windowId}":`, constructorError);
+
+    // Intentar obtener todas las ventanas y cerrar la que tenga este label
+    try {
+      const allWindows = await WebviewWindow.getAll();
+      console.log(`[TauriWindows] Ventanas abiertas:`, allWindows.map(w => w.label));
+
+      const zombieWindow = allWindows.find(w => w.label === windowId);
+      if (zombieWindow) {
+        console.log(`[TauriWindows] Encontrada ventana zombie "${windowId}", cerrándola...`);
+        await zombieWindow.close();
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Reintentar crear la ventana
+        window = new WebviewWindow(windowId, {
+          url,
+          title,
+          width,
+          height,
+          resizable,
+          center,
+          x: !center ? x : undefined,
+          y: !center ? y : undefined,
+          fullscreen,
+          alwaysOnTop,
+          decorations,
+          transparent,
+        });
+      } else {
+        throw constructorError;
+      }
+    } catch (recoveryError) {
+      console.error(`[TauriWindows] No se pudo recuperar del error:`, recoveryError);
+      throw new Error(
+        `No se pudo crear la ventana "${windowId}". ` +
+        `Si el problema persiste, cierra manualmente todas las ventanas secundarias y vuelve a intentar.`
+      );
+    }
+  }
 
   // Esperar a que la ventana esté lista
   await new Promise<void>((resolve, reject) => {
+    let resolved = false;
+
     window.once('tauri://created', () => {
-      console.log(`[TauriWindows] Ventana "${windowId}" creada exitosamente`);
-      resolve();
+      if (!resolved) {
+        resolved = true;
+        console.log(`[TauriWindows] Ventana "${windowId}" creada exitosamente`);
+        resolve();
+      }
     });
 
-    window.once('tauri://error', (error) => {
-      console.error(`[TauriWindows] Error creando ventana "${windowId}":`, error);
-      reject(new Error(`Error creando ventana: ${JSON.stringify(error)}`));
+    window.once('tauri://error', (error: any) => {
+      if (!resolved) {
+        // Si el error es "already exists", es un falso positivo de Tauri durante hot-reload
+        // La ventana SÍ se creó correctamente, solo necesitamos ignorar este error
+        if (error?.payload?.includes('already exists')) {
+          console.log(`[TauriWindows] Ignorando error de Tauri (falso positivo): ventana "${windowId}" creada OK`);
+
+          // Esperar un poco y resolver de todas formas (la ventana se creó)
+          setTimeout(async () => {
+            resolved = true;
+            try {
+              const recovered = await WebviewWindow.getByLabel(windowId);
+              if (recovered) {
+                // No loggear como "recuperada" porque nunca falló realmente
+                resolve();
+              } else {
+                reject(new Error(`No se pudo verificar la ventana "${windowId}"`));
+              }
+            } catch (err) {
+              reject(err);
+            }
+          }, 100);
+        } else {
+          // Este sí es un error real
+          resolved = true;
+          console.error(`[TauriWindows] Error creando ventana "${windowId}":`, error);
+          reject(new Error(`Error creando ventana: ${JSON.stringify(error)}`));
+        }
+      }
     });
 
     // Timeout de seguridad (10 segundos)
     setTimeout(() => {
-      reject(new Error('Timeout creando ventana'));
+      if (!resolved) {
+        resolved = true;
+        reject(new Error('Timeout creando ventana'));
+      }
     }, 10000);
   });
 

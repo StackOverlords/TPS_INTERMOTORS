@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/atoms/scroll-area';
 import { Separator } from '@/components/atoms/separator';
 import { Skeleton } from '@/components/atoms/skeleton';
 import { useToast } from '@/components/atoms/use-toast';
+import { useRouteViewConfigWithSync } from '@/hooks/useRouteViewConfig';
 import {
   ArrowLeft,
   Calendar,
@@ -58,6 +59,18 @@ const UserDetailScreen = () => {
   );
   const [isSaving, setIsSaving] = useState(false);
 
+  // Hooks configuraciones
+  const viewConfig = useRouteViewConfigWithSync();
+
+  // Debug temporal
+  useEffect(() => {
+    console.log('[UserDetailScreen] Debug:', {
+      pathname: location.pathname,
+      viewConfig,
+      viewConfigId: viewConfig?.id,
+      permissionsEnabled: viewConfig?.features?.permissions?.enabled,
+    });
+  }, [viewConfig, location.pathname]);
   // TODOS los hooks deben ir al inicio, sin condiciones
   const {
     data: user,
@@ -257,7 +270,7 @@ const UserDetailScreen = () => {
     const total = permissions.length;
     return { selected, total };
   };
-
+  console.log(viewConfig?.features?.permissions?.enabled )
   if (isLoading) {
     return (
       <div className="min-h-screen max-w-4xl mx-auto p-6">
@@ -514,241 +527,248 @@ const UserDetailScreen = () => {
         </div>
 
         {/* Sección de Gestión de Permisos */}
-        <div className="lg:col-span-3 mt-6" ref={permisosRef}>
-          <Card className="border border-gray-200">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-gray-400" />
-                  <CardTitle className="text-lg font-semibold">
-                    Gestión de Permisos
-                  </CardTitle>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={handleSavePermissions}
-                    disabled={
-                      isSaving ||
-                      isLoadingPermissions ||
-                      isLoadingUserPermissions
-                    }
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-                  </Button>
-                </div>
-              </div>
-              <CardDescription>
-                Gestiona los permisos y accesos del usuario{' '}
-                {user.empleado.nombre}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingPermissions || isLoadingUserPermissions ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-32 w-full" />
-                  <Skeleton className="h-32 w-full" />
-                  <Skeleton className="h-32 w-full" />
-                </div>
-              ) : isPermissionsError || isUserPermissionsError ? (
-                <div className="text-center py-8">
-                  <p className="text-red-600 mb-4">
-                    Error al cargar los permisos
-                  </p>
-                  <Button onClick={() => window.location.reload()}>
-                    Reintentar
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {/* Buscador de permisos */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Buscar permisos por nombre, descripción o categoría..."
-                      value={searchPermissions}
-                      onChange={e => setSearchPermissions(e.target.value)}
-                      className="pl-10"
-                    />
+        {viewConfig?.features?.permissions?.enabled && (
+          <div className="lg:col-span-3 mt-6" ref={permisosRef}>
+            <Card className="border border-gray-200">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-gray-400" />
+                    <CardTitle className="text-lg font-semibold">
+                      Gestión de Permisos
+                    </CardTitle>
                   </div>
-
-                  {/* Estadísticas generales */}
-                  <div className="bg-blue-50 p-2 rounded-lg">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-blue-700 font-medium">
-                        Permisos seleccionados: {selectedPermissions.size}
-                      </span>
-                      <span className="text-blue-600">
-                        Total disponible:{' '}
-                        {Object.values(processedPermissions).flat().length}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Botones de acción rápida */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const allPermissionNames = Object.values(
-                          processedPermissions
-                        )
-                          .flat()
-                          .map(p => p.name);
-                        setSelectedPermissions(new Set(allPermissionNames));
-                      }}
-                      disabled={isSaving}
-                    >
-                      Seleccionar todos
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedPermissions(new Set())}
-                      disabled={isSaving}
-                    >
-                      Deseleccionar todos
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (Object.keys(filteredPermissions).length > 0) {
-                          setExpandedGroups(
-                            new Set(Object.keys(filteredPermissions))
-                          );
+                  <div className="flex items-center gap-2">
+                    {
+                      viewConfig?.features?.saveButton?.enabled && (
+                        <Button
+                        onClick={handleSavePermissions}
+                        disabled={
+                          isSaving ||
+                          isLoadingPermissions ||
+                          isLoadingUserPermissions
                         }
-                      }}
-                      disabled={isSaving}
-                    >
-                      Expandir todo
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setExpandedGroups(new Set())}
-                      disabled={isSaving}
-                    >
-                      Colapsar todo
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                      </Button>
+                      )
+                    }
+                  </div>
+                </div>
+                <CardDescription>
+                  Gestiona los permisos y accesos del usuario{' '}
+                  {user.empleado.nombre}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingPermissions || isLoadingUserPermissions ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                ) : isPermissionsError || isUserPermissionsError ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-600 mb-4">
+                      Error al cargar los permisos
+                    </p>
+                    <Button onClick={() => window.location.reload()}>
+                      Reintentar
                     </Button>
                   </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Buscador de permisos */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Buscar permisos por nombre, descripción o categoría..."
+                        value={searchPermissions}
+                        onChange={e => setSearchPermissions(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
 
-                  {/* Lista de permisos agrupados */}
-                  <ScrollArea className="w-full">
-                    <div className="space-y-2 pr-4">
-                      {Object.keys(filteredPermissions).length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          {searchPermissions ? (
-                            <>
-                              No se encontraron permisos que coincidan con "
-                              {searchPermissions}"
-                            </>
-                          ) : (
-                            'No hay permisos disponibles'
-                          )}
-                        </div>
-                      ) : (
-                        Object.entries(filteredPermissions).map(
-                          ([groupName, permissions]) => {
-                            const stats = getGroupStats(permissions);
-                            const isExpanded = expandedGroups.has(groupName);
-                            const allSelected = permissions.every(p =>
-                              selectedPermissions.has(p.name)
+                    {/* Estadísticas generales */}
+                    <div className="bg-blue-50 p-2 rounded-lg">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-blue-700 font-medium">
+                          Permisos seleccionados: {selectedPermissions.size}
+                        </span>
+                        <span className="text-blue-600">
+                          Total disponible:{' '}
+                          {Object.values(processedPermissions).flat().length}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Botones de acción rápida */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const allPermissionNames = Object.values(
+                            processedPermissions
+                          )
+                            .flat()
+                            .map(p => p.name);
+                          setSelectedPermissions(new Set(allPermissionNames));
+                        }}
+                        disabled={isSaving}
+                      >
+                        Seleccionar todos
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedPermissions(new Set())}
+                        disabled={isSaving}
+                      >
+                        Deseleccionar todos
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (Object.keys(filteredPermissions).length > 0) {
+                            setExpandedGroups(
+                              new Set(Object.keys(filteredPermissions))
                             );
-                            const someSelected = permissions.some(p =>
-                              selectedPermissions.has(p.name)
-                            );
+                          }
+                        }}
+                        disabled={isSaving}
+                      >
+                        Expandir todo
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedGroups(new Set())}
+                        disabled={isSaving}
+                      >
+                        Colapsar todo
+                      </Button>
+                    </div>
 
-                            return (
-                              <Collapsible
-                                key={groupName}
-                                open={isExpanded}
-                                onOpenChange={() => toggleGroup(groupName)}
-                              >
-                                <CollapsibleTrigger asChild>
-                                  <div className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex items-center gap-2">
-                                        {isExpanded ? (
-                                          <ChevronDown className="h-4 w-4 text-gray-600" />
-                                        ) : (
-                                          <ChevronRight className="h-4 w-4 text-gray-600" />
-                                        )}
-                                        <Checkbox
-                                          checked={
-                                            allSelected
-                                              ? true
-                                              : someSelected
-                                              ? 'indeterminate'
-                                              : false
-                                          }
-                                          onCheckedChange={() =>
-                                            toggleAllInGroup(
-                                              groupName,
-                                              permissions
-                                            )
-                                          }
-                                          onClick={e => e.stopPropagation()}
-                                        />
-                                      </div>
-                                      <div>
-                                        <h3 className="font-medium text-gray-900">
-                                          {groupName}
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                          {stats.selected}/{stats.total}{' '}
-                                          permisos seleccionados
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <Badge
-                                      variant={
-                                        stats.selected > 0
-                                          ? 'default'
-                                          : 'secondary'
-                                      }
-                                    >
-                                      {stats.selected}/{stats.total}
-                                    </Badge>
-                                  </div>
-                                </CollapsibleTrigger>
+                    {/* Lista de permisos agrupados */}
+                    <ScrollArea className="w-full">
+                      <div className="space-y-2 pr-4">
+                        {Object.keys(filteredPermissions).length === 0 ? (
+                          <div className="text-center py-8 text-gray-500">
+                            {searchPermissions ? (
+                              <>
+                                No se encontraron permisos que coincidan con "
+                                {searchPermissions}"
+                              </>
+                            ) : (
+                              'No hay permisos disponibles'
+                            )}
+                          </div>
+                        ) : (
+                          Object.entries(filteredPermissions).map(
+                            ([groupName, permissions]) => {
+                              const stats = getGroupStats(permissions);
+                              const isExpanded = expandedGroups.has(groupName);
+                              const allSelected = permissions.every(p =>
+                                selectedPermissions.has(p.name)
+                              );
+                              const someSelected = permissions.some(p =>
+                                selectedPermissions.has(p.name)
+                              );
 
-                                <CollapsibleContent>
-                                  <div className="ml-10 mt-2 space-y-2">
-                                    {permissions.map(permission => (
-                                      <div
-                                        key={permission.name}
-                                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                                      >
-                                        <div className="flex items-center gap-3">
+                              return (
+                                <Collapsible
+                                  key={groupName}
+                                  open={isExpanded}
+                                  onOpenChange={() => toggleGroup(groupName)}
+                                >
+                                  <CollapsibleTrigger asChild>
+                                    <div className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors">
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2">
+                                          {isExpanded ? (
+                                            <ChevronDown className="h-4 w-4 text-gray-600" />
+                                          ) : (
+                                            <ChevronRight className="h-4 w-4 text-gray-600" />
+                                          )}
                                           <Checkbox
-                                            checked={selectedPermissions.has(
-                                              permission.name
-                                            )}
-                                            onCheckedChange={() =>
-                                              togglePermission(permission.name)
+                                            checked={
+                                              allSelected
+                                                ? true
+                                                : someSelected
+                                                ? 'indeterminate'
+                                                : false
                                             }
+                                            onCheckedChange={() =>
+                                              toggleAllInGroup(
+                                                groupName,
+                                                permissions
+                                              )
+                                            }
+                                            onClick={e => e.stopPropagation()}
                                           />
-                                          <div className="flex-1">
-                                            {/* <h4 className="font-medium text-gray-900 text-sm">
+                                        </div>
+                                        <div>
+                                          <h3 className="font-medium text-gray-900">
+                                            {groupName}
+                                          </h3>
+                                          <p className="text-sm text-gray-500">
+                                            {stats.selected}/{stats.total}{' '}
+                                            permisos seleccionados
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <Badge
+                                        variant={
+                                          stats.selected > 0
+                                            ? 'default'
+                                            : 'secondary'
+                                        }
+                                      >
+                                        {stats.selected}/{stats.total}
+                                      </Badge>
+                                    </div>
+                                  </CollapsibleTrigger>
+
+                                  <CollapsibleContent>
+                                    <div className="ml-10 mt-2 space-y-2">
+                                      {permissions.map(permission => (
+                                        <div
+                                          key={permission.name}
+                                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-3">
+                                            <Checkbox
+                                              checked={selectedPermissions.has(
+                                                permission.name
+                                              )}
+                                              onCheckedChange={() =>
+                                                togglePermission(
+                                                  permission.name
+                                                )
+                                              }
+                                            />
+                                            <div className="flex-1">
+                                              {/* <h4 className="font-medium text-gray-900 text-sm">
                                             {permission.name}
                                           </h4> */}
-                                            {permission.descripcion && (
-                                              <p className="text-xs text-gray-600 mt-1">
-                                                {permission.descripcion}
-                                              </p>
-                                            )}
+                                              {permission.descripcion && (
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                  {permission.descripcion}
+                                                </p>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                        <Badge
-                                          variant="outline"
-                                          className={`text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wide border transition-colors
+                                          <Badge
+                                            variant="outline"
+                                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium tracking-wide border transition-colors
                                           ${
                                             selectedPermissions.has(
                                               permission.name
@@ -756,29 +776,30 @@ const UserDetailScreen = () => {
                                               ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500'
                                               : 'bg-transparent text-gray-500 border-gray-300 hover:border-gray-400'
                                           }`}
-                                        >
-                                          {selectedPermissions.has(
-                                            permission.name
-                                          )
-                                            ? 'Asignado'
-                                            : 'No asignado'}
-                                        </Badge>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </CollapsibleContent>
-                              </Collapsible>
-                            );
-                          }
-                        )
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                                          >
+                                            {selectedPermissions.has(
+                                              permission.name
+                                            )
+                                              ? 'Asignado'
+                                              : 'No asignado'}
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </CollapsibleContent>
+                                </Collapsible>
+                              );
+                            }
+                          )
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

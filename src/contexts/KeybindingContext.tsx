@@ -51,7 +51,7 @@ export const KeybindingProvider: React.FC<KeybindingProviderProps> = ({
     const initKeybindings = async () => {
       try {
         await loadKeybindings();
-        console.log('✅ Keybindings cargados y migrados');
+        // console.log('✅ Keybindings cargados y migrados');
       } catch (error) {
         console.error('❌ Error cargando keybindings:', error);
       }

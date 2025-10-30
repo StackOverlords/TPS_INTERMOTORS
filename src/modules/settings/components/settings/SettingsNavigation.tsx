@@ -12,7 +12,7 @@ export type SettingsSection = {
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     description: string;
-    component: React.ComponentType;
+    component?: React.ComponentType;
 };
 
 interface SettingsNavigationProps {

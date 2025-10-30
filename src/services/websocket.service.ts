@@ -45,7 +45,7 @@ export class WebSocketService {
 
         // Simulate connection event
         setTimeout(() => {
-          console.log('Laravel Echo connected');
+          // console.log('Laravel Echo connected');
           resolve();
         }, 1000);
 
