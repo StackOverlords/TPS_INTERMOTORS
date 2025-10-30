@@ -1,22 +1,22 @@
-import { useBranchStore } from "@/states/branchStore";
-import { useEffect, useState } from "react";
-import { Filter, RefreshCcw, Search } from "lucide-react";
-import { Input } from "@/components/atoms/input";
-import { useDebounce } from "use-debounce";
-import { Switch } from "@/components/atoms/switch";
-import { Label } from "@/components/atoms/label";
-import TooltipButton from "@/components/common/TooltipButton";
 import { Button } from "@/components/atoms/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
 import { Separator } from "@/components/atoms/separator";
+import { Switch } from "@/components/atoms/switch";
 import ConfirmationModal from "@/components/common/confirmationModal";
-import useConfirmMutation from "@/hooks/useConfirmMutation";
+import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import type { TransferGetAll } from "../types/transferGet.types";
-import { useTransfersFilters } from "../hooks/useTransfersFilters";
-import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
-import { useDeleteTransfer } from "../hooks/useDeleteTransfer";
+import useConfirmMutation from "@/hooks/useConfirmMutation";
+import { useBranchStore } from "@/states/branchStore";
+import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useDebounce } from "use-debounce";
 import TransferFiltersComponent from "../components/transferList/TransferFiltersComponent";
 import TransferListTable from "../components/transferList/TransferListTable";
+import { useDeleteTransfer } from "../hooks/useDeleteTransfer";
+import { useTransfersFilters } from "../hooks/useTransfersFilters";
+import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
+import type { TransferGetAll } from "../types/transferGet.types";
 
 const TransferListScreen = () => {
     const { selectedBranchId } = useBranchStore()
@@ -25,7 +25,7 @@ const TransferListScreen = () => {
     const [isInfiniteScroll, setIsInfiniteScroll] = useState<boolean>(false)
     const [showFilters, setShowFilters] = useState<boolean>(true)
     const [transfers, setTransfers] = useState<TransferGetAll[]>([]);
-    const [searchMode] = useState<'realtime' | 'manual'>('realtime');
+    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
 
     const {
         filters,
@@ -101,8 +101,10 @@ const TransferListScreen = () => {
     } = useConfirmMutation(deleteTransfer, handleDeleteSuccess, handleDeleteError)
 
     useEffect(() => {
-        updateFilter("keywords", debouncedSearchKeywords);
-    }, [debouncedSearchKeywords, updateFilter]);
+        if (searchMode === 'realtime') {
+            updateFilter("keywords", debouncedSearchKeywords);
+        }
+    }, [debouncedSearchKeywords, searchMode, updateFilter]);
 
     const handleRefetchTransfers = () => {
         refetchTransfers();
@@ -112,25 +114,71 @@ const TransferListScreen = () => {
         setShowFilters(!showFilters)
     }
 
+    // Manejar búsqueda manual
+    const handleManualSearch = () => {
+        if (searchMode === 'manual') {
+            updateFilter('keywords', searchKeywords);
+        }
+    };
+
+    // Toggle del modo de búsqueda
+    const toggleSearchMode = () => {
+        setSearchMode(prev => {
+            const newMode = prev === 'realtime' ? 'manual' : 'realtime';
+            // Si cambiamos a realtime, aplicar el debounce inmediatamente
+            if (newMode === 'realtime') {
+                updateFilter('keywords', searchKeywords);
+            }
+            return newMode;
+        });
+    };
+
     return (
         <main className="min-h-screen space-y-2">
             <header className="bg-white rounded-lg p-2 space-y-2 border border-gray-200">
                 <h1 className="text-lg font-bold text-gray-900">Transferencias</h1>
                 <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
                     <div className="flex items-center gap-2 md:gap-4 grow">
-
-                        <div className="relative w-full">
+                        <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
                                 placeholder="Buscar por palabras clave..."
                                 value={searchKeywords}
                                 onChange={(e) => setSearchKeywords(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && searchMode === 'manual') {
+                                        handleManualSearch();
+                                    }
+                                }}
                                 className="pl-10 w-full"
                             />
                         </div>
+
+                        {/* Botón de búsqueda manual al lado del input */}
+                        {searchMode === 'manual' && (
+                            <Button
+                                onClick={handleManualSearch}
+                                size="sm"
+                                className="shrink-0"
+                            >
+                                <Search className="h-4 w-4 mr-2" />
+                                Buscar
+                            </Button>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                        {/* Toggle de modo de búsqueda */}
+                        <Button
+                            variant="ghost"
+                            onClick={toggleSearchMode}
+                            className="text-xs h-7"
+                            title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+                        >
+                            <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                            {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+                        </Button>
+
                         <div className="flex items-center space-x-2">
                             <Switch
                                 id="infinite-scroll"

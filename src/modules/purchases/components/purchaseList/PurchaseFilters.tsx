@@ -1,6 +1,8 @@
+import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import { ComboboxSelect } from '@/components/common/SelectCombobox';
+import { cn } from '@/lib/utils';
 import { Calendar, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -10,11 +12,15 @@ import type { usePurchaseFilters } from '../../hooks/usePurchaseFilters';
 interface PurchaseFiltersProps {
   filters: ReturnType<typeof usePurchaseFilters>['filters'];
   updateFilter: ReturnType<typeof usePurchaseFilters>['updateFilter'];
+  searchMode: 'realtime' | 'manual';
+  handleManualSearch: () => void;
 }
 
 const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
   filters,
   updateFilter,
+  searchMode,
+  handleManualSearch,
 }) => {
   const { data: providersData } = useProviders(); // Cargar todos los proveedores
 
@@ -70,7 +76,10 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
     <>
       {/* Búsquedas individuales */}
       <div className="space-y-4 p-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className={cn(
+          "grid grid-cols-1 md:grid-cols-3 gap-4",
+          searchMode === 'manual' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
+        )}>
           <div className="space-y-2">
             <Label className="text-gray-700 text-sm font-medium">
               Nro de Compra
@@ -147,6 +156,18 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
                   />
                 </div>
               </div>
+
+          {searchMode === 'manual' && (
+            <div className="flex items-end justify-end">
+              <Button
+                onClick={handleManualSearch}
+                className="w-full"
+              >
+                <Search className="size-4 mr-2" />
+                Buscar
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 

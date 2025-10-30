@@ -33,6 +33,7 @@ import {
   Search,
   Settings,
   Trash2,
+  Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -51,6 +52,8 @@ const PurchaseListScreen = () => {
   const navigate = useNavigate();
   const user = authSDK.getCurrentUser();
   const [showFilters, setShowFilters] = useState<boolean>(true);
+  const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
+
   const { filters, updateFilter, setPage, resetFilters } = usePurchaseFilters(
     Number(selectedBranchId) || 1
   );
@@ -70,12 +73,14 @@ const PurchaseListScreen = () => {
   const [debouncedSearchKeywords] = useDebounce(searchKeywords, 500);
 
   useEffect(() => {
-    updateFilter('keywords', debouncedSearchKeywords);
-  }, [debouncedSearchKeywords]);
+    if (searchMode === 'realtime') {
+      updateFilter('keywords', debouncedSearchKeywords);
+    }
+  }, [debouncedSearchKeywords, searchMode, updateFilter]);
 
   useEffect(() => {
     updateFilter('sucursal', Number(selectedBranchId));
-  }, [selectedBranchId]);
+  }, [selectedBranchId, updateFilter]);
 
   // Limpiar datos cuando se cambie el modo de scroll infinito
   useEffect(() => {
@@ -83,7 +88,7 @@ const PurchaseListScreen = () => {
       setPurchases([]);
       setPage(1);
     }
-  }, [isInfiniteScroll]);
+  }, [isInfiniteScroll, setPage]);
 
   // console.log(authSDK.getAccessToken());
   useEffect(() => {
@@ -479,6 +484,25 @@ const PurchaseListScreen = () => {
     resetAll();
   };
 
+  // Manejar búsqueda manual
+  const handleManualSearch = () => {
+    if (searchMode === 'manual') {
+      updateFilter('keywords', searchKeywords);
+    }
+  };
+
+  // Toggle del modo de búsqueda
+  const toggleSearchMode = () => {
+    setSearchMode(prev => {
+      const newMode = prev === 'realtime' ? 'manual' : 'realtime';
+      // Si cambiamos a realtime, aplicar el debounce inmediatamente
+      if (newMode === 'realtime') {
+        updateFilter('keywords', searchKeywords);
+      }
+      return newMode;
+    });
+  };
+
   return (
     <main className="min-h-screen max-w-full">
       <div className="bg-white rounded-lg shadow-sm">
@@ -493,12 +517,28 @@ const PurchaseListScreen = () => {
                   placeholder="Buscar en comentarios y comprobantes..."
                   value={searchKeywords}
                   onChange={e => setSearchKeywords(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && searchMode === 'manual') {
+                      handleManualSearch();
+                    }
+                  }}
                   className="pl-10 w-full"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Toggle de modo de búsqueda */}
+              <Button
+                variant="ghost"
+                onClick={toggleSearchMode}
+                className="text-xs h-7"
+                title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+              >
+                <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+              </Button>
+
               <div className="flex items-center space-x-2">
                 <Switch
                   id="infinite-scroll"
@@ -549,7 +589,12 @@ const PurchaseListScreen = () => {
 
         {/* Filtros */}
         {showFilters && (
-          <PurchaseFilters filters={filters} updateFilter={updateFilter} />
+          <PurchaseFilters
+            filters={filters}
+            updateFilter={updateFilter}
+            searchMode={searchMode}
+            handleManualSearch={handleManualSearch}
+          />
         )}
 
         {/* Results Info */}

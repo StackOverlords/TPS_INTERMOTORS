@@ -131,6 +131,23 @@ export function useSecondaryWindow(
     onWindowClosedRef.current = onWindowClosed;
   }, [onEvent, onWindowCreated, onWindowClosed]);
 
+  // Limpiar ventanas huérfanas al montar
+  useEffect(() => {
+    const checkAndCleanup = async () => {
+      const existingWindow = await isWindowOpen(windowId);
+      if (existingWindow && !isOpen) {
+        console.log(`[useSecondaryWindow] Limpiando ventana huérfana "${windowId}"`);
+        try {
+          await closeSecondaryWindow(windowId);
+        } catch (err) {
+          console.error(`[useSecondaryWindow] Error limpiando ventana huérfana:`, err);
+        }
+      }
+    };
+
+    checkAndCleanup();
+  }, []); // Solo al montar
+
   /**
    * Abre la ventana secundaria
    */
@@ -139,16 +156,7 @@ export function useSecondaryWindow(
       setIsLoading(true);
       setError(null);
 
-      // Si ya está abierta, solo la enfocamos
-      const windowIsOpen = await isWindowOpen(windowId);
-      if (windowIsOpen) {
-        await focusSecondaryWindow(windowId);
-        setIsOpen(true);
-        setIsLoading(false);
-        return;
-      }
-
-      // Crear nueva ventana
+      // Crear/obtener ventana (createSecondaryWindow maneja la lógica de reutilización)
       const newWindow = await createSecondaryWindow({
         windowId,
         ...windowConfig,
@@ -175,6 +183,8 @@ export function useSecondaryWindow(
       );
       setError(error);
       setIsLoading(false);
+      setIsOpen(false);
+      setWindow(null);
     }
   }, [windowId, windowConfig]);
 
@@ -384,3 +394,41 @@ export function usePurchaseSelectorWindow(
 };
 
 
+// Hook para views window
+export interface UseViewConfigRoutesWindowConfig {
+  context: string;
+  instanceId?: string;
+}
+export function useViewConfigRoutesWindowConfig(
+  config: UseViewConfigRoutesWindowConfig
+): UseSecondaryWindowResult {
+  const {
+    context,
+    instanceId,
+  } = config;
+
+  // Generar windowId único
+  // El prefijo 'view-config' es más descriptivo que 'settings-routes'
+  const windowId = instanceId
+    ? `view-config-${context}-${instanceId}`
+    : `view-config-${context}`;
+
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html', // HTML genérico
+    title: 'Configuración de Vistas',
+    width: 1200,
+    height: 800,
+    queryParams: {
+      component: 'settings-routes', // ID del componente a renderizar
+      context,
+    },
+    listenToEvents: [
+      'view-selected',
+      'window-closed',
+    ],
+    onEvent: (eventName, data) => {
+      // Aquí puede manejar eventos específicos si es necesario
+    },
+  });
+}

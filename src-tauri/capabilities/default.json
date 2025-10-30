@@ -5,7 +5,8 @@
   "windows": [
     "main",
     "product-selector-*",
-    "purchase-selector-*"
+    "purchase-selector-*",
+    "settings-routes-*"
   ],
   "permissions": [
     "core:default",
@@ -14,6 +15,8 @@
     "core:event:allow-listen",
     "core:event:allow-emit",
     "core:event:allow-emit-to",
+    "core:window:allow-set-title",
+    "core:tray:default",
     "core:webview:default",
     "core:webview:allow-create-webview",
     "core:webview:allow-create-webview-window",

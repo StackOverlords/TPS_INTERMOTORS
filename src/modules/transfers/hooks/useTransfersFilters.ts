@@ -14,14 +14,6 @@ const cleanFilters = (filters: TransfersFilters): TransfersFilters => ({
 
 export const useTransfersFilters = (defaultSucursal: number) => {
 
-    // Memoizar las fechas para evitar recrearlas en cada render
-    const defaultDates = useMemo(() => {
-        const today = new Date();
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(today.getMonth() - 1);
-        return { today, lastMonth };
-    }, []);
-
     const [filters, setFilters] = useState<TransfersFilters>({
         pagina: 1,
         codigo_interno: "",
@@ -29,8 +21,8 @@ export const useTransfersFilters = (defaultSucursal: number) => {
         sucursal: defaultSucursal,
         codigo_oem_producto: "",
         keywords: "",
-        fecha_fin: defaultDates.today.toISOString().split('T')[0],
-        fecha_inicio: defaultDates.lastMonth.toISOString().split('T')[0]
+        fecha_fin: undefined,
+        fecha_inicio: undefined
     });
 
     const [appliedFilters, setAppliedFilters] = useState<TransfersFilters>(filters);

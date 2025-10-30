@@ -4,7 +4,6 @@ import { Label } from "@/components/atoms/label";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useBranchStore } from "@/states/branchStore";
-import { format } from "date-fns";
 import { AlertCircle, Search, X } from "lucide-react";
 import { useState } from "react";
 import { useTransferBranches } from "../../hooks/commons/useTransferBranches";
@@ -33,14 +32,24 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
         isLoading: isBranchesLoading
     } = useTransferBranches(Number(selectedBranchId));
 
-    // Función auxiliar para formatear fecha de manera segura
+    // Función auxiliar para formatear fecha de manera segura (sin problemas de zona horaria)
     const formatDateSafe = (date: Date): string => {
         try {
-            return format(date, 'yyyy-MM-dd');
+            // Usar métodos locales para evitar problemas de timezone
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         } catch (error) {
             console.error('Error formatting date:', error);
             return '';
         }
+    };
+
+    // Función para parsear fecha string a Date local
+    const parseLocalDate = (dateString: string): Date => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
     };
 
     const handleFechaInicioChange = (date: Date | undefined) => {
@@ -48,9 +57,12 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
 
         if (date) {
             // Validar que la fecha inicio no sea posterior a fecha fin
-            if (filters.fecha_fin && date > new Date(filters.fecha_fin)) {
-                setDateError('La fecha de inicio no puede ser posterior a la fecha de fin');
-                return;
+            if (filters.fecha_fin) {
+                const fechaFin = parseLocalDate(filters.fecha_fin);
+                if (date > fechaFin) {
+                    setDateError('La fecha de inicio no puede ser posterior a la fecha de fin');
+                    return;
+                }
             }
         }
 
@@ -63,9 +75,12 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
         if (date) {
 
             // Validar que la fecha fin no sea anterior a fecha inicio
-            if (filters.fecha_inicio && date < new Date(filters.fecha_inicio)) {
-                setDateError('La fecha de fin no puede ser anterior a la fecha de inicio');
-                return;
+            if (filters.fecha_inicio) {
+                const fechaInicio = parseLocalDate(filters.fecha_inicio);
+                if (date < fechaInicio) {
+                    setDateError('La fecha de fin no puede ser anterior a la fecha de inicio');
+                    return;
+                }
             }
 
             // Validar que la fecha no sea futura (opcional, según tu caso de uso)
@@ -148,100 +163,94 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                         />
                     </div>
                 </div>
-                <div className="space-y-2 w-full">
-                        <Label>Fecha Inicio</Label>
-                        <div className="flex gap-2">
-                            <PopoverDatePicker
-                                value={filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined}
-                                onChange={(date) => handleFechaInicioChange(date)}
-                                hasError={dateError}
-                                disabled={(date) => {
-                                    // Deshabilitar fechas futuras
-                                    const today = new Date();
-                                    today.setHours(0, 0, 0, 0);
 
-                                    const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
-                                    if (fechaFin && date > fechaFin) return true;
-                                    return date > today;
-                                }}
-                            />
-                        </div>
-                    </div>
+                {/* Fecha Inicio */}
+                <div className="space-y-2">
+                    <Label>Fecha Inicio</Label>
+                    <PopoverDatePicker
+                        value={filters.fecha_inicio ? parseLocalDate(filters.fecha_inicio) : undefined}
+                        onChange={(date) => handleFechaInicioChange(date)}
+                        hasError={dateError}
+                        disabled={(date) => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const fechaFin = filters.fecha_fin ? parseLocalDate(filters.fecha_fin) : undefined;
+                            if (fechaFin && date > fechaFin) return true;
+                            return date > today;
+                        }}
+                    />
+                </div>
 
-                    {/* Fecha Fin */}
-                    <div className="space-y-2 w-full">
-                        <Label>Fecha Fin</Label>
-                        <div className="flex gap-2">
-                            <PopoverDatePicker
-                                value={filters.fecha_fin ? new Date(filters.fecha_fin) : undefined}
-                                onChange={(date) => handleFechaFinChange(date)}
-                                hasError={dateError}
-                                disabled={(date) => {
-                                    // Deshabilitar fechas futuras
-                                    const today = new Date();
-                                    today.setHours(0, 0, 0, 0);
-                                    if (date > today) return true;
+                {/* Fecha Fin */}
+                <div className="space-y-2">
+                    <Label>Fecha Fin</Label>
+                    <PopoverDatePicker
+                        value={filters.fecha_fin ? parseLocalDate(filters.fecha_fin) : undefined}
+                        onChange={(date) => handleFechaFinChange(date)}
+                        hasError={dateError}
+                        disabled={(date) => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            if (date > today) return true;
+                            const fechaInicio = filters.fecha_inicio ? parseLocalDate(filters.fecha_inicio) : undefined;
+                            if (fechaInicio && date < fechaInicio) return true;
+                            return false;
+                        }}
+                    />
+                </div>
 
-                                    const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
-                                    // Deshabilitar fechas anteriores a la fecha de inicio
-                                    if (fechaInicio && date < fechaInicio) return true;
-
-                                    return false;
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex gap-2 items-end justify-end">
-                    {(filters.fecha_inicio || filters.fecha_fin) && (
+                {/* Botón Limpiar fechas */}
+                {(filters.fecha_inicio || filters.fecha_fin) && (
+                    <div className="space-y-2">
+                        <Label className="opacity-0 pointer-events-none">Acción</Label>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={clearAllDateFilters}
-                            className="text-xs"
+                            className="text-xs h-8 w-full"
                         >
-                            <X className="h-3 w-3" />
-                            Limpiar todas las fechas
+                            <X className="h-3 w-3 mr-1" />
+                            Limpiar
                         </Button>
-                    )}
-
-                    {/* Botón para establecer rango de última semana */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            const today = new Date();
-                            const lastWeek = new Date(today);
-                            lastWeek.setDate(today.getDate() - 7);
-
-                            setDateError(null);
-                            updateFilter('fecha_inicio', formatDateSafe(lastWeek));
-                            updateFilter('fecha_fin', formatDateSafe(today));
-                        }}
-                        className="text-xs"
-                    >
-                        Última semana
-                    </Button>
-
-                    {/* Botón para establecer rango del último mes */}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            const today = new Date();
-                            const lastMonth = new Date(today);
-                            lastMonth.setMonth(today.getMonth() - 1);
-
-                            setDateError(null);
-                            updateFilter('fecha_inicio', formatDateSafe(lastMonth));
-                            updateFilter('fecha_fin', formatDateSafe(today));
-                        }}
-                        className="text-xs"
-                    >
-                        Último mes
-                    </Button>
-                </div>
+                    </div>
+                )}
             </div>
- 
+
+            {/* Botones de acciones rápidas de fecha - en una fila separada */}
+            {/* <div className="flex gap-2 items-center flex-wrap">
+              <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        const today = new Date();
+                        const lastWeek = new Date(today);
+                        lastWeek.setDate(today.getDate() - 7);
+
+                        setDateError(null);
+                        updateFilter('fecha_inicio', formatDateSafe(lastWeek));
+                        updateFilter('fecha_fin', formatDateSafe(today));
+                    }}
+                    className="text-xs h-8"
+                >
+                    Última semana
+                </Button><Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        const today = new Date();
+                        const lastMonth = new Date(today);
+                        lastMonth.setMonth(today.getMonth() - 1);
+
+                        setDateError(null);
+                        updateFilter('fecha_inicio', formatDateSafe(lastMonth));
+                        updateFilter('fecha_fin', formatDateSafe(today));
+                    }}
+                    className="text-xs h-8"
+                >
+                    Último mes
+                </Button>
+            </div> */}
+
 
             {/* Mostrar error de validación */}
             {dateError && (

@@ -117,26 +117,15 @@ export const useTabNavigation = () => {
   //Cerrar tab actual o una tab específica
 
   const closeCurrentTab = useCallback((tabIdToClose?: string) => {
-    const targetTabId = tabIdToClose || activeTabId;
-
-    console.log('🔵 closeCurrentTab llamado con:', targetTabId);
-    console.log('📊 Estado en closeCurrentTab:', {
-      tabs: tabs.map(t => ({ id: t.id, title: t.title })),
-      activeTabId
-    });
-
+    const targetTabId = tabIdToClose || activeTabId; 
     // No permitir cerrar si solo hay 1 tab
     if (tabs.length <= 1) {
-      console.log('⚠️ No se puede cerrar la última tab');
       return;
     }
 
     if (!targetTabId) {
-      console.log('⚠️ No hay targetTabId');
       return;
     }
-
-    console.log('🗑️ Intentando cerrar tab:', targetTabId);
 
     // Activar bandera para prevenir recreación de tab
     isClosingTabRef.current = true;
@@ -148,23 +137,16 @@ export const useTabNavigation = () => {
     // Después de remover, obtener el nuevo activeTabId del store y navegar a esa tab
     setTimeout(() => {
       const state = useTabStore.getState();
-      console.log('🔍 Estado después de removeTab:', {
-        tabs: state.tabs.map(t => ({ id: t.id, title: t.title })),
-        activeTabId: state.activeTabId
-      });
 
       const newActiveTab = state.tabs.find(tab => tab.id === state.activeTabId);
 
       if (newActiveTab) {
-        console.log('🚀 Navegando a:', newActiveTab.path);
         navigate(newActiveTab.path);
       } else if (state.tabs.length > 0) {
         // Fallback: navegar a la primera tab disponible
-        console.log('🚀 Fallback: Navegando a primera tab:', state.tabs[0].path);
         navigate(state.tabs[0].path);
       } else {
         // No quedan tabs, navegar al dashboard
-        console.log('🚀 No quedan tabs, navegando a dashboard');
         navigate('/dashboard');
       }
 
@@ -206,7 +188,6 @@ export const useTabNavigation = () => {
 
     // Si estamos cerrando una tab, no crear tabs nuevas
     if (isClosingTabRef.current) {
-      console.log('⏸️ Ignorando sincronización porque se está cerrando una tab');
       return;
     }
 
@@ -214,7 +195,6 @@ export const useTabNavigation = () => {
 
     if (!existingTab) {
       // Crear tab automáticamente si no existe
-      console.log('➕ Creando nueva tab para:', currentPath);
       const routeInfo = findRouteInfo(currentPath);
       const tabId = addTab(currentPath, routeInfo.name, routeInfo.icon);
       setActiveTab(tabId);
