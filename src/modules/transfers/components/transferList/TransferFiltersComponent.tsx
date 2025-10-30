@@ -4,12 +4,12 @@ import { Label } from "@/components/atoms/label";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useBranchStore } from "@/states/branchStore";
-import { format } from "date-fns";
 import { AlertCircle, Search, X } from "lucide-react";
 import { useState } from "react";
 import { useTransferBranches } from "../../hooks/commons/useTransferBranches";
 import { useTransferResponsibles } from "../../hooks/commons/useTransferResponsibles";
 import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
+import { format } from "date-fns";
 
 interface TransferFiltersProps {
     filters: ReturnType<typeof useTransfersFilters>["filters"]
@@ -52,7 +52,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
 
         if (date) {
             // Validar que la fecha inicio no sea posterior a fecha fin
-            if (filters.fecha_fin && date > new Date(filters.fecha_fin)) {
+            if (filters.fecha_fin && date > filters.fecha_fin) {
                 setDateError('La fecha de inicio no puede ser posterior a la fecha de fin');
                 return;
             }
@@ -67,7 +67,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
         if (date) {
 
             // Validar que la fecha fin no sea anterior a fecha inicio
-            if (filters.fecha_inicio && date < new Date(filters.fecha_inicio)) {
+            if (filters.fecha_inicio && date < filters.fecha_inicio) {
                 setDateError('La fecha de fin no puede ser anterior a la fecha de inicio');
                 return;
             }

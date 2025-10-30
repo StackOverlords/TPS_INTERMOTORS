@@ -122,40 +122,25 @@ export const useTabStore = create<TabState>()(
 
       removeTab: (tabId: string) => {
         const state = get();
-        console.log('🔴 removeTab llamado con:', tabId);
-        console.log('📊 Estado actual:', {
-          tabs: state.tabs.map(t => ({ id: t.id, title: t.title })),
-          activeTabId: state.activeTabId
-        });
 
         const tabIndex = state.tabs.findIndex(tab => tab.id === tabId);
 
         if (tabIndex === -1) {
-          console.log('⚠️ Tab no encontrado, abortando');
           return;
         }
 
         const newTabs = state.tabs.filter(tab => tab.id !== tabId);
-        console.log('📋 Tabs después de filtrar:', newTabs.map(t => ({ id: t.id, title: t.title })));
-
         // Si estamos cerrando el tab activo, activar otro
         let newActiveTabId = state.activeTabId;
         if (state.activeTabId === tabId && newTabs.length > 0) {
           const newIndex = tabIndex < newTabs.length ? tabIndex : tabIndex - 1;
           newActiveTabId = newTabs[newIndex]?.id || null;
-          console.log('✅ Nueva tab activa será:', newActiveTabId, 'en índice:', newIndex);
         } else if (newTabs.length === 0) {
           newActiveTabId = null;
-          console.log('⚠️ No quedan tabs');
         }
 
         set({
           tabs: newTabs,
-          activeTabId: newActiveTabId
-        });
-
-        console.log('✅ removeTab completado. Nuevo estado:', {
-          tabs: newTabs.map(t => ({ id: t.id, title: t.title })),
           activeTabId: newActiveTabId
         });
       },

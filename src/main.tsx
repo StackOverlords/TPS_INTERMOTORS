@@ -16,7 +16,7 @@ import { queryClient } from './lib/reactQueryConfig.ts';
 // Probar la conexión a la base de datos al iniciar la app
 testDatabaseConnection().then((success) => {
   if (success) {
-    console.log('✅ Database ready!');
+    // console.log('✅ Database ready!');
   } else {
     console.warn('⚠️ Database connection failed, app will continue without local storage');
   }

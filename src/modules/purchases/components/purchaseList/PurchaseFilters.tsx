@@ -1,3 +1,4 @@
+import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import { AlertCircle, Search, X } from 'lucide-react';
@@ -7,7 +8,6 @@ import type { usePurchaseFilters } from '../../hooks/usePurchaseFilters';
 import { format } from 'date-fns';
 import { PaginatedCombobox } from '@/components/common/paginatedCombobox';
 import PopoverDatePicker from '@/components/common/PopoverDatePicker';
-import { Button } from '@/components/atoms/button';
 
 interface PurchaseFiltersProps {
   filters: ReturnType<typeof usePurchaseFilters>['filters'];

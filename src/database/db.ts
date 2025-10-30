@@ -59,7 +59,7 @@ const initializeTables = async () => {
     ON offline_queue(status, created_at)
   `);
 
-  console.log('✅ Database initialized successfully');
+  // console.log('✅ Database initialized successfully');
 };
 
 export const closeDB = async () => {

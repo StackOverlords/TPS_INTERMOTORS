@@ -81,11 +81,9 @@ export const getKeybinding = async (
 
 //Obtiene todos los keybindings personalizados
 export const getAllKeybindings = async (): Promise<KeybindingRow[]> => {
-  console.log('Fetching all keybindings from DB');
-  const response = await executeQuery<KeybindingRow>(
+  await executeQuery<KeybindingRow>(
     'SELECT * FROM keybindings WHERE enabled = 1 ORDER BY id'
   );
-  console.log('Keybindings fetched:', response);
   return await executeQuery<KeybindingRow>(
     'SELECT * FROM keybindings WHERE enabled = 1 ORDER BY id'
   );

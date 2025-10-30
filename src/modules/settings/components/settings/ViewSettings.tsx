@@ -5,10 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/atoms/switch';
 import type { ViewBehaviorsConfig, ViewConfiguration, ViewFeaturesConfig } from '@/config/viewConfigTypes';
 import { useAllRouteConfigs } from '@/hooks/useAllRouteConfigs';
-import { useUserViewConfig } from '@/hooks/useRouteViewConfig';
+import { useUserViewConfig, useViewConfigSync } from '@/hooks/useRouteViewConfig';
 import { cn } from '@/lib/utils';
 import { ChevronRight, RotateCcw, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 const ViewSettings = () => {
   const routeConfigs = useAllRouteConfigs();
@@ -18,8 +18,11 @@ const ViewSettings = () => {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Cache de configuraciones - este es el estado que controla el render
-  const [configCache, setConfigCache] = useState<Record<string, any>>({});
+  // Hook para manejar la configuración actual (con callbacks memoizados)
+  const { getUserConfig, updateUserConfig, resetUserConfig } = useUserViewConfig(selectedViewId || '');
+
+  // Hook para sincronización en tiempo real
+  const syncedConfig = useViewConfigSync(selectedViewId || '');
 
   // Agrupar vistas por módulo
   const viewsByModule = useMemo(() => {
@@ -57,20 +60,24 @@ const ViewSettings = () => {
     });
   };
 
-  const handleFeatureToggle = (viewId: string, featureName: keyof ViewFeaturesConfig) => {
-    const { getUserConfig, updateUserConfig } = useUserViewConfig(viewId);
-    const routeConfig = routeConfigs.find(c => c.id === viewId);
+  const handleFeatureToggle = useCallback((
+    featureName: keyof ViewFeaturesConfig
+  ) => {
+    if (!selectedViewId) return;
+
+    const routeConfig = routeConfigs.find(c => c.id === selectedViewId);
     const userConfig = getUserConfig() || {};
 
-    // Obtener valor actual desde cache o desde config
-    const currentEnabled = configCache[`${viewId}-${featureName}`]
-      ?? userConfig.features?.[featureName]?.enabled
-      ?? routeConfig?.features?.[featureName]?.enabled
-      ?? false;
+    // Obtener valor actual desde syncedConfig (datos en tiempo real)
+    const currentEnabled =
+      syncedConfig?.features?.[featureName]?.enabled ??
+      userConfig.features?.[featureName]?.enabled ??
+      routeConfig?.features?.[featureName]?.enabled ??
+      false;
 
     const newEnabled = !currentEnabled;
 
-    // Actualizar localStorage
+    // Actualizar configuración (esto emitirá eventos automáticamente)
     updateUserConfig({
       features: {
         ...userConfig.features,
@@ -80,86 +87,71 @@ const ViewSettings = () => {
         },
       },
     });
+  }, [selectedViewId, routeConfigs, getUserConfig, updateUserConfig, syncedConfig]);
 
-    // Actualizar cache inmediatamente
-    setConfigCache(prev => ({
-      ...prev,
-      [`${viewId}-${featureName}`]: newEnabled
-    }));
-  };
-
-  const handleBehaviorChange = (
-    viewId: string,
+  const handleBehaviorChange = useCallback((
     behaviorName: keyof ViewBehaviorsConfig,
     value: any
   ) => {
-    const { getUserConfig, updateUserConfig } = useUserViewConfig(viewId);
+    if (!selectedViewId) return;
+
     const userConfig = getUserConfig() || {};
 
+    // Actualizar configuración (esto emitirá eventos automáticamente)
     updateUserConfig({
       behaviors: {
         ...userConfig.behaviors,
         [behaviorName]: value,
       },
     });
+  }, [selectedViewId, getUserConfig, updateUserConfig]);
 
-    // Actualizar cache inmediatamente
-    setConfigCache(prev => ({
-      ...prev,
-      [`${viewId}-behavior-${behaviorName}`]: value
-    }));
-  };
+  const handleResetView = useCallback(() => {
+    if (!selectedViewId) return;
 
-  const handleResetView = (viewId: string) => {
-    const { resetUserConfig } = useUserViewConfig(viewId);
+    // Resetear configuración (esto emitirá eventos automáticamente)
     resetUserConfig();
+  }, [selectedViewId, resetUserConfig]);
 
-    // Limpiar cache para esta vista
-    setConfigCache(prev => {
-      const newCache = { ...prev };
-      Object.keys(newCache).forEach(key => {
-        if (key.startsWith(`${viewId}-`)) {
-          delete newCache[key];
-        }
-      });
-      return newCache;
+  const handleResetAll = useCallback(() => {
+    // Resetear todas las configuraciones
+    routeConfigs.forEach(c => {
+      if (c.id) {
+        const { resetUserConfig } = useUserViewConfig(c.id);
+        resetUserConfig();
+      }
     });
-  };
+  }, [routeConfigs]);
 
-  const getFeatureEnabled = (viewId: string, featureName: keyof ViewFeaturesConfig): boolean => {
-    const cacheKey = `${viewId}-${featureName}`;
+  const getFeatureEnabled = useCallback((featureName: keyof ViewFeaturesConfig): boolean => {
+    if (!selectedViewId) return false;
 
-    // Si está en cache, usar ese valor
-    if (configCache[cacheKey] !== undefined) {
-      return configCache[cacheKey];
-    }
+    const routeConfig = routeConfigs.find(c => c.id === selectedViewId);
 
-    // Si no, obtener de configs
-    const routeConfig = routeConfigs.find(c => c.id === viewId);
-    const { getUserConfig } = useUserViewConfig(viewId);
-    const userConfig = getUserConfig();
-    return userConfig?.features?.[featureName]?.enabled ?? routeConfig?.features?.[featureName]?.enabled ?? false;
-  };
+    // Usar configuración sincronizada en tiempo real
+    return (
+      syncedConfig?.features?.[featureName]?.enabled ??
+      routeConfig?.features?.[featureName]?.enabled ??
+      false
+    );
+  }, [selectedViewId, routeConfigs, syncedConfig]);
 
-  const getBehaviorValue = (viewId: string, behaviorName: keyof ViewBehaviorsConfig): any => {
-    const cacheKey = `${viewId}-behavior-${behaviorName}`;
+  const getBehaviorValue = useCallback((behaviorName: keyof ViewBehaviorsConfig): any => {
+    if (!selectedViewId) return undefined;
 
-    // Si está en cache, usar ese valor
-    if (configCache[cacheKey] !== undefined) {
-      return configCache[cacheKey];
-    }
+    const routeConfig = routeConfigs.find(c => c.id === selectedViewId);
 
-    // Si no, obtener de configs
-    const routeConfig = routeConfigs.find(c => c.id === viewId);
-    const { getUserConfig } = useUserViewConfig(viewId);
-    const userConfig = getUserConfig();
-    return userConfig?.behaviors?.[behaviorName] ?? routeConfig?.behaviors?.[behaviorName];
-  };
+    // Usar configuración sincronizada en tiempo real
+    return (
+      syncedConfig?.behaviors?.[behaviorName] ??
+      routeConfig?.behaviors?.[behaviorName]
+    );
+  }, [selectedViewId, routeConfigs, syncedConfig]);
 
   return (
-    <div className="flex gap-3 h-[600px]">
-      {/* LEFT SIDEBAR */}
-      <div className="w-64 flex border border-gray-200 flex-col rounded-lg bg-white overflow-hidden">
+    <div className="flex gap-1 h-auto overflow-hidden rounded-lg">
+        {/* LEFT SIDEBAR */}
+        <div className="w-64 flex border border-gray-200 flex-col rounded-lg bg-white overflow-hidden shadow-sm">
         {/* Search */}
         <div className="p-2">
           <div className="relative">
@@ -218,10 +210,7 @@ const ViewSettings = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              routeConfigs.forEach(c => c.id && useUserViewConfig(c.id).resetUserConfig());
-              setConfigCache({}); // Limpiar todo el cache
-            }}
+            onClick={handleResetAll}
             className="w-full h-7 text-xs gap-1.5"
           >
             <RotateCcw className="h-3 w-3" />
@@ -238,12 +227,12 @@ const ViewSettings = () => {
             <div className="px-4 py-3 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-sm">{selectedView.name}</h3>
-                <p className="text-xs text-gray-500">{selectedView.path}</p>
+                {/* <p className="text-xs text-gray-500">{selectedView.path}</p> */}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleResetView(selectedView.id!)}
+                onClick={handleResetView}
                 className="h-7 text-xs gap-1.5"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -263,7 +252,7 @@ const ViewSettings = () => {
                     {Object.entries(selectedView.features).map(([key, feature]) => {
                       if (!feature) return null;
                       const featureKey = key as keyof ViewFeaturesConfig;
-                      const isEnabled = getFeatureEnabled(selectedView.id!, featureKey);
+                      const isEnabled = getFeatureEnabled(featureKey);
 
                       return (
                         <div
@@ -283,7 +272,7 @@ const ViewSettings = () => {
                           <Switch
                             id={`${selectedView.id}-${key}`}
                             checked={isEnabled}
-                            onCheckedChange={() => handleFeatureToggle(selectedView.id!, featureKey)}
+                            onCheckedChange={() => handleFeatureToggle(featureKey)}
                           />
                         </div>
                       );
@@ -303,9 +292,9 @@ const ViewSettings = () => {
                       <div className="space-y-1.5 p-3 rounded">
                         <Label className="text-xs font-medium">Modo Selector de Productos</Label>
                         <Select
-                          value={getBehaviorValue(selectedView.id!, 'productSelectorMode')}
+                          value={getBehaviorValue('productSelectorMode')}
                           onValueChange={(value) =>
-                            handleBehaviorChange(selectedView.id!, 'productSelectorMode', value)
+                            handleBehaviorChange('productSelectorMode', value)
                           }
                         >
                           <SelectTrigger className="h-8 text-xs">
@@ -324,9 +313,9 @@ const ViewSettings = () => {
                       <div className="space-y-1.5 p-3 border border-gray-200 rounded">
                         <Label className="text-xs font-medium">Abrir Detalles En</Label>
                         <Select
-                          value={getBehaviorValue(selectedView.id!, 'openDetailsIn')}
+                          value={getBehaviorValue('openDetailsIn')}
                           onValueChange={(value) =>
-                            handleBehaviorChange(selectedView.id!, 'openDetailsIn', value)
+                            handleBehaviorChange('openDetailsIn', value)
                           }
                         >
                           <SelectTrigger className="h-8 text-xs">
@@ -346,9 +335,9 @@ const ViewSettings = () => {
                       <div className="flex items-center justify-between py-2 px-3 border border-gray-200 rounded">
                         <Label className="text-xs font-medium">Guardar Filtros</Label>
                         <Switch
-                          checked={getBehaviorValue(selectedView.id!, 'persistFilters')}
+                          checked={getBehaviorValue('persistFilters')}
                           onCheckedChange={(checked) =>
-                            handleBehaviorChange(selectedView.id!, 'persistFilters', checked)
+                            handleBehaviorChange('persistFilters', checked)
                           }
                         />
                       </div>
@@ -358,9 +347,9 @@ const ViewSettings = () => {
                       <div className="space-y-1.5 p-3 border border-gray-200 rounded">
                         <Label className="text-xs font-medium">Filas por Página</Label>
                         <Select
-                          value={String(getBehaviorValue(selectedView.id!, 'defaultRowsPerPage'))}
+                          value={String(getBehaviorValue('defaultRowsPerPage'))}
                           onValueChange={(value) =>
-                            handleBehaviorChange(selectedView.id!, 'defaultRowsPerPage', Number(value))
+                            handleBehaviorChange('defaultRowsPerPage', Number(value))
                           }
                         >
                           <SelectTrigger className="h-8 text-xs">
@@ -382,9 +371,9 @@ const ViewSettings = () => {
                       <div className="space-y-1.5 p-3 border border-gray-200 rounded">
                         <Label className="text-xs font-medium">Modo de Búsqueda</Label>
                         <Select
-                          value={getBehaviorValue(selectedView.id!, 'defaultSearchMode')}
+                          value={getBehaviorValue('defaultSearchMode')}
                           onValueChange={(value) =>
-                            handleBehaviorChange(selectedView.id!, 'defaultSearchMode', value)
+                            handleBehaviorChange('defaultSearchMode', value)
                           }
                         >
                           <SelectTrigger className="h-8 text-xs">

@@ -1,21 +1,21 @@
-import { useBranchStore } from "@/states/branchStore";
-import { useEffect, useState } from "react";
-import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
-import { Input } from "@/components/atoms/input";
-import { Switch } from "@/components/atoms/switch";
-import { Label } from "@/components/atoms/label";
-import TooltipButton from "@/components/common/TooltipButton";
 import { Button } from "@/components/atoms/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
 import { Separator } from "@/components/atoms/separator";
+import { Switch } from "@/components/atoms/switch";
 import ConfirmationModal from "@/components/common/confirmationModal";
-import useConfirmMutation from "@/hooks/useConfirmMutation";
+import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import type { TransferGetAll } from "../types/transferGet.types";
-import { useTransfersFilters } from "../hooks/useTransfersFilters";
-import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
-import { useDeleteTransfer } from "../hooks/useDeleteTransfer";
+import useConfirmMutation from "@/hooks/useConfirmMutation";
+import { useBranchStore } from "@/states/branchStore";
+import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import TransferFiltersComponent from "../components/transferList/TransferFiltersComponent";
 import TransferListTable from "../components/transferList/TransferListTable";
+import { useDeleteTransfer } from "../hooks/useDeleteTransfer";
+import { useTransfersFilters } from "../hooks/useTransfersFilters";
+import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
+import type { TransferGetAll } from "../types/transferGet.types";
 
 const TransferListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -123,8 +123,7 @@ const TransferListScreen = () => {
                 <h1 className="text-lg font-bold text-primary">Transferencias</h1>
                 <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
                     <div className="flex items-center gap-2 md:gap-4 grow">
-
-                        <div className="relative w-full">
+                        <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
                                 placeholder="Buscar por palabras clave..."
@@ -133,6 +132,18 @@ const TransferListScreen = () => {
                                 className="pl-10 w-full"
                             />
                         </div>
+
+                        {/* Botón de búsqueda manual al lado del input */}
+                        {searchMode === 'manual' && (
+                            <Button
+                                onClick={handleManualSearch}
+                                size="sm"
+                                className="shrink-0"
+                            >
+                                <Search className="h-4 w-4 mr-2" />
+                                Buscar
+                            </Button>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">

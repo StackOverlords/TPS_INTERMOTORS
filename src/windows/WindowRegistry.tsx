@@ -1,5 +1,6 @@
 import ProductSelectorWindow from '@/modules/products/screens/ProductSelectorWindow';
 import PurchaseSelectorWindow from '@/modules/purchases/screens/PurchaseSelectorWindow';
+import ViewSettings from '@/modules/settings/components/settings/ViewSettings';
 import React from 'react';
 
 // Tipo para componentes que pueden renderizarse en ventanas
@@ -38,7 +39,7 @@ export function registerDefaultWindowComponents(): void {
   // Registrar ProductSelectorWindow || Todos los que vamos a usar 
   registerWindowComponent('product-selector', ProductSelectorWindow);
   registerWindowComponent('purchase-selector', PurchaseSelectorWindow);
-
+  registerWindowComponent('settings-routes', ViewSettings);
 }
 
 export const WindowComponentRenderer: React.FC = () => {
