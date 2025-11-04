@@ -1,47 +1,46 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ShoppingCart, CornerUpLeft, Printer, Plus } from "lucide-react";
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Label } from "@/components/atoms/label";
 import { Input } from "@/components/atoms/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal";
-import type { ProductGet } from "@/modules/products/types/ProductGet";
-import authSDK from "@/services/sdk-simple-auth";
-import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
-import { FormProvider, useForm, Controller, type FieldErrors } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Kbd } from "@/components/atoms/kbd";
-import { useNavigate } from "react-router";
+import { Label } from "@/components/atoms/label";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
+import { Switch } from "@/components/atoms/switch";
+import { Textarea } from "@/components/atoms/textarea";
+import { PDFViewer } from "@/components/common/PDFViewer";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
-import { useBranchStore } from "@/states/branchStore";
-import { useHotkeys } from "react-hotkeys-hook";
 import TooltipButton from "@/components/common/TooltipButton";
-import { format, parse } from "date-fns";
+import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { useDebounce } from "use-debounce";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { cn } from "@/lib/utils";
+import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
 import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities";
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles";
-import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
-import { useCreateQuotation } from "../hooks/useCreateQuotation";
-import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
-import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
-import QuotationsSummary from "../components/quotationsSummary";
-import ProductDetailTable from "../components/productDetailTable";
-import { Textarea } from "@/components/atoms/textarea";
+import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes";
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
-import { Switch } from "@/components/atoms/switch";
-import { useTabEffect } from "@/hooks/tabs/useTabEffect";
-import { PDFViewer } from "@/components/common/PDFViewer";
-import { useQuotationPDF } from "../hooks/useQuotationPDF";
-import { Badge } from "@/components/atoms/badge";
+import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
-import { cn } from "@/lib/utils";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
-import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
-import { Button } from "@/components/atoms/button";
+import authSDK from "@/services/sdk-simple-auth";
+import { useBranchStore } from "@/states/branchStore";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format, parse } from "date-fns";
+import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate } from "react-router";
+import { useDebounce } from "use-debounce";
+import ProductDetailTable from "../components/productDetailTable";
+import QuotationsSummary from "../components/quotationsSummary";
+import { useCreateQuotation } from "../hooks/useCreateQuotation";
+import { useQuotationPDF } from "../hooks/useQuotationPDF";
+import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
+import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -451,13 +450,8 @@ const QuotationCreateScreen = () => {
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
         instanceId: 'create-quotation',
-        onProductSelect: (product: ProductGet) => {
-            // console.log(product)
-            handleAddProductItem(product);
-        },
-        // onMultiSelect(products: ProductGet[]) {
-        //     handleAddMultipleProducts(products)
-        // },
+        onProductSelect: handleAddProductItem,
+        onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
     });
 

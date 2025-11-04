@@ -249,12 +249,17 @@ export async function listenToWindowEvent<T = any>(
 ): Promise<() => void> {
   const fullEventName = `${windowId}:${eventName}`;
 
+  console.log(`[TauriWindows] 📡 Registrando listener global para "${fullEventName}"`);
+
   const unlisten = await listen<T>(fullEventName, (event) => {
     console.log(`[TauriWindows] Evento recibido "${fullEventName}":`, event.payload);
     handler(event.payload);
   });
 
-  return unlisten;
+  return () => {
+    console.log(`[TauriWindows] 🧹 Limpiando listener global para "${fullEventName}"`);
+    unlisten();
+  };
 }
 
 export async function emitToWindow<T = any>(
