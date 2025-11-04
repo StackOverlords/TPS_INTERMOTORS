@@ -10,11 +10,9 @@ import {
 import { Input } from '@/components/atoms/input';
 import { Kbd } from '@/components/atoms/kbd';
 import { Label } from '@/components/atoms/label';
-import ResizableBox from '@/components/atoms/resizable-box';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
-import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import TooltipButton from '@/components/common/TooltipButton';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import { useCustomTable } from '@/hooks/useCustomTable';
@@ -35,28 +33,40 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useNavigate } from 'react-router';
-import { useDebounce } from 'use-debounce';
 import DeletePurchaseDialog from '../components/DeletePurchaseDialog';
 import PurchaseFilters from '../components/purchaseList/PurchaseFilters';
 import { usePurchaseDelete } from '../hooks/usePurchaseDelete';
 import { usePurchaseFilters } from '../hooks/usePurchaseFilters';
 import { usePurchasesPaginated } from '../hooks/usePurchasesPaginated';
 import type { PurchaseGet } from '../types/PurchaseGet';
+import { useKeyboardNavigation } from '@/hooks/keyBindings/useKeyboardNavigation';
 
 const PurchaseListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
-  const { selectedBranchId } = useBranchStore();
+  const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
   const navigate = useNavigate();
   const user = authSDK.getCurrentUser();
+  const tableRef = useRef<HTMLTableElement>(null)
+  const [isDraggingColumn, setIsDraggingColumn] = useState(false);
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
 
-  const { filters, updateFilter, setPage, resetFilters } = usePurchaseFilters(
-    Number(selectedBranchId) || 1
-  );
+  const {
+    filters,
+    debouncedFilters,
+    appliedFilters,
+    updateFilter,
+    setPage,
+    resetFilters,
+    applyFilters,
+    setPageSize,
+  } = usePurchaseFilters(Number(selectedBranchId) || 1)
+
+  // Determinar qué filtros usar según el modo
+  const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
 
   const {
     data: purchaseData,
@@ -66,51 +76,37 @@ const PurchaseListScreen = () => {
     isError,
     refetch: refetchPurchases,
     isRefetching: isRefetchingPurchases,
-  } = usePurchasesPaginated(filters);
+  } = usePurchasesPaginated(activeFilters);
 
   const [purchases, setPurchases] = useState<PurchaseGet[]>([]);
-  const [searchKeywords, setSearchKeywords] = useState('');
-  const [debouncedSearchKeywords] = useDebounce(searchKeywords, 500);
 
   useEffect(() => {
-    if (searchMode === 'realtime') {
-      updateFilter('keywords', debouncedSearchKeywords);
-    }
-  }, [debouncedSearchKeywords, searchMode, updateFilter]);
-
-  useEffect(() => {
-    updateFilter('sucursal', Number(selectedBranchId));
-  }, [selectedBranchId, updateFilter]);
-
-  // Limpiar datos cuando se cambie el modo de scroll infinito
-  useEffect(() => {
-    if (!isInfiniteScroll) {
-      setPurchases([]);
-      setPage(1);
-    }
-  }, [isInfiniteScroll, setPage]);
-
-  // console.log(authSDK.getAccessToken());
-  useEffect(() => {
-    // console.log('Filtros actualizados:', filters);
-    if (!purchaseData?.data || error) return;
+    if (!purchaseData?.data || error || isFetching) return;
 
     if (isInfiniteScroll && filters.pagina && filters.pagina > 1) {
-      setPurchases(prev => {
+      setPurchases((prev) => {
         // Evitar duplicados
         const newPurchases = purchaseData.data.filter(
-          newPurchase =>
-            !prev.some(
-              existingPurchase => existingPurchase.id === newPurchase.id
-            )
+          newPurchase => !prev.some(existingPurchase => existingPurchase.id === newPurchase.id)
         );
         return [...prev, ...newPurchases];
       });
     } else {
-      // En modo paginación normal, siempre reemplazar los datos
       setPurchases(purchaseData.data);
     }
-  }, [purchaseData?.data, isInfiniteScroll, filters.pagina, error]);
+  }, [purchaseData?.data, isInfiniteScroll, filters.pagina, error, isFetching]);
+
+  // Manejar búsqueda manual
+  const handleManualSearch = () => {
+    if (searchMode === 'manual') {
+      applyFilters();
+    }
+  };
+
+  // Toggle del modo de búsqueda
+  const toggleSearchMode = () => {
+    setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
+  };
 
   const handlePurchaseDetail = (purchaseId: number) => {
     navigate(`/dashboard/purchases/${purchaseId}`);
@@ -230,7 +226,7 @@ const PurchaseListScreen = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
-                    onClick={() => {}}
+                    onClick={() => { }}
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Ver comprobantes
@@ -360,9 +356,8 @@ const PurchaseListScreen = () => {
                   <Badge
                     key={index}
                     variant="outline"
-                    className={`text-xs font-mono border-gray-300 ${
-                      isMediumLong ? 'basis-full' : 'basis-auto'
-                    }`}
+                    className={`text-xs font-mono border-gray-300 ${isMediumLong ? 'basis-full' : 'basis-auto'
+                      }`}
                   >
                     {comprobante}
                   </Badge>
@@ -403,9 +398,8 @@ const PurchaseListScreen = () => {
           const comentarios = getValue<string>();
           return (
             <div
-              className={`text-xs ${
-                !comentarios ? 'italic text-gray-400' : ''
-              }`}
+              className={`text-xs ${!comentarios ? 'italic text-gray-400' : ''
+                }`}
             >
               {formatCell(comentarios, 'Sin comentarios')}
             </div>
@@ -425,18 +419,18 @@ const PurchaseListScreen = () => {
     columns,
 
     // Configuración de características
-    enableSorting: false, // ✅ Habilitar ordenamiento
+    enableSorting: true,
     enableColumnResizing: true,
     enableRowSelection: true,
     enableColumnVisibility: true,
-    enableColumnOrdering: true, // ✅ Habilitar reordenamiento de columnas
+    enableColumnOrdering: true,
     enablePagination: false,
 
     // Columnas ocultas por defecto
     hiddenColumns: ['Select'],
 
     // Configuración de resize
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
 
     // Persistencia con key única por usuario
     persistenceKey: `purchases-table-${user?.name}`,
@@ -444,14 +438,21 @@ const PurchaseListScreen = () => {
     persistColumnOrder: true,
   });
 
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [isFocused, setIsFocused] = useState(false);
-  const tableRef = useRef<HTMLTableElement | null>(null);
-
-  const handleTableClick = () => {
-    setIsFocused(true);
-  };
-
+  const {
+    selectedIndex,
+    setSelectedIndex,
+    isFocused,
+    // setIsFocused: setIsFocusedTable,
+    // hotkeys
+  } = useKeyboardNavigation<PurchaseGet, HTMLTableElement>({
+    items: purchases,
+    containerRef: tableRef,
+    isDragging: isDraggingColumn,
+    onPrimaryAction: (purchase) => {
+      handlePurchaseDetail(purchase.id);
+    },
+    getItemId: (purchase) => purchase.id
+  });
   const handleRowClick = (index: number) => {
     setSelectedIndex(index);
   };
@@ -468,8 +469,7 @@ const PurchaseListScreen = () => {
   };
 
   const onShowRowsChange = (rows: number) => {
-    updateFilter('pagina_registros', rows);
-    updateFilter('pagina', 1);
+    setPageSize(rows);
   };
 
   const handleRefetchPurchases = () => {
@@ -484,241 +484,228 @@ const PurchaseListScreen = () => {
     resetAll();
   };
 
-  // Manejar búsqueda manual
-  const handleManualSearch = () => {
-    if (searchMode === 'manual') {
-      updateFilter('keywords', searchKeywords);
-    }
-  };
+  const handleDragStart = useCallback(() => {
+    setIsDraggingColumn(true);
+  }, []);
 
-  // Toggle del modo de búsqueda
-  const toggleSearchMode = () => {
-    setSearchMode(prev => {
-      const newMode = prev === 'realtime' ? 'manual' : 'realtime';
-      // Si cambiamos a realtime, aplicar el debounce inmediatamente
-      if (newMode === 'realtime') {
-        updateFilter('keywords', searchKeywords);
-      }
-      return newMode;
-    });
-  };
+  const handleDragEnd = useCallback(() => {
+    setIsDraggingColumn(false);
+  }, []);
 
   return (
-    <main className="min-h-screen max-w-full">
-      <div className="bg-white rounded-lg shadow-sm">
-        {/* Header */}
-        <header className="p-2 border-b border-gray-200">
-          <h1 className="text-lg font-bold text-gray-900">Compras</h1>
-          <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
-            <div className="flex items-center gap-2 md:gap-4 grow">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar en comentarios y comprobantes..."
-                  value={searchKeywords}
-                  onChange={e => setSearchKeywords(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && searchMode === 'manual') {
-                      handleManualSearch();
-                    }
-                  }}
-                  className="pl-10 w-full"
-                />
-              </div>
+    <main className="h-full p-2 gap-2 flex flex-col">
+      {/* Header */}
+      <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+        <h1 className="text-lg font-bold text-primary">Compras</h1>
+        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+          <div className="flex items-center gap-2 md:gap-4 grow">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar por palabras clave..."
+                value={filters.keywords}
+                onChange={(e) => updateFilter("keywords", e.target.value)}
+                className="pl-10 w-full"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Toggle de modo de búsqueda */}
+            <Button
+              type='button'
+              size="sm"
+              variant="ghost"
+              onClick={toggleSearchMode}
+              className="text-xs h-7"
+              title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+            >
+              <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+              {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+            </Button>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="infinite-scroll"
+                checked={isInfiniteScroll}
+                onCheckedChange={checked => {
+                  setIsInfiniteScroll(checked);
+                  setPage(1);
+                }}
+              />
+              <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Toggle de modo de búsqueda */}
-              <Button
-                variant="ghost"
-                onClick={toggleSearchMode}
-                className="text-xs h-7"
-                title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
-              >
-                <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
-                {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
-              </Button>
+            <TooltipButton
+              onClick={handleRefetchPurchases}
+              buttonProps={{
+                className: 'w-8',
+                disabled: isRefetchingPurchases || isFetching,
+              }}
+              tooltip={"Recargar compras"}
+            >
+              <RefreshCcw
+                className={`size-4 ${isRefetchingPurchases || isFetching ? 'animate-spin' : ''}`}
+              />
+            </TooltipButton>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="infinite-scroll"
-                  checked={isInfiniteScroll}
-                  onCheckedChange={checked => {
-                    setIsInfiniteScroll(checked);
-                    setPage(1);
-                  }}
-                />
-                <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
-              </div>
+            <TooltipButton
+              onClick={handleResetTableConfig}
+              buttonProps={{
+                variant: 'outline',
+                size: 'sm',
+              }}
+              tooltip="Resetear orden y visibilidad de columnas"
+            >
+              <Settings className="h-4 w-4" />
+              Resetear Tabla
+            </TooltipButton>
 
-              <TooltipButton
-                onClick={handleRefetchPurchases}
-                buttonProps={{
-                  className: 'w-8',
-                  disabled: isRefetchingPurchases || isFetching,
-                }}
-                tooltip={"Recargar compras"}
-              >
-                <RefreshCcw
-                  className={`size-4 ${isRefetchingPurchases || isFetching ? 'animate-spin' : ''}`}
-                />
-              </TooltipButton>
-
-              <TooltipButton
-                onClick={handleResetTableConfig}
-                buttonProps={{
-                  variant: 'outline',
-                  size: 'sm',
-                }}
-                tooltip="Resetear orden y visibilidad de columnas"
-              >
-                <Settings className="h-4 w-4" />
-                Resetear Tabla
-              </TooltipButton>
-
-              <Button variant="outline" size="sm" onClick={resetFilters}>
-                <Filter className="h-4 w-4 mr-2" />
-                Reset Filters
-              </Button>
-              <Button size={'sm'} onClick={toggleShowFilters}>
-                {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
-              </Button>
-            </div>
-          </section>
-        </header>
+            <Button variant="outline" size="sm" onClick={resetFilters}>
+              <Filter className="h-4 w-4 mr-2" />
+              Reset Filters
+            </Button>
+            <Button size={'sm'} onClick={toggleShowFilters}>
+              {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </Button>
+          </div>
+        </section>
 
         {/* Filtros */}
         {showFilters && (
           <PurchaseFilters
             filters={filters}
             updateFilter={updateFilter}
-            searchMode={searchMode}
             handleManualSearch={handleManualSearch}
+            searchMode={searchMode}
           />
         )}
+      </header>
 
-        {/* Results Info */}
-        <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between">
-          {isLoading || isFetching ? (
-            <span>Cargando...</span>
-          ) : isError ? (
-            <span className="text-red-600">Error al cargar los datos</span>
-          ) : purchases.length > 0 ? (
-            isInfiniteScroll ? (
-              `Mostrando ${purchases.length} de ${
-                purchaseData?.meta.total || 0
-              } compras`
+      <div className="bg-card rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
+        <section className="flex flex-col h-full">
+          {/* Results Info */}
+          <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+            {isLoading || isFetching ? (
+              <span>Cargando...</span>
+            ) : isError ? (
+              <span className="text-red-600">Error al cargar los datos</span>
+            ) : purchases.length > 0 ? (
+              isInfiniteScroll ? (
+                `Mostrando ${purchases.length} de ${purchaseData?.meta?.total || 0
+                } compras`
+              ) : (
+                `Mostrando ${purchaseData?.meta?.from || 0} - ${purchaseData?.meta?.to || 0
+                } de ${purchaseData?.meta?.total || 0} compras`
+              )
             ) : (
-              `Mostrando ${purchaseData?.meta.from || 0} - ${
-                purchaseData?.meta.to || 0
-              } de ${purchaseData?.meta.total || 0} compras`
-            )
-          ) : (
-            <span className="text-amber-600">
-              No se encontraron compras para la sucursal actual
-            </span>
-          )}
-
-          <div className="flex items-center gap-2">
-            <RowsPerPageSelect
-              value={filters.pagina_registros ?? 10}
-              onChange={onShowRowsChange}
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Columnas
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-56 max-h-96 overflow-y-auto border border-gray-200"
-              >
-                {table
-                  .getAllColumns()
-                  .filter(column => column.getCanHide())
-                  .map(column => (
-                    <DropdownMenuItem
-                      key={column.id}
-                      className="flex items-center space-x-2 cursor-pointer"
-                      onSelect={e => e.preventDefault()}
-                      onClick={() =>
-                        column.toggleVisibility(!column.getIsVisible())
-                      }
-                    >
-                      <Checkbox
-                        className="border border-gray-400"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={value =>
-                          column.toggleVisibility(!!value)
-                        }
-                      />
-                      <span className="flex-1">
-                        {typeof column.columnDef.header === 'string'
-                          ? column.columnDef.header
-                          : column.id}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {table && hasSelectedPurchases > 0 && (
-              <Button size={'sm'} className="relative">
-                Acciones
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-                >
-                  {hasSelectedPurchases}
-                </Badge>
-              </Button>
+              <span className="text-amber-600">
+                No se encontraron compras para la sucursal actual
+              </span>
             )}
-          </div>
-        </div>
 
-        {isInfiniteScroll ? (
-          <InfiniteScroll
-            dataLength={purchases.length}
-            next={() => setPage((filters.pagina || 1) + 1)}
-            hasMore={purchases.length < (purchaseData?.meta.total || 0)}
-            loader={
-              <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                <Loader2 className="size-4 animate-spin" />
-                Cargando más compras...
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Columnas
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+                >
+                  {table
+                    .getAllColumns()
+                    .filter(column => column.getCanHide())
+                    .map(column => (
+                      <DropdownMenuItem
+                        key={column.id}
+                        className="flex items-center space-x-2 cursor-pointer"
+                        onSelect={e => e.preventDefault()}
+                        onClick={() =>
+                          column.toggleVisibility(!column.getIsVisible())
+                        }
+                      >
+                        <Checkbox
+                          className="border border-gray-400"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={value =>
+                            column.toggleVisibility(!!value)
+                          }
+                        />
+                        <span className="flex-1">
+                          {typeof column.columnDef.header === 'string'
+                            ? column.columnDef.header
+                            : column.id}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {table && hasSelectedPurchases > 0 && (
+                <Button size={'sm'} className="relative">
+                  Acciones
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+                  >
+                    {hasSelectedPurchases}
+                  </Badge>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+          <div className="flex-1 min-h-0">
+            {isInfiniteScroll ? (
+              <div
+                id="purchases-list-scroll-container"
+                className="h-full overflow-auto relative">
+                <InfiniteScroll
+                  dataLength={purchases.length}
+                  next={() => setPage((filters.pagina || 1) + 1)}
+                  hasMore={purchases.length < ((purchaseData?.meta?.total ?? 0))}
+                  loader={
+                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                      <Loader2 className="size-4 animate-spin" />
+                      Cargando más compras...
+                    </div>
+                  }
+                  scrollableTarget="purchases-list-scroll-container"
+                >
+                  <CustomizableTable
+                    table={table}
+                    isError={isError}
+                    errorMessage="Ocurrió un error al cargar las compras"
+                    isLoading={isLoading}
+                    rows={filters.pagina_registros}
+                    noDataMessage="No se encontraron compras"
+                    selectedRowIndex={selectedIndex}
+                    onRowClick={handleRowClick}
+                    onRowDoubleClick={handleRowDoubleClick}
+                    tableRef={tableRef}
+                    focused={isFocused}
+                    keyboardNavigationEnabled={true}
+                    enableColumnReordering={true}
+                    enableSorting={false}
+                    onDragEnd={handleDragEnd}
+                    onDragStart={handleDragStart}
+                  />
+                </InfiniteScroll>
               </div>
-            }
-            scrollableTarget="main-scroll-container"
-          >
-            <CustomizableTable
-              table={table}
-              isError={isError}
-              errorMessage="Ocurrió un error al cargar las compras. Verifica tu conexión o intenta con otra sucursal."
-              isLoading={isLoading}
-              rows={filters.pagina_registros}
-              noDataMessage="No se encontraron compras para la sucursal seleccionada. Prueba cambiar a otra sucursal o ajusta los filtros de búsqueda."
-              selectedRowIndex={selectedIndex}
-              onRowClick={handleRowClick}
-              onRowDoubleClick={handleRowDoubleClick}
-              tableRef={tableRef}
-              focused={isFocused}
-              keyboardNavigationEnabled={true}
-              enableColumnReordering={true}
-              enableSorting={true}
-            />
-          </InfiniteScroll>
-        ) : (
-          <ResizableBox direction="vertical" minSize={20}>
-            <div className="overflow-auto h-full">
-              <div onClick={handleTableClick} className="overflow-x-hidden">
+            ) : (
+              <div className="h-full overflow-auto">
                 <CustomizableTable
                   table={table}
                   isError={isError}
                   isFetching={isFetching}
                   isLoading={isLoading}
-                  errorMessage="Ocurrió un error al cargar las compras. Verifica tu conexión o intenta con otra sucursal."
+                  errorMessage="Ocurrió un error al cargar las compras"
+                  noDataMessage="No se encontraron compras"
                   rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron compras para la sucursal seleccionada. Prueba cambiar a otra sucursal o ajusta los filtros de búsqueda."
                   selectedRowIndex={selectedIndex}
                   onRowClick={handleRowClick}
                   onRowDoubleClick={handleRowDoubleClick}
@@ -726,23 +713,29 @@ const PurchaseListScreen = () => {
                   focused={isFocused}
                   keyboardNavigationEnabled={true}
                   enableColumnReordering={true}
-                  enableSorting={true}
+                  enableSorting={false}
+                  onDragEnd={handleDragEnd}
+                  onDragStart={handleDragStart}
                 />
               </div>
+            )}
+          </div>
 
-              {/* Pagination */}
-              {(purchaseData?.data?.length ?? 0) > 0 && (
+          {/* Pagination - FIJO en la parte inferior */}
+          {
+            !isInfiniteScroll && (purchaseData?.data?.length ?? 0) > 0 && (
+              <div className="flex-shrink-0 border-t border-border bg-card">
                 <Pagination
                   currentPage={filters.pagina || 1}
                   onPageChange={onPageChange}
-                  totalData={purchaseData?.meta.total || 1}
+                  totalData={purchaseData?.meta?.total ?? 1}
                   onShowRowsChange={onShowRowsChange}
                   showRows={filters.pagina_registros}
                 />
-              )}
-            </div>
-          </ResizableBox>
-        )}
+              </div>
+            )
+          }
+        </section>
       </div>
 
       {/* Delete Confirmation Dialog */}

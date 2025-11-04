@@ -75,11 +75,9 @@ const Pagination: React.FC<PaginationProps> = ({
         }
     };
 
-    if (totalPages <= 1) return null
-
     return (
         <div className={cn(
-            "flex flex-col sm:flex-row gap-3 sm:gap-1 items-center justify-between px-2 py-3 border-t border-gray-200",
+            "flex flex-col sm:flex-row gap-2 sm:gap-1 items-center justify-between p-2 border-t border-border",
             className
         )}>
             {/* Left side - Show rows selector */}
@@ -91,49 +89,53 @@ const Pagination: React.FC<PaginationProps> = ({
             </div>
 
             {/* Page numbers */}
-            <div className="flex items-center gap-1 text-xs sm:text-sm">
-                {/* Previous button */}
-                <Button
-                    type='button'
-                    variant="outline"
-                    onClick={handlePrevious}
-                    disabled={currentPage === 1}
-                    className="cursor-pointer disabled:cursor-not-allowed size-8"
-                >
-                    <ChevronLeftIcon className="size-4" />
-                </Button>
+            {
+                totalPages > 1 && (
+                    <div className="flex items-center gap-1 text-xs sm:text-sm">
+                        {/* Previous button */}
+                        <Button
+                            type='button'
+                            variant="outline"
+                            onClick={handlePrevious}
+                            disabled={currentPage === 1}
+                            className="cursor-pointer disabled:cursor-not-allowed size-8"
+                        >
+                            <ChevronLeftIcon className="size-4" />
+                        </Button>
 
-                {/* Page numbers */}
-                {getVisiblePages().map((page, index) => (
-                    <React.Fragment key={index}>
-                        {page === '...' ? (
-                            <span className="flex items-center justify-center size-6 sm:size-8 text-gray-500">
-                                ...
-                            </span>
-                        ) : (
-                            <Button
-                                type='button'
-                                variant={page === currentPage ? "default" : 'outline'} size="sm"
-                                onClick={() => handlePageClick(page)}
-                                className="cursor-pointer min-w-8"
-                            >
-                                {page}
-                            </Button>
-                        )}
-                    </React.Fragment>
-                ))}
+                        {/* Page numbers */}
+                        {getVisiblePages().map((page, index) => (
+                            <React.Fragment key={index}>
+                                {page === '...' ? (
+                                    <span className="flex items-center justify-center size-6 sm:size-8 text-gray-500">
+                                        ...
+                                    </span>
+                                ) : (
+                                    <Button
+                                        type='button'
+                                        variant={page === currentPage ? "default" : 'outline'} size="sm"
+                                        onClick={() => handlePageClick(page)}
+                                        className="cursor-pointer min-w-8"
+                                    >
+                                        {page}
+                                    </Button>
+                                )}
+                            </React.Fragment>
+                        ))}
 
-                {/* Next button */}
-                <Button
-                    type='button'
-                    variant="outline"
-                    onClick={handleNext}
-                    disabled={currentPage === totalPages}
-                    className="cursor-pointer disabled:cursor-not-allowed size-8"
-                >
-                    <ChevronRightIcon className="size-4" />
-                </Button>
-            </div>
+                        {/* Next button */}
+                        <Button
+                            type='button'
+                            variant="outline"
+                            onClick={handleNext}
+                            disabled={currentPage === totalPages}
+                            className="cursor-pointer disabled:cursor-not-allowed size-8"
+                        >
+                            <ChevronRightIcon className="size-4" />
+                        </Button>
+                    </div>
+                )
+            }
 
             {/* Right side - empty for balance */}
         </div>

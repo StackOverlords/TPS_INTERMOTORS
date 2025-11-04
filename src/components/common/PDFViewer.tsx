@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { createObjectURL, revokeObjectURL, downloadPDF } from "@/lib/pdfUtils";
-import { Loader2, Download, Maximize2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../atoms/dialog";
+import { Loader2, Download, Maximize2, X } from "lucide-react";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../atoms/dialog";
 import { Button } from "@/components/atoms/button";
 import { cn } from "@/lib/utils";
 
 interface PDFViewerProps {
-    id: number;
+    id: number | null;
     pdfBlob: Blob | undefined;
     isLoading: boolean;
     isError: boolean;
@@ -62,8 +62,8 @@ export const PDFViewer = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn(
-                "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col gap-2",
+            <DialogContent showCloseButton={false} className={cn(
+                "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col gap-2 p-3",
                 (isLoading || isError) && "max-w-max max-h-max",
                 expandedView && "max-w-full max-h-full",
             )} aria-description="pdf-viewer">
@@ -92,7 +92,7 @@ export const PDFViewer = ({
                                     <div className="flex items-center text-base">
                                         {title}
                                     </div>
-                                    <div className="flex items-center gap-2 pr-4">
+                                    <div className="flex items-center gap-2">
                                         <Button className="cursor-pointer" variant="outline" onClick={() => setExpandedView(!expandedView)}>
                                             <Maximize2 className="w-4 h-4" />
                                         </Button>
@@ -113,6 +113,9 @@ export const PDFViewer = ({
                                     <Printer className="w-4 h-4" />
                                     {environment.isTauri ? "Abrir" : "Imprimir"}
                                 </button> */}
+                                        <DialogClose className="size-8 rounded-sm ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary flex items-center justify-center" >
+                                            <X className="w-4 h-4" />
+                                        </DialogClose>
                                     </div>
                                 </DialogTitle>
                             </DialogHeader>

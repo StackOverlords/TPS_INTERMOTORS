@@ -1,5 +1,5 @@
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef, type VisibilityState } from "@tanstack/react-table";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Category, CreateCategory, SubcategoryItem, UpdateCategory } from "../types/category.types";
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
@@ -22,6 +22,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { CreateCategorySchema, UpdateCategorySchema } from "../schemas/category.schema";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
 import { Checkbox } from "@/components/atoms/checkbox";
+import { useCustomTable } from "@/hooks/useCustomTable";
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 
 const CATEGORIES_DIALOG_CONFIG: DialogConfig = {
     title: "Categoria",
@@ -33,7 +35,6 @@ const CATEGORIES_DIALOG_CONFIG: DialogConfig = {
         required: true,
     }
 };
-const getColumnVisibilityKey = (userName: string) => `categories-columns-${userName}`;
 
 interface CategoryListTableProps {
     categories: Category[]
@@ -65,9 +66,8 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
     const location = useLocation();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-        subcategorias: false
-    })
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    const tableRef = useRef<HTMLTableElement>(null)
 
     const {
         data: categoryById,
@@ -194,31 +194,6 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
             return newSet;
         });
     }, []);
-
-    useEffect(() => {
-        if (!user?.name) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        const savedVisibility = localStorage.getItem(COLUMN_VISIBILITY_KEY);
-        if (savedVisibility) {
-            try {
-                const parsed = JSON.parse(savedVisibility);
-                setColumnVisibility(parsed);
-            } catch (error) {
-                console.error('Error parsing column visibility:', error);
-                localStorage.removeItem(COLUMN_VISIBILITY_KEY);
-            }
-        }
-    }, [user?.name]);
-
-    useEffect(() => {
-        if (!user?.name || Object.keys(columnVisibility).length === 0) return;
-        const COLUMN_VISIBILITY_KEY = getColumnVisibilityKey(user.name);
-        try {
-            localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-        } catch (error) {
-            console.error('Error saving column visibility:', error);
-        }
-    }, [columnVisibility, user?.name]);
 
     const columns = useMemo<ColumnDef<Category>[]>(() => [
         {
@@ -365,20 +340,57 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
         },
     ], [handleEditCategory, handleOpenDeleteAlert, expandedRows, toggleExpanded]);
 
-    const table = useReactTable<Category>({
+    const {
+        table,
+    } = useCustomTable({
         data: categories,
         columns,
-        state: {
-            columnVisibility
-        },
-        onColumnVisibilityChange: setColumnVisibility,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: false,
         enableColumnResizing: true,
-        enableRowSelection: false,
-    })
+        enableRowSelection: true,
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Columnas ocultas por defecto
+        hiddenColumns: ['subcategorias'],
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `categories-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
+
+    const {
+        selectedIndex,
+        setSelectedIndex,
+        isFocused,
+        // hotkeys
+    } = useKeyboardNavigation<Category, HTMLTableElement>({
+        items: categories,
+        containerRef: tableRef,
+        isDragging: isDraggingColumn,
+        onPrimaryAction: (category) => {
+            handleEditCategory(category.id)
+        },
+        getItemId: (category) => category.id
+    });
+    const handleRowClick = (index: number) => {
+        setSelectedIndex(index);
+    };
+
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
 
     useEffect(() => {
         if (!isErrorCategoryById) return
@@ -387,8 +399,8 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
     }, [isErrorCategoryById, errorCategoryById, handleError, handleDialogToggle])
 
     return (
-        <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                 <div>
                     <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
                         <FolderOpen className="size-5 text-gray-700" />
@@ -407,7 +419,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
                                 Columnas
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                             {table
                                 .getAllColumns()
                                 .filter((column) => column.getCanHide())
@@ -444,25 +456,41 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
                     />
                 </div>
             </CardHeader>
-            <CardContent>
-                <div className="border rounded-lg border-gray-200">
-                    <CustomizableTable
-                        table={table}
-                        isLoading={isLoadingCategoriesData}
-                        isError={isErrorCategoriesData}
-                        isFetching={isFetchingCategoriesData}
-                        rows={rows}
-                    />
+            <CardContent className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0">
+                    <div className="h-full overflow-auto">
+                        <CustomizableTable
+                            table={table}
+                            isLoading={isLoadingCategoriesData}
+                            isError={isErrorCategoriesData}
+                            isFetching={isFetchingCategoriesData}
+                            rows={rows}
+                            errorMessage="Ocurrió un error al cargar las categorías."
+                            noDataMessage="No se encontraron categorías."
+                            selectedRowIndex={selectedIndex}
+                            onRowClick={handleRowClick}
+                            tableRef={tableRef}
+                            focused={isFocused}
+                            keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
+                        />
+                    </div>
                 </div>
 
-                <Pagination
-                    className="border-0 px-0 pt-3 pb-0"
-                    currentPage={page}
-                    onPageChange={onPageChange}
-                    totalData={totalRecords}
-                    onShowRowsChange={handleRowsChange}
-                    showRows={rows}
-                />
+                {/* Pagination - FIJO en la parte inferior */}
+                <div className="flex-shrink-0 border-t border-border bg-card">
+                    <Pagination
+                        className="border-0 px-0 pt-2 pb-0"
+                        currentPage={page}
+                        onPageChange={onPageChange}
+                        totalData={totalRecords}
+                        onShowRowsChange={handleRowsChange}
+                        showRows={rows}
+                    />
+                </div>
             </CardContent>
         </Card>
     );

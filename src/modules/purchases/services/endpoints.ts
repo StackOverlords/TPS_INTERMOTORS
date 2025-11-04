@@ -1,8 +1,11 @@
+const BASE_PATH = '/purchases';
+
 export const PURCHASE_ENDPOINTS = {
-    all: "/purchases",
-    byId: (id: number) => `/purchases/${id}`,
-    update: (id: number) => `/purchases/${id}`,
-    delete: (id: number) => `/purchases/${id}`,
+    all: BASE_PATH,
+    create: BASE_PATH,
+    byId: (id: string | number) => `${BASE_PATH}/${id}`,
+    update: (id: string | number) => `${BASE_PATH}/${id}`,
+    delete: (id: string | number) => `${BASE_PATH}/${id}`,
     providers: "/products/purchases/commons/providers",
     // Nuevos endpoints para commons
     types: "/products/purchases/commons/types",

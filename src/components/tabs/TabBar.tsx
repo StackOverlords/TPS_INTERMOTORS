@@ -74,12 +74,12 @@ const TabItem = React.memo(
     };
 
     // Mostrar título completo + ruta en el tooltip
-    const tooltipContent = (
-      <div className="flex flex-col gap-1">
-        <span className="font-medium">{tab.title}</span>
-        <span className="text-xs text-gray-400">{tab.path}</span>
-      </div>
-    );
+    // const tooltipContent = (
+    //   <div className="flex flex-col gap-1">
+    //     <span className="font-medium">{tab.title}</span>
+    //     <span className="text-xs text-gray-400">{tab.path}</span>
+    //   </div>
+    // );
 
     return (
       <div ref={setNodeRef} style={style}>
@@ -98,8 +98,8 @@ const TabItem = React.memo(
                 'cursor-grab active:cursor-grabbing',
                 isDragging && 'shadow-lg ring-2 ring-primary/20',
                 isActive
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gray-100 text-primary'
+                  : 'text-gray-600 hover:text-primary'
               )}
             >
               {tab.icon && <tab.icon className="h-4 w-4 flex-shrink-0" />}

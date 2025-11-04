@@ -28,6 +28,7 @@ interface ProductSelectorModalProps {
     addItem: (product: ProductGet) => void
     addMultipleItem: (products: ProductGet[]) => void
     onlyWithStock?: boolean
+    disabled?: boolean
 }
 
 const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
@@ -36,6 +37,7 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
     addItem,
     addMultipleItem,
     onlyWithStock = false,
+    disabled = false,
 }) => {
     const [products, setProducts] = useState<ProductGet[]>([]);
     const [selectedProducts, setSelectedProducts] = useState<ProductGet[]>([]);
@@ -186,8 +188,7 @@ const ProductSelectorModal: React.FC<ProductSelectorModalProps> = ({
             <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
                 <DialogTrigger asChild>
                     <Button
-                        className="bg-black hover:bg-gray-800 text-white"
-                        size="sm"
+                        disabled={disabled}
                         title="Seleccionar Productos"
                     >
                         <Plus className="size-4" />

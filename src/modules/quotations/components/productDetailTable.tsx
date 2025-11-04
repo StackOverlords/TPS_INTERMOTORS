@@ -12,9 +12,17 @@ import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { CartItem } from '@/modules/shoppingCart/types/cart.types';
 import { Input } from '@/components/atoms/input';
 
-const ProductDetailTable = forwardRef((_, ref) => {
+interface ProductDetailTableProps {
+    isReadOnly: boolean
+    details: CartItem[] | null;
+}
+
+const ProductDetailTable = forwardRef(({
+    isReadOnly,
+    details
+}: ProductDetailTableProps, ref) => {
     const user = authSDK.getCurrentUser()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -26,6 +34,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
             }
         }
     }));
+
     const {
         items: cart,
         updateCustomDescription,
@@ -35,6 +44,13 @@ const ProductDetailTable = forwardRef((_, ref) => {
         updateCustomPrice,
         updateCustomSubtotal,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
+
+    const dataToUse = useMemo(() => {
+        if (isReadOnly && details && details.length > 0) {
+            return details;
+        }
+        return cart;
+    }, [isReadOnly, details, cart]);
 
     const columns = useMemo<ColumnDef<CartItem>[]>(() => [
         {
@@ -58,13 +74,13 @@ const ProductDetailTable = forwardRef((_, ref) => {
                 const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
                 const customDescription = getValue<string>()
                 return (
-                    <div
-                        className="flex items-center">
+                    <div className="flex items-center">
                         <Input
                             value={customDescription}
-                            onChange={(e) => updateCustomDescription(row.original.product.id, e.target.value)}
+                            onChange={(e) => !isReadOnly && updateCustomDescription(row.original.product.id, e.target.value)}
                             ref={refToAssign}
                             autoSelectOnFocus={true}
+                            disabled={isReadOnly}
                         />
                     </div>
                 )
@@ -79,8 +95,9 @@ const ProductDetailTable = forwardRef((_, ref) => {
                 return (
                     <Input
                         value={customBrand}
-                        onChange={(e) => updateCustomBrand(row.original.product.id, e.target.value)}
+                        onChange={(e) => !isReadOnly && updateCustomBrand(row.original.product.id, e.target.value)}
                         autoSelectOnFocus={true}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -93,6 +110,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
             cell: ({ getValue, row }) => {
                 const quantity = getValue<number>()
                 const product = row.original.product
+
                 return (
                     <EditableQuantity
                         value={quantity}
@@ -103,6 +121,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
                             const num = parseInt(val);
                             return !isNaN(num) && num > 0;
                         }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -115,6 +134,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
             cell: ({ getValue, row }) => {
                 const basePrice = getValue<number>()
                 const product = row.original.product
+
                 return (
                     <EditablePrice
                         value={basePrice}
@@ -122,6 +142,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
                         className="w-full"
                         buttonClassName="w-full"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -134,6 +155,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
             cell: ({ getValue, row }) => {
                 const itemSubtotal = getValue<number>()
                 const product = row.original.product
+
                 return (
                     <EditablePrice
                         value={itemSubtotal}
@@ -141,6 +163,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
                         className="w-full"
                         inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -152,6 +175,11 @@ const ProductDetailTable = forwardRef((_, ref) => {
             minSize: 40,
             cell: ({ row }) => {
                 const product = row.original.product
+
+                if (isReadOnly) {
+                    return null;
+                }
+
                 return (
                     <div className='flex items-center justify-center'>
                         <Button
@@ -168,6 +196,7 @@ const ProductDetailTable = forwardRef((_, ref) => {
             }
         }
     ], [
+        isReadOnly,
         removeItem,
         updateCustomBrand,
         updateCustomDescription,
@@ -175,8 +204,9 @@ const ProductDetailTable = forwardRef((_, ref) => {
         updateCustomSubtotal,
         updateQuantity
     ])
+
     const table = useReactTable<CartItem>({
-        data: cart,
+        data: dataToUse,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -193,4 +223,5 @@ const ProductDetailTable = forwardRef((_, ref) => {
         />
     );
 });
+
 export default ProductDetailTable

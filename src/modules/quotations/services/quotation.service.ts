@@ -15,12 +15,15 @@ export const quotationService = {
      * Crear una nueva cotización
      * @param data - Datos de la cotización a crear
     */
-    async create(data: QuotationCreate): Promise<unknown> {
+    async create(data: QuotationCreate): Promise<QuotationGetById> {
         Logger.info('Creating quotation', { data }, MODULE_NAME);
 
         const response = await ApiService.post(
             QUOTATION_ENDPOINTS.create,
             data,
+            QuotationGetByIdSchema,
+            undefined,
+            { unwrapData: true }
         );
 
         Logger.info(
@@ -29,7 +32,7 @@ export const quotationService = {
             // response.data.id && { id: response.data.id },
             MODULE_NAME
         );
-        return response
+        return response as QuotationGetById;
     },
 
     /**

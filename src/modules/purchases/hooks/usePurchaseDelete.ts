@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { deletePurchase } from "../services/purchaseService";
 import { toast } from "@/hooks/use-toast";
+import { purchaseService } from "../services/purchaseService";
 
 export function usePurchaseDelete() {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -22,12 +22,12 @@ export function usePurchaseDelete() {
 
     setIsDeleting(true);
     try {
-      await deletePurchase(purchaseToDelete);
+      await purchaseService.delete(purchaseToDelete);
       toast({
         title: "Compra eliminada",
         description: "La compra se ha eliminado correctamente.",
       });
-      
+
       setShowDeleteDialog(false);
       setPurchaseToDelete(null);
       return true;

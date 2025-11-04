@@ -1,8 +1,7 @@
 import { useBranchStore } from "@/states/branchStore";
 import { useEffect, useState } from "react";
-import { Filter, RefreshCcw, Search } from "lucide-react";
+import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
-import { useDebounce } from "use-debounce";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
 import TooltipButton from "@/components/common/TooltipButton";
@@ -19,13 +18,11 @@ import ReturnsFiltersComponent from "../components/returnList/returnFilterCompon
 import ReturnsListTable from "../components/returnList/returnListTable";
 
 const ReturnListScreen = () => {
-    const { selectedBranchId } = useBranchStore()
-    const [searchKeywords, setSearchKeywords] = useState("");
-    const [debouncedSearchKeywords] = useDebounce(searchKeywords, 500);
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const [isInfiniteScroll, setIsInfiniteScroll] = useState<boolean>(false)
     const [showFilters, setShowFilters] = useState<boolean>(true)
     const [returns, setReturns] = useState<ReturnGetAll[]>([]);
-    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('realtime');
+    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
 
     const {
         filters,
@@ -34,8 +31,8 @@ const ReturnListScreen = () => {
         updateFilter,
         setPage,
         resetFilters,
-        // applyFilters, //para manual
-        setPageSize
+        applyFilters,
+        setPageSize,
     } = useReturnsFilters(Number(selectedBranchId) || 1)
 
     // Determinar qué filtros usar según el modo
@@ -69,8 +66,19 @@ const ReturnListScreen = () => {
 
     const handleResetFilters = () => {
         resetFilters()
-        setSearchKeywords("")
     }
+
+    // Manejar búsqueda manual
+    const handleManualSearch = () => {
+        if (searchMode === 'manual') {
+            applyFilters();
+        }
+    };
+
+    // Toggle del modo de búsqueda
+    const toggleSearchMode = () => {
+        setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
+    };
 
     const handleDeleteSuccess = (_data: unknown, Id: number) => {
         showSuccessToast({
@@ -101,10 +109,6 @@ const ReturnListScreen = () => {
         variables: returnToDelete
     } = useConfirmMutation(deleteReturn, handleDeleteSuccess, handleDeleteError)
 
-    useEffect(() => {
-        updateFilter("keywords", debouncedSearchKeywords);
-    }, [debouncedSearchKeywords, updateFilter]);
-
     const handleRefetchReturns = () => {
         refetchReturns();
     }
@@ -114,9 +118,9 @@ const ReturnListScreen = () => {
     }
 
     return (
-        <main className="min-h-screen space-y-2">
-            <header className="bg-white rounded-lg p-2 space-y-2 border border-gray-200">
-                <h1 className="text-lg font-bold text-gray-900">Devoluciones</h1>
+        <main className="h-full p-2 gap-2 flex flex-col">
+            <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+                <h1 className="text-lg font-bold text-primary">Devoluciones</h1>
                 <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
                     <div className="flex items-center gap-2 md:gap-4 grow">
 
@@ -124,14 +128,26 @@ const ReturnListScreen = () => {
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
                                 placeholder="Buscar por palabras clave..."
-                                value={searchKeywords}
-                                onChange={(e) => setSearchKeywords(e.target.value)}
+                                value={filters.keywords}
+                                onChange={(e) => updateFilter("keywords", e.target.value)}
                                 className="pl-10 w-full"
                             />
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                        {/* Toggle de modo de búsqueda */}
+                        <Button
+                            type='button'
+                            size="sm"
+                            variant="ghost"
+                            onClick={toggleSearchMode}
+                            className="text-xs h-7"
+                            title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+                        >
+                            <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                            {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+                        </Button>
                         <div className="flex items-center space-x-2">
                             <Switch
                                 id="infinite-scroll"
@@ -178,13 +194,15 @@ const ReturnListScreen = () => {
                             <ReturnsFiltersComponent
                                 filters={filters}
                                 updateFilter={updateFilter}
+                                handleManualSearch={handleManualSearch}
+                                searchMode={searchMode}
                             />
                         </>
                     )
                 }
             </header>
 
-            <div className="bg-white rounded-lg border border-gray-200 space-y-2">
+            <div className="bg-card rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
                 <ReturnsListTable
                     data={returnsData || { data: [], meta: null, links: null }}
                     filters={filters}

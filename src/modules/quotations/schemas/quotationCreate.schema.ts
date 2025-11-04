@@ -28,7 +28,6 @@ export const QuotationCreateSchema = z.object({
     nro_motor: z.string().nullable(),
     anticipo: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))).nullable(),
     pedido: z.boolean(),
-    usuario: z.number(),
     sucursal: z.number(),
     id_responsable: z.number(),
     detalles: z.array(QuotationDetailSchema)

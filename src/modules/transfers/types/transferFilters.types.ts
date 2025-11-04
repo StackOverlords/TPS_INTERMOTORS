@@ -5,8 +5,8 @@ export interface TransfersFilters {
     sucursal?: number;
     keywords?: string;
     responsable?: number;
-    fecha_inicio?: string;
-    fecha_fin?: string;
+    fecha_inicio?: Date;
+    fecha_fin?: Date;
     sucursal_origen?: number;
     sucursal_destino?: number;
     codigo_oem_producto?: string;

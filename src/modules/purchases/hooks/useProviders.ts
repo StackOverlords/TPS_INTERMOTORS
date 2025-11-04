@@ -1,10 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchProviders } from "../services/purchaseService";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { fetchProviders } from "../services/purchaseCommonsService";
+import { PURCHASE_COMMONS_KEYS } from "../constants/purchasesCommonsQuerykeys";
 
 export const useProviders = () => {
     return useQuery({
-        queryKey: ["providers"],
-        queryFn: () => fetchProviders(""), // Cargar todos los proveedores con "TODO"
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        queryKey: PURCHASE_COMMONS_KEYS.providers(),
+        queryFn: () => fetchProviders(""),
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 15, // 15 minutes
     });
 };
