@@ -115,6 +115,16 @@ export function useSecondaryWindow(
   // Si no se especifican eventos, usar solo 'window-closed' por defecto
   const eventsToListen = listenToEvents || ['window-closed'];
 
+  // Debug: detectar cambios en eventsToListen
+  const eventsToListenRef = useRef(eventsToListen);
+  if (eventsToListenRef.current !== eventsToListen) {
+    // console.log(`[useSecondaryWindow] ${windowId}: ⚠️ eventsToListen cambió!`, {
+    //   anterior: eventsToListenRef.current,
+    //   nuevo: eventsToListen,
+    // });
+    eventsToListenRef.current = eventsToListen;
+  }
+
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -136,7 +146,7 @@ export function useSecondaryWindow(
     const checkAndCleanup = async () => {
       const existingWindow = await isWindowOpen(windowId);
       if (existingWindow && !isOpen) {
-        console.log(`[useSecondaryWindow] Limpiando ventana huérfana "${windowId}"`);
+        // console.log(`[useSecondaryWindow] Limpiando ventana huérfana "${windowId}"`);
         try {
           await closeSecondaryWindow(windowId);
         } catch (err) {
@@ -233,18 +243,30 @@ export function useSecondaryWindow(
    * Configurar listeners de eventos
    */
   useEffect(() => {
-    if (!onEventRef.current) return;
+    if (!onEventRef.current) {
+      // console.log(`[useSecondaryWindow] ${windowId}: No hay onEvent, saltando setup de listeners`);
+      return;
+    }
 
-    const unlisteners: Array<() => void> = [];
+    // console.log(`[useSecondaryWindow] ${windowId}: 🔧 Configurando listeners para eventos:`, eventsToListen);
+    let unlisteners: Array<() => void> = [];
+    let mounted = true;
 
     // Escuchar eventos específicos
     const setupListeners = async () => {
       for (const eventName of eventsToListen) {
+        if (!mounted) {
+          // console.log(`[useSecondaryWindow] ${windowId}: ⚠️ Componente desmontado, abortando setup`);
+          break;
+        }
+
         try {
+          // console.log(`[useSecondaryWindow] ${windowId}: 📡 Registrando listener para "${eventName}"`);
           const unlisten = await listenToWindowEvent(
             windowId,
             eventName,
             data => {
+              // console.log(`[useSecondaryWindow] ${windowId}: 🔔 Listener disparado para "${eventName}"`);
               onEventRef.current?.(eventName, data);
             }
           );
@@ -256,13 +278,23 @@ export function useSecondaryWindow(
           );
         }
       }
+      // console.log(`[useSecondaryWindow] ${windowId}: ✅ ${unlisteners.length} listeners registrados exitosamente`);
     };
 
     setupListeners();
 
     // Cleanup: remover listeners
     return () => {
-      unlisteners.forEach(unlisten => unlisten());
+      mounted = false;
+      // console.log(`[useSecondaryWindow] ${windowId}: 🧹 Limpiando ${unlisteners.length} listeners`);
+      unlisteners.forEach(unlisten => {
+        try {
+          unlisten();
+        } catch (err) {
+          // console.error(`[useSecondaryWindow] Error limpiando listener:`, err);
+        }
+      });
+      unlisteners = [];
     };
   }, [windowId, eventsToListen]);
 
@@ -301,6 +333,13 @@ export interface UseProductSelectorWindowConfig {
   initialFilters?: Record<string, any>;
 }
 
+// Array constante para evitar recreaciones
+const PRODUCT_SELECTOR_EVENTS = [
+  'product-selected',
+  'product-multi-selected',
+  'window-closed',
+] as const;
+
 // ====== Hook específico para ventana de selector de productos ======
 export function useProductSelectorWindow(
   config: UseProductSelectorWindowConfig
@@ -319,6 +358,23 @@ export function useProductSelectorWindow(
     ? `product-selector-${context}-${instanceId}`
     : `product-selector-${context}`;
 
+  // Refs para mantener callbacks actualizados sin causar re-renders
+  const onProductSelectRef = useRef(onProductSelect);
+  const onMultiSelectRef = useRef(onMultiSelect);
+  useEffect(() => {
+    onProductSelectRef.current = onProductSelect;
+    onMultiSelectRef.current = onMultiSelect;
+  }, [onProductSelect, onMultiSelect]);
+  // Callback estable que usa las refs
+  // ✅ Sin dependencias, siempre estable
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    if (eventName === 'product-selected' && onProductSelectRef.current) {
+      onProductSelectRef.current(data);
+    } else if (eventName === 'product-multi-selected' && onMultiSelectRef.current) {
+      onMultiSelectRef.current(data);
+    }
+  }, []);
+
   return useSecondaryWindow({
     windowId,
     route: '/window.html', // HTML genérico
@@ -331,18 +387,8 @@ export function useProductSelectorWindow(
       onlyWithStock: String(onlyWithStock ?? false),
       ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
     },
-    listenToEvents: [
-      'product-selected',
-      'product-multi-selected',
-      'window-closed',
-    ],
-    onEvent: (eventName, data) => {
-      if (eventName === 'product-selected' && onProductSelect) {
-        onProductSelect(data);
-      } else if (eventName === 'product-multi-selected' && onMultiSelect) {
-        onMultiSelect(data);
-      }
-    },
+    listenToEvents: PRODUCT_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
+    onEvent: handleEvent, // ✅ Referencia estable
   });
 }
 
@@ -355,6 +401,12 @@ export interface UsePurchaseSelectorWindowConfig {
   onlyWithStock?: boolean;
 }
 
+// Array constante para evitar recreaciones
+const PURCHASE_SELECTOR_EVENTS = [
+  'purchase-selected',
+  'window-closed',
+] as const;
+
 export function usePurchaseSelectorWindow(
   config: UsePurchaseSelectorWindowConfig
 ): UseSecondaryWindowResult {
@@ -365,17 +417,31 @@ export function usePurchaseSelectorWindow(
     onlyWithStock,
   } = config;
 
-  // Generar windowId único // NO se olvideen de cambiar en sus ventanasss
+  // Generar windowId único
   const windowId = instanceId
     ? `purchase-selector-${context}-${instanceId}`
     : `purchase-selector-${context}`;
+
+
+  // Ref para mantener callback actualizado sin causar re-renders
+  const onPurchaseSelectRef = useRef(onPurchaseSelect);
+  useEffect(() => {
+    onPurchaseSelectRef.current = onPurchaseSelect;
+  }, [onPurchaseSelect]);
+  // Callback estable que usa la ref
+  // ✅ Sin dependencias, siempre estable
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    if (eventName === 'purchase-selected' && onPurchaseSelectRef.current) {
+      onPurchaseSelectRef.current(data);
+    }
+  }, []);
+
 
   // Usar hook genérico para crear ventana de selector de compras
   return useSecondaryWindow({
     windowId,
     route: '/window.html',
     title: 'Seleccionar Compra',
-    // autoCloseOnUnmount: true, // Siempre cerrar al desmontar
     width: 1400,
     height: 900,
     queryParams: {
@@ -384,12 +450,8 @@ export function usePurchaseSelectorWindow(
       onlyWithStock: String(onlyWithStock ?? false),
       windowId,
     },
-    listenToEvents: ['purchase-selected', 'window-closed'],
-    onEvent: (eventName, data) => {
-      if (eventName === 'purchase-selected' && onPurchaseSelect) {
-        onPurchaseSelect(data);
-      }
-    },
+    listenToEvents: PURCHASE_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
+    onEvent: handleEvent, // ✅ Referencia estable
   });
 };
 
