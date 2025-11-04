@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ShoppingCart, CornerUpLeft, Printer } from "lucide-react";
+import { ShoppingCart, CornerUpLeft, Printer, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Label } from "@/components/atoms/label";
 import { Input } from "@/components/atoms/input";
@@ -38,10 +38,19 @@ import { PDFViewer } from "@/components/common/PDFViewer";
 import { useQuotationPDF } from "../hooks/useQuotationPDF";
 import { Badge } from "@/components/atoms/badge";
 import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
+import { cn } from "@/lib/utils";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { Button } from "@/components/atoms/button";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
 const QuotationCreateScreen = () => {
+    const configuraciones = {
+        inputs: false,
+        formulario: 'top',
+        selector_mode: 'window'
+    }
     const [createdQuotationId, setCreatedQuotationId] = useState<number | null>(null);
     const [createdQuotationDetails, setCreatedQuotationDetails] = useState<CartItem[] | null>(null);
     const [createdQuotationSummary, setCreatedQuotationSummary] = useState<{
@@ -438,6 +447,27 @@ const QuotationCreateScreen = () => {
         setIsDialogOpen(false)
     }
 
+    // Hook para manejar la ventana secundaria de productos
+    const productWindow = useProductSelectorWindow({
+        context: 'cotizacion',
+        instanceId: 'create-quotation',
+        onProductSelect: (product: ProductGet) => {
+            // console.log(product)
+            handleAddProductItem(product);
+        },
+        // onMultiSelect(products: ProductGet[]) {
+        //     handleAddMultipleProducts(products)
+        // },
+        onlyWithStock: false,
+    });
+
+    const toggleWindowSelector = () => {
+        if (productWindow.isOpen) {
+            productWindow.close();
+        }
+        productWindow.open();
+    };
+
     // Shortcuts
     useHotkeys('escape', (e) => {
         e.preventDefault();
@@ -510,304 +540,411 @@ const QuotationCreateScreen = () => {
                         </div >
                     </header >
 
-                    {/* Formulario de información de cotización*/}
-                    <div className="grid md:grid-cols-3 gap-2 flex-shrink-0">
-                        {/* 1. Datos de la cotización */}
-                        <Card className="shadow-none h-full md:col-span-2">
+                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                        <div className={cn(
+                            "h-full gap-2",
+                            configuraciones.formulario === "top" && "flex flex-col",
+                            configuraciones.formulario === "left" && "flex flex-col md:grid md:grid-cols-3"
+                        )}>
+                            {/* Formulario de información de cotización*/}
+                            <div className={cn(
+                                "gap-2 flex-shrink-0",
+                                configuraciones.formulario === "top" && "grid md:grid-cols-3",
+                                configuraciones.formulario === "left" && "flex flex-col",
+                            )}>
+                                {/* 1. Datos de la cotización */}
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0 md:col-span-2",
+                                    configuraciones.formulario === "left" && "h-auto md:col-auto",
+                                )}>
 
-                            <CardContent className="p-2 sm:p-3">
-                                <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
-                                    <div>
-                                        <Label htmlFor="fechaCotizacion">Fecha *</Label>
-                                        <Input
-                                            id="fechaCotizacion"
-                                            type="date"
-                                            {...register("fecha")}
-                                            className="w-full"
-                                            autoFocus
-                                            disabled={isReadOnly}
-                                        />
-                                        {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="id_responsable">Responsable *</Label>
-                                        <Controller
-                                            name="id_responsable"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <ComboboxSelect
-                                                    value={field.value}
-                                                    onChange={(value) => {
-                                                        field.onChange(Number(value));
-                                                    }}
-                                                    options={saleResponsiblesData || []}
-                                                    optionTag={"nombre"}
-                                                    disabled={isReadOnly}
-                                                />
-                                            )}
-                                        />
-                                        {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="forma">Forma de Cotización *</Label>
-                                        <Controller
-                                            name="forma_cotizacion"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    disabled={isReadOnly}
-                                                    onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona una forma" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {
-                                                            saleModalitiesData && saleModalitiesData.map((modality) => (
-                                                                <SelectItem key={modality.code} value={modality.code}>
-                                                                    {modality.label}
-                                                                </SelectItem>
-                                                            ))
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.forma_cotizacion && <p className="text-red-500 text-sm mt-1">{errors.forma_cotizacion.message}</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="tipo_cotizacion">Tipo de Cotización *</Label>
-                                        <Controller
-                                            name="tipo_cotizacion"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    disabled={isReadOnly}
-                                                    onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona un tipo" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {
-                                                            saleTypesData && saleTypesData.map((type) => (
-                                                                <SelectItem key={type.code} value={type.code}>
-                                                                    {type.label}
-                                                                </SelectItem>
-                                                            ))
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.tipo_cotizacion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nroComprobante">N° Comprobante</Label>
-                                        <Input
-                                            id="nroComprobante"
-                                            {...register("nro_comprobante")}
-                                            placeholder="Número de comprobante"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nroComprobanteSecundario">N° Comprobante Sec.</Label>
-                                        <Input
-                                            id="nroComprobanteSecundario"
-                                            {...register("nro_comprobante2")}
-                                            placeholder="Comprobante secundario"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="fechaPlazo">
-                                            Fecha Plazo
-                                            <span className="text-xs ml-1 text-gray-500">(Crédito)</span>
-                                        </Label>
-                                        <Input
-                                            id="fechaPlazo"
-                                            type="date"
-                                            {...register("plazo_pago")}
-                                            disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="vehiculo">Vehículo</Label>
-                                        <Input
-                                            id="vehiculo"
-                                            {...register("vehiculo")}
-                                            placeholder="Modelo del vehículo"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="motor">Motor</Label>
-                                        <Input
-                                            id="motor"
-                                            {...register("nro_motor")}
-                                            placeholder="Tipo de motor"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="anticipo">Anticipo</Label>
-                                        <Controller
-                                            name="anticipo"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <EditablePrice
-                                                    value={field.value || 0}
-                                                    onSubmit={(value) => field.onChange(value as number)}
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className={cn(
+                                            "grid gap-2",
+                                            configuraciones.formulario === "top" && "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+                                            configuraciones.formulario === "left" && "grid-cols-2",
+                                        )}>
+                                            <div>
+                                                <Label htmlFor="fechaCotizacion">Fecha *</Label>
+                                                <Input
+                                                    id="fechaCotizacion"
+                                                    type="date"
+                                                    {...register("fecha")}
                                                     className="w-full"
-                                                    buttonClassName="w-full"
-                                                    numberProps={{ min: 0, step: 0.01 }}
+                                                    autoFocus
                                                     disabled={isReadOnly}
                                                 />
-                                            )}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="pedido">Es Pedido</Label>
-                                        <div>
-                                            <Controller
-                                                name="pedido"
-                                                control={control}
-                                                render={({ field }) => (
-                                                    <Switch
-                                                        checked={field.value}
-                                                        onCheckedChange={(checked) => field.onChange(checked)}
-                                                        disabled={isReadOnly}
+                                                {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="id_responsable">Responsable *</Label>
+                                                <Controller
+                                                    name="id_responsable"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <ComboboxSelect
+                                                            value={field.value}
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={saleResponsiblesData || []}
+                                                            optionTag={"nombre"}
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="forma">Forma de Cotización *</Label>
+                                                        <Controller
+                                                            name="forma_cotizacion"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <Select
+                                                                    disabled={isReadOnly}
+                                                                    onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Selecciona una forma" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {
+                                                                            saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                                <SelectItem key={modality.code} value={modality.code}>
+                                                                                    {modality.label}
+                                                                                </SelectItem>
+                                                                            ))
+                                                                        }
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        />
+                                                        {errors.forma_cotizacion && <p className="text-red-500 text-sm mt-1">{errors.forma_cotizacion.message}</p>}
+                                                    </div>
+                                                )
+                                            }
+
+                                            <div>
+                                                <Label htmlFor="tipo_cotizacion">Tipo de Cotización *</Label>
+                                                <Controller
+                                                    name="tipo_cotizacion"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona un tipo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    saleTypesData && saleTypesData.map((type) => (
+                                                                        <SelectItem key={type.code} value={type.code}>
+                                                                            {type.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.tipo_cotizacion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                                        <Input
+                                                            id="nroComprobante"
+                                                            {...register("nro_comprobante")}
+                                                            placeholder="Número de comprobante"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="nroComprobanteSecundario">N° Comprobante Sec.</Label>
+                                                        <Input
+                                                            id="nroComprobanteSecundario"
+                                                            {...register("nro_comprobante2")}
+                                                            placeholder="Comprobante secundario"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            <div>
+                                                <Label htmlFor="fechaPlazo">
+                                                    Fecha Plazo
+                                                    <span className="text-xs ml-1 text-gray-500">(Crédito)</span>
+                                                </Label>
+                                                <Input
+                                                    id="fechaPlazo"
+                                                    type="date"
+                                                    {...register("plazo_pago")}
+                                                    disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="vehiculo">Vehículo/Motor</Label>
+                                                <Input
+                                                    id="vehiculo"
+                                                    {...register("vehiculo")}
+                                                    placeholder="Modelo del vehículo"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="motor">Motor</Label>
+                                                        <Input
+                                                            id="motor"
+                                                            {...register("nro_motor")}
+                                                            placeholder="Tipo de motor"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            <div>
+                                                <Label htmlFor="anticipo">Anticipo</Label>
+                                                <Controller
+                                                    name="anticipo"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <EditablePrice
+                                                            value={field.value || 0}
+                                                            onSubmit={(value) => field.onChange(value as number)}
+                                                            className="w-full"
+                                                            buttonClassName="w-full"
+                                                            numberProps={{ min: 0, step: 0.01 }}
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="pedido">Es Pedido</Label>
+                                                <div>
+                                                    <Controller
+                                                        name="pedido"
+                                                        control={control}
+                                                        render={({ field }) => (
+                                                            <Switch
+                                                                checked={field.value}
+                                                                onCheckedChange={(checked) => field.onChange(checked)}
+                                                                disabled={isReadOnly}
+                                                            />
+                                                        )}
                                                     />
-                                                )}
-                                            />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    </CardContent>
+                                </Card>
 
-                        <Card className="shadow-none h-full">
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full",
+                                    configuraciones.formulario === "left" && "grow",
+                                )}>
 
-                            <CardContent className="p-2 sm:p-3">
-                                <div className="grid sm:grid-cols-2 gap-2">
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className="grid grid-cols-2 gap-2">
 
-                                    <div>
-                                        <Label htmlFor="cliente">Cliente *</Label>
-                                        <Controller
-                                            name="id_cliente"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <PaginatedCombobox
-                                                    value={field.value}
-                                                    onChange={(value) => field.onChange(Number(value))}
-                                                    optionsData={saleCustomersData?.data || []}
-                                                    displayField="nombre"
-                                                    isLoading={isSaleCustomersLoading}
-                                                    updatePage={(page) => { console.log("Update page:", page) }}
-                                                    updateSearch={setCustomerSearchTerm}
-                                                    disabled={isReadOnly}
-                                                    placeholder="Buscar cliente por nombre"
-                                                    metaData={
-                                                        {
-                                                            current_page: saleCustomersData?.meta.current_page || 1,
-                                                            last_page: saleCustomersData?.meta.last_page || 1,
-                                                            total: saleCustomersData?.meta.total || 0,
-                                                            per_page: saleCustomersData?.meta.per_page || 10,
-                                                        }
-                                                    }
+                                            <div>
+                                                <Label htmlFor="cliente">Cliente *</Label>
+                                                <Controller
+                                                    name="id_cliente"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <PaginatedCombobox
+                                                            value={field.value}
+                                                            onChange={(value) => field.onChange(Number(value))}
+                                                            optionsData={saleCustomersData?.data || []}
+                                                            displayField="nombre"
+                                                            isLoading={isSaleCustomersLoading}
+                                                            updatePage={(page) => { console.log("Update page:", page) }}
+                                                            updateSearch={setCustomerSearchTerm}
+                                                            disabled={isReadOnly}
+                                                            placeholder="Buscar cliente por nombre"
+                                                            metaData={
+                                                                {
+                                                                    current_page: saleCustomersData?.meta.current_page || 1,
+                                                                    last_page: saleCustomersData?.meta.last_page || 1,
+                                                                    total: saleCustomersData?.meta.total || 0,
+                                                                    per_page: saleCustomersData?.meta.per_page || 10,
+                                                                }
+                                                            }
+                                                        />
+                                                    )}
                                                 />
-                                            )}
-                                        />
-                                        {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="altClie">Cliente Alt.</Label>
-                                        <Input
-                                            id="altClie"
-                                            {...register("cliente_nombre")}
-                                            placeholder="Cliente alternativo"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="contacto">Contacto</Label>
-                                        <Input
-                                            id="contacto"
-                                            {...register("cliente_contacto")}
-                                            placeholder="Nombre de contacto"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="telefono">Teléfono</Label>
-                                        <Input
-                                            id="telefono"
-                                            {...register("cliente_telefono")}
-                                            placeholder="Teléfono del cliente"
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
+                                                {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="altClie">Cliente Alt.</Label>
+                                                        <Input
+                                                            id="altClie"
+                                                            {...register("cliente_nombre")}
+                                                            placeholder="Cliente alternativo"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="contacto">Contacto</Label>
+                                                        <Input
+                                                            id="contacto"
+                                                            {...register("cliente_contacto")}
+                                                            placeholder="Nombre de contacto"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="nit">Nit</Label>
+                                                        <Input
+                                                            id="nit"
+                                                            {...register("cliente_nit")}
+                                                            placeholder="Nro de nit del cliente"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="telefono">Teléfono</Label>
+                                                        <Input
+                                                            id="telefono"
+                                                            {...register("cliente_telefono")}
+                                                            placeholder="Teléfono del cliente"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
 
-                                    <div className="col-span-full">
-                                        <Label htmlFor="comentarios">Comentarios</Label>
-                                        <Textarea
-                                            id="comentarios"
-                                            {...register("comentarios")}
-                                            placeholder="Comentarios adicionales sobre la Cotización"
-                                            rows={1}
-                                            disabled={isReadOnly}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* 2. Productos */}
-                    <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
-                        <CardHeader className="flex-shrink-0">
-                            <CardTitle>
-                                <ProductSelectorModal
-                                    isSearchOpen={isSearchOpen}
-                                    setIsSearchOpen={setIsSearchOpen}
-                                    addItem={handleAddProductItem}
-                                    addMultipleItem={handleAddMultipleProducts}
-                                    disabled={isSaving || isReadOnly}
-                                />
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-1 min-h-0">
-                            <div className="h-full overflow-auto">
-                                {items.length === 0 && !createdQuotationDetails ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No hay productos agregados</p>
-                                        <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
-                                    </div>
-                                ) :
-                                    <ProductDetailTable
-                                        details={createdQuotationDetails}
-                                        isReadOnly={isReadOnly}
-                                    />
-                                }
+                                            <div className="col-span-full">
+                                                <Label htmlFor="comentarios">Comentarios</Label>
+                                                <Textarea
+                                                    id="comentarios"
+                                                    {...register("comentarios")}
+                                                    placeholder="Comentarios adicionales sobre la Cotización"
+                                                    rows={configuraciones.formulario === "top" ? 1 : 2}
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
-                        </CardContent>
-                    </Card>
-                    {/* Resumen de Cotización  */}
-                    <QuotationsSummary
-                        isReadOnly={isReadOnly}
-                        clearCart={clearCart}
-                        discountAmount={isReadOnly ? createdQuotationSummary?.discount ?? 0 : discountAmount}
-                        discountPercent={isReadOnly ? createdQuotationSummary?.discountPercent ?? 0 : discountPercent}
-                        subtotal={isReadOnly ? createdQuotationSummary?.subtotal ?? 0 : subtotal}
-                        total={isReadOnly ? createdQuotationSummary?.total ?? 0 : total}
-                        isPending={isSaving}
-                        handleNewQuotation={handleNewQuotation}
-                        setDiscountAmount={setDiscountAmount}
-                        setDiscountPercent={setDiscountPercent}
-                        hasProducts={items.length > 0}
-                    />
+
+                            <div className={cn(
+                                "flex-1 min-h-0",
+                                configuraciones.formulario === "top" && "",
+                                configuraciones.formulario === "top" && configuraciones.inputs && "",
+                                configuraciones.formulario === "left" && "col-span-2",
+                            )}>
+                                <div className="h-full min-h-screen md:min-h-auto flex flex-col gap-2">
+                                    <ResizablePanelGroup
+                                        className={cn(
+                                            "flex-1 min-h-0"
+                                        )}
+                                        direction={"vertical"}
+                                    >
+                                        {
+                                            configuraciones.selector_mode === "embebed" && (
+                                                <>
+                                                    <ResizablePanel
+                                                        defaultSize={50}
+                                                    >
+                                                    </ResizablePanel>
+                                                    <ResizableHandle withHandle />
+                                                </>
+                                            )
+                                        }
+                                        <ResizablePanel
+                                            defaultSize={50}
+                                            className="h-full flex flex-col">
+                                            {/* 2. Productos */}
+                                            <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                                                <CardHeader className="flex-shrink-0">
+                                                    <CardTitle className="flex justify-between">
+                                                        <h2 className="text-primary text-base">
+                                                            Detalle de Productos
+                                                        </h2>
+                                                        {
+                                                            configuraciones.selector_mode === "window" && (
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={toggleWindowSelector}
+                                                                    disabled={isSaving || isReadOnly}
+                                                                >
+                                                                    <Plus className="size-4" />
+                                                                    <span className="hidden sm:block">Seleccionar Productos</span>
+                                                                </Button>
+                                                            )
+                                                        }
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="flex-1 min-h-0">
+                                                    <div className="h-full overflow-auto">
+                                                        {items.length === 0 && !createdQuotationDetails ? (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                                                <p>No hay productos agregados</p>
+                                                                <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
+                                                            </div>
+                                                        ) :
+                                                            <ProductDetailTable
+                                                                details={createdQuotationDetails}
+                                                                isReadOnly={isReadOnly}
+                                                            />
+                                                        }
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </ResizablePanel>
+                                    </ResizablePanelGroup>
+
+                                    {/* <div className="flex flex-col flex-shrink-0"> */}
+                                    {/* Resumen de Cotización  */}
+                                    <QuotationsSummary
+                                        isReadOnly={isReadOnly}
+                                        clearCart={clearCart}
+                                        discountAmount={isReadOnly ? createdQuotationSummary?.discount ?? 0 : discountAmount}
+                                        discountPercent={isReadOnly ? createdQuotationSummary?.discountPercent ?? 0 : discountPercent}
+                                        subtotal={isReadOnly ? createdQuotationSummary?.subtotal ?? 0 : subtotal}
+                                        total={isReadOnly ? createdQuotationSummary?.total ?? 0 : total}
+                                        isPending={isSaving}
+                                        handleNewQuotation={handleNewQuotation}
+                                        setDiscountAmount={setDiscountAmount}
+                                        setDiscountPercent={setDiscountPercent}
+                                        hasProducts={items.length > 0}
+                                    />
+                                    {/* </div> */}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </FormProvider>
 
@@ -822,7 +959,7 @@ const QuotationCreateScreen = () => {
                 pdfName="cotizacion"
                 title={`Cotizacion Nro. ${createdQuotationId}`}
             />
-        </main>
+        </main >
     );
 };
 

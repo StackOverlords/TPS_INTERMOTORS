@@ -324,7 +324,7 @@ export function useProductSelectorWindow(
     route: '/window.html', // HTML genérico
     title: 'Seleccionar Productos',
     width: 1400,
-    height: 900,
+    height: 750,
     queryParams: {
       component: 'product-selector', // ID del componente a renderizar
       context,

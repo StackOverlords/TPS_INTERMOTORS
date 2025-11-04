@@ -492,10 +492,13 @@ const ProductListScreen = () => {
         containerRef: tableRef,
         isDragging: isDraggingColumn,
         onPrimaryAction: (product) => {
-            handleProductDetail(product.id);
+            if (!modalOpen) {
+                setSelectedProductId(product.id);
+                setModalOpen(true);
+            }
         },
         onSecondaryAction: (product) => {
-            addItemToCart(product);
+            handleProductDetail(product.id);
         },
         onDeleteAction: (product) => {
             decrementQuantity(product.id)
@@ -578,7 +581,7 @@ const ProductListScreen = () => {
     }, []);
 
     useHotkeys(
-        'ctrl+d',
+        'enter',
         (e) => {
             e.preventDefault();
 
@@ -591,21 +594,13 @@ const ProductListScreen = () => {
                     setSelectedProductId(null);
                 }
             }
-            else if (!modalOpen && selectedIndex !== -1 && isFocused) {
-                const selectedRow = table.getRowModel().rows[selectedIndex];
-                if (selectedRow) {
-                    const selectedProduct = selectedRow.original;
-                    setSelectedProductId(selectedProduct.id);
-                    setModalOpen(true);
-                }
-            }
         },
         {
             enableOnFormTags: false,
             preventDefault: true,
-            enabled: isFocused || modalOpen,
+            enabled: modalOpen,
         },
-        [modalOpen, selectedProductId, selectedIndex, table, handleAddItemCart, isFocused]
+        [modalOpen, selectedProductId, handleAddItemCart]
     );
 
     return (
@@ -762,7 +757,7 @@ const ProductListScreen = () => {
                                             Columnas
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                                    <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                                         {table
                                             .getAllColumns()
                                             .filter((column) => column.getCanHide())

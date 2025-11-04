@@ -15,8 +15,8 @@ import {
 } from '@/components/atoms/dropdown-menu';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
-import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import TooltipButton from '@/components/common/TooltipButton';
+import { useKeyboardNavigation } from '@/hooks/keyBindings/useKeyboardNavigation';
 import { useCustomTable } from '@/hooks/useCustomTable';
 import ProductFilters from '@/modules/products/components/productList/productFilters';
 import { useProductsPaginated } from '@/modules/products/hooks/queries/useProductsPaginated';
@@ -210,7 +210,7 @@ const ProductSelectorWindow: React.FC = () => {
     () => [
       {
         accessorKey: 'id',
-        header: 'ID',
+        header: 'Cód.',
         enableSorting: true,
         enableHiding: true,
         size: 60,
@@ -228,7 +228,7 @@ const ProductSelectorWindow: React.FC = () => {
         enableHiding: false,
         cell: ({ getValue }) => (
           <div className="flex flex-col">
-            <h3 className="font-medium text-gray-900 leading-tight truncate">
+            <h3 className="font-medium text-primary leading-tight truncate">
               {getValue<string>()}
             </h3>
           </div>
@@ -326,7 +326,7 @@ const ProductSelectorWindow: React.FC = () => {
       {
         id: 'acciones',
         header: 'Acción',
-        size: 120,
+        size: 130,
         minSize: 100,
         enableSorting: false,
         cell: ({ row }) => {
@@ -385,6 +385,33 @@ const ProductSelectorWindow: React.FC = () => {
     persistColumnVisibility: true,
     persistColumnOrder: true,
   });
+
+  const {
+    selectedIndex,
+    setSelectedIndex,
+    isFocused,
+    // hotkeys
+  } = useKeyboardNavigation<ProductGet, HTMLTableElement>({
+    items: products,
+    containerRef: tableRef,
+    onPrimaryAction: (product) => {
+      handleProductSelect(product)
+    },
+    onSecondaryAction: (product) => {
+      // addItemToCart(product);
+    },
+    onDeleteAction: (product) => {
+      // decrementQuantity(product.id)
+    },
+    getItemId: (product) => product.id
+  });
+  const handleRowClick = (index: number) => {
+    setSelectedIndex(index);
+  };
+
+  const handleRowDoubleClick = (product: ProductGet) => {
+    // addItemToCart(product);
+  };
 
   /**
    * Cierra la ventana
@@ -458,83 +485,81 @@ const ProductSelectorWindow: React.FC = () => {
   }, [config.context]);
 
   return (
-    <main className="h-screen">
-      <div className="bg-white rounded-lg shadow-sm">
-        {/* Header */}
-        <header className="p-2 border-b border-border">
-          <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
-            <div className="flex items-center gap-2 md:gap-4 grow">
-              <Package className="h-5 w-5 text-primary" />
-              <div>
-                <h1 className="text-lg font-bold text-primary">
-                  {contextTitle}
-                </h1>
-                <p className="text-xs text-gray-500">
-                  Contexto: <span className="font-mono">{config.context}</span>
-                </p>
-              </div>
+    <main className="h-full p-2 flex flex-col bg-gray-50 gap-2">
+      {/* Header */}
+      <header className="bg-background rounded-lg p-2 border border-border flex-shrink-0 flex flex-col divide-y divide-border gap-1">
+        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+          <div className="flex items-center gap-2 md:gap-4 grow">
+            <Package className="h-5 w-5 text-primary" />
+            <div>
+              <h1 className="text-lg font-bold text-primary">
+                {contextTitle}
+              </h1>
+              <p className="text-xs text-gray-500">
+                Contexto: <span className="font-mono">{config.context}</span>
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Indicador de multi-select */}
-              {config.multiSelect && selectedProducts.length > 0 && (
-                <Badge variant="default" className="text-sm">
-                  {totalSelectedProducts} seleccionados
-                </Badge>
-              )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Indicador de multi-select */}
+            {config.multiSelect && selectedProducts.length > 0 && (
+              <Badge variant="accent">
+                {totalSelectedProducts} seleccionados
+              </Badge>
+            )}
 
-              {/* Toggle de modo de búsqueda */}
-              <Button
-                variant="ghost"
-                onClick={toggleSearchMode}
-                className="text-xs h-7"
-                title={
-                  searchMode === 'realtime'
-                    ? 'Cambiar a búsqueda manual'
-                    : 'Cambiar a búsqueda en tiempo real'
-                }
-              >
-                <Zap
-                  className={`h-3 w-3 ${
-                    searchMode === 'realtime'
-                      ? 'text-yellow-500'
-                      : 'text-gray-500'
+            {/* Toggle de modo de búsqueda */}
+            <Button
+              variant="ghost"
+              onClick={toggleSearchMode}
+              className="text-xs h-7"
+              title={
+                searchMode === 'realtime'
+                  ? 'Cambiar a búsqueda manual'
+                  : 'Cambiar a búsqueda en tiempo real'
+              }
+            >
+              <Zap
+                className={`h-3 w-3 ${searchMode === 'realtime'
+                  ? 'text-yellow-500'
+                  : 'text-gray-500'
                   }`}
-                />
-                {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
-              </Button>
+              />
+              {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+            </Button>
 
-              <TooltipButton
-                onClick={handleRefetchProducts}
-                buttonProps={{
-                  className: 'w-8',
-                  disabled: isFetching,
-                }}
-                tooltip="Recargar productos"
+            <TooltipButton
+              onClick={handleRefetchProducts}
+              buttonProps={{
+                className: 'w-8',
+                disabled: isFetching,
+              }}
+              tooltip="Recargar productos"
+            >
+              <RefreshCcw
+                className={`size-4 ${isFetching ? 'animate-spin' : ''}`}
+              />
+            </TooltipButton>
+
+            <Button size="sm" onClick={toggleShowFilters}>
+              {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </Button>
+
+            {/* Botón confirmar (solo en multi-select) */}
+            {config.multiSelect && selectedProducts.length > 0 && (
+              <Button
+                onClick={handleConfirmMultiSelect}
+                size="sm"
+                className="gap-2"
               >
-                <RefreshCcw
-                  className={`size-4 ${isFetching ? 'animate-spin' : ''}`}
-                />
-              </TooltipButton>
-
-              <Button size="sm" onClick={toggleShowFilters}>
-                {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+                <Check className="h-4 w-4" />
+                Confirmar Selección
               </Button>
+            )}
 
-              {/* Botón confirmar (solo en multi-select) */}
-              {config.multiSelect && selectedProducts.length > 0 && (
-                <Button
-                  onClick={handleConfirmMultiSelect}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Check className="h-4 w-4" />
-                  Confirmar Selección
-                </Button>
-              )}
-
-              {/* Botón cerrar */}
-              {/* <Button
+            {/* Botón cerrar */}
+            {/* <Button
                   onClick={handleClose}
                   size="sm"
                   variant="ghost"
@@ -543,12 +568,11 @@ const ProductSelectorWindow: React.FC = () => {
                   <X className="h-4 w-4" />
                   Cerrar
                 </Button> */}
-            </div>
-          </section>
-        </header>
-
-        {/* Filtros */}
-        {showFilters && (
+          </div>
+        </section>
+        {/* Búsquedas individuales */}
+        {
+          showFilters &&
           <ProductFilters
             filters={filters}
             updateFilter={updateFilter}
@@ -556,30 +580,30 @@ const ProductSelectorWindow: React.FC = () => {
             handleManualSearch={handleManualSearch}
             searchMode={searchMode}
           />
-        )}
+        }
+      </header>
 
-        {/* Results Info */}
-        <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
-          {products.length > 0 ? (
-            (() => {
-              const pagina = filters.pagina ?? 1;
-              const porPagina = filters.pagina_registros ?? 1;
-              const inicio = (pagina - 1) * porPagina + 1;
-              const fin = pagina * porPagina;
-              return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
-            })()
-          ) : (
-            <span>Cargando...</span>
-          )}
+      <div className='bg-background rounded-lg border border-border flex-1 min-h-0'>
+        <div className="h-full flex flex-col">
+          {/* Results Info */}
+          <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+            {
+              products.length > 0 ? (
+                (() => {
+                  const pagina = filters.pagina ?? 1;
+                  const porPagina = filters.pagina_registros ?? 1;
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center">
-              <RowsPerPageSelect
-                value={filters.pagina_registros ?? 10}
-                onChange={onShowRowsChange}
-              />
-            </div>
-            <div className="flex items-center">
+                  const inicio = (pagina - 1) * porPagina + 1;
+                  const fin = pagina * porPagina;
+
+                  return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
+                })()
+              ) : (
+                <span>Cargando...</span>
+              )
+            }
+
+            <div className="flex items-center gap-2 flex-wrap">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -587,33 +611,24 @@ const ProductSelectorWindow: React.FC = () => {
                     Columnas
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56 max-h-96 overflow-y-auto border border-gray-200"
-                >
+                <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                   {table
                     .getAllColumns()
-                    .filter(column => column.getCanHide())
-                    .map(column => (
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
                       <DropdownMenuItem
                         key={column.id}
                         className="flex items-center space-x-2 cursor-pointer"
-                        onSelect={e => e.preventDefault()}
-                        onClick={() =>
-                          column.toggleVisibility(!column.getIsVisible())
-                        }
+                        onSelect={(e) => e.preventDefault()}
+                        onClick={() => column.toggleVisibility(!column.getIsVisible())}
                       >
                         <Checkbox
                           className="border border-gray-400"
                           checked={column.getIsVisible()}
-                          onCheckedChange={value =>
-                            column.toggleVisibility(!!value)
-                          }
+                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
                         />
                         <span className="flex-1">
-                          {typeof column.columnDef.header === 'string'
-                            ? column.columnDef.header
-                            : column.id}
+                          {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
                         </span>
                       </DropdownMenuItem>
                     ))}
@@ -621,11 +636,9 @@ const ProductSelectorWindow: React.FC = () => {
               </DropdownMenu>
             </div>
           </div>
-        </div>
 
-        {/* Tabla con productos */}
-        <div className="overflow-auto h-screen">
-          <div className="overflow-x-hidden">
+          {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+          <div className="flex-1 min-h-0">
             <CustomizableTable
               table={table}
               isError={isError}
@@ -634,22 +647,28 @@ const ProductSelectorWindow: React.FC = () => {
               errorMessage="Ocurrió un error al cargar los productos"
               rows={filters.pagina_registros}
               noDataMessage="No se encontraron productos"
-              tableRef={tableRef}
+              keyboardNavigationEnabled={true}
               enableColumnReordering={true}
-              enableSorting={false}
+              tableRef={tableRef}
+              enableSorting={false} //pendiente para usar configuraciones
+              selectedRowIndex={selectedIndex}
+              onRowClick={handleRowClick}
+              onRowDoubleClick={handleRowDoubleClick}
+              focused={isFocused}
             />
           </div>
-
-          {/* Pagination */}
-          {(productData?.data?.length ?? 0) > 0 && (
-            <Pagination
-              currentPage={filters.pagina || 1}
-              onPageChange={onPageChange}
-              totalData={productData?.meta.total || 1}
-              onShowRowsChange={onShowRowsChange}
-              showRows={filters.pagina_registros}
-            />
-          )}
+          {/* Pagination - FIJO en la parte inferior */}
+          {
+            (productData?.data?.length ?? 0) > 0 && (
+              <Pagination
+                currentPage={filters.pagina || 1}
+                onPageChange={onPageChange}
+                totalData={productData?.meta.total || 1}
+                onShowRowsChange={onShowRowsChange}
+                showRows={filters.pagina_registros}
+              />
+            )
+          }
         </div>
       </div>
 
@@ -657,9 +676,9 @@ const ProductSelectorWindow: React.FC = () => {
       {config.multiSelect &&
         showSelectionPanel &&
         selectedProducts.length > 0 && (
-          <div className="fixed right-4 bottom-4 w-80 max-h-96 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden">
-            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-gray-900">
+          <div className="fixed right-4 bottom-4 w-80 sm:w-96 max-h-96 bg-card rounded-lg shadow-2xl border border-border overflow-hidden z-50">
+            <div className="bg-gray-100 px-4 py-2 border-b border-border flex items-center justify-between">
+              <h3 className="font-semibold text-sm text-primary">
                 Productos Seleccionados ({selectedProducts.length})
               </h3>
               <Button
@@ -672,14 +691,14 @@ const ProductSelectorWindow: React.FC = () => {
               </Button>
             </div>
 
-            <div className="overflow-y-auto max-h-64 divide-y divide-gray-200">
+            <div className="overflow-y-auto max-h-64 divide-y divide-border">
               {selectedProducts.map(sp => (
                 <div
                   key={sp.product.id}
                   className="p-3 flex items-center gap-3 hover:bg-gray-50"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 truncate">
+                    <p className="text-xs font-semibold text-primary truncate">
                       {sp.product.descripcion}
                     </p>
                     <p className="text-xs text-gray-500 font-mono">
@@ -732,7 +751,7 @@ const ProductSelectorWindow: React.FC = () => {
             </div>
 
             {/* Footer con botón confirmar */}
-            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+            <div className="bg-gray-50 px-4 py-3 border-t border-border">
               <Button
                 onClick={handleConfirmMultiSelect}
                 className="w-full gap-2"

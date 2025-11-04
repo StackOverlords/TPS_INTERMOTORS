@@ -41,7 +41,7 @@ const QuotationsSummary: React.FC<SalesSummaryProps> = ({
     }
 
     return (
-        <Card className="border border-border shadow-none flex-shrink-0">
+        <Card className="border border-border shadow-none md:flex-shrink-0">
             <CardContent className="space-y-2 p-2 sm:p-3">
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
