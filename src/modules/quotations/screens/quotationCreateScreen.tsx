@@ -451,10 +451,7 @@ const QuotationCreateScreen = () => {
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
         instanceId: 'create-quotation',
-        onProductSelect: (product: ProductGet) => {
-            // console.log(product)
-            handleAddProductItem(product);
-        },
+        onProductSelect: addItemToCart,
         // onMultiSelect(products: ProductGet[]) {
         //     handleAddMultipleProducts(products)
         // },
