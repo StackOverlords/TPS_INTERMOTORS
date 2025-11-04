@@ -566,7 +566,6 @@ const OrderCreateScreen = () => {
                                     isSearchOpen={isSearchOpen}
                                     setIsSearchOpen={setIsSearchOpen}
                                     addItem={handleAddProductItem}
-                                    onlyWithStock={true}
                                     addMultipleItem={handleAddMultipleProducts}
                                 />
                             </CardTitle>

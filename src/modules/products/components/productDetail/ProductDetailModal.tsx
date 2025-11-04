@@ -8,12 +8,12 @@ import { useProductsPaginated } from '../../hooks/queries/useProductsPaginated';
 import { useProductById } from '../../hooks/queries/useProductById';
 import { useProductSalesStats } from '../../hooks/queries/useProductSalesStats';
 import { useProductProviderOrders } from '../../hooks/queries/useProductProviderOrders';
-import ProductDetailSkeleton from './ProductDetailSkeleton';
 import ErrorDataComponent from '@/components/common/errorDataComponent';
 import ProductLogistics from './ProductLogistics';
 import ProductSales from './ProductSales';
 import { MapPin, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/atoms/button';
+import { Skeleton } from '@/components/atoms/skeleton';
 
 interface ProductDetailModalProps {
     productId: number | null
@@ -22,7 +22,7 @@ interface ProductDetailModalProps {
 }
 
 export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDetailModalProps) => {
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const user = authSDK.getCurrentUser()
     const [sucursalSeleccionada, setSucursalSeleccionada] = useState<number>(Number(selectedBranchId))
 
@@ -37,7 +37,7 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
 
     const {
         data: productForCart,
-        isLoading: isLoadingProductForCart
+        // isLoading: isLoadingProductForCart
         // error,
         // isFetching,
         // isError,
@@ -50,10 +50,10 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
 
     const {
         data: product,
-        isLoading: isLoadingProduct,
         isError: isErrorProduct,
         refetch: refetchProduct,
-        // isFetching: isFetchingProduct
+        isLoading: isLoadingProduct,
+        isFetching: isFetchingProduct
     } = useProductById(Number(productId))
 
     const {
@@ -118,7 +118,7 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-7xl md:max-h-[90vh] overflow-auto p-2">
+            <DialogContent className="max-w-7xl md:max-h-[90vh] overflow-auto p-2" aria-describedby='Estadisticas del producto'>
                 {
                     isErrorProduct || !(Number(productId)) ? (
                         <ErrorDataComponent
@@ -126,15 +126,19 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
                             showButtonIcon={false}
                             onRetry={handleRetry}
                         />
-                    ) : isLoadingProduct || isLoadingProductForCart ? (
-                        <ProductDetailSkeleton />
                     ) : (
                         <>
                             <DialogHeader className="pr-8 pl-3 pt-3">
                                 <div className="flex items-start flex-wrap md:flex-nowrap gap-2 justify-between">
                                     <div className="space-y-2">
                                         <DialogTitle className="text-base md:text-xl font-bold">
-                                            {product?.descripcion}
+                                            {
+                                                isLoadingProduct || isFetchingProduct ? (
+                                                    <Skeleton className='p-3 w-full sm:w-80' />
+                                                ) : (
+                                                    product?.descripcion
+                                                )
+                                            }
                                         </DialogTitle>
                                     </div>
                                     <div className="flex items-center gap-2">

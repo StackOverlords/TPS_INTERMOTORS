@@ -1,3 +1,4 @@
+import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema"
 import { z } from "zod"
 
 export const CategoriaSchema = z.object({
@@ -74,7 +75,7 @@ export const ProductoDetalleSchema = z.object({
 
 export const DetalleCompraSchema = z.object({
   id: z.number(),
-  producto: ProductoDetalleSchema,
+  producto: ProductDetailSchema,
   cantidad: z.string(),
   costo: z.string(),
   inc_precio_venta: z.string(),
