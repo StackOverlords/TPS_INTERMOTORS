@@ -41,6 +41,7 @@ import { useCreateQuotation } from "../hooks/useCreateQuotation";
 import { useQuotationPDF } from "../hooks/useQuotationPDF";
 import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
 import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -137,7 +138,6 @@ const QuotationCreateScreen = () => {
         formState: { errors }
     } = methods
 
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const {
         items,
         getCartSubtotal,
@@ -148,8 +148,7 @@ const QuotationCreateScreen = () => {
         setDiscountPercent,
         clearCart,
         addItemToCart,
-        addMultipleItems,
-        validateCartWithToast,
+        addMultipleItemsWithQuantity,
         setCartMode,
         mode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
@@ -158,10 +157,10 @@ const QuotationCreateScreen = () => {
         if (mode !== 'quote' && !isReadOnly) {
             setCartMode('quote')
         }
-    }, [mode]);
+    }, [mode, isReadOnly, setCartMode]);
 
-    const subtotal = useMemo(() => getCartSubtotal(), [items, discountPercent]);
-    const total = useMemo(() => getCartTotal(), [items, discountPercent, discountAmount]);
+    const subtotal = useMemo(() => getCartSubtotal(), [getCartSubtotal]);
+    const total = useMemo(() => getCartTotal(), [getCartTotal]);
 
     const formValues = watch();
     const { tipo_cotizacion, plazo_pago } = formValues;
@@ -200,15 +199,7 @@ const QuotationCreateScreen = () => {
                 duration: 5000
             });
             isValid = false;
-        }
-
-        const validation = validateCartWithToast();
-        if (!validation.isValid) {
-            setError("detalles", {
-                type: "manual",
-                message: "Hay productos con problemas de stock en el carrito"
-            });
-            isValid = false;
+            return isValid;
         }
 
         if (!formValues.id_cliente) {
@@ -254,7 +245,7 @@ const QuotationCreateScreen = () => {
         }
 
         return isValid;
-    }, [items.length, validateCartWithToast, formValues, setError]);
+    }, [items.length, formValues, setError]);
 
     // VALIDACIÓN DE FECHA DE PLAZO
     useEffect(() => {
@@ -323,9 +314,11 @@ const QuotationCreateScreen = () => {
         addItemToCart(product);
     }, [addItemToCart]);
 
-    const handleAddMultipleProducts = useCallback((products: ProductGet[]) => {
-        addMultipleItems(products);
-    }, [addMultipleItems]);
+    const handleAddMultipleProducts = useCallback((
+        products: Array<ProductGet & { quantity?: number }>
+    ) => {
+        return addMultipleItemsWithQuantity(products);
+    }, [addMultipleItemsWithQuantity]);
 
     const onSubmit = useCallback((data: QuotationCreate) => {
         if (!validateBeforeSubmit()) {
@@ -348,8 +341,8 @@ const QuotationCreateScreen = () => {
 
                 clearCart();
                 showSuccessToast({
-                    title: "Cotización Exitosa",
-                    description: `Cotización realizada con éxito`,
+                    title: "Cotización Creada",
+                    description: `Cotización #${createdQuotation.id} creada exitosamente`,
                     duration: 5000
                 });
 
@@ -453,6 +446,7 @@ const QuotationCreateScreen = () => {
         onProductSelect: handleAddProductItem,
         onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
+        multiSelect: true
     });
 
     const toggleWindowSelector = () => {
@@ -522,7 +516,7 @@ const QuotationCreateScreen = () => {
                                             </TooltipButton>
 
                                             <Badge
-                                                className="h-8 rounded-sm font-bold text-base border border-emerald-500"
+                                                className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
                                                 variant={'success'}
                                             >
                                                 {createdQuotationId}
@@ -823,7 +817,7 @@ const QuotationCreateScreen = () => {
                                                 )
                                             }
                                             {
-                                                configuraciones.inputs && (
+                                                !configuraciones.inputs && (
                                                     <div>
                                                         <Label htmlFor="telefono">Teléfono</Label>
                                                         <Input
@@ -857,7 +851,10 @@ const QuotationCreateScreen = () => {
                                 configuraciones.formulario === "top" && configuraciones.inputs && "",
                                 configuraciones.formulario === "left" && "col-span-2",
                             )}>
-                                <div className="h-full min-h-screen md:min-h-auto flex flex-col gap-2">
+                                <div className={cn(
+                                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                                    configuraciones.selector_mode === "embebed" && "md:min-h-screen"
+                                )}>
                                     <ResizablePanelGroup
                                         className={cn(
                                             "flex-1 min-h-0"
@@ -870,6 +867,11 @@ const QuotationCreateScreen = () => {
                                                     <ResizablePanel
                                                         defaultSize={50}
                                                     >
+                                                        <ProductSearchPanel
+                                                            selectedProducts={items}
+                                                            onProductSelect={handleAddProductItem}
+                                                            allowExceedStock={true}
+                                                        />
                                                     </ResizablePanel>
                                                     <ResizableHandle withHandle />
                                                 </>
@@ -929,7 +931,7 @@ const QuotationCreateScreen = () => {
                                         subtotal={isReadOnly ? createdQuotationSummary?.subtotal ?? 0 : subtotal}
                                         total={isReadOnly ? createdQuotationSummary?.total ?? 0 : total}
                                         isPending={isSaving}
-                                        handleNewQuotation={handleNewQuotation}
+                                        callback={handleNewQuotation}
                                         setDiscountAmount={setDiscountAmount}
                                         setDiscountPercent={setDiscountPercent}
                                         hasProducts={items.length > 0}

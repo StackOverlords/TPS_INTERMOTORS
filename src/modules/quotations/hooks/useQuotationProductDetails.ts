@@ -17,6 +17,7 @@ interface UseSaleProductDetailsReturn {
 
     // Funciones principales
     addProduct: (product: ProductGet | ProductGet[]) => void;
+    addMultipleItemsWithQuantity: (products: Array<ProductGet & { quantity?: number }>) => void;
     removeProduct: (productId: number) => void;
     updateQuantity: (productId: number, quantity: number) => void;
     updatePrice: (productId: number, price: number) => void;
@@ -56,13 +57,20 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
         }
     }, [products])
 
-    // Agregar producto(s)
+    // Función auxiliar para reordenar productos
+    const reorderProducts = useCallback((productsList: QuotationUpdateDetail[]): QuotationUpdateDetail[] => {
+        return productsList.map((product, index) => ({
+            ...product,
+            orden: index + 1
+        }));
+    }, []);
+
+    // Agregar producto(s) sin cantidad específica
     const addProduct = useCallback((input: ProductGet | ProductGet[]) => {
         const productsToAdd = Array.isArray(input) ? input : [input];
         const currentProducts = getValues("detalles") || [];
         const updated = [...currentProducts];
         let addedCount = 0;
-        let skippedCount = 0;
 
         // Buscar si ya existe algún producto con descuento para aplicar el mismo porcentaje
         const productWithDiscount = currentProducts.find(p => p.descuento > 0 && p.porcentaje_descuento > 0);
@@ -72,16 +80,11 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
             const existingIndex = updated.findIndex(d => d.id_producto === product.id);
 
             if (existingIndex !== -1) {
-                // Ya existe, aumentar cantidad en 1 si hay stock disponible
+                // Ya existe, aumentar cantidad en 1
                 const item = updated[existingIndex]
                 const currentQuantity = updated[existingIndex].cantidad;
                 const newQuantity = currentQuantity + 1;
                 const newDiscount = (newQuantity * item.precio) * (item.porcentaje_descuento / 100)
-
-                if (product.stock_actual !== undefined && newQuantity > product.stock_actual) {
-                    skippedCount++;
-                    return;
-                }
 
                 updated[existingIndex] = {
                     ...updated[existingIndex],
@@ -90,19 +93,13 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
                 };
                 addedCount++;
             } else {
-                if (product.stock_actual !== undefined && product.stock_actual < 1) {
-                    skippedCount++;
-                    return;
-                }
-
                 // Calcular descuento para el nuevo producto si hay descuento existente
                 let porcentaje_descuento = 0;
                 let descuento = 0;
 
                 if (hasDiscount && existingDiscountPercentage > 0) {
                     porcentaje_descuento = existingDiscountPercentage;
-                    // Calcular el descuento en base al precio del producto y el porcentaje existente
-                    const subtotal = 1 * product.precio_venta; // cantidad inicial = 1
+                    const subtotal = 1 * product.precio_venta;
                     descuento = subtotal * (existingDiscountPercentage / 100);
                 }
 
@@ -115,7 +112,7 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
                     precio: product.precio_venta,
                     descripcion: product.descripcion,
                     nueva_marca: product.marca,
-                    orden: currentProducts.length + 1
+                    orden: updated.length + 1
                 };
 
                 updated.push(newDetail);
@@ -123,9 +120,91 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
             }
         });
 
-        setValue("detalles", updated);
-        showToastSummary(input, addedCount, skippedCount, productsToAdd);
-    }, [setValue, getValues, hasDiscount]);
+        // Reordenar productos
+        const reordered = reorderProducts(updated);
+        setValue("detalles", reordered);
+        
+        if (addedCount > 0) {
+            const message = Array.isArray(input) 
+                ? `${addedCount} producto(s) agregados correctamente`
+                : `${productsToAdd[0].descripcion} agregado correctamente`;
+            
+            showSuccessToast({
+                title: Array.isArray(input) ? "Productos agregados" : "Producto agregado",
+                description: message,
+                duration: 3000
+            });
+        }
+    }, [setValue, getValues, hasDiscount, reorderProducts]);
+
+    // Agregar múltiples productos con cantidad específica
+    const addMultipleItemsWithQuantity = useCallback((
+        productsToAdd: Array<ProductGet & { quantity?: number }>
+    ) => {
+        const currentProducts = getValues("detalles") || [];
+        const updated = [...currentProducts];
+        let addedCount = 0;
+
+        // Buscar si ya existe algún producto con descuento
+        const productWithDiscount = currentProducts.find(p => p.descuento > 0 && p.porcentaje_descuento > 0);
+        const existingDiscountPercentage = productWithDiscount?.porcentaje_descuento ?? 0;
+
+        productsToAdd.forEach((product) => {
+            const quantity = product.quantity || 1;
+            const existingIndex = updated.findIndex(d => d.id_producto === product.id);
+
+            if (existingIndex !== -1) {
+                // Ya existe, sumar la cantidad
+                const item = updated[existingIndex];
+                const newQuantity = item.cantidad + quantity;
+                const newDiscount = (newQuantity * item.precio) * (item.porcentaje_descuento / 100);
+
+                updated[existingIndex] = {
+                    ...updated[existingIndex],
+                    cantidad: newQuantity,
+                    descuento: newDiscount
+                };
+                addedCount++;
+            } else {
+                // Producto nuevo
+                let porcentaje_descuento = 0;
+                let descuento = 0;
+
+                if (hasDiscount && existingDiscountPercentage > 0) {
+                    porcentaje_descuento = existingDiscountPercentage;
+                    const subtotal = quantity * product.precio_venta;
+                    descuento = subtotal * (existingDiscountPercentage / 100);
+                }
+
+                const newDetail: QuotationUpdateDetail = {
+                    id_producto: product.id,
+                    cantidad: quantity,
+                    descuento: descuento,
+                    porcentaje_descuento: porcentaje_descuento,
+                    id_detalle_cotizacion: null,
+                    precio: product.precio_venta,
+                    descripcion: product.descripcion,
+                    nueva_marca: product.marca,
+                    orden: updated.length + 1
+                };
+
+                updated.push(newDetail);
+                addedCount++;
+            }
+        });
+
+        // Reordenar productos
+        const reordered = reorderProducts(updated);
+        setValue("detalles", reordered);
+
+        if (addedCount > 0) {
+            showSuccessToast({
+                title: "Productos agregados",
+                description: `${addedCount} producto(s) agregados correctamente`,
+                duration: 3000
+            });
+        }
+    }, [setValue, getValues, hasDiscount, reorderProducts]);
 
     // Quitar producto
     const removeProduct = useCallback((productId: number) => {
@@ -141,8 +220,11 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
         }
 
         const updated = currentProducts.filter(detail => detail.id_producto !== productId);
-        setValue("detalles", updated);
-    }, [setValue, getValues]);
+        
+        // Reordenar después de eliminar
+        const reordered = reorderProducts(updated);
+        setValue("detalles", reordered);
+    }, [setValue, getValues, reorderProducts]);
 
     // Actualizar cantidad
     const updateQuantity = useCallback((productId: number, quantity: number) => {
@@ -177,11 +259,11 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
         setValue("detalles", updated);
     }, [setValue, getValues]);
 
-    // Actualizar cantidad
+    // Actualizar subtotal personalizado
     const updateCustomSubtotal = useCallback((productId: number, customSubtotal: number) => {
         if (customSubtotal < 1) {
             showErrorToast({
-                title: "Monto inválida",
+                title: "Monto inválido",
                 description: "El monto debe ser mayor a 0",
                 duration: 3000
             });
@@ -389,46 +471,6 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
         }, 0)
     }, [products])
 
-    // Función auxiliar para mostrar toast de resumen
-    const showToastSummary = (
-        input: ProductGet | ProductGet[],
-        addedCount: number,
-        skippedCount: number,
-        products: ProductGet[]
-    ) => {
-        if (Array.isArray(input)) {
-            if (addedCount > 0) {
-                showSuccessToast({
-                    title: "Productos agregados",
-                    description: `${addedCount} producto(s) agregados correctamente`,
-                    duration: 3000
-                });
-            }
-            if (skippedCount > 0) {
-                showErrorToast({
-                    title: "Stock insuficiente",
-                    description: `${skippedCount} producto(s) no agregados por stock insuficiente`,
-                    duration: 5000
-                });
-            }
-        } else {
-            if (addedCount > 0) {
-                showSuccessToast({
-                    title: "Producto agregado",
-                    description: `${products[0].descripcion} agregado correctamente`,
-                    duration: 3000
-                });
-            }
-            if (skippedCount > 0) {
-                showErrorToast({
-                    title: "Stock insuficiente",
-                    description: `No hay stock disponible para ${products[0].descripcion}`,
-                    duration: 5000
-                });
-            }
-        }
-    };
-
     return {
         // Estados
         discountType,
@@ -436,6 +478,7 @@ const useQuotationProductDetails = ({ formMethods }: UseQuotationProductDetailsP
 
         // Funciones principales
         addProduct,
+        addMultipleItemsWithQuantity,
         removeProduct,
         updateQuantity,
         updatePrice,

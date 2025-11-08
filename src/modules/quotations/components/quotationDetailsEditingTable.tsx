@@ -1,5 +1,5 @@
 import { Button } from '@/components/atoms/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import CustomizableTable from '@/components/common/CustomizableTable';
@@ -7,6 +7,11 @@ import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuan
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import { Input } from '@/components/atoms/input';
 import type { QuotationUpdateDetail } from '../types/quotationUpdate.types';
+import { Badge } from '@/components/atoms/badge';
+import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
+import { useDeleteQuotationDetail } from '../hooks/useDeleteQuotationDetail';
+import useConfirmMutation from '@/hooks/useConfirmMutation';
+import ConfirmationModal from '@/components/common/confirmationModal';
 
 type QuotationDetailsEditingTableProps = {
     products: QuotationUpdateDetail[]
@@ -33,6 +38,52 @@ export const QuotationDetailsEditingTable = forwardRef<
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleDeleteSuccess = (_data: unknown, detailId: number) => {
+        const deletedItem = products.find(p => p.id_detalle_cotizacion === detailId);
+
+        if (deletedItem) {
+            removeItem(deletedItem.id_producto);
+        }
+
+        showSuccessToast({
+            title: "Detalle de cotización eliminado",
+            description: `El detalle de cotizacion #${detailId} se eliminó exitosamente`,
+            duration: 5000
+        })
+
+    };
+
+    const handleDeleteError = (_error: unknown, detailId: number) => {
+        showErrorToast({
+            title: "Error al eliminar el detalle de cotización",
+            description: `No se pudo eliminar el detalle de cotización #${detailId}. Por favor, intenta nuevamente`,
+            duration: 5000
+        })
+    };
+
+    const {
+        mutate: deleteQuotationDetail,
+        isPending: isDeleting
+    } = useDeleteQuotationDetail()
+
+    const {
+        close: handleCloseDeleteAlert,
+        confirm: handleConfirmDeleteAlert,
+        isOpen: showDeleteAlert,
+        open: handleOpenDeleteAlert,
+        variables: detailToDelete
+    } = useConfirmMutation(deleteQuotationDetail, handleDeleteSuccess, handleDeleteError)
+
+    const handleRemoveItem = (item: QuotationUpdateDetail) => {
+        const isNew = !item.id_detalle_cotizacion
+        if (isNew) {
+            removeItem(item.id_producto)
+            return
+        }
+
+        handleOpenDeleteAlert(item.id_detalle_cotizacion ?? undefined)
+    }
+
     // Exponer método focusFirstQuantityInput
     useImperativeHandle(ref, () => ({
         focusFirstQuantityInput: () => {
@@ -46,7 +97,32 @@ export const QuotationDetailsEditingTable = forwardRef<
         {
             accessorKey: "orden",
             header: "#",
-            size: 40
+            size: 25,
+        },
+        {
+            accessorKey: "id_detalle_cotizacion",
+            header: "Cód.",
+            size: 40,
+            cell({ row, getValue }) {
+                const value = getValue<number>()
+                const isNew = !row.original.id_detalle_cotizacion
+                return (
+                    <div className='flex items-center'>
+                        {
+                            isNew ? (
+                                <Badge
+                                    variant={'accent'}
+                                    className='text-[10px] px-1 py-0'
+                                >
+                                    Nuevo
+                                </Badge>
+                            ) : (
+                                <span>{value}</span>
+                            )
+                        }
+                    </div>
+                )
+            },
         },
         {
             accessorKey: "descripcion",
@@ -152,17 +228,23 @@ export const QuotationDetailsEditingTable = forwardRef<
             minSize: 40,
             cell: ({ row }) => {
                 const item = row.original
+                const isNew = !row.original.id_detalle_cotizacion
                 return (
                     <div className='flex items-center justify-center'>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => removeItem(item.id_producto)}
-                            className="text-red-500 hover:text-red-500 size-7
-                    "
+                            onClick={() => isNew ? removeItem(item.id_producto) : handleRemoveItem(item)}
+                            className="text-red-500 hover:text-red-500 size-7 cursor-pointer"
                         >
-                            <Trash2 className="size-3" />
+                            {
+                                isNew ? (
+                                    <X className="size-3" />
+                                ) : (
+                                    <Trash2 className="size-3" />
+                                )
+                            }
                         </Button>
                     </div>
                 )
@@ -181,10 +263,21 @@ export const QuotationDetailsEditingTable = forwardRef<
     })
 
     return (
-        <CustomizableTable
-            table={table}
-            isLoading={false}
-        />
+        <>
+            <CustomizableTable
+                table={table}
+                isLoading={false}
+            />
+
+            <ConfirmationModal
+                isOpen={showDeleteAlert}
+                title="Eliminar producto de cotización"
+                message={`¿Estás seguro de que deseas eliminar el detalle de cotización #${detailToDelete}?`}
+                onClose={handleCloseDeleteAlert}
+                onConfirm={handleConfirmDeleteAlert}
+                isLoading={isDeleting}
+            />
+        </>
     );
 });
 export default QuotationDetailsEditingTable

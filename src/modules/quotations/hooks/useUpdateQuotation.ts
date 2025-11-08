@@ -14,7 +14,7 @@ export const useUpdateQuotation = () => {
         mutationFn: ({ quotationId, data }: UpdateQuotationParams) => quotationService.update(quotationId, data),
         onSuccess: (updatedQuotation, { quotationId }) => {
             queryClient.invalidateQueries({ queryKey: ["quotations"] });
-            queryClient.setQueryData(["quotation-detail", quotationId], updatedQuotation);
+            queryClient.setQueryData(["quotation-detail", "details", quotationId], updatedQuotation);
             // queryClient.invalidateQueries({ queryKey: ["quotation-detail", quotationId] });
 
         }

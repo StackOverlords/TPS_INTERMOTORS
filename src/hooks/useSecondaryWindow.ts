@@ -331,6 +331,7 @@ export interface UseProductSelectorWindowConfig {
   onMultiSelect?: (products: any[]) => void;
   onlyWithStock?: boolean;
   initialFilters?: Record<string, any>;
+  multiSelect?: boolean;
 }
 
 // Array constante para evitar recreaciones
@@ -351,6 +352,7 @@ export function useProductSelectorWindow(
     onMultiSelect,
     onlyWithStock,
     initialFilters,
+    multiSelect = false,
   } = config;
 
   // Generar windowId único
@@ -386,6 +388,7 @@ export function useProductSelectorWindow(
       context,
       onlyWithStock: String(onlyWithStock ?? false),
       ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
+      multiSelect: String(multiSelect),
     },
     listenToEvents: PRODUCT_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
     onEvent: handleEvent, // ✅ Referencia estable
