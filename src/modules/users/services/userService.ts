@@ -1,5 +1,5 @@
 import apiClient from "@/services/axios";
-import { UserListResponseSchema, UserSchema } from "../screens/schemas/user.schema";
+import { UserSchema } from "../screens/schemas/user.schema";
 import type { Permission, User, UserFilters, UserListResponse, UserPermissionsRequest } from "../types/User";
 import { USER_ENDPOINTS } from "./endpoints";
 
@@ -14,12 +14,12 @@ export const fetchUsers = async (filters: UserFilters): Promise<UserListResponse
   const response = await apiClient.get(USER_ENDPOINTS.all, { params });
   // console.log("Respuesta recibida usuarios:", response.data);
 
-  const result = UserListResponseSchema.safeParse(response.data);
-  if (!result.success) {
-    console.error("Zod error en fetchUsers:", result.error.format());
-    throw new Error("Respuesta inválida del servidor.");
-  }
-  return result.data;
+  // const result = UserListResponseSchema.safeParse(response.data);
+  // if (response.status !== 200) {
+  //   throw new Error("Respuesta inválida del servidor.");
+  // }
+  console.log(response.data)
+  return response.data;
 };
 
 export const fetchUserByNickName = async (nickname: string): Promise<User> => {

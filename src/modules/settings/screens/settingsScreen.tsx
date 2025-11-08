@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/atoms/card';
-import { useViewConfigRoutesWindowConfig } from '@/hooks/useSecondaryWindow';
 import {
   Bell,
   Code,
@@ -32,6 +31,7 @@ import SecuritySettings from '../components/settings/SecuritySettings';
 import { SettingsNavigation } from '../components/settings/SettingsNavigation';
 import SystemSettings from '../components/settings/SystemSettings';
 import UpdateSettings from '../components/settings/UpdateSettings';
+import ViewSettings from '../components/settings/ViewSettings';
 
 export type SettingsSection = {
   id: string;
@@ -54,7 +54,7 @@ const settingsSections: SettingsSection[] = [
     label: 'Vistas',
     icon: Eye,
     description: 'Personaliza la funcionalidad de cada vista',
-    component: MasterDataSettings, // Dummy component, no se renderiza
+    component: ViewSettings,
   },
   {
     id: 'appearance',
@@ -130,23 +130,23 @@ const SettingsScreen = () => {
   const CurrentComponent = currentSection?.component || MasterDataSettings;
 
   // Hook para ventana de configuración de vistas
-  const viewWindow = useViewConfigRoutesWindowConfig({
-    context: 'settings',
-  });
+  // const viewWindow = useViewConfigRoutesWindowConfig({
+  //   context: 'settings',
+  // });
 
   const handleChangeSection = (section: string) => {
-    if (section === 'views') {
-      // Abrir ventana de Tauri para ViewSettings
-      if (!viewWindow.isOpen) {
-        viewWindow.open();
-      }
-      return;
-    }
-
-    // Cerrar ventana de vistas si está abierta y cambiar sección
-    if (viewWindow.isOpen) {
-      viewWindow.close();
-    }
+    // if (section === 'views') {
+    //   // Abrir ventana de Tauri para ViewSettings
+    //   if (!viewWindow.isOpen) {
+    //     viewWindow.open();
+    //   }
+    //   return;
+    // }
+    // setActiveSection(section);
+    // // Cerrar ventana de vistas si está abierta y cambiar sección
+    // if (viewWindow.isOpen) {
+    //   viewWindow.close();
+    // }
     setActiveSection(section);
   };
   return (

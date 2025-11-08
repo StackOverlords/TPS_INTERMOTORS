@@ -1,47 +1,48 @@
 import { SidebarInset, SidebarProvider } from '@/components/atoms/sidebar';
 import TabBar from '@/components/tabs/TabBar';
 import TabContainer from '@/components/tabs/TabContainer';
-import { useTabBarKeybindings } from '@/hooks/keyBindings/useTabBarKeyBindings';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
+import { useCommands } from '@/keybindings';
 import CartSidebar from '@/modules/shoppingCart/components/CartSidebar';
 import { useCartUiStore } from '@/modules/shoppingCart/store/cartUiStore';
 import { useEffect, useState } from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
 import AppSidebar from './appSidebar';
 import TopNav from './top-nav';
 
 export default function Layout() {
-  const { isOpen, close, toggle, open } = useCartUiStore();
+  const { isOpen, close, toggle,
+    // open 
+  } = useCartUiStore();
   const [mounted, setMounted] = useState(false);
-  const { nextTab, previousTab, closeCurrentTab, tabs } = useTabNavigation();
+  const { nextTab, previousTab, closeCurrentTab,
+    // tabs 
+  } = useTabNavigation();
 
-  const { formRef } = useTabBarKeybindings({
-    previousTab: previousTab,
-    nextTab: nextTab,
-    closeCurrentTab: closeCurrentTab,
-    canCloseCurrentTab: tabs.length > 1, // Solo permitir cerrar si hay más de 1 tab
-  });
-
+  useCommands({
+    'tabs.next': nextTab,
+    'tabs.previous': previousTab,
+    'tabs.close': closeCurrentTab
+  })
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useHotkeys(
-    'alt+c',
-    () => {
-      if (!isOpen) open();
-    },
-    {
-      enabled: !isOpen,
-    }
-  );
+  // useHotkeys(
+  //   'alt+c',
+  //   () => {
+  //     if (!isOpen) open();
+  //   },
+  //   {
+  //     enabled: !isOpen,
+  //   }
+  // );
 
   if (!mounted) {
     return null;
   }
 
   return (
-    <SidebarProvider ref={formRef as any}>
+    <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="min-w-0 flex flex-col h-screen">
         <header className="border-b border-border sticky top-0 z-10 bg-background flex-shrink-0">

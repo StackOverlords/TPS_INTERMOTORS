@@ -146,10 +146,10 @@ export const BranchUsersModal = ({ branchId, branchName, open, onOpenChange }: B
             cell: ({ row }) => (
                 <div>
                     <p className="font-medium text-gray-900 text-sm">
-                        {row.original.usuario.data_empleado.nombre}
+                        {row?.original?.usuario?.data_empleado?.nombre}
                     </p>
                     <p className="text-xs text-gray-500">
-                        @{row.original.usuario.nickname}
+                        @{row?.original?.usuario?.nickname}
                     </p>
                 </div>
             )
@@ -174,8 +174,8 @@ export const BranchUsersModal = ({ branchId, branchName, open, onOpenChange }: B
                     size="sm"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={() => handleOpenRemoveConfirm(
-                        row.original.id_usuario,
-                        row.original.usuario.data_empleado.nombre
+                        row?.original.id_usuario as number,
+                        row?.original?.usuario?.data_empleado?.nombre as string
                     )}
                 >
                     <UserMinus className="size-4" />

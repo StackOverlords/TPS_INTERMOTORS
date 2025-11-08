@@ -2,9 +2,9 @@ import { Button } from "@/components/atoms/button";
 import { Kbd } from "@/components/atoms/kbd";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
 import TooltipButton from "@/components/common/TooltipButton";
+import { useCommand } from "@/keybindings";
 import { CornerUpLeft, Loader2, Save } from "lucide-react";
 import React from "react";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
 import FormCreatePurchase from "../components/FormCreatePurchase";
 import PurchaseDetailSkeleton from "../components/purchaseDetail/PurchaseDetailSkeleton";
@@ -16,7 +16,6 @@ const EditPurchase: React.FC = () => {
   const navigate = useNavigate();
   const { purchaseId } = useParams();
 
-  // ✅ IMPORTANTE: Todos los hooks deben estar ANTES de cualquier return condicional
   const {
     data: purchase,
     isLoading: isLoadingPurchase,
@@ -40,16 +39,16 @@ const EditPurchase: React.FC = () => {
   const handleSave = async () => {
     const success = await handleSubmit(Number(purchaseId));
     if (success) {
-      // Redirigir de vuelta a la vista de detalle
       navigate(`/dashboard/purchases/${purchaseId}`);
     }
   };
 
-  // Shortcuts
-  useHotkeys('escape', handleGoBack, {
-    scopes: ["esc-key"],
-    enabled: true
-  });
+  // // Shortcuts
+  // useHotkeys('escape', handleGoBack, {
+  //   scopes: ["esc-key"],
+  //   enabled: true
+  // });
+  useCommand('actions.closeModal',handleGoBack)
 
   // ✅ Ahora validamos DESPUÉS de todos los hooks
   if (!Number(purchaseId)) {

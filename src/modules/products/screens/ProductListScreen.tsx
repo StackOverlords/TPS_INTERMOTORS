@@ -3,6 +3,7 @@ import { Button } from "@/components/atoms/button"
 import { Checkbox } from "@/components/atoms/checkbox"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu"
 import { Label } from "@/components/atoms/label"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
 import { Switch } from "@/components/atoms/switch"
 import ConfirmationModal from "@/components/common/confirmationModal"
 import CustomizableTable from "@/components/common/CustomizableTable"
@@ -10,11 +11,12 @@ import Pagination from "@/components/common/pagination"
 import ShortcutKey from "@/components/common/ShortcutKey"
 import TooltipButton from "@/components/common/TooltipButton"
 import { TooltipWrapper } from "@/components/common/TooltipWrapper"
-import keyBindings from "@/hooks/keyBindings/global.keys"
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation"
 import { showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
+import { useCustomTable } from "@/hooks/useCustomTable"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { COMMANDS, useKeybindingKeys } from "@/keybindings"
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
 import authSDK from "@/services/sdk-simple-auth"
@@ -23,31 +25,29 @@ import { formatCell } from "@/utils/formatCell"
 import { formatCurrency } from "@/utils/formaters"
 import { type ColumnDef } from "@tanstack/react-table"
 import {
-    Edit,
-    Eye,
-    // Filter,
-    HelpCircle,
-    Loader2,
-    MoreVertical,
-    RefreshCcw,
-    Settings,
-    // ShoppingCart,
-    // Trash2,
-    TrendingUp,
-    Zap,
+  Edit,
+  Eye,
+  // Filter,
+  HelpCircle,
+  Loader2,
+  MoreVertical,
+  RefreshCcw,
+  Settings,
+  // ShoppingCart,
+  // Trash2,
+  TrendingUp,
+  Zap,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useHotkeys } from "react-hotkeys-hook"
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { useNavigate } from "react-router"
+import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
 import ProductFilters from "../components/productList/productFilters"
 import { useDeleteProduct } from "../hooks/mutations/useDeleteProduct"
 import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
 import { useProductFilters } from "../hooks/useProductFilters"
 import type { ProductGet } from "../types/ProductGet"
-import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
-import { useHotkeys } from "react-hotkeys-hook"
-import { useCustomTable } from "@/hooks/useCustomTable"
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
 
 const ProductListScreen = () => {
     const [isInfiniteScroll, setIsInfiniteScroll] = useState(false)
@@ -61,6 +61,13 @@ const ProductListScreen = () => {
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
     // Estado para el modo de búsqueda
     const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
+
+    // ✨ Obtener teclas actuales del store (reactivas)
+    const filter1Keys = useKeybindingKeys('tableAndFilters.filter1');
+    const filter2Keys = useKeybindingKeys('tableAndFilters.filter2');
+    const filter3Keys = useKeybindingKeys('tableAndFilters.filter3');
+    const filter4Keys = useKeybindingKeys('tableAndFilters.filter4');
+    const nextFilterKeys = useKeybindingKeys('tableAndFilters.nextFilter');
 
     const {
         filters,
@@ -689,11 +696,11 @@ const ProductListScreen = () => {
                                     <div className="space-y-1.5">
                                         <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
                                         <div className="space-y-1 text-gray-600 text-xs">
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter1.keys} />{keyBindings.tableAndFilters.filter1.description}: Categoria</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter2.keys} />{keyBindings.tableAndFilters.filter2.description}: Descripción</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter3.keys} />{keyBindings.tableAndFilters.filter3.description}: Cod. OEM</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.filter4.keys} />{keyBindings.tableAndFilters.filter4.description}: Cod. Upc</p>
-                                            <p> <ShortcutKey combo={keyBindings.tableAndFilters.nextFilter.keys} />{keyBindings.tableAndFilters.nextFilter.description}</p>
+                                            <p> <ShortcutKey combo={filter1Keys} />{COMMANDS['tableAndFilters.filter1'].description}: Categoria</p>
+                                            <p> <ShortcutKey combo={filter2Keys} />{COMMANDS['tableAndFilters.filter2'].description}: Descripción</p>
+                                            <p> <ShortcutKey combo={filter3Keys} />{COMMANDS['tableAndFilters.filter3'].description}: Cod. OEM</p>
+                                            <p> <ShortcutKey combo={filter4Keys} />{COMMANDS['tableAndFilters.filter4'].description}: Cod. Upc</p>
+                                            <p> <ShortcutKey combo={nextFilterKeys} />{COMMANDS['tableAndFilters.nextFilter'].description}</p>
                                         </div>
                                     </div>
                                 </div>

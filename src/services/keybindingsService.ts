@@ -1,6 +1,13 @@
+// ⚠️ DEPRECATED: Este servicio está siendo reemplazado por el nuevo sistema de keybindings
+// Ver: /src/keybindings/store/persistence.ts y /src/keybindings/store/keybindingStore.ts
+//
+// Este archivo se mantiene temporalmente para compatibilidad con hooks antiguos
+// que aún no han sido migrados. Una vez que todos los componentes usen el nuevo
+// sistema, este archivo será eliminado.
+
 import { getAllKeybindings, saveKeybinding } from "@/database/schemas/keybindings.schema";
 import { getPreference, savePreference } from "@/database/schemas/preferences.schema";
-import keyBindings from "@/hooks/keyBindings/global.keys";
+import { COMMANDS } from "@/keybindings";
 
 const MIGRATION_KEY = 'keybindings_migrated';
 
@@ -50,15 +57,10 @@ export const migrateDefaultKeybindings = async (): Promise<void> => {
     }
 
 
-    // Migrar cada keybinding de global.keys.ts
-    for (const [category, bindings] of Object.entries(keyBindings)) {
-      for (const [action, config] of Object.entries(bindings)) {
-        const id = `${category}.${action}`;
-
-        // Guardar como default en la DB
-        await saveKeybinding(id, config.keys, config.keys);
-
-      }
+    // Migrar cada keybinding desde COMMANDS
+    for (const [id, config] of Object.entries(COMMANDS)) {
+      // Guardar como default en la DB
+      await saveKeybinding(id, config.defaultKeys, config.defaultKeys);
     }
 
     // Marcar como migrado
@@ -92,20 +94,17 @@ export const loadKeybindings = async (): Promise<Map<string, LoadedKeybinding>> 
     // Crear estructura completa mezclando defaults + customs
     const allKeybindings = new Map<string, LoadedKeybinding>();
 
-    for (const [category, bindings] of Object.entries(keyBindings)) {
-      for (const [action, config] of Object.entries(bindings)) {
-        const id = `${category}.${action}`;
-        const customKeys = customMap.get(id);
+    for (const [id, config] of Object.entries(COMMANDS)) {
+      const customKeys = customMap.get(id);
 
-        allKeybindings.set(id, {
-          id,
-          keys: customKeys || config.keys, // Custom o default
-          defaultKeys: config.keys,
-          description: config.description,
-          category,
-          isCustom: !!customKeys,
-        });
-      }
+      allKeybindings.set(id, {
+        id,
+        keys: customKeys || config.defaultKeys, // Custom o default
+        defaultKeys: config.defaultKeys,
+        description: config.description,
+        category: config.category || 'unknown',
+        isCustom: !!customKeys,
+      });
     }
 
     // Guardar en cache
@@ -116,18 +115,15 @@ export const loadKeybindings = async (): Promise<Map<string, LoadedKeybinding>> 
     // En caso de error, retornar solo los defaults
     const fallbackMap = new Map<string, LoadedKeybinding>();
 
-    for (const [category, bindings] of Object.entries(keyBindings)) {
-      for (const [action, config] of Object.entries(bindings)) {
-        const id = `${category}.${action}`;
-        fallbackMap.set(id, {
-          id,
-          keys: config.keys,
-          defaultKeys: config.keys,
-          description: config.description,
-          category,
-          isCustom: false,
-        });
-      }
+    for (const [id, config] of Object.entries(COMMANDS)) {
+      fallbackMap.set(id, {
+        id,
+        keys: config.defaultKeys,
+        defaultKeys: config.defaultKeys,
+        description: config.description,
+        category: config.category || 'unknown',
+        isCustom: false,
+      });
     }
 
     return fallbackMap;
@@ -174,17 +170,16 @@ export const clearKeybindingsCache = async (): Promise<void> => {
 //Obtiene las teclas de forma síncrona desde el cache
 //Retorna el default si no está en cache
 export const getKeysSync = (id: string): string => {
-  
+
   if (keybindingsCache) {
     const kb = keybindingsCache.get(id);
     if (kb) return kb.keys;
   }
-  
-  // Fallback a global.keys.ts
-  const [category, action] = id.split('.');
-  const categoryBindings = keyBindings[category as keyof typeof keyBindings];
-  if (categoryBindings && action in categoryBindings) {
-    return (categoryBindings as any)[action].keys;
+
+  // Fallback a COMMANDS
+  const command = COMMANDS[id as keyof typeof COMMANDS];
+  if (command) {
+    return command.defaultKeys;
   }
 
   return '';

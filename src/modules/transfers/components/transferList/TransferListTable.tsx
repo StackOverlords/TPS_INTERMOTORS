@@ -20,6 +20,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
 import type { TransferGetAll, TransfersGetAllResponse } from "../../types/transferGet.types";
+import TransferStatusBadge from "./TransferStatusBadge";
 
 interface TransferListTableProps {
     data: TransfersGetAllResponse
@@ -223,18 +224,11 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         {
             accessorKey: "estado",
             header: "Estado",
-            size: 160,
-            minSize: 100,
+            size: 200,
+            minSize: 150,
             cell: ({ getValue }) => {
                 const estado = getValue<string>();
-                const variant = estado === 'RECIBIDA' ? 'success' : estado === 'RECHAZADA' ? 'destructive' : 'warning';
-                return (
-                    <div className="space-y-1 flex flex-col">
-                        <Badge variant={variant} className="text-xs w-max">
-                            {estado}
-                        </Badge>
-                    </div>
-                );
+                return <TransferStatusBadge estado={estado} />;
             },
         },
         {

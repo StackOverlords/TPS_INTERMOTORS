@@ -3,15 +3,14 @@ import { Button } from '@/components/atoms/button';
 import { SidebarTrigger } from '@/components/atoms/sidebar';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-import keyBindings from '@/hooks/keyBindings/global.keys';
-import { useTopNavKeybindings } from '@/hooks/keyBindings/useTopNavKeybindings';
+import { COMMANDS, useCommand, useKeybindingKeys } from '@/keybindings';
 import { useCartWithUtils } from '@/modules/shoppingCart/hooks/useCartWithUtils';
 import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
 import { Bell, HelpCircle, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, matchPath, useLocation } from 'react-router';
 import SelectBranch from '../components/SelectBranch';
 import CommandPalette from './CommandPalette/CommandPalette';
@@ -85,22 +84,46 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     selectedBranchId ?? ''
   );
 
-  useTopNavKeybindings({
-    onOpenCommandPalette: () => setOpen(true),
-    onCloseCommandPalette: () => setOpen(false),
-    onOpenCart: onOpenCartChange,
-    onOpenNotifications: () => {
-      // console.log('Abriendo notificaciones... adadawdadw');
-      // Aquí lógica para mostrar notificaciones
-    },
-    onChangeBranch: () => {
-      // Disparar evento personalizado para alternar el selector de sucursal
-      const toggleEvent = new CustomEvent('toggleBranchSelector');
-      document.dispatchEvent(toggleEvent);
-    },
-    commandPaletteOpen: open,
+  // ✨ Obtener teclas actuales del store (reactivas)
+  const commandPaletteKeys = useKeybindingKeys('actions.commandPalette');
+  const changeBranchKeys = useKeybindingKeys('actions.changeBranch');
+  const openCartKeys = useKeybindingKeys('actions.openCart');
+  const openNotificationsKeys = useKeybindingKeys('actions.openNotifications');
+
+  // Handlers
+  const handleToggleCommandPalette = useCallback(() => {
+    setOpen(prev => !prev);
+  }, []);
+  const handleCloseCommandPalette = useCallback(() => {
+    setOpen(false);
+  }, []);
+  const handleChangeBranch = useCallback(() => {
+    const toggleEvent = new CustomEvent('toggleBranchSelector');
+    document.dispatchEvent(toggleEvent);
+  }, []);
+  const handleOpenNotifications = useCallback(() => {
+    // Lógica para mostrar notificaciones
+  }, []);
+
+  // Registrar comandos
+  useCommand('actions.commandPalette', handleToggleCommandPalette, {
+    enableOnFormTags: true,
+  });
+  useCommand('actions.closeModal', handleCloseCommandPalette, {
+    enableOnFormTags: true,
+    enabled: open,
+  });
+  useCommand('actions.openCart', onOpenCartChange, {
+    enableOnFormTags: true,
+  });
+  useCommand('actions.openNotifications', handleOpenNotifications, {
+    enableOnFormTags: true,
+  });
+  useCommand('actions.changeBranch', handleChangeBranch, {
+    enableOnFormTags: true,
   });
 
+  
   const renderBreadcrumb = () => {
     if (location.pathname === '/dashboard') {
       return (
@@ -202,31 +225,23 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
                 <div className="space-y-1 text-gray-600 text-xs">
                   <p>
                     {' '}
-                    <ShortcutKey
-                      combo={keyBindings.actions.openCommandPalette.keys}
-                    />
-                    {keyBindings.actions.openCommandPalette.description}
+                    <ShortcutKey combo={commandPaletteKeys} />
+                    {COMMANDS['actions.commandPalette'].description}
                   </p>
                   <p>
                     {' '}
-                    <ShortcutKey
-                      combo={keyBindings.actions.changeBranch.keys}
-                    />{' '}
-                    {keyBindings.actions.changeBranch.description}{' '}
+                    <ShortcutKey combo={changeBranchKeys} />{' '}
+                    {COMMANDS['actions.changeBranch'].description}{' '}
                   </p>
                   <p>
                     {' '}
-                    <ShortcutKey
-                      combo={keyBindings.actions.openCart.keys}
-                    />{' '}
-                    {keyBindings.actions.openCart.description}
+                    <ShortcutKey combo={openCartKeys} />{' '}
+                    {COMMANDS['actions.openCart'].description}
                   </p>
                   <p>
                     {' '}
-                    <ShortcutKey
-                      combo={keyBindings.actions.openNotifications.keys}
-                    />{' '}
-                    {keyBindings.actions.openNotifications.description}
+                    <ShortcutKey combo={openNotificationsKeys} />{' '}
+                    {COMMANDS['actions.openNotifications'].description}
                   </p>
                 </div>
               </div>

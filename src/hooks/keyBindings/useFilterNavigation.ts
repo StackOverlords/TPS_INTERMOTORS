@@ -1,6 +1,5 @@
-import { useRef } from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
-
+import { useCommands } from '@/keybindings';
+import { useCallback, useRef } from 'react';
 interface FilterNavigationOptions {
   onNavigateToCategoria?: () => void;
   onNavigateToDescripcion?: () => void;
@@ -18,8 +17,7 @@ export const useFilterNavigation = (options: FilterNavigationOptions = {}) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to focus the next filter in order
-  const focusNextFilter = (currentField?: string) => {
+  const focusNextFilter = useCallback((currentField?: string) => {
     if (!containerRef.current) return;
 
     const focusOrder = [
@@ -40,7 +38,6 @@ export const useFilterNavigation = (options: FilterNavigationOptions = {}) => {
     const nextElement = containerRef.current.querySelector(focusOrder[nextIndex]) as HTMLElement;
 
     if (nextElement) {
-      // Handle ComboboxSelect vs Input elements differently
       const trigger = nextElement.querySelector('[data-radix-select-trigger]') as HTMLElement;
       const input = nextElement.querySelector('input') as HTMLInputElement;
 
@@ -52,77 +49,50 @@ export const useFilterNavigation = (options: FilterNavigationOptions = {}) => {
         nextElement.focus();
       }
     }
-  };
+  }, []);
 
-  // Tab navigation within filters
-  useHotkeys('tab', (e) => {
-    const activeElement = document.activeElement as HTMLElement;
-    if (!containerRef.current?.contains(activeElement)) return;
+  // Helper to focus a specific filter by index
+  const focusFilterByIndex = useCallback((index: number) => {
+    if (!containerRef.current) return;
 
-    e.preventDefault();
+    const focusOrder = [
+      '[data-filter="categoria"]',
+      '[data-filter="descripcion"]',
+      '[data-filter="codigo_oem"]',
+      '[data-filter="codigo_upc"]'
+    ];
 
-    // Determine current filter based on active element
-    const currentFilter = activeElement.closest('[data-filter]')?.getAttribute('data-filter') || undefined;
-    focusNextFilter(currentFilter);
-  }, {
-    enableOnFormTags: true,
-    enabled: true
-  });
+    if (index >= 0 && index < focusOrder.length) {
+      const element = containerRef.current.querySelector(focusOrder[index]) as HTMLElement;
 
-  // Keyboard shortcuts for direct navigation
-  useHotkeys('ctrl+1', (e) => {
-    e.preventDefault();
-    if (onNavigateToCategoria) {
-      onNavigateToCategoria();
-    } else {
-      focusNextFilter(); // Focus first filter (categoria)
+      if (element) {
+        const trigger = element.querySelector('[data-radix-select-trigger]') as HTMLElement;
+        const input = element.querySelector('input') as HTMLInputElement;
+
+        if (trigger) {
+          trigger.focus();
+        } else if (input) {
+          input.focus();
+        } else {
+          element.focus();
+        }
+      }
     }
-  }, { enableOnFormTags: true });
+  }, []);
 
-  useHotkeys('ctrl+2', (e) => {
-    e.preventDefault();
-    if (onNavigateToDescripcion) {
-      onNavigateToDescripcion();
-    } else {
-      focusNextFilter('categoria'); // Focus descripcion
-    }
-  }, { enableOnFormTags: true });
-
-  useHotkeys('ctrl+3', (e) => {
-    e.preventDefault();
-    if (onNavigateToCodigoOem) {
-      onNavigateToCodigoOem();
-    } else {
-      focusNextFilter('descripcion'); // Focus codigo_oem
-    }
-  }, { enableOnFormTags: true });
-
-  useHotkeys('ctrl+4', (e) => {
-    e.preventDefault();
-    if (onNavigateToCodigoUniv) {
-      onNavigateToCodigoUniv();
-    } else {
-      focusNextFilter('codigo_oem'); // Focus codigo_upc
-    }
-  }, { enableOnFormTags: true });
-
-  // Enter key navigation - move to next filter
-  useHotkeys('enter', (e) => {
-    const activeElement = document.activeElement as HTMLElement;
-    if (!containerRef.current?.contains(activeElement)) return;
-
-    // Only prevent default for filter inputs, not for select dropdowns
-    const isFilterInput = activeElement.tagName === 'INPUT' &&
-      activeElement.closest('[data-filter]');
-
-    if (isFilterInput) {
-      e.preventDefault();
+  useCommands({
+    'tableAndFilters.filter1': onNavigateToCategoria || (() => focusFilterByIndex(0)),
+    'tableAndFilters.filter2': onNavigateToDescripcion || (() => focusFilterByIndex(1)),
+    'tableAndFilters.filter3': onNavigateToCodigoOem || (() => focusFilterByIndex(2)),
+    'tableAndFilters.filter4': onNavigateToCodigoUniv || (() => focusFilterByIndex(3)),
+    'tableAndFilters.nextFilter': () => {
+      const activeElement = document.activeElement as HTMLElement;
+      if (!containerRef.current?.contains(activeElement)) return;
       const currentFilter = activeElement.closest('[data-filter]')?.getAttribute('data-filter') || undefined;
       focusNextFilter(currentFilter);
     }
   }, {
-    enableOnFormTags: true,
-    enabled: true
+    enableOnFormTags: true
   });
 
   return {

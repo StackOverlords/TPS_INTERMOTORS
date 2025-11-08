@@ -1,10 +1,9 @@
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
+import { ComboboxSelect } from '@/components/common/SelectCombobox';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-// import { useFormKeybindings } from '@/hooks/useFormKeybindings';
-import { ComboboxSelect } from '@/components/common/SelectCombobox';
-import { useBasicFormKeybindings } from '@/hooks/keyBindings/useBasicFormKeybindings';
+import { useCommands } from '@/keybindings';
 import { HelpCircle, ShoppingBag } from 'lucide-react';
 import React from 'react';
 import { useProviders } from '../hooks/useProviders';
@@ -51,17 +50,15 @@ const FormCreatePurchase: React.FC<Props> = ({
     return d.toISOString().split('T')[0];
   };
 
-  // ✨ Versión básica que no depende del contexto complejo
-  const { formRef } = useBasicFormKeybindings({
-    onSave: onSubmit,
-    onReset: onReset,
-    onCancel: onCancel
+  // ✨ Nuevo sistema de keybindings - más simple y reactivo
+  useCommands({
+    'forms.save': onSubmit,
+    'forms.reset': onReset || undefined,
+    // 'forms.cancel': onCancel || undefined,
   });
 
-  // Ref simple para debug
-
   return (
-    <div ref={formRef as any} className="p-3 bg-white border border-gray-200 rounded-lg">
+    <div className="p-3 bg-white border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-3">
         <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
           <ShoppingBag className="w-4 h-4" />

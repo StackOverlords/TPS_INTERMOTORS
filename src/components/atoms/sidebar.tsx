@@ -14,8 +14,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/atoms/tooltip"
-import { useTabBarKeybindings } from "@/hooks/keyBindings/useSidebarKeybindings"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useCommands } from "@/keybindings"
 import { cn } from "@/lib/utils"
 import ShortcutKey from "../common/ShortcutKey"
 import { TooltipWrapper } from "../common/TooltipWrapper"
@@ -109,8 +109,11 @@ const SidebarProvider = React.forwardRef<
     }, [isMobile, setOpen, setOpenMobile])
 
     // Adds a keyboard shortcut to toggle the sidebar.
-    const { formRef } = useTabBarKeybindings({ toggleSidebar: toggleSidebar })
- 
+    // const { formRef } = useTabBarKeybindings({ toggleSidebar: toggleSidebar })
+    useCommands({
+      'actions.toggleSidebar': toggleSidebar,
+    })
+    
     const state = open ? "expanded" : "collapsed"
 
     const contextValue = React.useMemo<SidebarContext>(
@@ -141,7 +144,7 @@ const SidebarProvider = React.forwardRef<
               "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
               className
             )}
-            ref={formRef as any}
+            // ref={formRef as any}
             {...props}
           >
             {children}
