@@ -10,20 +10,18 @@ import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { usePurchaseSelectorWindow } from "@/hooks/useSecondaryWindow";
-import type { DetalleCompra } from "@/modules/purchases/schemas/purchase.schema";
-import type { PurchaseGet } from "@/modules/purchases/types/PurchaseGet";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import type { ProductGet } from "@/modules/products/types/ProductGet";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { ArrowLeftRight, CornerUpLeft, Loader2, Maximize2, Save } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import SelectPurchaseTransferModal from "../components/SelectPurchaseTransferModal";
 import type { TransferDetailTableRef } from "../components/TransferDetailTable";
 import TransferDetailTable from "../components/TransferDetailTable";
 import { useTransferBranches } from "../hooks/commons/useTransferBranches";
@@ -38,8 +36,6 @@ const CreateTransfer = () => {
     const user = authSDK.getCurrentUser();
     const { selectedBranchId } = useBranchStore();
     const tableRef = useRef<TransferDetailTableRef>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-    const [selectedPurchase, setSelectedPurchase] = useState<PurchaseGet | null>(null);
 
     // Hook de detalles de transferencia
     const transferDetailsHook = useTransferDetails();
@@ -221,22 +217,12 @@ const CreateTransfer = () => {
         }
     }, [transferResponsiblesData, setValue, user?._id]);
 
-    const handleAddProductItem = (product: DetalleCompra, purchaseId: number) => {
-        transferDetailsHook.addProduct(product, purchaseId);
+    const handleAddProductItem = (product: ProductGet) => {
+        transferDetailsHook.addProduct(product);
         // Enfocar el primer input de cantidad después de agregar
         setTimeout(() => {
             tableRef.current?.focusFirstQuantityInput();
         }, 100);
-    };
-
-    const handleSelectPurchase = (selectedPurchase: PurchaseGet) => {
-        setIsDialogOpen(true);
-        setSelectedPurchase(selectedPurchase);
-    };
-
-    const handleCloseSelectDialog = () => {
-        setIsDialogOpen(false);
-        setSelectedPurchase(null);
     };
 
     // Shortcuts
@@ -254,14 +240,15 @@ const CreateTransfer = () => {
     });
     
     // Window Purchase Selector
-    const purchaseWindow = usePurchaseSelectorWindow({
+    const purchaseWindow = useProductSelectorWindow({
         context: 'transfer',
         instanceId: 'create-transfer',
-        onPurchaseSelect: (purchase: PurchaseGet) => {
-            handleSelectPurchase(purchase);
+        onProductSelect: (product: any) => {
+            handleAddProductItem(product);
         },
         onlyWithStock: false,
     });
+
     const toggleSelectorMode = () => {
       if(purchaseWindow.isOpen){
         purchaseWindow.close();
@@ -297,17 +284,6 @@ const CreateTransfer = () => {
                                 </div>
                             </div>
                         </div>
-                        <Button
-                                    type="button"
-                                    // variant={selectorMode === 'window' ? 'default' : 'outline'}
-                                    variant={"outline"}
-                                    size="sm"
-                                    onClick={toggleSelectorMode}
-                                    className="gap-2"
-                                  >
-                                    <Maximize2 className="h-4 w-4" />
-                                        Agregar producto 
-                                  </Button>
                     </header>
 
                     {/* 1. Datos de la transferencia */}
@@ -423,11 +399,21 @@ const CreateTransfer = () => {
                     </div> */}
 
                     <Card className="shadow-none">
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                             <CardTitle className="text-base flex items-center gap-2">
                                 <ArrowLeftRight className="size-4" />
                                 Detalle de Transferencia
                             </CardTitle>
+                            <Button
+                                type="button"
+                                variant={"default"}
+                                size="sm"
+                                onClick={toggleSelectorMode}
+                                className="gap-2"
+                            >
+                                <Maximize2 className="h-4 w-4" />
+                                Agregar producto
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-2">
@@ -443,6 +429,12 @@ const CreateTransfer = () => {
                                             ref={tableRef}
                                             details={transferDetailsHook.details}
                                             onUpdateCantidad={transferDetailsHook.updateCantidad}
+                                            onUpdateCostoEntrada={transferDetailsHook.updateCostoEntrada}
+                                            onUpdatePrecioSalida={transferDetailsHook.updatePrecioSalida}
+                                            onUpdatePrecioEntradaVenta={transferDetailsHook.updatePrecioEntradaVenta}
+                                            onUpdatePrecioEntradaVentaAlt={transferDetailsHook.updatePrecioEntradaVentaAlt}
+                                            onUpdateIncrementoPrecioEntradaVenta={transferDetailsHook.updateIncrementoPrecioEntradaVenta}
+                                            onUpdateIncrementoPrecioEntradaVentaAlt={transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt}
                                             onRemoveProduct={transferDetailsHook.removeProduct}
                                         />
                                         <Separator className="h-[0.5px]" />
@@ -500,18 +492,6 @@ const CreateTransfer = () => {
                     </Card>
                 </form>
             </FormProvider>
-
-            <SelectPurchaseTransferModal
-                isDialogOpen={isDialogOpen}
-                onCloseDialog={handleCloseSelectDialog}
-                purchaseId={selectedPurchase?.id ?? null}
-                onProductSelect={handleAddProductItem}
-                selectedProducts={transferDetailsHook.getTransferDetails().map((detail, index) => ({
-                    producto_id: detail.producto_id,
-                    cantidad_entrada_salida: detail.cantidad_entrada_salida,
-                    purchase_id: transferDetailsHook.details[index]?.purchase_id || 0
-                }))}
-            />
         </main>
     );
 };

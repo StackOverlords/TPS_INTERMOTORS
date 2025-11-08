@@ -1,6 +1,5 @@
 import ProductSelectorWindow from '@/modules/products/screens/ProductSelectorWindow';
 import PurchaseSelectorWindow from '@/modules/purchases/screens/PurchaseSelectorWindow';
-import ViewSettings from '@/modules/settings/components/settings/ViewSettings';
 import React from 'react';
 
 // Tipo para componentes que pueden renderizarse en ventanas
@@ -35,11 +34,25 @@ export function getRegisteredComponentIds(): string[] {
   return Array.from(windowComponentRegistry.keys());
 }
 
+// ✨ Lazy loading para ViewSettings para evitar importaciones circulares
+// const LazyViewSettings = lazy(() => import('@/modules/settings/components/settings/ViewSettings'));
+
+// // Wrapper con Suspense para lazy components
+// const ViewSettingsWithSuspense: React.FC = () => (
+//   <Suspense fallback={
+//     <div className="h-screen flex items-center justify-center">
+//       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+//     </div>
+//   }>
+//     <LazyViewSettings />
+//   </Suspense>
+// );
+
 export function registerDefaultWindowComponents(): void {
-  // Registrar ProductSelectorWindow || Todos los que vamos a usar 
+  // Registrar ProductSelectorWindow || Todos los que vamos a usar
   registerWindowComponent('product-selector', ProductSelectorWindow);
   registerWindowComponent('purchase-selector', PurchaseSelectorWindow);
-  registerWindowComponent('settings-routes', ViewSettings);
+  // registerWindowComponent('settings-routes', ViewSettingsWithSuspense);
 }
 
 export const WindowComponentRenderer: React.FC = () => {

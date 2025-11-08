@@ -66,9 +66,7 @@ const CreatePurchase: React.FC = () => {
   const productWindow = useProductSelectorWindow({
     context: 'purchase',
     instanceId: 'create',
-    onProductSelect: (product: any) => {
-      handleProductSelect(product);
-    },
+    onProductSelect: handleProductSelect,
     onlyWithStock: false,
   });
   // Toggle entre modo embedded y window

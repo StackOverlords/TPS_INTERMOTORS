@@ -1,14 +1,14 @@
+import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { cn } from "@/lib/utils";
+import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
 import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
 import { useCommonBrands } from "@/modules/shared/hooks/useCommonBrands";
+import { useCommonSubcategories } from "@/modules/shared/hooks/useCommonSubcategories";
 import { Search } from "lucide-react";
 import type { useProductFilters } from "../../hooks/useProductFilters";
-import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { useCommonSubcategories } from "@/modules/shared/hooks/useCommonSubcategories";
-import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
-import { Button } from "@/components/atoms/button";
-import { cn } from "@/lib/utils";
 
 interface ProductFiltersProps {
     filters: ReturnType<typeof useProductFilters>["filters"]

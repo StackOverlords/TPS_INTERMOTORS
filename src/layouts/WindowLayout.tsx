@@ -1,11 +1,11 @@
 import { Toaster } from '@/components/atoms/toaster';
 import { TooltipProvider } from '@/components/atoms/tooltip';
+// import { KeybindingProvider } from '@/contexts/KeybindingContext'; // ⚠️ DEPRECATED: Reemplazado por el nuevo sistema de keybindings con Zustand
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import { queryClient } from '@/lib/reactQueryConfig';
 import authSDK from '@/services/sdk-simple-auth';
 import { QueryClientProvider } from '@tanstack/react-query';
 import React, { useEffect, useState } from 'react';
-import { HotkeysProvider } from 'react-hotkeys-hook';
 
 interface WindowLayoutProps {
   children: React.ReactNode;
@@ -50,17 +50,18 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
     );
   }
 
+  // ⚠️ DEPRECATED: KeybindingProvider removido - Ahora usamos Zustand store
   return (
     <WebSocketProvider>
       <QueryClientProvider client={queryClient}>
-        <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
-          <TooltipProvider>
-            <Toaster />
-            <div className="h-screen w-screen overflow-hidden">
-              {children}
-            </div>
-          </TooltipProvider>
-        </HotkeysProvider>
+        {/* <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}> */}
+        <TooltipProvider>
+          <Toaster />
+          <div className="h-screen w-screen overflow-hidden">
+            {children}
+          </div>
+        </TooltipProvider>
+        {/* </HotkeysProvider> */}
       </QueryClientProvider>
     </WebSocketProvider>
   );

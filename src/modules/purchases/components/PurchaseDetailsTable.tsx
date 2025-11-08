@@ -90,7 +90,7 @@ interface PurchaseDetail {
 interface Props {
   detalles: PurchaseDetail[];
   setDetalles: (d: PurchaseDetail[]) => void;
-  toggleSelectorMode: () => void;
+  toggleSelectorMode?: () => void;
 }
 
 type NormalizedPurchaseDetail = PurchaseDetail & {

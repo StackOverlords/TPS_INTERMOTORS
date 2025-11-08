@@ -1,113 +1,53 @@
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
-import {
-  exportKeybindings,
-  getAllKeybindings,
-  importKeybindings,
-  resetAllKeybindings,
-  validateImportFile,
-  type ImportValidationResult,
-  type ImportMode,
-} from "@/database/schemas/keybindings.schema";
-import keyBindings from "@/hooks/keyBindings/global.keys";
+import type { ImportValidationResult } from "@/database/schemas/keybindings.schema";
+import type { ImportMode } from "@/keybindings";
+import { CATEGORIES, detectConflicts, getUsedKeys, useKeybindingStore } from "@/keybindings";
 import { cn } from "@/lib/utils";
-import { clearKeybindingsCache } from "@/services/keybindingsService";
 import { FileDown, FileUp, RotateCcw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import KeybindingRow from "../keyBindingRow";
 import ImportKeybindingsModal from "../ImportKeybindingsModal";
-
-// Nombres amigables para categorías
-const categoryNames: Record<string, string> = {
-  forms: 'Formularios',
-  navigation: 'Navegación',
-  modal: 'Modales',
-  tableAndFilters: 'Tablas y Filtros',
-  actions: 'Acciones'
-};
+import KeybindingRow from "../keyBindingRow";
 
 const KeybindingsSettings = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [keybindings, setKeybindings] = useState<Map<string, string>>(new Map());
-  const [loading, setLoading] = useState(true);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importValidation, setImportValidation] = useState<ImportValidationResult | null>(null);
   const [importFileContent, setImportFileContent] = useState<string>("");
   const [importFileName, setImportFileName] = useState<string>("");
 
-  // Estructura plana de todos los keybindings con sus defaults
-  const allKeybindings = Object.entries(keyBindings).flatMap(([category, bindings]) =>
-    Object.entries(bindings).map(([action, config]) => ({
-      id: `${category}.${action}`,
-      category,
-      action,
-      defaultKeys: config.keys,
-      description: config.description,
-    }))
-  );
+  // ✨ Obtener datos del store reactivo
+  const keybindings = useKeybindingStore(state => state.keybindings);
+  const loading = useKeybindingStore(state => state.loading);
+  const initialized = useKeybindingStore(state => state.initialized);
+  const load = useKeybindingStore(state => state.load);
+  const save = useKeybindingStore(state => state.save);
+  const reset = useKeybindingStore(state => state.reset);
+  const resetAll = useKeybindingStore(state => state.resetAll);
+  const exportKeybindings = useKeybindingStore(state => state.export);
+  const importKeybindings = useKeybindingStore(state => state.import);
 
-  // Cargar keybindings desde la DB
-  const loadKeybindings = async () => {
-    try {
-      setLoading(true);
-      const customBindings = await getAllKeybindings();
-      const bindingsMap = new Map<string, string>();
-
-      customBindings.forEach((kb) => {
-        bindingsMap.set(kb.id, kb.keys);
-      });
-
-      setKeybindings(bindingsMap);
-    } catch (error) {
-      // console.error('Error loading keybindings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ✨ Cargar keybindings al montar el componente
   useEffect(() => {
-    loadKeybindings();
-  }, []);
+    if (!initialized && !loading) {
+      load();
+    }
+  }, [initialized, loading, load]);
+
+  // Convertir Map a array para trabajar más fácil
+  const allKeybindings = Array.from(keybindings.values());
 
   // Detectar conflictos
-  const detectConflicts = () => {
-    const conflicts = new Set<string>();
-    const keysMap = new Map<string, string[]>();
-
-    allKeybindings.forEach((kb) => {
-      const keys = keybindings.get(kb.id) || kb.defaultKeys;
-      const existing = keysMap.get(keys) || [];
-      existing.push(kb.id);
-      keysMap.set(keys, existing);
-    });
-
-    keysMap.forEach((ids) => {
-      if (ids.length > 1) {
-        ids.forEach(id => conflicts.add(id));
-      }
-    });
-
-    return conflicts;
-  };
-
-  // Obtener todas las combinaciones de teclas usadas (excepto la del id actual)
-  const getUsedKeys = (excludeId: string): string[] => {
-    return allKeybindings
-      .filter(kb => kb.id !== excludeId)
-      .map(kb => keybindings.get(kb.id) || kb.defaultKeys);
-  };
-
-  const conflicts = detectConflicts();
+  const conflictsMap = detectConflicts(keybindings);
 
   // Filtrar keybindings según búsqueda
   const filteredKeybindings = allKeybindings.filter((kb) => {
     const query = searchQuery.toLowerCase();
-    const currentKeys = keybindings.get(kb.id) || kb.defaultKeys;
     return (
       kb.description.toLowerCase().includes(query) ||
       kb.id.toLowerCase().includes(query) ||
-      currentKeys.toLowerCase().includes(query) ||
+      kb.keys.toLowerCase().includes(query) ||
       kb.category.toLowerCase().includes(query)
     );
   });
@@ -121,28 +61,26 @@ const KeybindingsSettings = () => {
     return acc;
   }, {} as Record<string, typeof allKeybindings>);
 
-  const handleEdit = async (id: string, keys: string) => {
-    const kb = allKeybindings.find(k => k.id === id);
-    if (!kb) return;
+  // Contar keybindings personalizados
+  const customCount = allKeybindings.filter(kb => kb.isCustom).length;
 
+  const handleEdit = async (id: string, keys: string) => {
     try {
-      const { saveKeybinding } = await import("@/database/schemas/keybindings.schema");
-      await saveKeybinding(id, keys, kb.defaultKeys);
-      await clearKeybindingsCache(); // Notificar hooks activos
-      await loadKeybindings(); // Recargar UI
+      await save(id, keys);
+      toast.success('Atajo actualizado correctamente');
     } catch (error) {
-      // console.error('Error saving keybinding:', error);
+      toast.error('Error al guardar el atajo');
+      console.error('Error saving keybinding:', error);
     }
   };
 
   const handleReset = async (id: string) => {
     try {
-      const { deleteKeybinding } = await import("@/database/schemas/keybindings.schema");
-      await deleteKeybinding(id);
-      await clearKeybindingsCache(); // Notificar hooks activos
-      await loadKeybindings(); // Recargar UI
+      await reset(id);
+      toast.success('Atajo restablecido');
     } catch (error) {
-      // console.error('Error resetting keybinding:', error);
+      toast.error('Error al restablecer el atajo');
+      console.error('Error resetting keybinding:', error);
     }
   };
 
@@ -152,19 +90,17 @@ const KeybindingsSettings = () => {
     }
 
     try {
-      await resetAllKeybindings();
-      await clearKeybindingsCache(); // Notificar hooks activos
-      await loadKeybindings(); // Recargar UI
+      await resetAll();
+      toast.success('Todos los atajos han sido restablecidos');
     } catch (error) {
-      // console.error('Error resetting all keybindings:', error);
+      toast.error('Error al restablecer los atajos');
+      console.error('Error resetting all keybindings:', error);
     }
   };
 
   const handleExport = async () => {
     try {
-      console.log('Iniciando exportación...');
       const json = await exportKeybindings();
-      console.log('JSON generado:', json.substring(0, 100));
 
       // Usar la API de Tauri para guardar archivos
       const { save } = await import('@tauri-apps/plugin-dialog');
@@ -216,16 +152,34 @@ const KeybindingsSettings = () => {
       // Leer el archivo
       const text = await readTextFile(filePath as string);
 
-      // Validar el archivo
-      const validation = await validateImportFile(text);
+      // Validación básica
+      try {
+        const data = JSON.parse(text);
+        const validation: ImportValidationResult = {
+          valid: !!data.keybindings,
+          errors: data.keybindings ? [] : ['Archivo inválido'],
+          warnings: [],
+          conflicts: [],
+          summary: {
+            total: data.keybindings ? Object.keys(data.keybindings).length : 0,
+            new: 0,
+            modified: 0,
+            unchanged: 0
+          }
+        };
 
-      // Guardar para usar después
-      setImportFileContent(text);
-      setImportFileName(typeof filePath === 'string' ? filePath.split(/[\\/]/).pop() || 'archivo.json' : 'archivo.json');
-      setImportValidation(validation);
+        // Guardar para usar después
+        setImportFileContent(text);
+        setImportFileName(typeof filePath === 'string' ? filePath.split(/[\\/]/).pop() || 'archivo.json' : 'archivo.json');
+        setImportValidation(validation);
 
-      // Mostrar modal de vista previa
-      setImportModalOpen(true);
+        // Mostrar modal de vista previa
+        setImportModalOpen(true);
+      } catch (parseError) {
+        toast.error('Error al leer el archivo', {
+          description: 'El archivo no contiene un JSON válido'
+        });
+      }
     } catch (error) {
       toast.error('Error al leer el archivo', {
         description: error instanceof Error ? error.message : 'El archivo no es válido'
@@ -235,9 +189,7 @@ const KeybindingsSettings = () => {
 
   const handleImportConfirm = async (mode: ImportMode) => {
     try {
-      await importKeybindings(importFileContent, { mode });
-      await clearKeybindingsCache(); // Limpiar cache y notificar
-      await loadKeybindings(); // Recargar UI
+      await importKeybindings(importFileContent, mode);
 
       setImportModalOpen(false);
 
@@ -282,11 +234,11 @@ const KeybindingsSettings = () => {
         {/* Stats */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground ml-auto">
           <span>{filteredKeybindings.length} atajos</span>
-          {keybindings.size > 0 && (
-            <span className="text-primary">{keybindings.size} personalizados</span>
+          {customCount > 0 && (
+            <span className="text-primary">{customCount} personalizados</span>
           )}
-          {conflicts.size > 0 && (
-            <span className="text-destructive">{conflicts.size} conflictos</span>
+          {conflictsMap.size > 0 && (
+            <span className="text-destructive">{conflictsMap.size} conflictos</span>
           )}
         </div>
 
@@ -329,25 +281,23 @@ const KeybindingsSettings = () => {
             {/* Header de categoría */}
             <div className="bg-muted/100 px-3 py-1.5 border-b border-border/50">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {categoryNames[category] || category}
+                {CATEGORIES[category as keyof typeof CATEGORIES] || category}
               </h3>
             </div>
 
             {/* Rows */}
             <div>
               {items.map((kb) => {
-                const currentKeys = keybindings.get(kb.id) || kb.defaultKeys;
-                const isCustom = keybindings.has(kb.id);
-                const hasConflict = conflicts.has(kb.id);
-                const usedKeys = getUsedKeys(kb.id);
+                const hasConflict = conflictsMap.has(kb.id);
+                const usedKeys = getUsedKeys(keybindings, kb.id);
 
                 return (
                   <KeybindingRow
                     key={kb.id}
                     id={kb.id}
-                    currentKeys={currentKeys}
+                    currentKeys={kb.keys}
                     description={kb.description}
-                    isCustom={isCustom}
+                    isCustom={kb.isCustom}
                     hasConflict={hasConflict}
                     conflictsWith={usedKeys}
                     onEdit={handleEdit}

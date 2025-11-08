@@ -22,6 +22,7 @@ const SelectBranch = () => {
     const fetchBranches = async () => {
       const { user } = await authSDK.getState();
       const userBranches: Branch[] = user?.sucursales || [];
+      console.log(user?.sucursales)
       setBranches(userBranches);
       if (!selectedBranchId && userBranches.length > 0) {
         const initialBranchId = String(userBranches[0].id);

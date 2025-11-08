@@ -50,7 +50,7 @@ const CreateProduct = () => {
             </div >
 
             {/* Action Buttons */}
-            < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
+            <div className="flex items-center justify-end w-full sm:w-auto gap-2" >
 
             </div >
           </div >

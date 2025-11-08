@@ -1,8 +1,8 @@
-import { Logger } from "@/lib/logger";
 import { ApiService } from "@/lib/apiService";
+import { Logger } from "@/lib/logger";
+import { TransferBranchesGetAllSchema, TransferResponsiblesGetAllSchema } from "../../schemas/commons/transferCommons.schema";
+import type { TransferBranchesGetAll, TransferResponsiblesGetAll } from "../../types/commons/transferCommons.types";
 import { TRANSFER_COMMONS_ENDPOINTS } from "../transferCommonsEndpoints.service";
-import type { TransferResponsiblesGetAll, TransferBranchesGetAll } from "../../types/commons/transferCommons.types";
-import { TransferResponsiblesGetAllSchema, TransferBranchesGetAllSchema } from "../../schemas/commons/transferCommons.schema";
 
 const MODULE_NAME = 'TRANSFER_COMMONS_SERVICE';
 
@@ -30,16 +30,17 @@ export const transferCommonsService = {
      * @param branchId - ID de la sucursal origen
      */
     async getBranches(branchId: number): Promise<TransferBranchesGetAll> {
-        Logger.info('Fetching Transfer Branches', { branchId }, MODULE_NAME);
-
+        // Logger.info('Fetching Transfer Branches', { branchId }, MODULE_NAME);
+        console.log(branchId)
         const response = await ApiService.get(
             TRANSFER_COMMONS_ENDPOINTS.branches(branchId),
             TransferBranchesGetAllSchema
         );
+        console.log(response,"assx")
 
-        Logger.info('Transfer Branches fetched successfully', {
-            count: response.data.length,
-        }, MODULE_NAME);
+        // Logger.info('Transfer Branches fetched successfully', {
+        //     count: response.data.length,
+        // }, MODULE_NAME);
 
         return response;
     },

@@ -2,17 +2,19 @@ import { Button } from '@/components/atoms/button';
 import { Kbd } from '@/components/atoms/kbd';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-import keyBindings from '@/hooks/keyBindings/global.keys';
+import { COMMANDS, useKeybindingKeys } from '@/keybindings';
 import { SearchIcon } from 'lucide-react';
 
 export default function SearchButton({ onClick }: { onClick: () => void }) {
+  const commandPaletteKeys = useKeybindingKeys('actions.commandPalette');
+
   return (
     <TooltipWrapper
       tooltip={
         <p>
           Presiona{' '}
-          <ShortcutKey combo={keyBindings.actions.openCommandPalette.keys} />{' '}
-          {keyBindings.actions.openCommandPalette.description}
+          <ShortcutKey combo={commandPaletteKeys} />{' '}
+          {COMMANDS['actions.commandPalette'].description}
         </p>
       }
     >

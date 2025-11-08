@@ -8,18 +8,13 @@ import Navigation from './navigation/Navigation.tsx';
 import '@/config/zodI18nConfig.ts';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 import { Toaster } from './components/atoms/toaster.tsx';
-import { KeybindingProvider } from './contexts/KeybindingContext.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
-import { testDatabaseConnection } from './database/test-connection';
+import { initializeKeybindingStore } from './keybindings/index.ts';
 import { queryClient } from './lib/reactQueryConfig.ts';
 
-// Probar la conexión a la base de datos al iniciar la app
-testDatabaseConnection().then((success) => {
-  if (success) {
-    // console.log('✅ Database ready!');
-  } else {
-    console.warn('⚠️ Database connection failed, app will continue without local storage');
-  }
+// ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
+initializeKeybindingStore().catch((error) => {
+  console.error('❌ Error initializing keybinding store:', error);
 });
 
 createRoot(document.getElementById('root')!).render(
@@ -29,13 +24,13 @@ createRoot(document.getElementById('root')!).render(
         <TooltipProvider>
           <Toaster />
           {/* <Sonner /> */}
-          <KeybindingProvider>
+          {/* <KeybindingProvider> */}
             <BrowserRouter>
               {/* <SidebarProvider> */}
               <Navigation />
               {/* </SidebarProvider> */}
             </BrowserRouter>
-          </KeybindingProvider>
+          {/* </KeybindingProvider> */}
         </TooltipProvider>
       </HotkeysProvider>
     </QueryClientProvider>

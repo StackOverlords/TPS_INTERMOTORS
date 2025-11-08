@@ -62,19 +62,19 @@ export const GetByIdBranchSchema = CreateBranchResponseSchema;
 
 // Schemas para la gestión de usuarios en sucursales
 export const BranchUserSchema = z.object({
-    id_usuario: z.number(),
+    id_usuario: z.number().nullable(),
     usuario: z.object({
-        nickname: z.string(),
-        fecha_creacion: z.string(),
-        email: z.string().nullable(),
+        nickname: z.string().nullable(),
+        fecha_creacion: z.string().nullable(),
+        email: z.string().nullable().nullable(),
         data_empleado: z.object({
-            id: z.number(),
-            nombre: z.string(),
-        }),
-    }),
-    rol: z.string(),
-    rol_name: z.string(),
-    fecha_registro: z.string(),
+            id: z.number().nullable(),
+            nombre: z.string().nullable(),
+        }).nullable(),
+    }).nullable(),
+    rol: z.string().nullable(),
+    rol_name: z.string().nullable(),
+    fecha_registro: z.string().nullable(),
 });
 
 export const GetBranchUsersSchema = z.object({

@@ -149,7 +149,7 @@ const ViewSettings = () => {
   }, [selectedViewId, routeConfigs, syncedConfig]);
 
   return (
-    <div className="flex gap-1 h-auto overflow-hidden rounded-lg">
+    <div className="flex gap-1 h-[600px] overflow-hidden rounded-lg">
         {/* LEFT SIDEBAR */}
         <div className="w-64 flex border border-gray-200 flex-col rounded-lg bg-white overflow-hidden shadow-sm">
         {/* Search */}
