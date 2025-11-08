@@ -46,6 +46,10 @@
     "fs:allow-write-file",
     "fs:allow-temp-read",
     "fs:allow-temp-write",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-applog-read",
+    "fs:allow-applog-write",
     "shell:allow-open"
   ]
 }
