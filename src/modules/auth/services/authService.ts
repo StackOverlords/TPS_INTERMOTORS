@@ -1,6 +1,6 @@
 import { Logger } from "@/lib/logger";
-import type { Login } from "../types/login.types";
 import authSDK from "@/services/sdk-simple-auth";
+import type { Login } from "../types/login.types";
 
 const MODULE_NAME = 'AUTH_SERVICE';
 
@@ -29,7 +29,7 @@ export const authService = {
             if (/4\d{2}/.test(errorMessage)) {
                 throw new Error("Error al iniciar sesión. Verifica tus credenciales.");
             }
-
+            alert(JSON.stringify(error))
             // Otro tipo de error (red, servidor, etc.)
             throw new Error("Ocurrió un error inesperado al intentar iniciar sesión. Inténtalo de nuevo.");
         }

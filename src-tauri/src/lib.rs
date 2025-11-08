@@ -1,3 +1,5 @@
+use tauri_plugin_log::{Target, TargetKind};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -20,8 +22,21 @@ pub fn run() {
       app.handle().plugin(
         tauri_plugin_log::Builder::default()
           .level(log_level)
+          .targets([
+            // Logs en stdout (terminal)
+            Target::new(TargetKind::Stdout),
+            // Logs en el webview (consola del navegador)
+            Target::new(TargetKind::Webview),
+            // Logs persistentes en archivo
+            Target::new(TargetKind::LogDir {
+              file_name: Some("app.log".into())
+            }),
+          ])
           .build(),
       )?;
+
+      // Generar un log inicial para crear el archivo
+      log::info!("TPS Intermotors iniciado correctamente");
 
       Ok(())
     })

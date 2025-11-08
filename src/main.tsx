@@ -11,28 +11,38 @@ import { Toaster } from './components/atoms/toaster.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
 import { initializeKeybindingStore } from './keybindings/index.ts';
 import { queryClient } from './lib/reactQueryConfig.ts';
+import { DebugPanel, useDebugPanel } from './components/common/DebugPanel.tsx';
 
 // ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
 initializeKeybindingStore().catch((error) => {
   console.error('❌ Error initializing keybinding store:', error);
 });
 
-createRoot(document.getElementById('root')!).render(
-  <WebSocketProvider>
-    <QueryClientProvider client={queryClient}>
-      <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
-        <TooltipProvider>
-          <Toaster />
-          {/* <Sonner /> */}
-          {/* <KeybindingProvider> */}
-            <BrowserRouter>
-              {/* <SidebarProvider> */}
-              <Navigation />
-              {/* </SidebarProvider> */}
-            </BrowserRouter>
-          {/* </KeybindingProvider> */}
-        </TooltipProvider>
-      </HotkeysProvider>
-    </QueryClientProvider>
-  </WebSocketProvider>
-);
+function App() {
+  const debugPanel = useDebugPanel();
+
+  return (
+    <WebSocketProvider>
+      <QueryClientProvider client={queryClient}>
+        <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
+          <TooltipProvider>
+            <Toaster />
+            {/* <Sonner /> */}
+            {/* <KeybindingProvider> */}
+              <BrowserRouter>
+                {/* <SidebarProvider> */}
+                <Navigation />
+                {/* </SidebarProvider> */}
+              </BrowserRouter>
+            {/* </KeybindingProvider> */}
+
+            {/* Panel de Debug - Se abre con Ctrl+Shift+D o F12 */}
+            <DebugPanel isOpen={debugPanel.isOpen} onClose={debugPanel.close} />
+          </TooltipProvider>
+        </HotkeysProvider>
+      </QueryClientProvider>
+    </WebSocketProvider>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<App />);
