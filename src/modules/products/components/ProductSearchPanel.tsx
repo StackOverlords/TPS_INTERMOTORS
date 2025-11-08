@@ -30,6 +30,7 @@ interface ProductSearchPanelProps<T extends BaseWithId | CartItem> {
   onProductSelect: (product: ProductGet) => void;
   defaultSearchMode?: 'realtime' | 'manual';
   onlySelectWithStock?: boolean;
+  allowExceedStock?: boolean;
 }
 
 function ProductSearchPanel<T extends BaseWithId | CartItem>({
@@ -37,6 +38,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
   onProductSelect,
   defaultSearchMode = 'manual',
   onlySelectWithStock = false,
+  allowExceedStock = false,
 }: ProductSearchPanelProps<T>) {
   // Estado para el modo de búsqueda
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>(defaultSearchMode);
@@ -120,7 +122,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         header: 'Producto',
         size: 150,
         cell: ({ getValue }) => (
-          <div className="font-bold text-xs text-gray-900 truncate">
+          <div className="font-bold text-xs text-primary truncate">
             {getValue() as string}
           </div>
         ),
@@ -197,34 +199,81 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
           } = isProductSelected(row.original.id);
 
           const quantity = item && "quantity" in item ? item.quantity : null
-          const isOutOfStock = quantity != null ?
-            (isSelected && quantity >= product.stock_actual) :
-            isSelected
 
-          const isDisabled = onlySelectWithStock && product.stock_actual <= 0;
+          // Lógica de deshabilitado del botón
+          let isDisabled = false;
+          let buttonText = '';
+          let buttonVariant: 'default' | 'outline' = 'default';
+          let showExtraIndicator = false;
+
+          // Si onlySelectWithStock está activo
+          if (onlySelectWithStock) {
+            // No se puede agregar si no hay stock
+            if (product.stock_actual <= 0) {
+              isDisabled = true;
+            }
+            // No se puede agregar más si ya alcanzó el stock
+            if (quantity != null && quantity >= product.stock_actual) {
+              isDisabled = true;
+            }
+          } else {
+            // Si allowExceedStock está desactivado
+            if (!allowExceedStock) {
+              // Comportamiento similar a onlySelectWithStock pero más permisivo
+              if (quantity != null && quantity >= product.stock_actual) {
+                isDisabled = true;
+              }
+            }
+            // Si allowExceedStock está activado, nunca se deshabilita por stock
+          }
+
+          // Determinar el texto y variante del botón
+          if (isSelected) {
+            buttonVariant = 'outline';
+            if (quantity != null) {
+              if (quantity > product.stock_actual && allowExceedStock) {
+                // Mostrar cantidad que excede el stock
+                const extraQuantity = quantity - product.stock_actual;
+                buttonText = `${quantity} (${extraQuantity} extra)`;
+                showExtraIndicator = true;
+              } else if (quantity >= product.stock_actual && !allowExceedStock) {
+                buttonText = 'Agregado';
+              } else {
+                buttonText = `${quantity} Agregados`;
+              }
+            } else {
+              buttonText = 'Agregado';
+            }
+          } else {
+            buttonText = 'Agregar';
+          }
 
           return (
             <Button
               type='button'
               size="sm"
-              variant={isSelected ? 'outline' : 'default'}
-              disabled={isOutOfStock || isDisabled}
+              variant={buttonVariant}
+              disabled={isDisabled}
               onClick={() => onProductSelect(product)}
-              className='h-7 text-xs'
+              className={`h-7 text-xs cursor-pointer`}
             >
-              {isOutOfStock ? (
+              {isDisabled && (quantity != null && quantity >= product.stock_actual) ? (
                 <>
                   <Check className="size-3" />
                   Agregado
                 </>
-              ) : isSelected && quantity != null ? (
+              ) : isSelected ? (
                 <>
-                  {quantity} Agregados
+                  {showExtraIndicator ? (
+                    <span className="text-muted-foreground">{buttonText}</span>
+                  ) : (
+                    buttonText
+                  )}
                 </>
               ) : (
                 <>
                   <Plus className="size-3" />
-                  Agregar
+                  {buttonText}
                 </>
               )}
             </Button>
@@ -232,7 +281,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         },
       },
     ],
-    [isProductSelected, onProductSelect, onlySelectWithStock]
+    [isProductSelected, onProductSelect, onlySelectWithStock, allowExceedStock]
   );
 
   const table = useReactTable({
@@ -257,12 +306,12 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
       {/* Header con Filtros */}
-      <div className="p-3 border-b border-gray-200 space-y-1">
+      <header className="p-3 border-b border-border space-y-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-gray-900">
+            <h3 className="text-base font-semibold text-primary">
               Buscar Productos
             </h3>
           </div>
@@ -376,33 +425,24 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
             />
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Table Container */}
       <div className="flex-1 overflow-auto">
-        {products.length > 0 ? (
-          <CustomizableTable
-            table={table}
-            isLoading={isLoading}
-            isError={isError}
-            isFetching={isFetching}
-            rows={filters.pagina_registros}
-            errorMessage="Ocurrió un error al cargar los productos"
-            noDataMessage="No se encontraron productos"
-          />
-        ) : (
-          <div className="text-center py-8 text-gray-500 text-sm">
-            {searchMode === 'manual' ?
-              'Haz clic en "Buscar" para ver los productos' :
-              'No se encontraron productos'
-            }
-          </div>
-        )}
+        <CustomizableTable
+          table={table}
+          isLoading={isLoading}
+          isError={isError}
+          isFetching={isFetching}
+          rows={filters.pagina_registros}
+          errorMessage="Ocurrió un error al cargar los productos"
+          noDataMessage="No se encontraron productos"
+        />
       </div>
 
       {/* Footer con Paginación */}
       {products.length > 0 && (
-        <div className="border-t border-gray-200 bg-gray-50">
+        <div className="flex-shrink-0 border-t border-border bg-card">
           <Pagination
             currentPage={filters.pagina}
             onPageChange={handlePageChange}

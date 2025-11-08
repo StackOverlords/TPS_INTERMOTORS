@@ -8,7 +8,7 @@ interface ErrorResult {
 }
 
 // 👇 Type Guard para validar si la respuesta tiene el formato esperado
-function isApiErrorResponse(data: unknown): data is { error: ApiError } {
+export function isApiErrorResponse(data: unknown): data is { error: ApiError } {
     return typeof data === "object" && data !== null && "error" in data;
 }
 
@@ -46,15 +46,16 @@ export class ErrorHandler {
         }
 
         // 👇 Validamos la forma de la respuesta antes de acceder
-        let apiError: ApiError | undefined;
-        if (isApiErrorResponse(error.response.data)) {
-            apiError = error.response.data.error;
-        }
+        // let apiError: ApiError | undefined;
+        // if (isApiErrorResponse(error.response.data)) {
+        //     apiError = error.response.data.error;
+        // }
 
         const status = error.response.status;
-        const serverMessage = apiError?.message;
+        // const serverMessage = apiError?.message;
 
-        return this.handleByStatus(status, serverMessage);
+        // return this.handleByStatus(status, serverMessage);
+        return this.handleByStatus(status);
     }
 
     private static handleByStatus(

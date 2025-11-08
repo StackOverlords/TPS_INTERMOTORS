@@ -104,7 +104,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild className="text-gray-600">
                         <div className="flex flex-col space-y-3 py-2 items-center justify-center w-full">
-                            <span className="font-medium">{message ?? configDefaults.message}</span>
+                            <span className="font-medium text-center">{message ?? configDefaults.message}</span>
                             <Badge variant={variant} className={cn("fle items-center gap-3 p-1.5 rounded-md border w-full justify-center", config.alertBg)}>
                                 <IconComponent className="size-4 flex-shrink-0" />
                                 {alertMessage ?? configDefaults.alertMessage}

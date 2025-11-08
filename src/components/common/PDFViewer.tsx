@@ -6,7 +6,7 @@ import { Button } from "@/components/atoms/button";
 import { cn } from "@/lib/utils";
 
 interface PDFViewerProps {
-    id: number | null;
+    id: number | null | undefined;
     pdfBlob: Blob | undefined;
     isLoading: boolean;
     isError: boolean;

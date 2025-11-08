@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/atoms/label"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
 import { Switch } from "@/components/atoms/switch"
+import { ColumnVisibilityDropdown } from "@/components/common/ColumnVisibilityDropdown"
 import ConfirmationModal from "@/components/common/confirmationModal"
 import CustomizableTable from "@/components/common/CustomizableTable"
 import Pagination from "@/components/common/pagination"
@@ -12,7 +13,7 @@ import ShortcutKey from "@/components/common/ShortcutKey"
 import TooltipButton from "@/components/common/TooltipButton"
 import { TooltipWrapper } from "@/components/common/TooltipWrapper"
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation"
-import { showSuccessToast } from "@/hooks/use-toast-enhanced"
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
 import { useCustomTable } from "@/hooks/useCustomTable"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
@@ -32,10 +33,10 @@ import {
   Loader2,
   MoreVertical,
   RefreshCcw,
-  Settings,
   // ShoppingCart,
   // Trash2,
   TrendingUp,
+  X,
   Zap,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -47,6 +48,7 @@ import ProductFilters from "../components/productList/productFilters"
 import { useDeleteProduct } from "../hooks/mutations/useDeleteProduct"
 import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
 import { useProductFilters } from "../hooks/useProductFilters"
+import { useProductSelection } from "../hooks/useProductSelection"
 import type { ProductGet } from "../types/ProductGet"
 
 const ProductListScreen = () => {
@@ -92,6 +94,16 @@ const ProductListScreen = () => {
         isRefetching: isRefetchingProducts,
     } = useProductsPaginated(activeFilters);
 
+    const {
+        isProductSelected,
+        toggleProductSelection,
+        toggleAllProductsSelection,
+        getAllSelectedProducts,
+        getSelectedCount,
+        clearAllSelections,
+        areAllProductsSelected,
+    } = useProductSelection();
+
     const { addItemToCart, addMultipleItems, decrementQuantity } = useCartWithUtils(user?.name ?? '', selectedBranchId ?? '')
     const [products, setProducts] = useState<ProductGet[]>([]);
 
@@ -127,11 +139,6 @@ const ProductListScreen = () => {
 
     const handleDeleteError = (error: unknown, productId: number) => {
         handleError({ error, customTitle: `Error al eliminar el producto #${productId}` });
-        // showErrorToast({
-        //     title: "Error al eliminar el producto",
-        //     description: `No se pudo eliminar el producto #${productId}. Por favor, intenta nuevamente`,
-        //     duration: 5000
-        // })
     };
 
     const {
@@ -143,7 +150,7 @@ const ProductListScreen = () => {
         close: handleCloseDeleteAlert,
         confirm: handleConfirmDeleteAlert,
         isOpen: showDeleteAlert,
-        open: handleOpenDeleteAlert,
+        // open: handleOpenDeleteAlert,
         variables: productToDelete
     } = useConfirmMutation(deleteProduct, handleDeleteSuccess, handleDeleteError)
 
@@ -177,17 +184,36 @@ const ProductListScreen = () => {
         setModalOpen(true)
     }, [])
 
+    const handleAddSelectedToCart = useCallback(() => {
+        const selectedProducts = getAllSelectedProducts();
+
+        if (selectedProducts.length === 0) {
+            showErrorToast({
+                title: "Error al agregar los productos",
+                description: `No hay productos seleccionados para agregar al carrito.`,
+            })
+            return;
+        }
+
+        try {
+            addMultipleItems(selectedProducts);
+            clearAllSelections();
+        } catch (error) {
+            showErrorToast({
+                title: "Error al agregar los productos",
+                description: `Error al procesar productos para el carrito`,
+            })
+        }
+    }, [getAllSelectedProducts, addMultipleItems, clearAllSelections]);
+
     const columns = useMemo<ColumnDef<ProductGet>[]>(() => [
         {
             id: "Select",
-            header: ({ table }) => (
+            header: () => (
                 <Checkbox
                     className="border border-gray-400"
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                    checked={areAllProductsSelected(products)}
+                    onCheckedChange={() => toggleAllProductsSelection(products)}
                     aria-label="Seleccionar todo"
                 />
             ),
@@ -195,8 +221,8 @@ const ProductListScreen = () => {
                 <div className="px-1">
                     <Checkbox
                         className="border border-gray-400"
-                        checked={row.getIsSelected()}
-                        onCheckedChange={(value) => row.toggleSelected(!!value)}
+                        checked={isProductSelected(row.original.id)}
+                        onCheckedChange={() => toggleProductSelection(row.original)}
                         aria-label="Seleccionar fila"
                     />
                 </div>
@@ -458,11 +484,19 @@ const ProductListScreen = () => {
                 </div>
             ),
         },
-    ], [handleAddItemCart, handleProductDetail, handleOpenDeleteAlert, handleUpdateProduct, handleViewDetails]);
+    ], [
+        areAllProductsSelected,
+        products,
+        toggleAllProductsSelection,
+        isProductSelected,
+        toggleProductSelection,
+        handleProductDetail,
+        handleViewDetails,
+        handleUpdateProduct
+    ]);
 
     const {
         table,
-        rowSelection,
         // resetAll,
     } = useCustomTable({
         data: products,
@@ -519,33 +553,6 @@ const ProductListScreen = () => {
     const handleRowDoubleClick = (product: ProductGet) => {
         addItemToCart(product);
     };
-
-    const hasProductSelected = Object.keys(rowSelection).length;
-    const handleAddSelectedToCart = useCallback(() => {
-        if (!table || !table.getSelectedRowModel) {
-            console.warn("Tabla no inicializada correctamente");
-            return;
-        }
-
-        const selectedProducts = table.getSelectedRowModel().rows.map(row => row.original);
-
-        if (selectedProducts.length === 0) {
-            console.warn("No hay productos seleccionados para agregar al carrito.");
-            return;
-        }
-
-        try {
-            addMultipleItems(selectedProducts);
-            setTimeout(() => {
-                if (table && table.resetRowSelection) {
-                    table.resetRowSelection();
-                }
-            }, 0);
-        } catch (error) {
-            console.error("Error al procesar productos para el carrito:", error);
-        }
-    }, [table, addMultipleItems]);
-
 
     const onPageChange = (page: number) => {
         setPage(page);
@@ -757,46 +764,27 @@ const ProductListScreen = () => {
                             }
 
                             <div className="flex items-center gap-2 flex-wrap">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                            <Settings className="w-4 h-4" />
-                                            Columnas
+                                <ColumnVisibilityDropdown table={table} />
+                                {getSelectedCount() > 0 && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            onClick={clearAllSelections}
+                                        >
+                                            <X className="size-4" />
+                                            Limpiar ({getSelectedCount()})
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
-                                        {table
-                                            .getAllColumns()
-                                            .filter((column) => column.getCanHide())
-                                            .map((column) => (
-                                                <DropdownMenuItem
-                                                    key={column.id}
-                                                    className="flex items-center space-x-2 cursor-pointer"
-                                                    onSelect={(e) => e.preventDefault()}
-                                                    onClick={() => column.toggleVisibility(!column.getIsVisible())}
-                                                >
-                                                    <Checkbox
-                                                        className="border border-gray-400"
-                                                        checked={column.getIsVisible()}
-                                                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                                                    />
-                                                    <span className="flex-1">
-                                                        {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
-                                                    </span>
-                                                </DropdownMenuItem>
-                                            ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                {
-                                    table && hasProductSelected > 0 && (
-                                        <Button size={'sm'} className="relative" onClick={handleAddSelectedToCart}>
+                                        <Button
+                                            className="relative"
+                                            onClick={handleAddSelectedToCart}
+                                        >
                                             Agregar al carrito
                                             <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-                                                {hasProductSelected}
+                                                {getSelectedCount()}
                                             </Badge>
                                         </Button>
-                                    )
-                                }
+                                    </>
+                                )}
                                 <TooltipWrapper
                                     tooltipContentProps={{
                                         align: 'end',
