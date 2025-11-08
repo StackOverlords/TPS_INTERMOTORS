@@ -1,4 +1,5 @@
 import { environment } from "@/utils/environment";
+import { invoke } from '@tauri-apps/api/core';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -31,24 +32,35 @@ export class Logger {
 
     static info(message: string, data?: unknown, module?: string) {
         const entry = this.createLogEntry('info', message, data, module);
+        const formattedMessage = `[INFO${module ? ` ${module}` : ''}] ${message}${data ? ` | ${JSON.stringify(data)}` : ''}`;
 
-        if (this.isDevelopment) {
-            console.log(`[INFO${module ? ` ${module}` : ''}] ${message}`, data || '');
-        }
+        // Siempre loguear a consola
+        console.log(formattedMessage, data || '');
 
+        // Escribir al archivo de logs de Tauri usando comando personalizado
+        invoke('log_info', { message: formattedMessage }).catch(() => {
+            // Silenciar errores de logging para no afectar UX
+        });
+
+        // Enviar a servicio externo solo en producción
         if (this.isProduction) {
-            // Enviar a servicio de logging (Sentry, DataDog, CloudWatch, etc.)
             this.sendToLoggingService(entry);
         }
     }
 
     static error(message: string, error?: unknown, module?: string) {
         const entry = this.createLogEntry('error', message, error, module);
+        const formattedMessage = `[ERROR${module ? ` ${module}` : ''}] ${message}${error ? ` | ${JSON.stringify(error)}` : ''}`;
 
-        if (this.isDevelopment) {
-            console.error(`[ERROR${module ? ` ${module}` : ''}] ${message}`, error || '');
-        }
+        // Siempre loguear a consola
+        console.error(formattedMessage, error || '');
 
+        // Escribir al archivo de logs de Tauri usando comando personalizado
+        invoke('log_error', { message: formattedMessage }).catch(() => {
+            // Silenciar errores de logging para no afectar UX
+        });
+
+        // Enviar a servicio externo solo en producción
         if (this.isProduction) {
             this.sendToLoggingService(entry);
         }
@@ -56,21 +68,32 @@ export class Logger {
 
     static warn(message: string, data?: unknown, module?: string) {
         const entry = this.createLogEntry('warn', message, data, module);
+        const formattedMessage = `[WARN${module ? ` ${module}` : ''}] ${message}${data ? ` | ${JSON.stringify(data)}` : ''}`;
 
-        if (this.isDevelopment) {
-            console.warn(`[WARN${module ? ` ${module}` : ''}] ${message}`, data || '');
-        }
+        // Siempre loguear a consola
+        console.warn(formattedMessage, data || '');
 
+        // Escribir al archivo de logs de Tauri usando comando personalizado
+        invoke('log_warn', { message: formattedMessage }).catch(() => {
+            // Silenciar errores de logging para no afectar UX
+        });
+
+        // Enviar a servicio externo solo en producción
         if (this.isProduction) {
             this.sendToLoggingService(entry);
         }
     }
 
     static debug(message: string, data?: unknown, module?: string) {
-        // const entry = this.createLogEntry('debug', message, data, module);
+        const formattedMessage = `[DEBUG${module ? ` ${module}` : ''}] ${message}${data ? ` | ${JSON.stringify(data)}` : ''}`;
 
+        // Siempre loguear a consola en desarrollo
         if (this.isDevelopment) {
-            console.debug(`[DEBUG${module ? ` ${module}` : ''}] ${message}`, data || '');
+            console.debug(formattedMessage, data || '');
+            // Escribir al archivo de logs de Tauri usando comando personalizado
+            invoke('log_debug', { message: formattedMessage }).catch(() => {
+                // Silenciar errores de logging para no afectar UX
+            });
         }
 
         // Debug logs normalmente no se envían en producción
