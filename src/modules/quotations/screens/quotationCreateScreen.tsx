@@ -1,47 +1,47 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ShoppingCart, CornerUpLeft, Printer, Plus } from "lucide-react";
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Label } from "@/components/atoms/label";
 import { Input } from "@/components/atoms/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal";
-import type { ProductGet } from "@/modules/products/types/ProductGet";
-import authSDK from "@/services/sdk-simple-auth";
-import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
-import { FormProvider, useForm, Controller, type FieldErrors } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Kbd } from "@/components/atoms/kbd";
-import { useNavigate } from "react-router";
+import { Label } from "@/components/atoms/label";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
+import { Switch } from "@/components/atoms/switch";
+import { Textarea } from "@/components/atoms/textarea";
+import { PDFViewer } from "@/components/common/PDFViewer";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
-import { useBranchStore } from "@/states/branchStore";
-import { useHotkeys } from "react-hotkeys-hook";
 import TooltipButton from "@/components/common/TooltipButton";
-import { format, parse } from "date-fns";
+import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { useDebounce } from "use-debounce";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { cn } from "@/lib/utils";
+import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
 import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities";
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles";
-import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
-import { useCreateQuotation } from "../hooks/useCreateQuotation";
-import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
-import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
-import QuotationsSummary from "../components/quotationsSummary";
-import ProductDetailTable from "../components/productDetailTable";
-import { Textarea } from "@/components/atoms/textarea";
+import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes";
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
-import { Switch } from "@/components/atoms/switch";
-import { useTabEffect } from "@/hooks/tabs/useTabEffect";
-import { PDFViewer } from "@/components/common/PDFViewer";
-import { useQuotationPDF } from "../hooks/useQuotationPDF";
-import { Badge } from "@/components/atoms/badge";
+import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
-import { cn } from "@/lib/utils";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
-import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
-import { Button } from "@/components/atoms/button";
+import authSDK from "@/services/sdk-simple-auth";
+import { useBranchStore } from "@/states/branchStore";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format, parse } from "date-fns";
+import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate } from "react-router";
+import { useDebounce } from "use-debounce";
+import ProductDetailTable from "../components/productDetailTable";
+import QuotationsSummary from "../components/quotationsSummary";
+import { useCreateQuotation } from "../hooks/useCreateQuotation";
+import { useQuotationPDF } from "../hooks/useQuotationPDF";
+import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
+import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -138,7 +138,6 @@ const QuotationCreateScreen = () => {
         formState: { errors }
     } = methods
 
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const {
         items,
         getCartSubtotal,
@@ -149,8 +148,7 @@ const QuotationCreateScreen = () => {
         setDiscountPercent,
         clearCart,
         addItemToCart,
-        addMultipleItems,
-        validateCartWithToast,
+        addMultipleItemsWithQuantity,
         setCartMode,
         mode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
@@ -159,10 +157,10 @@ const QuotationCreateScreen = () => {
         if (mode !== 'quote' && !isReadOnly) {
             setCartMode('quote')
         }
-    }, [mode]);
+    }, [mode, isReadOnly, setCartMode]);
 
-    const subtotal = useMemo(() => getCartSubtotal(), [items, discountPercent]);
-    const total = useMemo(() => getCartTotal(), [items, discountPercent, discountAmount]);
+    const subtotal = useMemo(() => getCartSubtotal(), [getCartSubtotal]);
+    const total = useMemo(() => getCartTotal(), [getCartTotal]);
 
     const formValues = watch();
     const { tipo_cotizacion, plazo_pago } = formValues;
@@ -201,15 +199,7 @@ const QuotationCreateScreen = () => {
                 duration: 5000
             });
             isValid = false;
-        }
-
-        const validation = validateCartWithToast();
-        if (!validation.isValid) {
-            setError("detalles", {
-                type: "manual",
-                message: "Hay productos con problemas de stock en el carrito"
-            });
-            isValid = false;
+            return isValid;
         }
 
         if (!formValues.id_cliente) {
@@ -255,7 +245,7 @@ const QuotationCreateScreen = () => {
         }
 
         return isValid;
-    }, [items.length, validateCartWithToast, formValues, setError]);
+    }, [items.length, formValues, setError]);
 
     // VALIDACIÓN DE FECHA DE PLAZO
     useEffect(() => {
@@ -324,9 +314,11 @@ const QuotationCreateScreen = () => {
         addItemToCart(product);
     }, [addItemToCart]);
 
-    const handleAddMultipleProducts = useCallback((products: ProductGet[]) => {
-        addMultipleItems(products);
-    }, [addMultipleItems]);
+    const handleAddMultipleProducts = useCallback((
+        products: Array<ProductGet & { quantity?: number }>
+    ) => {
+        return addMultipleItemsWithQuantity(products);
+    }, [addMultipleItemsWithQuantity]);
 
     const onSubmit = useCallback((data: QuotationCreate) => {
         if (!validateBeforeSubmit()) {
@@ -349,8 +341,8 @@ const QuotationCreateScreen = () => {
 
                 clearCart();
                 showSuccessToast({
-                    title: "Cotización Exitosa",
-                    description: `Cotización realizada con éxito`,
+                    title: "Cotización Creada",
+                    description: `Cotización #${createdQuotation.id} creada exitosamente`,
                     duration: 5000
                 });
 
@@ -451,11 +443,10 @@ const QuotationCreateScreen = () => {
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
         instanceId: 'create-quotation',
-        onProductSelect: addItemToCart,
-        // onMultiSelect(products: ProductGet[]) {
-        //     handleAddMultipleProducts(products)
-        // },
+        onProductSelect: handleAddProductItem,
+        onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
+        multiSelect: true
     });
 
     const toggleWindowSelector = () => {
@@ -525,7 +516,7 @@ const QuotationCreateScreen = () => {
                                             </TooltipButton>
 
                                             <Badge
-                                                className="h-8 rounded-sm font-bold text-base border border-emerald-500"
+                                                className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
                                                 variant={'success'}
                                             >
                                                 {createdQuotationId}
@@ -826,7 +817,7 @@ const QuotationCreateScreen = () => {
                                                 )
                                             }
                                             {
-                                                configuraciones.inputs && (
+                                                !configuraciones.inputs && (
                                                     <div>
                                                         <Label htmlFor="telefono">Teléfono</Label>
                                                         <Input
@@ -860,7 +851,10 @@ const QuotationCreateScreen = () => {
                                 configuraciones.formulario === "top" && configuraciones.inputs && "",
                                 configuraciones.formulario === "left" && "col-span-2",
                             )}>
-                                <div className="h-full min-h-screen md:min-h-auto flex flex-col gap-2">
+                                <div className={cn(
+                                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                                    configuraciones.selector_mode === "embebed" && "md:min-h-screen"
+                                )}>
                                     <ResizablePanelGroup
                                         className={cn(
                                             "flex-1 min-h-0"
@@ -873,6 +867,11 @@ const QuotationCreateScreen = () => {
                                                     <ResizablePanel
                                                         defaultSize={50}
                                                     >
+                                                        <ProductSearchPanel
+                                                            selectedProducts={items}
+                                                            onProductSelect={handleAddProductItem}
+                                                            allowExceedStock={true}
+                                                        />
                                                     </ResizablePanel>
                                                     <ResizableHandle withHandle />
                                                 </>
@@ -932,7 +931,7 @@ const QuotationCreateScreen = () => {
                                         subtotal={isReadOnly ? createdQuotationSummary?.subtotal ?? 0 : subtotal}
                                         total={isReadOnly ? createdQuotationSummary?.total ?? 0 : total}
                                         isPending={isSaving}
-                                        handleNewQuotation={handleNewQuotation}
+                                        callback={handleNewQuotation}
                                         setDiscountAmount={setDiscountAmount}
                                         setDiscountPercent={setDiscountPercent}
                                         hasProducts={items.length > 0}

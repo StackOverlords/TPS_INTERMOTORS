@@ -13,6 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/atoms/dropdown-menu';
+import { Label } from '@/components/atoms/label';
+import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
 import TooltipButton from '@/components/common/TooltipButton';
@@ -38,6 +40,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useProductSelection } from '../hooks/useProductSelection';
 
 type ProductSelectorContext =
   | 'purchase'
@@ -56,11 +59,6 @@ interface WindowConfig {
   initialFilters?: Record<string, any>;
 }
 
-interface SelectedProduct {
-  product: ProductGet;
-  quantity: number;
-}
-
 const ProductSelectorWindow: React.FC = () => {
   const currentWindow = getCurrentWebviewWindow();
   const selectedBranchId = useBranchStore(s => s.selectedBranchId);
@@ -77,10 +75,9 @@ const ProductSelectorWindow: React.FC = () => {
     };
   }, []);
 
+  const [isMultiSelect, setIsMultiSelect] = useState<boolean>(false)
+
   // Estados
-  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>(
-    []
-  );
   const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
   const [showFilters, setShowFilters] = useState<boolean>(true);
@@ -118,35 +115,26 @@ const ProductSelectorWindow: React.FC = () => {
     return 'success';
   };
 
-  // Helper para verificar si un producto está seleccionado
-  const isProductSelected = useCallback(
-    (productId: number) => {
-      return selectedProducts.some(sp => sp.product.id === productId);
-    },
-    [selectedProducts]
-  );
+  const {
+    isProductSelected,
+    toggleProductSelection,
+    getAllSelectedProducts,
+    getSelectedCount,
+    clearAllSelections,
+  } = useProductSelection();
 
-  /**
-   * Maneja la selección de un producto
-   */
+  const [quantities, setQuantities] = useState<Map<number, number>>(new Map());
+
   const handleProductSelect = useCallback(
     async (product: ProductGet) => {
-      if (config.multiSelect) {
-        // Modo multi-select: agregar a lista temporal
-        setSelectedProducts(prev => {
-          const existing = prev.find(p => p.product.id === product.id);
-          if (existing) {
-            // Incrementar cantidad
-            return prev.map(p =>
-              p.product.id === product.id
-                ? { ...p, quantity: p.quantity + 1 }
-                : p
-            );
-          } else {
-            // Agregar nuevo
-            return [...prev, { product, quantity: 1 }];
-          }
-        });
+      if (isMultiSelect) {
+        // Modo multi-select: agregar a lista
+        toggleProductSelection(product);
+
+        // Inicializar cantidad si no existe
+        if (!quantities.has(product.id)) {
+          setQuantities(prev => new Map(prev).set(product.id, 1));
+        }
 
         // Mostrar panel de selección si está oculto
         if (!showSelectionPanel) {
@@ -158,50 +146,53 @@ const ProductSelectorWindow: React.FC = () => {
         await currentWindow.close();
       }
     },
-    [config.multiSelect, config.windowId, currentWindow, showSelectionPanel]
+    [isMultiSelect, toggleProductSelection, quantities, config.windowId, currentWindow, showSelectionPanel]
   );
+
+  const handleRemoveFromSelection = useCallback((product: ProductGet) => {
+    toggleProductSelection(product);
+    setQuantities(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(product.id);
+      return newMap;
+    });
+  }, [toggleProductSelection]);
+
+  const handleQuantityChange = useCallback((productId: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      const product = getAllSelectedProducts().find(p => p.id === productId);
+      if (product) {
+        handleRemoveFromSelection(product);
+      }
+      return;
+    }
+
+    setQuantities(prev => new Map(prev).set(productId, newQuantity));
+  }, [getAllSelectedProducts, handleRemoveFromSelection]);
 
   /**
    * Confirma la multi-selección y envía todos los productos
    */
   const handleConfirmMultiSelect = async () => {
+    const selectedProducts = getAllSelectedProducts();
+
     if (selectedProducts.length === 0) return;
 
-    // Emitir evento con todos los productos seleccionados
+    // Emitir evento con productos y sus cantidades
+    const productsWithQuantities = selectedProducts.map(product => ({
+      ...product,
+      quantity: quantities.get(product.id) || 1,
+    }));
+
     await emitToWindow(
       config.windowId,
       'product-multi-selected',
-      selectedProducts.map(sp => ({
-        ...sp.product,
-        quantity: sp.quantity,
-      }))
+      productsWithQuantities
     );
 
     await currentWindow.close();
   };
 
-  /**
-   * Elimina un producto de la selección temporal
-   */
-  const handleRemoveFromSelection = (productId: number) => {
-    setSelectedProducts(prev => prev.filter(p => p.product.id !== productId));
-  };
-
-  /**
-   * Cambia la cantidad de un producto seleccionado
-   */
-  const handleQuantityChange = (productId: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      handleRemoveFromSelection(productId);
-      return;
-    }
-
-    setSelectedProducts(prev =>
-      prev.map(p =>
-        p.product.id === productId ? { ...p, quantity: newQuantity } : p
-      )
-    );
-  };
 
   /**
    * Definición de columnas (similar a ProductListScreen)
@@ -339,7 +330,7 @@ const ProductSelectorWindow: React.FC = () => {
               <Button
                 onClick={() => handleProductSelect(product)}
                 disabled={disabled}
-                size="sm"
+
                 variant={selected ? 'default' : 'outline'}
                 className="gap-2"
               >
@@ -466,8 +457,8 @@ const ProductSelectorWindow: React.FC = () => {
   }, []);
 
   // Calcular total de productos seleccionados
-  const totalSelectedProducts = selectedProducts.reduce(
-    (sum, p) => sum + p.quantity,
+  const totalSelectedProducts = getAllSelectedProducts().reduce(
+    (sum, p) => sum + (quantities.get(p.id) || 1),
     0
   );
 
@@ -503,7 +494,7 @@ const ProductSelectorWindow: React.FC = () => {
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* Indicador de multi-select */}
-            {config.multiSelect && selectedProducts.length > 0 && (
+            {isMultiSelect && getSelectedCount() > 0 && (
               <Badge variant="accent">
                 {totalSelectedProducts} seleccionados
               </Badge>
@@ -542,15 +533,14 @@ const ProductSelectorWindow: React.FC = () => {
               />
             </TooltipButton>
 
-            <Button size="sm" onClick={toggleShowFilters}>
+            <Button onClick={toggleShowFilters}>
               {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
             </Button>
 
             {/* Botón confirmar (solo en multi-select) */}
-            {config.multiSelect && selectedProducts.length > 0 && (
+            {isMultiSelect && getSelectedCount() > 0 && (
               <Button
                 onClick={handleConfirmMultiSelect}
-                size="sm"
                 className="gap-2"
               >
                 <Check className="h-4 w-4" />
@@ -561,7 +551,6 @@ const ProductSelectorWindow: React.FC = () => {
             {/* Botón cerrar */}
             {/* <Button
                   onClick={handleClose}
-                  size="sm"
                   variant="ghost"
                   className="gap-2"
                 >
@@ -604,9 +593,21 @@ const ProductSelectorWindow: React.FC = () => {
             }
 
             <div className="flex items-center gap-2 flex-wrap">
+              {
+                config.multiSelect && (
+                  <div className='border border-border rounded-sm gap-2 flex items-center px-2 h-8'>
+                    <Switch
+                      id='multi-select'
+                      checked={isMultiSelect}
+                      onCheckedChange={setIsMultiSelect}
+                    />
+                    <Label htmlFor='multi-select'>Selección multiple</Label>
+                  </div>
+                )
+              }
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline">
                     <Settings className="w-4 h-4" />
                     Columnas
                   </Button>
@@ -673,16 +674,15 @@ const ProductSelectorWindow: React.FC = () => {
       </div>
 
       {/* Panel lateral de productos seleccionados (solo multi-select) */}
-      {config.multiSelect &&
+      {isMultiSelect &&
         showSelectionPanel &&
-        selectedProducts.length > 0 && (
+        getSelectedCount() > 0 && (
           <div className="fixed right-4 bottom-4 w-80 sm:w-96 max-h-96 bg-card rounded-lg shadow-2xl border border-border overflow-hidden z-50">
             <div className="bg-gray-100 px-4 py-2 border-b border-border flex items-center justify-between">
               <h3 className="font-semibold text-sm text-primary">
-                Productos Seleccionados ({selectedProducts.length})
+                Productos Seleccionados ({getSelectedCount()})
               </h3>
               <Button
-                size="sm"
                 variant="ghost"
                 onClick={() => setShowSelectionPanel(false)}
                 className="h-6 w-6 p-0"
@@ -692,62 +692,62 @@ const ProductSelectorWindow: React.FC = () => {
             </div>
 
             <div className="overflow-y-auto max-h-64 divide-y divide-border">
-              {selectedProducts.map(sp => (
-                <div
-                  key={sp.product.id}
-                  className="p-3 flex items-center gap-3 hover:bg-gray-50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-primary truncate">
-                      {sp.product.descripcion}
-                    </p>
-                    <p className="text-xs text-gray-500 font-mono">
-                      {sp.product.codigo_oem}
-                    </p>
-                  </div>
-
-                  {/* Control de cantidad */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 w-6 p-0"
-                      onClick={() =>
-                        handleQuantityChange(sp.product.id, sp.quantity - 1)
-                      }
-                    >
-                      -
-                    </Button>
-                    <span className="text-sm font-semibold w-8 text-center">
-                      {sp.quantity}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 w-6 p-0"
-                      onClick={() =>
-                        handleQuantityChange(sp.product.id, sp.quantity + 1)
-                      }
-                      disabled={
-                        config.onlyWithStock &&
-                        sp.quantity >= sp.product.stock_actual
-                      }
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  {/* Botón eliminar */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleRemoveFromSelection(sp.product.id)}
+              {getAllSelectedProducts().map(product => {
+                const quantity = quantities.get(product.id) || 1;
+                return (
+                  <div
+                    key={product.id}
+                    className="p-3 flex items-center gap-3 hover:bg-gray-50"
                   >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-primary truncate">
+                        {product.descripcion}
+                      </p>
+                      <p className="text-xs text-gray-500 font-mono">
+                        {product.codigo_oem}
+                      </p>
+                    </div>
+
+                    {/* Control de cantidad */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                        onClick={() =>
+                          handleQuantityChange(product.id, quantity - 1)
+                        }
+                      >
+                        -
+                      </Button>
+                      <span className="text-sm font-semibold w-8 text-center">
+                        {quantity}
+                      </span>
+                      <Button
+                        variant="outline"
+                        className="h-6 w-6 p-0"
+                        onClick={() =>
+                          handleQuantityChange(product.id, quantity + 1)
+                        }
+                        disabled={
+                          config.onlyWithStock &&
+                          quantity >= product.stock_actual
+                        }
+                      >
+                        +
+                      </Button>
+                    </div>
+
+                    {/* Botón eliminar */}
+                    <Button
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleRemoveFromSelection(product)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )
+              })}
             </div>
 
             {/* Footer con botón confirmar */}
@@ -755,7 +755,6 @@ const ProductSelectorWindow: React.FC = () => {
               <Button
                 onClick={handleConfirmMultiSelect}
                 className="w-full gap-2"
-                size="sm"
               >
                 <Check className="h-4 w-4" />
                 Confirmar {totalSelectedProducts} producto

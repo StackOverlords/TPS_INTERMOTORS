@@ -53,13 +53,13 @@ export const useCartWithUtils = (user: string, branch: string) => {
         } else {
             // Construir mensaje detallado
             const details: string[] = [];
-            
+
             if (result.removedItems.length > 0) {
                 details.push(
                     `${result.removedItems.length} producto${result.removedItems.length > 1 ? 's removido' : ' removido'} sin stock`
                 );
             }
-            
+
             if (result.adjustedItems.length > 0) {
                 details.push(
                     `${result.adjustedItems.length} producto${result.adjustedItems.length > 1 ? 's con cantidad ajustada' : ' con cantidad ajustada'}`
@@ -286,7 +286,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
         let addedCount = 0;
         let hasWarning = false;
-        
+
         for (let i = 0; i < quantity; i++) {
             const result = state.addItem(productForCart);
             if (result.success) {
@@ -327,6 +327,153 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
+    }, [state.addItem, state.getItemQuantity, state.mode]);
+
+    /**
+ * Agrega múltiples productos al carrito, cada uno con su cantidad específica
+ * @param products Array de productos con cantidad opcional (default: 1)
+ * @returns Resultado detallado de la operación bulk
+ */
+    const addMultipleItemsWithQuantity = useCallback((
+        products: Array<ProductGet & { quantity?: number }>
+    ): BulkAddResult => {
+        let totalAdded = 0;
+        let totalFailed = 0;
+        const failedProducts: BulkAddResult['failedProducts'] = [];
+        let hasWarnings = false;
+        let totalUnitsRequested = 0;
+        let totalUnitsAdded = 0;
+
+        products.forEach(product => {
+            const requestedQuantity = product.quantity || 1;
+            totalUnitsRequested += requestedQuantity;
+
+            const productForCart = CartProductSchema.parse(product);
+            const existingQuantity = state.getItemQuantity(product.id);
+            const totalQuantity = existingQuantity + requestedQuantity;
+
+            // En modo venta, validar stock antes de agregar
+            if (state.mode === 'sale') {
+                // Validar que tenga stock
+                if (!product.stock_actual || product.stock_actual <= 0) {
+                    totalFailed++;
+                    failedProducts.push({
+                        product: productForCart,
+                        reason: 'NO_STOCK',
+                        message: `${product.descripcion} no tiene stock disponible`
+                    });
+                    return; // Saltar este producto
+                }
+
+                // Validar que no exceda el stock
+                if (totalQuantity > product.stock_actual) {
+                    const available = product.stock_actual - existingQuantity;
+                    totalFailed++;
+                    failedProducts.push({
+                        product: productForCart,
+                        reason: 'INSUFFICIENT_STOCK',
+                        message: available > 0
+                            ? `${product.descripcion}: solo ${available} unidades adicionales disponibles (intentó agregar ${requestedQuantity})`
+                            : `${product.descripcion}: ya alcanzó el stock máximo`
+                    });
+                    return; // Saltar este producto
+                }
+            }
+
+            // Agregar el producto la cantidad de veces solicitada
+            let addedCount = 0;
+            for (let i = 0; i < requestedQuantity; i++) {
+                const result = state.addItem(productForCart);
+                if (result.success) {
+                    addedCount++;
+                    totalUnitsAdded++;
+                    if (result.warning) {
+                        hasWarnings = true;
+                    }
+                } else {
+                    // Si falla en el medio, registrar como fallo parcial
+                    if (i === 0) {
+                        totalFailed++;
+                        failedProducts.push({
+                            product: productForCart,
+                            reason: result.error || 'UNKNOWN_ERROR',
+                            message: result.message
+                        });
+                    }
+                    break;
+                }
+            }
+
+            if (addedCount === requestedQuantity) {
+                totalAdded++;
+            } else if (addedCount > 0) {
+                // Agregado parcial - contar como warning
+                hasWarnings = true;
+            }
+        });
+
+        // Construir mensaje detallado
+        let message = '';
+        if (totalUnitsAdded > 0) {
+            message = `Se agregaron ${totalUnitsAdded} unidades de ${totalAdded} producto${totalAdded !== 1 ? 's' : ''}`;
+            if (totalFailed > 0) {
+                message += `. ${totalFailed} producto${totalFailed !== 1 ? 's fallaron' : ' falló'}`;
+            }
+        } else {
+            message = `No se pudo agregar ningún producto`;
+        }
+
+        const bulkResult: BulkAddResult = {
+            success: totalAdded > 0,
+            totalAdded,
+            totalFailed,
+            failedProducts,
+            message
+        };
+
+        // Mostrar toasts según el resultado
+        if (totalAdded > 0) {
+            if (hasWarnings && state.mode === 'quote') {
+                showWarningToast({
+                    title: "Productos agregados con advertencias",
+                    description: `${message}. Algunos productos no tienen stock suficiente.`,
+                    duration: 6000,
+                });
+            } else if (totalFailed > 0) {
+                showWarningToast({
+                    title: "Productos agregados parcialmente",
+                    description: message,
+                    duration: 6000,
+                });
+            } else {
+                showSuccessToast({
+                    title: "Productos agregados",
+                    description: message,
+                    duration: 5000,
+                });
+            }
+        }
+
+        // Toast con errores específicos si todos fallaron
+        if (totalFailed > 0 && totalAdded === 0) {
+            const errorMessages = failedProducts.slice(0, 3).map(fp => fp.message);
+            const moreCount = failedProducts.length - 3;
+
+            showErrorToast({
+                title: "No se pudieron agregar productos",
+                description: errorMessages.join('\n') + (moreCount > 0 ? `\n... y ${moreCount} más` : ''),
+                duration: 7000,
+            });
+        } else if (totalFailed > 0) {
+            // Mostrar resumen de fallos cuando algunos sí se agregaron
+            showInfoToast({
+                title: "Algunos productos no se agregaron",
+                description: `${totalFailed} producto${totalFailed !== 1 ? 's no pudieron' : ' no pudo'} agregarse. Revisa el stock disponible.`,
+                duration: 5000,
+            });
+        }
+
+        return bulkResult;
     }, [state.addItem, state.getItemQuantity, state.mode]);
 
     // ==================== VALIDACIONES ====================
@@ -420,9 +567,9 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
         return state.items
             .filter(item => {
-                return !item.product.stock_actual || 
-                       item.product.stock_actual <= 0 || 
-                       item.quantity > item.product.stock_actual;
+                return !item.product.stock_actual ||
+                    item.product.stock_actual <= 0 ||
+                    item.quantity > item.product.stock_actual;
             })
             .map(item => ({
                 productId: item.product.id,
@@ -451,6 +598,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         addItemToCart,
         addMultipleItems,
         addItemWithQuantity,
+        addMultipleItemsWithQuantity,
         updateQuantity,
 
         // Métodos sin cambios
