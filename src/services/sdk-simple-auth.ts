@@ -1,7 +1,6 @@
 // import { environment } from "@/utils/environment";
 import { environment } from "@/utils/environment";
 import { AuthSDK } from "sdk-simple-auth";
-import apiClient from "./axios";
 
 const authSDK = new AuthSDK({
   authServiceUrl: environment.apiUrl,
@@ -22,19 +21,6 @@ const authSDK = new AuthSDK({
   tokenRefresh: {
     enabled: true,
     bufferTime: 1800 // in seconds (30 minutes)
-  },
-  sessionValidation: {
-    enabled: true, // Habilitar validación automática
-    validateOnFocus: true, // Validar cuando la ventana obtiene foco
-    validateOnVisibility: true, // Validar cuando la página se vuelve visible
-    maxInactivityTime: 300, // 5 minutos (en segundos)
-    autoLogoutOnInvalid: true // Cerrar sesión automáticamente si es inválida
-  },
-  interceptors: {
-    enabled: true,
-    autoInjectToken: false,
-    handleAuthErrors: true,
-    axiosInstance: apiClient
   }
 })
 
