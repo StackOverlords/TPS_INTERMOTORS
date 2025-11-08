@@ -1,10 +1,10 @@
-import { Logger } from "@/lib/logger";
 import { ApiService } from "@/lib/apiService";
-import { TRANSFER_ENDPOINTS } from "./transferEndpoints.service";
+import { Logger } from "@/lib/logger";
+import { TransferGetByIdSchema, TransfersGetAllSchema } from "../schemas/transferGetSchema";
 import type { TransferCreate } from "../types/transferCreate.types";
 import type { TransfersFilters } from "../types/transferFilters.types";
-import type { TransfersGetAllResponse, TransferGetById } from "../types/transferGet.types";
-import { TransfersGetAllSchema, TransferGetByIdSchema } from "../schemas/transferGetSchema";
+import type { TransferGetById, TransfersGetAllResponse } from "../types/transferGet.types";
+import { TRANSFER_ENDPOINTS } from "./transferEndpoints.service";
 
 const MODULE_NAME = 'TRANSFER_SERVICE';
 
@@ -77,5 +77,35 @@ export const transferService = {
         await ApiService.delete(TRANSFER_ENDPOINTS.delete(id));
 
         Logger.info('Transfer deleted successfully', { id }, MODULE_NAME);
+    },
+
+    /**
+     * Enviar una transferencia (marcarla como enviada)
+     * @param id - ID de la transferencia
+     */
+    async send(id: number): Promise<unknown> {
+        Logger.info('Sending Transfer', { id }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            TRANSFER_ENDPOINTS.send(id)
+        );
+
+        Logger.info('Transfer sent successfully', { id }, MODULE_NAME);
+        return response;
+    },
+
+    /**
+     * Aceptar/Recibir una transferencia
+     * @param id - ID de la transferencia
+     */
+    async accept(id: number): Promise<unknown> {
+        Logger.info('Accepting Transfer', { id }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            TRANSFER_ENDPOINTS.accept(id)
+        );
+
+        Logger.info('Transfer accepted successfully', { id }, MODULE_NAME);
+        return response;
     },
 };

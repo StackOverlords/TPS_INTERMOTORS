@@ -13,6 +13,8 @@ import { useEffect, useState } from "react";
 import TransferFiltersComponent from "../components/transferList/TransferFiltersComponent";
 import TransferListTable from "../components/transferList/TransferListTable";
 import { useDeleteTransfer } from "../hooks/useDeleteTransfer";
+import { useSendTransfer } from "../hooks/useSendTransfer";
+import { useAcceptTransfer } from "../hooks/useAcceptTransfer";
 import { useTransfersFilters } from "../hooks/useTransfersFilters";
 import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
 import type { TransferGetAll } from "../types/transferGet.types";
@@ -102,12 +104,70 @@ const TransferListScreen = () => {
     } = useDeleteTransfer()
 
     const {
+        mutate: sendTransfer,
+        isPending: isSending
+    } = useSendTransfer()
+
+    const {
+        mutate: acceptTransfer,
+        isPending: isAccepting
+    } = useAcceptTransfer()
+
+    const {
         close: handleCloseDeleteAlert,
         confirm: handleConfirmDeleteAlert,
         isOpen: showDeleteAlert,
         open: handleOpenDeleteAlert,
         variables: transferToDelete
     } = useConfirmMutation(deleteTransfer, handleDeleteSuccess, handleDeleteError)
+
+    const handleSendSuccess = (_data: unknown, Id: number) => {
+        showSuccessToast({
+            title: "Transferencia enviada",
+            description: `La Transferencia #${Id} se envió exitosamente`,
+            duration: 5000
+        })
+    };
+
+    const handleSendError = (_error: unknown, Id: number) => {
+        showErrorToast({
+            title: "Error al enviar transferencia",
+            description: `No se pudo enviar la Transferencia #${Id}. Por favor, intenta nuevamente`,
+            duration: 5000
+        })
+    };
+
+    const {
+        close: handleCloseSendAlert,
+        confirm: handleConfirmSendAlert,
+        isOpen: showSendAlert,
+        open: handleOpenSendAlert,
+        variables: transferToSend
+    } = useConfirmMutation(sendTransfer, handleSendSuccess, handleSendError)
+
+    const handleAcceptSuccess = (_data: unknown, Id: number) => {
+        showSuccessToast({
+            title: "Transferencia recibida",
+            description: `La Transferencia #${Id} se recibió exitosamente`,
+            duration: 5000
+        })
+    };
+
+    const handleAcceptError = (_error: unknown, Id: number) => {
+        showErrorToast({
+            title: "Error al recibir transferencia",
+            description: `No se pudo recibir la Transferencia #${Id}. Por favor, intenta nuevamente`,
+            duration: 5000
+        })
+    };
+
+    const {
+        close: handleCloseAcceptAlert,
+        confirm: handleConfirmAcceptAlert,
+        isOpen: showAcceptAlert,
+        open: handleOpenAcceptAlert,
+        variables: transferToAccept
+    } = useConfirmMutation(acceptTransfer, handleAcceptSuccess, handleAcceptError)
 
     const handleRefetchTransfers = () => {
         refetchTransfers();
@@ -225,8 +285,12 @@ const TransferListScreen = () => {
                     setPage={setPage}
                     setPageSize={setPageSize}
                     handleDeleteTransfer={handleOpenDeleteAlert}
+                    handleSendTransfer={handleOpenSendAlert}
+                    handleAcceptTransfer={handleOpenAcceptAlert}
                 />
             </div>
+
+            {/* Modal de confirmación para eliminar */}
             <ConfirmationModal
                 isOpen={showDeleteAlert}
                 title="Eliminar Transferencia"
@@ -234,6 +298,26 @@ const TransferListScreen = () => {
                 onClose={handleCloseDeleteAlert}
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeleting}
+            />
+
+            {/* Modal de confirmación para enviar */}
+            <ConfirmationModal
+                isOpen={showSendAlert}
+                title="Enviar Transferencia"
+                message={`¿Estás seguro de que deseas enviar la Transferencia #${transferToSend}?`}
+                onClose={handleCloseSendAlert}
+                onConfirm={handleConfirmSendAlert}
+                isLoading={isSending}
+            />
+
+            {/* Modal de confirmación para recibir */}
+            <ConfirmationModal
+                isOpen={showAcceptAlert}
+                title="Recibir Transferencia"
+                message={`¿Estás seguro de que deseas recibir la Transferencia #${transferToAccept}?`}
+                onClose={handleCloseAcceptAlert}
+                onConfirm={handleConfirmAcceptAlert}
+                isLoading={isAccepting}
             />
         </main>
     );

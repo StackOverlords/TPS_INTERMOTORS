@@ -14,7 +14,7 @@ import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Settings, Trash2 } from "lucide-react";
+import { Check, Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Send, Settings, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
@@ -33,6 +33,8 @@ interface TransferListTableProps {
     isFetching: boolean,
     isError: boolean,
     handleDeleteTransfer: (id: number) => void
+    handleSendTransfer: (id: number) => void
+    handleAcceptTransfer: (id: number) => void
 }
 
 const TransferListTable: React.FC<TransferListTableProps> = ({
@@ -45,7 +47,9 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
     isError,
     isFetching,
     isLoading,
-    handleDeleteTransfer
+    handleDeleteTransfer,
+    handleSendTransfer,
+    handleAcceptTransfer
 }) => {
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
@@ -59,6 +63,25 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
     const handleUpdateTransfer = useCallback((id: number) => {
         navigate(`/dashboard/transfers/${id}/update`)
     }, [navigate])
+
+    // Función helper para determinar si se puede enviar una transferencia
+    const canSendTransfer = (estado: string): boolean => {
+        const normalizedEstado = estado.trim().toUpperCase();
+
+        // Solo se puede enviar si es saliente (=>) y está PENDIENTE (no fue transferido todavía)
+        return normalizedEstado.includes('=>') &&
+               normalizedEstado.includes('PENDIENTE');
+    }
+
+    // Función helper para determinar si se puede recibir una transferencia
+    const canReceiveTransfer = (estado: string): boolean => {
+        const normalizedEstado = estado.trim().toUpperCase();
+
+        // Solo se puede recibir si es entrante (<=) y está "TRANSFERIDO SIN RECEPCIONAR"
+        return normalizedEstado.includes('<=') &&
+               normalizedEstado.includes('TRANSFERIDO') &&
+               normalizedEstado.includes('SIN RECEPCIONAR');
+    }
 
     const columns = useMemo<ColumnDef<TransferGetAll>[]>(() => [
         {
@@ -120,7 +143,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                                     e.preventDefault();
                                 }}
                                 align="start"
-                                className="w-48">
+                                className="w-56">
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleSeeDetails(row.original.id)}
@@ -229,6 +252,57 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
             cell: ({ getValue }) => {
                 const estado = getValue<string>();
                 return <TransferStatusBadge estado={estado} />;
+            },
+        },
+        {
+            id: "transfer_actions",
+            header: "Acciones",
+            size: 120,
+            minSize: 100,
+            enableHiding: false,
+            cell: ({ row }) => {
+                const estado = row.original.estado;
+                const canSend = canSendTransfer(estado);
+                const canReceive = canReceiveTransfer(estado);
+
+                // Si no hay acciones disponibles, no mostrar nada
+                if (!canSend && !canReceive) {
+                    return null;
+                }
+
+                return (
+                    <div className="flex items-center gap-2 justify-center">
+                        {canSend && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSendTransfer(row.original.id);
+                                }}
+                                title="Enviar transferencia"
+                            >
+                                <Send className="size-3 mr-1" />
+                                Enviar
+                            </Button>
+                        )}
+                        {canReceive && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAcceptTransfer(row.original.id);
+                                }}
+                                className="h-7 px-2"
+                                title="Recibir transferencia"
+                            >
+                                <Check className="size-3 mr-1" />
+                                Recibir
+                            </Button>
+                        )}
+                    </div>
+                );
             },
         },
         {
