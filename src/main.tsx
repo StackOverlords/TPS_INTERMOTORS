@@ -6,12 +6,12 @@ import './index.css';
 import Navigation from './navigation/Navigation.tsx';
 // import { Toaster as Sonner } from "./components/atoms/sonner.tsx";
 import '@/config/zodI18nConfig.ts';
-import { HotkeysProvider } from 'react-hotkeys-hook';
+import { HotkeysProvider, useHotkeys } from 'react-hotkeys-hook';
 import { Toaster } from './components/atoms/toaster.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
 import { initializeKeybindingStore } from './keybindings/index.ts';
 import { queryClient } from './lib/reactQueryConfig.ts';
-import { DebugPanel, useDebugPanel } from './components/common/DebugPanel.tsx';
+import { useDebugLogWindow } from './hooks/useSecondaryWindow';
 
 // ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
 initializeKeybindingStore().catch((error) => {
@@ -19,7 +19,16 @@ initializeKeybindingStore().catch((error) => {
 });
 
 function App() {
-  const debugPanel = useDebugPanel();
+  const debugLogWindow = useDebugLogWindow();
+
+  // Atajos de teclado globales para abrir el panel de debug
+  useHotkeys('ctrl+shift+d, meta+shift+d', () => {
+    debugLogWindow.toggle();
+  }, { enableOnFormTags: true });
+
+  useHotkeys('f12', () => {
+    debugLogWindow.toggle();
+  }, { enableOnFormTags: true });
 
   return (
     <WebSocketProvider>
@@ -35,9 +44,6 @@ function App() {
                 {/* </SidebarProvider> */}
               </BrowserRouter>
             {/* </KeybindingProvider> */}
-
-            {/* Panel de Debug - Se abre con Ctrl+Shift+D o F12 */}
-            <DebugPanel isOpen={debugPanel.isOpen} onClose={debugPanel.close} />
           </TooltipProvider>
         </HotkeysProvider>
       </QueryClientProvider>
