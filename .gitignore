@@ -28,4 +28,6 @@ dist-ssr
 
 
 cambios.md
-test-keybindings.sh
+./test-keybindings.sh
+DEBUG_PANEL_GUIDE
+*.md

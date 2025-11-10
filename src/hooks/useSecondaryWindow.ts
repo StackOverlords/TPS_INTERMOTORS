@@ -497,3 +497,23 @@ export function useViewConfigRoutesWindowConfig(
     },
   });
 }
+
+// ========= Hook específico para ventana de debug logs =========
+const DEBUG_LOG_EVENTS = ['window-closed'] as const;
+
+export function useDebugLogWindow(): UseSecondaryWindowResult {
+  const windowId = 'debug-log-window';
+
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html',
+    title: 'Panel de Debug - TPS Intermotors',
+    width: 800,
+    height: 600,
+    queryParams: {
+      component: 'debug-log',
+    },
+    listenToEvents: DEBUG_LOG_EVENTS as unknown as string[],
+    autoCloseOnUnmount: false, // Permitir que persista
+  });
+}
