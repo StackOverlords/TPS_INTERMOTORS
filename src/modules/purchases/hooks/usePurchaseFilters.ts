@@ -12,12 +12,12 @@ const cleanFilters = (filters: PurchaseFilters): PurchaseFilters => ({
 
 export const usePurchaseFilters = (defaultSucursal: number) => {
     // Memoizar las fechas para evitar recrearlas en cada render
-    const defaultDates = useMemo(() => {
-        const today = new Date();
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(today.getMonth() - 1);
-        return { today, lastMonth };
-    }, []);
+    // const defaultDates = useMemo(() => {
+    //     const today = new Date();
+    //     const lastMonth = new Date(today);
+    //     lastMonth.setMonth(today.getMonth() - 1);
+    //     return { today, lastMonth };
+    // }, []);
 
     const [filters, setFilters] = useState<PurchaseFilters>({
         pagina: 1,
@@ -25,8 +25,8 @@ export const usePurchaseFilters = (defaultSucursal: number) => {
         sucursal: defaultSucursal,
         codigo_oem_producto: "",
         keywords: "",
-        fecha_fin: defaultDates.today,
-        fecha_inicio: defaultDates.lastMonth
+        fecha_fin: undefined,
+        fecha_inicio: undefined
     });
 
     const [appliedFilters, setAppliedFilters] = useState<PurchaseFilters>(filters);

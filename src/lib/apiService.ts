@@ -1,8 +1,8 @@
-import { z } from 'zod';
-import { Validator } from './validator';
 import apiClient from '@/services/axios';
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { z } from 'zod';
 import { Logger } from './logger';
+import { Validator } from './validator';
 
 interface ApiOptions {
   unwrapData?: boolean;
@@ -46,9 +46,10 @@ export class ApiService {
 
       const payload = options.unwrapData ? response.data.data : response.data;
 
-      if (schema) {
-        return Validator.validate(schema, payload, `GET ${url}`);
-      }
+      // if (schema) {
+      //   return Validator.validate(schema, payload, `GET ${url}`);
+      // }
+      
 
       return payload;
     } catch (error) {

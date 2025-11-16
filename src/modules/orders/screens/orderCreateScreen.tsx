@@ -1,41 +1,42 @@
-import { useEffect, useState, useRef } from "react";
-import { ShoppingCart, CornerUpLeft, Loader2, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Label } from "@/components/atoms/label";
 import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal";
+import { CornerUpLeft, ExternalLink, Loader2, Save, ShoppingCart } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+// import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal";
+import { Button } from "@/components/atoms/button";
+import { Kbd } from "@/components/atoms/kbd";
+import { Separator } from "@/components/atoms/separator";
+import { Textarea } from "@/components/atoms/textarea";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import TooltipButton from "@/components/common/TooltipButton";
+import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { cn } from "@/lib/utils";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import authSDK from "@/services/sdk-simple-auth";
-import { FormProvider, useForm, Controller, type FieldErrors } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Kbd } from "@/components/atoms/kbd";
-import { useNavigate } from "react-router";
-import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { useBranchStore } from "@/states/branchStore";
-import { useHotkeys } from "react-hotkeys-hook";
-import TooltipButton from "@/components/common/TooltipButton";
-import { format } from "date-fns";
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { useDebounce } from "use-debounce";
-import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { Textarea } from "@/components/atoms/textarea";
-import { useOrderTypes } from "../hooks/commons/useOrderTypes";
-import { useOrderModalities } from "../hooks/commons/useOrderModalities";
-import { useOrderResponsibles } from "../hooks/commons/useOrderResponsibles";
-import { useOrderProvider } from "../hooks/commons/useOrderProviders";
-import { useCreateOrder } from "../hooks/useCreateOrder";
-import type { OrderCreate } from "../types/orderCreate.types";
-import { OrderCreateSchema } from "../schemas/orderCreateSchema";
-import { useOrderStatus } from "../hooks/commons/useOrderStatus";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/atoms/button";
-import ShortcutKey from "@/components/common/ShortcutKey";
-import OrderDetailTable, { type OrderDetailTableRef } from "../components/OrderDetailTable";
-import { useOrderDetails } from "../hooks/useOrderDetails";
 import { formatCurrency } from "@/utils/formaters";
-import { Separator } from "@/components/atoms/separator";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate } from "react-router";
+import { useDebounce } from "use-debounce";
+import OrderDetailTable, { type OrderDetailTableRef } from "../components/OrderDetailTable";
+import { useOrderModalities } from "../hooks/commons/useOrderModalities";
+import { useOrderProvider } from "../hooks/commons/useOrderProviders";
+import { useOrderResponsibles } from "../hooks/commons/useOrderResponsibles";
+import { useOrderStatus } from "../hooks/commons/useOrderStatus";
+import { useOrderTypes } from "../hooks/commons/useOrderTypes";
+import { useCreateOrder } from "../hooks/useCreateOrder";
+import { useOrderDetails } from "../hooks/useOrderDetails";
+import { OrderCreateSchema } from "../schemas/orderCreateSchema";
+import type { OrderCreate } from "../types/orderCreate.types";
 
 const OrderCreateScreen = () => {
     const navigate = useNavigate();
@@ -108,7 +109,7 @@ const OrderCreateScreen = () => {
         formState: { errors }
     } = methods;
 
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    // const [isSearchOpen, setIsSearchOpen] = useState(false);
     const currentStatus = watch("estado_actual");
 
     // Sincronizar detalles con el formulario
@@ -218,20 +219,39 @@ const OrderCreateScreen = () => {
         }, 100);
     };
 
-    const handleAddMultipleProducts = (products: ProductGet[]) => {
-        products.forEach(product => {
-            orderDetailsHook.addProduct(product);
-        });
-        // Enfocar el primer input de cantidad después de agregar
-        setTimeout(() => {
-            tableRef.current?.focusFirstQuantityInput();
-        }, 100);
+    // const handleAddMultipleProducts = (products: ProductGet[]) => {
+    //     products.forEach(product => {
+    //         orderDetailsHook.addProduct(product);
+    //     });
+    //     // Enfocar el primer input de cantidad después de agregar
+    //     setTimeout(() => {
+    //         tableRef.current?.focusFirstQuantityInput();
+    //     }, 100);
+    // };
+
+    // Hook para manejar la ventana secundaria de productos
+    const productWindow = useProductSelectorWindow({
+        context: 'order',
+        instanceId: 'create',
+        onProductSelect: handleAddProductItem,
+        onlyWithStock: false,
+    });
+
+    // Función para abrir ventana de selección de productos
+    const toggleProductWindow = () => {
+        if (productWindow.isOpen) {
+            productWindow.close();
+        }
+        productWindow.open();
     };
 
     const onSubmit = (data: OrderCreate) => {
+        console.log("onSubmit called with data:", data);
         if (!validateBeforeSubmit()) {
+            console.log("Validation failed");
             return;
         }
+        console.log("Validation passed, creating order...");
         if (data.fecha_inicio_transito === '') {
             data.fecha_inicio_transito = undefined;
         }
@@ -255,7 +275,7 @@ const OrderCreateScreen = () => {
     };
 
     const onError = (errors: FieldErrors<OrderCreate>) => {
-        // console.log("Errores de validación:", errors);
+        console.log("Errores de validación:", errors);
         if (errors.id_proveedor || errors.tipo_pedido || errors.forma_pedido || errors.id_responsable) {
             showErrorToast({
                 title: "Error de validación",
@@ -561,13 +581,30 @@ const OrderCreateScreen = () => {
                     {/* 2. Productos */}
                     <Card className="shadow-none">
                         <CardHeader>
-                            <CardTitle>
-                                <ProductSelectorModal
+                            <CardTitle className="flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                    <ShoppingCart className="h-5 w-5" />
+                                    Productos del Pedido
+                                </span>
+                                <TooltipButton
+                                    buttonProps={{
+                                        type: 'button',
+                                        onClick: toggleProductWindow,
+                                        variant: 'default',
+                                        size: 'sm',
+                                    }}
+                                    tooltip="Abrir selector de productos en ventana secundaria"
+                                >
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Seleccionar Productos
+                                </TooltipButton>
+                                {/* Modal anterior (comentado) */}
+                                {/* <ProductSelectorModal
                                     isSearchOpen={isSearchOpen}
                                     setIsSearchOpen={setIsSearchOpen}
                                     addItem={handleAddProductItem}
                                     addMultipleItem={handleAddMultipleProducts}
-                                />
+                                /> */}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -576,7 +613,9 @@ const OrderCreateScreen = () => {
                                     <div className="text-center py-8 text-gray-500">
                                         <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                         <p>No hay productos agregados</p>
-                                        <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
+                                        <p className="text-sm flex items-center justify-center gap-1">
+                                            Haz clic en <ExternalLink className="h-3 w-3" /> "Seleccionar Productos" para abrir la ventana de selección
+                                        </p>
                                     </div>
                                 ) : (
                                     <div>

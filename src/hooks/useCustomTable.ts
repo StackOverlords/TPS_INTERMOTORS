@@ -1,18 +1,18 @@
-import { useState, useMemo, useEffect } from 'react';
 import {
-    useReactTable,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getSortedRowModel,
-    getPaginationRowModel,
-    type ColumnDef,
-    type SortingState,
-    type ColumnOrderState,
-    type VisibilityState,
-    type RowSelectionState,
-    type PaginationState,
-    type ColumnResizeMode,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type ColumnOrderState,
+  type ColumnResizeMode,
+  type PaginationState,
+  type RowSelectionState,
+  type SortingState,
+  type VisibilityState,
 } from '@tanstack/react-table';
+import { useEffect, useMemo, useState } from 'react';
 
 interface UseCustomTableOptions<TData> {
     data: TData[];
