@@ -9,7 +9,6 @@ import {
 } from '@/components/atoms/dropdown-menu';
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
-import ResizableBox from '@/components/atoms/resizable-box';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
@@ -371,8 +370,8 @@ const UserListScreen = () => {
   };
 
   return (
-    <main className="min-h-screen max-w-full">
-      <div className="bg-white rounded-lg shadow-sm">
+    <main className="h-full flex flex-col overflow-hidden p-2">
+      <div className="bg-white rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
         {/* Header */}
         <header className="p-2 border-b border-gray-200">
           <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
@@ -452,7 +451,7 @@ const UserListScreen = () => {
         </header>
 
         {/* Results Info */}
-        <div className="p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex-shrink-0 p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
           {users.length > 0 ? (
             isInfiniteScroll ? (
               `Mostrando ${users.length} de ${userData?.meta.total} usuarios`
@@ -533,50 +532,26 @@ const UserListScreen = () => {
           </div>
         </div>
 
-        {isInfiniteScroll ? (
-          <InfiniteScroll
-            dataLength={users.length}
-            next={() => setPage((filters.pagina || 1) + 1)}
-            hasMore={users.length < (userData?.meta.total || 0)}
-            loader={
-              <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                <Loader2 className="size-4 animate-spin" />
-                Cargando más usuarios...
-              </div>
-            }
-            scrollableTarget="main-scroll-container"
-          >
-            <CustomizableTable
-              table={table}
-              isError={isError}
-              errorMessage="Ocurrió un error al cargar los usuarios"
-              isLoading={isLoading}
-              rows={filters.pagina_registros}
-              noDataMessage="No se encontraron usuarios"
-              selectedRowIndex={selectedIndex}
-              onRowClick={handleRowClick}
-              onRowDoubleClick={handleRowDoubleClick}
-              tableRef={tableRef}
-              focused={isFocused}
-              keyboardNavigationEnabled={true}
-              enableColumnReordering={true}
-              enableSorting={true}
-            />
-          </InfiniteScroll>
-        ) : (
-          <ResizableBox
-            direction="vertical"
-            minSize={'100px'}
-            initialSize={'300px'}
-          >
-            <div className="overflow-auto h-full">
-              <div onClick={handleTableClick} className="overflow-x-hidden">
+        <div className="flex-1 overflow-hidden">
+          {isInfiniteScroll ? (
+            <div className="h-full overflow-auto">
+              <InfiniteScroll
+                dataLength={users.length}
+                next={() => setPage((filters.pagina || 1) + 1)}
+                hasMore={users.length < (userData?.meta.total || 0)}
+                loader={
+                  <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                    <Loader2 className="size-4 animate-spin" />
+                    Cargando más usuarios...
+                  </div>
+                }
+                scrollableTarget="main-scroll-container"
+              >
                 <CustomizableTable
                   table={table}
                   isError={isError}
-                  isFetching={isFetching}
-                  isLoading={isLoading}
                   errorMessage="Ocurrió un error al cargar los usuarios"
+                  isLoading={isLoading}
                   rows={filters.pagina_registros}
                   noDataMessage="No se encontraron usuarios"
                   selectedRowIndex={selectedIndex}
@@ -584,25 +559,53 @@ const UserListScreen = () => {
                   onRowDoubleClick={handleRowDoubleClick}
                   tableRef={tableRef}
                   focused={isFocused}
-                  keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
+                  keyboardNavigationEnabled={true}
                   enableColumnReordering={true}
                   enableSorting={true}
                 />
-              </div>
-
-              {/* Pagination */}
-              {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
-                <Pagination
-                  currentPage={filters.pagina || 1}
-                  onPageChange={onPageChange}
-                  totalData={userData?.meta.total || 1}
-                  onShowRowsChange={onShowRowsChange}
-                  showRows={filters.pagina_registros}
-                />
-              )}
+              </InfiniteScroll>
             </div>
-          </ResizableBox>
-        )}
+          ) : (
+            // <ResizableBox
+            //   direction="vertical"
+            //   minSize={'100px'}
+            //   initialSize={'300px'}
+            // >
+              <div className="overflow-auto h-full">
+                <div onClick={handleTableClick} className="overflow-x-hidden">
+                  <CustomizableTable
+                    table={table}
+                    isError={isError}
+                    isFetching={isFetching}
+                    isLoading={isLoading}
+                    errorMessage="Ocurrió un error al cargar los usuarios"
+                    rows={filters.pagina_registros}
+                    noDataMessage="No se encontraron usuarios"
+                    selectedRowIndex={selectedIndex}
+                    onRowClick={handleRowClick}
+                    onRowDoubleClick={handleRowDoubleClick}
+                    tableRef={tableRef}
+                    focused={isFocused}
+                    keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
+                    enableColumnReordering={true}
+                    enableSorting={true}
+                  />
+                </div>
+
+                {/* Pagination */}
+                {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
+                  <Pagination
+                    currentPage={filters.pagina || 1}
+                    onPageChange={onPageChange}
+                    totalData={userData?.meta.total || 1}
+                    onShowRowsChange={onShowRowsChange}
+                    showRows={filters.pagina_registros}
+                  />
+                )}
+              </div>
+            // </ResizableBox>
+          )}
+        </div>
       </div>
 
       {/* Diálogos */}

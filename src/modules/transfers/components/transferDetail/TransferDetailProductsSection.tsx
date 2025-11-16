@@ -19,6 +19,14 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
     totalAmount
 }) => {
 
+    // Calcular total de cantidades
+    const totalCantidad = useMemo(() => {
+        return products.reduce((total, product) => {
+            const cantidad = product.cantidad ? parseFloat(product.cantidad) : 0;
+            return total + cantidad;
+        }, 0);
+    }, [products]);
+
     const columns = useMemo<ColumnDef<TransferDetailGetById>[]>(() => [
         {
             accessorKey: "id",
@@ -49,15 +57,16 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
             },
         },
         {
-            accessorKey: "cantidad_entrada_salida",
+            accessorKey: "cantidad",
             header: "Cantidad",
             size: 90,
             minSize: 80,
             cell: ({ getValue }) => {
-                const value = getValue<number | null>();
+                const value = getValue<string | null>();
+                const cantidad = value ? parseFloat(value) : 0;
                 return (
                     <div className="text-center">
-                        <div className="text-sm font-medium">{value ? value.toFixed(0) : '0'}</div>
+                        <div className="text-sm font-medium">{cantidad.toFixed(0)}</div>
                     </div>
                 )
             },
@@ -121,7 +130,8 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
             minSize: 80,
             cell: ({ row }) => {
                 const product = row.original
-                const cantidad = row.getValue<number | null>("cantidad_entrada_salida") ?? 0
+                const cantidadValue = row.getValue<string | null>("cantidad");
+                const cantidad = cantidadValue ? parseFloat(cantidadValue) : 0;
                 const subtotal = (Number(product.costo_entrada) ?? 0) * cantidad
 
                 return (
@@ -163,8 +173,8 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
     })
 
     return (
-        <section className="border border-gray-200 rounded-lg bg-white">
-            <header className="p-4 border-b border-gray-200">
+        <section className="border border-gray-200 rounded-lg bg-white flex-1 flex flex-col overflow-hidden">
+            <header className="p-4 border-b border-gray-200 flex-shrink-0">
                 <h3 className="text-base font-medium text-gray-900 flex gap-2 items-center">
                     <Package className="size-4" />
                     Productos de la transferencia
@@ -173,27 +183,40 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
                     {products.length} {products.length === 1 ? "producto" : "productos"} en total
                 </p>
             </header>
-            <CustomizableTable
+            <div className="flex-1 overflow-auto">
+                <CustomizableTable
                 table={table}
                 isLoading={isLoading}
-                renderBottomRow={() => {
-                    const colSpan = table.getVisibleFlatColumns().length;
-                    return (
-                        <TableRow className="bg-gray-50">
-                            <TableCell colSpan={colSpan} className="p-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <div className="text-muted-foreground font-semibold">
-                                        Total de ítems: <span className="font-medium text-gray-900">{products.length}</span>
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                        <span className="text-sm font-bold text-emerald-600">{formatCurrency(totalAmount)}</span>
-                                    </div>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    );
-                }}
-            />
+                stickyHeader={true}
+                renderBottomRow={() => (
+                    <TableRow className="bg-gray-50 font-semibold sticky bottom-0">
+                        {table.getVisibleFlatColumns().map((column) => {
+                            if (column.id === 'cantidad') {
+                                return (
+                                    <TableCell key={column.id} className="text-center">
+                                        <div className="text-xs text-muted-foreground mb-0.5">Total Cantidad</div>
+                                        <div className="text-sm font-bold text-blue-600">
+                                            {totalCantidad.toFixed(0)}
+                                        </div>
+                                    </TableCell>
+                                );
+                            }
+                            if (column.id === 'subtotal') {
+                                return (
+                                    <TableCell key={column.id} className="text-right">
+                                        <div className="text-xs text-muted-foreground mb-0.5">Total</div>
+                                        <div className="text-sm font-bold text-emerald-600">
+                                            {formatCurrency(totalAmount)}
+                                        </div>
+                                    </TableCell>
+                                );
+                            }
+                            return <TableCell key={column.id} />;
+                        })}
+                    </TableRow>
+                )}
+                />
+            </div>
         </section>
     );
 }

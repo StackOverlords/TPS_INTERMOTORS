@@ -1,11 +1,11 @@
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
-import { formatCurrency } from "@/utils/formaters";
-import CustomizableTable from "@/components/common/CustomizableTable";
 import { Badge } from "@/components/atoms/badge";
-import { formatCell } from "@/utils/formatCell";
 import { TableCell, TableRow } from "@/components/atoms/table";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import { formatCell } from "@/utils/formatCell";
+import { formatCurrency } from "@/utils/formaters";
+import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { Package } from "lucide-react";
+import { useMemo } from "react";
 import type { QuotationItemGetById } from "../../types/quotationGet.types";
 
 interface QuotationProductsSectionProps {
@@ -18,6 +18,16 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
     products,
     totalAmount
 }) => {
+
+    // Calcular total de cantidades
+    const totalCantidad = useMemo(() => {
+        return products.reduce((total, product) => {
+            const cantidad = typeof product.cantidad === "string"
+                ? parseFloat(product.cantidad)
+                : product.cantidad;
+            return total + (isFinite(cantidad) ? cantidad : 0);
+        }, 0);
+    }, [products]);
 
     const columns = useMemo<ColumnDef<QuotationItemGetById>[]>(() => [
         {
@@ -87,11 +97,16 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
             header: "Cantidad",
             size: 90,
             minSize: 80,
-            cell: ({ row, getValue }) => {
-                const product = row.original.producto
+            cell: ({ row }) => {
+                const product = row.original.producto;
+                const cantidad = typeof row.original.cantidad === "string"
+                    ? parseFloat(row.original.cantidad)
+                    : row.original.cantidad;
+                const cantidadDisplay = isFinite(cantidad) ? cantidad.toFixed(0) : "0";
+
                 return (
                     <div className="text-center">
-                        <div className="text-sm font-medium">{getValue<number>().toFixed(0)}</div>
+                        <div className="text-sm font-medium">{cantidadDisplay}</div>
                         {product.unidad_medida && (
                             <div className="text-[10px] text-gray-500">{product.unidad_medida.unidad_medida}</div>
                         )}
@@ -170,37 +185,50 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
     })
 
     return (
-        <section className="border border-gray-200 rounded-lg">
-            <header className="p-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 flex gap-2 items-center">
-                    <Package className="size-5" />
+        <section className="border border-gray-200 rounded-lg bg-white flex-1 flex flex-col overflow-hidden">
+            <header className="p-4 border-b border-gray-200 flex-shrink-0">
+                <h3 className="text-base font-medium text-gray-900 flex gap-2 items-center">
+                    <Package className="size-4" />
                     Productos de la cotizacion
                 </h3>
                 <p className="text-xs text-gray-600 mt-1">
                     {products.length} {products.length === 1 ? "producto" : "productos"} en total
                 </p>
             </header>
-            <CustomizableTable
-                table={table}
-                isLoading={isLoading}
-                renderBottomRow={() => {
-                    const colSpan = table.getVisibleFlatColumns().length;
-                    return (
-                        <TableRow className="bg-gray-50">
-                            <TableCell colSpan={colSpan} className="p-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <div className="text-gray-500">
-                                        Total de ítems: <span className="font-medium text-gray-900">{products.length}</span>
-                                    </div>
-                                    <div className="text-gray-500">
-                                        <span className="text-sm font-bold text-emerald-600">{formatCurrency(totalAmount)}</span>
-                                    </div>
-                                </div>
-                            </TableCell>
+            <div className="flex-1 overflow-auto">
+                <CustomizableTable
+                    table={table}
+                    isLoading={isLoading}
+                    stickyHeader={true}
+                    renderBottomRow={() => (
+                        <TableRow className="bg-gray-50 font-semibold sticky bottom-0">
+                            {table.getVisibleFlatColumns().map((column) => {
+                                if (column.id === 'cantidad') {
+                                    return (
+                                        <TableCell key={column.id} className="text-center">
+                                            <div className="text-xs text-muted-foreground mb-0.5">Total Cantidad</div>
+                                            <div className="text-sm font-bold text-blue-600">
+                                                {totalCantidad.toFixed(0)}
+                                            </div>
+                                        </TableCell>
+                                    );
+                                }
+                                if (column.id === 'subtotal') {
+                                    return (
+                                        <TableCell key={column.id} className="text-right">
+                                            <div className="text-xs text-muted-foreground mb-0.5">Total</div>
+                                            <div className="text-sm font-bold text-emerald-600">
+                                                {formatCurrency(totalAmount)}
+                                            </div>
+                                        </TableCell>
+                                    );
+                                }
+                                return <TableCell key={column.id} />;
+                            })}
                         </TableRow>
-                    );
-                }}
-            />
+                    )}
+                />
+            </div>
         </section>
     );
 }

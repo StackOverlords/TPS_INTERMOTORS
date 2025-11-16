@@ -1,22 +1,22 @@
-import { useNavigate, useParams } from "react-router";
-import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useMemo } from "react";
-import TooltipButton from "@/components/common/TooltipButton";
-import { Kbd } from "@/components/atoms/kbd";
-import { Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2, User } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Label } from "@/components/atoms/label";
-import { formatCurrency, formatDate } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
-import { formatCell } from "@/utils/formatCell";
-import { useHotkeys } from "react-hotkeys-hook";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
+import { Kbd } from "@/components/atoms/kbd";
+import { Label } from "@/components/atoms/label";
+import ConfirmationModal from "@/components/common/confirmationModal";
+import ErrorDataComponent from "@/components/common/errorDataComponent";
+import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
-import ConfirmationModal from "@/components/common/confirmationModal";
-import { useGetReturnById } from "../hooks/useGetReturnById";
-import { useDeleteReturn } from "../hooks/useDeleteReturn";
+import { formatCell } from "@/utils/formatCell";
+import { formatDate } from "@/utils/formaters";
+import { Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2 } from "lucide-react";
+import { useMemo } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate, useParams } from "react-router";
 import ReturnDetailProductsSection from "../components/returnDetail/ReturnDetailProductsSection";
 import ReturnDetailSkeleton from "../components/returnDetail/returnDetailSkeleton";
+import { useDeleteReturn } from "../hooks/useDeleteReturn";
+import { useGetReturnById } from "../hooks/useGetReturnById";
 
 const ReturnDetailScreen = () => {
     const navigate = useNavigate()
@@ -167,83 +167,40 @@ const ReturnDetailScreen = () => {
                     </div >
                 </header >
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <Card className="bg-white border border-gray-200 shadow-none md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                                <FileText className="size-4 text-gray-700" />
-                                Información General
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-base font-semibold text-gray-900">
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Fecha</Label>
-                                    <p className="font-semibold flex items-center gap-2 text-sm">
-                                        <Calendar className="size-4 text-gray-600" />
-                                        {formatDate(returnData?.fecha ?? '')}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Forma de devolución</Label>
-                                    <br />
-                                    <Badge
-                                        variant={'secondary'}
-                                        className="rounded w-max"
-                                    >
-                                        {returnData?.forma_devolucion}
-                                    </Badge>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Total</Label>
-                                    <p className="font-bold text-sm text-green-600">{formatCurrency(totalReturn)}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Productos</Label>
-                                    <br />
-                                    <p className="text-sm">
-                                        {returnData?.cantidad_detalles}{' '}
-                                        {returnData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Comprobante</Label>
-                                    <p className="text-sm font-medium">{formatCell(returnData?.comprobante)}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Comentarios</Label>
-                                    <p className="text-sm font-medium">{formatCell(returnData?.comentarios)}</p>
-                                </div>
+                <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <FileText className="size-4 text-gray-700" />
+                            Información General
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Fecha</Label>
+                                <p className="text-sm font-medium flex items-center gap-2">
+                                    <Calendar className="size-4 text-gray-600" />
+                                    {formatDate(returnData?.fecha ?? '')}
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100  border-emerald-200">
-                        <CardHeader>
-                            <CardTitle className="text-base font-semibold text-emerald-700">Total de la devolución</CardTitle>
-                        </CardHeader>
-                        <CardContent className="px-4 pb-3">
-                            <p className="text-2xl font-bold text-emerald-600">
-                                {formatCurrency(totalReturn)}
-                            </p>
-                            <p className="text-sm font-medium text-emerald-600/70 mt-1">
-                                {returnData?.cantidad_detalles} {returnData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
-                            </p>
-                        </CardContent>
-                    </Card> */}
-
-                    <Card className="bg-white border border-gray-200 shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                                <User className="size-4 text-gray-700" />
-                                Responsable de devolución
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Forma de devolución</Label>
+                                <br />
+                                <Badge variant="secondary" className="rounded w-max">
+                                    {returnData?.forma_devolucion}
+                                </Badge>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Comprobante</Label>
+                                <p className="text-sm font-medium">{formatCell(returnData?.comprobante)}</p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Comentarios</Label>
+                                <p className="text-sm font-medium">{formatCell(returnData?.comentarios)}</p>
+                            </div>
                                 <div>
-                                    <Label className="text-xs text-muted-foreground">Nombre</Label>
-                                    <p className="text-base font-semibold">
+                                    <Label className="text-xs text-muted-foreground">Responsable</Label>
+                                    <p className="text-sm font-medium">
                                         {formatCell(
                                             [
                                                 returnData?.responsable?.nombre,
@@ -255,21 +212,48 @@ const ReturnDetailScreen = () => {
                                         )}
                                     </p>
                                 </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">DNI</Label>
-                                        <p>{formatCell(returnData?.responsable?.dni)}</p>
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">Celular</Label>
-                                        <p>{formatCell(returnData?.responsable?.celular)}</p>
-                                    </div>
+                {/* Información detallada de responsable - Comentado por si se necesita más adelante */}
+                {/* <Card className="bg-white border border-gray-200 shadow-none">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+                            <User className="size-4 text-gray-700" />
+                            Responsable de devolución
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-xs text-gray-900 space-y-4">
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Nombre</Label>
+                                <p className="text-base font-semibold">
+                                    {formatCell(
+                                        [
+                                            returnData?.responsable?.nombre,
+                                            returnData?.responsable?.apellido_paterno,
+                                            returnData?.responsable?.apellido_materno
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ")
+                                    )}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">DNI</Label>
+                                    <p>{formatCell(returnData?.responsable?.dni)}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Celular</Label>
+                                    <p>{formatCell(returnData?.responsable?.celular)}</p>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
+                    </CardContent>
+                </Card> */}
 
                 <ReturnDetailProductsSection
                     products={returnData?.detalles ?? []}

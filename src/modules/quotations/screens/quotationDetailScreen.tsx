@@ -1,23 +1,22 @@
-import { useNavigate, useParams } from "react-router";
-import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useMemo, useState } from "react";
-import TooltipButton from "@/components/common/TooltipButton";
-import { Kbd } from "@/components/atoms/kbd";
-import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, MapPin, Phone, Printer, Trash2, User } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Label } from "@/components/atoms/label";
-import { formatCurrency, formatDate } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
-import { formatCell } from "@/utils/formatCell";
-import { useHotkeys } from "react-hotkeys-hook";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
+import { Kbd } from "@/components/atoms/kbd";
+import { Label } from "@/components/atoms/label";
+import ConfirmationModal from "@/components/common/confirmationModal";
+import ErrorDataComponent from "@/components/common/errorDataComponent";
+import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
-import ConfirmationModal from "@/components/common/confirmationModal";
-import { useQuotationGetById } from "../hooks/useQuotationGetById";
-import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
 import SaleDetailSkeleton from "@/modules/sales/components/saleDetail/saleDetailSkeleton";
-import QuotationProductsSection from "../components/quotationDetail/SaleProductsSection";
+import { formatCurrency, formatDate } from "@/utils/formaters";
+import { Calendar, CornerUpLeft, Edit, FileText, Loader2, Printer, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate, useParams } from "react-router";
 import { PDFViewer } from "../../../components/common/PDFViewer";
+import QuotationProductsSection from "../components/quotationDetail/SaleProductsSection";
+import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
+import { useQuotationGetById } from "../hooks/useQuotationGetById";
 import { useQuotationPDF } from "../hooks/useQuotationPDF";
 
 const QuotationDetailScreen = () => {
@@ -124,9 +123,9 @@ const QuotationDetailScreen = () => {
     }
 
     return (
-        <main className="flex flex-col items-center">
-            <div className="max-w-7xl w-full space-y-2">
-                <header className="border-gray-200 border bg-white rounded-lg p-3">
+        <main className="h-full flex flex-col items-center overflow-hidden p-2">
+            <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
+                <header className="bg-white border border-gray-200 rounded-lg p-3 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -142,20 +141,20 @@ const QuotationDetailScreen = () => {
                                 <CornerUpLeft />
                             </TooltipButton>
                             <div>
-                                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
-                                    Cotizacion {quotationData?.nro}
+                                <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                                    Cotizacion Nro. {quotationData?.nro}
                                 </h1>
                                 {quotationData && (
-                                    <p className="text-sm text-gray-600">
-                                        {quotationData.cliente ? `${quotationData.cliente?.cliente} - ` : ''}
-                                        {quotationData.cantidad_detalles} {quotationData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                    <p className="text-xs text-muted-foreground">
+                                        {quotationData?.cantidad_detalles ?? 0}{' '}
+                                        {(quotationData?.cantidad_detalles ?? 0) === 1 ? 'producto' : 'productos'}
                                     </p>
                                 )}
                             </div>
-                        </div >
+                        </div>
 
                         {/* Action Buttons */}
-                        < div className="flex items-center gap-2" >
+                        <div className="flex items-center gap-2">
                             <TooltipButton
                                 onClick={handleUpdateQuotation}
                                 tooltip="Editar cotizacion"
@@ -173,6 +172,7 @@ const QuotationDetailScreen = () => {
                                 tooltip="Imprimir cotizacion"
                                 buttonProps={{
                                     variant: 'default',
+                                    size: 'sm'
                                 }}
                             >
                                 <Printer className="h-4 w-4" />
@@ -202,41 +202,32 @@ const QuotationDetailScreen = () => {
                                     )
                                 }
                             </TooltipButton>
-                        </div >
-                    </div >
-                </header >
+                        </div>
+                    </div>
+                </header>
 
-                <Card className="bg-white border border-gray-200 shadow-none">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                            <FileText className="h-5 w-5 text-gray-700" />
+                <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <FileText className="size-4 text-gray-700" />
                             Información General
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-base font-semibold text-gray-900">
+                    <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                             <div>
-                                <Label>Número de cotizacion</Label>
-                                <p className="font-bold">{quotationData?.nro}</p>
-                            </div>
-                            <div>
-                                <Label>Fecha</Label>
-                                <p className="font-semibold flex items-center gap-2">
+                                <Label className="text-xs text-muted-foreground">Fecha</Label>
+                                <p className="text-sm font-medium flex items-center gap-2">
                                     <Calendar className="size-4 text-gray-600" />
                                     {formatDate(quotationData?.fecha ?? '')}
                                 </p>
                             </div>
                             <div>
-                                <Label>Total</Label>
-                                <br />
-                                <Badge
-                                    className="rounded font-bold text-base"
-                                    variant={'success'}>
-                                    {formatCurrency(totalQuotation)}
-                                </Badge>
+                                <Label className="text-xs text-muted-foreground">Total</Label>
+                                <p className="text-sm font-bold text-green-600">{formatCurrency(totalQuotation)}</p>
                             </div>
                             <div>
-                                <Label>Tipo de cotizacion</Label>
+                                <Label className="text-xs text-muted-foreground">Tipo de cotizacion</Label>
                                 <br />
                                 <Badge
                                     variant={getContextColor(quotationData?.tipo_cotizacion ?? '')}
@@ -246,25 +237,43 @@ const QuotationDetailScreen = () => {
                                 </Badge>
                             </div>
                             <div>
-                                <Label>Forma de cotizacion</Label>
+                                <Label className="text-xs text-muted-foreground">Forma de cotizacion</Label>
                                 <br />
                                 <Badge variant="secondary" className="rounded w-max">
                                     {quotationData?.forma_cotizacion}
                                 </Badge>
                             </div>
                             <div>
-                                <Label>Productos</Label>
-                                <br />
-                                <p className="text-base">
+                                <Label className="text-xs text-muted-foreground">Cliente</Label>
+                                <p className="text-sm font-medium">{quotationData?.cliente?.cliente}</p>
+                            </div>
+                            {/* <div>
+                                <Label className="text-xs text-muted-foreground">Productos</Label>
+                                <p className="text-sm">
                                     {quotationData?.cantidad_detalles}{' '}
                                     {quotationData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
                                 </p>
-                            </div>
+                            </div> */}
+                            {quotationData?.responsable_cotizacion && (
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Responsable</Label>
+                                    <p className="text-sm font-medium">
+                                        {[
+                                            quotationData?.responsable_cotizacion?.nombre,
+                                            quotationData?.responsable_cotizacion?.apellido_paterno,
+                                            quotationData?.responsable_cotizacion?.apellido_materno
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ")}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
 
-                <div className="grid md:grid-cols-2 gap-2">
+                {/* Información detallada de cliente y responsable - Comentado por si se necesita más adelante */}
+                {/* <div className="grid md:grid-cols-2 gap-2">
                     <Card className="bg-white border border-gray-200 shadow-none">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
@@ -339,14 +348,14 @@ const QuotationDetailScreen = () => {
                             </div>
                         </CardContent>
                     </Card>
-                </div>
+                </div> */}
 
                 <QuotationProductsSection
                     products={quotationData?.detalles ?? []}
                     isLoading={isLoadingQuotation}
                     totalAmount={totalQuotation}
                 />
-            </div >
+            </div>
 
             <ConfirmationModal
                 isOpen={showDeleteAlert}
@@ -367,7 +376,7 @@ const QuotationDetailScreen = () => {
                 pdfName="cotizacion"
                 title={`Cotizacion Nro. ${quotationData?.id}`}
             />
-        </main >
+        </main>
     );
 }
 
