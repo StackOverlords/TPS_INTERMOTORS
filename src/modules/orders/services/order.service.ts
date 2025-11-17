@@ -38,10 +38,21 @@ export const orderService = {
     async getAll(filters: Partial<OrdersFilters>): Promise<OrderGetAllResponse> {
         Logger.info('Fetching Orders', { filters }, MODULE_NAME);
 
+        // Formatear fechas a YYYY-MM-DD si existen
+        const formattedFilters = {
+            ...filters,
+            fecha_inicio: filters.fecha_inicio instanceof Date
+                ? filters.fecha_inicio.toISOString().split('T')[0]
+                : filters.fecha_inicio,
+            fecha_fin: filters.fecha_fin instanceof Date
+                ? filters.fecha_fin.toISOString().split('T')[0]
+                : filters.fecha_fin,
+        };
+
         const response = await ApiService.get(
             ORDER_ENDPOINTS.all,
             OrdersGetAllSchema,
-            { params: filters }
+            { params: formattedFilters }
         );
 
         Logger.info('Orders fetched successfully', {

@@ -1,8 +1,7 @@
 import { Kbd } from '@/components/atoms/kbd';
-import { Tabs, TabsList, TabsTrigger } from '@/components/atoms/tabs';
 import ErrorDataComponent from '@/components/common/errorDataComponent';
 import TooltipButton from '@/components/common/TooltipButton';
-import { CornerUpLeft, Edit, FileText, Package, Trash2 } from 'lucide-react';
+import { CornerUpLeft, Edit, Trash2 } from 'lucide-react';
 import { useCallback } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useNavigate, useParams } from 'react-router';
@@ -80,10 +79,10 @@ const PurchaseDetailScreen = () => {
       {isLoadingPurchase ? (
         <PurchaseDetailSkeleton />
       ) : (
-        <div className="min-h-screen">
-          <div className="max-w-7xl mx-auto space-y-4">
+        <main className="h-full flex flex-col items-center overflow-hidden p-2">
+          <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
             {/* Header */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <header className="bg-white border border-gray-200 rounded-lg p-3 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <TooltipButton
@@ -104,12 +103,11 @@ const PurchaseDetailScreen = () => {
                     <CornerUpLeft />
                   </TooltipButton>
                   <div>
-                    <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
-                      Compra {purchase?.nro}
+                    <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                      Compra Nro. {purchase?.nro}
                     </h1>
                     {purchase && (
-                      <p className="text-sm text-gray-600">
-                        {purchase?.proveedor?.proveedor ?? '-'} -{' '}
+                      <p className="text-xs text-muted-foreground">
                         {purchase?.cantidad_detalles ?? 0}{' '}
                         {(purchase?.cantidad_detalles ?? 0) === 1
                           ? 'producto'
@@ -120,7 +118,7 @@ const PurchaseDetailScreen = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                   <TooltipButton
                     onClick={handleEdit}
                     tooltip="Editar compra"
@@ -146,54 +144,32 @@ const PurchaseDetailScreen = () => {
                   </TooltipButton>
                 </div>
               </div>
-            </div>
+            </header>
 
-            {/* Navigation Tabs */}
-            <Tabs defaultValue="overview" className="space-y-4">
-              <div className="flex flex-wrap-reverse gap-2 justify-between">
-                <TabsList className="bg-white border border-gray-200 gap-2 h-10">
-                  <TabsTrigger
-                    value="overview"
-                    className="data-[state=active]:bg-gray-900 data-[state=active]:text-white rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors h-8"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Resumen
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="products"
-                    className="data-[state=active]:bg-gray-900 data-[state=active]:text-white rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors h-8"
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Productos
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {isErrorPurchase ? (
-                <ErrorDataComponent
-                  errorMessage="No se pudo cargar la compra. Por favor, inténtalo de nuevo más tarde."
-                  onRetry={handleRetry}
+            {isErrorPurchase ? (
+              <ErrorDataComponent
+                errorMessage="No se pudo cargar la compra. Por favor, inténtalo de nuevo más tarde."
+                onRetry={handleRetry}
+              />
+            ) : (
+              <>
+                {/* Overview */}
+                <PurchaseOverview
+                  purchase={purchase}
+                  isLoading={isLoadingPurchase}
+                  isError={isErrorPurchase}
                 />
-              ) : (
-                <>
-                  {/* Overview Tab */}
-                  <PurchaseOverview
-                    purchase={purchase}
-                    isLoading={isLoadingPurchase}
-                    isError={isErrorPurchase}
-                  />
 
-                  {/* Products Tab */}
-                  <PurchaseProducts
-                    purchase={purchase}
-                    isLoading={isLoadingPurchase}
-                    isError={isErrorPurchase}
-                  />
-                </>
-              )}
-            </Tabs>
+                {/* Products */}
+                <PurchaseProducts
+                  purchase={purchase}
+                  isLoading={isLoadingPurchase}
+                  isError={isErrorPurchase}
+                />
+              </>
+            )}
           </div>
-        </div>
+        </main>
       )}
 
       {/* Delete Confirmation Dialog */}

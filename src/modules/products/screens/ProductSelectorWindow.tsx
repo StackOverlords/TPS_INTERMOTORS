@@ -510,15 +510,19 @@ const ProductSelectorWindow: React.FC = () => {
         header: 'Stock',
         size: 110,
         minSize: 100,
-        cell: ({ row, getValue }) => {
-          const stock = getValue<number>();
+        cell: ({ row }) => {
+          const stock = typeof row.original.stock_actual === "string"
+            ? parseFloat(row.original.stock_actual)
+            : row.original.stock_actual;
+          const stockDisplay = isFinite(stock) ? stock.toFixed(0) : "0";
           const stockMin = row.original.stock_minimo || 1;
+
           return (
             <Badge
               variant={getStockColor(stock, stockMin)}
               className="flex flex-col justify-center rounded"
             >
-              <span className="font-bold">{getValue<number>().toFixed(0)}</span>
+              <span className="font-bold">{stockDisplay}</span>
               <span className="text-[10px] uppercase">
                 {row.original.unidad_medida}
               </span>

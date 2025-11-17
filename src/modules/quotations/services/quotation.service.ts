@@ -1,12 +1,12 @@
-import type { QuotationFilters } from "../types/quotationFilters.types";
-import type { QuotationGetAllResponse, QuotationGetById } from "../types/quotationGet.types";
-import { QUOTATION_ENDPOINTS } from "./quotationEndpoints.service";
+import { ApiService } from "@/lib/apiService";
+import { Logger } from "@/lib/logger";
 import { QuotationGetAllResponseSchema } from "../schemas/quotationGet.schema";
 import { QuotationGetByIdSchema } from "../schemas/quotationGetById.schema";
-import { Logger } from "@/lib/logger";
-import { ApiService } from "@/lib/apiService";
 import type { QuotationCreate } from "../types/quotationCreate.types";
+import type { QuotationFilters } from "../types/quotationFilters.types";
+import type { QuotationGetAllResponse, QuotationGetById } from "../types/quotationGet.types";
 import type { QuotationUpdate } from "../types/quotationUpdate.types";
+import { QUOTATION_ENDPOINTS } from "./quotationEndpoints.service";
 
 const MODULE_NAME = 'QUOTATION_SERVICE';
 
@@ -63,7 +63,7 @@ export const quotationService = {
 
         const response = await ApiService.get(
             QUOTATION_ENDPOINTS.byId(id),
-            QuotationGetByIdSchema,
+            undefined, // QuotationGetByIdSchema - Temporalmente deshabilitado
             undefined,
             { unwrapData: true }
         );

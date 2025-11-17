@@ -101,8 +101,8 @@ const TransferDetailScreen = () => {
     }
 
     return (
-        <main className="flex flex-col items-center">
-            <div className="max-w-7xl w-full space-y-2">
+        <main className="h-full flex flex-col items-center overflow-hidden p-2">
+            <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
                 <header className="border-gray-200 border bg-white rounded-lg p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -173,109 +173,85 @@ const TransferDetailScreen = () => {
                     </div >
                 </header >
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <Card className="bg-white border border-gray-200 shadow-none md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                                <FileText className="size-4 text-gray-700" />
-                                Información General
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-base font-semibold text-gray-900">
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Fecha</Label>
-                                    <p className="font-semibold flex items-center gap-2 text-sm">
-                                        <Calendar className="size-4 text-gray-600" />
-                                        {formatDate(transferData?.fecha ?? '')}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Estado</Label>
-                                    <br />
-                                    <Badge
-                                        variant={transferData?.estado === 'RECIBIDA' ? 'success' : transferData?.estado === 'RECHAZADA' ? 'destructive' : 'warning'}
-                                        className="rounded w-max"
-                                    >
-                                        {transferData?.estado}
-                                    </Badge>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Total</Label>
-                                    <p className="font-bold text-sm text-green-600">{formatCurrency(totalTransfer)}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Productos</Label>
-                                    <br />
-                                    <p className="text-sm">
-                                        {transferData?.cantidad_detalles}{' '}
-                                        {transferData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Sucursal Origen</Label>
-                                    <p className="text-sm font-medium flex items-center gap-1">
-                                        <Building2 className="size-3 text-gray-600" />
-                                        {formatCell(transferData?.sucursal_origen_nombre)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Sucursal Destino</Label>
-                                    <p className="text-sm font-medium flex items-center gap-1">
-                                        <ArrowLeftRight className="size-3 text-gray-600" />
-                                        {formatCell(transferData?.sucursal_destino_nombre)}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Comprobante</Label>
-                                    <p className="text-sm font-medium">{formatCell(transferData?.nro_comprobante)}</p>
-                                </div>
-                                <div className="col-span-2">
-                                    <Label className="text-xs text-muted-foreground">Comentarios</Label>
-                                    <p className="text-sm font-medium">{formatCell(transferData?.comentarios)}</p>
-                                </div>
+                <Card className="bg-white border border-gray-200 shadow-none">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <FileText className="size-4 text-gray-700" />
+                            Información General
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 text-base font-semibold text-gray-900">
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Fecha</Label>
+                                <p className="font-semibold flex items-center gap-2 text-sm">
+                                    <Calendar className="size-4 text-gray-600" />
+                                    {formatDate(transferData?.fecha ?? '')}
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-white border border-gray-200 shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                                <User className="size-4 text-gray-700" />
-                                Responsable de transferencia
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Nombre</Label>
-                                    <p className="text-base font-semibold">
-                                        {formatCell(
-                                            [
-                                                transferData?.responsable?.nombre,
-                                                transferData?.responsable?.apellido_paterno,
-                                                transferData?.responsable?.apellido_materno
-                                            ]
-                                                .filter(Boolean)
-                                                .join(" ")
-                                        )}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">DNI</Label>
-                                        <p>{formatCell(transferData?.responsable?.dni)}</p>
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs text-muted-foreground">Celular</Label>
-                                        <p>{formatCell(transferData?.responsable?.celular)}</p>
-                                    </div>
-                                </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Estado</Label>
+                                <br />
+                                <Badge
+                                    variant={transferData?.estado === 'RECIBIDA' ? 'success' : transferData?.estado === 'RECHAZADA' ? 'destructive' : 'warning'}
+                                    className="rounded w-max"
+                                >
+                                    {transferData?.estado}
+                                </Badge>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Total</Label>
+                                <p className="font-bold text-sm text-green-600">{formatCurrency(totalTransfer)}</p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Productos</Label>
+                                <br />
+                                <p className="text-sm">
+                                    {transferData?.cantidad_detalles}{' '}
+                                    {transferData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Sucursal Origen</Label>
+                                <p className="text-sm font-medium flex items-center gap-1">
+                                    <Building2 className="size-3 text-gray-600" />
+                                    {formatCell(transferData?.sucursal_origen_nombre)}
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Sucursal Destino</Label>
+                                <p className="text-sm font-medium flex items-center gap-1">
+                                    <ArrowLeftRight className="size-3 text-gray-600" />
+                                    {formatCell(transferData?.sucursal_destino_nombre)}
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Comprobante</Label>
+                                <p className="text-sm font-medium">{formatCell(transferData?.nro_comprobante)}</p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Responsable</Label>
+                                <p className="text-sm font-medium flex items-center gap-1">
+                                    <User className="size-3 text-gray-600" />
+                                    {formatCell(
+                                        [
+                                            transferData?.responsable?.nombre,
+                                            transferData?.responsable?.apellido_paterno,
+                                            transferData?.responsable?.apellido_materno
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ")
+                                    )}
+                                </p>
+                            </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Comentarios</Label>
+                                <p className="text-sm font-medium">{formatCell(transferData?.comentarios)}</p>
+                            </div>
+                            </div>
+
+                    </CardContent>
+                </Card>
 
                 <TransferDetailProductsSection
                     products={transferData?.detalles ?? []}

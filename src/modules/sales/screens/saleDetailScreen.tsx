@@ -1,22 +1,22 @@
-import { useNavigate, useParams } from "react-router";
-import { useSaleGetById } from "../hooks/useSaleGetById";
-import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useMemo } from "react";
-import TooltipButton from "@/components/common/TooltipButton";
-import { Kbd } from "@/components/atoms/kbd";
-import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2, User } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
-import { Label } from "@/components/atoms/label";
-import { formatCurrency, formatDate } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
-import { formatCell } from "@/utils/formatCell";
-import SaleProductsSection from "../components/saleDetail/SaleProducts";
-import { useHotkeys } from "react-hotkeys-hook";
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { useDeleteSale } from "../hooks/useDeleteSale";
-import useConfirmMutation from "@/hooks/useConfirmMutation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
+import { Kbd } from "@/components/atoms/kbd";
+import { Label } from "@/components/atoms/label";
 import ConfirmationModal from "@/components/common/confirmationModal";
+import ErrorDataComponent from "@/components/common/errorDataComponent";
+import TooltipButton from "@/components/common/TooltipButton";
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import useConfirmMutation from "@/hooks/useConfirmMutation";
+import { formatCell } from "@/utils/formatCell";
+import { formatDate } from "@/utils/formaters";
+import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2, User } from "lucide-react";
+import { useMemo } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate, useParams } from "react-router";
 import SaleDetailSkeleton from "../components/saleDetail/saleDetailSkeleton";
+import SaleProductsSection from "../components/saleDetail/SaleProducts";
+import { useDeleteSale } from "../hooks/useDeleteSale";
+import { useSaleGetById } from "../hooks/useSaleGetById";
 
 const SaleDetailScreen = () => {
     const navigate = useNavigate()
@@ -109,8 +109,8 @@ const SaleDetailScreen = () => {
     }
 
     return (
-        <main className="flex flex-col items-center">
-            <div className="max-w-7xl w-full space-y-2">
+        <main className="h-full flex flex-col items-center overflow-hidden p-2">
+            <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
                 <header className="border-gray-200 border bg-white rounded-lg p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -181,36 +181,23 @@ const SaleDetailScreen = () => {
                 </header >
 
                 <Card className="bg-white border border-gray-200 shadow-none">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                            <FileText className="h-5 w-5 text-gray-700" />
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                            <FileText className="size-4 text-gray-700" />
                             Información General
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-base font-semibold text-gray-900">
+                    <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-base font-semibold text-gray-900">
                             <div>
-                                <Label>Número de venta</Label>
-                                <p className="font-bold">{saleData?.nro}</p>
-                            </div>
-                            <div>
-                                <Label>Fecha</Label>
-                                <p className="font-semibold flex items-center gap-2">
+                                <Label className="text-xs text-muted-foreground">Fecha</Label>
+                                <p className="font-semibold flex items-center gap-2 text-sm">
                                     <Calendar className="size-4 text-gray-600" />
                                     {formatDate(saleData?.fecha ?? '')}
                                 </p>
                             </div>
                             <div>
-                                <Label>Total</Label>
-                                <br />
-                                <Badge
-                                    className="rounded font-bold text-base"
-                                    variant={'success'}>
-                                    {formatCurrency(totalVenta)}
-                                </Badge>
-                            </div>
-                            <div>
-                                <Label>Tipo de venta</Label>
+                                <Label className="text-xs text-muted-foreground">Tipo de venta</Label>
                                 <br />
                                 <Badge
                                     variant={getContextColor(saleData?.tipo_venta ?? '')}
@@ -220,92 +207,45 @@ const SaleDetailScreen = () => {
                                 </Badge>
                             </div>
                             <div>
-                                <Label>Forma de venta</Label>
+                                <Label className="text-xs text-muted-foreground">Forma de venta</Label>
                                 <br />
                                 <Badge variant="secondary" className="rounded w-max">
                                     {saleData?.forma_venta}
                                 </Badge>
                             </div>
                             <div>
-                                <Label>Productos</Label>
+                                <Label className="text-xs text-muted-foreground">Productos</Label>
                                 <br />
-                                <p className="text-base">
+                                <p className="text-sm">
                                     {saleData?.cantidad_detalles}{' '}
                                     {saleData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
                                 </p>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="grid md:grid-cols-2 gap-2">
-                    <Card className="bg-white border border-gray-200 shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                                <Building2 className="h-5 w-5 text-gray-700" />
-                                Información del cliente
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
-                                <div>
-                                    <Label>Cliente</Label>
-                                    <p className="text-base text-blue-600 font-semibold">{saleData?.cliente?.cliente}</p>
-                                </div>
-                                <div>
-                                    <Label>Dirección</Label>
-                                    <p>{formatCell(saleData?.cliente?.direccion)}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label>Contacto</Label>
-                                        <p>{formatCell(saleData?.cliente?.contacto)}</p>
-                                    </div>
-                                    <div>
-                                        <Label>NIT</Label>
-                                        <p>{formatCell(saleData?.cliente?.nit)}</p>
-                                    </div>
-                                </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Cliente</Label>
+                                <p className="text-sm font-medium flex items-center gap-1">
+                                    <Building2 className="size-3 text-gray-600" />
+                                    {formatCell(saleData?.cliente?.cliente)}
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-white border border-gray-200 shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                                <User className="h-5 w-5 text-gray-700" />
-                                Responsable de venta
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
-                                <div>
-                                    <Label>Nombre</Label>
-                                    <p className="text-base font-semibold">
-                                        {[
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Responsable</Label>
+                                <p className="text-sm font-medium flex items-center gap-1">
+                                    <User className="size-3 text-gray-600" />
+                                    {formatCell(
+                                        [
                                             saleData?.responsable_venta?.nombre,
                                             saleData?.responsable_venta?.apellido_paterno,
                                             saleData?.responsable_venta?.apellido_materno
                                         ]
                                             .filter(Boolean)
-                                            .join(" ")}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label>DNI</Label>
-                                        <p>{formatCell(saleData?.responsable_venta?.dni)}</p>
-                                    </div>
-                                    <div>
-                                        <Label>Celular</Label>
-                                        <p>{formatCell(saleData?.responsable_venta?.celular)}</p>
-                                    </div>
-                                </div>
+                                            .join(" ")
+                                    )}
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <SaleProductsSection
                     products={saleData?.detalles ?? []}

@@ -87,11 +87,16 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             header: "Cantidad",
             size: 90,
             minSize: 80,
-            cell: ({ row, getValue }) => {
-                const product = row.original.producto
+            cell: ({ row }) => {
+                const product = row.original.producto;
+                const cantidad = typeof row.original.cantidad === "string"
+                    ? parseFloat(row.original.cantidad)
+                    : row.original.cantidad;
+                const cantidadDisplay = isFinite(cantidad) ? cantidad.toFixed(0) : "0";
+
                 return (
                     <div className="text-center">
-                        <div className="text-sm font-medium">{getValue<number>().toFixed(0)}</div>
+                        <div className="text-sm font-medium">{cantidadDisplay}</div>
                         {product.unidad_medida && (
                             <div className="text-[10px] text-gray-500">{product.unidad_medida.unidad_medida}</div>
                         )}
@@ -118,7 +123,11 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             size: 80,
             minSize: 70,
             cell: ({ getValue, row }) => {
-                const discountPercent = row.original.porcentaje_descuento?.toFixed(2)
+                const porcentajeDescuento = typeof row.original.porcentaje_descuento === "string"
+                    ? parseFloat(row.original.porcentaje_descuento)
+                    : row.original.porcentaje_descuento;
+                const discountPercent = isFinite(porcentajeDescuento) ? porcentajeDescuento.toFixed(2) : null;
+
                 return (
                     <div className="font-medium flex items-end justify-center flex-col">
                         {
