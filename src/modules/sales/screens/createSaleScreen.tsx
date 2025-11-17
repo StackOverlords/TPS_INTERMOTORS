@@ -15,8 +15,8 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parse } from "date-fns";
-import { CornerUpLeft, ShoppingCart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
@@ -30,13 +30,34 @@ import { useSaleTypes } from "../hooks/useSaleTypes";
 import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
-import ResizableBox from "@/components/atoms/resizable-box";
 import { Textarea } from "@/components/atoms/textarea";
+import { cn } from "@/lib/utils";
+import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
+import { Button } from "@/components/atoms/button";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
+import type { SelectedItem } from "@/types/windowSelectedItems";
+
+const SCREEN_PATH = "/dashboard/create-sale"
 
 const CreateSaleScreen = () => {
+    const configuraciones = {
+        inputs: false,
+        formulario: 'top',
+        selector_mode: 'window'
+    }
+    const [createdSaleDetails, setCreatedSaleDetails] = useState<CartItem[] | null>(null);
+    const [createdSaleSummary, setCreatedSaleSummary] = useState<{
+        subtotal: number;
+        total: number;
+        discount: number;
+        discountPercent: number;
+    } | null>(null);
+    const isReadOnly = useMemo(() => createdSaleDetails !== null, [createdSaleDetails]);
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
 
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
@@ -91,7 +112,6 @@ const CreateSaleScreen = () => {
         register,
         watch,
         reset,
-        resetField,
         control,
         handleSubmit,
         setValue,
@@ -111,27 +131,40 @@ const CreateSaleScreen = () => {
         setDiscountPercent,
         clearCart,
         addItemToCart,
-        validateCartWithToast
+        validateCartWithToast,
+        addMultipleItemsWithQuantity,
+        setCartMode,
+        mode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
-    const subtotal = getCartSubtotal();
-    const total = getCartTotal();
 
-    useEffect(() => {
-        const detalles: SaleDetail[] = items.map(item => ({
+    useTabEffect(SCREEN_PATH, () => {
+        if (mode !== 'sale' && !isReadOnly) {
+            setCartMode('sale')
+        }
+    }, [mode, isReadOnly, setCartMode]);
+
+    const subtotal = getCartSubtotal()
+    const total = getCartTotal()
+
+    const formValues = watch();
+    const { tipo_venta, plazo_pago } = formValues;
+
+    const detalles = useMemo((): SaleDetail[] => {
+        return items.map((item) => ({
             id_producto: item.product.id,
             cantidad: item.quantity,
             precio: item.customPrice,
             descuento: ((item.customPrice ?? 0) * item.quantity) * ((discountPercent ?? 0) / 100),
-            porcentaje_descuento: discountPercent ?? 0
+            porcentaje_descuento: discountPercent ?? 0,
         }));
+    }, [items, discountPercent]);
 
+    useEffect(() => {
         if (detalles.length > 0) {
             setValue("detalles", detalles as [SaleDetail, ...SaleDetail[]]);
             clearErrors("detalles");
-        } else {
-            // setValue("detalles", []);
         }
-    }, [items, discountAmount, discountPercent, setValue, clearErrors]);
+    }, [detalles, setValue, clearErrors]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -158,9 +191,7 @@ const CreateSaleScreen = () => {
             isValid = false;
         }
 
-        const formData = getValues();
-
-        if (!formData.id_cliente) {
+        if (!formValues.id_cliente) {
             setError("id_cliente", {
                 type: "manual",
                 message: "Debes seleccionar un cliente"
@@ -173,7 +204,7 @@ const CreateSaleScreen = () => {
             isValid = false;
         }
 
-        if (!formData.tipo_venta) {
+        if (!formValues.tipo_venta) {
             setError("tipo_venta", {
                 type: "manual",
                 message: "Debes seleccionar un tipo de venta"
@@ -181,7 +212,7 @@ const CreateSaleScreen = () => {
             isValid = false;
         }
 
-        if (!formData.forma_venta) {
+        if (!formValues.forma_venta) {
             setError("forma_venta", {
                 type: "manual",
                 message: "Debes seleccionar una forma de venta"
@@ -189,57 +220,64 @@ const CreateSaleScreen = () => {
             isValid = false;
         }
 
-        if (formData.tipo_venta === "VC" && !formData.plazo_pago) {
-            setError("plazo_pago", {
-                type: "manual",
-                message: "Debes especificar la fecha de plazo para venta a crédito"
-            });
-            showErrorToast({
-                title: "Plazo requerido",
-                description: "Las ventas a crédito requieren una fecha de plazo",
-                duration: 5000
-            });
-            isValid = false;
+        if (formValues.tipo_venta === "VC" && formValues.plazo_pago && formValues.fecha) {
+            const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+            fechaVenta.setHours(0, 0, 0, 0);
+
+            const plazoDate = parse(formValues.plazo_pago, "yyyy-MM-dd", new Date());
+            plazoDate.setHours(0, 0, 0, 0);
+
+            if (plazoDate <= fechaVenta) {
+                setError("plazo_pago", {
+                    type: "manual",
+                    message: "La fecha de plazo debe ser posterior a la fecha de venta"
+                });
+                showErrorToast({
+                    title: "Fecha inválida",
+                    description: "La fecha de plazo debe ser posterior a la fecha de venta",
+                    duration: 5000
+                });
+                isValid = false;
+            }
         }
 
         return isValid;
     };
 
     // VALIDACIÓN DE FECHA DE PLAZO
-    const tipoVenta = watch("tipo_venta");
-    const plazoPago = watch("plazo_pago");
     useEffect(() => {
-
-        if (tipoVenta === "VC" && plazoPago) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const plazoDate = parse(plazoPago, "yyyy-MM-dd", new Date());
-            plazoDate.setHours(0, 0, 0, 0);
-
-            if (plazoDate <= today) {
-                setError("plazo_pago", {
-                    type: "manual",
-                    message: "La fecha de plazo debe ser posterior a hoy"
-                });
-                showErrorToast({
-                    title: "Fecha inválida",
-                    description: "La fecha de plazo debe ser posterior a hoy",
-                    duration: 5000
-                });
-                resetField("plazo_pago");
-            } else {
-                clearErrors("plazo_pago");
-            }
+        // Si no es venta a crédito, limpiar y salir
+        if (tipo_venta !== "VC") {
+            clearErrors("plazo_pago");
+            return;
         }
-        if (tipoVenta !== "VC") {
-            resetField("plazo_pago");
+
+        // Si no hay plazo_pago o no hay fecha de venta, no validar
+        if (!plazo_pago || !formValues.fecha) {
+            clearErrors("plazo_pago");
+            return;
         }
-    }, [tipoVenta, plazoPago, resetField, setError, clearErrors, watch]);
 
-    const handleCheckout = () => {
-        clearCart();
+        // Comparar con la fecha de venta, no con hoy
+        const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+        fechaVenta.setHours(0, 0, 0, 0);
 
+        const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
+        plazoDate.setHours(0, 0, 0, 0);
+
+        if (plazoDate <= fechaVenta) {
+            setError("plazo_pago", {
+                type: "manual",
+                message: "La fecha de plazo debe ser posterior a la fecha de venta"
+            });
+        } else {
+            clearErrors("plazo_pago");
+        }
+    }, [tipo_venta, plazo_pago, formValues.fecha, setError, clearErrors]);
+
+    const handleNewSale = useCallback(() => {
+        setCreatedSaleDetails(null);
+        setCreatedSaleSummary(null);
         const currentValues = getValues();
         reset({
             fecha: format(new Date(), "yyyy-MM-dd"),
@@ -252,19 +290,25 @@ const CreateSaleScreen = () => {
             plazo_pago: "",
             vehiculo: "",
             nro_motor: "",
-            cliente_nombre: currentValues.cliente_nombre,
-            cliente_nit: currentValues.cliente_nit,
-            usuario: currentValues.usuario,
-            sucursal: currentValues.sucursal,
+            cliente_nombre: "",
+            cliente_nit: "",
+            usuario: 1,
+            sucursal: Number(selectedBranchId) || 1,
             id_responsable: currentValues.id_responsable,
             detalles: []
         });
-    };
+        clearCart()
+    }, [getValues, reset]);
 
-    const handleAddProductItem = (product: ProductGet) => {
-        addItemToCart(product)
-    };
+    const handleAddProductItem = useCallback((product: ProductGet) => {
+        addItemToCart(product);
+    }, [addItemToCart]);
 
+    const handleAddMultipleProducts = useCallback((
+        products: Array<ProductGet & { quantity?: number }>
+    ) => {
+        return addMultipleItemsWithQuantity(products);
+    }, [addMultipleItemsWithQuantity]);
 
     // FUNCIÓN onSubmit corregida
     const onSubmit = (data: Sale) => {
@@ -273,14 +317,46 @@ const CreateSaleScreen = () => {
         }
 
         createSale(data, {
-            onSuccess: () => {
-                // console.log('Venta creada:', response);
+            onSuccess: (createdSale) => {
+                const finalSubtotal = subtotal;
+                const finalTotal = total;
+                const finalDiscountAmount = discountAmount || 0;
+                const finalDiscountPercent = discountPercent || 0;
+
+                setCreatedSaleSummary({
+                    subtotal: finalSubtotal,
+                    total: finalTotal,
+                    discount: finalDiscountAmount,
+                    discountPercent: finalDiscountPercent
+                });
+
+                clearCart();
                 showSuccessToast({
-                    title: "Venta Exitosa",
-                    description: `Venta realizada con éxito`,
+                    title: "Venta Creada",
+                    description: `Venta #${createdSale.id} creada exitosamente`,
                     duration: 5000
                 });
-                handleCheckout();
+
+                const details: CartItem[] = createdSale.detalles.map((det) => ({
+                    product: {
+                        id: det.producto.id,
+                        descripcion: det.producto.descripcion,
+                        codigo_oem: det.producto.codigo_oem,
+                        codigo_upc: det.producto.codigo_upc,
+                        precio_venta: det.producto.precio_venta,
+                        precio_venta_alt: det.producto.precio_venta_alt,
+                        stock_actual: 0,
+                        marca: det.producto.marca?.marca || '',
+                        unidad_medida: det.producto.unidad_medida.unidad_medida,
+                        sucursal: ''
+                    },
+                    quantity: det.cantidad,
+                    customPrice: det.precio,
+                    customSubtotal: det.cantidad * det.precio,
+                    customDescription: '',
+                    customBrand: '',
+                }));
+                setCreatedSaleDetails(details);
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear la venta" });
@@ -289,6 +365,7 @@ const CreateSaleScreen = () => {
     };
 
     const onError = (errors: FieldErrors<Sale>) => {
+        console.log(errors)
         if (errors.id_cliente || errors.tipo_venta || errors.forma_venta || errors.id_responsable) {
             showErrorToast({
                 title: "Error de validación",
@@ -313,9 +390,9 @@ const CreateSaleScreen = () => {
         }
     };
 
-    const handleGoBack = () => {
-        navigate('/dashboard/productos')
-    }
+    const handleGoBack = useCallback(() => {
+        navigate('/dashboard/productos');
+    }, [navigate]);
 
     useEffect(() => {
         if (!user?._id && saleResponsiblesData && saleResponsiblesData.length > 0) {
@@ -330,8 +407,6 @@ const CreateSaleScreen = () => {
         if (saleCustomersData?.data && saleCustomersData.data.length > 0) {
             const firstCustomer = saleCustomersData.data[0];
             setValue("id_cliente", firstCustomer.id);
-            setValue("cliente_nombre", firstCustomer.nombre);
-            setValue("cliente_nit", firstCustomer.nit?.toString() || "");
         }
     }, [saleCustomersData, setValue, getValues]);
 
@@ -345,6 +420,33 @@ const CreateSaleScreen = () => {
             }
         }
     }, [saleTypesData, saleModalitiesData, getValues, setValue])
+
+    const selectedItems = useMemo<SelectedItem[]>(() => {
+        return detalles.map(detail => ({
+            productId: detail.id_producto || 0,
+            quantity: detail.cantidad, // Solo cantidad actual
+        }));
+    }, [detalles]);
+
+    // Hook para manejar la ventana secundaria de productos
+    const productWindow = useProductSelectorWindow({
+        context: 'venta',
+        instanceId: 'create-sale',
+        onProductSelect: handleAddProductItem,
+        onMultiSelect: handleAddMultipleProducts,
+        onlyWithStock: true,
+        multiSelect: true,
+        mode: 'create',
+        validateStock: true,
+        selectedItems,
+    });
+
+    const toggleWindowSelector = () => {
+        if (productWindow.isOpen) {
+            productWindow.close();
+        }
+        productWindow.open();
+    };
 
     // Shortcuts
     useHotkeys('escape', (e) => {
@@ -361,11 +463,11 @@ const CreateSaleScreen = () => {
     })
 
     return (
-        <main>
+        <main className="p-2 h-full">
             <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit, onError)} className="w-full flex flex-col gap-3">
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2">
                     {/* Header */}
-                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+                    <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
                         <div className="flex flex-wrap gap-2 items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <TooltipButton
@@ -382,7 +484,7 @@ const CreateSaleScreen = () => {
                                     <CornerUpLeft />
                                 </TooltipButton>
                                 <div>
-                                    <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                                         Nueva Venta
                                     </h1>
                                     <p className="text-sm text-gray-500">Registra una nueva venta en el sistema</p>
@@ -396,251 +498,330 @@ const CreateSaleScreen = () => {
                         </div >
                     </header >
 
-                    {/* Formulario de información de venta */}
-                    <Card className="shadow-none h-full">
+                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                        <div className={cn(
+                            "h-full gap-2",
+                            configuraciones.formulario === "top" && "flex flex-col",
+                            configuraciones.formulario === "left" && "flex flex-col md:grid md:grid-cols-3"
+                        )}>
+                            {/* Formulario de información de venta*/}
+                            <div className={cn(
+                                "gap-2 flex-shrink-0",
+                                configuraciones.formulario === "top" && "grid",
+                                configuraciones.formulario === "left" && "flex flex-col",
+                            )}>
+                                {/* 1. Datos de la venta */}
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0",
+                                    configuraciones.formulario === "left" && "h-auto md:h-full",
+                                )}>
 
-                        <CardContent className="py-4">
-                            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 xl:gap-x-2 xl:gap-y-3">
-                                <div>
-                                    <Label htmlFor="fechaVenta">Fecha *</Label>
-                                    <Input
-                                        id="fechaVenta"
-                                        type="date"
-                                        {...register("fecha")}
-                                        className="w-full"
-                                        autoFocus
-                                    />
-                                    {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="responsable">Responsable *</Label>
-                                    <Controller
-                                        name="id_responsable"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <ComboboxSelect
-                                                value={field.value}
-                                                onChange={(value) => {
-                                                    field.onChange(Number(value));
-                                                }}
-                                                options={saleResponsiblesData || []}
-                                                optionTag={"nombre"}
-                                            />
-                                        )}
-                                    />
-                                    {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                </div>
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className={cn(
+                                            "grid gap-2",
+                                            configuraciones.formulario === "top" && "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
+                                            configuraciones.formulario === "left" && "grid-cols-2",
+                                        )}>
+                                            <div>
+                                                <Label htmlFor="fechaVenta">Fecha *</Label>
+                                                <Input
+                                                    id="fechaVenta"
+                                                    type="date"
+                                                    {...register("fecha")}
+                                                    className="w-full"
+                                                    autoFocus
+                                                    disabled={isReadOnly}
+                                                />
+                                                {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="id_responsable">Responsable *</Label>
+                                                <Controller
+                                                    name="id_responsable"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <ComboboxSelect
+                                                            value={field.value}
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={saleResponsiblesData || []}
+                                                            optionTag={"nombre"}
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_responsable && <p className="text-red-500 text-xs">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="cliente">Cliente *</Label>
+                                                <Controller
+                                                    name="id_cliente"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <PaginatedCombobox
+                                                            value={field.value}
+                                                            onChange={(value) => field.onChange(Number(value))}
+                                                            optionsData={saleCustomersData?.data || []}
+                                                            displayField="nombre"
+                                                            isLoading={isSaleCustomersLoading}
+                                                            updatePage={(page) => { console.log("Update page:", page) }}
+                                                            updateSearch={setCustomerSearchTerm}
+                                                            disabled={isReadOnly}
+                                                            placeholder="Buscar cliente por nombre"
+                                                            metaData={
+                                                                {
+                                                                    current_page: saleCustomersData?.meta.current_page || 1,
+                                                                    last_page: saleCustomersData?.meta.last_page || 1,
+                                                                    total: saleCustomersData?.meta.total || 0,
+                                                                    per_page: saleCustomersData?.meta.per_page || 10,
+                                                                }
+                                                            }
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="altClie">Cliente Alt.</Label>
+                                                <Input
+                                                    id="altClie"
+                                                    {...register("cliente_nombre")}
+                                                    placeholder="Cliente alternativo"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="cliente_nit">Nit Cliente</Label>
+                                                <Input
+                                                    id="cliente_nit"
+                                                    {...register("cliente_nit")}
+                                                    placeholder="Nit del Cliente"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                                <Input
+                                                    id="nroComprobante"
+                                                    {...register("nro_comprobante")}
+                                                    placeholder="Número de comprobante"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="nroComprobanteSecundario">N° Comprobante Sec.</Label>
+                                                <Input
+                                                    id="nroComprobanteSecundario"
+                                                    {...register("nro_comprobante2")}
+                                                    placeholder="Número secundario"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="forma">Forma de venta *</Label>
+                                                <Controller
+                                                    name="forma_venta"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona una forma" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                        <SelectItem key={modality.code} value={modality.code}>
+                                                                            {modality.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.forma_venta && <p className="text-red-500 text-xs">{errors.forma_venta.message}</p>}
+                                            </div>
 
-                                <div>
-                                    <Label htmlFor="cliente">Cliente *</Label>
-                                    <Controller
-                                        name="id_cliente"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <PaginatedCombobox
-                                                value={field.value}
-                                                onChange={(value) => {
-                                                    field.onChange(Number(value));
-                                                    const selected = saleCustomersData?.data.find((c) => c.id.toString() === value);
-                                                    if (selected) {
-                                                        setValue("cliente_nombre", selected.nombre);
-                                                        setValue("cliente_nit", selected.nit?.toString() || "");
-                                                    }
-                                                }}
-                                                optionsData={saleCustomersData?.data || []}
-                                                displayField="nombre"
-                                                isLoading={isSaleCustomersLoading}
-                                                updatePage={(page) => { console.log("Update page:", page) }}
-                                                updateSearch={setCustomerSearchTerm}
-                                                metaData={
-                                                    {
-                                                        current_page: saleCustomersData?.meta.current_page || 1,
-                                                        last_page: saleCustomersData?.meta.last_page || 1,
-                                                        total: saleCustomersData?.meta.total || 0,
-                                                        per_page: saleCustomersData?.meta.per_page || 10,
-                                                    }
-                                                }
-                                            />
-                                        )}
-                                    />
-                                    {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="altClie">Alt. Cliente</Label>
-                                    <Input
-                                        id="altClie"
-                                        {...register("cliente_nombre")}
-                                        placeholder="Cliente alternativo"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="nroComprobante">N° Comprobante</Label>
-                                    <Input
-                                        id="nroComprobante"
-                                        {...register("nro_comprobante")}
-                                        placeholder="Número de comprobante"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="nroComprobanteSecundario">N° Comprobante Sec.</Label>
-                                    <Input
-                                        id="nroComprobanteSecundario"
-                                        {...register("nro_comprobante2")}
-                                        placeholder="Número secundario"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="forma">Forma de venta *</Label>
-                                    <Controller
-                                        name="forma_venta"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona una forma" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {
-                                                        saleModalitiesData && saleModalitiesData.map((modality) => (
-                                                            <SelectItem key={modality.code} value={modality.code}>
-                                                                {modality.label}
-                                                            </SelectItem>
-                                                        ))
-                                                    }
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                    />
-                                    {errors.forma_venta && <p className="text-red-500 text-sm mt-1">{errors.forma_venta.message}</p>}
-                                </div>
+                                            <div>
+                                                <Label htmlFor="tipo_venta">Tipo de Venta *</Label>
+                                                <Controller
+                                                    name="tipo_venta"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona un tipo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    saleTypesData && saleTypesData.map((type) => (
+                                                                        <SelectItem key={type.code} value={type.code}>
+                                                                            {type.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.tipo_venta && <p className="text-red-500 text-xs">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="fechaPlazo">
+                                                    Fecha Plazo
+                                                    <span className="text-xs ml-1 text-gray-500">(Crédito)</span>
+                                                </Label>
+                                                <Input
+                                                    id="fechaPlazo"
+                                                    type="date"
+                                                    {...register("plazo_pago")}
+                                                    disabled={formValues.tipo_venta !== "VC" || isReadOnly}
+                                                />
+                                                {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="vehiculo">Vehículo/Motor</Label>
+                                                <Input
+                                                    id="vehiculo"
+                                                    {...register("vehiculo")}
+                                                    placeholder="Modelo del vehículo"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="motor">Motor</Label>
+                                                        <Input
+                                                            id="motor"
+                                                            {...register("nro_motor")}
+                                                            placeholder="Tipo de motor"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            <div className={cn(
+                                                configuraciones.formulario === "top" && "",
+                                                configuraciones.formulario === "left" && "md:col-span-2",
+                                            )}>
+                                                <Label htmlFor="comentarios">Comentarios</Label>
+                                                <Textarea
+                                                    id="comentarios"
+                                                    {...register("comentario")}
+                                                    placeholder="Comentarios adicionales sobre la venta"
+                                                    rows={configuraciones.formulario === "top" ? 1 : 2}
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                                <div>
-                                    <Label htmlFor="tipoVenta">Tipo de Venta *</Label>
-                                    <Controller
-                                        name="tipo_venta"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <Select onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecciona un tipo" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {
-                                                        saleTypesData && saleTypesData.map((type) => (
-                                                            <SelectItem key={type.code} value={type.code}>
-                                                                {type.label}
-                                                            </SelectItem>
-                                                        ))
-                                                    }
-                                                </SelectContent>
-                                            </Select>
+                            <div className={cn(
+                                "flex-1 min-h-0",
+                                configuraciones.formulario === "top" && "",
+                                configuraciones.formulario === "top" && configuraciones.inputs && "",
+                                configuraciones.formulario === "left" && "col-span-2",
+                            )}>
+                                <div className={cn(
+                                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                                    configuraciones.selector_mode === "embebed" && "md:min-h-screen"
+                                )}>
+                                    <ResizablePanelGroup
+                                        className={cn(
+                                            "flex-1 min-h-0"
                                         )}
-                                    />
-                                    {errors.tipo_venta && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                </div>
-                                <div>
-                                    <Label htmlFor="fechaPlazo">
-                                        Fecha Plazo
-                                        <span className="text-xs ml-1 text-gray-500">(Crédito)</span>
-                                    </Label>
-                                    <Input
-                                        id="fechaPlazo"
-                                        type="date"
-                                        {...register("plazo_pago")}
-                                        disabled={watch("tipo_venta") !== "VC"}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="vehiculo">Vehículo</Label>
-                                    <Input
-                                        id="vehiculo"
-                                        {...register("vehiculo")}
-                                        placeholder="Modelo del vehículo"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="motor">Motor</Label>
-                                    <Input
-                                        id="motor"
-                                        {...register("nro_motor")}
-                                        placeholder="Tipo de motor"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="comentarios">Comentarios</Label>
-                                    <Textarea
-                                        id="comentarios"
-                                        {...register("comentario")}
-                                        placeholder="Comentarios adicionales sobre la venta"
-                                        rows={1}
+                                        direction={"vertical"}
+                                    >
+                                        {
+                                            configuraciones.selector_mode === "embebed" && (
+                                                <>
+                                                    <ResizablePanel
+                                                        defaultSize={50}
+                                                    >
+                                                        <ProductSearchPanel
+                                                            selectedProducts={items}
+                                                            onProductSelect={handleAddProductItem}
+                                                            onlySelectWithStock={true}
+                                                        />
+                                                    </ResizablePanel>
+                                                    <ResizableHandle withHandle />
+                                                </>
+                                            )
+                                        }
+                                        <ResizablePanel
+                                            defaultSize={50}
+                                            className="h-full flex flex-col">
+                                            {/* 2. Productos */}
+                                            <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                                                <CardHeader className="flex-shrink-0">
+                                                    <CardTitle className="flex justify-between">
+                                                        <h2 className="text-primary text-base">
+                                                            Detalle de Productos
+                                                        </h2>
+                                                        {
+                                                            configuraciones.selector_mode === "window" && (
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={toggleWindowSelector}
+                                                                    disabled={isSaving || isReadOnly}
+                                                                >
+                                                                    <Plus className="size-4" />
+                                                                    <span className="hidden sm:block">Seleccionar Productos</span>
+                                                                </Button>
+                                                            )
+                                                        }
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="flex-1 min-h-0">
+                                                    <div className="h-full overflow-auto">
+                                                        {items.length === 0 && !createdSaleDetails ? (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                                                <p>No hay productos agregados</p>
+                                                                <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
+                                                            </div>
+                                                        ) :
+                                                            <TableShoppingCart
+                                                                isReadOnly={isReadOnly}
+                                                                details={createdSaleDetails}
+                                                            />
+                                                        }
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </ResizablePanel>
+                                    </ResizablePanelGroup>
+
+                                    {/* Resumen de Cotización  */}
+                                    <SalesSummary
+                                        isReadOnly={isReadOnly}
+                                        clearCart={clearCart}
+                                        discountAmount={isReadOnly ? createdSaleSummary?.discount ?? 0 : discountAmount}
+                                        discountPercent={isReadOnly ? createdSaleSummary?.discountPercent ?? 0 : discountPercent}
+                                        subtotal={isReadOnly ? createdSaleSummary?.subtotal ?? 0 : subtotal}
+                                        total={isReadOnly ? createdSaleSummary?.total ?? 0 : total}
+                                        isPending={isSaving}
+                                        callback={handleNewSale}
+                                        setDiscountAmount={setDiscountAmount}
+                                        setDiscountPercent={setDiscountPercent}
+                                        hasProducts={items.length > 0}
                                     />
                                 </div>
                             </div>
-                            <span className="text-xs text-gray-500">* Campos requeridos</span>
-                        </CardContent>
-                    </Card>
-
-                    {/* 2. Productos */}
-                    <div className="flex-1 overflow-auto flex flex-col">
-                        {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
-                        <div className="flex-shrink-0">
-                            <ResizableBox
-                                direction="vertical"
-                                minSize={'100px'}
-                                initialSize={'350px'}
-                            >
-                                <ProductSearchPanel
-                                    selectedProducts={items}
-                                    onProductSelect={handleAddProductItem}
-                                    onlySelectWithStock={true}
-                                />
-                            </ResizableBox>
                         </div>
                     </div>
-
-                    <Card className="shadow-none">
-                        <CardHeader>
-                            <CardTitle className="text-base">
-                                Detalle de Venta
-                                {/* <ProductSelectorModal
-                                    isSearchOpen={isSearchOpen}
-                                    setIsSearchOpen={setIsSearchOpen}
-                                    addItem={handleAddProductItem}
-                                    onlyWithStock={true}
-                                    addMultipleItem={handleAddMultipleProducts}
-                                /> */}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="-mt-4">
-                            <div className="space-y-2">
-                                {items.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No hay productos agregados</p>
-                                        <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
-                                    </div>
-                                ) :
-                                    <TableShoppingCart />
-                                }
-                            </div>
-                        </CardContent>
-                    </Card>
-                    {/* Resumen de venta - Columna derecha */}
-                    <SalesSummary
-                        clearCart={clearCart}
-                        discountAmount={discountAmount || 0}
-                        discountPercent={discountPercent || 0}
-                        isPending={isSaving}
-                        reset={reset}
-                        setDiscountAmount={setDiscountAmount}
-                        setDiscountPercent={setDiscountPercent}
-                        subtotal={subtotal}
-                        total={total}
-                        hasProducts={items.length > 0}
-                    />
                 </form>
             </FormProvider>
-        </main>
+        </main >
     );
 };
 

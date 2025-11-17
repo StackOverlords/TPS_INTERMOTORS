@@ -1,18 +1,10 @@
 /**
  * ProductSelectorWindow - Ventana Standalone para Selección de Productos
- *
- * Usa la misma estructura visual y filtros que ProductListScreen
+ * Con validación de stock configurable y cálculo interno
  */
 
 import { Badge } from '@/components/atoms/badge';
 import { Button } from '@/components/atoms/button';
-import { Checkbox } from '@/components/atoms/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/atoms/dropdown-menu';
 import { Label } from '@/components/atoms/label';
 import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
@@ -35,27 +27,31 @@ import {
   Package,
   Plus,
   RefreshCcw,
-  Settings,
   X,
   Zap,
+  Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProductSelection } from '../hooks/useProductSelection';
+import type { SelectedItem } from '@/types/windowSelectedItems';
+import { showErrorToast, showSuccessToast, showWarningToast } from '@/hooks/use-toast-enhanced';
+import { ColumnVisibilityDropdown } from '@/components/common/ColumnVisibilityDropdown';
 
 type ProductSelectorContext =
   | 'purchase'
   | 'sale'
   | 'transfer'
-  | 'sale-edit'
-  | 'purchase-edit'
+  | 'quote'
   | 'inventory'
-  | string; // Permitir contextos personalizados
+  | string;
 
 interface WindowConfig {
   windowId: string;
   context: ProductSelectorContext;
-  onlyWithStock?: boolean;
-  multiSelect?: boolean;
+  multiSelect: boolean;
+  mode: 'create' | 'edit';
+  validateStock: boolean; // Nueva propiedad
+  selectedItems: SelectedItem[];
   initialFilters?: Record<string, any>;
 }
 
@@ -64,25 +60,43 @@ const ProductSelectorWindow: React.FC = () => {
   const selectedBranchId = useBranchStore(s => s.selectedBranchId);
   const tableRef = useRef<HTMLTableElement>(null);
 
-  // Extraer configuración de query params
   const config: WindowConfig = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
+
+    const selectedItemsParam = params.get('selectedItems');
+    let selectedItems: SelectedItem[] = [];
+    if (selectedItemsParam) {
+      try {
+        selectedItems = JSON.parse(selectedItemsParam);
+      } catch (e) {
+        console.error('Error parsing selectedItems:', e);
+      }
+    }
+
     return {
       windowId: params.get('windowId') || 'product-selector-default',
       context: params.get('context') || 'default',
-      onlyWithStock: params.get('onlyWithStock') === 'true',
       multiSelect: params.get('multiSelect') === 'true',
+      mode: (params.get('mode') as 'create' | 'edit') || 'create',
+      validateStock: params.get('validateStock') !== 'false', // Por defecto true
+      selectedItems,
     };
   }, []);
 
-  const [isMultiSelect, setIsMultiSelect] = useState<boolean>(false)
-
-  // Estados
+  const [isMultiSelect, setIsMultiSelect] = useState<boolean>(false);
   const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
   const [showFilters, setShowFilters] = useState<boolean>(true);
 
-  // Filtros de productos
+  // Map de items seleccionados para búsqueda rápida
+  const selectedItemsMap = useMemo(() => {
+    const map = new Map<number, SelectedItem>();
+    config.selectedItems.forEach(item => {
+      map.set(item.productId, item);
+    });
+    return map;
+  }, [config.selectedItems]);
+
   const {
     filters,
     debouncedFilters,
@@ -93,10 +107,8 @@ const ProductSelectorWindow: React.FC = () => {
     setPageSize,
   } = useProductFilters(Number(selectedBranchId) || 1);
 
-  const activeFilters =
-    searchMode === 'realtime' ? debouncedFilters : appliedFilters;
+  const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
 
-  // Query de productos
   const {
     data: productData,
     isLoading,
@@ -107,13 +119,97 @@ const ProductSelectorWindow: React.FC = () => {
 
   const products = productData?.data || [];
 
-  // Función para determinar el color del stock
-  const getStockColor = (stock: number, stock_min: number) => {
-    const stockMin: number = stock_min || 10;
-    if (stock <= stockMin) return 'danger';
-    if (stock <= stockMin + 10) return 'warning';
-    return 'success';
-  };
+  /**
+   * Calcula el stock disponible INTERNAMENTE
+   * - Si validateStock = false: Infinity (cotizaciones, compras)
+   * - Si mode = 'create': stock_actual
+   * - Si mode = 'edit': stock_actual + cantidad_original
+   */
+  const getAvailableStock = useCallback((product: ProductGet): number => {
+    if (!config.validateStock) {
+      return Infinity; // Sin validación de stock
+    }
+
+    const stockActual = product.stock_actual ?? 0;
+    const selectedItem = selectedItemsMap.get(product.id);
+
+    if (config.mode === 'edit' && selectedItem) {
+      // EDICIÓN: stock_actual + cantidad que ya estaba en la venta
+      return stockActual + selectedItem.quantity;
+    }
+
+    // CREACIÓN: solo stock_actual
+    return stockActual;
+  }, [config.mode, config.validateStock, selectedItemsMap]);
+
+  /**
+   * Verifica si un producto está completamente agotado
+   */
+  // const isProductFullySelected = useCallback((product: ProductGet): boolean => {
+  //   if (!config.validateStock) return false;
+
+  //   const selectedItem = selectedItemsMap.get(product.id);
+  //   if (!selectedItem) return false;
+
+  //   const availableStock = getAvailableStock(product);
+  //   if (availableStock === Infinity) return false;
+
+  //   return selectedItem.quantity >= availableStock;
+  // }, [config.validateStock, selectedItemsMap, getAvailableStock]);
+
+  /**
+   * Valida si se puede agregar un producto
+   */
+  const canAddProduct = useCallback((product: ProductGet): {
+    canAdd: boolean;
+    reason?: string;
+    availableToAdd?: number;
+    showStockInfo: boolean;
+  } => {
+    if (!config.validateStock) {
+      return { canAdd: true, showStockInfo: false };
+    }
+
+    const stockActual = product.stock_actual ?? 0;
+
+    if (stockActual <= 0 && config.mode === 'create') {
+      return {
+        canAdd: false,
+        reason: 'Este producto no tiene stock disponible',
+        availableToAdd: 0,
+        showStockInfo: true
+      };
+    }
+
+    const selectedItem = selectedItemsMap.get(product.id);
+    const availableStock = getAvailableStock(product);
+
+    if (selectedItem && availableStock !== Infinity) {
+      if (selectedItem.quantity >= availableStock) {
+        return {
+          canAdd: false,
+          reason: config.mode === 'edit'
+            ? `Ya agregaste el máximo disponible (${availableStock} unidades total)`
+            : `Ya agregaste todo el stock disponible (${stockActual} unidades)`,
+          availableToAdd: 0,
+          showStockInfo: true
+        };
+      }
+
+      const remaining = availableStock - selectedItem.quantity;
+      return {
+        canAdd: true,
+        availableToAdd: remaining,
+        showStockInfo: true
+      };
+    }
+
+    return {
+      canAdd: true,
+      availableToAdd: availableStock === Infinity ? undefined : availableStock,
+      showStockInfo: true
+    };
+  }, [config.mode, config.validateStock, selectedItemsMap, getAvailableStock]);
 
   const {
     isProductSelected,
@@ -127,26 +223,63 @@ const ProductSelectorWindow: React.FC = () => {
 
   const handleProductSelect = useCallback(
     async (product: ProductGet) => {
+      const validation = canAddProduct(product);
+
+      if (!validation.canAdd) {
+        showErrorToast({
+          title: 'No se puede agregar',
+          description: validation.reason || 'No disponible',
+          duration: 3000
+        });
+        return;
+      }
+
       if (isMultiSelect) {
-        // Modo multi-select: agregar a lista
         toggleProductSelection(product);
 
-        // Inicializar cantidad si no existe
         if (!quantities.has(product.id)) {
           setQuantities(prev => new Map(prev).set(product.id, 1));
         }
 
-        // Mostrar panel de selección si está oculto
         if (!showSelectionPanel) {
           setShowSelectionPanel(true);
         }
+
+        const selectedItem = selectedItemsMap.get(product.id);
+        if (selectedItem) {
+          showSuccessToast({
+            title: 'Producto en carrito',
+            description: `${product.descripcion} (${selectedItem.quantity} en carrito actual)`,
+            duration: 2000
+          });
+        } else {
+          showSuccessToast({
+            title: 'Producto agregado',
+            description: product.descripcion,
+            duration: 2000
+          });
+        }
       } else {
-        // Modo single-select: emitir inmediatamente y cerrar
+        showSuccessToast({
+          title: 'Producto seleccionado',
+          description: product.descripcion,
+          duration: 1500
+        });
+
         await emitToWindow(config.windowId, 'product-selected', product);
         await currentWindow.close();
       }
     },
-    [isMultiSelect, toggleProductSelection, quantities, config.windowId, currentWindow, showSelectionPanel]
+    [
+      isMultiSelect,
+      toggleProductSelection,
+      quantities,
+      config.windowId,
+      currentWindow,
+      showSelectionPanel,
+      canAddProduct,
+      selectedItemsMap
+    ]
   );
 
   const handleRemoveFromSelection = useCallback((product: ProductGet) => {
@@ -156,33 +289,129 @@ const ProductSelectorWindow: React.FC = () => {
       newMap.delete(product.id);
       return newMap;
     });
+
+    showWarningToast({
+      title: 'Producto removido',
+      description: product.descripcion,
+      duration: 2000
+    });
   }, [toggleProductSelection]);
 
   const handleQuantityChange = useCallback((productId: number, newQuantity: number) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
     if (newQuantity <= 0) {
-      const product = getAllSelectedProducts().find(p => p.id === productId);
-      if (product) {
-        handleRemoveFromSelection(product);
-      }
+      handleRemoveFromSelection(product);
+      showWarningToast({
+        title: 'Producto removido',
+        description: product.descripcion,
+        duration: 2000
+      });
       return;
     }
 
-    setQuantities(prev => new Map(prev).set(productId, newQuantity));
-  }, [getAllSelectedProducts, handleRemoveFromSelection]);
+    // Si NO valida stock, permitir cualquier cantidad
+    if (!config.validateStock) {
+      setQuantities(prev => new Map(prev).set(productId, newQuantity));
+      return;
+    }
 
-  /**
-   * Confirma la multi-selección y envía todos los productos
-   */
+    const selectedItem = selectedItemsMap.get(productId);
+    const availableStock = getAvailableStock(product);
+    const currentInCart = selectedItem?.quantity || 0;
+
+    const maxCanAdd = availableStock === Infinity
+      ? Infinity
+      : availableStock - currentInCart;
+
+    if (maxCanAdd !== Infinity && newQuantity > maxCanAdd) {
+      showErrorToast({
+        title: 'Stock insuficiente',
+        description: config.mode === 'edit'
+          ? `Solo puedes agregar ${maxCanAdd} más (máximo total: ${availableStock})`
+          : `Solo puedes agregar ${maxCanAdd} más (stock actual: ${product.stock_actual})`,
+        duration: 4000,
+      });
+      return;
+    }
+
+    if (maxCanAdd !== Infinity && newQuantity === maxCanAdd) {
+      showWarningToast({
+        title: 'Máximo alcanzado',
+        description: `Has alcanzado el límite para este producto`,
+        duration: 3000,
+      });
+    }
+
+    setQuantities(prev => new Map(prev).set(productId, newQuantity));
+  }, [
+    products,
+    getAvailableStock,
+    selectedItemsMap,
+    handleRemoveFromSelection,
+    config.mode,
+    config.validateStock
+  ]);
+
+  const handleClearSelection = useCallback(() => {
+    const count = getSelectedCount();
+    if (count === 0) return;
+
+    clearAllSelections();
+    setQuantities(new Map());
+
+    showWarningToast({
+      title: 'Selección limpiada',
+      description: `${count} producto${count !== 1 ? 's' : ''} removido${count !== 1 ? 's' : ''}`,
+      duration: 2000
+    });
+  }, [getSelectedCount, clearAllSelections]);
+
   const handleConfirmMultiSelect = async () => {
     const selectedProducts = getAllSelectedProducts();
 
-    if (selectedProducts.length === 0) return;
+    if (selectedProducts.length === 0) {
+      showErrorToast({
+        title: 'Sin productos',
+        description: 'No has seleccionado ningún producto',
+        duration: 3000
+      });
+      return;
+    }
 
-    // Emitir evento con productos y sus cantidades
-    const productsWithQuantities = selectedProducts.map(product => ({
-      ...product,
-      quantity: quantities.get(product.id) || 1,
-    }));
+    // Validar cada producto antes de confirmar
+    const invalidProducts: string[] = [];
+    const productsWithQuantities = selectedProducts.map(product => {
+      const quantity = quantities.get(product.id) || 1;
+      const validation = canAddProduct(product);
+
+      if (!validation.canAdd || (validation.availableToAdd !== undefined && quantity > validation.availableToAdd)) {
+        invalidProducts.push(
+          `${product.descripcion} (máx: ${validation.availableToAdd || 0})`
+        );
+      }
+
+      return {
+        ...product,
+        quantity,
+      };
+    });
+
+    if (invalidProducts.length > 0) {
+      showErrorToast({
+        title: 'Productos con cantidad inválida',
+        description: invalidProducts.join(', '),
+        duration: 5000
+      });
+      return;
+    }
+
+    showSuccessToast({
+      title: 'Productos confirmados',
+      description: `${selectedProducts.length} producto${selectedProducts.length !== 1 ? 's' : ''} agregado${selectedProducts.length !== 1 ? 's' : ''}`,
+      duration: 2000
+    });
 
     await emitToWindow(
       config.windowId,
@@ -193,10 +422,13 @@ const ProductSelectorWindow: React.FC = () => {
     await currentWindow.close();
   };
 
+  const getStockColor = (stock: number, stock_min: number) => {
+    const stockMin: number = stock_min || 10;
+    if (stock <= stockMin) return 'danger';
+    if (stock <= stockMin + 10) return 'warning';
+    return 'success';
+  };
 
-  /**
-   * Definición de columnas (similar a ProductListScreen)
-   */
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
       {
@@ -317,51 +549,82 @@ const ProductSelectorWindow: React.FC = () => {
       {
         id: 'acciones',
         header: 'Acción',
-        size: 130,
-        minSize: 100,
+        size: 170,
+        minSize: 150,
         enableSorting: false,
         cell: ({ row }) => {
           const product = row.original;
           const selected = isProductSelected(product.id);
-          const disabled = config.onlyWithStock && product.stock_actual <= 0;
+          const selectedItem = selectedItemsMap.get(product.id);
+          const validation = canAddProduct(product);
+
+          let buttonText = 'Seleccionar';
+          let buttonVariant: 'default' | 'outline' | 'secondary' = 'outline';
+          let icon = <Plus className="h-4 w-4" />;
+          let tooltipText = '';
+
+          if (!validation.canAdd) {
+            buttonText = 'No disponible';
+            buttonVariant = 'secondary';
+            icon = <X className="h-4 w-4 hidden" />;
+            tooltipText = validation.reason || 'No disponible';
+          } else if (selectedItem) {
+            buttonText = `En carrito (${selectedItem.quantity})`;
+            buttonVariant = 'default';
+            icon = <Check className="h-4 w-4" />;
+
+            if (validation.availableToAdd !== undefined) {
+              tooltipText = `Puedes agregar ${validation.availableToAdd} más`;
+            }
+          } else if (selected) {
+            buttonText = 'Seleccionado';
+            buttonVariant = 'default';
+            icon = <Check className="h-4 w-4" />;
+          }
 
           return (
-            <div className="flex items-center justify-center">
-              <Button
+            <div className="flex flex-col items-center gap-1">
+              <TooltipButton
                 onClick={() => handleProductSelect(product)}
-                disabled={disabled}
-
-                variant={selected ? 'default' : 'outline'}
-                className="gap-2"
+                buttonProps={{
+                  disabled: !validation.canAdd,
+                  variant: buttonVariant,
+                  className: 'gap-2 w-full',
+                }}
+                tooltip={tooltipText || undefined}
               >
-                {selected ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Seleccionado
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    Seleccionar
-                  </>
-                )}
-              </Button>
+                {icon}
+                <span className="truncate">{buttonText}</span>
+              </TooltipButton>
+
+              {/* Info de stock */}
+              {validation.showStockInfo && selectedItem && validation.availableToAdd !== undefined && (
+                <span className={`text-[10px] ${validation.availableToAdd === 0
+                  ? 'text-red-600 font-semibold'
+                  : validation.availableToAdd <= 3
+                    ? 'text-orange-600'
+                    : 'text-gray-500'
+                  }`}>
+                  {validation.availableToAdd === 0
+                    ? 'Máximo alcanzado'
+                    : `+${validation.availableToAdd} disponible${validation.availableToAdd !== 1 ? 's' : ''}`
+                  }
+                </span>
+              )}
             </div>
           );
         },
       },
     ],
     [
-      config.onlyWithStock,
-      getStockColor,
+      config.validateStock,
       handleProductSelect,
       isProductSelected,
+      selectedItemsMap,
+      canAddProduct,
     ]
   );
 
-  /**
-   * Tabla customizable setup
-   */
   const { table } = useCustomTable({
     data: products,
     columns,
@@ -381,41 +644,30 @@ const ProductSelectorWindow: React.FC = () => {
     selectedIndex,
     setSelectedIndex,
     isFocused,
-    // hotkeys
   } = useKeyboardNavigation<ProductGet, HTMLTableElement>({
     items: products,
     containerRef: tableRef,
     onPrimaryAction: (product) => {
       handleProductSelect(product)
     },
-    onSecondaryAction: (product) => {
-      // addItemToCart(product);
-    },
-    onDeleteAction: (product) => {
-      // decrementQuantity(product.id)
-    },
+    onSecondaryAction: () => { },
+    onDeleteAction: () => { },
     getItemId: (product) => product.id
   });
+
   const handleRowClick = (index: number) => {
     setSelectedIndex(index);
   };
 
   const handleRowDoubleClick = (product: ProductGet) => {
-    // addItemToCart(product);
+    handleProductSelect(product);
   };
 
-  /**
-   * Cierra la ventana
-   */
   const handleClose = async () => {
-    // Emitir evento de cancelación (opcional)
     await emitToWindow(config.windowId, 'window-closed', { canceled: true });
     await currentWindow.close();
   };
 
-  /**
-   * Manejo de paginación y filtros
-   */
   const onPageChange = (page: number) => {
     setPage(page);
   };
@@ -442,9 +694,6 @@ const ProductSelectorWindow: React.FC = () => {
     setSearchMode(prev => (prev === 'realtime' ? 'manual' : 'realtime'));
   };
 
-  /**
-   * Listener para eventos de teclado (Escape para cerrar)
-   */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -456,23 +705,22 @@ const ProductSelectorWindow: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Calcular total de productos seleccionados
   const totalSelectedProducts = getAllSelectedProducts().reduce(
     (sum, p) => sum + (quantities.get(p.id) || 1),
     0
   );
 
-  // Título contextual || En que vista usaremos esto:
   const contextTitle = useMemo(() => {
     const titles: Record<string, string> = {
       purchase: 'Agregar a Compra',
       sale: 'Agregar a Venta',
+      quote: 'Agregar a Cotización',
       transfer: 'Agregar a Transferencia',
-      'sale-edit': 'Agregar a Venta',
-      'purchase-edit': 'Agregar a Compra',
       inventory: 'Seleccionar Productos',
     };
-    return titles[config.context] || 'Seleccionar Productos';
+
+    const title = titles[config.context] || 'Seleccionar Productos';
+    return title;
   }, [config.context]);
 
   return (
@@ -482,25 +730,24 @@ const ProductSelectorWindow: React.FC = () => {
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
           <div className="flex items-center gap-2 md:gap-4 grow">
             <Package className="h-5 w-5 text-primary" />
-            <div>
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-primary">
                 {contextTitle}
               </h1>
-              <p className="text-xs text-gray-500">
-                Contexto: <span className="font-mono">{config.context}</span>
-              </p>
+              {/* Badges de modo y validación */}
+              <Badge variant={config.mode === 'edit' ? 'default' : 'secondary'}>
+                {config.mode === 'edit' ? 'Editando' : 'Nuevo'}
+              </Badge>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Indicador de multi-select */}
             {isMultiSelect && getSelectedCount() > 0 && (
               <Badge variant="accent">
                 {totalSelectedProducts} seleccionados
               </Badge>
             )}
 
-            {/* Toggle de modo de búsqueda */}
             <Button
               variant="ghost"
               onClick={toggleSearchMode}
@@ -537,7 +784,6 @@ const ProductSelectorWindow: React.FC = () => {
               {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
             </Button>
 
-            {/* Botón confirmar (solo en multi-select) */}
             {isMultiSelect && getSelectedCount() > 0 && (
               <Button
                 onClick={handleConfirmMultiSelect}
@@ -547,21 +793,9 @@ const ProductSelectorWindow: React.FC = () => {
                 Confirmar Selección
               </Button>
             )}
-
-            {/* Botón cerrar */}
-            {/* <Button
-                  onClick={handleClose}
-                  variant="ghost"
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Cerrar
-                </Button> */}
           </div>
         </section>
-        {/* Búsquedas individuales */}
-        {
-          showFilters &&
+        {showFilters && (
           <ProductFilters
             filters={filters}
             updateFilter={updateFilter}
@@ -569,76 +803,41 @@ const ProductSelectorWindow: React.FC = () => {
             handleManualSearch={handleManualSearch}
             searchMode={searchMode}
           />
-        }
+        )}
       </header>
 
       <div className='bg-background rounded-lg border border-border flex-1 min-h-0'>
         <div className="h-full flex flex-col">
           {/* Results Info */}
           <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
-            {
-              products.length > 0 ? (
-                (() => {
-                  const pagina = filters.pagina ?? 1;
-                  const porPagina = filters.pagina_registros ?? 1;
-
-                  const inicio = (pagina - 1) * porPagina + 1;
-                  const fin = pagina * porPagina;
-
-                  return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
-                })()
-              ) : (
-                <span>Cargando...</span>
-              )
-            }
+            {products.length > 0 ? (
+              (() => {
+                const pagina = filters.pagina ?? 1;
+                const porPagina = filters.pagina_registros ?? 1;
+                const inicio = (pagina - 1) * porPagina + 1;
+                const fin = pagina * porPagina;
+                return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
+              })()
+            ) : (
+              <span>Cargando...</span>
+            )}
 
             <div className="flex items-center gap-2 flex-wrap">
-              {
-                config.multiSelect && (
-                  <div className='border border-border rounded-sm gap-2 flex items-center px-2 h-8'>
-                    <Switch
-                      id='multi-select'
-                      checked={isMultiSelect}
-                      onCheckedChange={setIsMultiSelect}
-                    />
-                    <Label htmlFor='multi-select'>Selección multiple</Label>
-                  </div>
-                )
-              }
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Settings className="w-4 h-4" />
-                    Columnas
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => (
-                      <DropdownMenuItem
-                        key={column.id}
-                        className="flex items-center space-x-2 cursor-pointer"
-                        onSelect={(e) => e.preventDefault()}
-                        onClick={() => column.toggleVisibility(!column.getIsVisible())}
-                      >
-                        <Checkbox
-                          className="border border-gray-400"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                        />
-                        <span className="flex-1">
-                          {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
-                        </span>
-                      </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {config.multiSelect && (
+                <div className='border border-border rounded-sm gap-2 flex items-center px-2 h-8'>
+                  <Switch
+                    id='multi-select'
+                    checked={isMultiSelect}
+                    onCheckedChange={setIsMultiSelect}
+                  />
+                  <Label htmlFor='multi-select'>Selección múltiple</Label>
+                </div>
+              )}
+              <ColumnVisibilityDropdown table={table} />
             </div>
           </div>
 
-          {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+          {/* Tabla con scroll */}
           <div className="flex-1 min-h-0">
             <CustomizableTable
               table={table}
@@ -651,118 +850,171 @@ const ProductSelectorWindow: React.FC = () => {
               keyboardNavigationEnabled={true}
               enableColumnReordering={true}
               tableRef={tableRef}
-              enableSorting={false} //pendiente para usar configuraciones
+              enableSorting={false}
               selectedRowIndex={selectedIndex}
               onRowClick={handleRowClick}
               onRowDoubleClick={handleRowDoubleClick}
               focused={isFocused}
             />
           </div>
-          {/* Pagination - FIJO en la parte inferior */}
-          {
-            (productData?.data?.length ?? 0) > 0 && (
-              <Pagination
-                currentPage={filters.pagina || 1}
-                onPageChange={onPageChange}
-                totalData={productData?.meta.total || 1}
-                onShowRowsChange={onShowRowsChange}
-                showRows={filters.pagina_registros}
-              />
-            )
-          }
+
+          {/* Paginación */}
+          {(productData?.data?.length ?? 0) > 0 && (
+            <Pagination
+              currentPage={filters.pagina || 1}
+              onPageChange={onPageChange}
+              totalData={productData?.meta.total || 1}
+              onShowRowsChange={onShowRowsChange}
+              showRows={filters.pagina_registros}
+            />
+          )}
         </div>
       </div>
 
-      {/* Panel lateral de productos seleccionados (solo multi-select) */}
-      {isMultiSelect &&
-        showSelectionPanel &&
-        getSelectedCount() > 0 && (
-          <div className="fixed right-4 bottom-4 w-80 sm:w-96 max-h-96 bg-card rounded-lg shadow-2xl border border-border overflow-hidden z-50">
-            <div className="bg-gray-100 px-4 py-2 border-b border-border flex items-center justify-between">
+      {/* Panel lateral mejorado */}
+      {isMultiSelect && showSelectionPanel && getSelectedCount() > 0 && (
+        <div className="fixed right-4 bottom-4 w-80 sm:w-96 max-h-[32rem] bg-card rounded-lg shadow-2xl border-2 border-border overflow-hidden z-50">
+          <div className="bg-primary/10 px-4 py-3 border-b border-border flex items-center justify-between">
+            <div>
               <h3 className="font-semibold text-sm text-primary">
-                Productos Seleccionados ({getSelectedCount()})
+                Productos para Agregar ({getSelectedCount()})
               </h3>
+              <p className="text-xs text-gray-600">
+                Total unidades: {totalSelectedProducts}
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              {getSelectedCount() > 1 && (
+                <TooltipButton
+                  onClick={handleClearSelection}
+                  buttonProps={{
+                    variant: 'ghost',
+                    className: 'h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
+                  }}
+                  tooltip="Limpiar selección"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </TooltipButton>
+              )}
               <Button
                 variant="ghost"
                 onClick={() => setShowSelectionPanel(false)}
-                className="h-6 w-6 p-0"
+                className="h-7 w-7 p-0"
               >
-                <X className="h-3 w-3" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
+          </div>
 
-            <div className="overflow-y-auto max-h-64 divide-y divide-border">
-              {getAllSelectedProducts().map(product => {
-                const quantity = quantities.get(product.id) || 1;
-                return (
-                  <div
-                    key={product.id}
-                    className="p-3 flex items-center gap-3 hover:bg-gray-50"
-                  >
+          <div className="overflow-y-auto max-h-80 divide-y divide-border">
+            {getAllSelectedProducts().map(product => {
+              const quantity = quantities.get(product.id) || 1;
+              const selectedItem = selectedItemsMap.get(product.id);
+              const validation = canAddProduct(product);
+              const maxCanAdd = validation.availableToAdd ?? Infinity;
+
+              const hasWarning = maxCanAdd !== Infinity && quantity >= maxCanAdd;
+              const isAtLimit = quantity === maxCanAdd;
+
+              return (
+                <div
+                  key={product.id}
+                  className={`p-2 hover:bg-gray-50 ${hasWarning ? 'bg-orange-50/50' : ''}`}
+                >
+                  <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-primary truncate">
+                      <p className="text-sm font-semibold text-primary truncate">
                         {product.descripcion}
                       </p>
-                      <p className="text-xs text-gray-500 font-mono">
-                        {product.codigo_oem}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-gray-500 font-mono">
+                          {product.codigo_oem || 'Sin código'}
+                        </p>
+                        {selectedItem && (
+                          <Badge variant="secondary" className="text-xs py-0">
+                            {selectedItem.quantity} en carrito
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Advertencias */}
+                      {config.validateStock && hasWarning && (
+                        <p className={`text-xs mt-1 font-medium ${isAtLimit ? 'text-red-600' : 'text-orange-600'
+                          }`}>
+                          {isAtLimit
+                            ? '⚠️ Máximo alcanzado'
+                            : `⚠️ Cerca del límite (máx: ${maxCanAdd})`
+                          }
+                        </p>
+                      )}
+
+                      {config.validateStock && config.mode === 'edit' && validation.availableToAdd !== undefined && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Disponible para agregar: {validation.availableToAdd}
+                        </p>
+                      )}
                     </div>
 
                     {/* Control de cantidad */}
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={() =>
-                          handleQuantityChange(product.id, quantity - 1)
-                        }
+                        className="h-7 w-7 p-0"
+                        onClick={() => handleQuantityChange(product.id, quantity - 1)}
                       >
                         -
                       </Button>
-                      <span className="text-sm font-semibold w-8 text-center">
+                      <span className="text-sm font-semibold w-10 text-center">
                         {quantity}
                       </span>
                       <Button
                         variant="outline"
-                        className="h-6 w-6 p-0"
-                        onClick={() =>
-                          handleQuantityChange(product.id, quantity + 1)
-                        }
-                        disabled={
-                          config.onlyWithStock &&
-                          quantity >= product.stock_actual
-                        }
+                        className={`h-7 w-7 p-0 ${config.validateStock && isAtLimit ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        onClick={() => handleQuantityChange(product.id, quantity + 1)}
+                        disabled={config.validateStock && isAtLimit}
+                        title={config.validateStock && isAtLimit ? 'Máximo alcanzado' : 'Agregar más'}
                       >
                         +
                       </Button>
                     </div>
 
                     {/* Botón eliminar */}
-                    <Button
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    <TooltipButton
                       onClick={() => handleRemoveFromSelection(product)}
+                      buttonProps={{
+                        variant: 'ghost',
+                        className: 'h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
+                      }}
+                      tooltip="Remover producto"
                     >
-                      <X className="h-3 w-3" />
-                    </Button>
+                      <X className="h-4 w-4" />
+                    </TooltipButton>
                   </div>
-                )
-              })}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-4 py-3 border-t border-border space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Total a agregar:</span>
+              <span className="font-bold text-primary">
+                {totalSelectedProducts} unidad{totalSelectedProducts !== 1 ? 'es' : ''}
+              </span>
             </div>
 
-            {/* Footer con botón confirmar */}
-            <div className="bg-gray-50 px-4 py-3 border-t border-border">
-              <Button
-                onClick={handleConfirmMultiSelect}
-                className="w-full gap-2"
-              >
-                <Check className="h-4 w-4" />
-                Confirmar {totalSelectedProducts} producto
-                {totalSelectedProducts !== 1 ? 's' : ''}
-              </Button>
-            </div>
+            <Button
+              onClick={handleConfirmMultiSelect}
+              className="w-full gap-2"
+            >
+              <Check className="h-4 w-4" />
+              Confirmar Selección
+            </Button>
           </div>
-        )}
+        </div>
+      )}
     </main>
   );
 };

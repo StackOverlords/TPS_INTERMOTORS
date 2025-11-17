@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "use-debounce"
 import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
@@ -43,6 +43,7 @@ import { PDFViewer } from "@/components/common/PDFViewer"
 import { useQuotationPDF } from "../hooks/useQuotationPDF"
 import QuotationsSummary from "../components/quotationsSummary"
 import type { QuotationGetById } from "../types/quotationGet.types"
+import type { SelectedItem } from "@/types/windowSelectedItems"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -129,7 +130,6 @@ const QuotationEditScreen = () => {
         register,
         watch,
         reset,
-        resetField,
         control,
         handleSubmit,
         getValues,
@@ -180,7 +180,8 @@ const QuotationEditScreen = () => {
         if (quotationData && quotationTypesData && quotationModalitiesData) {
             loadFormData(quotationData)
         }
-    }, [quotationData, quotationTypesData, quotationModalitiesData, reset]);
+        return
+    }, [quotationData, quotationTypesData, quotationModalitiesData]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -236,10 +237,32 @@ const QuotationEditScreen = () => {
             });
             showErrorToast({
                 title: "Plazo requerido",
-                description: "Las cotizaciones a crédito requieren una fecha de plazo",
+                description: "Las ventas a crédito requieren una fecha de plazo",
                 duration: 5000
             });
             isValid = false;
+        }
+
+        // Agregar validación adicional
+        if (formData.tipo_cotizacion === "VC" && formData.plazo_pago && formData.fecha) {
+            const fechaVenta = parse(formData.fecha, "yyyy-MM-dd", new Date());
+            fechaVenta.setHours(0, 0, 0, 0);
+
+            const plazoDate = parse(formData.plazo_pago, "yyyy-MM-dd", new Date());
+            plazoDate.setHours(0, 0, 0, 0);
+
+            if (plazoDate <= fechaVenta) {
+                setError("plazo_pago", {
+                    type: "manual",
+                    message: "La fecha de plazo debe ser posterior a la fecha de cotización"
+                });
+                showErrorToast({
+                    title: "Fecha inválida",
+                    description: "La fecha de plazo debe ser posterior a la fecha de cotización",
+                    duration: 5000
+                });
+                isValid = false;
+            }
         }
 
         return isValid;
@@ -250,32 +273,35 @@ const QuotationEditScreen = () => {
     // VALIDACIÓN DE FECHA DE PLAZO
     useEffect(() => {
         if (!hasInitialized) return;
-        if (tipo_cotizacion === "VC" && plazo_pago) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
 
-            const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
-            plazoDate.setHours(0, 0, 0, 0);
-
-            if (plazoDate <= today) {
-                setError("plazo_pago", {
-                    type: "manual",
-                    message: "La fecha de plazo debe ser posterior a hoy"
-                });
-                showErrorToast({
-                    title: "Fecha inválida",
-                    description: "La fecha de plazo debe ser posterior a hoy",
-                    duration: 5000
-                });
-                resetField("plazo_pago");
-            } else {
-                clearErrors("plazo_pago");
-            }
-        }
+        // Si no es cotización a crédito, limpiar y salir
         if (tipo_cotizacion !== "VC") {
-            resetField("plazo_pago", { defaultValue: "" });
+            clearErrors("plazo_pago");
+            return;
         }
-    }, [tipo_cotizacion, plazo_pago, resetField, setError, clearErrors, hasInitialized]);
+
+        // Si no hay plazo_pago o no hay fecha de cotización, no validar
+        if (!plazo_pago || !formValues.fecha) {
+            clearErrors("plazo_pago");
+            return;
+        }
+
+        // Comparar con la fecha de cotización, no con hoy
+        const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+        fechaVenta.setHours(0, 0, 0, 0);
+
+        const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
+        plazoDate.setHours(0, 0, 0, 0);
+
+        if (plazoDate <= fechaVenta) {
+            setError("plazo_pago", {
+                type: "manual",
+                message: "La fecha de plazo debe ser posterior a la fecha de cotización"
+            });
+        } else {
+            clearErrors("plazo_pago");
+        }
+    }, [tipo_cotizacion, plazo_pago, formValues.fecha, setError, clearErrors, hasInitialized]);
 
     const {
         addProduct,
@@ -327,7 +353,6 @@ const QuotationEditScreen = () => {
     };
 
     const onError = (errors: FieldErrors<QuotationUpdate>) => {
-        console.log(errors)
         if (errors.id_cliente || errors.tipo_cotizacion || errors.forma_cotizacion || errors.id_responsable) {
             showErrorToast({
                 title: "Error de validación",
@@ -360,6 +385,13 @@ const QuotationEditScreen = () => {
         setIsDialogOpen(false)
     }
 
+    const selectedItems = useMemo<SelectedItem[]>(() => {
+        return detalles.map(detail => ({
+            productId: detail.id_producto || 0,
+            quantity: detail.cantidad,
+        }));
+    }, [detalles]);
+
     // Hook para manejar la ventana secundaria de productos
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
@@ -367,7 +399,9 @@ const QuotationEditScreen = () => {
         onProductSelect: addProduct,
         onMultiSelect: addMultipleItemsWithQuantity,
         onlyWithStock: false,
-        multiSelect: true
+        multiSelect: true,
+        mode: 'edit',
+        selectedItems
     });
 
     const toggleWindowSelector = () => {
@@ -509,7 +543,7 @@ const QuotationEditScreen = () => {
                                                     autoFocus
                                                     disabled={isReadOnly}
                                                 />
-                                                {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                                {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
                                             </div>
                                             <div>
                                                 <Label htmlFor="id_responsable">Responsable *</Label>
@@ -528,7 +562,7 @@ const QuotationEditScreen = () => {
                                                         />
                                                     )}
                                                 />
-                                                {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.id_responsable && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
 
                                             {
@@ -557,7 +591,7 @@ const QuotationEditScreen = () => {
                                                                 </Select>
                                                             )}
                                                         />
-                                                        {errors.forma_cotizacion && <p className="text-red-500 text-sm mt-1">{errors.forma_cotizacion.message}</p>}
+                                                        {errors.forma_cotizacion && <p className="text-red-500 text-xs">{errors.forma_cotizacion.message}</p>}
                                                     </div>
                                                 )
                                             }
@@ -586,7 +620,7 @@ const QuotationEditScreen = () => {
                                                         </Select>
                                                     )}
                                                 />
-                                                {errors.tipo_cotizacion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.tipo_cotizacion && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
                                                 configuraciones.inputs && (
@@ -625,6 +659,7 @@ const QuotationEditScreen = () => {
                                                     {...register("plazo_pago")}
                                                     disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
                                                 />
+                                                {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
                                             </div>
                                             <div>
                                                 <Label htmlFor="vehiculo">Vehículo/Motor</Label>
@@ -721,7 +756,7 @@ const QuotationEditScreen = () => {
                                                         />
                                                     )}
                                                 />
-                                                {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
                                                 configuraciones.inputs && (
