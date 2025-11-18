@@ -38,21 +38,34 @@ jobs:
               repo: context.repo.repo,
               tag_name: `v${{ steps.get_version.outputs.VERSION }}`,
               name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }}`,
-              body: `## 🚀 Nueva version v${{ steps.get_version.outputs.VERSION }}
+              body: `
 
-              ### 📋 Cambios
-              - Ver commits para detalles completos
+              ## 🚀 Nueva version v${{ steps.get_version.outputs.VERSION }}
 
-              ### 📦 Instalacion
-              - **Windows MSI**: Descarga \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
-              - **Windows NSIS**: Descarga \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
+              ![image](https://i.ibb.co/Z1RYJ3Jd/Captura-de-pantalla-20251118-003142.png) 
 
-              ### 🔄 Actualizacion
-              Si ya tienes la app instalada, usa el boton "Buscar actualizaciones" en Configuracion.
+              ## 🚀 Novedades
+              
+              - 🪟 Ventanas múltiples optimizadas
+              - 💰 Cuentas por pagar: [click aquí](/dashboard/list-accounts-payable)
+              - 🖼️ Visualizador de imagene del producto: [click aquí](/dashboard/productos)
+
+              ## 🐛 Errores corregidos
+
+              <details><summary>Ver lista completa de correcciones</summary> 
+              <ul>
+                  <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li> 
+              </ul>
+              </details>
 
               ---
 
-              🤖 Generado automaticamente por GitHub Actions`,
+              ### 📦 Instalación
+
+              - **Windows MSI**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
+              - **Windows NSIS**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
+              
+              `,
               draft: false,
               prerelease: false
             });
@@ -190,9 +203,16 @@ jobs:
             const fs = require('fs');
             const assets = ${{ steps.get_assets.outputs.result }};
 
+            // Obtener las release notes del release
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', '')
+            });
+
             const manifest = {
               version: "v${{ steps.get_version.outputs.VERSION }}",
-              notes: "Ver changelog completo en GitHub Releases",
+              notes: release.data.body || "Ver changelog completo en GitHub Releases",
               pub_date: new Date().toISOString(),
               platforms: {}
             };

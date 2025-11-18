@@ -8,19 +8,19 @@ import Pagination from "@/components/common/pagination";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { es } from "date-fns/locale";
-import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, User, Settings, Trash2 } from "lucide-react";
+import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Settings, Trash2, User } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
-import type { OrderGetAll, OrderGetAllResponse } from "../../types/orderGet.types";
 import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
-import { formatInTimeZone } from "date-fns-tz";
-import { useCustomTable } from "@/hooks/useCustomTable";
+import type { OrderGetAll, OrderGetAllResponse } from "../../types/orderGet.types";
 
 interface OrdersListTableProps {
     data: OrderGetAllResponse
@@ -149,6 +149,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
+                                    disabled={row.original.situacion_actual === "Disponible"}
                                     onClick={() => handleUpdateOrder(row.original.id)}>
                                     <Edit className="size-4 mr-2" />
                                     Editar pedido

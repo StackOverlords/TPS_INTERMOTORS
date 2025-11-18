@@ -1,6 +1,10 @@
 import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
+import { Label } from '@/components/atoms/label';
+import { Switch } from '@/components/atoms/switch';
 import CustomizableTable from '@/components/common/CustomizableTable';
+import TooltipButton from '@/components/common/TooltipButton';
+import { showSuccessToast } from '@/hooks/use-toast-enhanced';
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -8,7 +12,7 @@ import {
   useReactTable,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { Edit3, Maximize2, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Edit3, Maximize2, Trash2 } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -121,6 +125,13 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSel
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Estados para conversión de moneda
+  const [isUSD, setIsUSD] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(() => {
+    const saved = localStorage.getItem('purchase_exchange_rate');
+    return saved ? parseFloat(saved) : 6.96;
+  });
+
   const roundToTwo = (num: number): number =>
     Math.round((num + Number.EPSILON) * 100) / 100;
 
@@ -220,6 +231,42 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSel
     );
 
     return updatedDetail;
+  };
+
+  // Guardar tipo de cambio en localStorage
+  useEffect(() => {
+    localStorage.setItem('purchase_exchange_rate', exchangeRate.toString());
+  }, [exchangeRate]);
+
+  // Función para convertir entre monedas
+  const handleConvertCurrency = () => {
+    if (detalles.length === 0) return;
+
+    const updatedDetalles = detalles.map(detalle => {
+      const normalized = normalizeDetail(detalle);
+      let newCosto: number;
+
+      if (isUSD) {
+        // Convertir de USD a BOB
+        newCosto = roundToTwo(normalized.costo * exchangeRate);
+      } else {
+        // Convertir de BOB a USD
+        newCosto = roundToTwo(normalized.costo / exchangeRate);
+      }
+
+      // Recalcular precios con el nuevo costo
+      const updated = calculatePrecise(normalized, 'costo', newCosto);
+      return { ...detalle, ...updated };
+    });
+
+    setDetalles(updatedDetalles);
+    setIsUSD(!isUSD); // Cambiar al estado opuesto
+
+    showSuccessToast({
+      title: 'Conversión completada',
+      description: `${detalles.length} producto(s) convertido(s) ${isUSD ? 'de USD a BOB' : 'de BOB a USD'} con tipo de cambio ${exchangeRate}`,
+      duration: 3000,
+    });
   };
 
   const editableColumns: EditableNumericKey[] = [
@@ -567,11 +614,17 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSel
         id: 'subtotal',
         header: 'Subtotal',
         minSize: 110,
-        cell: ({ getValue }) => (
-          <div className="text-sm font-medium text-gray-900 text-center">
-            ${roundToTwo(getValue<number>()).toFixed(2)}
-          </div>
-        ),
+        cell: ({ getValue }) => {
+          const subtotal = typeof getValue() === "string"
+            ? parseFloat(getValue() as string)
+            : getValue<number>();
+          const subtotalRounded = isFinite(subtotal) ? roundToTwo(subtotal) : 0;
+          return (
+            <div className="text-sm font-medium text-gray-900 text-center">
+              ${subtotalRounded.toFixed(2)}
+            </div>
+          );
+        },
       },
       {
         id: 'action',
@@ -623,37 +676,85 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSel
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-2 border-b border-gray-200 flex-shrink-0 bg-white">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* Título */}
           <span className="text-sm font-semibold text-gray-900">
             Detalle de Compra
           </span>
-          <div className='flex flex-row justify-center items-center gap-4'>
-            {/* <div className="text-xs text-gray-500 hidden sm:block">
-              Click para editar | Esc: Cancelar | Del: Eliminar
-            </div> */}
-            <Button
-              type="button"
-              // variant={selectorMode === 'window' ? 'default' : 'outline'}
-              variant={"outline"}
-              size="sm"
-              onClick={toggleSelectorMode}
-              className="gap-2"
+
+          {/* Controles de conversión de moneda - Centro */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Switch de moneda */}
+            <div className="flex items-center gap-2">
+              <Label htmlFor="currency-switch" className="text-xs font-medium text-gray-700">
+                Moneda:
+              </Label>
+              <div className="flex items-center gap-2 bg-gray-50 rounded-md px-2 py-1 border border-gray-300">
+                <span className={`text-xs font-medium ${!isUSD ? 'text-green-600' : 'text-gray-400'}`}>
+                  BOB
+                </span>
+                <Switch
+                  id="currency-switch"
+                  checked={isUSD}
+                  onCheckedChange={setIsUSD}
+                />
+                <span className={`text-xs font-medium ${isUSD ? 'text-blue-600' : 'text-gray-400'}`}>
+                  USD
+                </span>
+              </div>
+            </div>
+
+            {/* Input de tipo de cambio */}
+            <div className="flex items-center gap-2">
+              <Label htmlFor="exchange-rate" className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                T.C:
+              </Label>
+              <Input
+                id="exchange-rate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
+                className="w-20 h-8 text-sm"
+                placeholder="6.96"
+              />
+            </div>
+
+            {/* Botón de conversión */}
+            <TooltipButton
+              tooltip={
+                detalles.length === 0
+                  ? "Agrega productos para convertir"
+                  : isUSD
+                  ? `Convertir ${detalles.length} producto(s) de USD a BOB`
+                  : `Convertir ${detalles.length} producto(s) de BOB a USD`
+              }
+              buttonProps={{
+                onClick: handleConvertCurrency,
+                disabled: detalles.length === 0,
+                size: "sm",
+                variant: "default",
+                type: "button",
+                // className: "gap-2 bg-green-600 hover:bg-green-700",
+              }}
             >
-              <Maximize2 className="h-4 w-4" />
-                  Agregar producto
-              {/* {selectorMode === 'window' ? (
-                <>
-                  <ExternalLink className="h-4 w-4" />
-                  Modo Ventana
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="h-4 w-4" />
-                  Abrir en Ventana
-                </>
-              )} */}
-            </Button>
+              <ArrowRightLeft className="h-4 w-4" />
+              {isUSD ? 'USD → BOB' : 'BOB → USD'}
+            </TooltipButton>
           </div>
+
+          {/* Botón agregar producto - Derecha */}
+          <Button
+            type="button"
+            variant={"outline"}
+            size="sm"
+            onClick={toggleSelectorMode}
+            className="gap-2"
+          >
+            <Maximize2 className="h-4 w-4" />
+            Agregar producto
+          </Button>
         </div>
       </div>
 

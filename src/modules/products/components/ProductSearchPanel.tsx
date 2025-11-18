@@ -173,14 +173,17 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         size: 80,
         minSize: 60,
         cell: ({ row, getValue }) => {
-          const stock = getValue<number>();
+          const stock = typeof getValue() === "string"
+            ? parseFloat(getValue() as string)
+            : getValue<number>();
+          const stockDisplay = isFinite(stock) ? stock.toFixed(0) : "0";
           const stockMin = row.original.stock_minimo || 1;
           return (
             <Badge
               variant={getStockColor(stock, stockMin)}
               className={`flex flex-col justify-center rounded`}
             >
-              <span className="font-bold">{getValue<number>().toFixed(0)}</span>
+              <span className="font-bold">{stockDisplay}</span>
               <span className="text-[10px] uppercase">{row.original.unidad_medida}</span>
             </Badge>
           );

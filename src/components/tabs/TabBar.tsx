@@ -205,21 +205,13 @@ const TabBar: React.FC<TabBarProps> = ({
     (e: React.MouseEvent, tabId: string) => {
       e.stopPropagation();
 
-      // Si hay una función externa, usarla (viene del layout con la lógica correcta)
+      // Si hay una función externa, usarla directamente
+      // La lógica de navegación ya está en closeCurrentTab
       if (externalOnCloseTab) {
-        // Primero activar la tab que vamos a cerrar para que closeCurrentTab funcione
-        if (tabId !== activeTabId) {
-          setActiveTab(tabId);
-          // Esperar un tick para que el store se actualice
-          setTimeout(() => {
-            externalOnCloseTab(tabId);
-          }, 0);
-        } else {
-          externalOnCloseTab(tabId);
-        }
+        externalOnCloseTab(tabId);
       }
     },
-    [externalOnCloseTab, activeTabId, setActiveTab]
+    [externalOnCloseTab]
   );
 
   const handleNewTab = useCallback(() => {

@@ -19,31 +19,31 @@ import { format, parse } from "date-fns"
 import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { Button } from "@/components/atoms/button"
-import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
+import { Switch } from "@/components/atoms/switch"
+import { Textarea } from "@/components/atoms/textarea"
+import { PDFViewer } from "@/components/common/PDFViewer"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
-import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes"
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow"
+import { cn } from "@/lib/utils"
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel"
+import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers"
 import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities"
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles"
-import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers"
-import { useUpdateQuotation } from "../hooks/useUpdateQuotation"
-import { useQuotationGetById } from "../hooks/useQuotationGetById"
-import type { QuotationUpdate, QuotationUpdateDetail } from "../types/quotationUpdate.types"
-import { QuotationUpdateSchema } from "../schemas/quotationUpdate.schema"
-import QuotationEditSkeleton from "../components/quotationEditSkeleton"
-import { Textarea } from "@/components/atoms/textarea"
-import useQuotationProductDetails from "../hooks/useQuotationProductDetails"
+import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes"
+import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice"
 import QuotationDetailsEditingTable from "../components/quotationDetailsEditingTable"
-import { Switch } from "@/components/atoms/switch"
-import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel"
-import { cn } from "@/lib/utils"
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
-import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow"
-import { Badge } from "@/components/atoms/badge"
-import { PDFViewer } from "@/components/common/PDFViewer"
-import { useQuotationPDF } from "../hooks/useQuotationPDF"
+import QuotationEditSkeleton from "../components/quotationEditSkeleton"
 import QuotationsSummary from "../components/quotationsSummary"
+import { useQuotationGetById } from "../hooks/useQuotationGetById"
+import { useQuotationPDF } from "../hooks/useQuotationPDF"
+import useQuotationProductDetails from "../hooks/useQuotationProductDetails"
+import { useUpdateQuotation } from "../hooks/useUpdateQuotation"
+import { QuotationUpdateSchema } from "../schemas/quotationUpdate.schema"
 import type { QuotationGetById } from "../types/quotationGet.types"
 import type { SelectedItem } from "@/types/windowSelectedItems"
+import type { QuotationUpdate, QuotationUpdateDetail } from "../types/quotationUpdate.types"
+import { Badge } from "@/components/atoms/badge"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -142,8 +142,8 @@ const QuotationEditScreen = () => {
         const detallesTransformados: QuotationUpdateDetail[] = quotation.detalles.map((detalle, index) => ({
             id_producto: detalle.producto.id,
             descripcion: detalle.descripcion,
-            cantidad: detalle.cantidad,
-            precio: detalle.precio,
+            cantidad: Number(detalle.cantidad),
+            precio: Number(detalle.precio),
             descuento: detalle.descuento ?? 0,
             porcentaje_descuento: detalle.porcentaje_descuento ?? 0,
             nueva_marca: detalle.marca,

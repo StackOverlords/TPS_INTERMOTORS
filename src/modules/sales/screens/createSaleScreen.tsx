@@ -3,11 +3,13 @@ import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
+import { Textarea } from "@/components/atoms/textarea";
 import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import TableShoppingCart from "@/modules/shoppingCart/components/tableShoppingCart";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
@@ -30,12 +32,10 @@ import { useSaleTypes } from "../hooks/useSaleTypes";
 import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
-import { Textarea } from "@/components/atoms/textarea";
 import { cn } from "@/lib/utils";
 import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { Button } from "@/components/atoms/button";
-import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 
@@ -131,7 +131,6 @@ const CreateSaleScreen = () => {
         setDiscountPercent,
         clearCart,
         addItemToCart,
-        validateCartWithToast,
         addMultipleItemsWithQuantity,
         setCartMode,
         mode,
@@ -178,15 +177,6 @@ const CreateSaleScreen = () => {
                 title: "Carrito vacío",
                 description: "Debes agregar al menos un producto para realizar una venta",
                 duration: 5000
-            });
-            isValid = false;
-        }
-
-        const validation = validateCartWithToast();
-        if (!validation.isValid) {
-            setError("detalles", {
-                type: "manual",
-                message: "Hay productos con problemas de stock en el carrito"
             });
             isValid = false;
         }
@@ -801,7 +791,7 @@ const CreateSaleScreen = () => {
                                         </ResizablePanel>
                                     </ResizablePanelGroup>
 
-                                    {/* Resumen de Cotización  */}
+                                    {/* Resumen de venta  */}
                                     <SalesSummary
                                         isReadOnly={isReadOnly}
                                         clearCart={clearCart}

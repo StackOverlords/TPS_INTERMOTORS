@@ -12,6 +12,8 @@ export interface UpdateState {
   downloadProgress: number;
   error: string | null;
   update: Update | null;
+  releaseNotes: string | null;
+  releaseDate: string | null;
 }
 
 export const useUpdateChecker = () => {
@@ -25,11 +27,13 @@ export const useUpdateChecker = () => {
     downloadProgress: 0,
     error: null,
     update: null,
+    releaseNotes: null,
+    releaseDate: null,
   });
 
   // Check on mount
   useEffect(() => {
-    // Solo verificar actualizaciones si estamos en Tauri
+    // Modo real: Verificar actualizaciones automáticamente
     if (typeof window !== 'undefined' && '__TAURI__' in window) {
       checkForUpdates();
     }
@@ -58,7 +62,7 @@ export const useUpdateChecker = () => {
       //   latestVersion: update?.version,
       // });
 
-      if (update?.available) {
+      if (update && 'available' in update && update.available) {
         // console.log('[Updater] ✅ Nueva actualización disponible:', update.version);
         setUpdateState(prev => ({
           ...prev,
@@ -66,9 +70,31 @@ export const useUpdateChecker = () => {
           currentVersion: update.currentVersion,
           latestVersion: update.version,
           update,
+          releaseNotes: update.body || null,
+          releaseDate: update.date || null,
           isChecking: false,
         }));
       } else {
+        // Verificar si acabamos de actualizar comparando con localStorage
+        const lastSeenVersion = localStorage.getItem('lastSeenVersion');
+        const shouldShowNotes = lastSeenVersion && lastSeenVersion !== update?.currentVersion;
+
+        if (shouldShowNotes) {
+          // Fetch release notes para la versión actual desde GitHub
+          try {
+            const response = await fetch(
+              `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${update?.currentVersion}`
+            );
+            const releaseData = await response.json();
+            setUpdateState(prev => ({
+              ...prev,
+              releaseNotes: releaseData.body || null,
+              releaseDate: releaseData.published_at || null,
+            }));
+          } catch (err) {
+            console.error('Error fetching release notes:', err);
+          }
+        }
         // console.log('[Updater] ✓ Ya estás en la última versión');
         setUpdateState(prev => ({
           ...prev,
