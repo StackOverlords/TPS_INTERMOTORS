@@ -2,14 +2,12 @@ import z from "zod";
 import { SaleCustomerGetSchema } from "./saleCustomer.schema";
 import { SaleResponsibleSchema } from "./saleResponsibles.schema";
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema";
+import { toNumberOrZero } from "@/modules/shared/schemas/numberSchemas";
 
 export const SaleItemSchema = z.object({
     id: z.number().int(),
     producto: ProductDetailSchema,
-    cantidad: z.preprocess(
-        (val) => (typeof val === "string" ? parseFloat(val) : val),
-        z.number()
-    ),
+    cantidad: toNumberOrZero,
     precio: z.preprocess(
         (val) => (typeof val === "string" ? parseFloat(val) : val),
         z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5)))
