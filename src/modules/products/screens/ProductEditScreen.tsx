@@ -110,7 +110,7 @@ const ProductEditScreen = () => {
             const resetData: ProductUpdate = {
                 codigo_oem: productData?.codigo_oem,
                 codigo_upc: productData?.codigo_upc || '',
-                costo_referencia: productData?.costo_referencia || 0,
+                costo_referencia: Number(productData?.costo_referencia || 0),
                 descripcion: productData?.descripcion,
                 descripcion_alt: productData.descripcion_alt || '',
                 id_categoria: productData.id_categoria,
@@ -122,9 +122,9 @@ const ProductEditScreen = () => {
                 medida: productData.medida,
                 modelo: productData.modelo,
                 nro_motor: productData.nro_motor,
-                precio_venta: productData.precio_venta,
-                precio_venta_alt: productData.precio_venta_alt,
-                stock_minimo: productData.stock_minimo || 0
+                precio_venta: Number(productData.precio_venta),
+                precio_venta_alt: Number(productData.precio_venta_alt),
+                stock_minimo: Number(productData.stock_minimo || 0)
             };
             reset(resetData);
             isFirstLoad.current = false;

@@ -30,20 +30,19 @@ import {
   Eye,
   // Filter,
   HelpCircle,
+  Image,
   Loader2,
   MoreVertical,
   RefreshCcw,
-  // ShoppingCart,
-  // Trash2,
-  TrendingUp,
   X,
-  Zap,
+  Zap
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { useNavigate } from "react-router"
 import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
+import { ProductImageModal } from "../components/ProductImageModal"
 import ProductFilters from "../components/productList/productFilters"
 import { useDeleteProduct } from "../hooks/mutations/useDeleteProduct"
 import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
@@ -60,6 +59,8 @@ const ProductListScreen = () => {
     // const [showFilters, setShowFilters] = useState<boolean>(true)
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
+    const [imageModalOpen, setImageModalOpen] = useState(false)
+    const [selectedProductForImage, setSelectedProductForImage] = useState<ProductGet | null>(null)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
     // Estado para el modo de búsqueda
     const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
@@ -184,6 +185,11 @@ const ProductListScreen = () => {
         setModalOpen(true)
     }, [])
 
+    const handleViewImage = useCallback((product: ProductGet) => {
+        setSelectedProductForImage(product)
+        setImageModalOpen(true)
+    }, [])
+
     const handleAddSelectedToCart = useCallback(() => {
         const selectedProducts = getAllSelectedProducts();
 
@@ -290,10 +296,16 @@ const ProductListScreen = () => {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
+                                    onClick={() => handleViewImage(row.original)}>
+                                    <Image className="mr-2 h-4 w-4" />
+                                    Ver imagen
+                                </DropdownMenuItem>
+                                {/* <DropdownMenuItem
+                                    onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleViewDetails(row.original.id)}>
                                     <TrendingUp className="mr-2 h-4 w-4" />
                                     Ver estadisticas
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> */}
                                 {/* <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleAddItemCart(row.original)}>
@@ -369,14 +381,17 @@ const ProductListScreen = () => {
             size: 110,
             minSize: 30,
             cell: ({ row, getValue }) => {
-                const stock = getValue<number>();
+                const stock = typeof getValue() === "string"
+                    ? parseFloat(getValue() as string)
+                    : getValue<number>();
+                const stockDisplay = isFinite(stock) ? stock.toFixed(0) : "0";
                 const stockMin = row.original.stock_minimo || 1;
                 return (
                     <Badge
                         variant={getStockColor(stock, stockMin)}
                         className={`flex flex-col justify-center rounded`}
                     >
-                        <span className="font-bold">{getValue<number>().toFixed(0)}</span>
+                        <span className="font-bold">{stockDisplay}</span>
                         <span className="text-[10px] uppercase">{row.original.unidad_medida}</span>
                     </Badge>
                 );
@@ -387,12 +402,18 @@ const ProductListScreen = () => {
             header: "Stock Sucursales",
             size: 100,
             minSize: 30,
-            cell: ({ getValue }) => (
-                <div className="text-center">
-                    <div className="text-sm font-medium">{getValue<number>().toFixed(0)}</div>
-                    <span>Disponible</span>
-                </div>
-            ),
+            cell: ({ getValue }) => {
+                const stockResto = typeof getValue() === "string"
+                    ? parseFloat(getValue() as string)
+                    : getValue<number>();
+                const stockRestoDisplay = isFinite(stockResto) ? stockResto.toFixed(0) : "0";
+                return (
+                    <div className="text-center">
+                        <div className="text-sm font-medium">{stockRestoDisplay}</div>
+                        <span>Disponible</span>
+                    </div>
+                );
+            },
         },
         {
             accessorKey: "marca",
@@ -430,11 +451,14 @@ const ProductListScreen = () => {
             size: 100,
             minSize: 30,
             cell: ({ getValue }) => {
-                const value = getValue<number>()
+                const value = typeof getValue() === "string"
+                    ? parseFloat(getValue() as string)
+                    : getValue<number>();
+                const valueDisplay = isFinite(value) ? value.toFixed(0) : "0";
                 return (
                     <div className="text-center">
                         <div className={`text-sm font-medium ${value > 0 ? "text-blue-600" : ""}`}>
-                            {getValue<number>().toFixed(0)}
+                            {valueDisplay}
                         </div>
                     </div>
                 );
@@ -492,6 +516,7 @@ const ProductListScreen = () => {
         toggleProductSelection,
         handleProductDetail,
         handleViewDetails,
+        handleViewImage,
         handleUpdateProduct
     ]);
 
@@ -927,6 +952,14 @@ const ProductListScreen = () => {
                 productId={Number(selectedProductId)}
                 open={modalOpen}
                 onOpenChange={setModalOpen}
+            />
+
+            <ProductImageModal
+                productId={selectedProductForImage?.id || null}
+                productName={selectedProductForImage?.descripcion}
+                imageUrl={"https://images.pexels.com/photos/162553/keys-workshop-mechanic-tools-162553.jpeg"}
+                open={imageModalOpen}
+                onOpenChange={setImageModalOpen}
             />
         </main>
     )

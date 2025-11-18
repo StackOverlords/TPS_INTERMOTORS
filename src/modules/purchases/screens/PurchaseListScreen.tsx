@@ -312,13 +312,19 @@ const PurchaseListScreen = () => {
         header: 'Total',
         size: 60,
         minSize: 40,
-        cell: ({ getValue }) => (
-          <div className="text-right">
-            <div className="font-bold text-green-600">
-              ${getValue<number>().toFixed(2)}
+        cell: ({ getValue }) => {
+          const total = typeof getValue() === "string"
+            ? parseFloat(getValue() as string)
+            : getValue<number>();
+          const totalDisplay = isFinite(total) ? total.toFixed(2) : "0.00";
+          return (
+            <div className="text-right">
+              <div className="font-bold text-green-600">
+                ${totalDisplay}
+              </div>
             </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         accessorKey: 'contexto',

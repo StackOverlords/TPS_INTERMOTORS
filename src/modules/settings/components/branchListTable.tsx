@@ -5,6 +5,8 @@ import { Checkbox } from "@/components/atoms/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, GitBranchIcon, Settings, Users } from "lucide-react";
@@ -13,8 +15,6 @@ import { useLocation, useNavigate } from "react-router";
 import type { Branch } from "../types/branch.types";
 import BranchFormDialog from "./branchFormDialog";
 import { BranchUsersModal } from "./BranchUsersModal";
-import { useCustomTable } from "@/hooks/useCustomTable";
-import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 
 interface BranchListTableProps {
     branches: Branch[]

@@ -422,7 +422,7 @@ function TransferDetailTableInner({
                 <EditableCell
                     rowIndex={row.index}
                     fieldName="precio_salida"
-                    value={row.original.precio_salida}
+                    value={Number(row.original.precio_salida)}
                     format="currency"
                 />
             ),

@@ -8,7 +8,7 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import SaleDetailSkeleton from "@/modules/sales/components/saleDetail/saleDetailSkeleton";
-import { formatCurrency, formatDate } from "@/utils/formaters";
+import { formatDate } from "@/utils/formaters";
 import { Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2 } from "lucide-react";
 import { useMemo } from "react";
 import { useHotkeys } from "react-hotkeys-hook";

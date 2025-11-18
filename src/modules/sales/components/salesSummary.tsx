@@ -9,6 +9,7 @@ import { EditablePercentage } from "@/modules/shoppingCart/components/EditablePe
 import TooltipButton from "@/components/common/TooltipButton";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { formatCurrency } from "@/utils/formaters";
+import { formatNumber } from "@/utils/numberFormatters";
 import { Separator } from "@/components/atoms/separator";
 interface SalesSummaryProps {
     isPending: boolean
@@ -92,7 +93,7 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
                                 <span className="font-medium">{formatCurrency(subtotal)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <Label>Descuento ({discountPercent?.toFixed(2)}%):</Label>
+                                <Label>Descuento ({formatNumber(discountPercent)}%):</Label>
                                 <span className="font-medium text-orange-600">-{formatCurrency(discountAmount)}</span>
                             </div>
 

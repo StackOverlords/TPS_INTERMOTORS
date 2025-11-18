@@ -3,6 +3,7 @@ import { TableCell, TableRow } from "@/components/atoms/table";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { formatCell } from "@/utils/formatCell";
 import { formatCurrency } from "@/utils/formaters";
+import { formatNumber } from "@/utils/numberFormatters";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { Package } from "lucide-react";
 import { useMemo } from "react";
@@ -45,7 +46,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
             id: "descripcion",
             header: "Descripción",
             size: 300,
-            minSize: 200,
+            minSize: 40,
             cell: ({ getValue, row }) => {
                 const product = row.original.producto
                 const descripcion = getValue<string>()
@@ -133,7 +134,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
             size: 80,
             minSize: 70,
             cell: ({ getValue, row }) => {
-                const discountPercent = row.original.porcentaje_descuento?.toFixed(2)
+                const discountPercent = formatNumber(row.original.porcentaje_descuento);
                 return (
                     <div className="font-medium flex items-end justify-center flex-col">
                         {
