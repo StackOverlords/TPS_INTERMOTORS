@@ -33,9 +33,48 @@ export const useUpdateChecker = () => {
 
   // Check on mount
   useEffect(() => {
-    // Modo real: Verificar actualizaciones automáticamente
+    // Simular que acabamos de actualizar (para testing)
+    // IMPORTANTE: En la app buildeada, borra localStorage.lastSeenVersion para simular primera vez
+    // O ponlo en '1.1.3' para simular que acabas de actualizar de 1.1.3 a 1.1.4
+
     if (typeof window !== 'undefined' && '__TAURI__' in window) {
       checkForUpdates();
+    } else {
+      // Modo browser (desarrollo): simular que acabamos de actualizar
+      const demoReleaseNotes = `
+## 🚀 Nueva version v1.1.4
+
+![image](https://i.ibb.co/Z1RYJ3Jd/Captura-de-pantalla-20251118-003142.png)
+
+## 🚀 Novedades
+
+- 🪟 Ventanas múltiples optimizadas
+- 💰 Cuentas por pagar
+- 🖼️ Visualizador de imagene del producto
+
+## 🐛 Errores corregidos
+
+<details><summary>Ver lista completa de correcciones</summary>
+<ul>
+    <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li>
+</ul>
+</details>
+
+---
+
+### 📦 Instalación
+
+- **Windows MSI**: \`TPS-Intermotors_1.1.4_x64_en-US.msi\`
+- **Windows NSIS**: \`TPS-Intermotors_1.1.4_x64-setup.exe\`
+`;
+
+      localStorage.setItem('lastSeenVersion', '1.1.3');
+      setUpdateState(prev => ({
+        ...prev,
+        currentVersion: '1.1.4',
+        releaseNotes: demoReleaseNotes,
+        releaseDate: new Date().toISOString(),
+      }));
     }
   }, []);
 
@@ -79,6 +118,9 @@ export const useUpdateChecker = () => {
         const lastSeenVersion = localStorage.getItem('lastSeenVersion');
         const shouldShowNotes = lastSeenVersion && lastSeenVersion !== update?.currentVersion;
 
+        let releaseNotes = null;
+        let releaseDate = null;
+
         if (shouldShowNotes) {
           // Fetch release notes para la versión actual desde GitHub
           try {
@@ -86,21 +128,21 @@ export const useUpdateChecker = () => {
               `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${update?.currentVersion}`
             );
             const releaseData = await response.json();
-            setUpdateState(prev => ({
-              ...prev,
-              releaseNotes: releaseData.body || null,
-              releaseDate: releaseData.published_at || null,
-            }));
+            releaseNotes = releaseData.body || null;
+            releaseDate = releaseData.published_at || null;
           } catch (err) {
             console.error('Error fetching release notes:', err);
           }
         }
+
         // console.log('[Updater] ✓ Ya estás en la última versión');
         setUpdateState(prev => ({
           ...prev,
           available: false,
           currentVersion: update?.currentVersion || '',
           latestVersion: update?.currentVersion || '',
+          releaseNotes,
+          releaseDate,
           isChecking: false,
         }));
 
