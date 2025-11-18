@@ -1,8 +1,7 @@
-import { Button } from '@/components/atoms/button';
 import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { getVersion } from '@tauri-apps/api/app';
-import { AlertCircle, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import ReleaseNotes from './ReleaseNotes';
 
 export default function UpdateSettings() {
   const {
@@ -14,10 +13,11 @@ export default function UpdateSettings() {
     isInstalling,
     downloadProgress,
     error,
+    releaseNotes,
+    releaseDate,
     checkForUpdates,
     downloadAndInstall,
     dismissUpdate,
-    clearError,
   } = useUpdateChecker();
 
   const [appVersion, setAppVersion] = useState<string>('');
@@ -27,100 +27,34 @@ export default function UpdateSettings() {
   }, []);
 
   const displayCurrentVersion = currentVersion || appVersion;
-  const displayLatestVersion = available ? latestVersion : displayCurrentVersion;
+
+  const handleDismiss = () => {
+    // Guardar que ya vio esta versión
+    localStorage.setItem('lastSeenVersion', displayCurrentVersion);
+    // Si hay actualización disponible, solo la descarta
+    if (available) {
+      dismissUpdate();
+    }
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-6 max-w-sm">
-        {/* Version Display */}
-        <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">Versión actual</p>
-          <p className="text-2xl font-light text-gray-600">{displayCurrentVersion}</p>
-        </div>
-
-        {/* Status */}
-        {available && (
-          <div className="text-center">
-            <p className="text-xs text-gray-400 mb-1">Nueva versión disponible</p>
-            <p className="text-lg font-medium text-gray-700">{displayLatestVersion}</p>
-          </div>
-        )}
-
-        {/* Progress */}
-        {(isDownloading || isInstalling) && (
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-500">
-                {isInstalling ? 'Instalando' : 'Descargando'}
-              </span>
-              <span className="text-xs text-gray-500">{Math.round(downloadProgress)}%</span>
-            </div>
-            <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gray-800 transition-all duration-300"
-                style={{ width: `${downloadProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Error */}
-        {error && !error.includes('Ya estás en la última versión') && (
-          <div className="flex items-center gap-2 text-xs text-red-600">
-            <AlertCircle className="h-3 w-3" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          {!available && !isDownloading && !isInstalling && (
-            <Button
-              onClick={() => checkForUpdates(false)}
-              disabled={isChecking}
-              variant="ghost"
-              size="sm"
-              // className="text-xs text-gray-600 hover:text-gray-900"
-            >
-              {isChecking ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                  Buscando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-1.5 h-3 w-3" />
-                  Buscar actualizaciones
-                </>
-              )}
-            </Button>
-          )}
-
-          {available && !isDownloading && !isInstalling && (
-            <>
-              <Button
-                onClick={downloadAndInstall}
-                size="sm"
-                variant={"default"}
-              >
-                <Download className="mr-1.5 h-3 w-3" />
-                Actualizar
-              </Button>
-              <Button
-                onClick={dismissUpdate}
-                variant="ghost"
-                size="sm"
-              >
-                Más tarde
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Footer */}
-        {error && error.includes('Ya estás en la última versión') && (
-          <p className="text-xs text-gray-400">Tienes la última versión</p>
-        )}
+    <div className="flex items-center justify-center min-h-[60vh] py-8">
+      <div className="flex flex-col items-center gap-6 max-w-4xl w-full px-6">
+        <ReleaseNotes
+          currentVersion={displayCurrentVersion}
+          latestVersion={latestVersion}
+          releaseNotes={releaseNotes}
+          releaseDate={releaseDate || undefined}
+          hasUpdate={available}
+          isChecking={isChecking}
+          isDownloading={isDownloading}
+          isInstalling={isInstalling}
+          downloadProgress={downloadProgress}
+          error={error}
+          onCheckUpdate={() => checkForUpdates(false)}
+          onDownloadUpdate={downloadAndInstall}
+          onDismiss={handleDismiss}
+        />
       </div>
     </div>
   );

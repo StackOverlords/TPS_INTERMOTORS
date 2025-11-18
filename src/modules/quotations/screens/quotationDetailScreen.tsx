@@ -214,7 +214,7 @@ const QuotationDetailScreen = () => {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                             <div>
                                 <Label className="text-xs text-muted-foreground">Fecha</Label>
                                 <p className="text-sm font-medium flex items-center gap-2">
@@ -223,8 +223,8 @@ const QuotationDetailScreen = () => {
                                 </p>
                             </div>
                             <div>
-                                <Label className="text-xs text-muted-foreground">Total</Label>
-                                <p className="text-sm font-bold text-green-600">{formatCurrency(totalQuotation)}</p>
+                                <Label className="text-xs text-muted-foreground">Anticipo</Label>
+                                <p className="text-sm font-bold text-green-600">{formatCurrency(quotationData?.anticipo)}</p>
                             </div>
                             <div>
                                 <Label className="text-xs text-muted-foreground">Tipo de cotizacion</Label>

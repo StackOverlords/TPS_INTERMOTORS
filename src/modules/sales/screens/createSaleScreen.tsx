@@ -3,11 +3,13 @@ import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
+import { Textarea } from "@/components/atoms/textarea";
 import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import TableShoppingCart from "@/modules/shoppingCart/components/tableShoppingCart";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
@@ -15,7 +17,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parse } from "date-fns";
-import { CornerUpLeft, ShoppingCart } from "lucide-react";
+import { CornerUpLeft, ExternalLink, ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -29,9 +31,6 @@ import { useSaleResponsibles } from "../hooks/useSaleResponsibles";
 import { useSaleTypes } from "../hooks/useSaleTypes";
 import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
-import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
-import ResizableBox from "@/components/atoms/resizable-box";
-import { Textarea } from "@/components/atoms/textarea";
 
 const CreateSaleScreen = () => {
     const navigate = useNavigate();
@@ -265,6 +264,13 @@ const CreateSaleScreen = () => {
         addItemToCart(product)
     };
 
+    // Hook para manejar la ventana secundaria de productos
+    const productWindow = useProductSelectorWindow({
+        context: 'sale',
+        instanceId: 'create',
+        onProductSelect: handleAddProductItem,
+        onlyWithStock: true,
+    });
 
     // FUNCIÓN onSubmit corregida
     const onSubmit = (data: Sale) => {
@@ -581,8 +587,12 @@ const CreateSaleScreen = () => {
                     </Card>
 
                     {/* 2. Productos */}
-                    <div className="flex-1 overflow-auto flex flex-col">
-                        {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
+                    {/*
+                    TODO: Configurar modo de selección de productos (embedded vs window)
+                    Por ahora comentado para usar ventana secundaria con useProductSelectorWindow
+                    En el futuro se podrá configurar si usar el buscador directo inyectado o la ventana alternativa
+                    */}
+                    {/* <div className="flex-1 overflow-auto flex flex-col">
                         <div className="flex-shrink-0">
                             <ResizableBox
                                 direction="vertical"
@@ -596,22 +606,29 @@ const CreateSaleScreen = () => {
                                 />
                             </ResizableBox>
                         </div>
-                    </div>
+                    </div> */}
 
                     <Card className="shadow-none">
                         <CardHeader>
-                            <CardTitle className="text-base">
-                                Detalle de Venta
-                                {/* <ProductSelectorModal
-                                    isSearchOpen={isSearchOpen}
-                                    setIsSearchOpen={setIsSearchOpen}
-                                    addItem={handleAddProductItem}
-                                    onlyWithStock={true}
-                                    addMultipleItem={handleAddMultipleProducts}
-                                /> */}
-                            </CardTitle>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base">
+                                    Detalle de Venta
+                                </CardTitle>
+                                <TooltipButton
+                                    buttonProps={{
+                                        onClick: () => productWindow.open(),
+                                        variant: "default",
+                                        size: "sm",
+                                        type: "button",
+                                    }}
+                                    tooltip="Abrir selector de productos en ventana secundaria"
+                                >
+                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                    Seleccionar Productos
+                                </TooltipButton>
+                            </div>
                         </CardHeader>
-                        <CardContent className="-mt-4">
+                        <CardContent>
                             <div className="space-y-2">
                                 {items.length === 0 ? (
                                     <div className="text-center py-8 text-gray-500">

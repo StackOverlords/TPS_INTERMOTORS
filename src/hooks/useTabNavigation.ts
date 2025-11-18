@@ -1,7 +1,7 @@
 import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import { useTabStore } from '@/states/tabStore';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 
 
@@ -15,27 +15,46 @@ export const useTabNavigation = () => {
   // Bandera para prevenir recreación de tabs después de cerrar
   const isClosingTabRef = useRef(false);
 
+  // Cache de rutas aplanadas (se calcula una sola vez)
+  const flatRoutes = useMemo(() => {
+    const flatten = (routes: RouteType[]): RouteType[] => {
+      const result: RouteType[] = [];
+      routes.forEach(route => {
+        if (route.path) {
+          result.push(route);
+        }
+        if (route.subRoutes) {
+          result.push(...flatten(route.subRoutes));
+        }
+      });
+      return result;
+    };
+    return flatten(protectedRoutes);
+  }, []);
+
+  // Cache de rutas ya resueltas
+  const routeInfoCache = useRef(new Map<string, { name: string; icon?: any }>());
+
   // Función para encontrar el nombre e icono de una ruta
   // Soporta rutas dinámicas y extrae parámetros para mostrar en el título
   const findRouteInfo = useCallback((path: string): { name: string; icon?: any } => {
-    const findInRoutes = (routes: RouteType[], targetPath: string): { name: string; icon?: any } | null => {
-      for (const route of routes) {
-        if (!route.path) {
-          // Si es un header sin path, buscar en subrutas
-          if (route.subRoutes) {
-            const found = findInRoutes(route.subRoutes, targetPath);
-            if (found) return found;
-          }
-          continue;
-        }
+    // Verificar cache primero
+    if (routeInfoCache.current.has(path)) {
+      return routeInfoCache.current.get(path)!;
+    }
 
-        // Intentar match exacto
-        if (route.path === targetPath) {
-          return { name: route.name, icon: route.icon };
-        }
+    // Buscar en rutas aplanadas (más eficiente)
+    for (const route of flatRoutes) {
+      // Intentar match exacto
+      if (route.path === path) {
+        const info = { name: route.name, icon: route.icon };
+        routeInfoCache.current.set(path, info);
+        return info;
+      }
 
-        // Intentar match con parámetros dinámicos usando matchPath correctamente
-        const match = matchPath({ path: route.path, end: true }, targetPath);
+      // Intentar match con parámetros dinámicos usando matchPath correctamente
+      if (route.path) {
+        const match = matchPath({ path: route.path, end: true }, path);
         if (match) {
           // Si tiene parámetros, agregarlos al nombre del tab
           const params = match.params;
@@ -46,21 +65,17 @@ export const useTabNavigation = () => {
             ? `${route.name}: ${paramValues[0]}`
             : route.name;
 
-          return { name: displayName, icon: route.icon };
-        }
-
-        // Buscar en subrutas
-        if (route.subRoutes) {
-          const found = findInRoutes(route.subRoutes, targetPath);
-          if (found) return found;
+          const info = { name: displayName, icon: route.icon };
+          routeInfoCache.current.set(path, info);
+          return info;
         }
       }
-      return null;
-    };
+    }
 
-    const info = findInRoutes(protectedRoutes, path);
-    return info || { name: 'Sin título', icon: undefined };
-  }, []);
+    const fallback = { name: 'Sin título', icon: undefined };
+    routeInfoCache.current.set(path, fallback);
+    return fallback;
+  }, [flatRoutes]);
 
   
   //Navegar a una ruta y crear/activar un tab
@@ -117,7 +132,7 @@ export const useTabNavigation = () => {
   //Cerrar tab actual o una tab específica
 
   const closeCurrentTab = useCallback((tabIdToClose?: string) => {
-    const targetTabId = tabIdToClose || activeTabId; 
+    const targetTabId = tabIdToClose || activeTabId;
     // No permitir cerrar si solo hay 1 tab
     if (tabs.length <= 1) {
       return;
@@ -134,46 +149,51 @@ export const useTabNavigation = () => {
     // IMPORTANTE: removeTab actualiza automáticamente el activeTabId al siguiente tab disponible
     removeTab(targetTabId);
 
-    // Después de remover, obtener el nuevo activeTabId del store y navegar a esa tab
-    setTimeout(() => {
-      const state = useTabStore.getState();
+    // Obtener el nuevo activeTabId del store y navegar a esa tab (sin setTimeout)
+    const state = useTabStore.getState();
+    const newActiveTab = state.tabs.find(tab => tab.id === state.activeTabId);
 
-      const newActiveTab = state.tabs.find(tab => tab.id === state.activeTabId);
+    if (newActiveTab) {
+      navigate(newActiveTab.path);
+    } else if (state.tabs.length > 0) {
+      // Fallback: navegar a la primera tab disponible
+      navigate(state.tabs[0].path);
+    } else {
+      // No quedan tabs, navegar al dashboard
+      navigate('/dashboard');
+    }
 
-      if (newActiveTab) {
-        navigate(newActiveTab.path);
-      } else if (state.tabs.length > 0) {
-        // Fallback: navegar a la primera tab disponible
-        navigate(state.tabs[0].path);
-      } else {
-        // No quedan tabs, navegar al dashboard
-        navigate('/dashboard');
-      }
-
-      // Desactivar bandera después de navegar
-      setTimeout(() => {
-        isClosingTabRef.current = false;
-      }, 100);
-    }, 0);
+    // Desactivar bandera en el siguiente tick (mínimo delay necesario)
+    requestAnimationFrame(() => {
+      isClosingTabRef.current = false;
+    });
   }, [activeTabId, removeTab, navigate, tabs]);
 
 
   //Migrar tabs antiguos y recuperar iconos desde localStorage (solo una vez al montar)
-  useEffect(() => {
-    tabs.forEach(tab => {
-      const needsUpdate =
-        tab.title === tab.path ||
-        tab.title.startsWith('/') ||
-        !tab.icon;
+  const hasMigratedRef = useRef(false);
 
-      if (needsUpdate) {
+  useEffect(() => {
+    // Solo ejecutar una vez al montar
+    if (hasMigratedRef.current) return;
+    hasMigratedRef.current = true;
+
+    // Agrupar todas las actualizaciones en un solo batch
+    const tabsToUpdate = tabs.filter(tab =>
+      tab.title === tab.path ||
+      tab.title.startsWith('/') ||
+      !tab.icon
+    );
+
+    if (tabsToUpdate.length > 0) {
+      tabsToUpdate.forEach(tab => {
         const routeInfo = findRouteInfo(tab.path);
         updateTab(tab.id, {
           title: routeInfo.name,
           icon: routeInfo.icon
         });
-      }
-    });
+      });
+    }
   }, []);
 
 

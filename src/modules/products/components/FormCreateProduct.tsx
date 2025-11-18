@@ -4,18 +4,17 @@ import { ComboboxSelect } from '@/components/common/SelectCombobox';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import TooltipButton from '@/components/common/TooltipButton';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
+import { showSuccessToast } from '@/hooks/use-toast-enhanced';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useCategoriesWithSubcategories } from '@/modules/shared/hooks/useCategories';
 import { useCommonBrands } from '@/modules/shared/hooks/useCommonBrands';
 import { useCommonMeasurements } from '@/modules/shared/hooks/useCommonMeasurements';
 import { useCommonOrigins } from '@/modules/shared/hooks/useCommonOrigins';
-import { useCommonSubcategories } from '@/modules/shared/hooks/useCommonSubcategories';
 import { useCommonVehicleBrands } from '@/modules/shared/hooks/useCommonVehicleBrands';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { HelpCircle, Loader2, Package, Save, Wand2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { Controller, useForm, type FieldErrors } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useCreateProduct } from '../hooks/mutations/useCreateProduct';
 import { useAutoDescription } from '../hooks/useAutoDescription';
@@ -71,10 +70,10 @@ const FormCreateProduct: React.FC = () => {
   const { data: procedencia } = useCommonOrigins();
   const { data: unidades } = useCommonMeasurements();
 
-  const { data: subcategorias } = useCommonSubcategories({
-    categoria: id_categoria,
-    enabled: !!id_categoria,
-  });
+  // const { data: subcategorias } = useCommonSubcategories({
+  //   categoria: id_categoria,
+  //   enabled: !!id_categoria,
+  // });
 
   const { handleError } = useErrorHandler();
 
@@ -121,18 +120,18 @@ const FormCreateProduct: React.FC = () => {
     reset();
   };
 
-  const onError = (errors: FieldErrors<ProductCreate>) => {
-    const firstErrorKey = Object.keys(errors)[0] as keyof ProductCreate;
-    const firstError = errors[firstErrorKey];
+  // const onError = (errors: FieldErrors<ProductCreate>) => {
+  //   const firstErrorKey = Object.keys(errors)[0] as keyof ProductCreate;
+  //   const firstError = errors[firstErrorKey];
 
-    if (firstError?.message) {
-      showErrorToast({
-        title: 'Error en el formulario',
-        description: firstError.message,
-        duration: 5000,
-      });
-    }
-  };
+  //   if (firstError?.message) {
+  //     showErrorToast({
+  //       title: 'Error en el formulario',
+  //       description: firstError.message,
+  //       duration: 5000,
+  //     });
+  //   }
+  // };
 
   const getInputClassName = (fieldName: keyof ProductCreate): string => {
     const baseClass = '';
@@ -261,7 +260,7 @@ const FormCreateProduct: React.FC = () => {
           </TooltipWrapper>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {/* Categoría */}
+          {/* 1. Categoría */}
           <div>
             <Label>Categoría *</Label>
             <Controller
@@ -291,34 +290,120 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-          {/* Subcategoría */}
+          {/* 2. Código OEM */}
           <div>
-            <Label>Subcategoría (Opcional)</Label>
-            <Controller
-              name="id_subcategoria"
-              control={control}
-              render={({ field }) => (
-                <ComboboxSelect
-                  value={field.value}
-                  onChange={value => field.onChange(Number(value) || 0)}
-                  options={subcategorias || []}
-                  optionTag="subcategoria"
-                  placeholder="Seleccionar subcategoría"
-                  searchPlaceholder="Buscar subcategoría..."
-                  className={getSelectClassName('id_subcategoria')}
-                />
-              )}
-            />
+            <Label>Código OEM (Opcional)</Label>
+            <Input {...register('codigo_oem')} placeholder="Código OEM" />
             <div className="mt-1">
-              {errors.id_subcategoria && (
+              {errors.codigo_oem && (
                 <p className="text-xs text-red-500 truncate">
-                  {errors.id_subcategoria.message}
+                  {errors.codigo_oem.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Precio de venta */}
+          {/* 3. Código UPC */}
+          <div>
+            <Label>Código UPC *</Label>
+            <Controller
+              name="codigo_upc"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} placeholder="Código UPC" />
+              )}
+            />
+            <div className="mt-1">
+              {errors.codigo_upc && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.codigo_upc.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 4. Marca */}
+          <div>
+            <Label>Marca *</Label>
+            <Controller
+              name="id_marca"
+              control={control}
+              render={({ field }) => (
+                <ComboboxSelect
+                  value={field.value}
+                  onChange={value => field.onChange(Number(value))}
+                  options={brands || []}
+                  optionTag="marca"
+                  placeholder="Seleccionar marca"
+                  searchPlaceholder="Buscar marcas..."
+                  className={getSelectClassName('id_marca')}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.id_marca && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.id_marca.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 5. Procedencia */}
+          <div>
+            <Label>Procedencia *</Label>
+            <Controller
+              name="id_procedencia"
+              control={control}
+              render={({ field }) => (
+                <ComboboxSelect
+                  value={field.value}
+                  onChange={value => field.onChange(Number(value))}
+                  options={procedencia || []}
+                  optionTag="procedencia"
+                  placeholder="Seleccionar procedencia"
+                  searchPlaceholder="Buscar procedencia..."
+                  className={getSelectClassName('id_procedencia')}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.id_procedencia && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.id_procedencia.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 6. Medida (Unidad) */}
+          <div>
+            <Label>Unidad *</Label>
+            <Controller
+              name="id_unidad"
+              control={control}
+              render={({ field }) => (
+                <ComboboxSelect
+                  value={field.value}
+                  onChange={value => field.onChange(Number(value))}
+                  options={unidades || []}
+                  optionTag="unidad_medida"
+                  placeholder="Seleccionar unidad"
+                  searchPlaceholder="Buscar unidad..."
+                  className={getSelectClassName('id_unidad')}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.id_unidad && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.id_unidad.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 7. Precio */}
           <div>
             <Label>Precio de venta *</Label>
             <Controller
@@ -348,7 +433,34 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-          {/* P. Venta. Alt */}
+          {/* 8. Stock min */}
+          <div>
+            <Label>Stock mínimo *</Label>
+            <Controller
+              name="stock_minimo"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  autoSelectOnFocus={true}
+                  min={0}
+                  {...field}
+                  onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                  className={getInputClassName('stock_minimo')}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.stock_minimo && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.stock_minimo.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* 9. Precio alt */}
           <div>
             <Label>P. Venta. Alt *</Label>
             <Controller
@@ -376,28 +488,18 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-          {/* Stock mínimo */}
+          {/* 10. Motor */}
           <div>
-            <Label>Stock mínimo *</Label>
-            <Controller
-              name="stock_minimo"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  autoSelectOnFocus={true}
-                  min={0}
-                  {...field}
-                  onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  className={getInputClassName('stock_minimo')}
-                />
-              )}
+            <Label>Nro. Motor (Opcional)</Label>
+            <Input
+              {...register('nro_motor')}
+              placeholder="Nro. Motor"
+              className={getInputClassName('nro_motor')}
             />
             <div className="mt-1">
-              {errors.stock_minimo && (
+              {errors.nro_motor && (
                 <p className="text-xs text-red-500 truncate">
-                  {errors.stock_minimo.message}
+                  {errors.nro_motor.message}
                 </p>
               )}
             </div>
@@ -405,39 +507,23 @@ const FormCreateProduct: React.FC = () => {
         </div>
       </div>
 
-      {/* Especificaciones del Vehículo */}
+      {/* 11. Descripción Auto-generada */}
+      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+        <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
+          <Wand2 className="w-4 h-4" />
+          Descripción Auto-generada
+        </h3>
+        <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
+          {autoDescription || 'Completa los campos para generar la descripción'}
+        </div>
+      </div>
+
+      {/* Campos adicionales para la generación de descripción */}
       <div className="p-3 bg-white border border-gray-200 rounded-lg">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">
-          Especificaciones del Vehículo
+          Información Complementaria
         </h3>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {/* Marca */}
-          <div>
-            <Label>Marca *</Label>
-            <Controller
-              name="id_marca"
-              control={control}
-              render={({ field }) => (
-                <ComboboxSelect
-                  value={field.value}
-                  onChange={value => field.onChange(Number(value))}
-                  options={brands || []}
-                  optionTag="marca"
-                  placeholder="Seleccionar marca"
-                  searchPlaceholder="Buscar marcas..."
-                  className={getSelectClassName('id_marca')}
-                />
-              )}
-            />
-            <div className="mt-1">
-              {errors.id_marca && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.id_marca.message}
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* Marca vehículo */}
           <div>
             <Label>Marca vehículo *</Label>
@@ -460,23 +546,6 @@ const FormCreateProduct: React.FC = () => {
               {errors.id_marca_vehiculo && (
                 <p className="text-xs text-red-500 truncate">
                   {errors.id_marca_vehiculo.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Nro. Motor */}
-          <div>
-            <Label>Nro. Motor (Opcional)</Label>
-            <Input
-              {...register('nro_motor')}
-              placeholder="Nro. Motor"
-              className={getInputClassName('nro_motor')}
-            />
-            <div className="mt-1">
-              {errors.nro_motor && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.nro_motor.message}
                 </p>
               )}
             </div>
@@ -513,7 +582,7 @@ const FormCreateProduct: React.FC = () => {
           </div>
 
           {/* Descripción alt. */}
-          <div className="flex flex-col sm:col-span-2 lg:col-span-3 xl:col-span-2">
+          <div className="flex flex-col sm:col-span-2">
             <div>
               <Label>Descripción alt. *</Label>
               <Controller
@@ -532,26 +601,7 @@ const FormCreateProduct: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Descripción Auto-generada */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
-          <Wand2 className="w-4 h-4" />
-          Descripción Auto-generada
-        </h3>
-        <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
-          {autoDescription || 'Completa los campos para generar la descripción'}
-        </div>
-      </div>
-
-      {/* Información Adicional */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h3 className="mb-3 text-sm font-semibold text-gray-900">
-          Información Adicional
-        </h3>
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {/* Costo Referencia */}
           <div>
             <Label>Costo Referencia *</Label>
@@ -576,92 +626,6 @@ const FormCreateProduct: React.FC = () => {
               {errors.costo_referencia && (
                 <p className="text-xs text-red-500 truncate">
                   {errors.costo_referencia.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Código OEM */}
-          <div>
-            <Label>Código OEM (Opcional)</Label>
-            <Input {...register('codigo_oem')} placeholder="Código OEM" />
-            <div className="mt-1">
-              {errors.codigo_oem && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.codigo_oem.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Código UPC */}
-          <div>
-            <Label>Código UPC *</Label>
-            <Controller
-              name="codigo_upc"
-              control={control}
-              render={({ field }) => (
-                <Input {...field} placeholder="Código UPC" />
-              )}
-            />
-            <div className="mt-1">
-              {errors.codigo_upc && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.codigo_upc.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Unidad */}
-          <div>
-            <Label>Unidad *</Label>
-            <Controller
-              name="id_unidad"
-              control={control}
-              render={({ field }) => (
-                <ComboboxSelect
-                  value={field.value}
-                  onChange={value => field.onChange(Number(value))}
-                  options={unidades || []}
-                  optionTag="unidad_medida"
-                  placeholder="Seleccionar unidad"
-                  searchPlaceholder="Buscar unidad..."
-                  className={getSelectClassName('id_unidad')}
-                />
-              )}
-            />
-            <div className="mt-1">
-              {errors.id_unidad && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.id_unidad.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Procedencia */}
-          <div>
-            <Label>Procedencia *</Label>
-            <Controller
-              name="id_procedencia"
-              control={control}
-              render={({ field }) => (
-                <ComboboxSelect
-                  value={field.value}
-                  onChange={value => field.onChange(Number(value))}
-                  options={procedencia || []}
-                  optionTag="procedencia"
-                  placeholder="Seleccionar procedencia"
-                  searchPlaceholder="Buscar procedencia..."
-                  className={getSelectClassName('id_procedencia')}
-                />
-              )}
-            />
-            <div className="mt-1">
-              {errors.id_procedencia && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.id_procedencia.message}
                 </p>
               )}
             </div>

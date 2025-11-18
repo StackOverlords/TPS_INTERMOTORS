@@ -1,43 +1,43 @@
-import ErrorDataComponent from "@/components/common/errorDataComponent"
-import { useNavigate, useParams } from "react-router"
-import TooltipButton from "@/components/common/TooltipButton"
-import { CornerUpLeft, Loader2, Save, ShoppingCart } from "lucide-react"
-import { Kbd } from "@/components/atoms/kbd"
-import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card"
-import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
-import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import { useEffect, useRef, useState } from "react"
-import { useDebounce } from "use-debounce"
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
+import { Kbd } from "@/components/atoms/kbd"
+import { Label } from "@/components/atoms/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
-import { format } from "date-fns"
-import { useHotkeys } from "react-hotkeys-hook"
-import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal"
-import { useGoBack } from "@/hooks/useGoBack"
-import { useErrorHandler } from "@/hooks/useErrorHandler"
-import ShortcutKey from "@/components/common/ShortcutKey"
-import { Textarea } from "@/components/atoms/textarea"
-import { useOrderTypes } from "../hooks/commons/useOrderTypes"
-import { useOrderModalities } from "../hooks/commons/useOrderModalities"
-import { useOrderResponsibles } from "../hooks/commons/useOrderResponsibles"
-import { useOrderProvider } from "../hooks/commons/useOrderProviders"
-import { useUpdateOrder } from "../hooks/useUpdateOrder"
-import { useGetOrderById } from "../hooks/useGetOrderById"
-import type { OrderUpdate, UIOrderDetailUpdate } from "../types/orderUpdate.types"
-import { OrderUpdateSchema } from "../schemas/orderUpdateSchema"
-import { useOrderStatus } from "../hooks/commons/useOrderStatus"
-import { cn } from "@/lib/utils"
-import OrderEditSkeleton from "../components/orderEditSkeleton"
-import type { OrderDetailTableRef } from "../components/OrderDetailTable"
-import { useOrderDetails } from "../hooks/useOrderDetails"
-import type { ProductGet } from "@/modules/products/types/ProductGet"
-import OrderDetailTable from "../components/OrderDetailTable"
 import { Separator } from "@/components/atoms/separator"
+import { Textarea } from "@/components/atoms/textarea"
+import ErrorDataComponent from "@/components/common/errorDataComponent"
+import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
+import { ComboboxSelect } from "@/components/common/SelectCombobox"
+import ShortcutKey from "@/components/common/ShortcutKey"
+import TooltipButton from "@/components/common/TooltipButton"
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
+import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { useGoBack } from "@/hooks/useGoBack"
+import { cn } from "@/lib/utils"
+import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal"
+import type { ProductGet } from "@/modules/products/types/ProductGet"
 import { formatCurrency } from "@/utils/formaters"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { format } from "date-fns"
+import { CornerUpLeft, Loader2, Save, ShoppingCart } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
+import { useHotkeys } from "react-hotkeys-hook"
+import { useNavigate, useParams } from "react-router"
+import { useDebounce } from "use-debounce"
+import type { OrderDetailTableRef } from "../components/OrderDetailTable"
+import OrderDetailTable from "../components/OrderDetailTable"
+import OrderEditSkeleton from "../components/orderEditSkeleton"
+import { useOrderModalities } from "../hooks/commons/useOrderModalities"
+import { useOrderProvider } from "../hooks/commons/useOrderProviders"
+import { useOrderResponsibles } from "../hooks/commons/useOrderResponsibles"
+import { useOrderStatus } from "../hooks/commons/useOrderStatus"
+import { useOrderTypes } from "../hooks/commons/useOrderTypes"
+import { useGetOrderById } from "../hooks/useGetOrderById"
+import { useOrderDetails } from "../hooks/useOrderDetails"
+import { useUpdateOrder } from "../hooks/useUpdateOrder"
+import { OrderUpdateSchema } from "../schemas/orderUpdateSchema"
+import type { OrderUpdate, UIOrderDetailUpdate } from "../types/orderUpdate.types"
 
 const OrderEditScreen = () => {
     const navigate = useNavigate()
@@ -125,24 +125,35 @@ const OrderEditScreen = () => {
     useEffect(() => {
         if (orderData && orderTypesData && orderModalitiesData) {
             // Transformar detalles a UIOrderDetailUpdate
-            const detallesUI: UIOrderDetailUpdate[] = orderData.detalles.map((detalle, index) => ({
-                id_detalle_pedido: detalle.id,
-                id_producto: detalle.producto.id,
-                cantidad: detalle.cantidad,
-                costo: detalle.costo,
-                inc_p_venta: detalle.inc_precio_venta ?? 0,
-                precio_venta: detalle.precio_venta ?? 0,
-                inc_p_venta_alt: detalle.inc_precio_venta_alt ?? 0,
-                precio_venta_alt: detalle.precio_venta_alt ?? 0,
-                orden: detalle.orden ?? (index + 1),
-                product: {
-                    id: detalle.producto.id,
-                    descripcion: detalle.producto.descripcion,
-                    codigo_oem: detalle.producto.codigo_oem,
-                    codigo_upc: detalle.producto.codigo_upc,
-                    precio_venta: detalle.producto.precio_venta,
-                }
-            }));
+            const detallesUI: UIOrderDetailUpdate[] = orderData.detalles.map((detalle, index) => {
+                // Si precio_venta es null, usar el precio del producto
+                const precioVentaFinal = detalle.precio_venta !== null
+                    ? Number(detalle.precio_venta)
+                    : Number(detalle.producto.precio_venta);
+
+                const precioVentaAltFinal = detalle.precio_venta_alt !== null
+                    ? Number(detalle.precio_venta_alt)
+                    : Number(detalle.producto.precio_venta_alt);
+
+                return {
+                    id_detalle_pedido: detalle.id,
+                    id_producto: detalle.producto.id,
+                    cantidad: Number(detalle.cantidad),
+                    costo: Number(detalle.costo),
+                    inc_p_venta: detalle.inc_precio_venta !== null ? Number(detalle.inc_precio_venta) : 0,
+                    precio_venta: precioVentaFinal,
+                    inc_p_venta_alt: detalle.inc_precio_venta_alt !== null ? Number(detalle.inc_precio_venta_alt) : 0,
+                    precio_venta_alt: precioVentaAltFinal,
+                    orden: detalle.orden ?? (index + 1),
+                    product: {
+                        id: detalle.producto.id,
+                        descripcion: detalle.producto.descripcion,
+                        codigo_oem: detalle.producto.codigo_oem,
+                        codigo_upc: detalle.producto.codigo_upc,
+                        precio_venta: Number(detalle.producto.precio_venta),
+                    }
+                };
+            });
 
             // Establecer detalles en el hook
             orderDetailsHook.setOrderDetails(detallesUI);

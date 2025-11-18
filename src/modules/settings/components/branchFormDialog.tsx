@@ -93,7 +93,10 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                 fax: '',
             });
             setImagePreview(null);
+            return; // Salir temprano si no estamos editando
         }
+
+        // Solo ejecutar la lógica de edición si tenemos datos válidos
         if (branchById && isEditing) {
             updateForm.reset({
                 nombre: branchById.nombre,
@@ -104,6 +107,12 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                 celular: branchById.celular || '',
                 fax: branchById.fax || '',
             });
+            // Cargar la imagen existente si la sucursal tiene una
+            if (branchById.imagen && typeof branchById.imagen === 'string' && branchById.imagen.trim() !== '') {
+                setImagePreview(branchById.imagen);
+            } else {
+                setImagePreview(null);
+            }
         }
     }, [branchById, isEditing, updateForm, createForm]);
 
@@ -133,6 +142,8 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+        // Si estamos editando y la sucursal tenía imagen original,
+        // la volvemos a mostrar solo si cancelamos o cerramos sin guardar
     };
 
     const handleCreateSubmit = useCallback(createForm.handleSubmit(async (data: CreateBranch) => {
@@ -399,12 +410,16 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                     />
                                 </div>
 
-                                {imagePreview && (
+                                {imagePreview ? (
                                     <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
                                         <img
                                             src={imagePreview}
-                                            alt="Preview"
+                                            alt="Vista previa de la imagen"
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Si la imagen falla al cargar, mostrar el placeholder
+                                                e.currentTarget.style.display = 'none';
+                                            }}
                                         />
                                         <Button
                                             type="button"
@@ -416,9 +431,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                             <X className="h-4 w-4" />
                                         </Button>
                                     </div>
-                                )}
-
-                                {!imagePreview && (
+                                ) : (
                                     <div className="flex items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg">
                                         <ImageIcon className="h-8 w-8 text-gray-400" />
                                     </div>

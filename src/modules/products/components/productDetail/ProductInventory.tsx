@@ -1,11 +1,12 @@
+import { Badge } from "@/components/atoms/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { TabsContent } from "@/components/atoms/tabs";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import { formatPrice } from "@/utils/numberFormatters";
+import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import { Building2 } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
-import CustomizableTable from "@/components/common/CustomizableTable";
-import { format } from "date-fns";
-import { Badge } from "@/components/atoms/badge";
 
 interface ProductInventoryProps {
     productStockData: ProductStock[]
@@ -57,14 +58,11 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
         {
             accessorKey: "costo",
             header: `Costo`,
-            cell: ({ getValue }) => {
-                const value = getValue<number>();
-                return (
-                    <div className="text-end">
-                        ${value.toFixed(2)}
-                    </div>
-                );
-            }
+            cell: ({ getValue }) => (
+                <div className="text-end">
+                    {formatPrice(getValue<number>())}
+                </div>
+            )
         },
         {
             accessorKey: "cantidad",
@@ -85,7 +83,7 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
                 const value = getValue<number>();
                 return (
                     <div className="text-end">
-                        ${value.toFixed(2)}
+                        ${formatPrice(value)}
                     </div>
                 );
             }
@@ -97,7 +95,7 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
                 const value = getValue<number>();
                 return (
                     <div className="text-end">
-                        ${value.toFixed(2)}
+                        ${formatPrice(value)}
                     </div>
                 );
             }

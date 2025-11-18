@@ -36,8 +36,7 @@ export const BranchUsersModal = ({ branchId, branchName, open, onOpenChange }: B
         isError: isErrorBranchUsers,
         isFetching: isFetchingBranchUsers,
         refetch: refetchBranchUsers
-    } = useGetBranchUsers(branchId);
-
+    } = useGetBranchUsers(branchId); 
     const {
         data: rolesData,
     } = useGetBranchRoles();

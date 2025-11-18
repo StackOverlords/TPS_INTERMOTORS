@@ -5,6 +5,7 @@ import type { ProductProviderOrder } from "../../types/ProductProviderOrder";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import CustomizableTable from "@/components/common/CustomizableTable";
+import { formatPrice } from "@/utils/numberFormatters";
 
 interface ProductLogisticsProps {
     ProductProviderOrders: ProductProviderOrder[]
@@ -57,14 +58,11 @@ const ProductLogistics: React.FC<ProductLogisticsProps> = ({
             header: `Costo`,
             size:80,
             minSize: 60,
-            cell: ({ getValue }) => {
-                const value = getValue<number>();
-                return (
-                    <div className="text-end">
-                        ${value.toFixed(2)}
-                    </div>
-                );
-            }
+            cell: ({ getValue }) => (
+                <div className="text-end">
+                    {formatPrice(getValue())}
+                </div>
+            )
         },
         {
             accessorKey: "nro_pedido",

@@ -1,11 +1,12 @@
+import { Badge } from "@/components/atoms/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { TabsContent } from "@/components/atoms/tabs";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import { formatNumber, formatPrice } from "@/utils/numberFormatters";
+import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import { Calendar, ImageIcon, ShoppingCart } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/atoms/badge";
-import CustomizableTable from "@/components/common/CustomizableTable";
-import { format } from "date-fns";
 
 interface ProductOverviewProps {
     productStockData: ProductStock[],
@@ -55,14 +56,11 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
         {
             accessorKey: "costo",
             header: `Costo`,
-            cell: ({ getValue }) => {
-                const value = getValue<number>();
-                return (
-                    <div className="text-end">
-                        ${value.toFixed(2)}
-                    </div>
-                );
-            }
+            cell: ({ getValue }) => (
+                <div className="text-end">
+                    {formatPrice(getValue<number>())}
+                </div>
+            )
         },
         {
             accessorKey: "cantidad",
@@ -71,7 +69,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                 const value = getValue<number>();
                 return (
                     <div className="text-end">
-                        {value}
+                        {formatNumber(value)}
                     </div>
                 );
             }
@@ -83,7 +81,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                 const value = getValue<number>();
                 return (
                     <div className="text-end">
-                        ${value.toFixed(2)}
+                        ${formatPrice(value)}
                     </div>
                 );
             }
@@ -91,14 +89,11 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
         {
             accessorKey: "precio_venta_alt",
             header: `Precio Venta Alt.`,
-            cell: ({ getValue }) => {
-                const value = getValue<number>();
-                return (
-                    <div className="text-end">
-                        ${value.toFixed(2)}
-                    </div>
-                );
-            }
+            cell: ({ getValue }) => (
+                <div className="text-end">
+                    {formatPrice(getValue<number>())}
+                </div>
+            )
         },
         {
             accessorKey: "saldo",
@@ -187,16 +182,20 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-600">Costo</label>
-                                                    <p className="text-lg font-semibold text-gray-900">${compraReciente.costo.toFixed(2)}</p>
+                                                    <p className="text-lg font-semibold text-gray-900">
+                                                        {formatPrice(compraReciente.costo)}
+                                                    </p>
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-600">Precio de Venta F.</label>
-                                                    <p className="text-lg font-semibold text-gray-900">${compraReciente.precio_venta.toFixed(2)}</p>
+                                                    <p className="text-lg font-semibold text-gray-900">
+                                                        {formatPrice(compraReciente.precio_venta)}
+                                                    </p>
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-600">Precio de Venta S.F.</label>
                                                     <p className="text-lg font-semibold text-gray-900">
-                                                        ${compraReciente.precio_venta_alt.toFixed(2)}
+                                                        {formatPrice(compraReciente.precio_venta_alt)}
                                                     </p>
                                                 </div>
                                                 <div>

@@ -104,9 +104,13 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
             minSize: 80,
             cell: ({ row, getValue }) => {
                 const product = row.original.producto
+                const cantidad = typeof getValue() === "string"
+                    ? parseFloat(getValue() as string)
+                    : getValue<number>();
+                const cantidadDisplay = isFinite(cantidad) ? cantidad.toFixed(0) : "0";
                 return (
                     <div className="text-center">
-                        <div className="text-sm font-medium">{getValue<number>().toFixed(0)}</div>
+                        <div className="text-sm font-medium">{cantidadDisplay}</div>
                         {product.unidad_medida && (
                             <div className="text-[10px] text-gray-500">{product.unidad_medida.unidad_medida}</div>
                         )}
@@ -133,13 +137,18 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
             size: 80,
             minSize: 70,
             cell: ({ getValue, row }) => {
-                const discountPercent = row.original.porcentaje_descuento?.toFixed(2)
+                const porcentaje = row.original.porcentaje_descuento;
+                const discountPercent = typeof porcentaje === "string"
+                    ? parseFloat(porcentaje)
+                    : porcentaje;
+                const discountPercentDisplay = isFinite(discountPercent) ? discountPercent.toFixed(2) : null;
+
                 return (
                     <div className="font-medium flex items-end justify-center flex-col">
                         {
-                            discountPercent && (
+                            discountPercentDisplay && (
                                 <span className="text-red-500">
-                                    {discountPercent}%
+                                    {discountPercentDisplay}%
                                 </span>
                             )
                         }

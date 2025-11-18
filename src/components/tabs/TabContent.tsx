@@ -4,15 +4,13 @@ import React, { useEffect, useRef, type ReactNode } from 'react';
 interface TabContentProps {
   children: ReactNode;
   tabId: string;
+  isActive: boolean; // Recibir isActive como prop para evitar suscripción a activeTabId
 }
 
-const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => {
+const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId, isActive }) => {
   // Selectores específicos para evitar re-renders innecesarios
-  const activeTabId = useTabStore(state => state.activeTabId);
   const updateTab = useTabStore(state => state.updateTab);
   const getTab = useTabStore(state => state.getTab);
-
-  const isActive = tabId === activeTabId;
   const hasBeenActiveRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,9 +45,10 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => 
   return (
     <div
       ref={containerRef}
-      className="h-full overflow-auto"
+      className="h-full overflow-auto transition-opacity duration-150"
       style={{
         display: isActive ? 'block' : 'none',
+        opacity: isActive ? 1 : 0,
       }}
     >
       {children}
@@ -57,16 +56,16 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId }) => 
   );
 };
 
-// Memoización agresiva: solo re-render si el estado activo cambia
+// Memoización: solo re-render si cambió el estado activo o el tabId
 const TabContent = React.memo(TabContentComponent, (prev, next) => {
-  // Solo re-renderizar si el tabId cambió o si cambió de activo/inactivo
+  // Si cambió el tabId, siempre re-renderizar
   if (prev.tabId !== next.tabId) return false;
 
-  const store = useTabStore.getState();
-  const prevActive = prev.tabId === store.activeTabId;
-  const nextActive = next.tabId === store.activeTabId;
+  // Si cambió el estado activo, re-renderizar
+  if (prev.isActive !== next.isActive) return false;
 
-  return prevActive === nextActive;
+  // Si nada cambió, NO re-renderizar
+  return true;
 });
 
 TabContent.displayName = 'TabContent';
