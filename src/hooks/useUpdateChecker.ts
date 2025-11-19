@@ -101,48 +101,52 @@ export const useUpdateChecker = () => {
       //   latestVersion: update?.version,
       // });
 
+      // Verificar si acabamos de actualizar comparando con localStorage
+      const lastSeenVersion = localStorage.getItem('lastSeenVersion');
+      const currentVersion = update?.currentVersion || '';
+      const justUpdated = lastSeenVersion && lastSeenVersion !== currentVersion;
+
+      // Obtener las notas de la versión ACTUAL si acabamos de actualizar
+      let currentVersionNotes = null;
+      let currentVersionDate = null;
+
+      if (justUpdated) {
+        try {
+          const response = await fetch(
+            `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${currentVersion}`
+          );
+          const releaseData = await response.json();
+          currentVersionNotes = releaseData.body || null;
+          currentVersionDate = releaseData.published_at || null;
+        } catch (err) {
+          console.error('Error fetching current version release notes:', err);
+        }
+      }
+
       if (update && 'available' in update && update.available) {
         // console.log('[Updater] ✅ Nueva actualización disponible:', update.version);
+        // Hay una actualización disponible, pero PRIORIZAMOS las notas de la versión actual si acabamos de actualizar
         setUpdateState(prev => ({
           ...prev,
           available: true,
           currentVersion: update.currentVersion,
           latestVersion: update.version,
           update,
-          releaseNotes: update.body || null,
-          releaseDate: update.date || null,
+          // Mostrar las notas de la versión ACTUAL si acabamos de actualizar, sino las de la futura
+          releaseNotes: currentVersionNotes || update.body || null,
+          releaseDate: currentVersionDate || update.date || null,
           isChecking: false,
         }));
       } else {
-        // Verificar si acabamos de actualizar comparando con localStorage
-        const lastSeenVersion = localStorage.getItem('lastSeenVersion');
-        const shouldShowNotes = lastSeenVersion && lastSeenVersion !== update?.currentVersion;
-
-        let releaseNotes = null;
-        let releaseDate = null;
-
-        if (shouldShowNotes) {
-          // Fetch release notes para la versión actual desde GitHub
-          try {
-            const response = await fetch(
-              `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${update?.currentVersion}`
-            );
-            const releaseData = await response.json();
-            releaseNotes = releaseData.body || null;
-            releaseDate = releaseData.published_at || null;
-          } catch (err) {
-            console.error('Error fetching release notes:', err);
-          }
-        }
-
         // console.log('[Updater] ✓ Ya estás en la última versión');
         setUpdateState(prev => ({
           ...prev,
           available: false,
-          currentVersion: update?.currentVersion || '',
-          latestVersion: update?.currentVersion || '',
-          releaseNotes,
-          releaseDate,
+          currentVersion: currentVersion,
+          latestVersion: currentVersion,
+          // Mostrar las notas de la versión actual si acabamos de actualizar
+          releaseNotes: currentVersionNotes,
+          releaseDate: currentVersionDate,
           isChecking: false,
         }));
 

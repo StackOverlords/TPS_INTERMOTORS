@@ -62,11 +62,17 @@ export default function ReleaseNotes({
           {/* Header */}
           <div>
             <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-              {releaseNotes ? `Novedades en v${currentVersion}` : 'Actualizaciones'}
+              {releaseNotes
+                ? (hasUpdate
+                    ? `Novedades en v${currentVersion}`
+                    : `Novedades en v${currentVersion}`)
+                : 'Actualizaciones'}
             </h3>
             <p className="text-sm text-gray-500">
               {releaseNotes
-                ? 'Ver las mejoras y cambios de esta versión'
+                ? (hasUpdate
+                    ? 'Ver las mejoras de tu versión actual. Hay una nueva versión disponible →'
+                    : 'Ver las mejoras y cambios de esta versión')
                 : 'Mantén tu aplicación actualizada'}
             </p>
           </div>
