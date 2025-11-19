@@ -11,9 +11,17 @@ import { formatCell } from '@/utils/formatCell';
 import { EditableQuantity } from './editableQuantity';
 import CustomizableTable from '@/components/common/CustomizableTable';
 
-const TableShoppingCart = forwardRef((_props, ref) => {
+interface TableShoppingCartProps {
+    isReadOnly?: boolean
+    details?: CartItem[] | null;
+}
+
+const TableShoppingCart = forwardRef(({
+    isReadOnly = false,
+    details
+}: TableShoppingCartProps, ref) => {
     const user = authSDK.getCurrentUser()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -32,6 +40,13 @@ const TableShoppingCart = forwardRef((_props, ref) => {
         updateCustomPrice,
         updateCustomSubtotal,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
+
+    const dataToUse = useMemo(() => {
+        if (isReadOnly && details && details.length > 0) {
+            return details;
+        }
+        return cart;
+    }, [isReadOnly, details, cart]);
 
     const columns = useMemo<ColumnDef<CartItem>[]>(() => [
         {
@@ -82,6 +97,7 @@ const TableShoppingCart = forwardRef((_props, ref) => {
                             return !isNaN(num) && num > 0;
                         }}
                         inputRef={refToAssign}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -101,6 +117,7 @@ const TableShoppingCart = forwardRef((_props, ref) => {
                         className="w-full"
                         buttonClassName="w-full"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -120,6 +137,7 @@ const TableShoppingCart = forwardRef((_props, ref) => {
                         className="w-full"
                         inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -131,6 +149,10 @@ const TableShoppingCart = forwardRef((_props, ref) => {
             minSize: 40,
             cell: ({ row }) => {
                 const product = row.original.product
+                if (isReadOnly) {
+                    return null;
+                }
+
                 return (
                     <div className='flex items-center justify-center'>
                         <Button
@@ -147,13 +169,14 @@ const TableShoppingCart = forwardRef((_props, ref) => {
             }
         }
     ], [
+        isReadOnly,
         removeItem,
         updateCustomPrice,
         updateCustomSubtotal,
         updateQuantity
     ])
     const table = useReactTable<CartItem>({
-        data: cart,
+        data: dataToUse,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),

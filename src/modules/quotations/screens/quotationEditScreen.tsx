@@ -1,21 +1,29 @@
-import { Badge } from "@/components/atoms/badge"
-import { Button } from "@/components/atoms/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card"
-import { Input } from "@/components/atoms/input"
+import ErrorDataComponent from "@/components/common/errorDataComponent"
+import { useNavigate, useParams } from "react-router"
+import TooltipButton from "@/components/common/TooltipButton"
+import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react"
 import { Kbd } from "@/components/atoms/kbd"
+import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card"
 import { Label } from "@/components/atoms/label"
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
+import { Input } from "@/components/atoms/input"
+import { ComboboxSelect } from "@/components/common/SelectCombobox"
+import { useEffect, useMemo, useState } from "react"
+import { useDebounce } from "use-debounce"
+import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
+import { useBranchStore } from "@/states/branchStore"
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
+import { format, parse } from "date-fns"
+import { useHotkeys } from "react-hotkeys-hook"
+import { useGoBack } from "@/hooks/useGoBack"
+import { Button } from "@/components/atoms/button"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
 import { Switch } from "@/components/atoms/switch"
 import { Textarea } from "@/components/atoms/textarea"
-import ErrorDataComponent from "@/components/common/errorDataComponent"
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { PDFViewer } from "@/components/common/PDFViewer"
-import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import TooltipButton from "@/components/common/TooltipButton"
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
-import { useGoBack } from "@/hooks/useGoBack"
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow"
 import { cn } from "@/lib/utils"
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel"
@@ -24,15 +32,6 @@ import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities"
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles"
 import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes"
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice"
-import { useBranchStore } from "@/states/branchStore"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { format, parse } from "date-fns"
-import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
-import { useHotkeys } from "react-hotkeys-hook"
-import { useNavigate, useParams } from "react-router"
-import { useDebounce } from "use-debounce"
 import QuotationDetailsEditingTable from "../components/quotationDetailsEditingTable"
 import QuotationEditSkeleton from "../components/quotationEditSkeleton"
 import QuotationsSummary from "../components/quotationsSummary"
@@ -42,7 +41,9 @@ import useQuotationProductDetails from "../hooks/useQuotationProductDetails"
 import { useUpdateQuotation } from "../hooks/useUpdateQuotation"
 import { QuotationUpdateSchema } from "../schemas/quotationUpdate.schema"
 import type { QuotationGetById } from "../types/quotationGet.types"
+import type { SelectedItem } from "@/types/windowSelectedItems"
 import type { QuotationUpdate, QuotationUpdateDetail } from "../types/quotationUpdate.types"
+import { Badge } from "@/components/atoms/badge"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -129,7 +130,6 @@ const QuotationEditScreen = () => {
         register,
         watch,
         reset,
-        resetField,
         control,
         handleSubmit,
         getValues,
@@ -180,7 +180,8 @@ const QuotationEditScreen = () => {
         if (quotationData && quotationTypesData && quotationModalitiesData) {
             loadFormData(quotationData)
         }
-    }, [quotationData, quotationTypesData, quotationModalitiesData, reset]);
+        return
+    }, [quotationData, quotationTypesData, quotationModalitiesData]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -236,10 +237,32 @@ const QuotationEditScreen = () => {
             });
             showErrorToast({
                 title: "Plazo requerido",
-                description: "Las cotizaciones a crédito requieren una fecha de plazo",
+                description: "Las ventas a crédito requieren una fecha de plazo",
                 duration: 5000
             });
             isValid = false;
+        }
+
+        // Agregar validación adicional
+        if (formData.tipo_cotizacion === "VC" && formData.plazo_pago && formData.fecha) {
+            const fechaVenta = parse(formData.fecha, "yyyy-MM-dd", new Date());
+            fechaVenta.setHours(0, 0, 0, 0);
+
+            const plazoDate = parse(formData.plazo_pago, "yyyy-MM-dd", new Date());
+            plazoDate.setHours(0, 0, 0, 0);
+
+            if (plazoDate <= fechaVenta) {
+                setError("plazo_pago", {
+                    type: "manual",
+                    message: "La fecha de plazo debe ser posterior a la fecha de cotización"
+                });
+                showErrorToast({
+                    title: "Fecha inválida",
+                    description: "La fecha de plazo debe ser posterior a la fecha de cotización",
+                    duration: 5000
+                });
+                isValid = false;
+            }
         }
 
         return isValid;
@@ -250,32 +273,35 @@ const QuotationEditScreen = () => {
     // VALIDACIÓN DE FECHA DE PLAZO
     useEffect(() => {
         if (!hasInitialized) return;
-        if (tipo_cotizacion === "VC" && plazo_pago) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
 
-            const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
-            plazoDate.setHours(0, 0, 0, 0);
-
-            if (plazoDate <= today) {
-                setError("plazo_pago", {
-                    type: "manual",
-                    message: "La fecha de plazo debe ser posterior a hoy"
-                });
-                showErrorToast({
-                    title: "Fecha inválida",
-                    description: "La fecha de plazo debe ser posterior a hoy",
-                    duration: 5000
-                });
-                resetField("plazo_pago");
-            } else {
-                clearErrors("plazo_pago");
-            }
-        }
+        // Si no es cotización a crédito, limpiar y salir
         if (tipo_cotizacion !== "VC") {
-            resetField("plazo_pago", { defaultValue: "" });
+            clearErrors("plazo_pago");
+            return;
         }
-    }, [tipo_cotizacion, plazo_pago, resetField, setError, clearErrors, hasInitialized]);
+
+        // Si no hay plazo_pago o no hay fecha de cotización, no validar
+        if (!plazo_pago || !formValues.fecha) {
+            clearErrors("plazo_pago");
+            return;
+        }
+
+        // Comparar con la fecha de cotización, no con hoy
+        const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+        fechaVenta.setHours(0, 0, 0, 0);
+
+        const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
+        plazoDate.setHours(0, 0, 0, 0);
+
+        if (plazoDate <= fechaVenta) {
+            setError("plazo_pago", {
+                type: "manual",
+                message: "La fecha de plazo debe ser posterior a la fecha de cotización"
+            });
+        } else {
+            clearErrors("plazo_pago");
+        }
+    }, [tipo_cotizacion, plazo_pago, formValues.fecha, setError, clearErrors, hasInitialized]);
 
     const {
         addProduct,
@@ -327,7 +353,6 @@ const QuotationEditScreen = () => {
     };
 
     const onError = (errors: FieldErrors<QuotationUpdate>) => {
-        console.log(errors)
         if (errors.id_cliente || errors.tipo_cotizacion || errors.forma_cotizacion || errors.id_responsable) {
             showErrorToast({
                 title: "Error de validación",
@@ -360,6 +385,13 @@ const QuotationEditScreen = () => {
         setIsDialogOpen(false)
     }
 
+    const selectedItems = useMemo<SelectedItem[]>(() => {
+        return detalles.map(detail => ({
+            productId: detail.id_producto || 0,
+            quantity: detail.cantidad,
+        }));
+    }, [detalles]);
+
     // Hook para manejar la ventana secundaria de productos
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
@@ -367,7 +399,9 @@ const QuotationEditScreen = () => {
         onProductSelect: addProduct,
         onMultiSelect: addMultipleItemsWithQuantity,
         onlyWithStock: false,
-        multiSelect: true
+        multiSelect: true,
+        mode: 'edit',
+        selectedItems
     });
 
     const toggleWindowSelector = () => {
@@ -509,7 +543,7 @@ const QuotationEditScreen = () => {
                                                     autoFocus
                                                     disabled={isReadOnly}
                                                 />
-                                                {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                                {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
                                             </div>
                                             <div>
                                                 <Label htmlFor="id_responsable">Responsable *</Label>
@@ -528,7 +562,7 @@ const QuotationEditScreen = () => {
                                                         />
                                                     )}
                                                 />
-                                                {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.id_responsable && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
 
                                             {
@@ -557,7 +591,7 @@ const QuotationEditScreen = () => {
                                                                 </Select>
                                                             )}
                                                         />
-                                                        {errors.forma_cotizacion && <p className="text-red-500 text-sm mt-1">{errors.forma_cotizacion.message}</p>}
+                                                        {errors.forma_cotizacion && <p className="text-red-500 text-xs">{errors.forma_cotizacion.message}</p>}
                                                     </div>
                                                 )
                                             }
@@ -586,7 +620,7 @@ const QuotationEditScreen = () => {
                                                         </Select>
                                                     )}
                                                 />
-                                                {errors.tipo_cotizacion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.tipo_cotizacion && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
                                                 configuraciones.inputs && (
@@ -625,6 +659,7 @@ const QuotationEditScreen = () => {
                                                     {...register("plazo_pago")}
                                                     disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
                                                 />
+                                                {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
                                             </div>
                                             <div>
                                                 <Label htmlFor="vehiculo">Vehículo/Motor</Label>
@@ -721,7 +756,7 @@ const QuotationEditScreen = () => {
                                                         />
                                                     )}
                                                 />
-                                                {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
                                                 configuraciones.inputs && (

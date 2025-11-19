@@ -37,7 +37,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         showInfoToast({
             title: "Modo cambiado",
             description: mode === 'sale' ? "Modo: Venta" : "Modo: Cotización",
-            duration: 3000
+            duration: 2000
         });
     }, [state.setMode]);
 
@@ -69,7 +69,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showWarningToast({
                 title: "Carrito convertido a Venta",
                 description: details.join('\n'),
-                duration: 7000
+                duration: 5000
             });
         }
 
@@ -462,7 +462,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showErrorToast({
                 title: "No se pudieron agregar productos",
                 description: errorMessages.join('\n') + (moreCount > 0 ? `\n... y ${moreCount} más` : ''),
-                duration: 7000,
+                duration: 5000,
             });
         } else if (totalFailed > 0) {
             // Mostrar resumen de fallos cuando algunos sí se agregaron

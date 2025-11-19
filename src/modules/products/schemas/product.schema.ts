@@ -1,3 +1,4 @@
+import { toNumberOrZero } from "@/modules/shared/schemas/numberSchemas"
 import { z } from "zod"
 
 export const ProductGetSchema = z.object({
@@ -13,7 +14,7 @@ export const ProductGetSchema = z.object({
     marca: z.string(),
     procedencia: z.string(),
     unidad_medida: z.string(),
-    stock_actual: z.preprocess((v) => Number(v), z.number()),
+    stock_actual: toNumberOrZero,
     stock_resto: z.preprocess((v) => Number(v), z.number()),
     stock_minimo: z.preprocess((v) => v === null ? null : Number(v), z.number().nullable()),
     pedido_transito: z.preprocess((v) => Number(v), z.number()),

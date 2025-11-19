@@ -2,7 +2,7 @@ import ErrorDataComponent from "@/components/common/errorDataComponent"
 import { useNavigate, useParams } from "react-router"
 import { useSaleGetById } from "../hooks/useSaleGetById"
 import TooltipButton from "@/components/common/TooltipButton"
-import { CornerUpLeft, Loader2, Save, ShoppingCart } from "lucide-react"
+import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react"
 import { Kbd } from "@/components/atoms/kbd"
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useDebounce } from "use-debounce"
 import { useSaleTypes } from "../hooks/useSaleTypes"
 import { useSaleModalities } from "../hooks/useSaleModalities"
@@ -23,30 +23,39 @@ import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { parse } from "date-fns"
 import { useHotkeys } from "react-hotkeys-hook"
-import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal"
 import SaleDetailsEditingTable from "../components/saleEdit/saleDetailsEditingTable"
 import { SaleUpdateFormSchema, SaleUpdateSchema } from "../schemas/saleUpdate.schema"
 import useSaleProductDetailsWithForm from "../hooks/useSaleProductDetails"
 import { useUpdateSale } from "../hooks/useUpdateSale"
 import { useGoBack } from "@/hooks/useGoBack"
 import { Button } from "@/components/atoms/button"
-import { Separator } from "@/components/atoms/separator"
-import { formatCurrency } from "@/utils/formaters"
-import { EditablePercentage } from "@/modules/shoppingCart/components/EditablePercentage"
-import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import SaleEditSkeleton from "../components/saleEdit/saleEditSkeleton"
-import ShortcutKey from "@/components/common/ShortcutKey"
 import { Textarea } from "@/components/atoms/textarea"
+import { cn } from "@/lib/utils"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel"
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow"
+import SalesSummary from "../components/salesSummary"
+import type { SaleGetById } from "../types/salesGetResponse"
+import type { ProductGet } from "@/modules/products/types/ProductGet"
+import type { SelectedItem } from "@/types/windowSelectedItems"
 
 const SaleEditScreen = () => {
+    const configuraciones = {
+        inputs: false,
+        formulario: 'top',
+        selector_mode: 'window'
+    }
+
+    const [isReadOnly] = useState<boolean>(false)
     const navigate = useNavigate()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const { saleId } = useParams()
     const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
-    const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
+    const [originalDetails, setOriginalDetails] = useState<SaleUpdateDetailUI[]>([]);
 
     const {
         data: saleTypesData,
@@ -108,59 +117,65 @@ const SaleEditScreen = () => {
         register,
         watch,
         reset,
-        resetField,
         control,
         handleSubmit,
-        setValue,
         getValues,
         setError,
         clearErrors,
         formState: { errors }
     } = formMethods
 
+    const loadFormData = (sale: SaleGetById) => {
+        const detallesTransformados: SaleUpdateDetailUI[] =
+            (sale.detalles ?? []).map((d) => ({
+                cantidad: d.cantidad,
+                descuento: d.descuento,
+                id_detalle_venta: d.id,
+                id_producto: d.producto.id,
+                porcentaje_descuento: d.porcentaje_descuento,
+                precio: d.precio,
+                producto: {
+                    id: d.producto.id,
+                    categoria: d.producto.categoria?.categoria ?? null,
+                    codigo_oem: d.producto.codigo_oem ?? null,
+                    codigo_upc: d.producto.codigo_upc ?? null,
+                    descripcion: d.producto.descripcion,
+                    marca: d.producto.marca?.marca ?? '',
+                    precio_venta: d.producto.precio_venta,
+                    stock_actual: 0
+                }
+            }));
+        // Guardar los detalles originales
+        setOriginalDetails(detallesTransformados);
+
+        const resetData: SaleUpdateForm = {
+            fecha: sale.fecha?.slice(0, 10) ?? "",
+            nro_comprobante2: sale.comprobante2 ?? "",
+            nro_comprobante: sale.comprobante ?? "",
+            id_cliente: sale.cliente?.id ?? 0,
+            comentario: sale.comentarios ?? "",
+            plazo_pago: sale.plazo_pago?.slice(0, 10) ?? "",
+            vehiculo: sale.vehiculo ?? "",
+            nro_motor: sale.nmotor ?? "",
+            cliente_nombre: sale.cliente?.cliente ?? "",
+            cliente_nit: sale.cliente?.nit?.toString() ?? "",
+            sucursal: Number(selectedBranchId) || 1,
+            usuario: 1,
+            id_responsable: sale.responsable_venta?.id ?? 0,
+            detalles: detallesTransformados,
+            tipo_venta: sale.tipo_venta,
+            forma_venta: sale.forma_venta,
+        };
+        reset(resetData);
+        setHasInitialized(true);
+    }
+
     useEffect(() => {
         if (saleData && saleTypesData && saleModalitiesData) {
-            const detallesTransformados: SaleUpdateDetailUI[] =
-                (saleData.detalles ?? []).map((d) => ({
-                    cantidad: d.cantidad,
-                    descuento: d.descuento,
-                    id_detalle_venta: d.id,
-                    id_producto: d.producto.id,
-                    porcentaje_descuento: d.porcentaje_descuento,
-                    precio: d.precio,
-                    producto: {
-                        id: d.producto.id,
-                        categoria: d.producto.categoria?.categoria ?? null,
-                        codigo_oem: d.producto.codigo_oem ?? null,
-                        codigo_upc: d.producto.codigo_upc ?? null,
-                        descripcion: d.producto.descripcion,
-                        marca: d.producto.marca?.marca ?? '',
-                        precio_venta: d.producto.precio_venta
-                    }
-                }));
-
-            const resetData: SaleUpdateForm = {
-                fecha: saleData.fecha?.slice(0, 10) ?? "",
-                nro_comprobante2: saleData.comprobante2 ?? "",
-                nro_comprobante: saleData.comprobante ?? "",
-                id_cliente: saleData.cliente?.id ?? 0,
-                comentario: saleData.comentarios ?? "",
-                plazo_pago: saleData.plazo_pago?.slice(0, 10) ?? "",
-                vehiculo: saleData.vehiculo ?? "",
-                nro_motor: saleData.nmotor ?? "",
-                cliente_nombre: saleData.cliente?.cliente ?? "",
-                cliente_nit: saleData.cliente?.nit?.toString() ?? "",
-                usuario: 1,
-                sucursal: 1,
-                id_responsable: saleData.responsable_venta?.id ?? 0,
-                detalles: detallesTransformados,
-                tipo_venta: saleData.tipo_venta,
-                forma_venta: saleData.forma_venta,
-            };
-            reset(resetData);
-            setHasInitialized(true);
+            loadFormData(saleData)
         }
-    }, [saleData, saleTypesData, saleModalitiesData, reset]);
+        return
+    }, [saleData, saleTypesData, saleModalitiesData]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -221,40 +236,65 @@ const SaleEditScreen = () => {
             isValid = false;
         }
 
-        return isValid;
-    };
+        if (formData.tipo_venta === "VC" && formData.plazo_pago && formData.fecha) {
+            const fechaVenta = parse(formData.fecha, "yyyy-MM-dd", new Date());
+            fechaVenta.setHours(0, 0, 0, 0);
 
-    // VALIDACIÓN DE FECHA DE PLAZO
-    const tipoVenta = watch("tipo_venta");
-    const plazoPago = watch("plazo_pago");
-    useEffect(() => {
-        if (!hasInitialized) return;
-        if (tipoVenta === "VC" && plazoPago) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const plazoDate = parse(plazoPago, "yyyy-MM-dd", new Date());
+            const plazoDate = parse(formData.plazo_pago, "yyyy-MM-dd", new Date());
             plazoDate.setHours(0, 0, 0, 0);
 
-            if (plazoDate <= today) {
+            if (plazoDate <= fechaVenta) {
                 setError("plazo_pago", {
                     type: "manual",
-                    message: "La fecha de plazo debe ser posterior a hoy"
+                    message: "La fecha de plazo debe ser posterior a la fecha de venta"
                 });
                 showErrorToast({
                     title: "Fecha inválida",
-                    description: "La fecha de plazo debe ser posterior a hoy",
+                    description: "La fecha de plazo debe ser posterior a la fecha de venta",
                     duration: 5000
                 });
-                resetField("plazo_pago");
-            } else {
-                clearErrors("plazo_pago");
+                isValid = false;
             }
         }
-        if (tipoVenta !== "VC") {
-            resetField("plazo_pago", { defaultValue: "" });
+
+        return isValid;
+    };
+
+    const formValues = watch();
+    const { tipo_venta, plazo_pago, detalles } = formValues;
+
+    // VALIDACIÓN DE FECHA DE PLAZO
+    useEffect(() => {
+        if (!hasInitialized) return;
+
+        // Si no es venta a crédito, limpiar y salir
+        if (tipo_venta !== "VC") {
+            clearErrors("plazo_pago");
+            return;
         }
-    }, [tipoVenta, plazoPago, resetField, setError, clearErrors, hasInitialized]);
+
+        // Si no hay plazo_pago o no hay fecha de venta, no validar
+        if (!plazo_pago || !formValues.fecha) {
+            clearErrors("plazo_pago");
+            return;
+        }
+
+        // Comparar con la fecha de venta, no con hoy
+        const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+        fechaVenta.setHours(0, 0, 0, 0);
+
+        const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
+        plazoDate.setHours(0, 0, 0, 0);
+
+        if (plazoDate <= fechaVenta) {
+            setError("plazo_pago", {
+                type: "manual",
+                message: "La fecha de plazo debe ser posterior a la fecha de venta"
+            });
+        } else {
+            clearErrors("plazo_pago");
+        }
+    }, [tipo_venta, plazo_pago, formValues.fecha, setError, clearErrors, hasInitialized]);
 
     const {
         addProduct,
@@ -267,7 +307,17 @@ const SaleEditScreen = () => {
         calculateTotalDiscount,
         calculateTotalBeforeDiscount,
         getDiscountPercentage,
-    } = useSaleProductDetailsWithForm({ formMethods });
+        addMultipleItemsWithQuantity,
+    } = useSaleProductDetailsWithForm({
+        formMethods,
+        originalDetails
+    });
+
+    const handleAddMultipleProducts = useCallback((
+        products: Array<ProductGet & { quantity?: number }>
+    ) => {
+        return addMultipleItemsWithQuantity(products);
+    }, [addMultipleItemsWithQuantity]);
 
     const onSubmit = (data: SaleUpdate) => {
         if (!validateBeforeSubmit()) return;
@@ -287,13 +337,13 @@ const SaleEditScreen = () => {
         updateSale(
             { saleId: Number(saleId), data: transformedData },
             {
-                onSuccess: () => {
+                onSuccess: (updatedData) => {
                     showSuccessToast({
                         title: "Venta Modificada",
                         description: `Venta modificada con éxito`,
                         duration: 5000,
                     });
-                    setTimeout(handleGoBack, 200);
+                    loadFormData(updatedData)
                 },
                 onError: (error: unknown) => {
                     handleError({ error, customTitle: "No se pudo modificar la venta" });
@@ -328,6 +378,34 @@ const SaleEditScreen = () => {
         }
     };
 
+    // Convertir detalles actuales a SelectedItems 
+    const selectedItems = useMemo<SelectedItem[]>(() => {
+        return detalles.map(detail => ({
+            productId: detail.producto?.id || 0,
+            quantity: detail.cantidad,
+        }));
+    }, [detalles]);
+
+    // Hook para manejar la ventana secundaria de productos
+    const productWindow = useProductSelectorWindow({
+        context: 'venta',
+        instanceId: 'update-sale',
+        onProductSelect: addProduct,
+        onMultiSelect: handleAddMultipleProducts,
+        onlyWithStock: true,
+        multiSelect: true,
+        mode: 'edit', // Modo edición
+        validateStock: true, // ✅ Valida stock
+        selectedItems,
+    });
+
+    const toggleWindowSelector = () => {
+        if (productWindow.isOpen) {
+            productWindow.close();
+        }
+        productWindow.open();
+    };
+
     // Shortcuts
     useHotkeys('escape', (e) => {
         e.preventDefault();
@@ -358,391 +436,373 @@ const SaleEditScreen = () => {
     }
 
     return (
-        <main className="flex flex-col items-center">
-            <div className="w-full space-y-2">
-                <FormProvider {...formMethods}>
-                    <form
-                        className="space-y-2"
-                        onSubmit={handleSubmit(onSubmit, onError)}
-                    >
-                        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
-                            <div className="flex flex-wrap gap-2 items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <TooltipButton
-                                        tooltipContentProps={{
-                                            align: 'start'
-                                        }}
-                                        onClick={handleGoBack}
-                                        tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver atrás</p>}
-                                        buttonProps={{
-                                            variant: 'default',
-                                            type: 'button'
-                                        }}
-                                    >
-                                        <CornerUpLeft />
-                                    </TooltipButton>
-                                    <div>
-                                        <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
-                                            Editar venta #{saleData?.nro}
-                                        </h1>
-                                        {saleData && (
-                                            <p className="text-sm text-gray-600">
-                                                {saleData.cliente ? `${saleData.cliente?.cliente} - ` : ''}
-                                                {saleData.cantidad_detalles} {saleData.cantidad_detalles === 1 ? 'producto' : 'productos'}
-                                            </p>
+        <main className="p-2 h-full">
+            <FormProvider {...formMethods}>
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2">
+                    {/* Header */}
+                    <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
+                        <div className="flex flex-wrap gap-2 items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <TooltipButton
+                                    tooltipContentProps={{
+                                        align: 'start'
+                                    }}
+                                    onClick={handleGoBack}
+                                    tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver atrás</p>}
+                                    buttonProps={{
+                                        variant: 'default',
+                                        type: 'button'
+                                    }}
+                                >
+                                    <CornerUpLeft />
+                                </TooltipButton>
+                                <div>
+                                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
+                                        Editar venta #{saleData?.nro}
+                                    </h1>
+                                    {saleData && (
+                                        <p className="text-sm text-gray-600">
+                                            {saleData.cliente ? `${saleData.cliente?.cliente} - ` : ''}
+                                            {saleData.cantidad_detalles} {saleData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                        </p>
+                                    )}
+                                </div>
+                            </div >
+
+                            {/* Action Buttons */}
+                            < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
+
+                            </div >
+                        </div >
+                    </header >
+
+                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                        <div className={cn(
+                            "h-full gap-2",
+                            configuraciones.formulario === "top" && "flex flex-col",
+                            configuraciones.formulario === "left" && "flex flex-col md:grid md:grid-cols-3"
+                        )}>
+                            {/* Formulario de información de venta*/}
+                            <div className={cn(
+                                "gap-2 flex-shrink-0",
+                                configuraciones.formulario === "top" && "grid",
+                                configuraciones.formulario === "left" && "flex flex-col",
+                            )}>
+                                {/* 1. Datos de la venta */}
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0",
+                                    configuraciones.formulario === "left" && "h-auto md:h-full",
+                                )}>
+
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className={cn(
+                                            "grid gap-2",
+                                            configuraciones.formulario === "top" && "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
+                                            configuraciones.formulario === "left" && "grid-cols-2",
+                                        )}>
+                                            <div>
+                                                <Label htmlFor="fechaVenta">Fecha *</Label>
+                                                <Input
+                                                    id="fechaVenta"
+                                                    type="date"
+                                                    {...register("fecha")}
+                                                    className="w-full"
+                                                    autoFocus
+                                                    disabled={isReadOnly}
+                                                />
+                                                {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="id_responsable">Responsable *</Label>
+                                                <Controller
+                                                    name="id_responsable"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <ComboboxSelect
+                                                            value={field.value}
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={saleResponsiblesData || []}
+                                                            optionTag={"nombre"}
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_responsable && <p className="text-red-500 text-xs">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="cliente">Cliente *</Label>
+                                                <Controller
+                                                    name="id_cliente"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <PaginatedCombobox
+                                                            value={field.value}
+                                                            onChange={(value) => field.onChange(Number(value))}
+                                                            optionsData={saleCustomersData?.data || []}
+                                                            displayField="nombre"
+                                                            isLoading={isSaleCustomersLoading}
+                                                            updatePage={(page) => { console.log("Update page:", page) }}
+                                                            updateSearch={setCustomerSearchTerm}
+                                                            disabled={isReadOnly}
+                                                            placeholder="Buscar cliente por nombre"
+                                                            metaData={
+                                                                {
+                                                                    current_page: saleCustomersData?.meta.current_page || 1,
+                                                                    last_page: saleCustomersData?.meta.last_page || 1,
+                                                                    total: saleCustomersData?.meta.total || 0,
+                                                                    per_page: saleCustomersData?.meta.per_page || 10,
+                                                                }
+                                                            }
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="altClie">Cliente Alt.</Label>
+                                                <Input
+                                                    id="altClie"
+                                                    {...register("cliente_nombre")}
+                                                    placeholder="Cliente alternativo"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="cliente_nit">Nit Cliente</Label>
+                                                <Input
+                                                    id="cliente_nit"
+                                                    {...register("cliente_nit")}
+                                                    placeholder="Nit del Cliente"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                                <Input
+                                                    id="nroComprobante"
+                                                    {...register("nro_comprobante")}
+                                                    placeholder="Número de comprobante"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="nroComprobanteSecundario">N° Comprobante Sec.</Label>
+                                                <Input
+                                                    id="nroComprobanteSecundario"
+                                                    {...register("nro_comprobante2")}
+                                                    placeholder="Número secundario"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="forma">Forma de venta *</Label>
+                                                <Controller
+                                                    name="forma_venta"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange}
+                                                            value={field.value || saleData?.forma_venta || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona una forma" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                        <SelectItem key={modality.code} value={modality.code}>
+                                                                            {modality.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.forma_venta && <p className="text-red-500 text-xs">{errors.forma_venta.message}</p>}
+                                            </div>
+
+                                            <div>
+                                                <Label htmlFor="tipo_venta">Tipo de Venta *</Label>
+                                                <Controller
+                                                    name="tipo_venta"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange}
+                                                            value={field.value || saleData?.tipo_venta || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona un tipo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    saleTypesData && saleTypesData.map((type) => (
+                                                                        <SelectItem key={type.code} value={type.code}>
+                                                                            {type.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.tipo_venta && <p className="text-red-500 text-xs">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="fechaPlazo">
+                                                    Fecha Plazo
+                                                    <span className="text-xs ml-1 text-gray-500">(Crédito)</span>
+                                                </Label>
+                                                <Input
+                                                    id="fechaPlazo"
+                                                    type="date"
+                                                    {...register("plazo_pago")}
+                                                    disabled={formValues.tipo_venta !== "VC" || isReadOnly}
+                                                />
+                                                {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="vehiculo">Vehículo/Motor</Label>
+                                                <Input
+                                                    id="vehiculo"
+                                                    {...register("vehiculo")}
+                                                    placeholder="Modelo del vehículo"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="motor">Motor</Label>
+                                                        <Input
+                                                            id="motor"
+                                                            {...register("nro_motor")}
+                                                            placeholder="Tipo de motor"
+                                                            disabled={isReadOnly}
+                                                        />
+                                                    </div>
+                                                )
+                                            }
+                                            <div className={cn(
+                                                configuraciones.formulario === "top" && "",
+                                                configuraciones.formulario === "left" && "md:col-span-2",
+                                            )}>
+                                                <Label htmlFor="comentarios">Comentarios</Label>
+                                                <Textarea
+                                                    id="comentarios"
+                                                    {...register("comentario")}
+                                                    placeholder="Comentarios adicionales sobre la venta"
+                                                    rows={configuraciones.formulario === "top" ? 1 : 2}
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className={cn(
+                                "flex-1 min-h-0",
+                                configuraciones.formulario === "top" && "",
+                                configuraciones.formulario === "top" && configuraciones.inputs && "",
+                                configuraciones.formulario === "left" && "col-span-2",
+                            )}>
+                                <div className={cn(
+                                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                                    configuraciones.selector_mode === "embebed" && "md:min-h-screen"
+                                )}>
+                                    <ResizablePanelGroup
+                                        className={cn(
+                                            "flex-1 min-h-0"
                                         )}
-                                    </div>
-                                </div >
-
-                                {/* Action Buttons */}
-                                < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-                                    <TooltipButton
-                                        onClick={handleGoBack}
-                                        tooltip="Cancelar Edicion"
-                                        buttonProps={{
-                                            variant: 'outline',
-                                            size: 'sm',
-                                            type: 'button'
-                                        }}
-                                    >
-                                        Cancelar
-                                    </TooltipButton>
-
-                                    <TooltipButton
-                                        tooltip={
-                                            <span className="flex items-center gap-1">Guardar Cambios <ShortcutKey combo="alt+s" /></span>
-                                        }
-                                        buttonProps={{
-                                            variant: 'default',
-                                            size: 'sm',
-                                            type: 'submit',
-                                            disabled: isSaving
-                                        }}
+                                        direction={"vertical"}
                                     >
                                         {
-                                            !isSaving ? (
+                                            configuraciones.selector_mode === "embebed" && (
                                                 <>
-                                                    <Save className="h-4 w-4" />
-                                                    Guardar Cambios
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Guardando...
+                                                    <ResizablePanel
+                                                        defaultSize={50}
+                                                    >
+                                                        <ProductSearchPanel
+                                                            selectedProducts={detalles}
+                                                            onProductSelect={addProduct}
+                                                            onlySelectWithStock={true}
+                                                        />
+                                                    </ResizablePanel>
+                                                    <ResizableHandle withHandle />
                                                 </>
                                             )
                                         }
-                                    </TooltipButton>
-                                </div >
-                            </div >
-                        </header >
-
-                        {/* 1. Datos de la Venta */}
-                        <Card className="border-gray-200 shadow-none pt-4">
-                            <CardContent className="">
-                                <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 xl:gap-x-2 xl:gap-y-3">
-                                    <div>
-                                        <Label htmlFor="fechaVenta">Fecha *</Label>
-                                        <Input
-                                            id="fechaVenta"
-                                            type="date"
-                                            {...register("fecha")}
-                                            className="w-full"
-                                            autoFocus
-                                        />
-                                        {errors.fecha && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="responsable">Responsable *</Label>
-                                        <Controller
-                                            name="id_responsable"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <ComboboxSelect
-                                                    value={field.value}
-                                                    onChange={(value) => {
-                                                        field.onChange(Number(value));
-                                                    }}
-                                                    options={saleResponsiblesData || []}
-                                                    optionTag={"nombre"}
-                                                />
-                                            )}
-                                        />
-                                        {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="cliente">Cliente *</Label>
-                                        <Controller
-                                            name="id_cliente"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <PaginatedCombobox
-                                                    value={field.value}
-                                                    onChange={(value) => {
-                                                        field.onChange(Number(value));
-                                                        const selected = saleCustomersData?.data.find((c) => c.id.toString() === value);
-                                                        if (selected) {
-                                                            setValue("cliente_nombre", selected.nombre);
-                                                            setValue("cliente_nit", selected.nit?.toString() || "");
-                                                        }
-                                                    }}
-                                                    optionsData={saleCustomersData?.data || []}
-                                                    displayField="nombre"
-                                                    isLoading={isSaleCustomersLoading}
-                                                    updatePage={(page) => { console.log("Update page:", page) }}
-                                                    updateSearch={setCustomerSearchTerm}
-                                                    metaData={
+                                        <ResizablePanel
+                                            defaultSize={50}
+                                            className="h-full flex flex-col">
+                                            {/* 2. Productos */}
+                                            <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                                                <CardHeader className="flex-shrink-0">
+                                                    <CardTitle className="flex justify-between">
+                                                        <h2 className="text-primary text-base">
+                                                            Detalle de Productos
+                                                        </h2>
                                                         {
-                                                            current_page: saleCustomersData?.meta.current_page || 1,
-                                                            last_page: saleCustomersData?.meta.last_page || 1,
-                                                            total: saleCustomersData?.meta.total || 0,
-                                                            per_page: saleCustomersData?.meta.per_page || 10,
+                                                            configuraciones.selector_mode === "window" && (
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={toggleWindowSelector}
+                                                                    disabled={isSaving || isReadOnly}
+                                                                >
+                                                                    <Plus className="size-4" />
+                                                                    <span className="hidden sm:block">Seleccionar Productos</span>
+                                                                </Button>
+                                                            )
                                                         }
-                                                    }
-                                                />
-                                            )}
-                                        />
-                                        {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="altClie">Alt. Clie</Label>
-                                        <Input
-                                            id="altClie"
-                                            {...register("cliente_nombre")}
-                                            placeholder="Cliente alternativo"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nroComprobante">N° Comprobante</Label>
-                                        <Input
-                                            id="nroComprobante"
-                                            {...register("nro_comprobante")}
-                                            placeholder="Número de comprobante"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nroComprobanteSecundario">N° Comprobante Sec.</Label>
-                                        <Input
-                                            id="nroComprobanteSecundario"
-                                            {...register("nro_comprobante2")}
-                                            placeholder="Número secundario"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="forma_venta">Forma de venta *</Label>
-                                        <Controller
-                                            name="forma_venta"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    value={field.value || saleData?.forma_venta || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona una forma" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {
-                                                            saleModalitiesData && saleModalitiesData.map((modality) => (
-                                                                <SelectItem key={modality.code} value={modality.code}>
-                                                                    {modality.label}
-                                                                </SelectItem>
-                                                            ))
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="flex-1 min-h-0">
+                                                    <div className="h-full overflow-auto">
+                                                        {saleData?.detalles.length === 0 ? (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                                                <p>No hay productos agregados</p>
+                                                                <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
+                                                            </div>
+                                                        ) :
+                                                            <SaleDetailsEditingTable
+                                                                products={detalles}
+                                                                removeItem={removeProduct}
+                                                                updatePrice={updatePrice}
+                                                                updateQuantity={updateQuantity}
+                                                                updateCustomSubtotal={updateCustomSubtotal}
+                                                            />
                                                         }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.forma_venta && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </ResizablePanel>
+                                    </ResizablePanelGroup>
 
-                                    <div>
-                                        <Label htmlFor="tipo_venta">Tipo de Venta *</Label>
-                                        <Controller
-                                            name="tipo_venta"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    onValueChange={field.onChange} value={field.value || saleData?.tipo_venta || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona un tipo" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {
-                                                            saleTypesData && saleTypesData.map((type) => (
-                                                                <SelectItem key={type.code} value={type.code}>
-                                                                    {type.label}
-                                                                </SelectItem>
-                                                            ))
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.tipo_venta && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="fechaPlazo">
-                                            Fecha Plazo
-                                            <span className="text-xs ml-1 text-gray-500">(Crédito)</span>
-                                        </Label>
-                                        <Input
-                                            id="plazo_pago"
-                                            type="date"
-                                            {...register("plazo_pago")}
-                                            disabled={watch("tipo_venta") !== "VC"}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="vehiculo">Vehículo</Label>
-                                        <Input
-                                            id="vehiculo"
-                                            {...register("vehiculo")}
-                                            placeholder="Modelo del vehículo"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="motor">Motor</Label>
-                                        <Input
-                                            id="motor"
-                                            {...register("nro_motor")}
-                                            placeholder="Tipo de motor"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="comentarios">Comentarios</Label>
-                                        <Textarea
-                                            id="comentarios"
-                                            {...register("comentario")}
-                                            placeholder="Comentarios adicionales sobre la venta"
-                                            rows={1}
-                                        />
-                                    </div>
-                                </div>
-                                <span className="text-xs text-gray-500">* Campos requeridos</span>
-                            </CardContent>
-                        </Card>
-
-                    </form>
-
-                    {/* 2. Productos */}
-                    <Card className="border-0 shadow-sm">
-                        <CardHeader className="pb-4">
-                            <CardTitle>
-                                <ProductSelectorModal
-                                    isSearchOpen={isSearchOpen}
-                                    setIsSearchOpen={setIsSearchOpen}
-                                    addItem={addProduct}
-                                    onlyWithStock={true}
-                                    addMultipleItem={addProduct}
-                                />
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                {saleData?.detalles.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No hay productos agregados</p>
-                                        <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
-                                    </div>
-                                ) :
-                                    <SaleDetailsEditingTable
-                                        products={watch("detalles")}
-                                        removeItem={removeProduct}
-                                        updatePrice={updatePrice}
-                                        updateQuantity={updateQuantity}
-                                        updateCustomSubtotal={updateCustomSubtotal}
+                                    {/* Resumen de venta  */}
+                                    <SalesSummary
+                                        isReadOnly={isReadOnly}
+                                        isEditMode={true}
+                                        discountAmount={calculateTotalDiscount()}
+                                        discountPercent={getDiscountPercentage()}
+                                        subtotal={calculateTotalBeforeDiscount()}
+                                        total={calculateTotal()}
+                                        isPending={isSaving}
+                                        callback={handleGoBack}
+                                        aplyGlobalDiscount={applyGlobalDiscount}
+                                        hasProducts={detalles.length > 0}
                                     />
-                                }
+                                </div>
                             </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border shadow-none border-gray-200 pt-3">
-                        <CardContent>
-                            <div className="grid md:grid-cols-2 gap-3">
-                                <section className="space-y-2 bg-gray-50 p-3 rounded-lg">
-                                    <header className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Descuento</span>
-                                    </header>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <Label className="text-xs text-gray-600">Porcentaje (%)</Label>
-                                            <EditablePercentage
-                                                value={getDiscountPercentage()}
-                                                onSubmit={(value) => applyGlobalDiscount(value as number, 'percentage')}
-                                                className="w-full"
-                                                buttonClassName="w-full"
-                                                showEditIcon={false}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label className="text-xs text-gray-600">Monto (Bs)</Label>
-                                            <EditablePrice
-                                                value={calculateTotalDiscount()}
-                                                onSubmit={(value) => applyGlobalDiscount(value as number, 'amount')}
-                                                className="w-full"
-                                                buttonClassName="w-full"
-                                                showEditIcon={false}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-1">
-                                        {[0, 5, 10, 15, 20].map((percentage) => (
-                                            <Button
-                                                key={percentage}
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="text-xs h-7 px-2 border-orange-300 text-orange-700 hover:bg-orange-100 hover:text-orange-600 transition-colors duration-300"
-                                                onClick={() => applyGlobalDiscount(percentage, 'percentage')}
-                                            >
-                                                {percentage}%
-                                            </Button>
-                                        ))}
-                                    </div>
-                                </section>
-
-                                {/* Totales - DERECHA */}
-                                <section className="space-y-4">
-                                    <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
-                                        <div className="flex justify-between items-center">
-                                            <Label>Subtotal:</Label>
-                                            <span className="text-base font-semibold tabular-nums">
-                                                {formatCurrency(calculateTotalBeforeDiscount())}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center">
-                                            <Label>
-                                                Descuento ({getDiscountPercentage().toFixed(2)}%):
-                                            </Label>
-                                            <span className="text-base font-semibold text-red-600 tabular-nums">
-                                                -{formatCurrency(calculateTotalDiscount())}
-                                            </span>
-                                        </div>
-
-                                        <Separator className="my-2" />
-
-                                        <div className="bg-white rounded-lg p-2 border border-green-200">
-                                            <div className="flex justify-between items-center">
-                                                <Label className="text-base font-bold text-gray-700">TOTAL:</Label>
-                                                <span className="text-xl font-bold text-green-600 tabular-nums">
-                                                    {formatCurrency(calculateTotal())}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </FormProvider>
-            </div>
+                        </div>
+                    </div>
+                </form>
+            </FormProvider>
         </main >
     );
 }

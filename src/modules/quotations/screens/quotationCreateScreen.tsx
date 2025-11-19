@@ -42,6 +42,7 @@ import { useQuotationPDF } from "../hooks/useQuotationPDF";
 import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
 import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
+import type { SelectedItem } from "@/types/windowSelectedItems";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -128,7 +129,6 @@ const QuotationCreateScreen = () => {
         register,
         watch,
         reset,
-        resetField,
         control,
         handleSubmit,
         setValue,
@@ -159,8 +159,8 @@ const QuotationCreateScreen = () => {
         }
     }, [mode, isReadOnly, setCartMode]);
 
-    const subtotal = useMemo(() => getCartSubtotal(), [getCartSubtotal]);
-    const total = useMemo(() => getCartTotal(), [getCartTotal]);
+    const subtotal = getCartSubtotal()
+    const total = getCartTotal()
 
     const formValues = watch();
     const { tipo_cotizacion, plazo_pago } = formValues;
@@ -238,10 +238,32 @@ const QuotationCreateScreen = () => {
             });
             showErrorToast({
                 title: "Plazo requerido",
-                description: "Las cotizaciones a crédito requieren una fecha de plazo",
+                description: "Las ventas a crédito requieren una fecha de plazo",
                 duration: 5000
             });
             isValid = false;
+        }
+
+        // Agregar validación adicional
+        if (formValues.tipo_cotizacion === "VC" && formValues.plazo_pago && formValues.fecha) {
+            const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+            fechaVenta.setHours(0, 0, 0, 0);
+
+            const plazoDate = parse(formValues.plazo_pago, "yyyy-MM-dd", new Date());
+            plazoDate.setHours(0, 0, 0, 0);
+
+            if (plazoDate <= fechaVenta) {
+                setError("plazo_pago", {
+                    type: "manual",
+                    message: "La fecha de plazo debe ser posterior a la fecha de cotización"
+                });
+                showErrorToast({
+                    title: "Fecha inválida",
+                    description: "La fecha de plazo debe ser posterior a la fecha de cotización",
+                    duration: 5000
+                });
+                isValid = false;
+            }
         }
 
         return isValid;
@@ -249,38 +271,34 @@ const QuotationCreateScreen = () => {
 
     // VALIDACIÓN DE FECHA DE PLAZO
     useEffect(() => {
-        // Early return si no es crédito
+        // Si no es cotización a crédito, limpiar y salir
         if (tipo_cotizacion !== "VC") {
             clearErrors("plazo_pago");
             return;
         }
 
-        // Solo validar si hay plazo
-        if (!plazo_pago) {
+        // Si no hay plazo_pago o no hay fecha de cotización, no validar
+        if (!plazo_pago || !formValues.fecha) {
+            clearErrors("plazo_pago");
             return;
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // Comparar con la fecha de cotización, no con hoy
+        const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
+        fechaVenta.setHours(0, 0, 0, 0);
 
         const plazoDate = parse(plazo_pago, "yyyy-MM-dd", new Date());
         plazoDate.setHours(0, 0, 0, 0);
 
-        if (plazoDate <= today) {
+        if (plazoDate <= fechaVenta) {
             setError("plazo_pago", {
                 type: "manual",
-                message: "La fecha de plazo debe ser posterior a hoy"
+                message: "La fecha de plazo debe ser posterior a la fecha de cotización"
             });
-            showErrorToast({
-                title: "Fecha inválida",
-                description: "La fecha de plazo debe ser posterior a hoy",
-                duration: 5000
-            });
-            resetField("plazo_pago");
         } else {
             clearErrors("plazo_pago");
         }
-    }, [tipo_cotizacion, plazo_pago, resetField, setError, clearErrors]);
+    }, [tipo_cotizacion, plazo_pago, formValues.fecha, setError, clearErrors]);
 
     const handleNewQuotation = useCallback(() => {
         setCreatedQuotationId(null);
@@ -439,6 +457,13 @@ const QuotationCreateScreen = () => {
         setIsDialogOpen(false)
     }
 
+    const selectedItems = useMemo<SelectedItem[]>(() => {
+        return detalles.map(detail => ({
+            productId: detail.id_producto || 0,
+            quantity: detail.cantidad,
+        }));
+    }, [detalles]);
+
     // Hook para manejar la ventana secundaria de productos
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
@@ -446,7 +471,8 @@ const QuotationCreateScreen = () => {
         onProductSelect: handleAddProductItem,
         onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
-        multiSelect: true
+        multiSelect: true,
+        selectedItems
     });
 
     const toggleWindowSelector = () => {
@@ -563,7 +589,7 @@ const QuotationCreateScreen = () => {
                                                     autoFocus
                                                     disabled={isReadOnly}
                                                 />
-                                                {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                                {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
                                             </div>
                                             <div>
                                                 <Label htmlFor="id_responsable">Responsable *</Label>
@@ -582,7 +608,7 @@ const QuotationCreateScreen = () => {
                                                         />
                                                     )}
                                                 />
-                                                {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.id_responsable && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
 
                                             {
@@ -611,7 +637,7 @@ const QuotationCreateScreen = () => {
                                                                 </Select>
                                                             )}
                                                         />
-                                                        {errors.forma_cotizacion && <p className="text-red-500 text-sm mt-1">{errors.forma_cotizacion.message}</p>}
+                                                        {errors.forma_cotizacion && <p className="text-red-500 text-xs">{errors.forma_cotizacion.message}</p>}
                                                     </div>
                                                 )
                                             }
@@ -640,7 +666,7 @@ const QuotationCreateScreen = () => {
                                                         </Select>
                                                     )}
                                                 />
-                                                {errors.tipo_cotizacion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.tipo_cotizacion && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
                                                 configuraciones.inputs && (
@@ -679,6 +705,7 @@ const QuotationCreateScreen = () => {
                                                     {...register("plazo_pago")}
                                                     disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
                                                 />
+                                                {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
                                             </div>
                                             <div>
                                                 <Label htmlFor="vehiculo">Vehículo/Motor</Label>
@@ -775,7 +802,7 @@ const QuotationCreateScreen = () => {
                                                         />
                                                     )}
                                                 />
-                                                {errors.id_cliente && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                                {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
                                                 configuraciones.inputs && (

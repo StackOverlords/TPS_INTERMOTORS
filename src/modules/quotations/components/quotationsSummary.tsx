@@ -11,7 +11,7 @@ import { Badge } from "@/components/atoms/badge";
 
 type DiscountType = 'amount' | 'percentage';
 
-interface SalesSummaryProps {
+interface QuotationSummaryProps {
     isReadOnly?: boolean
     isEditMode?: boolean
     isPending: boolean
@@ -27,7 +27,7 @@ interface SalesSummaryProps {
     hasProducts?: boolean
 }
 
-const QuotationsSummary: React.FC<SalesSummaryProps> = ({
+const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
     isReadOnly = false,
     isEditMode = false,
     isPending,

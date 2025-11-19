@@ -15,12 +15,15 @@ export const salesService = {
      * Crear una nueva venta
      * @param data - Datos de la venta a crear
      */
-    async create(data: Sale): Promise<unknown> {
+    async create(data: Sale): Promise<SaleGetById> {
         Logger.info('Creating sale', { data }, MODULE_NAME);
 
         const response = await ApiService.post(
             SALE_ENDPOINTS.create,
             data,
+            SaleGetByIdSchema,
+            undefined,
+            { unwrapData: true }
         );
 
         Logger.info(
@@ -29,7 +32,7 @@ export const salesService = {
             // response.data.id && { id: response.data.id },
             MODULE_NAME
         );
-        return response
+        return response as SaleGetById;
     },
 
     /**
@@ -104,5 +107,17 @@ export const salesService = {
         await ApiService.delete(SALE_ENDPOINTS.delete(id));
 
         Logger.info('Sale deleted successfully', { id }, MODULE_NAME);
+    },
+
+    /**
+    * Eliminar detalle de una venta por ID
+    * @param id - ID del detalle de venta
+    */
+    async deleteDetail(id: number): Promise<void> {
+        Logger.info('Deleting sale detail', { id }, MODULE_NAME);
+
+        await ApiService.delete(SALE_ENDPOINTS.details.delete(id));
+
+        Logger.info('Sale detail deleted successfully', { id }, MODULE_NAME);
     },
 };
