@@ -1,5 +1,5 @@
 import { Button } from '@/components/atoms/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { formatCell } from '@/utils/formatCell';
@@ -9,6 +9,11 @@ import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { UIOrderDetailCreate } from '../types/orderCreate.types';
 import { EditablePercentage } from '@/modules/shoppingCart/components/EditablePercentage';
 import type { UIOrderDetailUpdate } from '../types/orderUpdate.types';
+import { Badge } from '@/components/atoms/badge';
+import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
+import useConfirmMutation from '@/hooks/useConfirmMutation';
+import ConfirmationModal from '@/components/common/confirmationModal';
+import { useDeleteOrderDetail } from '../hooks/useDeleteOrderDetail';
 
 type OrderDetailUnion = UIOrderDetailCreate | UIOrderDetailUpdate;
 
@@ -22,6 +27,9 @@ interface OrderDetailTableProps<T extends OrderDetailUnion> {
     onUpdateIncPVentaAlt: (id_producto: number, inc: number) => void;
     onRemoveProduct: (id_producto: number) => void;
     isLoading?: boolean;
+    isReadOnly?: boolean;
+    isSaving?: boolean;
+    isEditMode?: boolean; // Nueva prop para saber si estamos en modo edición
 }
 
 export interface OrderDetailTableRef {
@@ -37,10 +45,65 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
     onUpdatePrecioVentaAlt,
     onUpdateIncPVentaAlt,
     onRemoveProduct,
-    isLoading = false
+    isLoading = false,
+    isReadOnly = false,
+    isSaving = false,
+    isEditMode = false,
 }: OrderDetailTableProps<T>, ref: React.Ref<OrderDetailTableRef>) {
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+
+    const handleDeleteSuccess = (_data: unknown, detailId: number) => {
+        const deletedItem = details.find(d => 'id_detalle_pedido' in d && d.id_detalle_pedido === detailId);
+        if (deletedItem) {
+            onRemoveProduct(deletedItem.id_producto);
+        }
+        showSuccessToast({
+            title: "Detalle de pedido eliminado",
+            description: `El detalle de pedido #${detailId} se eliminó exitosamente`,
+            duration: 5000
+        });
+    };
+
+    const handleDeleteError = (_error: unknown, detailId: number) => {
+        showErrorToast({
+            title: "Error al eliminar el detalle de pedido",
+            description: `No se pudo eliminar el detalle de pedido #${detailId}. Por favor, intenta nuevamente`,
+            duration: 5000
+        });
+    };
+
+    const {
+        mutate: deleteOrderDetail,
+        isPending: isDeleting
+    } = useDeleteOrderDetail();
+
+    const {
+        close: handleCloseDeleteAlert,
+        confirm: handleConfirmDeleteAlert,
+        isOpen: showDeleteAlert,
+        open: handleOpenDeleteAlert,
+        variables: detailToDelete
+    } = useConfirmMutation(deleteOrderDetail, handleDeleteSuccess, handleDeleteError);
+
+    const handleRemoveItem = (item: T) => {
+        // Si no estamos en modo edición, siempre eliminamos del estado local
+        if (!isEditMode) {
+            onRemoveProduct(item.id_producto);
+            return;
+        }
+
+        // Si estamos en modo edición, verificamos si el item existe en BD
+        const isNew = !('id_detalle_pedido' in item) || !item.id_detalle_pedido;
+
+        if (isNew) {
+            // Item nuevo, solo eliminamos del estado local
+            onRemoveProduct(item.id_producto);
+        } else {
+            // Item existente en BD, mostramos confirmación y eliminamos de BD
+            handleOpenDeleteAlert((item as UIOrderDetailUpdate).id_detalle_pedido ?? undefined);
+        }
+    };
 
     // Exponer método focusFirstQuantityInput
     useImperativeHandle(ref, () => ({
@@ -51,180 +114,233 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
         }
     }));
 
-    const columns = useMemo<ColumnDef<T>[]>(() => [
-        {
-            accessorKey: "id_producto",
-            header: "ID",
-            size: 50,
-            minSize: 40,
-        },
-        {
-            accessorFn: row => row.product.descripcion,
-            id: "descripcion",
-            header: "Descripción",
-            size: 300,
-            minSize: 250,
-            enableHiding: false,
-            cell: ({ getValue }) => (
-                <span>{getValue<string>()}</span>
-            )
-        },
-        {
-            accessorFn: row => row.product.codigo_oem,
-            id: "codigo_oem",
-            header: "Cód. OEM",
-            size: 100,
-            minSize: 70,
-            cell: ({ getValue }) => (
-                <span>{formatCell(getValue<string>())}</span>
-            ),
-        },
-        {
-            accessorKey: "cantidad",
-            id: 'cantidad',
-            header: "Cantidad",
-            size: 110,
-            minSize: 80,
-            cell: ({ getValue, row }) => {
-                const cantidad = getValue<number>();
-                const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
-                return (
-                    <EditableQuantity
-                        value={cantidad}
-                        className="w-full"
-                        buttonClassName="w-full"
-                        onSubmit={(value) => onUpdateCantidad(row.original.id_producto, value as number)}
-                        validate={(val) => {
-                            const num = parseInt(val);
-                            return !isNaN(num) && num > 0;
-                        }}
-                        inputRef={refToAssign}
-                    />
-                )
-            },
-        },
-        {
-            accessorKey: "costo",
-            id: 'costo',
-            header: "Costo",
-            size: 110,
-            minSize: 80,
-            cell: ({ getValue, row }) => {
-                const costo = getValue<number>();
-                return (
-                    <EditablePrice
-                        value={costo}
-                        onSubmit={(value) => onUpdateCosto(row.original.id_producto, value as number)}
-                        className="w-full"
-                        buttonClassName="w-full"
-                        numberProps={{ min: 0, step: 0.01 }}
-                    />
-                )
-            },
-        },
-        {
-            accessorKey: "inc_p_venta",
-            id: 'inc_p_venta',
-            header: "Inc. %",
-            size: 110,
-            minSize: 80,
-            cell: ({ getValue, row }) => {
-                const inc = getValue<number>();
-                return (
-                    <EditablePercentage
-                        value={inc}
-                        onSubmit={(value) => onUpdateIncPVenta(row.original.id_producto, value as number)}
-                        className="w-full"
-                        buttonClassName="w-full"
-                    />
-                )
-            },
-        },
-        {
-            accessorKey: "precio_venta",
-            id: 'precio_venta',
-            header: "P. Venta",
-            size: 110,
-            minSize: 80,
-            cell: ({ getValue, row }) => {
-                const precio = getValue<number>();
-                return (
-                    <EditablePrice
-                        value={precio}
-                        onSubmit={(value) => onUpdatePrecioVenta(row.original.id_producto, value as number)}
-                        className="w-full"
-                        buttonClassName="w-full"
-                        numberProps={{ min: 0, step: 0.01 }}
-                    />
-                )
-            },
-        },
-        {
-            accessorKey: "inc_p_venta_alt",
-            id: 'inc_p_venta_alt',
-            header: "Inc. Alt %",
-            size: 110,
-            minSize: 80,
-            cell: ({ getValue, row }) => {
-                const inc = getValue<number>();
-                return (
-                    <EditablePercentage
-                        value={inc}
-                        onSubmit={(value) => onUpdateIncPVentaAlt(row.original.id_producto, value as number)}
-                        className="w-full"
-                        buttonClassName="w-full"
-                    />
-                )
-            },
-        },
-        {
-            accessorKey: "precio_venta_alt",
-            id: 'precio_venta_alt',
-            header: "P. Venta Alt",
-            size: 110,
-            minSize: 80,
-            cell: ({ getValue, row }) => {
-                const precio = getValue<number>();
-                return (
-                    <EditablePrice
-                        value={precio}
-                        onSubmit={(value) => onUpdatePrecioVentaAlt(row.original.id_producto, value as number)}
-                        className="w-full"
-                        buttonClassName="w-full"
-                        numberProps={{ min: 0, step: 0.01 }}
-                    />
-                )
-            },
-        },
-        {
-            id: "action",
-            header: "Acciones",
-            size: 60,
-            minSize: 40,
-            cell: ({ row }) => {
-                return (
-                    <div className='flex items-center justify-center'>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onRemoveProduct(row.original.id_producto)}
-                            className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                        >
-                            <Trash2 className="size-3" />
-                        </Button>
-                    </div>
-                )
-            }
+    const columns = useMemo<ColumnDef<T>[]>(() => {
+        const baseColumns: ColumnDef<T>[] = [];
+
+        // Columna de código/badge solo en modo edición
+        if (isEditMode) {
+            baseColumns.push({
+                accessorKey: "id_detalle_pedido",
+                header: "Cód.",
+                size: 50,
+                minSize: 30,
+                cell: ({ row, getValue }) => {
+                    const value = getValue<number>();
+                    const isNew = !('id_detalle_pedido' in row.original) || !row.original.id_detalle_pedido;
+                    return (
+                        <div className="flex items-center justify-center">
+                            {isNew ? (
+                                <Badge
+                                    variant={'accent'}
+                                    className='text-[10px] px-1 py-0'
+                                >
+                                    Nuevo
+                                </Badge>
+                            ) : (
+                                <span>{value}</span>
+                            )}
+                        </div>
+                    );
+                },
+            });
         }
-    ], [
+
+        // Resto de columnas
+        baseColumns.push(
+            {
+                accessorKey: "id_producto",
+                header: "Cód. P.",
+                size: 50,
+                minSize: 40,
+            },
+            {
+                accessorFn: row => row.product.descripcion,
+                id: "descripcion",
+                header: "Descripción",
+                size: 300,
+                minSize: 250,
+                enableHiding: false,
+                cell: ({ getValue }) => (
+                    <span>{getValue<string>()}</span>
+                )
+            },
+            {
+                accessorFn: row => row.product.codigo_oem,
+                id: "codigo_oem",
+                header: "Cód. OEM",
+                size: 100,
+                minSize: 70,
+                cell: ({ getValue }) => (
+                    <span>{formatCell(getValue<string>())}</span>
+                ),
+            },
+            {
+                accessorKey: "cantidad",
+                id: 'cantidad',
+                header: "Cantidad",
+                size: 110,
+                minSize: 80,
+                cell: ({ getValue, row }) => {
+                    const cantidad = getValue<number>();
+                    const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
+                    return (
+                        <EditableQuantity
+                            value={cantidad}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            onSubmit={(value) => onUpdateCantidad(row.original.id_producto, value as number)}
+                            validate={(val) => {
+                                const num = parseInt(val);
+                                return !isNaN(num) && num > 0;
+                            }}
+                            inputRef={refToAssign}
+                            disabled={isReadOnly || isSaving}
+                        />
+                    )
+                },
+            },
+            {
+                accessorKey: "costo",
+                id: 'costo',
+                header: "Costo",
+                size: 110,
+                minSize: 80,
+                cell: ({ getValue, row }) => {
+                    const costo = getValue<number>();
+                    return (
+                        <EditablePrice
+                            value={costo}
+                            onSubmit={(value) => onUpdateCosto(row.original.id_producto, value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            numberProps={{ min: 0, step: 0.01 }}
+                            disabled={isReadOnly || isSaving}
+                        />
+                    )
+                },
+            },
+            {
+                accessorKey: "inc_p_venta",
+                id: 'inc_p_venta',
+                header: "Inc. %",
+                size: 110,
+                minSize: 80,
+                cell: ({ getValue, row }) => {
+                    const inc = getValue<number>();
+                    return (
+                        <EditablePercentage
+                            value={inc}
+                            onSubmit={(value) => onUpdateIncPVenta(row.original.id_producto, value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            disabled={isReadOnly || isSaving}
+                        />
+                    )
+                },
+            },
+            {
+                accessorKey: "precio_venta",
+                id: 'precio_venta',
+                header: "P. Venta",
+                size: 110,
+                minSize: 80,
+                cell: ({ getValue, row }) => {
+                    const precio = getValue<number>();
+                    return (
+                        <EditablePrice
+                            value={precio}
+                            onSubmit={(value) => onUpdatePrecioVenta(row.original.id_producto, value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            numberProps={{ min: 0, step: 0.01 }}
+                            disabled={isReadOnly || isSaving}
+                        />
+                    )
+                },
+            },
+            {
+                accessorKey: "inc_p_venta_alt",
+                id: 'inc_p_venta_alt',
+                header: "Inc. Alt %",
+                size: 110,
+                minSize: 80,
+                cell: ({ getValue, row }) => {
+                    const inc = getValue<number>();
+                    return (
+                        <EditablePercentage
+                            value={inc}
+                            onSubmit={(value) => onUpdateIncPVentaAlt(row.original.id_producto, value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            disabled={isReadOnly || isSaving}
+                        />
+                    )
+                },
+            },
+            {
+                accessorKey: "precio_venta_alt",
+                id: 'precio_venta_alt',
+                header: "P. Venta Alt",
+                size: 110,
+                minSize: 80,
+                cell: ({ getValue, row }) => {
+                    const precio = getValue<number>();
+                    return (
+                        <EditablePrice
+                            value={precio}
+                            onSubmit={(value) => onUpdatePrecioVentaAlt(row.original.id_producto, value as number)}
+                            className="w-full"
+                            buttonClassName="w-full"
+                            numberProps={{ min: 0, step: 0.01 }}
+                            disabled={isReadOnly || isSaving}
+                        />
+                    )
+                },
+            },
+            {
+                id: "action",
+                header: "Acciones",
+                size: 60,
+                minSize: 40,
+                cell: ({ row }) => {
+                    const item = row.original;
+                    const isNew = !isEditMode || !('id_detalle_pedido' in item) || !item.id_detalle_pedido;
+
+                    return (
+                        <div className='flex items-center justify-center'>
+                            <Button
+                                disabled={isReadOnly || isSaving || isDeleting}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveItem(item)}
+                                className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                            >
+                                {isNew && isEditMode ? (
+                                    <X className="size-3" />
+                                ) : (
+                                    <Trash2 className="size-3" />
+                                )}
+                            </Button>
+                        </div>
+                    )
+                }
+            }
+        );
+
+        return baseColumns;
+    }, [
+        isEditMode,
         onUpdateCantidad,
         onUpdateCosto,
         onUpdateIncPVenta,
         onUpdatePrecioVenta,
         onUpdateIncPVentaAlt,
         onUpdatePrecioVentaAlt,
-        onRemoveProduct
+        onRemoveProduct,
+        isReadOnly,
+        isSaving,
+        isDeleting
     ]);
 
     const table = useReactTable<T>({
@@ -239,16 +355,27 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
     });
 
     return (
-        <CustomizableTable
-            table={table}
-            isLoading={isLoading}
-        />
+        <>
+            <CustomizableTable
+                table={table}
+                isLoading={isLoading}
+            />
+
+            <ConfirmationModal
+                isOpen={showDeleteAlert}
+                onClose={handleCloseDeleteAlert}
+                onConfirm={handleConfirmDeleteAlert}
+                title="Eliminar detalle de pedido"
+                message={`¿Estás seguro de eliminar el detalle de pedido #${detailToDelete}?`}
+                isLoading={isDeleting}
+            />
+        </>
     );
 }
 
 // Exportar con forwardRef tipado correctamente
-const OrderDetailTable = forwardRef(OrderDetailTableInner) as React.FC<
-    OrderDetailTableProps<OrderDetailUnion> & { ref?: React.Ref<OrderDetailTableRef> }
+const OrderDetailTable = forwardRef(OrderDetailTableInner) as React.ForwardRefExoticComponent<
+    OrderDetailTableProps<OrderDetailUnion> & React.RefAttributes<OrderDetailTableRef>
 >;
 
 OrderDetailTable.displayName = 'OrderDetailTable';

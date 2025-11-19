@@ -145,7 +145,6 @@ const SaleEditScreen = () => {
                     stock_actual: 0
                 }
             }));
-
         // Guardar los detalles originales
         setOriginalDetails(detallesTransformados);
 

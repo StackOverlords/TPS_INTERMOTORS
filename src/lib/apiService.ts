@@ -36,7 +36,8 @@ export class ApiService {
     url: string,
     schema?: z.ZodSchema<T>,
     config?: AxiosRequestConfig,
-    options: ApiOptions = { unwrapData: false }
+    options: ApiOptions = { unwrapData: false },
+    applySchema: boolean = true
   ): Promise<T> {
     this.logRequest('GET', url);
 
@@ -46,10 +47,9 @@ export class ApiService {
 
       const payload = options.unwrapData ? response.data.data : response.data;
 
-      // if (schema) {
-      //   return Validator.validate(schema, payload, `GET ${url}`);
-      // }
-      
+      if (schema && applySchema) {
+        return Validator.validate(schema, payload, `GET ${url}`);
+      }
 
       return payload;
     } catch (error) {
