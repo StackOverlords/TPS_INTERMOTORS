@@ -4,7 +4,6 @@ import {
   AlertCircle,
   Calendar,
   ChevronDown,
-  ChevronUp,
   Download,
   ExternalLink,
   Loader2,
@@ -49,29 +48,25 @@ export default function ReleaseNotes({
   error,
   onCheckUpdate,
   onDownloadUpdate,
-  onDismiss,
+  // onDismiss,
 }: ReleaseNotesProps) {
   const [showDetails, setShowDetails] = React.useState(true);
 
   return (
     <div className="w-full">
-      {/* Layout de 2 columnas estilo VSCode */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Columna Izquierda - Contenido/Detalles (2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Header */}
           <div>
             <h3 className="text-2xl font-semibold text-gray-800 mb-2">
               {releaseNotes
-                ? (hasUpdate
-                    ? `Novedades en v${currentVersion}`
-                    : `Novedades en v${currentVersion}`)
+                ? `Novedades en v${hasUpdate ? latestVersion : currentVersion}`
                 : 'Actualizaciones'}
             </h3>
             <p className="text-sm text-gray-500">
               {releaseNotes
                 ? (hasUpdate
-                    ? 'Ver las mejoras de tu versión actual. Hay una nueva versión disponible →'
+                    ? `Nueva versión disponible para actualizar`
                     : 'Ver las mejoras y cambios de esta versión')
                 : 'Mantén tu aplicación actualizada'}
             </p>
@@ -80,42 +75,43 @@ export default function ReleaseNotes({
           {/* Si hay release notes */}
           {releaseNotes && (
             <>
-              {/* Toggle para expandir/colapsar */}
-              <Button
+              <button
                 onClick={() => setShowDetails(!showDetails)}
-                variant={showDetails ? 'outline' : 'default'}
-                className="gap-2 w-full sm:w-auto"
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200 group -ml-1"
               >
-                {showDetails ? (
-                  <>
-                    <ChevronUp className="h-4 w-4" />
-                    Ocultar detalles
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4" />
-                    Ver qué hay de nuevo
-                  </>
-                )}
-              </Button>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-300 ease-out ${
+                    showDetails ? 'rotate-180' : 'rotate-0'
+                  }`}
+                />
+                <span className="group-hover:underline">
+                  {showDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                </span>
+              </button>
 
-              {/* Contenido de las notas con scroll - Renderizado con @uiw/react-markdown-preview */}
-              {showDetails && releaseNotes && (
-                <div className="max-h-[60vh] overflow-y-auto pr-4 animate-in slide-in-from-top-2">
-                  <MarkdownPreview
-                    source={releaseNotes}
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: '#374151',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                    }}
-                    wrapperElement={{
-                      'data-color-mode': 'light',
-                    }}
-                  />
-                </div>
-              )}
+              {/* Contenido de las notas con animación suave */}
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  showDetails ? 'max-h-[60vh] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+                }`}
+              >
+                {showDetails && (
+                  <div className="max-h-[60vh] overflow-y-auto pr-4">
+                    <MarkdownPreview
+                      source={releaseNotes}
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: '#374151',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                      }}
+                      wrapperElement={{
+                        'data-color-mode': 'light',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -135,7 +131,7 @@ export default function ReleaseNotes({
         {/* Columna Derecha - Detalles Técnicos y Acciones (1/3) */}
         <div className="space-y-6">
           {/* Card de información */}
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-5 space-y-4">
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-2 space-y-4">
             {/* Versión actual */}
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -256,20 +252,20 @@ export default function ReleaseNotes({
             )}
 
             {/* Botón secundario: Cerrar (solo si hay release notes) */}
-            {releaseNotes && !isDownloading && !isInstalling && (
+            {/* {releaseNotes && !isDownloading && !isInstalling && (
               <Button onClick={onDismiss} variant="ghost" className="w-full text-xs">
                 {hasUpdate ? 'Más tarde' : 'Cerrar'}
               </Button>
-            )}
+            )} */}
           </div>
 
           {/* Info adicional */}
-          {releaseNotes && (
+          {/* {releaseNotes && (
             <div className="text-xs text-gray-500 space-y-2">
               <p>Esta ventana se muestra automáticamente cuando se instala una nueva versión.</p>
               <p>Puedes volver a ver las notas en cualquier momento desde GitHub.</p>
             </div>
-          )}
+          )} */}
 
           {/* Mensaje de última versión */}
           {error && error.includes('Ya estás en la última versión') && (
