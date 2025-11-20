@@ -27,6 +27,7 @@
  * ```
  */
 
+import type { SelectedItem } from '@/types/windowSelectedItems';
 import {
   closeSecondaryWindow,
   createSecondaryWindow,
@@ -332,6 +333,9 @@ export interface UseProductSelectorWindowConfig {
   onlyWithStock?: boolean;
   initialFilters?: Record<string, any>;
   multiSelect?: boolean;
+  mode?: 'create' | 'edit';
+  validateStock?: boolean; // Si debe validar stock (false para cotizaciones/compras...)
+  selectedItems?: SelectedItem[];
 }
 
 // Array constante para evitar recreaciones
@@ -353,6 +357,9 @@ export function useProductSelectorWindow(
     onlyWithStock,
     initialFilters,
     multiSelect = false,
+    mode = 'create',
+    validateStock = false, // Por defecto no valida stock
+    selectedItems = [],
   } = config;
 
   // Generar windowId único
@@ -386,7 +393,10 @@ export function useProductSelectorWindow(
     queryParams: {
       component: 'product-selector', // ID del componente a renderizar
       context,
+      mode,
+      validateStock: String(validateStock),
       onlyWithStock: String(onlyWithStock ?? false),
+      selectedItems: JSON.stringify(selectedItems),
       ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
       multiSelect: String(multiSelect),
     },

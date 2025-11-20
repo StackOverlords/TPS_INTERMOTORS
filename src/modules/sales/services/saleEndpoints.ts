@@ -1,7 +1,12 @@
+const BASE_PATH = '/sales';
+
 export const SALE_ENDPOINTS = {
-    all: "/sales",
-    create: "/sales",
-    byId: (venta: string | number) => `/sales/${venta}`,
-    update: (venta: string | number) => `/sales/${venta}`,
-    delete: (venta: string | number) => `/sales/${venta}`,
+    all: BASE_PATH,
+    create: BASE_PATH,
+    byId: (venta: string | number) => `${BASE_PATH}/${venta}`,
+    update: (venta: string | number) => `${BASE_PATH}/${venta}`,
+    delete: (venta: string | number) => `${BASE_PATH}/${venta}`,
+    details: {
+        delete: (detalle: string | number) => `${BASE_PATH}-detail/${detalle}`,
+    },
 };

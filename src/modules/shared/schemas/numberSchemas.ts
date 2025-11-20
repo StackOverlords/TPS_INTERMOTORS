@@ -57,3 +57,14 @@ export const toNumber = z.preprocess((v) => {
     const parsed = parseFloat(v as string);
     return isNaN(parsed) ? v : parsed;
 }, z.number());
+
+/**
+ * convierte un valor a número
+ */
+export const toNumberOrZero = z.preprocess(
+    (v) => {
+        const parsed = Number(v);
+        return isNaN(parsed) || v == null ? 0 : parsed;
+    },
+    z.number()
+);

@@ -15,12 +15,15 @@ export const orderService = {
      * Crear un nuevo pedido
      * @param data - Datos del pedido a crear
     */
-    async create(data: OrderCreate): Promise<unknown> {
+    async create(data: OrderCreate): Promise<OrderGetById> {
         Logger.info('Creating Order', { data }, MODULE_NAME);
 
         const response = await ApiService.post(
             ORDER_ENDPOINTS.create,
             data,
+            OrderByIdSchema,
+            undefined,
+            { unwrapData: true }
         );
 
         Logger.info(
@@ -29,7 +32,7 @@ export const orderService = {
             // response.data.id && { id: response.data.id },
             MODULE_NAME
         );
-        return response
+        return response as OrderGetById;
     },
 
     /**
@@ -113,5 +116,17 @@ export const orderService = {
         await ApiService.delete(ORDER_ENDPOINTS.delete(id));
 
         Logger.info('Order deleted successfully', { id }, MODULE_NAME);
+    },
+
+    /**
+        * Eliminar detalle de un pedido por ID
+        * @param id - ID del detalle de un pedido
+        */
+    async deleteDetail(id: number): Promise<void> {
+        Logger.info('Deleting order detail', { id }, MODULE_NAME);
+
+        await ApiService.delete(ORDER_ENDPOINTS.details.delete(id));
+
+        Logger.info('Order detail deleted successfully', { id }, MODULE_NAME);
     },
 };

@@ -9,6 +9,7 @@ export const SaleProductDetailSchema = z.object({
     precio_venta: z.coerce.number(),
     categoria: z.string().nullable(),
     marca: z.string(),
+    stock_actual:z.number().nonnegative()
 })
 
 export const SaleUpdateDetailSchema = SaleDetailSchema

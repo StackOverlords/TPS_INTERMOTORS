@@ -1,5 +1,5 @@
 import { Button } from '@/components/atoms/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { formatCell } from '@/utils/formatCell';
@@ -7,6 +7,11 @@ import CustomizableTable from '@/components/common/CustomizableTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { SaleUpdateDetailUI } from '../../types/saleUpdate.type';
+import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
+import useConfirmMutation from '@/hooks/useConfirmMutation';
+import { Badge } from '@/components/atoms/badge';
+import ConfirmationModal from '@/components/common/confirmationModal';
+import { useDeleteSaleDetail } from '../../hooks/useDeleteSaleDetail';
 
 type SaleDetailsEditingTableProps = {
     products: SaleUpdateDetailUI[]
@@ -29,6 +34,52 @@ export const SaleDetailsEditingTable = forwardRef<
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
 
+    const handleDeleteSuccess = (_data: unknown, detailId: number) => {
+        const deletedItem = products.find(p => p.id_detalle_venta === detailId);
+
+        if (deletedItem) {
+            removeItem(deletedItem.id_producto);
+        }
+
+        showSuccessToast({
+            title: "Detalle de venta eliminado",
+            description: `El detalle de venta #${detailId} se eliminó exitosamente`,
+            duration: 5000
+        })
+
+    };
+
+    const handleDeleteError = (_error: unknown, detailId: number) => {
+        showErrorToast({
+            title: "Error al eliminar el detalle de venta",
+            description: `No se pudo eliminar el detalle de venta #${detailId}. Por favor, intenta nuevamente`,
+            duration: 5000
+        })
+    };
+
+    const {
+        mutate: deleteSaleDetail,
+        isPending: isDeleting
+    } = useDeleteSaleDetail()
+
+    const {
+        close: handleCloseDeleteAlert,
+        confirm: handleConfirmDeleteAlert,
+        isOpen: showDeleteAlert,
+        open: handleOpenDeleteAlert,
+        variables: detailToDelete
+    } = useConfirmMutation(deleteSaleDetail, handleDeleteSuccess, handleDeleteError)
+
+    const handleRemoveItem = (item: SaleUpdateDetailUI) => {
+        const isNew = !item.id_detalle_venta
+        if (isNew) {
+            removeItem(item.id_producto)
+            return
+        }
+
+        handleOpenDeleteAlert(item.id_detalle_venta ?? undefined)
+    }
+
     // Exponer método focusFirstQuantityInput
     useImperativeHandle(ref, () => ({
         focusFirstQuantityInput: () => {
@@ -39,6 +90,31 @@ export const SaleDetailsEditingTable = forwardRef<
     }));
 
     const columns = useMemo<ColumnDef<SaleUpdateDetailUI>[]>(() => [
+        {
+            accessorKey: "id_detalle_venta",
+            header: "Cód.",
+            size: 40,
+            cell({ row, getValue }) {
+                const value = getValue<number>()
+                const isNew = !row.original.id_detalle_venta
+                return (
+                    <div className='flex items-center'>
+                        {
+                            isNew ? (
+                                <Badge
+                                    variant={'accent'}
+                                    className='text-[10px] px-1 py-0'
+                                >
+                                    Nuevo
+                                </Badge>
+                            ) : (
+                                <span>{value}</span>
+                            )
+                        }
+                    </div>
+                )
+            },
+        },
         {
             accessorFn: row => row.producto.descripcion,
             id: "descripcion",
@@ -141,17 +217,24 @@ export const SaleDetailsEditingTable = forwardRef<
             size: 60,
             minSize: 40,
             cell: ({ row }) => {
-                const product = row.original.producto
+                const item = row.original
+                const isNew = !row.original.id_detalle_venta
                 return (
                     <div className='flex items-center justify-center'>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => removeItem(product.id)}
-                            className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                            onClick={() => isNew ? removeItem(item.id_producto) : handleRemoveItem(item)}
+                            className="text-red-500 hover:text-red-500 size-7 cursor-pointer"
                         >
-                            <Trash2 className="size-3" />
+                            {
+                                isNew ? (
+                                    <X className="size-3" />
+                                ) : (
+                                    <Trash2 className="size-3" />
+                                )
+                            }
                         </Button>
                     </div>
                 )
@@ -170,10 +253,21 @@ export const SaleDetailsEditingTable = forwardRef<
     })
 
     return (
-        <CustomizableTable
-            table={table}
-            isLoading={false}
-        />
+        <>
+            <CustomizableTable
+                table={table}
+                isLoading={false}
+            />
+
+            <ConfirmationModal
+                isOpen={showDeleteAlert}
+                title="Eliminar producto de venta"
+                message={`¿Estás seguro de que deseas eliminar el detalle de venta #${detailToDelete}?`}
+                onClose={handleCloseDeleteAlert}
+                onConfirm={handleConfirmDeleteAlert}
+                isLoading={isDeleting}
+            />
+        </>
     );
 });
 export default SaleDetailsEditingTable

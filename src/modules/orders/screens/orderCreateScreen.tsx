@@ -2,12 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import { CornerUpLeft, ExternalLink, Loader2, Save, ShoppingCart } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-// import ProductSelectorModal from "@/modules/products/components/ProductSelectorModal";
+import { CornerUpLeft, Loader2, Plus, Save, ShoppingCart } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/atoms/button";
 import { Kbd } from "@/components/atoms/kbd";
-import { Separator } from "@/components/atoms/separator";
 import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ShortcutKey from "@/components/common/ShortcutKey";
@@ -37,11 +35,20 @@ import { useCreateOrder } from "../hooks/useCreateOrder";
 import { useOrderDetails } from "../hooks/useOrderDetails";
 import { OrderCreateSchema } from "../schemas/orderCreateSchema";
 import type { OrderCreate } from "../types/orderCreate.types";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
+import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
+import type { SelectedItem } from "@/types/windowSelectedItems";
 
 const OrderCreateScreen = () => {
+    const configuraciones = {
+        inputs: false,
+        formulario: 'top',
+        selector_mode: 'window'
+    }
+    const [isReadOnly, setIsReadOnly] = useState<boolean>(false)
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser();
-    const { selectedBranchId } = useBranchStore();
+    const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
     const [providerSearchTerm, setProviderSearchTerm] = useState<string>("");
     const [debouncedCustomerSearchTerm] = useDebounce<string>(providerSearchTerm, 500);
     const tableRef = useRef<OrderDetailTableRef>(null);
@@ -109,7 +116,6 @@ const OrderCreateScreen = () => {
         formState: { errors }
     } = methods;
 
-    // const [isSearchOpen, setIsSearchOpen] = useState(false);
     const currentStatus = watch("estado_actual");
 
     // Sincronizar detalles con el formulario
@@ -128,7 +134,6 @@ const OrderCreateScreen = () => {
 
     useEffect(() => {
         if (!currentStatus) return;
-
 
         // Si el estado no permite fecha de tránsito, limpiarla
         if (statusesDisablingTransit.includes(currentStatus)) {
@@ -191,9 +196,9 @@ const OrderCreateScreen = () => {
         return isValid;
     };
 
-    const handleCheckout = () => {
+    const handleNewOrder = useCallback(() => {
         orderDetailsHook.clearDetails();
-
+        setIsReadOnly(false)
         const currentValues = getValues();
         reset({
             fecha: format(new Date(), "yyyy-MM-dd"),
@@ -207,9 +212,9 @@ const OrderCreateScreen = () => {
             detalles: [],
             fecha_inicio_transito: "",
             fecha_llegada: "",
-            estado_actual: currentValues.estado_actual,
+            estado_actual: orderStatusData?.[0]?.id || "",
         });
-    };
+    }, [getValues, reset]);
 
     const handleAddProductItem = (product: ProductGet) => {
         orderDetailsHook.addProduct(product);
@@ -229,29 +234,10 @@ const OrderCreateScreen = () => {
     //     }, 100);
     // };
 
-    // Hook para manejar la ventana secundaria de productos
-    const productWindow = useProductSelectorWindow({
-        context: 'order',
-        instanceId: 'create',
-        onProductSelect: handleAddProductItem,
-        onlyWithStock: false,
-    });
-
-    // Función para abrir ventana de selección de productos
-    const toggleProductWindow = () => {
-        if (productWindow.isOpen) {
-            productWindow.close();
-        }
-        productWindow.open();
-    };
-
     const onSubmit = (data: OrderCreate) => {
-        console.log("onSubmit called with data:", data);
         if (!validateBeforeSubmit()) {
-            console.log("Validation failed");
             return;
         }
-        console.log("Validation passed, creating order...");
         if (data.fecha_inicio_transito === '') {
             data.fecha_inicio_transito = undefined;
         }
@@ -261,12 +247,12 @@ const OrderCreateScreen = () => {
         }
         createOrder(data, {
             onSuccess: () => {
+                setIsReadOnly(true)
                 showSuccessToast({
                     title: "Pedido Exitoso",
                     description: `Pedido realizado con éxito`,
                     duration: 5000
                 });
-                handleCheckout();
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear el pedido" });
@@ -275,7 +261,6 @@ const OrderCreateScreen = () => {
     };
 
     const onError = (errors: FieldErrors<OrderCreate>) => {
-        console.log("Errores de validación:", errors);
         if (errors.id_proveedor || errors.tipo_pedido || errors.forma_pedido || errors.id_responsable) {
             showErrorToast({
                 title: "Error de validación",
@@ -302,11 +287,6 @@ const OrderCreateScreen = () => {
 
     const handleGoBack = () => {
         navigate('/dashboard/orders');
-    };
-
-    const handleNewOrder = () => {
-        reset();
-        orderDetailsHook.clearDetails();
     };
 
     useEffect(() => {
@@ -339,6 +319,31 @@ const OrderCreateScreen = () => {
         }
     }, [orderTypesData, orderModalitiesData, orderStatusData, getValues, setValue]);
 
+    const selectedItems = useMemo<SelectedItem[]>(() => {
+        return orderDetailsHook.details.map(detail => ({
+            productId: detail.id_producto || 0,
+            quantity: detail.cantidad,
+        }));
+    }, [orderDetailsHook.details]);
+
+    // Hook para manejar la ventana secundaria de productos
+    const productWindow = useProductSelectorWindow({
+        context: 'pedido',
+        instanceId: 'create-order',
+        onProductSelect: handleAddProductItem,
+        // onMultiSelect: handleAddMultipleProducts,
+        onlyWithStock: false,
+        multiSelect: true,
+        selectedItems
+    });
+
+    const toggleWindowSelector = () => {
+        if (productWindow.isOpen) {
+            productWindow.close();
+        }
+        productWindow.open();
+    };
+
     // Shortcuts
     useHotkeys('escape', (e) => {
         e.preventDefault();
@@ -354,11 +359,11 @@ const OrderCreateScreen = () => {
     });
 
     return (
-        <main>
+        <main className="p-2 h-full">
             <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit, onError)} className="w-full mx-auto flex flex-col gap-3">
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2">
                     {/* Header */}
-                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3">
+                    <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
                         <div className="flex flex-wrap gap-2 items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <TooltipButton
@@ -369,323 +374,402 @@ const OrderCreateScreen = () => {
                                     tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver a la lista de pedidos</p>}
                                     buttonProps={{
                                         variant: 'default',
-                                        type: 'button',
+                                        type: 'button'
                                     }}
                                 >
                                     <CornerUpLeft />
                                 </TooltipButton>
                                 <div>
-                                    <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                                         Nuevo Pedido
                                     </h1>
                                     <p className="text-sm text-gray-500">Registra un nuevo pedido en el sistema</p>
                                 </div>
+                            </div >
+
+                            {/* Action Buttons */}
+                            < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
+
+                            </div >
+                        </div >
+                    </header >
+
+                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                        <div className={cn(
+                            "h-full gap-2",
+                            configuraciones.formulario === "top" && "flex flex-col",
+                            configuraciones.formulario === "left" && "flex flex-col md:grid md:grid-cols-3"
+                        )}>
+                            {/* Formulario de información de cotización*/}
+                            <div className={cn(
+                                "gap-2 flex-shrink-0",
+                                configuraciones.formulario === "top" && "grid md:grid-cols-3",
+                                configuraciones.formulario === "left" && "flex flex-col",
+                            )}>
+                                {/* 1. Datos de la cotización */}
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0 md:col-span-2",
+                                    configuraciones.formulario === "left" && "h-auto md:col-auto",
+                                )}>
+
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className={cn(
+                                            "grid gap-2",
+                                            configuraciones.formulario === "top" && "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+                                            configuraciones.formulario === "left" && "grid-cols-2",
+                                        )}>
+                                            <div>
+                                                <Label htmlFor="fechaCotizacion">Fecha *</Label>
+                                                <Input
+                                                    id="fechaCotizacion"
+                                                    type="date"
+                                                    {...register("fecha")}
+                                                    className="w-full"
+                                                    autoFocus
+                                                    disabled={isReadOnly}
+                                                />
+                                                {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="id_responsable">Responsable *</Label>
+                                                <Controller
+                                                    name="id_responsable"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <ComboboxSelect
+                                                            disabled={isReadOnly}
+                                                            value={field.value}
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={orderResponsiblesData?.data || []}
+                                                            optionTag={"nombre"}
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+
+                                            <div>
+                                                <Label htmlFor="forma">Forma de Pedido *</Label>
+                                                <Controller
+                                                    name="forma_pedido"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange}
+                                                            value={field.value || orderModalitiesData?.[0]?.id || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona una forma" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    orderModalitiesData && orderModalitiesData.map((modality) => (
+                                                                        <SelectItem key={modality.id} value={modality.id}>
+                                                                            {modality.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.forma_pedido && <p className="text-red-500 text-sm mt-1">{errors.forma_pedido.message}</p>}
+                                            </div>
+
+                                            <div>
+                                                <Label htmlFor="tipoCotizacion">Tipo de Pedido *</Label>
+                                                <Controller
+                                                    name="tipo_pedido"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            disabled={isReadOnly}
+                                                            onValueChange={field.onChange}
+                                                            value={field.value || orderTypesData?.[0]?.id || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona un tipo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    orderTypesData && orderTypesData.map((type) => (
+                                                                        <SelectItem key={type.id} value={type.id}>
+                                                                            {type.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.tipo_pedido && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="fechaTransito">
+                                                    Fecha Tránsito
+                                                </Label>
+                                                <Input
+                                                    id="fechaTransito"
+                                                    type="date"
+                                                    {...register("fecha_inicio_transito")}
+                                                    disabled={statusesDisablingTransit.includes(currentStatus) || isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="fechaLlegada">
+                                                    Fecha Llegada
+                                                </Label>
+                                                <Input
+                                                    id="fechaLlegada"
+                                                    type="date"
+                                                    {...register("fecha_llegada")}
+                                                    disabled={statusesDisablingArrival.includes(currentStatus) || isReadOnly}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                                <Input
+                                                    id="nroComprobante"
+                                                    {...register("nro_comprobante")}
+                                                    placeholder="Número de comprobante"
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full",
+                                    configuraciones.formulario === "left" && "grow",
+                                )}>
+
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className="grid grid-cols-2 gap-2">
+
+                                            <div>
+                                                <Label htmlFor="proveedor">Proveedor *</Label>
+                                                <Controller
+                                                    name="id_proveedor"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <PaginatedCombobox
+                                                            disabled={isReadOnly}
+                                                            value={field.value}
+                                                            onChange={(value) => field.onChange(Number(value))}
+                                                            optionsData={orderProvidersData?.data || []}
+                                                            displayField="nombre"
+                                                            isLoading={isOrderProvidersLoading}
+                                                            updatePage={(page) => { console.log("Update page:", page) }}
+                                                            updateSearch={setProviderSearchTerm}
+                                                            metaData={
+                                                                {
+                                                                    current_page: orderProvidersData?.meta?.current_page || 1,
+                                                                    last_page: orderProvidersData?.meta?.last_page || 1,
+                                                                    total: orderProvidersData?.meta?.total || 0,
+                                                                    per_page: orderProvidersData?.meta?.per_page || 10,
+                                                                }
+                                                            }
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.id_proveedor && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+
+                                            <div>
+                                                <Label>Estado *</Label>
+                                                <Controller
+                                                    name="estado_actual"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            value={field.value || orderStatusData?.[0]?.id || ""}
+                                                            disabled={isOrderStatusLoading || isReadOnly}
+                                                            onValueChange={(value) => field.onChange(value)}
+                                                        >
+                                                            <SelectTrigger className={cn(
+                                                                "space-x-2 w-full",
+                                                            )}>
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent className={cn(
+                                                                "shadow-lg",
+                                                            )}>
+                                                                {orderStatusData?.map(({ id, label }) => (
+                                                                    <SelectItem key={id} value={id}>
+                                                                        {label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="col-span-full">
+                                                <Label htmlFor="comentario">Comentarios</Label>
+                                                <Textarea
+                                                    id="comentario"
+                                                    {...register("comentario")}
+                                                    placeholder="Comentarios adicionales sobre el pedido"
+                                                    rows={configuraciones.formulario === "top" ? 1 : 2}
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className={cn(
+                                "flex-1 min-h-0",
+                                configuraciones.formulario === "top" && "",
+                                configuraciones.formulario === "top" && configuraciones.inputs && "",
+                                configuraciones.formulario === "left" && "col-span-2",
+                            )}>
+                                <div className={cn(
+                                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                                    configuraciones.selector_mode === "embebed" && "md:min-h-screen"
+                                )}>
+                                    <ResizablePanelGroup
+                                        className={cn(
+                                            "flex-1 min-h-0"
+                                        )}
+                                        direction={"vertical"}
+                                    >
+                                        {
+                                            configuraciones.selector_mode === "embebed" && (
+                                                <>
+                                                    <ResizablePanel
+                                                        defaultSize={50}
+                                                    >
+                                                        <ProductSearchPanel
+                                                            selectedProducts={orderDetailsHook.details}
+                                                            onProductSelect={handleAddProductItem}
+                                                            allowExceedStock={true}
+                                                        />
+                                                    </ResizablePanel>
+                                                    <ResizableHandle withHandle />
+                                                </>
+                                            )
+                                        }
+                                        <ResizablePanel
+                                            defaultSize={50}
+                                            className="h-full flex flex-col">
+                                            {/* 2. Productos */}
+                                            <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                                                <CardHeader className="flex-shrink-0">
+                                                    <CardTitle className="flex justify-between">
+                                                        <h2 className="text-primary text-base">
+                                                            Detalle de Productos
+                                                        </h2>
+                                                        {
+                                                            configuraciones.selector_mode === "window" && (
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={toggleWindowSelector}
+                                                                    disabled={isSaving || isReadOnly}
+                                                                >
+                                                                    <Plus className="size-4" />
+                                                                    <span className="hidden sm:block">Seleccionar Productos</span>
+                                                                </Button>
+                                                            )
+                                                        }
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="flex-1 min-h-0">
+                                                    <div className="h-full overflow-auto">
+                                                        {orderDetailsHook.details.length === 0 ? (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                                                <p>No hay productos agregados</p>
+                                                                <p className="text-sm">Haz clic en "Seleccionar Productos" para agregar</p>
+                                                            </div>
+                                                        ) :
+                                                            <div className="flex flex-col h-full">
+                                                                <div className="flex-1 min-h-0">
+                                                                    <div className="h-full overflow-auto">
+                                                                        <OrderDetailTable
+                                                                            ref={tableRef}
+                                                                            details={orderDetailsHook.details}
+                                                                            onUpdateCantidad={orderDetailsHook.updateCantidad}
+                                                                            onUpdateCosto={orderDetailsHook.updateCosto}
+                                                                            onUpdatePrecioVenta={orderDetailsHook.updatePrecioVenta}
+                                                                            onUpdateIncPVenta={orderDetailsHook.updateIncPVenta}
+                                                                            onUpdatePrecioVentaAlt={orderDetailsHook.updatePrecioVentaAlt}
+                                                                            onUpdateIncPVentaAlt={orderDetailsHook.updateIncPVentaAlt}
+                                                                            onRemoveProduct={orderDetailsHook.removeProduct}
+                                                                            isReadOnly={isReadOnly}
+                                                                            isSaving={isSaving}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex justify-end flex-shrink-0 items-center px-2 pt-2 border-t border-border gap-3">
+                                                                    <span className="font-medium text-primary">Total:</span>
+                                                                    <span className="font-bold text-emerald-600">{formatCurrency(orderDetailsHook.getTotalCosto())}</span>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </ResizablePanel>
+                                    </ResizablePanelGroup>
+
+                                    {/* <div className="flex flex-col flex-shrink-0"> */}
+                                    <Card className="border border-border shadow-none pt-3">
+                                        <CardContent className="space-y-2">
+                                            <footer className="flex gap-2 items-center justify-between">
+                                                <span className="text-xs text-gray-500">* Campos requeridos</span>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        size={'sm'}
+                                                        variant="outline"
+                                                        className="w-full py-3 font-medium"
+                                                        onClick={handleNewOrder}
+                                                    >
+                                                        Nuevo Pedido
+                                                    </Button>
+
+                                                    <TooltipButton
+                                                        buttonProps={{
+                                                            type: 'submit',
+                                                            disabled: isSaving,
+                                                            variant: 'default',
+                                                            className: "w-full"
+                                                        }}
+                                                        tooltip={
+                                                            <span className="flex items-center gap-1">Registrar Pedido <ShortcutKey combo="alt+s" /></span>
+                                                        }
+                                                    >
+                                                        {isSaving ? (
+                                                            <>
+                                                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                                                Procesando Pedido...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Save className="mr-2 size-4" />
+                                                                Registrar Pedido
+                                                            </>
+                                                        )}
+                                                    </TooltipButton>
+                                                </div>
+                                            </footer>
+                                        </CardContent>
+                                    </Card>
+                                    {/* </div> */}
+                                </div>
                             </div>
                         </div>
-                    </header>
-
-                    {/* Formulario de información de cotización*/}
-                    <div className="grid md:grid-cols-3 gap-3">
-                        {/* 1. Datos del pedido */}
-                        <Card className="shadow-none h-full md:col-span-2">
-                            <CardContent className="py-3">
-                                <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-y-3 gap-x-2">
-                                    <div>
-                                        <Label htmlFor="fechaCotizacion">Fecha *</Label>
-                                        <Input
-                                            id="fechaCotizacion"
-                                            type="date"
-                                            {...register("fecha")}
-                                            className="w-full"
-                                            autoFocus
-                                        />
-                                        {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="id_responsable">Responsable *</Label>
-                                        <Controller
-                                            name="id_responsable"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <ComboboxSelect
-                                                    value={field.value}
-                                                    onChange={(value) => {
-                                                        field.onChange(Number(value));
-                                                    }}
-                                                    options={orderResponsiblesData?.data || []}
-                                                    optionTag={"nombre"}
-                                                />
-                                            )}
-                                        />
-                                        {errors.id_responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="forma">Forma de Pedido *</Label>
-                                        <Controller
-                                            name="forma_pedido"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select onValueChange={field.onChange} value={field.value || orderModalitiesData?.[0]?.id || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona una forma" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {
-                                                            orderModalitiesData && orderModalitiesData.map((modality) => (
-                                                                <SelectItem key={modality.id} value={modality.id}>
-                                                                    {modality.label}
-                                                                </SelectItem>
-                                                            ))
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.forma_pedido && <p className="text-red-500 text-sm mt-1">{errors.forma_pedido.message}</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="tipoCotizacion">Tipo de Pedido *</Label>
-                                        <Controller
-                                            name="tipo_pedido"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select onValueChange={field.onChange} value={field.value || orderTypesData?.[0]?.id || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona un tipo" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {
-                                                            orderTypesData && orderTypesData.map((type) => (
-                                                                <SelectItem key={type.id} value={type.id}>
-                                                                    {type.label}
-                                                                </SelectItem>
-                                                            ))
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.tipo_pedido && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="fechaTransito">
-                                            Fecha Tránsito
-                                        </Label>
-                                        <Input
-                                            id="fechaTransito"
-                                            type="date"
-                                            {...register("fecha_inicio_transito")}
-                                            disabled={statusesDisablingTransit.includes(currentStatus)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="fechaLlegada">
-                                            Fecha Llegada
-                                        </Label>
-                                        <Input
-                                            id="fechaLlegada"
-                                            type="date"
-                                            {...register("fecha_llegada")}
-                                            disabled={statusesDisablingArrival.includes(currentStatus)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nroComprobante">N° Comprobante</Label>
-                                        <Input
-                                            id="nroComprobante"
-                                            {...register("nro_comprobante")}
-                                            placeholder="Número de comprobante"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="shadow-none h-full">
-                            <CardContent className="space-y-3 py-3">
-                                <div className="grid sm:grid-cols-2 gap-y-3 gap-x-2">
-                                    <div>
-                                        <Label htmlFor="proveedor">Proveedor *</Label>
-                                        <Controller
-                                            name="id_proveedor"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <PaginatedCombobox
-                                                    value={field.value}
-                                                    onChange={(value) => field.onChange(Number(value))}
-                                                    optionsData={orderProvidersData?.data || []}
-                                                    displayField="nombre"
-                                                    isLoading={isOrderProvidersLoading}
-                                                    updatePage={(page) => { console.log("Update page:", page) }}
-                                                    updateSearch={setProviderSearchTerm}
-                                                    metaData={
-                                                        {
-                                                            current_page: orderProvidersData?.meta?.current_page || 1,
-                                                            last_page: orderProvidersData?.meta?.last_page || 1,
-                                                            total: orderProvidersData?.meta?.total || 0,
-                                                            per_page: orderProvidersData?.meta?.per_page || 10,
-                                                        }
-                                                    }
-                                                />
-                                            )}
-                                        />
-                                        {errors.id_proveedor && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label>Estado *</Label>
-                                        <Controller
-                                            name="estado_actual"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    value={field.value || orderStatusData?.[0]?.id || ""}
-                                                    disabled={isOrderStatusLoading}
-                                                    onValueChange={(value) => field.onChange(value)}
-                                                >
-                                                    <SelectTrigger className={cn(
-                                                        "space-x-2 w-full",
-                                                    )}>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className={cn(
-                                                        "shadow-lg",
-                                                    )}>
-                                                        {orderStatusData?.map(({ id, label }) => (
-                                                            <SelectItem key={id} value={id}>
-                                                                {label}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="col-span-full">
-                                        <Label htmlFor="comentario">Comentarios</Label>
-                                        <Textarea
-                                            id="comentario"
-                                            {...register("comentario")}
-                                            placeholder="Comentarios adicionales sobre el pedido"
-                                            rows={1}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
                     </div>
-
-                    {/* 2. Productos */}
-                    <Card className="shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span className="flex items-center gap-2">
-                                    <ShoppingCart className="h-5 w-5" />
-                                    Productos del Pedido
-                                </span>
-                                <TooltipButton
-                                    buttonProps={{
-                                        type: 'button',
-                                        onClick: toggleProductWindow,
-                                        variant: 'default',
-                                        size: 'sm',
-                                    }}
-                                    tooltip="Abrir selector de productos en ventana secundaria"
-                                >
-                                    <ExternalLink className="h-4 w-4 mr-2" />
-                                    Seleccionar Productos
-                                </TooltipButton>
-                                {/* Modal anterior (comentado) */}
-                                {/* <ProductSelectorModal
-                                    isSearchOpen={isSearchOpen}
-                                    setIsSearchOpen={setIsSearchOpen}
-                                    addItem={handleAddProductItem}
-                                    addMultipleItem={handleAddMultipleProducts}
-                                /> */}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                {orderDetailsHook.details.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No hay productos agregados</p>
-                                        <p className="text-sm flex items-center justify-center gap-1">
-                                            Haz clic en <ExternalLink className="h-3 w-3" /> "Seleccionar Productos" para abrir la ventana de selección
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <OrderDetailTable
-                                            ref={tableRef}
-                                            details={orderDetailsHook.details}
-                                            onUpdateCantidad={orderDetailsHook.updateCantidad}
-                                            onUpdateCosto={orderDetailsHook.updateCosto}
-                                            onUpdatePrecioVenta={orderDetailsHook.updatePrecioVenta}
-                                            onUpdateIncPVenta={orderDetailsHook.updateIncPVenta}
-                                            onUpdatePrecioVentaAlt={orderDetailsHook.updatePrecioVentaAlt}
-                                            onUpdateIncPVentaAlt={orderDetailsHook.updateIncPVentaAlt}
-                                            onRemoveProduct={orderDetailsHook.removeProduct}
-                                        />
-                                        <Separator className="h-[0.5px]" />
-                                        <div className="flex justify-between items-center px-2 pt-2">
-                                            <span className="font-medium text-gray-500">Total:</span>
-                                            <span className="font-bold text-emerald-600">{formatCurrency(orderDetailsHook.getTotalCosto())}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border border-gray-200 shadow-none pt-3">
-                        <CardContent className="space-y-2">
-                            <footer className="flex gap-3 items-center justify-between">
-                                <span className="text-xs text-gray-500">* Campos requeridos</span>
-                                <div className="flex gap-2">
-                                    <Button
-                                        type="button"
-                                        size={'sm'}
-                                        variant="outline"
-                                        className="w-full py-3 font-medium"
-                                        onClick={handleNewOrder}
-                                    >
-                                        Nuevo Pedido
-                                    </Button>
-
-                                    <TooltipButton
-                                        buttonProps={{
-                                            type: 'submit',
-                                            disabled: isSaving,
-                                            variant: 'default',
-                                            className: "w-full"
-                                        }}
-                                        tooltip={
-                                            <span className="flex items-center gap-1">Registrar Pedido <ShortcutKey combo="alt+s" /></span>
-                                        }
-                                    >
-                                        {isSaving ? (
-                                            <>
-                                                <Loader2 className="mr-2 size-4 animate-spin" />
-                                                Procesando Pedido...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="mr-2 size-4" />
-                                                Registrar Pedido
-                                            </>
-                                        )}
-                                    </TooltipButton>
-                                </div>
-                            </footer>
-                        </CardContent>
-                    </Card>
                 </form>
             </FormProvider>
-        </main>
+        </main >
     );
 };
 
