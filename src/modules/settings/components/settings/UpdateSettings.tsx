@@ -29,16 +29,14 @@ export default function UpdateSettings() {
   const displayCurrentVersion = currentVersion || appVersion;
 
   const handleDismiss = () => {
-    // Guardar que ya vio esta versión
-    localStorage.setItem('lastSeenVersion', displayCurrentVersion);
-    // Si hay actualización disponible, solo la descarta
+    // Si hay actualización disponible, la descarta temporalmente
     if (available) {
       dismissUpdate();
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh] py-8">
+    <div className="flex items-center justify-center min-h-[60vh] py-2">
       <div className="flex flex-col items-center gap-6 max-w-4xl w-full px-6">
         <ReleaseNotes
           currentVersion={displayCurrentVersion}
