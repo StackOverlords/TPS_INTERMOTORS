@@ -216,23 +216,29 @@ const OrderCreateScreen = () => {
         });
     }, [getValues, reset]);
 
-    const handleAddProductItem = (product: ProductGet) => {
+    // Función para agregar un solo producto
+    const handleAddProduct = (product: ProductGet) => {
         orderDetailsHook.addProduct(product);
-        // Enfocar el primer input de cantidad después de agregar
         setTimeout(() => {
-            tableRef.current?.focusFirstQuantityInput();
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(product.id);
         }, 100);
     };
 
-    // const handleAddMultipleProducts = (products: ProductGet[]) => {
-    //     products.forEach(product => {
-    //         orderDetailsHook.addProduct(product);
-    //     });
-    //     // Enfocar el primer input de cantidad después de agregar
-    //     setTimeout(() => {
-    //         tableRef.current?.focusFirstQuantityInput();
-    //     }, 100);
-    // };
+    // Función para agregar múltiples productos
+    const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
+        const addedProductIds = orderDetailsHook.addMultipleProducts(products);
+
+        setTimeout(() => {
+            // Enfocar el primer producto nuevo que se agregó
+            if (addedProductIds.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(addedProductIds[0]);
+            } else if (products.length > 0) {
+                // Si todos ya existían, enfocar el primero de la lista
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            }
+        }, 100);
+    };
 
     const onSubmit = (data: OrderCreate) => {
         if (!validateBeforeSubmit()) {
@@ -330,8 +336,8 @@ const OrderCreateScreen = () => {
     const productWindow = useProductSelectorWindow({
         context: 'pedido',
         instanceId: 'create-order',
-        onProductSelect: handleAddProductItem,
-        // onMultiSelect: handleAddMultipleProducts,
+        onProductSelect: handleAddProduct,
+        onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
         multiSelect: true,
         selectedItems
@@ -648,7 +654,7 @@ const OrderCreateScreen = () => {
                                                     >
                                                         <ProductSearchPanel
                                                             selectedProducts={orderDetailsHook.details}
-                                                            onProductSelect={handleAddProductItem}
+                                                            onProductSelect={handleAddProduct}
                                                             allowExceedStock={true}
                                                         />
                                                     </ResizablePanel>

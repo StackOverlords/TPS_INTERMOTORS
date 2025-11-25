@@ -19,7 +19,7 @@ export interface ConversionResult {
     message: string;
 }
 
-export type CartMode = 'sale' | 'quote';
+export type CartMode = 'sale-strict' | 'sale-permissive' | 'quote';
 
 export type CartItem = {
     product: CartProduct;
@@ -30,6 +30,16 @@ export type CartItem = {
     customBrand: string | null;
 };
 
+export interface ConversionPreview {
+    willHaveChanges: boolean;
+    removedCount: number;
+    adjustedCount: number;
+    keptCount: number;
+    itemsToRemove: CartItem[];
+    itemsToAdjust: ConversionAdjustment[];
+    itemsToKeep: CartItem[];
+    summary: string;
+}
 export interface CartOperationResult {
     success: boolean;
     error?: 'NO_STOCK' | 'INSUFFICIENT_STOCK' | 'ITEM_NOT_FOUND' | 'UNKNOWN_ERROR';
@@ -68,7 +78,8 @@ export type CartState = {
 
     // ← NUEVO: Gestión de modo
     setMode: (mode: CartMode) => void;
-    convertToSale: () => ConversionResult;
+    convertToSaleStrict: () => ConversionResult;
+    convertToSalePermissive: () => void;
     convertToQuote: () => void;
     clearLastConversion: () => void;
 
@@ -96,6 +107,7 @@ export type CartState = {
 
     validateCart: () => CartValidationResult;
     canAddProduct: (productId: number, quantityToAdd?: number) => CanAddProductResult;
+    previewConversion: (targetMode: CartMode) => ConversionPreview;
 };
 
 export interface CartSummary {

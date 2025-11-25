@@ -33,11 +33,12 @@ import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import { cn } from "@/lib/utils";
-import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
+import type { CartItem, CartMode } from "@/modules/shoppingCart/types/cart.types";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { Button } from "@/components/atoms/button";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import type { SelectedItem } from "@/types/windowSelectedItems";
+import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeConversionModal";
 
 const SCREEN_PATH = "/dashboard/create-sale"
 
@@ -59,8 +60,13 @@ const CreateSaleScreen = () => {
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
+
+    // Estado de modales de conversión
+    const DEFAULT_SALE_MODE: CartMode = 'sale-strict' as CartMode;
+    const [showModeConversionModal, setShowModeConversionModal] = useState(false);
+    const [targetModeForModal, setTargetModeForModal] = useState<CartMode>('sale-strict');
+    const [lastProcessedMode, setLastProcessedMode] = useState<CartMode | null>(null);
 
     const {
         data: saleTypesData,
@@ -132,15 +138,76 @@ const CreateSaleScreen = () => {
         clearCart,
         addItemToCart,
         addMultipleItemsWithQuantity,
-        setCartMode,
         mode,
-    } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
+        setCartMode,
+        previewConversion,
+    } = useCartWithUtils(user?.name || '', selectedBranchId ?? '');
 
     useTabEffect(SCREEN_PATH, () => {
-        if (mode !== 'sale' && !isReadOnly) {
-            setCartMode('sale')
+        if (isReadOnly) return;
+
+        if (lastProcessedMode === mode) return;
+
+        // CASO 1: Ya está en un modo de venta
+        if (mode === 'sale-strict' || mode === 'sale-permissive') {
+            setLastProcessedMode(mode);
+            return; // Respetar el modo actual
         }
-    }, [mode, isReadOnly, setCartMode]);
+
+        // CASO 2: Está en modo quote
+        if (mode === 'quote') {
+            if (items.length === 0) {
+                // Sin items, cambiar directamente al modo por defecto
+                setCartMode(DEFAULT_SALE_MODE);
+                setLastProcessedMode(DEFAULT_SALE_MODE);
+            } else {
+                // Hay items en quote
+                if (DEFAULT_SALE_MODE === 'sale-permissive') {
+                    setCartMode('sale-permissive');
+                    setLastProcessedMode('sale-permissive');
+                } else {
+                    // Verificar si hay cambios
+                    const preview = previewConversion('sale-strict');
+
+                    if (preview.willHaveChanges) {
+                        setTargetModeForModal('sale-strict');
+                        setShowModeConversionModal(true);
+                    } else {
+                        setCartMode('sale-strict');
+                        setLastProcessedMode('sale-strict');
+                    }
+                }
+            }
+        }
+    }, [mode, items.length, isReadOnly, lastProcessedMode, previewConversion, setCartMode]);
+
+    const handleManualModeChange = useCallback((newMode: 'sale-strict' | 'sale-permissive') => {
+        if (mode === newMode) return;
+
+        if (newMode === 'sale-strict' && items.length > 0) {
+            const preview = previewConversion('sale-strict');
+
+            if (preview.willHaveChanges) {
+                setTargetModeForModal('sale-strict');
+                setShowModeConversionModal(true);
+            } else {
+                setCartMode('sale-strict');
+                setLastProcessedMode('sale-strict');
+            }
+        } else {
+            setCartMode(newMode);
+            setLastProcessedMode(newMode);
+        }
+    }, [mode, items.length, previewConversion, setCartMode]);
+
+    const handleCloseModal = useCallback(() => {
+        setShowModeConversionModal(false);
+        if (mode === 'quote') {
+            setLastProcessedMode(null);
+        } else {
+            setLastProcessedMode(mode);
+        }
+    }, [mode]);
 
     const subtotal = getCartSubtotal()
     const total = getCartTotal()
@@ -268,6 +335,7 @@ const CreateSaleScreen = () => {
     const handleNewSale = useCallback(() => {
         setCreatedSaleDetails(null);
         setCreatedSaleSummary(null);
+        setLastProcessedMode(null);
         const currentValues = getValues();
         reset({
             fecha: format(new Date(), "yyyy-MM-dd"),
@@ -483,7 +551,29 @@ const CreateSaleScreen = () => {
 
                             {/* Action Buttons */}
                             < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-
+                                <Label className="text-sm text-muted-foreground">Modo:</Label>
+                                <div className="flex gap-1 border border-border rounded-lg p-1">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={mode === 'sale-strict' ? 'default' : 'ghost'}
+                                        onClick={() => handleManualModeChange('sale-strict')}
+                                        disabled={isReadOnly}
+                                        className="h-7 text-xs"
+                                    >
+                                        Estricta
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={mode === 'sale-permissive' ? 'default' : 'ghost'}
+                                        onClick={() => handleManualModeChange('sale-permissive')}
+                                        disabled={isReadOnly}
+                                        className="h-7 text-xs"
+                                    >
+                                        Permisiva
+                                    </Button>
+                                </div>
                             </div >
                         </div >
                     </header >
@@ -811,6 +901,14 @@ const CreateSaleScreen = () => {
                     </div>
                 </form>
             </FormProvider>
+
+            {/* Modales de Conversión */}
+            <CartModeConversionModal
+                open={showModeConversionModal}
+                onClose={handleCloseModal}
+                targetMode={targetModeForModal}
+                shouldGoBackOnClose={true}
+            />
         </main >
     );
 };
