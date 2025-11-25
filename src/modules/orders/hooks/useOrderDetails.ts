@@ -69,6 +69,65 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
         });
     }, [isEditMode]);
 
+    // Añadir múltiples productos al detalle
+    const addMultipleProducts = useCallback((products: Array<ProductGet & { quantity?: number }>): number[] => {
+        const addedProductIds: number[] = [];
+
+        setDetails((prev) => {
+            let newDetails = [...prev];
+
+            products.forEach((product) => {
+                // Verificar si el producto ya existe
+                const existingIndex = newDetails.findIndex((d) => d.id_producto === product.id);
+
+                if (existingIndex !== -1) {
+                    // Si ya existe, incrementar cantidad
+                    newDetails = newDetails.map((d, idx) =>
+                        idx === existingIndex
+                            ? { ...d, cantidad: d.cantidad + (product.quantity ?? 1) }
+                            : d
+                    );
+                } else {
+                    // Si no existe, crear nuevo detalle
+                    const costo = product.precio_venta || 0;
+                    const precio_venta = calcularPrecioDesdeIncremento(costo, DEFAULT_INC_P_VENTA);
+                    const precio_venta_alt = calcularPrecioDesdeIncremento(precio_venta, DEFAULT_INC_P_VENTA_ALT);
+
+                    const newDetail: any = {
+                        id_producto: product.id,
+                        cantidad: product.quantity,
+                        costo,
+                        inc_p_venta: DEFAULT_INC_P_VENTA,
+                        precio_venta,
+                        inc_p_venta_alt: DEFAULT_INC_P_VENTA_ALT,
+                        precio_venta_alt,
+                        orden: newDetails.length,
+                        product: {
+                            id: product.id,
+                            descripcion: product.descripcion,
+                            codigo_oem: product.codigo_oem,
+                            codigo_upc: product.codigo_upc,
+                            precio_venta: product.precio_venta,
+                        },
+                    };
+
+                    // Si es modo edición, añadir id_detalle_pedido como null (nuevo producto)
+                    if (isEditMode) {
+                        newDetail.id_detalle_pedido = null;
+                    }
+
+                    newDetails.push(newDetail as T);
+                    addedProductIds.push(product.id);
+                }
+            });
+
+            // Reordenar los índices
+            return newDetails.map((d, index) => ({ ...d, orden: index }));
+        });
+
+        return addedProductIds;
+    }, [isEditMode]);
+
     // Eliminar un producto del detalle
     const removeProduct = useCallback((id_producto: number) => {
         setDetails((prev) => {
@@ -256,6 +315,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
 
         // Métodos
         addProduct,
+        addMultipleProducts,
         removeProduct,
         updateCantidad,
         updateCosto,

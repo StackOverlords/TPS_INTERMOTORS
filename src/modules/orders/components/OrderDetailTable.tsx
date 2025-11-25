@@ -34,6 +34,7 @@ interface OrderDetailTableProps<T extends OrderDetailUnion> {
 
 export interface OrderDetailTableRef {
     focusFirstQuantityInput: () => void;
+    focusQuantityInputByProductId: (productId: number) => void;
 }
 
 function OrderDetailTableInner<T extends OrderDetailUnion>({
@@ -52,6 +53,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
 }: OrderDetailTableProps<T>, ref: React.Ref<OrderDetailTableRef>) {
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+    const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
     const handleDeleteSuccess = (_data: unknown, detailId: number) => {
         const deletedItem = details.find(d => 'id_detalle_pedido' in d && d.id_detalle_pedido === detailId);
@@ -105,14 +107,30 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
         }
     };
 
-    // Exponer método focusFirstQuantityInput
+    // Exponer métodos para enfocar inputs
     useImperativeHandle(ref, () => ({
         focusFirstQuantityInput: () => {
             if (firstQuantityInputRef.current) {
                 firstQuantityInputRef.current.focus();
+                firstQuantityInputRef.current.select();
+            }
+        },
+        focusQuantityInputByProductId: (productId: number) => {
+            const input = quantityInputRefs.current.get(productId);
+            if (input) {
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 50);
+            } else {
+                // Fallback: si no encuentra el input específico, enfoca el primero
+                if (firstQuantityInputRef.current) {
+                    firstQuantityInputRef.current.focus();
+                    firstQuantityInputRef.current.select();
+                }
             }
         }
-    }));
+    }), []);
 
     const columns = useMemo<ColumnDef<T>[]>(() => {
         const baseColumns: ColumnDef<T>[] = [];
@@ -182,6 +200,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
                 minSize: 80,
                 cell: ({ getValue, row }) => {
                     const cantidad = getValue<number>();
+                    const productId = row.original.id_producto;
                     const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
                     return (
                         <EditableQuantity
@@ -193,7 +212,16 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
                                 const num = parseInt(val);
                                 return !isNaN(num) && num > 0;
                             }}
-                            inputRef={refToAssign}
+                            inputRef={(el) => {
+                                if (refToAssign) {
+                                    refToAssign.current = el;
+                                }
+                                if (el) {
+                                    quantityInputRefs.current.set(productId, el);
+                                } else {
+                                    quantityInputRefs.current.delete(productId);
+                                }
+                            }}
                             disabled={isReadOnly || isSaving}
                         />
                     )

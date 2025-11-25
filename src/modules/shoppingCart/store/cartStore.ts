@@ -1,5 +1,5 @@
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
-import type { CartItem, CartState, ConversionAdjustment, ConversionResult } from "../types/cart.types";
+import type { CartItem, CartMode, CartState, ConversionAdjustment, ConversionResult } from "../types/cart.types";
 import { CART_CONSTANTS } from "../constants/cart.constants";
 import { createStore } from "zustand";
 
@@ -12,7 +12,7 @@ export const createCartStore = (user: string) => {
             persist(
                 (set, get) => ({
                     items: [],
-                    mode: 'sale',
+                    mode: 'sale-strict',
                     discountAmount: 0,
                     discountPercent: 0,
                     discountMode: null,
@@ -24,7 +24,7 @@ export const createCartStore = (user: string) => {
                         set({ mode });
                     },
 
-                    convertToSale: () => {
+                    convertToSaleStrict: () => {
                         const currentItems = get().items;
                         const removedItems: CartItem[] = [];
                         const adjustedItems: ConversionAdjustment[] = [];
@@ -34,10 +34,8 @@ export const createCartStore = (user: string) => {
                             const hasStock = item.product.stock_actual && item.product.stock_actual > 0;
 
                             if (!hasStock) {
-                                // Item sin stock - se remueve
                                 removedItems.push(item);
                             } else if (item.quantity > item.product.stock_actual) {
-                                // Item con cantidad que excede stock - se ajusta
                                 const adjustedItem = {
                                     ...item,
                                     quantity: item.product.stock_actual,
@@ -55,7 +53,6 @@ export const createCartStore = (user: string) => {
                                     reason: 'QUANTITY_ADJUSTED'
                                 });
                             } else {
-                                // Item válido - se mantiene
                                 keptItems.push(item);
                             }
                         });
@@ -70,13 +67,19 @@ export const createCartStore = (user: string) => {
 
                         set({
                             items: keptItems,
-                            mode: 'sale',
+                            mode: 'sale-strict',
                             lastConversion: result
                         });
 
                         get().recalculateDiscount();
-
                         return result;
+                    },
+
+                    convertToSalePermissive: () => {
+                        set({
+                            mode: 'sale-permissive',
+                            lastConversion: null
+                        });
                     },
 
                     convertToQuote: () => {
@@ -90,6 +93,91 @@ export const createCartStore = (user: string) => {
                         set({ lastConversion: null });
                     },
 
+                    previewConversion: (targetMode: CartMode) => {
+                        const currentItems = get().items;
+                        const currentMode = get().mode;
+
+                        // Si ya está en el modo objetivo, no hay cambios
+                        if (currentMode === targetMode) {
+                            return {
+                                willHaveChanges: false,
+                                removedCount: 0,
+                                adjustedCount: 0,
+                                keptCount: currentItems.length,
+                                itemsToRemove: [],
+                                itemsToAdjust: [],
+                                itemsToKeep: currentItems,
+                                summary: 'Ya estás en este modo'
+                            };
+                        }
+
+                        // Solo necesita validación si va a modo STRICT
+                        if (targetMode === 'sale-strict') {
+                            let removedCount = 0;
+                            let adjustedCount = 0;
+                            const itemsToRemove: CartItem[] = [];
+                            const itemsToAdjust: ConversionAdjustment[] = [];
+                            const itemsToKeep: CartItem[] = [];
+
+                            currentItems.forEach(item => {
+                                const hasStock = item.product.stock_actual && item.product.stock_actual > 0;
+
+                                if (!hasStock) {
+                                    removedCount++;
+                                    itemsToRemove.push(item);
+                                } else if (item.quantity > item.product.stock_actual) {
+                                    adjustedCount++;
+                                    itemsToAdjust.push({
+                                        productId: item.product.id,
+                                        productName: item.product.descripcion,
+                                        originalQuantity: item.quantity,
+                                        adjustedQuantity: item.product.stock_actual,
+                                        reason: 'QUANTITY_ADJUSTED'
+                                    });
+                                    // Item ajustado también va a "kept"
+                                    itemsToKeep.push({
+                                        ...item,
+                                        quantity: item.product.stock_actual,
+                                        customSubtotal: calculateSubtotalByItem(
+                                            item.customPrice,
+                                            item.product.stock_actual
+                                        )
+                                    });
+                                } else {
+                                    itemsToKeep.push(item);
+                                }
+                            });
+
+                            const keptCount = itemsToKeep.length;
+                            const willHaveChanges = removedCount > 0 || adjustedCount > 0;
+
+                            return {
+                                willHaveChanges,
+                                removedCount,
+                                adjustedCount,
+                                keptCount,
+                                itemsToRemove,
+                                itemsToAdjust,
+                                itemsToKeep,
+                                summary: willHaveChanges
+                                    ? generateConversionSummary(removedCount, adjustedCount, keptCount)
+                                    : 'Todos los productos son válidos para venta estricta'
+                            };
+                        }
+
+                        // Para otros modos (permissive o quote), no hay cambios en items
+                        return {
+                            willHaveChanges: false,
+                            removedCount: 0,
+                            adjustedCount: 0,
+                            keptCount: currentItems.length,
+                            itemsToRemove: [],
+                            itemsToAdjust: [],
+                            itemsToKeep: currentItems,
+                            summary: `Cambio simple a modo ${getModeLabel(targetMode)}`
+                        };
+                    },
+
                     // ==================== GESTIÓN DE ITEMS ====================
 
                     addItem: (product) => {
@@ -97,8 +185,8 @@ export const createCartStore = (user: string) => {
                         const existing = get().items.find((i) => i.product.id === product.id);
                         const basePrice = product.precio_venta;
 
-                        // Validar stock solo en modo VENTA
-                        if (mode === 'sale') {
+                        // Validar stock SOLO en modo SALE-STRICT
+                        if (mode === 'sale-strict') {
                             if (!product.stock_actual || product.stock_actual <= 0) {
                                 return {
                                     success: false,
@@ -111,8 +199,8 @@ export const createCartStore = (user: string) => {
                         if (existing) {
                             const newQuantity = existing.quantity + 1;
 
-                            // Validar cantidad vs stock solo en modo VENTA
-                            if (mode === 'sale' && newQuantity > product.stock_actual) {
+                            // Validar cantidad vs stock SOLO en modo SALE-STRICT
+                            if (mode === 'sale-strict' && newQuantity > product.stock_actual) {
                                 return {
                                     success: false,
                                     error: 'INSUFFICIENT_STOCK',
@@ -137,8 +225,9 @@ export const createCartStore = (user: string) => {
                                 ),
                             });
 
-                            // Warning para cotizaciones sin stock
-                            if (mode === 'quote' && (!product.stock_actual || product.stock_actual <= 0)) {
+                            // Warnings para modos permissive y quote
+                            if ((mode === 'sale-permissive' || mode === 'quote') &&
+                                (!product.stock_actual || product.stock_actual <= 0)) {
                                 get().recalculateDiscount();
                                 return {
                                     success: true,
@@ -147,7 +236,8 @@ export const createCartStore = (user: string) => {
                                 };
                             }
 
-                            if (mode === 'quote' && newQuantity > product.stock_actual) {
+                            if ((mode === 'sale-permissive' || mode === 'quote') &&
+                                newQuantity > product.stock_actual) {
                                 get().recalculateDiscount();
                                 return {
                                     success: true,
@@ -169,8 +259,9 @@ export const createCartStore = (user: string) => {
 
                             set({ items: [...get().items, newItem] });
 
-                            // Warning para cotizaciones sin stock
-                            if (mode === 'quote' && (!product.stock_actual || product.stock_actual <= 0)) {
+                            // Warning para modos permissive y quote
+                            if ((mode === 'sale-permissive' || mode === 'quote') &&
+                                (!product.stock_actual || product.stock_actual <= 0)) {
                                 get().recalculateDiscount();
                                 return {
                                     success: true,
@@ -211,8 +302,8 @@ export const createCartStore = (user: string) => {
                             };
                         }
 
-                        // Validar stock solo en modo VENTA
-                        if (mode === 'sale' && quantity > item.product.stock_actual) {
+                        // Validar stock SOLO en modo SALE-STRICT
+                        if (mode === 'sale-strict' && quantity > item.product.stock_actual) {
                             return {
                                 success: false,
                                 error: 'INSUFFICIENT_STOCK',
@@ -237,8 +328,9 @@ export const createCartStore = (user: string) => {
 
                         get().recalculateDiscount();
 
-                        // Warning para cotizaciones que exceden stock
-                        if (mode === 'quote' && quantity > item.product.stock_actual) {
+                        // Warning para modos permissive y quote que exceden stock
+                        if ((mode === 'sale-permissive' || mode === 'quote') &&
+                            quantity > item.product.stock_actual) {
                             return {
                                 success: true,
                                 warning: 'EXCEEDS_STOCK',
@@ -418,15 +510,15 @@ export const createCartStore = (user: string) => {
                     validateCart: () => {
                         const mode = get().mode;
 
-                        // En modo cotización, el carrito siempre es válido
-                        if (mode === 'quote') {
+                        // En modos permissive y quote, el carrito siempre es válido
+                        if (mode === 'sale-permissive' || mode === 'quote') {
                             return {
                                 isValid: true,
                                 issues: []
                             };
                         }
 
-                        // En modo venta, validar stock
+                        // En modo sale-strict, validar stock
                         const issues = get().items.filter(item => {
                             return !item.product.stock_actual ||
                                 item.product.stock_actual <= 0 ||
@@ -450,12 +542,12 @@ export const createCartStore = (user: string) => {
                     canAddProduct: (productId: number, quantityToAdd: number = 1) => {
                         const mode = get().mode;
 
-                        // En modo cotización, siempre se puede agregar
-                        if (mode === 'quote') {
+                        // En modos permissive y quote, siempre se puede agregar
+                        if (mode === 'sale-permissive' || mode === 'quote') {
                             return { canAdd: true };
                         }
 
-                        // En modo venta, validar stock
+                        // En modo sale-strict, validar stock
                         const product = get().items.find(i => i.product.id === productId)?.product;
                         if (!product) return { canAdd: false, reason: 'PRODUCT_NOT_FOUND' };
 
@@ -540,4 +632,35 @@ const generateConversionMessage = (removedCount: number, adjustedCount: number):
     }
 
     return parts.join(' y ');
+};
+
+const generateConversionSummary = (
+    removedCount: number,
+    adjustedCount: number,
+    keptCount: number
+): string => {
+    const parts: string[] = [];
+
+    if (removedCount > 0) {
+        parts.push(`${removedCount} producto${removedCount > 1 ? 's serán removidos' : ' será removido'}`);
+    }
+
+    if (adjustedCount > 0) {
+        parts.push(`${adjustedCount} producto${adjustedCount > 1 ? 's tendrán' : ' tendrá'} cantidad ajustada`);
+    }
+
+    if (keptCount > 0) {
+        parts.push(`${keptCount} producto${keptCount > 1 ? 's se mantendrán' : ' se mantendrá'}`);
+    }
+
+    return parts.join(', ');
+};
+
+export const getModeLabel = (mode: CartMode): string => {
+    switch (mode) {
+        case 'sale-strict': return 'Venta Estricta';
+        case 'sale-permissive': return 'Venta Permisiva';
+        case 'quote': return 'Cotización';
+        default: return mode;
+    }
 };
