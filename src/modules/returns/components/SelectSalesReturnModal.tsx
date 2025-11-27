@@ -1,6 +1,6 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/atoms/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/atoms/dialog";
 import { Input } from "@/components/atoms/input";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { TableCell, TableRow } from "@/components/atoms/table";
@@ -20,14 +20,16 @@ interface SelectSalesReturnModalProps {
     isDialogOpen: boolean;
     onCloseDialog: (open: boolean) => void;
     selectedProducts: { almacen_out_det_id: number, cantidad: number }[];
-    onProductSelect: (product: SaleItemGetById, saleId: number) => void
+    onProductSelect: (product: SaleItemGetById, saleId: number) => void;
+    onConfirm?: () => void;
 }
 const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
     saleId,
     isDialogOpen,
     onCloseDialog,
     selectedProducts,
-    onProductSelect
+    onProductSelect,
+    onConfirm,
 }) => {
 
     const [searchSaleDetail, setSearchSaleDetail] = useState<string>("")
@@ -317,28 +319,47 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
                                 errorMessage="No se pudo cargar la venta."
                             />
                         ) : (
-                            <CustomizableTable
-                                table={table}
-                                isLoading={isLoadingSale}
-                                rows={filteredSaleDetailData?.length}
-                                renderBottomRow={() => {
-                                    const colSpan = table.getVisibleFlatColumns().length;
-                                    return (
-                                        <TableRow className="bg-gray-50">
-                                            <TableCell colSpan={colSpan} className="p-2">
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <div className="text-gray-500">
-                                                        Total de ítems: <span className="font-medium text-gray-900">{saleData?.cantidad_detalles}</span>
+                            <>
+                                <CustomizableTable
+                                    table={table}
+                                    isLoading={isLoadingSale}
+                                    rows={filteredSaleDetailData?.length}
+                                    renderBottomRow={() => {
+                                        const colSpan = table.getVisibleFlatColumns().length;
+                                        return (
+                                            <TableRow className="bg-gray-50">
+                                                <TableCell colSpan={colSpan} className="p-2">
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <div className="text-gray-500">
+                                                            Total de ítems: <span className="font-medium text-gray-900">{saleData?.cantidad_detalles}</span>
+                                                        </div>
+                                                        <div className="text-gray-500">
+                                                            <span className="text-sm font-bold text-emerald-600">{formatCurrency(totalAmount)}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-gray-500">
-                                                        <span className="text-sm font-bold text-emerald-600">{formatCurrency(totalAmount)}</span>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                }}
-                            />
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    }}
+                                />
+                                {onConfirm && (
+                                    <DialogFooter className="">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => onCloseDialog(false)}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            onClick={onConfirm}
+                                            className="gap-2"
+                                        >
+                                            <Check className="h-4 w-4" />
+                                            Confirmar Selección
+                                        </Button>
+                                    </DialogFooter>
+                                )}
+                            </>
                         )
                     }
                 </div>

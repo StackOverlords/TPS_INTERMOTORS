@@ -27,6 +27,7 @@
  * ```
  */
 
+import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
 import type { SelectedItem } from '@/types/windowSelectedItems';
 import {
   closeSecondaryWindow,
@@ -525,5 +526,73 @@ export function useDebugLogWindow(): UseSecondaryWindowResult {
     },
     listenToEvents: DEBUG_LOG_EVENTS as unknown as string[],
     autoCloseOnUnmount: false, // Permitir que persista
+  });
+}
+
+export interface UseSaleDetailSelectorWindowConfig {
+  context: string;
+  instanceId?: string;
+  onMultiSelect?: (items: UIReturnDetailCreate[]) => void;
+  initialFilters?: Record<string, any>;
+  mode?: 'create' | 'edit';
+  selectedItems?: UIReturnDetailCreate[];
+}
+
+// Array constante para evitar recreaciones
+const SALE_DETAIL_SELECTOR_EVENTS = [
+  'sale-details-multi-selected',
+  'window-closed',
+] as const;
+
+/**
+ * Hook para abrir ventana de selección de detalles de venta
+ * Permite seleccionar múltiples productos de diferentes ventas
+ */
+export function useSaleDetailSelectorWindow(
+  config: UseSaleDetailSelectorWindowConfig
+): UseSecondaryWindowResult {
+  const {
+    context,
+    instanceId,
+    onMultiSelect,
+    initialFilters,
+    mode = 'create',
+    selectedItems = [],
+  } = config;
+
+  // Generar windowId único
+  const windowId = instanceId
+    ? `sale-detail-selector-${context}-${instanceId}`
+    : `sale-detail-selector-${context}`;
+
+  // Ref para mantener callback actualizado sin causar re-renders
+  const onMultiSelectRef = useRef(onMultiSelect);
+  
+  useEffect(() => {
+    onMultiSelectRef.current = onMultiSelect;
+  }, [onMultiSelect]);
+
+  // Callback estable que usa la ref
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    if (eventName === 'sale-details-multi-selected' && onMultiSelectRef.current) {
+      onMultiSelectRef.current(data);
+    }
+  }, []);
+
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html', // HTML genérico
+    title: 'Seleccionar Items de Venta',
+    width: 1400,
+    height: 750,
+    queryParams: {
+      component: 'sale-detail-selector', // ID del componente a renderizar
+      context,
+      mode,
+      selectedItems: JSON.stringify(selectedItems),
+      ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
+    },
+    listenToEvents: SALE_DETAIL_SELECTOR_EVENTS as unknown as string[],
+    onEvent: handleEvent,
   });
 }

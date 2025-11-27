@@ -2,6 +2,7 @@ import ProductSelectorWindow from '@/modules/products/screens/ProductSelectorWin
 import PurchaseSelectorWindow from '@/modules/purchases/screens/PurchaseSelectorWindow';
 import { DebugLogWindow } from '@/components/common/DebugLogWindow';
 import React from 'react';
+import SaleDetailSelectorWindow from '@/modules/sales/screens/SaleDetailSelectorWindow';
 
 // Tipo para componentes que pueden renderizarse en ventanas
 export type WindowComponent = React.ComponentType<any>;
@@ -54,6 +55,7 @@ export function registerDefaultWindowComponents(): void {
   registerWindowComponent('product-selector', ProductSelectorWindow);
   registerWindowComponent('purchase-selector', PurchaseSelectorWindow);
   registerWindowComponent('debug-log', DebugLogWindow);
+  registerWindowComponent('sale-detail-selector', SaleDetailSelectorWindow);
   // registerWindowComponent('settings-routes', ViewSettingsWithSuspense);
 }
 

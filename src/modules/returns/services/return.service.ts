@@ -103,4 +103,16 @@ export const returnService = {
 
         Logger.info('Return deleted successfully', { id }, MODULE_NAME);
     },
+
+    /**
+    * Eliminar detalle de una devolucion por ID
+    * @param id - ID del detalle de una devolucion
+    */
+    async deleteDetail(id: number): Promise<void> {
+        Logger.info('Deleting return detail', { id }, MODULE_NAME);
+
+        await ApiService.delete(RETURN_ENDPOINTS.details.delete(id));
+
+        Logger.info('Return detail deleted successfully', { id }, MODULE_NAME);
+    },
 };

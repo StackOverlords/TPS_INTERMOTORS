@@ -197,7 +197,7 @@ const OrderEditScreen = () => {
 
     // Validaciones de fechas según estado
     const statusesDisablingTransit = ["P", "C"];
-    const statusesDisablingArrival = ["P", "C", "T"];
+    const statusesDisablingArrival = ["P", "C"];
 
     useEffect(() => {
         if (!currentStatus || !hasInitialized) return;
@@ -262,8 +262,8 @@ const OrderEditScreen = () => {
         return isValid;
     };
 
-     // Función para agregar un solo producto
-     const handleAddProduct = (product: ProductGet) => {
+    // Función para agregar un solo producto
+    const handleAddProduct = (product: ProductGet) => {
         orderDetailsHook.addProduct(product);
         setTimeout(() => {
             // Enfocar el input del producto agregado
@@ -274,7 +274,7 @@ const OrderEditScreen = () => {
     // Función para agregar múltiples productos
     const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
         const addedProductIds = orderDetailsHook.addMultipleProducts(products);
-        
+
         setTimeout(() => {
             // Enfocar el primer producto nuevo que se agregó
             if (addedProductIds.length > 0) {
@@ -639,7 +639,7 @@ const OrderEditScreen = () => {
                                                             <SelectContent className={cn(
                                                                 "shadow-lg",
                                                             )}>
-                                                                {orderStatusData?.map(({ id, label }) => (
+                                                                {orderStatusData?.filter((s) => s.id !== 'D').map(({ id, label }) => (
                                                                     <SelectItem key={id} value={id}>
                                                                         {label}
                                                                     </SelectItem>

@@ -382,12 +382,12 @@ function SaleReturnList<T extends BaseWithId>({
     };
 
     return (
-        <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="h-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
             {/* Header con Filtros */}
-            <div className="p-3 border-b border-gray-200 space-y-1">
-                <div className="flex items-center justify-between">
+            <div className="p-2 border-b border-border space-y-1">
+                <header className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-base font-semibold text-gray-900">
+                        <h3 className="text-base font-semibold text-primary">
                             Buscar Ventas
                         </h3>
                     </div>
@@ -427,7 +427,7 @@ function SaleReturnList<T extends BaseWithId>({
                             </Button>
                         )}
                     </div>
-                </div>
+                </header>
 
                 {/* Filtros en Grid */}
                 <section className="space-y-2">
@@ -580,17 +580,19 @@ function SaleReturnList<T extends BaseWithId>({
             </div>
 
             {/* Table Container */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 min-h-0 overflow-hidden">
                 {sales.length > 0 ? (
-                    <CustomizableTable
-                        table={table}
-                        isLoading={isLoading}
-                        isError={isError}
-                        isFetching={isFetching}
-                        rows={filters.pagina_registros}
-                        errorMessage="Ocurrió un error al cargar los productos"
-                        noDataMessage="No se encontraron productos"
-                    />
+                    <div className="h-full overflow-auto px-2">
+                        <CustomizableTable
+                            table={table}
+                            isLoading={isLoading}
+                            isError={isError}
+                            isFetching={isFetching}
+                            rows={filters.pagina_registros}
+                            errorMessage="Ocurrió un error al cargar los productos"
+                            noDataMessage="No se encontraron productos"
+                        />
+                    </div>
                 ) : (
                     <div className="text-center py-8 text-gray-500 text-sm">
                         {searchMode === 'manual' ?
@@ -603,7 +605,7 @@ function SaleReturnList<T extends BaseWithId>({
 
             {/* Footer con Paginación */}
             {sales.length > 0 && (
-                <div className="border-t border-gray-200 bg-gray-50">
+                <div className="flex-shrink-0 border-t border-border bg-card">
                     <Pagination
                         currentPage={filters.pagina}
                         onPageChange={handlePageChange}

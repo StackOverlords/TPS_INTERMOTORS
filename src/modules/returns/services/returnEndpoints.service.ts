@@ -1,7 +1,12 @@
+const BASE_PATH = '/returns';
+
 export const RETURN_ENDPOINTS = {
-    all: "/returns",
-    create: "/returns",
-    byId: (devolucion: string | number) => `/returns/${devolucion}`,
-    update: (devolucion: string | number) => `/returns/${devolucion}`,
-    delete: (devolucion: string | number) => `/returns/${devolucion}`,
-};
+    all: BASE_PATH,
+    create: BASE_PATH,
+    byId: (devolucion: string | number) => `${BASE_PATH}/${devolucion}`,
+    update: (devolucion: string | number) => `${BASE_PATH}/${devolucion}`,
+    delete: (devolucion: string | number) => `${BASE_PATH}/${devolucion}`,
+    details: {
+        delete: (detalle: string | number) => `${BASE_PATH}-detail/${detalle}`,
+    },
+} as const;
