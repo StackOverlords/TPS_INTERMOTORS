@@ -10,11 +10,16 @@ export const ProveedorSchema = z.object({
 
 export const ResponsableSchema = z.object({
     id: z.number(),
-    nombre: z.string(),
-    apellido_paterno: z.string(),
+    nombre: z.string().nullable(),
+    apellido_paterno: z.string().nullable(),
     apellido_materno: z.string().nullable(),
     dni: z.number().nullable(),
+    dni_comp: z.string().nullable(),
+    dni_tipo: z.string().nullable(),
     celular: z.string().nullable(),
+    telefono: z.string().nullable(),
+    direccion: z.string().nullable(),
+    sexo: z.string().nullable(),
 })
 
 export const PurchaseGetSchema = z.object({

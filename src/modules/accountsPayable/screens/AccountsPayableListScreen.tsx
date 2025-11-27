@@ -482,7 +482,7 @@ const AccountsPayableListScreen = () => {
       <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
           <div className="flex items-center gap-2 md:gap-4 grow">
-            <h1 className="text-lg font-bold text-primary">Cuentas por Pagar</h1>
+            <h1 className="text-lg font-bold text-primary">Cuentas por Cobrar</h1>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -522,7 +522,7 @@ const AccountsPayableListScreen = () => {
                 className: "w-8",
                 disabled: isRefetchingAccountsPayable || isFetching,
               }}
-              tooltip={"Recargar cuentas por pagar"}
+              tooltip={"Recargar cuentas por cobrar"}
             >
               <RefreshCcw
                 className={`size-4 ${isRefetchingAccountsPayable || isFetching ? "animate-spin" : ""
@@ -584,14 +584,14 @@ const AccountsPayableListScreen = () => {
         <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
           {accountsPayable.length > 0 ? (
             isInfiniteScroll ? (
-              `Mostrando ${accountsPayable.length} de ${accountsPayableData?.meta.total} cuentas por pagar`
+              `Mostrando ${accountsPayable.length} de ${accountsPayableData?.meta.total} cuentas por cobrar`
             ) : (
               (() => {
                 const pagina = filters.pagina ?? 1;
                 const porPagina = filters.pagina_registros ?? 1;
                 const inicio = (pagina - 1) * porPagina + 1;
                 const fin = pagina * porPagina;
-                return `Mostrando ${inicio} - ${fin} de ${accountsPayableData?.meta.total} cuentas por pagar`;
+                return `Mostrando ${inicio} - ${fin} de ${accountsPayableData?.meta.total} cuentas por cobrar`;
               })()
             )
           ) : (
@@ -648,7 +648,7 @@ const AccountsPayableListScreen = () => {
                 loader={
                   <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
                     <Loader2 className="size-4 animate-spin" />
-                    Cargando más cuentas por pagar...
+                    Cargando más cuentas por cobrar...
                   </div>
                 }
                 scrollableTarget="accounts-payable-scroll-container"
@@ -656,10 +656,10 @@ const AccountsPayableListScreen = () => {
                 <CustomizableTable
                   table={table}
                   isError={isError}
-                  errorMessage="Ocurrió un error al cargar las cuentas por pagar"
+                  errorMessage="Ocurrió un error al cargar las cuentas por cobrar"
                   isLoading={isLoading}
                   rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron cuentas por pagar"
+                  noDataMessage="No se encontraron cuentas por cobrar"
                   selectedRowIndex={selectedIndex}
                   onRowClick={handleRowClick}
                   tableRef={tableRef}
@@ -678,9 +678,9 @@ const AccountsPayableListScreen = () => {
               isError={isError}
               isFetching={isFetching}
               isLoading={isLoading}
-              errorMessage="Ocurrió un error al cargar las cuentas por pagar"
+              errorMessage="Ocurrió un error al cargar las cuentas por cobrar"
               rows={filters.pagina_registros}
-              noDataMessage="No se encontraron cuentas por pagar"
+              noDataMessage="No se encontraron cuentas por cobrar"
               selectedRowIndex={selectedIndex}
               onRowClick={handleRowClick}
               tableRef={tableRef}
@@ -706,7 +706,7 @@ const AccountsPayableListScreen = () => {
         )}
       </div>
 
-      {/* Modal de detalles de cuenta por pagar */}
+      {/* Modal de detalles de cuenta por cobrar */}
       <AccountPayableDetailModal
         accountPayable={accountsPayable.find(ap => ap.id === selectedAccountPayableId) || null}
         open={modalOpen}

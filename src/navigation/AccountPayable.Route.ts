@@ -4,7 +4,7 @@ import type RouteType from "./RouteType";
 
 const accountsPayable: RouteType[] = [
   {
-    name: "Cuentas por pagar",
+    name: "Cuentas por cobrar",
     type: "protected",
     //element: Content,
     isAdmin: false,
@@ -16,7 +16,7 @@ const accountsPayable: RouteType[] = [
     subRoutes: [
       {
         path: "/dashboard/list-accounts-payable",
-        name: "Listar cuentas por pagar",
+        name: "Listar cuentas por cobrar",
         type: "protected",
         element: AccountsPayableListScreen,
         isAdmin: true,

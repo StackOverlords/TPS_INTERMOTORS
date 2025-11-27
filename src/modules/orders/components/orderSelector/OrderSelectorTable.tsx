@@ -1,0 +1,579 @@
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import { Checkbox } from "@/components/atoms/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
+import { Kbd } from "@/components/atoms/kbd";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import Pagination from "@/components/common/pagination";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useCustomTable } from "@/hooks/useCustomTable";
+import authSDK from "@/services/sdk-simple-auth";
+import { formatCurrency } from "@/utils/formaters";
+import { type ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+import { es } from "date-fns/locale";
+import { Clock, HelpCircle, Loader2, Plus, Settings, User } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
+import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
+import type { OrderGetAll, OrderGetAllResponse } from "../../types/orderGet.types";
+
+interface OrderSelectorTableProps {
+    data: OrderGetAllResponse
+    orders: OrderGetAll[]
+    filters: ReturnType<typeof useOrdersFilters>["filters"]
+    setPage: (page: number) => void
+    setPageSize: (rows: number) => void
+    isInfiniteScroll: boolean
+    isLoading: boolean
+    isFetching: boolean,
+    isError: boolean,
+    onSelectOrder: (order: OrderGetAll) => void
+}
+
+const getStatusBadge = (estado: string) => {
+    switch (estado) {
+        case 'Preparación':
+            return "secondary"
+        case 'Cotización':
+            return "info"
+        case 'Tránsito':
+            return "warning"
+        case 'Almacén':
+            return "accent"
+        case 'Disponible':
+            return "success"
+        default:
+            return "default"
+    }
+};
+
+const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
+    data,
+    orders,
+    filters,
+    setPage,
+    setPageSize,
+    isInfiniteScroll,
+    isError,
+    isFetching,
+    isLoading,
+    onSelectOrder
+}) => {
+
+    const user = authSDK.getCurrentUser()
+    console.log(user)
+    const tableRef = useRef<HTMLTableElement>(null)
+    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+
+
+    const columns = useMemo<ColumnDef<OrderGetAll>[]>(() => [ 
+        {
+            accessorKey: "nro_pedido",
+            header: "Nro. Pedido",
+            size: 120,
+            minSize: 100,
+            enableHiding: false,
+            cell: ({ row, getValue }) => (
+                <div className="flex items-center gap-1.5">
+                    <TooltipWrapper
+                        tooltipContentProps={{
+                            align: 'start'
+                        }}
+                        tooltip={
+                            <p className="flex gap-1">Presiona <Kbd>enter</Kbd> para seleccionar el pedido</p>
+                        }
+                    >
+                        <div className="space-y-1 flex flex-col">
+                            <span className="font-medium text-foreground">{getValue<string>()}</span>
+                            <span className="text-xs text-muted-foreground">ID: {row.original.id}</span>
+                        </div>
+                    </TooltipWrapper>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "fecha",
+            header: "Fecha",
+            size: 100,
+            minSize: 90,
+            cell: ({ getValue }) => {
+                const dateString = getValue<string>();
+
+                try {
+                    const date = new Date(dateString);
+                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+                    return (
+                        <div className="text-center text-xs">
+                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
+                            </div>
+                            <div className="text-muted-foreground flex items-center justify-center gap-1">
+                                <Clock className="size-3" />
+                                {format(date, "HH:mm", { locale: es })}
+                            </div>
+                        </div>
+                    );
+                } catch {
+                    return <span className="text-xs text-muted-foreground">{dateString}</span>;
+                }
+            },
+        },
+        {
+            accessorKey: "fecha_transito",
+            header: "Fecha Tránsito",
+            size: 100,
+            minSize: 90,
+            cell: ({ getValue }) => {
+                let dateString = getValue<string>();
+                dateString = dateString ?? "Pendiente"
+
+                try {
+                    const date = new Date(dateString);
+                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+                    return (
+                        <div className="text-center text-xs">
+                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
+                            </div>
+                        </div>
+                    );
+                } catch {
+                    return <div className="text-xs text-muted-foreground italic text-center">{dateString}</div>;
+                }
+            },
+        },
+        {
+            accessorKey: "fecha_llegada",
+            header: "Fecha Llegada",
+            size: 100,
+            minSize: 90,
+            cell: ({ getValue }) => {
+                let dateString = getValue<string>();
+                dateString = dateString ?? "Pendiente"
+
+                try {
+                    const date = new Date(dateString);
+                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+                    return (
+                        <div className="text-center text-xs">
+                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
+                            </div>
+                        </div>
+                    );
+                } catch {
+                    return <div className="text-xs text-muted-foreground italic text-center">{dateString}</div>;
+                }
+            },
+        },
+        {
+            accessorKey: "proveedor",
+            header: "Proveedor",
+            size: 120,
+            minSize: 120,
+            cell: ({ row }) => {
+                const proveedor = row.original.proveedor;
+                return (
+                    <div className="space-y-1 flex flex-col">
+                        <span className={`${!proveedor ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>
+                            {proveedor?.proveedor || "Sin proveedor"}
+                        </span>
+                        {
+                            proveedor &&
+                            <div className="text-xs text-muted-foreground flex items-center gap-3">
+                                {proveedor.nit && <div>NIT: {proveedor.nit}</div>}
+                                {proveedor.contacto && <div className="flex gap-1 items-center"><User className="size-3" /> {proveedor.contacto}</div>}
+                            </div>
+                        }
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "responsable",
+            header: "Responsable",
+            size: 180,
+            minSize: 150,
+            cell: ({ row }) => {
+                const resp = row.original.responsable;
+                const nombreCompleto = `${resp ? `${resp.nombre} ${resp.apellido_paterno}${resp.apellido_materno ? ` ${resp.apellido_materno}` : ''}` : 'Sin responsable'}`;
+                return (
+                    <div className="space-y-1 flex flex-col">
+                        <span className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>{nombreCompleto}</span>
+                        {
+                            resp &&
+                            <span className="text-xs text-muted-foreground">DNI: {resp.dni}</span>
+                        }
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "total",
+            header: "Total",
+            size: 120,
+            minSize: 100,
+            cell: ({ getValue, row }) => {
+                const items = row.original.numero_items;
+                return (
+                    <div className="flex flex-col space-y-0.5 items-end">
+                        <span className=" font-medium text-green-600">{formatCurrency(getValue<number>())}</span>
+                        <span className="text-muted-foreground">{items} items</span>
+                    </div>
+                )
+            }
+        },
+        {
+            accessorKey: "situacion_actual",
+            header: "Estado",
+            size: 110,
+            minSize: 100,
+            cell: ({ getValue }) => {
+                const situacion = getValue<string>();
+                return (
+                    <Badge variant={getStatusBadge(situacion)} className="w-max">
+                        {situacion}
+                    </Badge>
+                );
+            },
+        },
+        {
+            accessorKey: "contexto",
+            header: "Contexto",
+            size: 120,
+            minSize: 100,
+            cell: ({ getValue }) => {
+                const contexto = getValue<string>();
+                const [tipo, categoria] = contexto.split('|');
+                return (
+                    <div className="space-y-1 flex flex-col">
+                        <Badge variant={'info'} className="text-xs w-max">
+                            {tipo}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground">{categoria}</div>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "comprobantes",
+            header: "Comprobantes",
+            size: 140,
+            minSize: 120,
+            cell: ({ getValue }) => {
+                const comprobantes = getValue<string>();
+
+                if (!comprobantes || comprobantes.trim() === "" || comprobantes === "|") {
+                    return (
+                        <div className="text-center">
+                            <span className="text-muted-foreground italic text-xs">
+                                Sin comprobantes
+                            </span>
+                        </div>
+                    );
+                }
+
+                const [comprobante1, comprobante2] = comprobantes
+                    .split("|")
+                    .map(comp => comp.trim())
+                    .filter(comp => comp !== "");
+
+                return (
+                    <div className="flex flex-col space-y-0.5 text-xs text-foreground items-center">
+                        {comprobante1 && (
+                            <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante1}</Badge>
+                        )}
+                        {comprobante2 && (
+                            <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante2}</Badge>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "comentarios",
+            header: "Comentarios",
+            size: 200,
+            minSize: 150,
+            cell: ({ getValue }) => {
+                const comentarios = getValue<string | null>();
+                return (
+                    <div className={`text-xs text-muted-foreground truncate ${!comentarios ? "italic" : ""}`}>
+                        {comentarios || "Sin comentarios"}
+                    </div>
+                );
+            },
+        },
+        {
+            id: "Select",
+            header: "Seleccionar",
+            size: 200,
+            minSize: 200,
+            cell: ({ row }) => (  
+              <Button
+                onClick={(e) => {
+                   e.stopPropagation();
+                   onSelectOrder(row.original);
+                }} 
+                size="sm"
+                variant="outline"
+              >
+                <Plus className="h-5 w-5" />
+                <span className="truncate">Seleccionar</span>
+              </Button> 
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+    ], [onSelectOrder]);
+
+    const {
+        table,
+    } = useCustomTable({
+        data: orders,
+        columns,
+
+        // Configuración de características
+        enableSorting: true,
+        enableColumnResizing: true,
+        enableRowSelection: true,
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        enablePagination: false,
+
+        // Columnas ocultas por defecto
+        hiddenColumns: [],
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+
+        // Persistencia con key única por usuario
+        persistenceKey: `orders-selector-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
+
+    const {
+        selectedIndex,
+        setSelectedIndex,
+        isFocused,
+        hotkeys
+    } = useKeyboardNavigation<OrderGetAll, HTMLTableElement>({
+        items: orders,
+        containerRef: tableRef,
+        isDragging: isDraggingColumn,
+        onPrimaryAction: (order) => {
+            onSelectOrder(order);
+        },
+        getItemId: (order) => order.id
+    });
+    const handleRowClick = (index: number) => {
+        setSelectedIndex(index);
+    };
+
+    const handleRowDoubleClick = (order: OrderGetAll) => {
+        onSelectOrder(order);
+    };
+
+    const onPageChange = (page: number) => {
+        setPage(page);
+    };
+
+    const onShowRowsChange = (rows: number) => {
+        setPageSize(rows)
+    };
+    
+    const handleDragStart = useCallback(() => {
+        setIsDraggingColumn(true);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDraggingColumn(false);
+    }, []);
+
+    return (
+        <section className="flex flex-col h-full">
+            {/* Results Info */}
+            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+                {
+                    orders.length > 0 ? (
+                        isInfiniteScroll ? (
+                            `Mostrando ${orders.length} de ${data?.meta?.total} pedidos`
+                        ) : (
+                            (() => {
+                                const pagina = filters.pagina ?? 1;
+                                const porPagina = filters.pagina_registros ?? 1;
+
+                                const inicio = (pagina - 1) * porPagina + 1;
+                                const fin = pagina * porPagina;
+
+                                return `Mostrando ${inicio} - ${fin} de ${data?.meta?.total} pedidos`;
+                            })()
+                        )
+                    ) : (
+                        <span>Cargando...</span>
+                    )
+                }
+
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Settings className="w-4 h-4" />
+                                Columnas
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                            {table
+                                .getAllColumns()
+                                .filter((column) => column.getCanHide())
+                                .map((column) => (
+                                    <DropdownMenuItem
+                                        key={column.id}
+                                        className="flex items-center space-x-2 cursor-pointer"
+                                        onSelect={(e) => e.preventDefault()}
+                                        onClick={() => column.toggleVisibility(!column.getIsVisible())}
+                                    >
+                                        <Checkbox
+                                            className="border border-gray-400"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                                        />
+                                        <span className="flex-1">
+                                            {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
+                                        </span>
+                                    </DropdownMenuItem>
+                                ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <TooltipWrapper
+                        tooltipContentProps={{
+                            align: 'end',
+                            className: 'max-w-xs'
+                        }}
+                        tooltip={
+                            <div className="flex flex-col space-y-3">
+                                {/* Título del tooltip */}
+                                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                    Atajos de teclado
+                                </div>
+
+                                {/* Sección de navegación básica */}
+                                <div className="space-y-1.5">
+                                    <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación</h4>
+                                    <div className="space-y-1 text-gray-600 text-xs">
+                                        <p> <ShortcutKey combo={hotkeys.activate ?? ''} /> Activar tabla </p>
+                                        <p> <ShortcutKey combo={hotkeys.deactivate ?? ''} /> Salir de tabla </p>
+                                        <p> <ShortcutKey combo={hotkeys.moveUp ?? ''} /> / <ShortcutKey combo={hotkeys.moveDown ?? ''} /> Navegar filas </p>
+                                        <p> <ShortcutKey combo={hotkeys.navigate ?? ''} /> Cambiar columna</p>
+                                    </div>
+                                </div>
+
+                                {/* Sección de acciones */}
+                                <div className="space-y-1.5">
+                                    <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
+                                    <div className="space-y-1 text-gray-600 text-xs">
+                                        <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Seleccionar pedido </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    >
+                        <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                            <HelpCircle />
+                        </span>
+                    </TooltipWrapper>
+                </div>
+            </div>
+
+            {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+            <div className="flex-1 min-h-0">
+                {isInfiniteScroll ? (
+                    <div
+                        id="orders-selector-scroll-container"
+                        className="h-full overflow-auto relative">
+                        <InfiniteScroll
+                            dataLength={orders.length}
+                            next={() => setPage((filters.pagina || 1) + 1)}
+                            hasMore={orders.length < ((data?.meta?.total ?? 0))}
+                            loader={
+                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                                    <Loader2 className="size-4 animate-spin" />
+                                    Cargando más pedidos...
+                                </div>
+                            }
+                            scrollableTarget="orders-selector-scroll-container"
+                        >
+                            <CustomizableTable
+                                table={table}
+                                isError={isError}
+                                errorMessage="Ocurrió un error al cargar los pedidos"
+                                isLoading={isLoading}
+                                rows={filters.pagina_registros}
+                                noDataMessage="No se encontraron pedidos"
+                                selectedRowIndex={selectedIndex}
+                                onRowClick={handleRowClick}
+                                onRowDoubleClick={handleRowDoubleClick}
+                                tableRef={tableRef}
+                                focused={isFocused}
+                                keyboardNavigationEnabled={true}
+                                enableColumnReordering={true}
+                                enableSorting={false}
+                                onDragEnd={handleDragEnd}
+                                onDragStart={handleDragStart}
+                            />
+                        </InfiniteScroll>
+                    </div>
+                ) : (
+                    <div className="h-full overflow-auto">
+                        <CustomizableTable
+                            table={table}
+                            isError={isError}
+                            isFetching={isFetching}
+                            isLoading={isLoading}
+                            errorMessage="Ocurrió un error al cargar los pedidos"
+                            noDataMessage="No se encontraron pedidos"
+                            rows={filters.pagina_registros}
+                            selectedRowIndex={selectedIndex}
+                            onRowClick={handleRowClick}
+                            onRowDoubleClick={handleRowDoubleClick}
+                            tableRef={tableRef}
+                            focused={isFocused}
+                            keyboardNavigationEnabled={true}
+                            enableColumnReordering={true}
+                            enableSorting={false}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Pagination - FIJO en la parte inferior */}
+            {
+                !isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
+                    <div className="flex-shrink-0 border-t border-border bg-card">
+                        <Pagination
+                            currentPage={filters.pagina || 1}
+                            onPageChange={onPageChange}
+                            totalData={data?.meta?.total ?? 1}
+                            onShowRowsChange={onShowRowsChange}
+                            showRows={filters.pagina_registros}
+                        />
+                    </div>
+                )
+            }
+        </section>
+    );
+}
+
+export default OrderSelectorTable;

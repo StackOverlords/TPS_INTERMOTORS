@@ -256,11 +256,11 @@ const CreateTransfer = () => {
       purchaseWindow.open();
     }
     return (
-        <main>
+        <main className="h-full flex flex-col">
             <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit, onError)} className="w-full mx-auto flex flex-col gap-2">
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2 p-2">
                     {/* Header */}
-                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3">
+                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3 flex-shrink-0">
                         <div className="flex flex-wrap gap-2 items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <TooltipButton
@@ -287,9 +287,9 @@ const CreateTransfer = () => {
                     </header>
 
                     {/* 1. Datos de la transferencia */}
-                    <Card className="shadow-none h-full">
-                        <CardContent className="py-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                    <Card className="shadow-none flex-shrink-0">
+                            <CardContent className="py-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                                 <div className="w-full">
                                     <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
                                     <Input
@@ -398,7 +398,7 @@ const CreateTransfer = () => {
                         </div>
                     </div> */}
 
-                    <Card className="shadow-none">
+                    <Card className="shadow-none flex-1 min-h-0 flex flex-col">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                             <CardTitle className="text-base flex items-center gap-2">
                                 <ArrowLeftRight className="size-4" />
@@ -415,16 +415,16 @@ const CreateTransfer = () => {
                                 Agregar producto
                             </Button>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                {transferDetailsHook.details.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No hay productos agregados</p>
-                                        <p className="text-sm">Haz clic en "Agregar" para añadir productos desde una compra</p>
-                                    </div>
-                                ) : (
-                                    <div>
+                        <CardContent className="flex-1 min-h-0 flex flex-col">
+                            {transferDetailsHook.details.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                    <p>No hay productos agregados</p>
+                                    <p className="text-sm">Haz clic en "Agregar" para añadir productos desde una compra</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex-1 min-h-0 overflow-auto">
                                         <TransferDetailTable
                                             ref={tableRef}
                                             details={transferDetailsHook.details}
@@ -437,18 +437,19 @@ const CreateTransfer = () => {
                                             onUpdateIncrementoPrecioEntradaVentaAlt={transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt}
                                             onRemoveProduct={transferDetailsHook.removeProduct}
                                         />
-                                        <Separator className="h-[0.5px]" />
-                                        <div className="flex justify-between items-center px-2 pt-2">
-                                            <span className="font-medium text-gray-500">Total (Costo Entrada):</span>
-                                            <span className="font-bold text-emerald-600">{formatCurrency(transferDetailsHook.getTotal())}</span>
-                                        </div>
                                     </div>
-                                )}
-                            </div>
+                                    <Separator className="h-[0.5px] flex-shrink-0" />
+                                    <div className="flex justify-between items-center px-2 pt-2 flex-shrink-0">
+                                        <span className="font-medium text-gray-500">Total (Costo Entrada):</span>
+                                        <span className="font-bold text-emerald-600">{formatCurrency(transferDetailsHook.getTotal())}</span>
+                                    </div>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-gray-200 shadow-none pt-3">
+                    {/* Footer fijo */}
+                    <Card className="border border-gray-200 shadow-none pt-3 flex-shrink-0">
                         <CardContent className="space-y-2">
                             <footer className="flex gap-2 items-center justify-between">
                                 <span className="text-xs text-gray-500">* Campos requeridos</span>

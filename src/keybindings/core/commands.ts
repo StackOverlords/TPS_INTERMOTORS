@@ -156,6 +156,24 @@ export const COMMANDS = {
     when: 'global',
     category: 'actions',
   },
+  'actions.zoomIn': {
+    defaultKeys: 'ctrl + more',
+    description: 'Acercar (Zoom In)',
+    when: 'global',
+    category: 'actions',
+  },
+  'actions.zoomOut': {
+    defaultKeys: 'ctrl+minus',
+    description: 'Alejar (Zoom Out)',
+    when: 'global',
+    category: 'actions',
+  },
+  'actions.zoomReset': {
+    defaultKeys: 'ctrl+0',
+    description: 'Restablecer Zoom',
+    when: 'global',
+    category: 'actions',
+  },
 
   // ==================== TABS ====================
   'tabs.previous': {

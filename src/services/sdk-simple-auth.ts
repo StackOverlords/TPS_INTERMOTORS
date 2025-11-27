@@ -21,6 +21,11 @@ const authSDK = new AuthSDK({
   tokenRefresh: {
     enabled: true,
     bufferTime: 1800 // in seconds (30 minutes)
+  },
+  sessionValidation: {
+    enabled: true,
+    validateOnStartup: true,
+    autoLogoutOnInvalid: true
   }
 })
 

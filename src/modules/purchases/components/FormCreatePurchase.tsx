@@ -118,8 +118,8 @@ const FormCreatePurchase: React.FC<Props> = ({
           </span>
         </TooltipWrapper>
       </div>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end">
-        <div className="flex flex-col">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end mb-6">
+        <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Fecha *</Label>
           <Input
             type="date"
@@ -128,9 +128,9 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur('fecha')}
             className={inputClass('fecha')}
           />
-          {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha}</p>}
+          {errors.fecha && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.fecha}</p>}
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Proveedor *</Label>
           <ComboboxSelect
             value={formData.id_proveedor || undefined}
@@ -142,11 +142,11 @@ const FormCreatePurchase: React.FC<Props> = ({
             disabled={isLoadingProviders}
             data-field="id_proveedor"
           />
-          {errors.id_proveedor && <p className="text-xs text-red-500 mt-1">{errors.id_proveedor}</p>}
+          {errors.id_proveedor && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.id_proveedor}</p>}
         </div>
 
 
-        <div className="flex flex-col">
+        <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Nro comprobante *</Label>
           <Input
             type="text"
@@ -157,11 +157,11 @@ const FormCreatePurchase: React.FC<Props> = ({
             className={inputClass('nro_comprobante')}
             data-field="nro_comprobante"
           />
-          {errors.nro_comprobante && <p className="text-xs text-red-500 mt-1">{errors.nro_comprobante}</p>}
+          {errors.nro_comprobante && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.nro_comprobante}</p>}
         </div>
 
-        <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Nro comprobante 2 (Opcional)</Label>
+        <div className="flex flex-col relative">
+          <Label className="text-xs font-medium mb-1">Nro. Compro 2 (Opcional)</Label>
           <Input
             type="text"
             value={formData.nro_comprobante2}
@@ -169,10 +169,10 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur('nro_comprobante2')}
             className={inputClass('nro_comprobante2')}
           />
-          {errors.nro_comprobante2 && <p className="text-xs text-red-500 mt-1">{errors.nro_comprobante2}</p>}
+          {errors.nro_comprobante2 && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.nro_comprobante2}</p>}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Tipo *</Label>
           <ComboboxSelect
             value={formData.tipo_compra || undefined}
@@ -183,10 +183,10 @@ const FormCreatePurchase: React.FC<Props> = ({
             className={inputClass('tipo_compra')}
             disabled={loading.types}
           />
-          {errors.tipo_compra && <p className="text-xs text-red-500 mt-1">{errors.tipo_compra}</p>}
+          {errors.tipo_compra && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.tipo_compra}</p>}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Forma *</Label>
           <ComboboxSelect
             value={formData.forma_compra || undefined}
@@ -197,10 +197,10 @@ const FormCreatePurchase: React.FC<Props> = ({
             className={inputClass('forma_compra')}
             disabled={loading.modalities}
           />
-          {errors.forma_compra && <p className="text-xs text-red-500 mt-1">{errors.forma_compra}</p>}
+          {errors.forma_compra && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.forma_compra}</p>}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Responsable *</Label>
           <ComboboxSelect
             value={formData.id_responsable || undefined}
@@ -211,7 +211,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             className={inputClass('id_responsable')}
             disabled={loading.responsibles}
           />
-          {errors.id_responsable && <p className="text-xs text-red-500 mt-1">{errors.id_responsable}</p>}
+          {errors.id_responsable && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.id_responsable}</p>}
         </div>
       </div>
 

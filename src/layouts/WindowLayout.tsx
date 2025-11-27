@@ -1,5 +1,6 @@
 import { Toaster } from '@/components/atoms/toaster';
 import { TooltipProvider } from '@/components/atoms/tooltip';
+import { ZoomManager } from '@/components/common/ZoomManager';
 // import { KeybindingProvider } from '@/contexts/KeybindingContext'; // ⚠️ DEPRECATED: Reemplazado por el nuevo sistema de keybindings con Zustand
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import { queryClient } from '@/lib/reactQueryConfig';
@@ -57,6 +58,7 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
         {/* <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}> */}
         <TooltipProvider>
           <Toaster />
+          <ZoomManager />
           <div className="h-screen w-screen overflow-hidden">
             {children}
           </div>

@@ -30,6 +30,9 @@ export const useAccountPayableFilters = (
         fecha_fin: undefined,
         tipo_vencimiento: undefined,
         condicion_vencimiento: undefined,
+        condicion_fecha_especifica: undefined,
+        fecha_vencimiento_regla: undefined,
+        fecha_vencimiento: undefined,
     };
 
     const [filters, setFilters] = useState<AccountPayableFilters>(initialFilters);
@@ -50,9 +53,29 @@ export const useAccountPayableFilters = (
                     pagina: key === "pagina" ? value : 1,
                 };
 
-                // Limpiar tipo_vencimiento cuando se desactiva el switch
-                if (key === "condicion_vencimiento" && !value) {
-                    newFilters.tipo_vencimiento = undefined;
+                // Lógica de exclusividad mutua
+                if (key === "condicion_vencimiento") {
+                    if (value) {
+                        // Si se activa vencimiento, desactivar fecha específica
+                        newFilters.condicion_fecha_especifica = false;
+                        newFilters.fecha_vencimiento_regla = undefined;
+                        newFilters.fecha_vencimiento = undefined;
+                    } else {
+                        // Si se desactiva, limpiar su valor
+                        newFilters.tipo_vencimiento = undefined;
+                    }
+                }
+
+                if (key === "condicion_fecha_especifica") {
+                    if (value) {
+                        // Si se activa fecha específica, desactivar vencimiento
+                        newFilters.condicion_vencimiento = false;
+                        newFilters.tipo_vencimiento = undefined;
+                    } else {
+                        // Si se desactiva, limpiar sus valores
+                        newFilters.fecha_vencimiento_regla = undefined;
+                        newFilters.fecha_vencimiento = undefined;
+                    }
                 }
 
                 return newFilters;

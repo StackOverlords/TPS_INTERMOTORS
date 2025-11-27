@@ -95,6 +95,9 @@ interface Props {
   detalles: PurchaseDetail[];
   setDetalles: (d: PurchaseDetail[]) => void;
   toggleSelectorMode?: () => void;
+  toggleOrderSelector?: () => void;
+  canAddProducts?: boolean;
+  canImportOrder?: boolean;
 }
 
 type NormalizedPurchaseDetail = PurchaseDetail & {
@@ -118,7 +121,14 @@ type EditableNumericKey = keyof Pick<
   | 'precio_venta_alt'
 >;
 
-const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSelectorMode }) => {
+const PurchaseDetailsTable: React.FC<Props> = ({
+  detalles,
+  setDetalles,
+  toggleSelectorMode,
+  toggleOrderSelector,
+  canAddProducts = true,
+  canImportOrder = true,
+}) => {
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
   const [tempValue, setTempValue] = useState('');
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
@@ -744,17 +754,46 @@ const PurchaseDetailsTable: React.FC<Props> = ({ detalles, setDetalles,toggleSel
             </TooltipButton>
           </div>
 
-          {/* Botón agregar producto - Derecha */}
-          <Button
-            type="button"
-            variant={"outline"}
-            size="sm"
-            onClick={toggleSelectorMode}
-            className="gap-2"
-          >
-            <Maximize2 className="h-4 w-4" />
-            Agregar producto
-          </Button>
+          {/* Botones de acción - Derecha */}
+          <div className="flex items-center gap-2">
+            <TooltipButton
+              tooltip={
+                !canImportOrder
+                  ? 'No puedes importar un pedido si ya hay productos agregados manualmente'
+                  : 'Importar productos desde un pedido existente'
+              }
+              buttonProps={{
+                type: 'button',
+                variant: 'outline',
+                size: 'sm',
+                onClick: toggleOrderSelector,
+                disabled: !canImportOrder,
+                className: 'gap-2',
+              }}
+            >
+              <Maximize2 className="h-4 w-4" />
+              Importar pedido
+            </TooltipButton>
+
+            <TooltipButton
+              tooltip={
+                !canAddProducts
+                  ? 'No puedes agregar productos manualmente mientras estás importando un pedido'
+                  : 'Agregar productos desde el selector'
+              }
+              buttonProps={{
+                type: 'button',
+                variant: 'outline',
+                size: 'sm',
+                onClick: toggleSelectorMode,
+                disabled: !canAddProducts,
+                className: 'gap-2',
+              }}
+            >
+              <Maximize2 className="h-4 w-4" />
+              Agregar producto
+            </TooltipButton>
+          </div>
         </div>
       </div>
 

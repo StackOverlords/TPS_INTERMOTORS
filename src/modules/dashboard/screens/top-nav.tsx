@@ -1,8 +1,10 @@
 import { Badge } from '@/components/atoms/badge';
 import { Button } from '@/components/atoms/button';
 import { SidebarTrigger } from '@/components/atoms/sidebar';
+import NotificationsPanel from '@/components/common/NotificationsPanel';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
+import { useTaskNotificationsContext } from '@/contexts/TaskNotificationsContext';
 import { COMMANDS, useCommand, useKeybindingKeys } from '@/keybindings';
 import { useCartWithUtils } from '@/modules/shoppingCart/hooks/useCartWithUtils';
 import protectedRoutes from '@/navigation/Protected.Route';
@@ -13,6 +15,7 @@ import { Bell, HelpCircle, ShoppingCart } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Link, matchPath, useLocation } from 'react-router';
 import SelectBranch from '../components/SelectBranch';
+import { ZoomControls } from '../components/ZoomControls';
 import CommandPalette from './CommandPalette/CommandPalette';
 import SearchButton from './CommandPalette/SearchButton';
 
@@ -76,6 +79,8 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
   const { selectedBranchId } = useBranchStore();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
   const routes = protectedRoutes.filter(route => route.type === 'protected');
   const currentRoute = matchRoute(routes, location.pathname);
   const parentRoute = findParentRoute(routes, location.pathname);
@@ -83,6 +88,10 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     user?.name || '',
     selectedBranchId ?? ''
   );
+
+  // Context de notificaciones
+  const { tasks, removeTask, clearTasks } = useTaskNotificationsContext();
+  const inProgressCount = tasks.filter(t => t.status === 'in-progress' || t.status === 'pending').length;
 
   // ✨ Obtener teclas actuales del store (reactivas)
   const commandPaletteKeys = useKeybindingKeys('actions.commandPalette');
@@ -102,7 +111,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     document.dispatchEvent(toggleEvent);
   }, []);
   const handleOpenNotifications = useCallback(() => {
-    // Lógica para mostrar notificaciones
+    setNotificationsOpen(prev => !prev);
   }, []);
 
   // Registrar comandos
@@ -196,17 +205,33 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             </Badge>
           )}
         </Button>
-        <Button
-          variant={'outline'}
-          type="button"
-          className="flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
-          onClick={() => {
-            // console.log('Abriendo notificaciones...');
-            // Lógica para notificaciones
-          }}
-        >
-          <Bell className="w-4 h-4 text-gray-600 sm:h-5 sm:w-5" />
-        </Button>
+        <NotificationsPanel
+          tasks={tasks}
+          onDismiss={removeTask}
+          onClearAll={clearTasks}
+          isOpen={notificationsOpen}
+          onOpenChange={setNotificationsOpen}
+          trigger={
+            <Button
+              variant={'outline'}
+              type="button"
+              className="relative flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
+            >
+              <Bell className="w-4 h-4 text-gray-600" />
+              {inProgressCount > 0 && (
+                <Badge
+                  variant="info"
+                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs animate-pulse"
+                >
+                  {inProgressCount}
+                </Badge>
+              )}
+            </Button>
+          }
+        />
+
+        <ZoomControls />
+
         <TooltipWrapper
           tooltipContentProps={{
             align: 'end',
