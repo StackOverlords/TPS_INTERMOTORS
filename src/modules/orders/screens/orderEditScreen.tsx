@@ -48,7 +48,6 @@ const OrderEditScreen = () => {
         formulario: 'top',
         selector_mode: 'window'
     }
-    const [isReadOnly, setIsReadOnly] = useState<boolean>(false)
     const navigate = useNavigate()
     const { orderId } = useParams()
     const [providerSearchTerm, setProviderSearchTerm] = useState<string>("");
@@ -263,19 +262,27 @@ const OrderEditScreen = () => {
         return isValid;
     };
 
-    const handleAddProduct = (product: ProductGet) => {
+     // Función para agregar un solo producto
+     const handleAddProduct = (product: ProductGet) => {
         orderDetailsHook.addProduct(product);
         setTimeout(() => {
-            tableRef.current?.focusFirstQuantityInput();
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(product.id);
         }, 100);
     };
 
-    const handleAddMultipleProducts = (products: ProductGet[]) => {
-        products.forEach(product => {
-            orderDetailsHook.addProduct(product);
-        });
+    // Función para agregar múltiples productos
+    const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
+        const addedProductIds = orderDetailsHook.addMultipleProducts(products);
+        
         setTimeout(() => {
-            tableRef.current?.focusFirstQuantityInput();
+            // Enfocar el primer producto nuevo que se agregó
+            if (addedProductIds.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(addedProductIds[0]);
+            } else if (products.length > 0) {
+                // Si todos ya existían, enfocar el primero de la lista
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            }
         }, 100);
     };
 
@@ -356,7 +363,7 @@ const OrderEditScreen = () => {
         context: 'pedido',
         instanceId: 'update-order',
         onProductSelect: handleAddProduct,
-        // onMultiSelect: handleAddMultipleProducts,
+        onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
         multiSelect: true,
         selectedItems

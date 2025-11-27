@@ -1,10 +1,11 @@
 import { useCartStore } from "./useCartStore";
-import type { CartProduct, CartSummary, ConversionResult } from "../types/cart.types";
+import type { CartMode, CartProduct, CartSummary, ConversionResult } from "../types/cart.types";
 import { useStore } from "zustand";
 import { showErrorToast, showInfoToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { CartProductSchema } from "../schemas/cartProduct.schema";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import { useCallback } from "react";
+import { getModeLabel } from "../store/cartStore";
 
 export interface CartOperationResult {
     success: boolean;
@@ -32,31 +33,30 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
     // ==================== GESTIÓN DE MODO ====================
 
-    const setCartMode = useCallback((mode: 'sale' | 'quote') => {
+    const setCartMode = useCallback((mode: CartMode) => {
         state.setMode(mode);
         showInfoToast({
             title: "Modo cambiado",
-            description: mode === 'sale' ? "Modo: Venta" : "Modo: Cotización",
+            description: getModeLabel(mode),
             duration: 2000
         });
     }, [state.setMode]);
 
-    const convertToSaleWithToast = useCallback((): ConversionResult => {
-        const result = state.convertToSale();
+    const convertToSaleStrictWithToast = useCallback((): ConversionResult => {
+        const result = state.convertToSaleStrict();
 
         if (result.removedItems.length === 0 && result.adjustedItems.length === 0) {
             showSuccessToast({
-                title: "Convertido a Venta",
+                title: "Convertido a Venta Estricta",
                 description: result.message,
                 duration: 5000
             });
         } else {
-            // Construir mensaje detallado
             const details: string[] = [];
 
             if (result.removedItems.length > 0) {
                 details.push(
-                    `${result.removedItems.length} producto${result.removedItems.length > 1 ? 's removido' : ' removido'} sin stock`
+                    `${result.removedItems.length} producto${result.removedItems.length > 1 ? 's removidos' : ' removido'} sin stock`
                 );
             }
 
@@ -67,14 +67,23 @@ export const useCartWithUtils = (user: string, branch: string) => {
             }
 
             showWarningToast({
-                title: "Carrito convertido a Venta",
+                title: "Carrito convertido a Venta Estricta",
                 description: details.join('\n'),
                 duration: 5000
             });
         }
 
         return result;
-    }, [state.convertToSale]);
+    }, [state.convertToSaleStrict]);
+
+    const convertToSalePermissiveWithToast = useCallback(() => {
+        state.convertToSalePermissive();
+        showInfoToast({
+            title: "Modo Venta Permisiva",
+            description: "Puedes agregar productos aunque no tengan stock suficiente",
+            duration: 5000
+        });
+    }, [state.convertToSalePermissive]);
 
     const convertToQuoteWithToast = useCallback(() => {
         state.convertToQuote();
@@ -248,8 +257,8 @@ export const useCartWithUtils = (user: string, branch: string) => {
         const existingQuantity = state.getItemQuantity(product.id);
         const totalQuantity = existingQuantity + quantity;
 
-        // En modo venta, validar stock
-        if (state.mode === 'sale') {
+        // Validar stock solo en modo sale-strict
+        if (state.mode === 'sale-strict') {
             if (!product.stock_actual || product.stock_actual <= 0) {
                 const result = {
                     success: false,
@@ -305,7 +314,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         };
 
         if (addedCount === quantity) {
-            if (hasWarning && state.mode === 'quote') {
+            if (hasWarning && (state.mode === 'quote' || state.mode === 'sale-permissive')) {
                 showWarningToast({
                     title: "Productos agregados con advertencia",
                     description: `${result.message} (sin stock disponible)`,
@@ -327,7 +336,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         }
 
         return result;
-    }, [state.addItem, state.getItemQuantity, state.mode]);
+    }, [state.getItemQuantity, state.addItem, state.mode]);
 
     /**
  * Agrega múltiples productos al carrito, cada uno con su cantidad específica
@@ -341,20 +350,16 @@ export const useCartWithUtils = (user: string, branch: string) => {
         let totalFailed = 0;
         const failedProducts: BulkAddResult['failedProducts'] = [];
         let hasWarnings = false;
-        let totalUnitsRequested = 0;
         let totalUnitsAdded = 0;
 
         products.forEach(product => {
             const requestedQuantity = product.quantity || 1;
-            totalUnitsRequested += requestedQuantity;
-
             const productForCart = CartProductSchema.parse(product);
             const existingQuantity = state.getItemQuantity(product.id);
             const totalQuantity = existingQuantity + requestedQuantity;
 
-            // En modo venta, validar stock antes de agregar
-            if (state.mode === 'sale') {
-                // Validar que tenga stock
+            // Validar stock solo en modo sale-strict
+            if (state.mode === 'sale-strict') {
                 if (!product.stock_actual || product.stock_actual <= 0) {
                     totalFailed++;
                     failedProducts.push({
@@ -362,10 +367,9 @@ export const useCartWithUtils = (user: string, branch: string) => {
                         reason: 'NO_STOCK',
                         message: `${product.descripcion} no tiene stock disponible`
                     });
-                    return; // Saltar este producto
+                    return;
                 }
 
-                // Validar que no exceda el stock
                 if (totalQuantity > product.stock_actual) {
                     const available = product.stock_actual - existingQuantity;
                     totalFailed++;
@@ -376,11 +380,10 @@ export const useCartWithUtils = (user: string, branch: string) => {
                             ? `${product.descripcion}: solo ${available} unidades adicionales disponibles (intentó agregar ${requestedQuantity})`
                             : `${product.descripcion}: ya alcanzó el stock máximo`
                     });
-                    return; // Saltar este producto
+                    return;
                 }
             }
 
-            // Agregar el producto la cantidad de veces solicitada
             let addedCount = 0;
             for (let i = 0; i < requestedQuantity; i++) {
                 const result = state.addItem(productForCart);
@@ -391,7 +394,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
                         hasWarnings = true;
                     }
                 } else {
-                    // Si falla en el medio, registrar como fallo parcial
                     if (i === 0) {
                         totalFailed++;
                         failedProducts.push({
@@ -407,21 +409,13 @@ export const useCartWithUtils = (user: string, branch: string) => {
             if (addedCount === requestedQuantity) {
                 totalAdded++;
             } else if (addedCount > 0) {
-                // Agregado parcial - contar como warning
                 hasWarnings = true;
             }
         });
 
-        // Construir mensaje detallado
-        let message = '';
-        if (totalUnitsAdded > 0) {
-            message = `Se agregaron ${totalUnitsAdded} unidades de ${totalAdded} producto${totalAdded !== 1 ? 's' : ''}`;
-            if (totalFailed > 0) {
-                message += `. ${totalFailed} producto${totalFailed !== 1 ? 's fallaron' : ' falló'}`;
-            }
-        } else {
-            message = `No se pudo agregar ningún producto`;
-        }
+        const message = totalUnitsAdded > 0
+            ? `Se agregaron ${totalUnitsAdded} unidades de ${totalAdded} producto${totalAdded !== 1 ? 's' : ''}${totalFailed > 0 ? `. ${totalFailed} producto${totalFailed !== 1 ? 's fallaron' : ' falló'}` : ''}`
+            : `No se pudo agregar ningún producto`;
 
         const bulkResult: BulkAddResult = {
             success: totalAdded > 0,
@@ -431,9 +425,8 @@ export const useCartWithUtils = (user: string, branch: string) => {
             message
         };
 
-        // Mostrar toasts según el resultado
         if (totalAdded > 0) {
-            if (hasWarnings && state.mode === 'quote') {
+            if (hasWarnings && (state.mode === 'quote' || state.mode === 'sale-permissive')) {
                 showWarningToast({
                     title: "Productos agregados con advertencias",
                     description: `${message}. Algunos productos no tienen stock suficiente.`,
@@ -454,7 +447,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
             }
         }
 
-        // Toast con errores específicos si todos fallaron
         if (totalFailed > 0 && totalAdded === 0) {
             const errorMessages = failedProducts.slice(0, 3).map(fp => fp.message);
             const moreCount = failedProducts.length - 3;
@@ -465,7 +457,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 duration: 5000,
             });
         } else if (totalFailed > 0) {
-            // Mostrar resumen de fallos cuando algunos sí se agregaron
             showInfoToast({
                 title: "Algunos productos no se agregaron",
                 description: `${totalFailed} producto${totalFailed !== 1 ? 's no pudieron' : ' no pudo'} agregarse. Revisa el stock disponible.`,
@@ -491,7 +482,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 description: issueMessages.join(', '),
                 duration: 5000
             });
-        } else if (state.mode === 'sale') {
+        } else if (state.mode === 'sale-strict') {
             showSuccessToast({
                 title: "Carrito válido",
                 description: "Todos los productos tienen stock disponible",
@@ -562,6 +553,10 @@ export const useCartWithUtils = (user: string, branch: string) => {
         };
     }, [state.getCartCount, state.getCartSubtotal, state.getDiscountAmount, state.getCartTotal, state.items.length]);
 
+    const previewConversion = useCallback((targetMode: CartMode) => {
+        return state.previewConversion(targetMode);
+    }, [state.previewConversion]);
+
     const getStockWarnings = useCallback(() => {
         if (state.mode !== 'quote') return [];
 
@@ -586,13 +581,15 @@ export const useCartWithUtils = (user: string, branch: string) => {
         // Estado original
         ...state,
 
-        // Nuevos métodos de modo
+        // Métodos de modo
         setCartMode,
-        convertToSaleWithToast,
+        convertToSaleStrictWithToast,
+        convertToSalePermissiveWithToast,
         convertToQuoteWithToast,
+        previewConversion,
         getStockWarnings,
 
-        // Métodos actualizados con soporte de modo
+        // Gestión de items
         incrementQuantity,
         decrementQuantity,
         addItemToCart,
@@ -600,10 +597,10 @@ export const useCartWithUtils = (user: string, branch: string) => {
         addItemWithQuantity,
         addMultipleItemsWithQuantity,
         updateQuantity,
-
-        // Métodos sin cambios
         updateCustomDescription,
         updateCustomBrand,
+
+        // Validaciones
         validateCartWithToast,
         removeOutOfStockItems,
         adjustQuantitiesToStock,

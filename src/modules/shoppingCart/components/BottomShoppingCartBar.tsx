@@ -1,7 +1,6 @@
-import { Button } from '@/components/atoms/button';
 import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
-import { FileText, CreditCard, BrushCleaning } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { useCartWithUtils } from '../hooks/useCartWithUtils';
 import { Label } from '@/components/atoms/label';
 import { EditablePercentage } from './EditablePercentage';
@@ -12,8 +11,8 @@ import ShortcutKey from '@/components/common/ShortcutKey';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useRef } from 'react';
 import { formatCurrency } from '@/utils/formaters';
-import { Switch } from '@/components/atoms/switch';
 import { Badge } from '@/components/atoms/badge';
+import { CartActionBar } from './CartActionBar';
 
 interface ShoppingCartProps {
     callback?: () => void;
@@ -34,9 +33,6 @@ const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
         discountPercent,
         setDiscountAmount,
         setDiscountPercent,
-        clearCart,
-        mode,
-        setCartMode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
 
     const subtotal = getCartSubtotal();
@@ -126,45 +122,12 @@ const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
                     )
                 }
 
-                <div className="flex justify-between gap-2">
-                    <div className="flex items-center gap-2 h-8 px-2 rounded-sm border-border border">
-                        <Switch
-                            id="cart-mode-switch"
-                            checked={mode === 'quote'}
-                            onCheckedChange={(checked) => setCartMode(checked ? 'quote' : 'sale')}
-                        >
-                            {mode === 'sale' ? 'Venta' : 'Cotización'}
-                        </Switch>
-                        <Label htmlFor="cart-mode-switch">Cotización</Label>
-                    </div>
-                    <div className="flex justify-end items-center gap-2">
-                        <Button
-                            className="cursor-pointer"
-                            onClick={() => {
-                                navigate(mode === "sale" ? '/dashboard/create-sale' : '/dashboard/create-quotation')
-                            }}
-                        >
-                            {
-                                mode === "sale" ? <CreditCard className="size-4" /> : <FileText className="size-4" />
-                            }
-                            {mode === "sale" ? 'Proceder a la Venta' : 'Proceder a la Cotización'}
-                        </Button>
-
-                        {
-                            cart.length > 0 && (
-                                <Button
-                                    className="cursor-pointer"
-                                    size={'sm'}
-                                    onClick={clearCart}
-                                    variant={'destructive'}
-                                >
-                                    <BrushCleaning />
-                                    Limpiar
-                                </Button>
-                            )
-                        }
-                    </div>
-                </div>
+                <CartActionBar
+                    showhClearBottom={true}
+                    onAction={(path) => {
+                        navigate(path)
+                    }}
+                />
             </footer>
         </section>
     );

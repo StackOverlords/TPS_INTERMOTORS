@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/atoms/button"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/atoms/sheet"
 import { cn } from "@/lib/utils"
-import { BrushCleaning, CreditCard, FileText, Maximize2, ShoppingCart, X } from "lucide-react"
+import { BrushCleaning, Maximize2, ShoppingCart, X } from "lucide-react"
 import CartItemComponent from "./cartItemComponent"
 import { Label } from "@/components/atoms/label"
 import { useNavigate } from "react-router"
@@ -14,7 +14,7 @@ import { EditablePercentage } from "./EditablePercentage"
 import { EditablePrice } from "./editablePrice"
 import { formatCurrency } from "@/utils/formaters"
 import { Badge } from "@/components/atoms/badge"
-import { Switch } from "@/components/atoms/switch"
+import { CartActionBar } from "./CartActionBar"
 
 const CartSidebar = ({
     open,
@@ -42,8 +42,6 @@ const CartSidebar = ({
         setDiscountAmount,
         setDiscountPercent,
         clearCart,
-        mode,
-        setCartMode,
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
 
     useHotkeys('escape',
@@ -195,30 +193,12 @@ const CartSidebar = ({
                             )
                         }
 
-                        <div className="flex justify-between items-center gap-2">
-                            <div className="flex items-center gap-2 h-8 px-2 rounded-sm border-border border">
-                                <Switch
-                                    id="cart-mode-switch"
-                                    checked={mode === 'quote'}
-                                    onCheckedChange={(checked) => setCartMode(checked ? 'quote' : 'sale')}
-                                >
-                                    {mode === 'sale' ? 'Venta' : 'Cotización'}
-                                </Switch>
-                                <Label htmlFor="cart-mode-switch">Cotización</Label>
-                            </div>
-                            <Button
-                                className="cursor-pointer"
-                                onClick={() => {
-                                    navigate(mode === "sale" ? '/dashboard/create-sale' : '/dashboard/create-quotation')
-                                    onOpenChange(false)
-                                }}
-                            >
-                                {
-                                    mode === "sale" ? <CreditCard className="size-4" /> : <FileText className="size-4" />
-                                }
-                                {mode === "sale" ? 'Proceder a la Venta' : 'Proceder a la Cotización'}
-                            </Button>
-                        </div>
+                        <CartActionBar
+                            onAction={(path) => {
+                                navigate(path)
+                                onOpenChange(false)
+                            }}
+                        />
                     </div>
                 </SheetFooter>
             </SheetContent>
