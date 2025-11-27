@@ -22,7 +22,7 @@ export const useTransfersFilters = (defaultSucursal: number) => {
         codigo_oem_producto: "",
         keywords: "",
         fecha_fin: undefined,
-        fecha_inicio: undefined
+        fecha_inicio: undefined,
     });
 
     const [appliedFilters, setAppliedFilters] = useState<TransfersFilters>(filters);

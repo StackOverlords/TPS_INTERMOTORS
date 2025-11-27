@@ -108,4 +108,24 @@ export const transferService = {
         Logger.info('Transfer accepted successfully', { id }, MODULE_NAME);
         return response;
     },
+
+    /**
+     * Actualizar una transferencia por ID
+     * @param id - ID de la transferencia
+     * @param data - Datos para actualizar la transferencia
+     */
+    async update(id: number, data: any): Promise<TransferGetById> {
+        Logger.info('Updating Transfer', { id, data }, MODULE_NAME);
+
+        const response = await ApiService.put(
+            TRANSFER_ENDPOINTS.update(id),
+            data,
+            TransferGetByIdSchema,
+            undefined,
+            { unwrapData: true }
+        );
+
+        Logger.info('Transfer updated successfully', { id }, MODULE_NAME);
+        return response as TransferGetById;
+    },
 };

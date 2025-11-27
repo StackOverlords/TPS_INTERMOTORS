@@ -1,6 +1,5 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import authSDK from './sdk-simple-auth';
 
 declare global {
   interface Window {
@@ -8,49 +7,91 @@ declare global {
   }
 }
 
-type WebSocketEventListener = (data: any) => void;
-
 export class WebSocketService {
   private echo: Echo<any> | null = null;
-  private url: string;
-  private listeners: Map<string, WebSocketEventListener[]> = new Map();
+
+  // Guardamos las instancias de canales para no duplicar suscripciones
   private channels: Map<string, any> = new Map();
 
-  constructor(url: string) {
-    this.url = url;
+  constructor() {
     window.Pusher = Pusher;
   }
 
+  /**
+   * Inicializa la conexión con Reverb
+   */
   connect(): Promise<void> {
+    if (this.echo) {
+      // console.log('⚠️ Echo ya está conectado');
+      return Promise.resolve();
+    }
+
     return new Promise((resolve, reject) => {
       try {
+        const host = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
+        const port = import.meta.env.VITE_REVERB_PORT || '8080';
+        const appKey = import.meta.env.VITE_REVERB_APP_KEY;
+        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'ws';
+        const useTLS = scheme === 'https' || scheme === 'wss';
+
+        // console.log('🔌 Configurando conexión a Reverb:', {
+        //   host,
+        //   port,
+        //   appKey,
+        //   scheme,
+        //   useTLS
+        // });
+
+        // Configuración correcta para Reverb compatible con Pusher
         this.echo = new Echo({
           broadcaster: 'pusher',
-          key: import.meta.env.VITE_SOCKET_KEY,
-          wsHost: this.url.replace(/^https?:\/\//, '').split(':')[0],
-          wsPort: parseInt(this.url.split(':').pop() || '8589'),
-          wssPort: parseInt(this.url.split(':').pop() || '8589'),
-          forceTLS: false,
-          encrypted: false,
+          key: appKey,
+          wsHost: host,
+          wsPort: parseInt(port),
+          wssPort: parseInt(port),
+          forceTLS: useTLS,
+          encrypted: useTLS,
           disableStats: true,
-          enabledTransports: ['ws', 'wss'],
-          cluster: 'mt1',
-          authEndpoint: `${import.meta.env.VITE_API_URL}/broadcasting/auth`,
+          enabledTransports: useTLS ? ['wss'] : ['ws'],
+          cluster: 'mt1', // Requerido por Pusher.js aunque Reverb no lo use
+
+          // Configuración adicional para Reverb
           auth: {
             headers: {
-              Authorization: `Bearer ${authSDK.getAccessToken() || ''}`,
+              // Aquí vamosss a agregar headers de autenticación si es necesario
+              // 'Authorization': `Bearer ${token}`
             },
           },
         });
 
-        // Simulate connection event
-        setTimeout(() => {
-          // console.log('Laravel Echo connected');
-          resolve();
-        }, 1000);
+        // console.log('📡 Echo instance created, waiting for connection...');
+
+        // Escuchar eventos de conexión
+        this.echo.connector.pusher.connection.bind('connected', () => {
+            // console.log('✅ Conectado a Reverb WebSocket');
+            // console.log('📊 Socket ID:', this.echo?.socketId());
+            resolve();
+        });
+
+        this.echo.connector.pusher.connection.bind('error', (err: any) => {
+            console.error('❌ Error en la conexión:', err);
+        });
+
+        this.echo.connector.pusher.connection.bind('failed', (err: any) => {
+            console.error('❌ Falló la conexión a Reverb:', err);
+            reject(new Error(`Failed to connect: ${JSON.stringify(err)}`));
+        });
+
+        this.echo.connector.pusher.connection.bind('disconnected', () => {
+            // console.log('⚠️ Desconectado de Reverb');
+        });
+
+        this.echo.connector.pusher.connection.bind('state_change', (states: any) => {
+            // console.log('🔄 Estado de conexión cambió:', states.previous, '->', states.current);
+        });
 
       } catch (error) {
-        console.error('Laravel Echo connection error:', error);
+        console.error('💥 Error inicializando Echo:', error);
         reject(error);
       }
     });
@@ -64,50 +105,77 @@ export class WebSocketService {
     this.channels.clear();
   }
 
-  send(type: string, data: any): void {
-    if (this.echo) {
-      console.log(`Broadcasting event ${type}:`, data);
-      // Laravel Echo is primarily for listening, not sending
-      // Broadcasting is typically done via HTTP API
-    } else {
-      console.warn('Laravel Echo is not connected');
-    }
-  }
-
-  listen(channel: string, event: string, listener: WebSocketEventListener): void {
+  /**
+   * Escuchar un evento en un canal
+   * @param channelName - Nombre del canal (ej: 'public-updates', 'private-orders', 'presence-chat')
+   * @param eventName - Nombre del evento (ej: 'public.notification', 'OrderCreated', '.OrderUpdated')
+   * @param callback - Función a ejecutar cuando se reciba el evento
+   */
+  listen(channelName: string, eventName: string, callback: Function): void {
     if (!this.echo) {
-      console.warn('Laravel Echo is not connected');
+      console.warn('⚠️ Echo no está conectado. Llama a connect() primero.');
       return;
     }
 
-    const channelInstance = this.echo.channel(channel);
-    channelInstance.listen(event, listener);
-    this.channels.set(`${channel}:${event}`, channelInstance);
-  }
+    // console.log(`🎯 Intentando suscribirse a canal: "${channelName}" con evento: "${eventName}"`);
 
-  on(event: string, listener: WebSocketEventListener): void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, []);
-    }
-    this.listeners.get(event)!.push(listener);
-  }
+    // Reutilizar instancia del canal si ya existe
+    let channel = this.channels.get(channelName);
 
-  off(event: string, listener: WebSocketEventListener): void {
-    const eventListeners = this.listeners.get(event);
-    if (eventListeners) {
-      const index = eventListeners.indexOf(listener);
-      if (index > -1) {
-        eventListeners.splice(index, 1);
+    if (!channel) {
+      // Determinar el tipo de canal basado en el nombre
+      if (channelName.startsWith('private-')) {
+        const privateChannelName = channelName.replace('private-', '');
+        // // console.log(`🔒 Creando canal privado: ${privateChannelName}`);
+        channel = this.echo.private(privateChannelName);
+      } else if (channelName.startsWith('presence-')) {
+        const presenceChannelName = channelName.replace('presence-', '');
+        // // console.log(`👥 Creando canal de presencia: ${presenceChannelName}`);
+        channel = this.echo.join(presenceChannelName);
+      } else {
+        // // console.log(`📢 Creando canal público: ${channelName}`);
+        channel = this.echo.channel(channelName);
       }
+
+      this.channels.set(channelName, channel);
+
+      // Escuchar eventos de suscripción
+      channel.on('pusher:subscription_succeeded', () => {
+        // console.log(`✅ Suscripción exitosa al canal: ${channelName}`);
+      });
+
+      channel.on('pusher:subscription_error', (error: any) => {
+        console.error(`❌ Error al suscribirse al canal ${channelName}:`, error);
+      });
     }
+
+    // Formatear el nombre del evento correctamente
+    // Si el evento ya tiene un punto al inicio, no agregar otro
+    // Si no, agregarlo para que Laravel Echo lo maneje correctamente
+    const formattedEvent = eventName.startsWith('.') ? eventName : `.${eventName}`;
+
+    channel.listen(formattedEvent, (data: any) => {
+      // console.log(`📨 Evento recibido [${channelName}] [${eventName}]:`, data);
+      callback(data);
+    });
+
+    // console.log(`🎧 Escuchando evento "${formattedEvent}" en canal "${channelName}"`);
   }
 
+  /**
+   * Dejar de escuchar un canal completo
+   */
+  leave(channelName: string): void {
+    if (this.echo) {
+      this.echo.leave(channelName);
+      this.channels.delete(channelName);
+    }
+  }
 
   get isConnected(): boolean {
-    return this.echo !== null;
+    // Verificación más robusta usando el estado interno de Pusher
+    return this.echo?.connector?.pusher?.connection?.state === 'connected';
   }
 }
 
-export const websocketService = new WebSocketService(
-  import.meta.env.VITE_WS_URL || 'http://192.168.1.14:8589'
-);
+export const websocketService = new WebSocketService();

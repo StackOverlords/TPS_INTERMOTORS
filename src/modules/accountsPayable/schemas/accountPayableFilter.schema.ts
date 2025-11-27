@@ -4,7 +4,7 @@ import z from "zod";
 
 export const accountPayableFiltersSchema = baseFilterSchema.extend({
     // Filtro por número de venta
-    nro_venta: z.preprocess(toUndefinedIfEmpty, z.number().int().optional()),
+    nro_venta: z.preprocess(toUndefinedIfEmpty, z.string().optional()),
 
     // Filtro por cliente (ID)
     cliente: z.preprocess(toUndefinedIfEmpty, z.number().int().optional()),
@@ -31,4 +31,12 @@ export const accountPayableFiltersSchema = baseFilterSchema.extend({
         ]).optional()
     ),
     condicion_vencimiento: z.preprocess(toUndefinedIfEmpty, z.boolean().optional()),
+
+    // Filtro por fecha específica (requiere condicion_fecha_especifica=true)
+    condicion_fecha_especifica: z.preprocess(toUndefinedIfEmpty, z.boolean().optional()),
+    fecha_vencimiento_regla: z.preprocess(
+        toUndefinedIfEmpty,
+        z.enum(["=", ">=", "<="]).optional()
+    ),
+    fecha_vencimiento: z.preprocess(toUndefinedIfEmpty, z.string().optional()),
 });

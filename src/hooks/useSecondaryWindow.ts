@@ -508,6 +508,8 @@ export function useViewConfigRoutesWindowConfig(
   });
 }
 
+
+
 // ========= Hook específico para ventana de debug logs =========
 const DEBUG_LOG_EVENTS = ['window-closed'] as const;
 
@@ -526,4 +528,68 @@ export function useDebugLogWindow(): UseSecondaryWindowResult {
     listenToEvents: DEBUG_LOG_EVENTS as unknown as string[],
     autoCloseOnUnmount: false, // Permitir que persista
   });
+};
+
+
+// ========= Hook específico para ventana de selector de pedidos =========
+export interface UseOrderSelectorWindow {
+  context: string;
+  instanceId?: string;
+  onOrderSelect?: (order: any) => void;
+  estado?: 'P' | 'C' | 'T' | 'A' | 'D'; // P=Preparación, C=Cotización, T=Tránsito, A=Almacén, D=Disponible
 }
+
+// Array constante para evitar recreaciones
+const ORDER_SELECTOR_EVENTS = [
+  'order-selected',
+  'window-closed',
+] as const;
+
+export function useOrderSelectorWindow(
+  config: UseOrderSelectorWindow
+): UseSecondaryWindowResult {
+  const {
+    context,
+    instanceId,
+    onOrderSelect,
+    estado = 'A', // Por defecto Almacén
+  } = config;
+
+  // Generar windowId único
+  const windowId = instanceId
+    ? `order-selector-${context}-${instanceId}`
+    : `order-selector-${context}`;
+
+
+  // Ref para mantener callback actualizado sin causar re-renders
+  const onOrderSelectRef = useRef(onOrderSelect);
+  useEffect(() => {
+    onOrderSelectRef.current = onOrderSelect;
+  }, [onOrderSelect]);
+  // Callback estable que usa la ref
+  // ✅ Sin dependencias, siempre estable
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    if (eventName === 'order-selected' && onOrderSelectRef.current) {
+      onOrderSelectRef.current(data);
+    }
+  }, []);
+
+
+  // Usar hook genérico para crear ventana de selector de pedidos
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html',
+    title: 'Seleccionar Pedido',
+    width: 1400,
+    height: 900,
+    queryParams: {
+      component: 'order-selector',
+      context,
+      estado, // Pasar el estado para filtrar
+      windowId,
+    },
+    listenToEvents: ORDER_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
+    onEvent: handleEvent, // ✅ Referencia estable
+  });
+};
+

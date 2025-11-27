@@ -8,14 +8,17 @@ import Navigation from './navigation/Navigation.tsx';
 import '@/config/zodI18nConfig.ts';
 import { HotkeysProvider, useHotkeys } from 'react-hotkeys-hook';
 import { Toaster } from './components/atoms/toaster.tsx';
+import { ZoomManager } from './components/common/ZoomManager.tsx';
+import { TaskNotificationsProvider } from './contexts/TaskNotificationsContext.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
+import { useDebugLogWindow } from './hooks/useSecondaryWindow';
 import { initializeKeybindingStore } from './keybindings/index.ts';
 import { queryClient } from './lib/reactQueryConfig.ts';
-import { useDebugLogWindow } from './hooks/useSecondaryWindow';
+import logger from './utils/logger.ts';
 
 // ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
 initializeKeybindingStore().catch((error) => {
-  console.error('❌ Error initializing keybinding store:', error);
+  logger.error('❌ Error initializing keybinding store:', error);
 });
 
 function App() {
@@ -31,23 +34,26 @@ function App() {
   }, { enableOnFormTags: true });
 
   return (
-    <WebSocketProvider>
-      <QueryClientProvider client={queryClient}>
-        <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
-          <TooltipProvider>
-            <Toaster />
-            {/* <Sonner /> */}
-            {/* <KeybindingProvider> */}
+    <QueryClientProvider client={queryClient}>
+      <TaskNotificationsProvider>
+        <WebSocketProvider>
+          <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
+            <TooltipProvider>
+              <Toaster />
+              <ZoomManager />
+              {/* <Sonner /> */}
+              {/* <KeybindingProvider> */}
               <BrowserRouter>
                 {/* <SidebarProvider> */}
                 <Navigation />
                 {/* </SidebarProvider> */}
               </BrowserRouter>
-            {/* </KeybindingProvider> */}
-          </TooltipProvider>
-        </HotkeysProvider>
-      </QueryClientProvider>
-    </WebSocketProvider>
+              {/* </KeybindingProvider> */}
+            </TooltipProvider>
+          </HotkeysProvider>
+        </WebSocketProvider>
+      </TaskNotificationsProvider>
+    </QueryClientProvider>
   );
 }
 

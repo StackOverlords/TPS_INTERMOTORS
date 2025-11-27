@@ -2,10 +2,11 @@ import { toast } from "@/hooks/use-toast";
 import { useCallback, useEffect, useState } from "react";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { FormData } from "./usePurchaseForm";
-import { purchaseService } from "../services/purchaseService";
+import { usePurchaseUpdate } from "./usePurchaseUpdate";
 
 export function usePurchaseEdit(initialData?: PurchaseDetail) {
-  const [isLoading, setIsLoading] = useState(false);
+  const updateMutation = usePurchaseUpdate();
+  const isLoading = updateMutation.isPending;
   const [formData, setFormData] = useState<FormData>({
     fecha: "",
     nro_comprobante: "",
@@ -91,7 +92,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
       return false;
     }
 
-    setIsLoading(true);
     try {
       // Transformar los datos para el servidor
       const dataToSend = {
@@ -169,7 +169,10 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
       };
 
       console.log('📤 Payload completo a enviar:', dataToSend);
-      await purchaseService.update(purchaseId, dataToSend);
+
+      // Usar la mutación de React Query que invalida el caché automáticamente
+      await updateMutation.mutateAsync({ id: purchaseId, data: dataToSend });
+
       toast({
         title: "Compra actualizada",
         description: "La compra se ha actualizado correctamente.",
@@ -183,10 +186,8 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
         variant: "destructive"
       });
       return false;
-    } finally {
-      setIsLoading(false);
     }
-  }, [formData, validateAll]);
+  }, [formData, validateAll, updateMutation]);
 
   return {
     formData,

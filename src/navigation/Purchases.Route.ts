@@ -2,7 +2,8 @@ import CreatePurchase from "@/modules/purchases/screens/CreatePurchase";
 import EditPurchase from "@/modules/purchases/screens/EditPurchase";
 import PurchaseDetailScreen from "@/modules/purchases/screens/PurchaseDetailScreen";
 import PurchaseListScreen from "@/modules/purchases/screens/PurchaseListScreen";
-import { Package, ShoppingBag, ShoppingCart } from "lucide-react";
+import UpdatePrices from "@/modules/purchases/screens/UpdatePrices";
+import { Package, PencilLine, ShoppingBag, ShoppingCart } from "lucide-react";
 import type RouteType from "./RouteType";
 
 const purchasesProtectedRoutes: RouteType[] = [  
@@ -63,7 +64,19 @@ const purchasesProtectedRoutes: RouteType[] = [
 
         isHeader: false,
         showSidebar: false
-      }
+      },
+      {
+        path: "/dashboard/update-prices",
+        name: "Actualizar precios",
+        type: "protected",
+        element: UpdatePrices,
+        isAdmin: true,
+        role: ["admin"],
+        icon: PencilLine,
+
+        isHeader: false,
+        showSidebar: true
+      },
     ]
   }, 
 ];
