@@ -6,7 +6,7 @@ export const useTransferById = (id: number) => {
     return useQuery({
         queryKey: TRANSFER_QUERY_KEYS.detail(id),
         queryFn: () => transferService.getById(id),
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 0, // Siempre refetch para obtener datos actualizados
         enabled: !!id,
     });
 };

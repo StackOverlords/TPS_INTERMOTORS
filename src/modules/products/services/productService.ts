@@ -51,6 +51,23 @@ export const productsService = {
 	},
 
 	/**
+	 * Obtener detalle de un producto por ID de una determinada sucursal
+	 * @param id - ID del producto
+	 * @param sucursalId - ID de la sucursal
+	 */
+	async getByIdWithStock(id: number, sucursalId: number): Promise<ProductDetail> {
+		Logger.info("Fetching product detail", { id }, MODULE_NAME);
+		const response = await ApiService.get(
+			PRODUCT_ENDPOINTS.getByIdWithStock(id, sucursalId),
+			ProductDetailSchema,
+			undefined,
+			{ unwrapData: true }
+		);
+		Logger.info("Product detail fetched successfully", { id, sucursalId }, MODULE_NAME);
+		return response as ProductDetail;
+	},
+
+	/**
 	 * Obtener stock de un producto con filtros opcionales
 	 * @param params - Parámetros para la consulta de stock
 	 */
@@ -135,9 +152,9 @@ export const productsService = {
 		 */
 	async create(data: ProductCreate): Promise<ProductDetail> {
 		Logger.info('Creating product', { data }, MODULE_NAME);
-    if(data.id_subcategoria === 0) {
-      delete data.id_subcategoria;
-    }
+		if (data.id_subcategoria === 0) {
+			delete data.id_subcategoria;
+		}
 		const response = await ApiService.post(
 			PRODUCT_ENDPOINTS.create,
 			data,

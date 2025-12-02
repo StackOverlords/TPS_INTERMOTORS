@@ -21,7 +21,7 @@ import { useQuotationPDF } from "../hooks/useQuotationPDF";
 
 const QuotationDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: quotationId } = useParams()
+    const { quotationId } = useParams()
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
 
     const {

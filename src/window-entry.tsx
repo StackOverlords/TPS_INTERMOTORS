@@ -1,5 +1,7 @@
 import WindowLayout from '@/layouts/WindowLayout';
 import { createRoot } from 'react-dom/client';
+import { TaskNotificationsProvider } from './contexts/TaskNotificationsContext.tsx';
+import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
 import './index.css';
 import { initializeKeybindingStore } from './keybindings/index.ts';
 import {
@@ -29,9 +31,13 @@ const requiresAuth = componentId ? !NO_AUTH_COMPONENTS.includes(componentId) : t
 if (rootElement) {
   createRoot(rootElement).render(
     requiresAuth ? (
-      <WindowLayout>
-        <WindowComponentRenderer />
-      </WindowLayout>
+      <TaskNotificationsProvider>
+        <WebSocketProvider>
+          <WindowLayout>
+            <WindowComponentRenderer />
+          </WindowLayout>
+        </WebSocketProvider>
+      </TaskNotificationsProvider>
     ) : (
       <WindowComponentRenderer />
     )

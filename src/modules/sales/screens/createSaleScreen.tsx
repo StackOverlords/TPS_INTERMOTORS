@@ -107,7 +107,6 @@ const CreateSaleScreen = () => {
             nro_motor: "",
             cliente_nombre: "",
             cliente_nit: "",
-            usuario: 1,
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: Number(user?._id) || undefined,
             detalles: []
@@ -350,7 +349,6 @@ const CreateSaleScreen = () => {
             nro_motor: "",
             cliente_nombre: "",
             cliente_nit: "",
-            usuario: 1,
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: currentValues.id_responsable,
             detalles: []

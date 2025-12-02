@@ -11,4 +11,6 @@ export const PURCHASE_ENDPOINTS = {
     types: "/products/purchases/commons/types",
     modalities: "/products/purchases/commons/modalities",
     responsibles: "/products/purchases/commons/responsibles",
+    // Actions
+    updatePrices: `${BASE_PATH}/actions/update_prices`,
 } as const;

@@ -27,6 +27,7 @@
  * ```
  */
 
+import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
 import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
 import type { SelectedItem } from '@/types/windowSelectedItems';
 import {
@@ -509,6 +510,8 @@ export function useViewConfigRoutesWindowConfig(
   });
 }
 
+
+
 // ========= Hook específico para ventana de debug logs =========
 const DEBUG_LOG_EVENTS = ['window-closed'] as const;
 
@@ -529,10 +532,11 @@ export function useDebugLogWindow(): UseSecondaryWindowResult {
   });
 }
 
+// ========= Hook específico para ventana de seleccionar detalles de venta =========
 export interface UseSaleDetailSelectorWindowConfig {
   context: string;
   instanceId?: string;
-  onMultiSelect?: (items: UIReturnDetailCreate[]) => void;
+  onChangesApplied?: (changes: ProductChange[]) => void;
   initialFilters?: Record<string, any>;
   mode?: 'create' | 'edit';
   selectedItems?: UIReturnDetailCreate[];
@@ -540,7 +544,7 @@ export interface UseSaleDetailSelectorWindowConfig {
 
 // Array constante para evitar recreaciones
 const SALE_DETAIL_SELECTOR_EVENTS = [
-  'sale-details-multi-selected',
+  'sale-details-changes-applied',
   'window-closed',
 ] as const;
 
@@ -554,7 +558,7 @@ export function useSaleDetailSelectorWindow(
   const {
     context,
     instanceId,
-    onMultiSelect,
+    onChangesApplied,
     initialFilters,
     mode = 'create',
     selectedItems = [],
@@ -565,28 +569,30 @@ export function useSaleDetailSelectorWindow(
     ? `sale-detail-selector-${context}-${instanceId}`
     : `sale-detail-selector-${context}`;
 
-  // Ref para mantener callback actualizado sin causar re-renders
-  const onMultiSelectRef = useRef(onMultiSelect);
-  
-  useEffect(() => {
-    onMultiSelectRef.current = onMultiSelect;
-  }, [onMultiSelect]);
+  // Refs para mantener callbacks actualizados sin causar re-renders
+  const onChangesAppliedRef = useRef(onChangesApplied);
 
-  // Callback estable que usa la ref
+  useEffect(() => {
+    onChangesAppliedRef.current = onChangesApplied;
+  }, [onChangesApplied]);
+
+  // Callback estable que usa las refs
   const handleEvent = useCallback((eventName: string, data: any) => {
-    if (eventName === 'sale-details-multi-selected' && onMultiSelectRef.current) {
-      onMultiSelectRef.current(data);
+    // Nuevo evento con solo cambios (recomendado)
+    if (eventName === 'sale-details-changes-applied' && onChangesAppliedRef.current) {
+      onChangesAppliedRef.current(data as ProductChange[]);
+      return;
     }
   }, []);
 
   return useSecondaryWindow({
     windowId,
-    route: '/window.html', // HTML genérico
+    route: '/window.html',
     title: 'Seleccionar Items de Venta',
     width: 1400,
     height: 750,
     queryParams: {
-      component: 'sale-detail-selector', // ID del componente a renderizar
+      component: 'sale-detail-selector',
       context,
       mode,
       selectedItems: JSON.stringify(selectedItems),
@@ -596,3 +602,65 @@ export function useSaleDetailSelectorWindow(
     onEvent: handleEvent,
   });
 }
+
+// ========= Hook específico para ventana de selector de pedidos =========
+export interface UseOrderSelectorWindow {
+  context: string;
+  instanceId?: string;
+  onOrderSelect?: (order: any) => void;
+  estado?: 'P' | 'C' | 'T' | 'A' | 'D'; // P=Preparación, C=Cotización, T=Tránsito, A=Almacén, D=Disponible
+}
+
+// Array constante para evitar recreaciones
+const ORDER_SELECTOR_EVENTS = [
+  'order-selected',
+  'window-closed',
+] as const;
+
+export function useOrderSelectorWindow(
+  config: UseOrderSelectorWindow
+): UseSecondaryWindowResult {
+  const {
+    context,
+    instanceId,
+    onOrderSelect,
+    estado = 'A', // Por defecto Almacén
+  } = config;
+
+  // Generar windowId único
+  const windowId = instanceId
+    ? `order-selector-${context}-${instanceId}`
+    : `order-selector-${context}`;
+
+
+  // Ref para mantener callback actualizado sin causar re-renders
+  const onOrderSelectRef = useRef(onOrderSelect);
+  useEffect(() => {
+    onOrderSelectRef.current = onOrderSelect;
+  }, [onOrderSelect]);
+  // Callback estable que usa la ref
+  // ✅ Sin dependencias, siempre estable
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    if (eventName === 'order-selected' && onOrderSelectRef.current) {
+      onOrderSelectRef.current(data);
+    }
+  }, []);
+
+
+  // Usar hook genérico para crear ventana de selector de pedidos
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html',
+    title: 'Seleccionar Pedido',
+    width: 1400,
+    height: 900,
+    queryParams: {
+      component: 'order-selector',
+      context,
+      estado, // Pasar el estado para filtrar
+      windowId,
+    },
+    listenToEvents: ORDER_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
+    onEvent: handleEvent, // ✅ Referencia estable
+  });
+};

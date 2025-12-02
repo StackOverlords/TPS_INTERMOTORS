@@ -1,115 +1,103 @@
-import { Badge } from "@/components/atoms/badge";
-import { ArrowLeftRight, ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Circle } from "lucide-react";
 
 interface TransferStatusBadgeProps {
     estado: string;
 }
 
 /**
- * Componente que muestra el estado de una transferencia con icono y color
+ * Componente que muestra el estado de una transferencia de forma clara y minimalista
  *
- * Tipos de transferencia:
- * - => : Transferencia de sucursal base (origen) hacia otro destino
- * - <= : Transferencia que llega de otro destino a la sucursal base
- * - <=> : Transferencia entre dos sucursales diferentes a la sucursal base
- *
- * Estados posibles:
- * - TRANSFERIDO => : Producto enviado desde sucursal base
- * - RECEPCIONADO <= : Producto recibido en sucursal base
- * - TRANSFERIDO <=> : Transferencia entre otras sucursales (solo visualización)
+ * Formato del estado desde el backend: "ESTADO <=> DIRECCION"
+ * Ejemplos:
+ * - "TRANSFERIDO => SUCURSAL DESTINO"
+ * - "POR TRANSFERIR <=> PENDIENTE"
+ * - "RECEPCIONADO <= SUCURSAL ORIGEN"
  */
 const TransferStatusBadge: React.FC<TransferStatusBadgeProps> = ({ estado }) => {
-    // Extraer el tipo de transferencia y el estado
-    const getTransferInfo = (estado: string) => {
-        // Normalizar el estado para quitar espacios extras
+    // Parsear el estado para extraer la información relevante
+    const parseEstado = (estado: string) => {
         const normalizedEstado = estado.trim();
 
-        // Detectar el tipo de transferencia
+        // Detectar dirección y extraer el estado principal
+        let direccion: 'salida' | 'entrada' | 'entre' | 'ninguna' = 'ninguna';
+        let estadoPrincipal = normalizedEstado;
+
         if (normalizedEstado.includes('<=>')) {
-            const estadoText = normalizedEstado.replace('<=>', '').trim();
-            return {
-                type: '<=>',
-                status: estadoText,
-                icon: ArrowLeftRight,
-                color: 'text-purple-600',
-                bgColor: 'bg-purple-50',
-                borderColor: 'border-purple-200',
-                description: 'Entre otras sucursales'
-            };
+            direccion = 'entre';
+            estadoPrincipal = normalizedEstado.split('<=>')[0].trim();
         } else if (normalizedEstado.includes('=>')) {
-            const estadoText = normalizedEstado.replace('=>', '').trim();
-            return {
-                type: '=>',
-                status: estadoText,
-                icon: ArrowRight,
-                color: 'text-blue-600',
-                bgColor: 'bg-blue-50',
-                borderColor: 'border-blue-200',
-                description: 'Enviado desde esta sucursal'
-            };
+            direccion = 'salida';
+            estadoPrincipal = normalizedEstado.split('=>')[0].trim();
         } else if (normalizedEstado.includes('<=')) {
-            const estadoText = normalizedEstado.replace('<=', '').trim();
-            return {
-                type: '<=',
-                status: estadoText,
-                icon: ArrowLeft,
-                color: 'text-green-600',
-                bgColor: 'bg-green-50',
-                borderColor: 'border-green-200',
-                description: 'Recibido en esta sucursal'
-            };
+            direccion = 'entrada';
+            estadoPrincipal = normalizedEstado.split('<=')[0].trim();
         }
 
-        // Estado sin tipo de transferencia (fallback)
+        // Determinar el icono y estilo según la dirección
+        let Icon = Circle;
+        let iconColor = 'text-gray-400';
+        let textoDireccion = '';
+
+        if (direccion === 'salida') {
+            Icon = ArrowUpRight;
+            iconColor = 'text-blue-500';
+            textoDireccion = 'Salida';
+        } else if (direccion === 'entrada') {
+            Icon = ArrowDownLeft;
+            iconColor = 'text-green-500';
+            textoDireccion = 'Entrada';
+        } else if (direccion === 'entre') {
+            Icon = ArrowLeftRight;
+            iconColor = 'text-purple-500';
+            textoDireccion = 'Entre sucursales';
+        }
+
+        // Determinar el color del texto según el estado
+        let estadoColor = 'text-foreground';
+        const upperEstado = estadoPrincipal.toUpperCase();
+
+        if (upperEstado.includes('RECEPCIONADO') || upperEstado.includes('RECIBIDO')) {
+            estadoColor = 'text-green-700 font-semibold';
+        } else if (upperEstado.includes('TRANSFERIDO') || upperEstado.includes('ENVIADO')) {
+            estadoColor = 'text-blue-700 font-semibold';
+        } else if (upperEstado.includes('PENDIENTE') || upperEstado.includes('POR')) {
+            estadoColor = 'text-amber-700 font-medium';
+        } else if (upperEstado.includes('CANCELADO') || upperEstado.includes('RECHAZADO')) {
+            estadoColor = 'text-red-700 font-semibold';
+        }
+
         return {
-            type: '',
-            status: normalizedEstado,
-            icon: ArrowLeftRight,
-            color: 'text-gray-600',
-            bgColor: 'bg-gray-50',
-            borderColor: 'border-gray-200',
-            description: 'Estado desconocido'
+            estadoPrincipal,
+            Icon,
+            iconColor,
+            estadoColor,
+            textoDireccion,
+            direccion
         };
     };
 
-    const transferInfo = getTransferInfo(estado);
-    const Icon = transferInfo.icon;
-
-    // Determinar el color del badge según el estado
-    const getStatusColor = (status: string) => {
-        const upperStatus = status.toUpperCase();
-
-        if (upperStatus.includes('RECEPCIONADO') || upperStatus.includes('RECIBIDO') || upperStatus.includes('RECIBIDA')) {
-            return 'success';
-        } else if (upperStatus.includes('RECHAZADO') || upperStatus.includes('RECHAZADA') || upperStatus.includes('CANCELADO')) {
-            return 'destructive';
-        } else if (upperStatus.includes('TRANSFERIDO') || upperStatus.includes('ENVIADO') || upperStatus.includes('PENDIENTE')) {
-            return 'warning';
-        }
-
-        return 'default';
-    };
-
-    const badgeVariant = getStatusColor(transferInfo.status);
+    const info = parseEstado(estado);
+    const Icon = info.Icon;
 
     return (
-        <div className="flex flex-col gap-1.5">
-            {/* Badge del estado */}
-            <Badge variant={badgeVariant} className="text-xs w-max flex items-center gap-1.5">
-                <Icon className="size-3" />
-                {transferInfo.status}
-            </Badge>
+        <div className="flex items-center gap-2">
+            {/* Icono de dirección */}
+            <div className={`${info.iconColor} shrink-0`} title={info.textoDireccion}>
+                <Icon className="size-4" />
+            </div>
 
-            {/* Indicador del tipo de transferencia */}
-            {transferInfo.type && (
-                <div
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium w-max border ${transferInfo.bgColor} ${transferInfo.color} ${transferInfo.borderColor}`}
-                    title={transferInfo.description}
-                >
-                    <span className="font-bold">{transferInfo.type}</span>
-                    <span className="text-[9px] opacity-80">{transferInfo.description}</span>
-                </div>
-            )}
+            {/* Estado principal */}
+            <div className="flex flex-col">
+                <span className={`text-sm ${info.estadoColor}`}>
+                    {info.estadoPrincipal}
+                </span>
+                {/* Texto de dirección sutil solo si es relevante */}
+                {info.direccion !== 'ninguna' && (
+                    <span className="text-xs text-muted-foreground">
+                        {info.textoDireccion}
+                    </span>
+                )}
+            </div>
         </div>
     );
 };

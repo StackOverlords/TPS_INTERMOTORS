@@ -68,19 +68,23 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
     const canSendTransfer = (estado: string): boolean => {
         const normalizedEstado = estado.trim().toUpperCase();
 
-        // Solo se puede enviar si es saliente (=>) y está PENDIENTE (no fue transferido todavía)
-        return normalizedEstado.includes('=>') &&
-               normalizedEstado.includes('PENDIENTE');
+        // Detectar diferentes formatos de estado pendiente de envío:
+        // 1. "POR TRANSFERIR <=> ..." - Cuando está en origen y no se ha enviado
+        // 2. "=> PENDIENTE" - Formato alternativo
+        // 3. "PENDIENTE =>" - Formato alternativo
+        return (normalizedEstado.includes('POR TRANSFERIR') ||
+                (normalizedEstado.includes('=>') && normalizedEstado.includes('PENDIENTE')));
     }
 
     // Función helper para determinar si se puede recibir una transferencia
     const canReceiveTransfer = (estado: string): boolean => {
         const normalizedEstado = estado.trim().toUpperCase();
 
-        // Solo se puede recibir si es entrante (<=) y está "TRANSFERIDO SIN RECEPCIONAR"
-        return normalizedEstado.includes('<=') &&
-               normalizedEstado.includes('TRANSFERIDO') &&
-               normalizedEstado.includes('SIN RECEPCIONAR');
+        // Detectar diferentes formatos de estado pendiente de recepción:
+        // 1. "... <=> POR RECEPCIONAR" - Cuando está en tránsito esperando recepción
+        // 2. "<= TRANSFERIDO" (sin RECEPCIONADO) - Formato alternativo
+        return (normalizedEstado.includes('POR RECEPCIONAR') ||
+                (normalizedEstado.includes('<=') && normalizedEstado.includes('TRANSFERIDO') && !normalizedEstado.includes('RECEPCIONADO')));
     }
 
     const columns = useMemo<ColumnDef<TransferGetAll>[]>(() => [
@@ -344,7 +348,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                 );
             },
         },
-    ], [handleSeeDetails, handleUpdateTransfer, handleDeleteTransfer]);
+    ], [handleSeeDetails, handleUpdateTransfer, handleDeleteTransfer, handleSendTransfer, handleAcceptTransfer]);
 
     const {
         table,

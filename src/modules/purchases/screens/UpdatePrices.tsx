@@ -1,0 +1,271 @@
+import { Alert, AlertDescription } from '@/components/atoms/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/atoms/alert-dialog';
+import { Badge } from '@/components/atoms/badge';
+import { Button } from '@/components/atoms/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card';
+import TooltipButton from '@/components/common/TooltipButton';
+import { useGetAllBranches } from '@/modules/settings/hooks/branch/useGetAllBranches';
+import { useGetAllCategories } from '@/modules/settings/hooks/category/useGetAllCategories';
+import { AlertCircle, Loader2, RefreshCw, RotateCcw, Save } from 'lucide-react';
+import { useState } from 'react';
+import FormUpdatePrices from '../components/FormUpdatePrices';
+import { useUpdatePrices } from '../hooks/useUpdatePrices';
+import { UpdatePricesSchema, type UpdatePricesFormData } from '../schemas/updatePrices.schema';
+
+const UpdatePrices = () => {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [lastSuccess, setLastSuccess] = useState<string | null>(null);
+  
+  const [formData, setFormData] = useState<UpdatePricesFormData>({
+    aplicar_todas: true,
+    incremento: 0,
+    fecha: null,
+    categoria: 0,
+    sucursal: null,
+  });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Obtener datos para los selectores
+  const { data: categoriesData = [], isLoading: loadingCategories } = useGetAllCategories({
+    pagina: 1,
+    pagina_registros: 1000,
+  });
+  
+  const { data: branchesData = [], isLoading: loadingBranches } = useGetAllBranches({
+    pagina: 1,
+    pagina_registros: 1000,
+  });
+
+  const categories = Array.isArray(categoriesData) ? categoriesData : categoriesData?.data || [];
+  const branches = Array.isArray(branchesData) ? branchesData : branchesData?.data || [];
+
+  const updatePricesMutation = useUpdatePrices();
+
+  const handleChange = (field: keyof UpdatePricesFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Limpiar error del campo al cambiar
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const validate = () => {
+    const result = UpdatePricesSchema.safeParse(formData);
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.errors.forEach(err => {
+        if (err.path[0]) {
+          newErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      aplicar_todas: true,
+      incremento: 0,
+      fecha: "",
+      categoria: 0,
+      sucursal: null,
+    });
+    setErrors({});
+    // setLastSuccess(null);
+  };
+
+  const handleConfirmUpdate = () => {
+    updatePricesMutation.mutate(formData, {
+      onSuccess: (response) => {
+        setShowConfirmDialog(false);
+        setLastSuccess(response.message || 'Precios actualizados exitosamente');
+        handleReset();
+        setTimeout(() => setLastSuccess(null), 5000);
+      },
+      onError: () => {
+        setShowConfirmDialog(false);
+      },
+    });
+  };
+
+  const getCategoryName = (id: number) => {
+    const category = categories.find((cat: any) => cat.id === id);
+    return category?.categoria || `Categoría ${id}`;
+  };
+
+  const getBranchName = (id: number) => {
+    const branch = branches.find((br: any) => br.id === id);
+    return branch?.nombre || `Sucursal ${id}`;
+  };
+
+  return (
+    <main className="h-full p-4 overflow-auto bg-gray-50">
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* Success Alert */}
+        {/* {lastSuccess && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              {lastSuccess}
+            </AlertDescription>
+          </Alert>
+        )} */}
+
+        {/* Error Alert */}
+        {updatePricesMutation.isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {updatePricesMutation.error?.message || 'Error al actualizar precios'}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Actualizar Precios
+            </CardTitle>
+            <CardDescription>
+              Actualiza los precios de productos por categoría con un porcentaje de incremento o decremento
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <FormUpdatePrices
+              formData={formData}
+              errors={errors}
+              isLoading={updatePricesMutation.isPending}
+              onChange={handleChange}
+              onSubmit={handleSubmit}
+              onReset={handleReset}
+              categories={categories}
+              branches={branches}
+              loadingCategories={loadingCategories}
+              loadingBranches={loadingBranches}
+            />
+
+            <div className="flex justify-end gap-3 pt-6">
+              <TooltipButton
+                buttonProps={{
+                  onClick: handleReset,
+                  disabled: updatePricesMutation.isPending,
+                  className: 'bg-gray-500 hover:bg-gray-600 text-white',
+                }}
+                tooltip="Limpiar formulario"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Limpiar
+              </TooltipButton>
+
+              <Button
+                onClick={handleSubmit}
+                disabled={updatePricesMutation.isPending}
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                {updatePricesMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Actualizar Precios
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                Confirmar Actualización de Precios
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild className="space-y-3 pt-2">
+                <div className="text-sm text-muted-foreground">
+                  <p>Estás a punto de actualizar los precios con los siguientes parámetros:</p>
+                  
+                  <div className="space-y-2 bg-muted p-3 rounded-md text-sm text-foreground">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Categoría:</span>
+                      <Badge variant="secondary">
+                        {formData.categoria ? getCategoryName(formData.categoria) : 'N/A'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="font-medium">Aplicar a:</span>
+                      <Badge variant="secondary">
+                        {formData.aplicar_todas 
+                          ? 'Todas las sucursales' 
+                          : formData.sucursal ? getBranchName(formData.sucursal) : 'N/A'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="font-medium">Incremento:</span>
+                      <Badge variant={formData.incremento >= 0 ? 'default' : 'destructive'}>
+                        {formData.incremento >= 0 ? '+' : ''}{formData.incremento}%
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="font-medium">Fecha:</span>
+                      <span className="text-muted-foreground">{formData.fecha}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-amber-600 font-medium">
+                    ⚠️ Esta acción modificará los precios de los productos. ¿Deseas continuar?
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={updatePricesMutation.isPending}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmUpdate}
+                disabled={updatePricesMutation.isPending}
+                className="bg-primary"
+              >
+                {updatePricesMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Confirmar Actualización
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </main>
+  );
+};
+
+export default UpdatePrices;

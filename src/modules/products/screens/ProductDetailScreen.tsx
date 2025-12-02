@@ -31,7 +31,7 @@ import { useHotkeys } from "react-hotkeys-hook"
 
 const ProductDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: productId } = useParams()
+    const { productId } = useParams()
     const { selectedBranchId } = useBranchStore()
     const user = authSDK.getCurrentUser()
     const [sucursalSeleccionada, setSucursalSeleccionada] = useState<number>(Number(selectedBranchId))
@@ -152,7 +152,7 @@ const ProductDetailScreen = () => {
 
     if (isErrorProduct || !(Number(productId))) {
         return <ErrorDataComponent
-            errorMessage="No se pudo cargar el producto. Por favor, inténtalo de nuevo más tarde."
+            errorMessage="No se pudo cargar el producto."
             showButtonIcon={false}
             onRetry={handleRetry}
         />;

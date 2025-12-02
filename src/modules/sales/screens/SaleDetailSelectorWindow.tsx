@@ -7,11 +7,12 @@ import { emitToWindow } from '@/utils/tauriWindows';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { Check, Package, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { SaleGetAll, SaleItemGetById } from '@/modules/sales/types/salesGetResponse';
+import type { SaleGetAll } from '@/modules/sales/types/salesGetResponse';
 import SaleReturnList from '@/modules/returns/components/SalesReturnList';
 import SelectSalesReturnModal from '@/modules/returns/components/SelectSalesReturnModal';
 import ReturnDetailTable, { type ReturnDetailTableRef } from '@/modules/returns/components/returnDetailTable';
 import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
+import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
 
 interface WindowConfig {
     windowId: string;
@@ -53,14 +54,18 @@ const SaleDetailSelectorWindow = () => {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
     const [selectedItems, setSelectedItems] = useState<SelectedItemWithSale[]>([]);
 
-    // Inicializar items seleccionados desde config
+    // Estado inicial para detectar cambios
+    const [initialItems, setInitialItems] = useState<SelectedItemWithSale[]>([]);
+
+    // Inicializar items desde config
     useEffect(() => {
         if (config.selectedItems.length > 0) {
             const itemsWithSaleId = config.selectedItems.map(item => ({
                 ...item,
-                sale_id: 0 // Se actualizará cuando se seleccione una venta
+                sale_id: (item as any).sale_id || 0
             }));
             setSelectedItems(itemsWithSaleId);
+            setInitialItems(itemsWithSaleId);
         }
     }, [config.selectedItems]);
 
@@ -74,37 +79,59 @@ const SaleDetailSelectorWindow = () => {
         setSelectedSale(null);
     }, []);
 
-    const handleAddProductItem = useCallback((product: SaleItemGetById, saleId: number) => {
-        const newItem: SelectedItemWithSale = {
-            almacen_out_det_id: product.id,
-            cantidad: 1,
-            precio: product.precio,
-            comentario: '',
-            sale_id: saleId,
-            product: {
-                id: product.producto.id,
-                descripcion: product.producto.descripcion,
-                codigo_oem: product.producto.codigo_oem || '',
-                codigo_upc: product.producto.codigo_upc || '',
-                precio_venta: product.precio,
-            }
-        };
+    // Manejar confirmación del modal con cambios
+    const handleConfirmModal = useCallback((changes: ProductChange[]) => {
+        if (changes.length === 0) {
+            setIsDialogOpen(false);
+            setSelectedSale(null);
+            return;
+        }
 
         setSelectedItems(prev => {
-            const exists = prev.find(item => item.almacen_out_det_id === newItem.almacen_out_det_id);
-            if (exists) {
-                return prev;
-            }
-            return [...prev, newItem];
+            const newItems = [...prev];
+
+            changes.forEach(change => {
+                const existingIndex = newItems.findIndex(
+                    item => item.almacen_out_det_id === change.almacen_out_det_id
+                );
+
+                // Cantidad 0 significa eliminar
+                if (change.cantidad === 0) {
+                    if (existingIndex >= 0) {
+                        newItems.splice(existingIndex, 1);
+                    }
+                    return;
+                }
+
+                // Actualizar o agregar
+                if (existingIndex >= 0) {
+                    newItems[existingIndex] = {
+                        ...newItems[existingIndex],
+                        cantidad: change.cantidad,
+                        precio: change.precio,
+                        comentario: change.comentario || newItems[existingIndex].comentario,
+                        maxQuantity: change.maxQuantity, // Actualizar maxQuantity
+                    };
+                } else {
+                    newItems.push({
+                        almacen_out_det_id: change.almacen_out_det_id,
+                        cantidad: change.cantidad,
+                        precio: change.precio,
+                        comentario: change.comentario || '',
+                        sale_id: change.sale_id,
+                        product: change.product,
+                        maxQuantity: change.maxQuantity // Incluir maxQuantity
+                    });
+                }
+            });
+
+            return newItems;
         });
 
-        showSuccessToast({
-            title: 'Producto agregado',
-            description: product.producto.descripcion,
-            duration: 2000
-        });
+        setIsDialogOpen(false);
+        setSelectedSale(null);
 
-        // Enfocar el primer input de cantidad después de agregar
+        // Enfocar el primer input después del cambio
         setTimeout(() => {
             tableRef.current?.focusFirstQuantityInput();
         }, 100);
@@ -112,11 +139,21 @@ const SaleDetailSelectorWindow = () => {
 
     const handleUpdateCantidad = useCallback((id_detalle: number, cantidad: number) => {
         setSelectedItems(prev =>
-            prev.map(item =>
-                item.almacen_out_det_id === id_detalle
-                    ? { ...item, cantidad }
-                    : item
-            )
+            prev.map(item => {
+                if (item.almacen_out_det_id !== id_detalle) return item;
+                
+                // Validar contra maxQuantity
+                if (cantidad > item.maxQuantity) {
+                    showErrorToast({
+                        title: 'Cantidad excedida',
+                        description: `La cantidad máxima disponible es ${item.maxQuantity}`,
+                        duration: 3000
+                    });
+                    return item; // Mantener valor anterior
+                }
+                
+                return { ...item, cantidad };
+            })
         );
     }, []);
 
@@ -145,39 +182,81 @@ const SaleDetailSelectorWindow = () => {
     }, []);
 
     const handleConfirmSelection = useCallback(async () => {
-        if (selectedItems.length === 0) {
+        // Detectar solo los cambios reales
+        const changes: ProductChange[] = [];
+
+        selectedItems.forEach(item => {
+            const initialItem = initialItems.find(i => i.almacen_out_det_id === item.almacen_out_det_id);
+
+            // Es nuevo si no existía antes
+            const isNew = !initialItem;
+
+            // Hay cambio si es nuevo O si algo cambió
+            const hasChanged = isNew ||
+                initialItem.cantidad !== item.cantidad ||
+                initialItem.precio !== item.precio ||
+                initialItem.comentario !== item.comentario;
+
+            if (hasChanged) {
+                changes.push({
+                    almacen_out_det_id: item.almacen_out_det_id,
+                    cantidad: item.cantidad,
+                    precio: item.precio,
+                    comentario: item.comentario || '',
+                    sale_id: item.sale_id,
+                    product: item.product,
+                    isNew,
+                    maxQuantity: item.maxQuantity // Incluir maxQuantity
+                });
+            }
+        });
+
+        // Detectar eliminados
+        initialItems.forEach(initialItem => {
+            const stillExists = selectedItems.some(i => i.almacen_out_det_id === initialItem.almacen_out_det_id);
+            if (!stillExists) {
+                changes.push({
+                    almacen_out_det_id: initialItem.almacen_out_det_id,
+                    cantidad: 0, // Indica eliminación
+                    precio: initialItem.precio,
+                    comentario: '',
+                    sale_id: initialItem.sale_id,
+                    product: initialItem.product,
+                    isNew: false,
+                    maxQuantity: initialItem.maxQuantity // Incluir maxQuantity
+                });
+            }
+        });
+
+        if (changes.length === 0) {
             showErrorToast({
-                title: 'Sin productos',
-                description: 'No has seleccionado ningún producto',
+                title: 'Sin cambios',
+                description: 'No has realizado ningún cambio',
                 duration: 3000
             });
             return;
         }
 
         showSuccessToast({
-            title: 'Productos confirmados',
-            description: `${selectedItems.length} producto${selectedItems.length !== 1 ? 's' : ''} seleccionado${selectedItems.length !== 1 ? 's' : ''}`,
+            title: 'Cambios confirmados',
+            description: `${changes.length} cambio${changes.length !== 1 ? 's' : ''} aplicado${changes.length !== 1 ? 's' : ''}`,
             duration: 2000
         });
 
+        // Enviar solo los cambios
         await emitToWindow(
             config.windowId,
-            'sale-details-multi-selected',
-            selectedItems
+            'sale-details-changes-applied',
+            changes
         );
 
         await currentWindow.close();
-    }, [selectedItems, config.windowId, currentWindow]);
+    }, [selectedItems, initialItems, config.windowId, currentWindow]);
 
     const handleClose = useCallback(async () => {
         await emitToWindow(config.windowId, 'window-closed', { canceled: true });
         await currentWindow.close();
     }, [config.windowId, currentWindow]);
-
-    const handleConfirmModal = useCallback(() => {
-        setIsDialogOpen(false);
-        setSelectedSale(null);
-    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -197,6 +276,28 @@ const SaleDetailSelectorWindow = () => {
         };
         return titles[config.context] || 'Seleccionar Productos';
     }, [config.context]);
+
+    // Calcular cambios pendientes
+    const pendingChanges = useMemo(() => {
+        let changes = 0;
+
+        selectedItems.forEach(item => {
+            const initialItem = initialItems.find(i => i.almacen_out_det_id === item.almacen_out_det_id);
+            if (!initialItem ||
+                initialItem.cantidad !== item.cantidad ||
+                initialItem.precio !== item.precio ||
+                initialItem.comentario !== item.comentario) {
+                changes++;
+            }
+        });
+
+        initialItems.forEach(initialItem => {
+            const stillExists = selectedItems.some(i => i.almacen_out_det_id === initialItem.almacen_out_det_id);
+            if (!stillExists) changes++;
+        });
+
+        return changes;
+    }, [selectedItems, initialItems]);
 
     return (
         <main className="h-full p-2 flex flex-col bg-gray-50 gap-2">
@@ -222,6 +323,12 @@ const SaleDetailSelectorWindow = () => {
                             </Badge>
                         )}
 
+                        {pendingChanges > 0 && (
+                            <Badge variant="default">
+                                {pendingChanges} cambios
+                            </Badge>
+                        )}
+
                         <Button
                             onClick={handleClose}
                             variant="ghost"
@@ -230,15 +337,14 @@ const SaleDetailSelectorWindow = () => {
                             Cancelar
                         </Button>
 
-                        {selectedItems.length > 0 && (
-                            <Button
-                                onClick={handleConfirmSelection}
-                                className="gap-2"
-                            >
-                                <Check className="h-4 w-4" />
-                                Confirmar Selección
-                            </Button>
-                        )}
+                        <Button
+                            onClick={handleConfirmSelection}
+                            className="gap-2"
+                            disabled={pendingChanges === 0}
+                        >
+                            <Check className="h-4 w-4" />
+                            Confirmar {pendingChanges > 0 && `(${pendingChanges})`}
+                        </Button>
                     </div>
                 </section>
             </header>
@@ -300,8 +406,11 @@ const SaleDetailSelectorWindow = () => {
                 isDialogOpen={isDialogOpen}
                 onCloseDialog={handleCloseSelectDialog}
                 saleId={selectedSale?.id ?? null}
-                onProductSelect={handleAddProductItem}
-                selectedProducts={selectedItems}
+                selectedProducts={selectedItems.map(item => ({
+                    almacen_out_det_id: item.almacen_out_det_id,
+                    cantidad: item.cantidad,
+                    comentario: item.comentario
+                }))}
                 onConfirm={handleConfirmModal}
             />
         </main>

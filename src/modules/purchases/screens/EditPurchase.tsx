@@ -2,9 +2,11 @@ import { Button } from "@/components/atoms/button";
 import { Kbd } from "@/components/atoms/kbd";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
 import TooltipButton from "@/components/common/TooltipButton";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 import { useCommand } from "@/keybindings";
 import { CornerUpLeft, Loader2, Save } from "lucide-react";
-import React from "react";
+import React, { useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
 import FormCreatePurchase from "../components/FormCreatePurchase";
 import PurchaseDetailSkeleton from "../components/purchaseDetail/PurchaseDetailSkeleton";
@@ -15,6 +17,7 @@ import { usePurchaseEdit } from "../hooks/usePurchaseEdit";
 const EditPurchase: React.FC = () => {
   const navigate = useNavigate();
   const { purchaseId } = useParams();
+  const { closeCurrentTab } = useTabNavigation();
 
   const {
     data: purchase,
@@ -39,8 +42,61 @@ const EditPurchase: React.FC = () => {
   const handleSave = async () => {
     const success = await handleSubmit(Number(purchaseId));
     if (success) {
-      navigate(`/dashboard/purchases/${purchaseId}`);
+      // Cerrar la tab actual después de guardar exitosamente
+      closeCurrentTab();
     }
+  };
+
+  // Función para agregar producto desde el panel de búsqueda
+  const handleProductSelect = useCallback(
+    (product: any) => {
+      const existingDetail = formData.detalles.find(
+        (d: any) => d.id_producto === product.id.toString()
+      );
+
+      if (existingDetail) {
+        return; // Ya existe, no hacer nada
+      }
+
+      const costo = parseFloat(product.precio_venta) || 0;
+      const inc_p_venta = 30; // 30% por defecto
+      const inc_p_venta_alt = 15; // 15% por defecto
+
+      const precio_venta = costo * (1 + inc_p_venta / 100);
+      // precio_venta_alt se calcula en cadena sobre precio_venta, no sobre costo
+      const precio_venta_alt = precio_venta * (1 + inc_p_venta_alt / 100);
+
+      const newDetail = {
+        id_producto: product.id.toString(),
+        cantidad: 1,
+        costo,
+        inc_p_venta,
+        precio_venta,
+        inc_p_venta_alt,
+        precio_venta_alt,
+        producto: product,
+        subtotal: costo * 1,
+      };
+
+      handleChange('detalles', [...formData.detalles, newDetail]);
+    },
+    [formData.detalles, handleChange]
+  );
+
+  // Hook para manejar la ventana secundaria de productos
+  const productWindow = useProductSelectorWindow({
+    context: 'purchase',
+    instanceId: `edit-${purchaseId}`,
+    onProductSelect: handleProductSelect,
+    onlyWithStock: false,
+  });
+
+  // Toggle para abrir ventana secundaria
+  const toggleSelectorMode = () => {
+    if (productWindow.isOpen) {
+      productWindow.close();
+    }
+    productWindow.open();
   };
 
   // // Shortcuts
@@ -150,6 +206,7 @@ const EditPurchase: React.FC = () => {
             <PurchaseDetailsTable
               detalles={formData.detalles}
               setDetalles={(detalles) => handleChange("detalles", detalles)}
+              toggleSelectorMode={toggleSelectorMode}
             />
           </div>
         </div>

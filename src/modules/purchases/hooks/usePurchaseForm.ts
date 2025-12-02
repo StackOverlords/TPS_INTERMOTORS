@@ -15,12 +15,13 @@ export interface FormData {
   sucursal: number | null;
   detalles: any[];
   id_responsable: number | null;
+  id_pedido: number | null; // ID del pedido asociado (opcional)
 }
 
 interface FormErrors { [key: string]: string; }
 interface FormTouched { [key: string]: boolean; }
 
-export function usePurchaseForm(initialBranch: number) {
+export function usePurchaseForm(initialBranch: number, onSuccessCallback?: () => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     fecha: new Date().toISOString().split("T")[0],
@@ -33,7 +34,8 @@ export function usePurchaseForm(initialBranch: number) {
     usuario: 1, // ID por defecto
     sucursal: initialBranch || 1, // Usar branch inicial o 1 por defecto
     detalles: [],
-    id_responsable: null // Se seleccionará desde el dropdown
+    id_responsable: null, // Se seleccionará desde el dropdown
+    id_pedido: null, // ID del pedido asociado (opcional)
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<FormTouched>({});
@@ -81,6 +83,7 @@ export function usePurchaseForm(initialBranch: number) {
       sucursal: initialBranch || 1, // Usar branch inicial o 1 por defecto
       detalles: [],
       id_responsable: null, // Se seleccionará desde el dropdown
+      id_pedido: null, // ID del pedido asociado (opcional)
     });
     setErrors({});
     setTouched({});
@@ -94,11 +97,12 @@ export function usePurchaseForm(initialBranch: number) {
     try {
       await apiConstructor({ url: "/purchases", method: "POST", data: formData });
       reset();
+      if (onSuccessCallback) onSuccessCallback();
       toast({ title: "Compra creada exitosamente", description: "La compra se ha guardado correctamente." });
     } finally {
       setIsLoading(false);
     }
-  }, [formData, validateAll, reset]);
+  }, [formData, validateAll, reset, onSuccessCallback]);
 
   return {
     formData,

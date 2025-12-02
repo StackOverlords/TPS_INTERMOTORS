@@ -133,13 +133,13 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
         // Columna de código/badge solo en modo edición
         if (isEditMode) {
             baseColumns.push({
-                accessorKey: "id",
+                accessorKey: "almacen_out_dev_det_id",
                 header: "Cód.",
                 size: 50,
                 minSize: 30,
                 cell: ({ row, getValue }) => {
                     const value = getValue<number>();
-                    const isNew = !('id' in row.original) || !row.original.id;
+                    const isNew = !('almacen_out_dev_det_id' in row.original) || !row.original.almacen_out_dev_det_id;
                     return (
                         <div className="flex items-center justify-center">
                             {isNew ? (
@@ -195,7 +195,7 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                 cell: ({ getValue }) => {
                     const precio = getValue<number>();
                     return (
-                        <div className="text-right font-medium text-green-600">
+                        <div className="font-medium text-green-600">
                             {formatCurrency(precio)}
                         </div>
                     )
@@ -210,29 +210,42 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                 cell: ({ getValue, row }) => {
                     const cantidad = getValue<number>();
                     const almacenOutDetId = row.original.almacen_out_det_id;
+                    const maxQuantity = row.original.maxQuantity;
                     const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
+
                     return (
-                        <EditableQuantity
-                            value={cantidad}
-                            className="w-full"
-                            buttonClassName="w-full"
-                            onSubmit={(value) => onUpdateCantidad(almacenOutDetId, value as number)}
-                            validate={(val) => {
-                                const num = parseInt(val);
-                                return !isNaN(num) && num > 0;
-                            }}
-                            inputRef={(el) => {
-                                if (refToAssign) {
-                                    refToAssign.current = el;
-                                }
-                                if (el) {
-                                    quantityInputRefs.current.set(almacenOutDetId, el);
-                                } else {
-                                    quantityInputRefs.current.delete(almacenOutDetId);
-                                }
-                            }}
-                            disabled={isReadOnly || isSaving}
-                        />
+                        <div className="flex items-center justify-center gap-1">
+                            <EditableQuantity
+                                value={cantidad}
+                                className="w-full"
+                                buttonClassName="w-full"
+                                onSubmit={(value) => {
+                                    const newValue = value as number;
+                                    onUpdateCantidad(almacenOutDetId, newValue);
+                                }}
+                                validate={(val) => {
+                                    const num = parseInt(val);
+                                    if (isNaN(num) || num <= 0) return false;
+                                    return true;
+                                }}
+                                inputRef={(el) => {
+                                    if (refToAssign) {
+                                        refToAssign.current = el;
+                                    }
+                                    if (el) {
+                                        quantityInputRefs.current.set(almacenOutDetId, el);
+                                    } else {
+                                        quantityInputRefs.current.delete(almacenOutDetId);
+                                    }
+                                }}
+                                disabled={isReadOnly || isSaving}
+                            />
+                            {maxQuantity && maxQuantity !== Infinity && (
+                                <div className="text-[10px] text-gray-500 text-center">
+                                    Máx: {maxQuantity}
+                                </div>
+                            )}
+                        </div>
                     )
                 },
             },
@@ -262,7 +275,7 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                 minSize: 40,
                 cell: ({ row }) => {
                     const item = row.original;
-                    const isNew = !isEditMode || !('id' in item) || !item.id;
+                    const isNew = !isEditMode || !('almacen_out_dev_det_id' in item) || !item.almacen_out_dev_det_id;
 
                     return (
                         <div className='flex items-center justify-center'>

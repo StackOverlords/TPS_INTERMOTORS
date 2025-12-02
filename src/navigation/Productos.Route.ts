@@ -38,7 +38,7 @@ const productosProtectedRoutes: RouteType[] = [
         showSidebar: true
       },
       {
-        path: "/dashboard/productos/:id",
+        path: "/dashboard/productos/:productId",
         name: "Detalle de Producto",
         type: "protected",
         element: ProductDetailScreen,
@@ -50,7 +50,7 @@ const productosProtectedRoutes: RouteType[] = [
         showInCommandPalette: false
       },
       {
-        path: "/dashboard/productos/:productId/update",
+        path: "/dashboard/productos/:updateProductId/update",
         name: "Editar producto",
         type: "protected",
         element: ProductEditScreen,

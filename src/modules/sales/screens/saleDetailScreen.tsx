@@ -20,13 +20,13 @@ import { useSaleGetById } from "../hooks/useSaleGetById";
 
 const SaleDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: saleId } = useParams()
+    const { saleCod } = useParams()
 
     const {
         data: saleData,
         isLoading: isLoadingSale,
         isError: isErrorSale
-    } = useSaleGetById(Number(saleId))
+    } = useSaleGetById(Number(saleCod))
 
     const handleDeleteSuccess = (_data: unknown, saleId: number) => {
         showSuccessToast({
@@ -97,7 +97,7 @@ const SaleDetailScreen = () => {
         return <SaleDetailSkeleton />;
     }
 
-    if (isErrorSale || !(Number(saleId))) {
+    if (isErrorSale || !(Number(saleCod))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar la venta."
             showButtonIcon={false}

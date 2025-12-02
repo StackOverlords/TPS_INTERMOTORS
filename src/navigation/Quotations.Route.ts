@@ -40,7 +40,7 @@ const quotationsProtectedRoutes: RouteType[] = [
         showSidebar: true
       },
       {
-        path: "/dashboard/quotations/:id",
+        path: "/dashboard/quotations/:quotationId",
         name: "Detalle de cotizacion",
         type: "protected",
         element: QuotationDetailScreen,
@@ -52,7 +52,7 @@ const quotationsProtectedRoutes: RouteType[] = [
         showInCommandPalette: false
       },
       {
-        path: "/dashboard/quotations/:quotationId/update",
+        path: "/dashboard/quotations/:updateQuotationId/update",
         name: "Editar cotización",
         type: "protected",
         element: QuotationEditScreen,

@@ -19,13 +19,13 @@ import { useGetOrderById } from "../hooks/useGetOrderById";
 
 const OrderDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: orderId } = useParams()
+    const { orderCod } = useParams()
 
     const {
         data: orderData,
         isLoading: isLoadingOrder,
         isError: isErrorOrder
-    } = useGetOrderById(Number(orderId))
+    } = useGetOrderById(Number(orderCod))
 
     const handleDeleteSuccess = (_data: unknown, orderId: number) => {
         showSuccessToast({
@@ -86,7 +86,7 @@ const OrderDetailScreen = () => {
         return <SaleDetailSkeleton />;
     }
 
-    if (isErrorOrder || !(Number(orderId))) {
+    if (isErrorOrder || !(Number(orderCod))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar el pedido."
             showButtonIcon={false}

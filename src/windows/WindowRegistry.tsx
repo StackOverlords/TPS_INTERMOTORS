@@ -1,6 +1,7 @@
+import { DebugLogWindow } from '@/components/common/DebugLogWindow';
+import OrderSelectorWindow from '@/modules/orders/screens/OrderSelectorWindow';
 import ProductSelectorWindow from '@/modules/products/screens/ProductSelectorWindow';
 import PurchaseSelectorWindow from '@/modules/purchases/screens/PurchaseSelectorWindow';
-import { DebugLogWindow } from '@/components/common/DebugLogWindow';
 import React from 'react';
 import SaleDetailSelectorWindow from '@/modules/sales/screens/SaleDetailSelectorWindow';
 
@@ -55,6 +56,7 @@ export function registerDefaultWindowComponents(): void {
   registerWindowComponent('product-selector', ProductSelectorWindow);
   registerWindowComponent('purchase-selector', PurchaseSelectorWindow);
   registerWindowComponent('debug-log', DebugLogWindow);
+  registerWindowComponent('order-selector', OrderSelectorWindow);
   registerWindowComponent('sale-detail-selector', SaleDetailSelectorWindow);
   // registerWindowComponent('settings-routes', ViewSettingsWithSuspense);
 }
@@ -110,7 +112,9 @@ export const WindowComponentRenderer: React.FC = () => {
     );
   }
 
-  return <Component />;
+  return (
+      <Component />
+  );
 };
 
 export { windowComponentRegistry };

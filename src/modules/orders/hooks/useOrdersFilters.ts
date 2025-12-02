@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { OrdersFilters } from "../types/orderFilters.types";
 import { useDebounce } from "use-debounce";
+import type { OrdersFilters } from "../types/orderFilters.types";
 
 // Helper para limpiar filtros opcionales
 const cleanFilters = (filters: OrdersFilters): OrdersFilters => ({
@@ -44,11 +44,14 @@ export const useOrdersFilters = (defaultSucursal: number) => {
 
     const updateFilter = useCallback(
         (key: keyof OrdersFilters, value: OrdersFilters[keyof OrdersFilters]) => {
-            setFilters((prev) => ({
-                ...prev,
-                [key]: value,
-                pagina: key === 'pagina' || key === 'pagina_registros' ? prev.pagina : 1,
-            }));
+            setFilters((prev) => {
+                if (prev[key] === value) return prev;
+                return {
+                    ...prev,
+                    [key]: value,
+                    pagina: key === 'pagina' || key === 'pagina_registros' ? prev.pagina : 1,
+                };
+            });
         },
         []
     );

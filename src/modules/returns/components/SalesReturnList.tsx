@@ -581,26 +581,17 @@ function SaleReturnList<T extends BaseWithId>({
 
             {/* Table Container */}
             <div className="flex-1 min-h-0 overflow-hidden">
-                {sales.length > 0 ? (
-                    <div className="h-full overflow-auto px-2">
-                        <CustomizableTable
-                            table={table}
-                            isLoading={isLoading}
-                            isError={isError}
-                            isFetching={isFetching}
-                            rows={filters.pagina_registros}
-                            errorMessage="Ocurrió un error al cargar los productos"
-                            noDataMessage="No se encontraron productos"
-                        />
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-gray-500 text-sm">
-                        {searchMode === 'manual' ?
-                            'Haz clic en "Buscar" para ver los productos' :
-                            'No se encontraron productos'
-                        }
-                    </div>
-                )}
+                <div className="h-full overflow-auto px-2">
+                    <CustomizableTable
+                        table={table}
+                        isLoading={isLoading}
+                        isError={isError}
+                        isFetching={isFetching}
+                        rows={filters.pagina_registros}
+                        errorMessage="Ocurrió un error al cargar los productos"
+                        noDataMessage={searchMode === 'manual' ? 'Haz clic en "Buscar" para ver los productos' : 'No se encontraron productos'}
+                    />
+                </div>
             </div>
 
             {/* Footer con Paginación */}

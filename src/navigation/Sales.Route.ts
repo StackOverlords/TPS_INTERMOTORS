@@ -40,7 +40,7 @@ const salesProtectedRoutes: RouteType[] = [
         showSidebar: true
       },
       {
-        path: "/dashboard/sales/:id",
+        path: "/dashboard/sales/:saleCod",
         name: "Detalle de venta",
         type: "protected",
         element: SaleDetailScreen,

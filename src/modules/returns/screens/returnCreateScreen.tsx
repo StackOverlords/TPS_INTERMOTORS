@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { CornerUpLeft, Loader2, Plus, Save, Undo2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Label } from "@/components/atoms/label";
@@ -21,13 +21,13 @@ import { Button } from "@/components/atoms/button";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { formatCurrency } from "@/utils/formaters";
 import type { ReturnDetailTableRef } from "../components/returnDetailTable";
-import { useReturnDetails } from "../hooks/useReturnDetails";
+import { useReturnDetails, type ProductChange } from "../hooks/useReturnDetails";
 import { useReturnTypes } from "../hooks/commons/useReturnTypes";
 import { useReturnResponsibles } from "../hooks/commons/useReturnResponsibles";
 import { useCreateReturn } from "../hooks/useCreateReturn";
 import type { ReturnCreate, UIReturnDetailCreate } from "../types/returnCreate.types";
 import { ReturnCreateSchema } from "../schemas/returnCreateSchema";
-import type { SaleGetAll, SaleItemGetById } from "@/modules/sales/types/salesGetResponse";
+import type { SaleGetAll } from "@/modules/sales/types/salesGetResponse";
 import ReturnDetailTable from "../components/returnDetailTable";
 import SaleReturnList from "../components/SalesReturnList";
 import SelectSalesReturnModal from "../components/SelectSalesReturnModal";
@@ -103,6 +103,23 @@ const ReturnCreateScreen = () => {
         }
     }, [returnDetailsHook.details, setValue, clearErrors]);
 
+    // Validar si hay errores de cantidad (cantidades que exceden maxQuantity)
+    const hasQuantityErrors = useMemo(() => {
+        return returnDetailsHook.details.some(detail =>
+            detail.cantidad > detail.maxQuantity || detail.cantidad <= 0
+        );
+    }, [returnDetailsHook.details]);
+
+    // Validar si el formulario está listo para enviar
+    const canSubmit = useMemo(() => {
+        return (
+            !hasQuantityErrors &&
+            returnDetailsHook.details.length > 0 &&
+            !isReadOnly &&
+            !isSaving
+        );
+    }, [hasQuantityErrors, returnDetailsHook.details.length, isReadOnly, isSaving]);
+
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
 
@@ -114,6 +131,16 @@ const ReturnCreateScreen = () => {
             showErrorToast({
                 title: "Sin productos",
                 description: "Debes agregar al menos un producto para realizar una devolución",
+                duration: 5000
+            });
+            isValid = false;
+        }
+
+        // Validar cantidades
+        if (hasQuantityErrors) {
+            showErrorToast({
+                title: "Cantidades inválidas",
+                description: "Algunos productos tienen cantidades que exceden el máximo permitido",
                 duration: 5000
             });
             isValid = false;
@@ -168,7 +195,6 @@ const ReturnCreateScreen = () => {
     };
 
     const onError = (errors: FieldErrors<ReturnCreate>) => {
-        // console.log("Errores de validación:", errors);
         if (errors.motivo_devolucion || errors.responsable) {
             showErrorToast({
                 title: "Error de validación",
@@ -212,14 +238,6 @@ const ReturnCreateScreen = () => {
         }
     }, [returnTypesData, getValues, setValue]);
 
-    const handleAddProductItem = (product: SaleItemGetById, saleId: number) => {
-        const addedId = returnDetailsHook.addProduct(product, saleId);
-
-        setTimeout(() => {
-            tableRef.current?.focusQuantityInputByProductId(addedId);
-        }, 100);
-    };
-
     const handleSelectSale = (selectedSale: SaleGetAll) => {
         setIsDialogOpen(true)
         setSelectedSale(selectedSale)
@@ -230,21 +248,35 @@ const ReturnCreateScreen = () => {
         setSelectedSale(null)
     }
 
+    const handleConfirmModalSelections = (changes: ProductChange[]) => {
+        if (!selectedSale || changes.length === 0) return;
+
+        // Aplicar solo los cambios detectados
+        const addedIds = returnDetailsHook.applyModalChanges(changes);
+
+        // Enfocar el primer producto agregado
+        setTimeout(() => {
+            if (addedIds.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(addedIds[0]);
+            }
+        }, 100);
+    };
+
     const {
         open: openSaleDetailSelector,
         isOpen: isSaleDetailSelectorOpen,
     } = useSaleDetailSelectorWindow({
-        context: 'return',
+        context: 'create-return',
         mode: 'create',
         selectedItems: returnDetailsHook.details,
-        onMultiSelect: (items) => {
-            const addedIds = returnDetailsHook.addMultipleProducts(items);
+        onChangesApplied: (changes: ProductChange[]) => {
+            // Aplicar solo los cambios detectados
+            const addedIds = returnDetailsHook.applyModalChanges(changes);
 
+            // Enfocar el primer producto agregado
             setTimeout(() => {
                 if (addedIds.length > 0) {
                     tableRef.current?.focusQuantityInputByProductId(addedIds[0]);
-                } else if (items.length > 0) {
-                    tableRef.current?.focusQuantityInputByProductId(items[0].almacen_out_det_id);
                 }
             }, 100);
         }
@@ -261,7 +293,11 @@ const ReturnCreateScreen = () => {
 
     useHotkeys('alt+s', (e) => {
         e.preventDefault();
-        handleSubmit(onSubmit, onError)();
+        if (canSubmit) {
+            handleSubmit(onSubmit, onError)();
+        }
+    }, {
+        enabled: canSubmit
     });
 
     return (
@@ -293,10 +329,6 @@ const ReturnCreateScreen = () => {
                                 </div>
                             </div >
 
-                            {/* Action Buttons */}
-                            < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-
-                            </div >
                         </div >
                     </header >
 
@@ -515,12 +547,16 @@ const ReturnCreateScreen = () => {
                                                     <TooltipButton
                                                         buttonProps={{
                                                             type: 'submit',
-                                                            disabled: isSaving || isReadOnly,
+                                                            disabled: !canSubmit || isSaving,
                                                             variant: 'default',
                                                             className: "w-full"
                                                         }}
                                                         tooltip={
-                                                            <span className="flex items-center gap-1">Registrar Devolución <ShortcutKey combo="alt+s" /></span>
+                                                            !canSubmit && hasQuantityErrors ? (
+                                                                <span>Corrige las cantidades inválidas</span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1">Registrar Devolución <ShortcutKey combo="alt+s" /></span>
+                                                            )
                                                         }
                                                     >
                                                         {isSaving ? (
@@ -550,8 +586,12 @@ const ReturnCreateScreen = () => {
                 isDialogOpen={isDialogOpen}
                 onCloseDialog={handleCloseSelectDialog}
                 saleId={selectedSale?.id ?? null}
-                onProductSelect={handleAddProductItem}
-                selectedProducts={returnDetailsHook.getReturnDetails()}
+                selectedProducts={returnDetailsHook.details.map(d => ({
+                    almacen_out_det_id: d.almacen_out_det_id,
+                    cantidad: d.cantidad,
+                    comentario: d.comentario
+                }))}
+                onConfirm={handleConfirmModalSelections}
             />
         </main >
     );

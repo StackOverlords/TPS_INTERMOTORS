@@ -101,9 +101,9 @@ const TransferDetailScreen = () => {
     }
 
     return (
-        <main className="h-full flex flex-col items-center overflow-hidden p-2">
-            <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
-                <header className="border-gray-200 border bg-white rounded-lg p-3">
+        <main className="h-full p-2 gap-2 flex flex-col">
+            <div className="max-w-7xl w-full h-full flex flex-col gap-2 mx-auto">
+                <header className="border-gray-200 border bg-white rounded-lg p-3 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -138,7 +138,7 @@ const TransferDetailScreen = () => {
                                 buttonProps={{
                                     variant: 'outline',
                                     size: 'sm',
-                                    disabled:true
+                                    disabled:transferData?.estado.trim().includes("RECEPCIONADO <=> TRANSFERIDO")
                                 }}
                             >
                                 <Edit className="h-4 w-4" />
@@ -173,7 +173,9 @@ const TransferDetailScreen = () => {
                     </div >
                 </header >
 
-                <Card className="bg-white border border-gray-200 shadow-none">
+                {/* Contenedor con scroll interno */}
+                <div className="flex-1 min-h-0 overflow-auto flex flex-col gap-2">
+                    <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                             <FileText className="size-4 text-gray-700" />
@@ -251,14 +253,15 @@ const TransferDetailScreen = () => {
                             </div>
 
                     </CardContent>
-                </Card>
+                    </Card>
 
-                <TransferDetailProductsSection
-                    products={transferData?.detalles ?? []}
-                    isLoading={isLoadingTransfer}
-                    totalAmount={totalTransfer}
-                />
-            </div >
+                    <TransferDetailProductsSection
+                        products={transferData?.detalles ?? []}
+                        isLoading={isLoadingTransfer}
+                        totalAmount={totalTransfer}
+                    />
+                </div>
+            </div>
 
             <ConfirmationModal
                 isOpen={showDeleteAlert}
@@ -268,7 +271,7 @@ const TransferDetailScreen = () => {
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeleting}
             />
-        </main >
+        </main>
     );
 }
 

@@ -1,11 +1,14 @@
-import { Logger } from "@/lib/logger";
 import { ApiService } from "@/lib/apiService";
-import { PURCHASE_ENDPOINTS } from "./endpoints";
+import { Logger } from "@/lib/logger";
+import { PurchaseDetailSchema } from "../schemas/purchase.schema";
+import { PurchaseListResponseSchema } from "../schemas/purchaseResponse.schema";
+import type { UpdatePricesFormData } from "../schemas/updatePrices.schema";
+import { UpdatePricesResponseSchema } from "../schemas/updatePricesResponse.schema";
+import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { PurchaseFilters } from "../types/purchaseFilters";
 import type { PurchaseListResponse } from "../types/purchaseListResponse";
-import { PurchaseListResponseSchema } from "../schemas/purchaseResponse.schema";
-import type { PurchaseDetail } from "../types/PurchaseDetail";
-import { PurchaseDetailSchema } from "../schemas/purchase.schema";
+import type { UpdatePricesResponse } from "../types/UpdatePricesResponse";
+import { PURCHASE_ENDPOINTS } from "./endpoints";
 
 const MODULE_NAME = 'PURCHASE_SERVICE';
 
@@ -116,5 +119,28 @@ export const purchaseService = {
 
   //   Logger.info('Purchase detail deleted successfully', { id }, MODULE_NAME);
   // },
+
+  /**
+   * Actualizar precios de productos por categoría
+   * @param data - Datos para la actualización de precios
+   */
+  async updatePrices(data: UpdatePricesFormData): Promise<UpdatePricesResponse> {
+    Logger.info('Updating prices', { data }, MODULE_NAME);
+
+    const response = await ApiService.post(
+      PURCHASE_ENDPOINTS.updatePrices,
+      undefined, // No body, params go in query string
+      UpdatePricesResponseSchema,
+      { params: data }, // Send as query params
+      { unwrapData: false }
+    );
+
+    // Logger.info('Prices updated successfully', {
+    //   updated_count: response.updated_count,
+    //   affected_products: response.affected_products
+    // }, MODULE_NAME);
+    
+    return response as UpdatePricesResponse;
+  },
 
 };

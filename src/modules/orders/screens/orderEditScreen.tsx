@@ -166,7 +166,7 @@ const OrderEditScreen = () => {
             orderDetailsHook.setOrderDetails(detallesUI);
 
             const resetData: OrderUpdate = {
-                fecha: format(orderData.fecha, "yyyy-MM-dd") ?? "",
+                fecha: orderData.fecha ?? "",
                 nro_comprobante: orderData.comprobante ?? "",
                 id_proveedor: orderData.proveedor?.id ?? 0,
                 comentario: orderData.comentarios ?? "",
@@ -175,8 +175,8 @@ const OrderEditScreen = () => {
                 tipo_pedido: orderData.tipo_pedido,
                 forma_pedido: orderData.forma_pedido,
                 estado_actual: orderData.situacion_actual,
-                fecha_inicio_transito: "",
-                fecha_llegada: "",
+                fecha_inicio_transito: orderData.fecha_transito ?? "",
+                fecha_llegada: orderData.fecha_llegada ?? "",
             };
             reset(resetData);
             setHasInitialized(true);

@@ -40,7 +40,7 @@ const returnsProtectedRoutes: RouteType[] = [
                 showSidebar: true
             },
             {
-                path: "/dashboard/returns/:id",
+                path: "/dashboard/returns/:returnCod",
                 name: "Detalle de Devolución",
                 type: "protected",
                 element: ReturnDetailScreen,

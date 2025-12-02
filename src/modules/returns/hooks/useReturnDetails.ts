@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import type { ReturnDetailCreate, UIReturnDetailCreate } from "../types/returnCreate.types";
 import type { ReturnDetailUpdate, UIReturnDetailUpdate } from "../types/returnUpdate.types";
 import type { SaleItemGetById } from "@/modules/sales/types/salesGetResponse";
-import { showErrorToast, showWarningToast } from "@/hooks/use-toast-enhanced";
+import { showErrorToast, showWarningToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 
 type ReturnDetailUnion = UIReturnDetailCreate | UIReturnDetailUpdate;
 
@@ -18,6 +18,17 @@ export interface SaleItemForUse extends Omit<SaleItemGetById, 'producto'> {
     producto: ProductMinimal;
 }
 
+export interface ProductChange {
+    almacen_out_det_id: number;
+    cantidad: number;
+    precio: number;
+    comentario: string;
+    sale_id: number;
+    product: ProductMinimal;
+    isNew: boolean;
+    maxQuantity: number; // Añadido
+}
+
 export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCreate>(isEditMode: boolean = false) => {
     const [details, setDetails] = useState<T[]>([]);
 
@@ -29,25 +40,32 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         let addedId = detail.id;
 
         setDetails((prev) => {
-            // Verificar si el producto ya existe
             const exists = prev.find((d) => d.almacen_out_det_id === detail.id);
-            
+
             if (exists) {
+                // Validar cantidad máxima
+                if (exists.cantidad >= exists.maxQuantity) {
+                    showWarningToast({
+                        title: 'Cantidad máxima alcanzada',
+                        description: `${detail.producto.descripcion} ya tiene la cantidad máxima (${exists.maxQuantity})`,
+                        duration: 3000
+                    });
+                    return prev;
+                }
+
                 showWarningToast({
                     title: 'Producto ya agregado',
                     description: `${detail.producto.descripcion} ya está en la lista. Se incrementó la cantidad.`,
                     duration: 3000
                 });
-                
-                // Si ya existe, incrementar cantidad
+
                 return prev.map((d) =>
                     d.almacen_out_det_id === detail.id
-                        ? { ...d, cantidad: d.cantidad + 1 }
+                        ? { ...d, cantidad: Math.min(d.cantidad + 1, d.maxQuantity) }
                         : d
                 );
             }
 
-            // Crear nuevo detalle
             const newDetail: any = {
                 almacen_out_det_id: detail.id,
                 cantidad: 1,
@@ -61,9 +79,9 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     precio_venta: detail.producto.precio_venta,
                 },
                 sale_id: saleId,
+                maxQuantity: detail.cantidad, // Guardar cantidad original de la venta
             };
 
-            // Si es modo edición, añadir almacen_out_dev_det_id como null (nuevo producto)
             if (isEditMode) {
                 newDetail.almacen_out_dev_det_id = null;
             }
@@ -75,24 +93,133 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
     }, [isEditMode]);
 
     /**
-     * Agregar múltiples productos al detalle
-     * Retorna array de IDs de los detalles agregados para enfocar el input
+     * Procesar cambios del modal
+     * Solo aplica los cambios reales sin reemplazar todo
+     */
+    const applyModalChanges = useCallback((changes: ProductChange[]) => {
+        if (changes.length === 0) return [];
+
+        const addedIds: number[] = [];
+        let addedCount = 0;
+        let updatedCount = 0;
+        let removedCount = 0;
+
+        setDetails(prev => {
+            const newDetails = [...prev];
+
+            changes.forEach(change => {
+                const existingIndex = newDetails.findIndex(
+                    d => d.almacen_out_det_id === change.almacen_out_det_id
+                );
+
+                // Cantidad 0 significa eliminar
+                if (change.cantidad === 0) {
+                    if (existingIndex >= 0) {
+                        newDetails.splice(existingIndex, 1);
+                        removedCount++;
+                    }
+                    return;
+                }
+
+                // Actualizar existente o agregar nuevo
+                if (existingIndex >= 0) {
+                    // Solo actualizar si es un cambio real
+                    if (change.isNew || newDetails[existingIndex].cantidad !== change.cantidad) {
+                        newDetails[existingIndex] = {
+                            ...newDetails[existingIndex],
+                            cantidad: change.cantidad,
+                            precio: change.precio,
+                            comentario: change.comentario || newDetails[existingIndex].comentario,
+                            maxQuantity: change.maxQuantity, // Actualizar maxQuantity
+                        };
+                        updatedCount++;
+                    }
+                } else {
+                    // Agregar nuevo item
+                    const newDetail: any = {
+                        almacen_out_det_id: change.almacen_out_det_id,
+                        cantidad: change.cantidad,
+                        precio: change.precio,
+                        comentario: change.comentario || '',
+                        product: change.product,
+                        sale_id: change.sale_id,
+                        maxQuantity: change.maxQuantity, // Guardar maxQuantity
+                    };
+
+                    if (isEditMode) {
+                        newDetail.almacen_out_dev_det_id = null;
+                    }
+
+                    newDetails.push(newDetail as T);
+                    addedIds.push(change.almacen_out_det_id);
+                    addedCount++;
+                }
+            });
+
+            return newDetails;
+        });
+
+        // Mostrar resumen de cambios
+        const messages: string[] = [];
+        if (addedCount > 0) messages.push(`${addedCount} agregado${addedCount !== 1 ? 's' : ''}`);
+        if (updatedCount > 0) messages.push(`${updatedCount} actualizado${updatedCount !== 1 ? 's' : ''}`);
+        if (removedCount > 0) messages.push(`${removedCount} eliminado${removedCount !== 1 ? 's' : ''}`);
+
+        if (messages.length > 0) {
+            showSuccessToast({
+                title: 'Cambios aplicados',
+                description: messages.join(', '),
+                duration: 3000
+            });
+        }
+
+        return addedIds;
+    }, [isEditMode]);
+
+    /**
+     * Agregar múltiples productos (MANTENER para compatibilidad con ventana)
      */
     const addMultipleProducts = useCallback((
-        items: UIReturnDetailCreate[]
+        items: Array<{
+            almacen_out_det_id: number;
+            cantidad: number;
+            precio: number;
+            comentario?: string;
+            sale_id: number;
+            product: {
+                id: number;
+                descripcion: string;
+                codigo_oem: string;
+                codigo_upc: string;
+                precio_venta?: number;
+            };
+            maxQuantity: number; // Añadido
+        }>
     ): number[] => {
         const addedIds: number[] = [];
 
         setDetails(prev => {
             const newDetails = [...prev];
-            
+
             items.forEach(item => {
-                const exists = newDetails.find(d => d.almacen_out_det_id === item.almacen_out_det_id);
-                
-                if (!exists) {
+                const existingIndex = newDetails.findIndex(d => d.almacen_out_det_id === item.almacen_out_det_id);
+
+                if (existingIndex >= 0) {
+                    // ACTUALIZAR (solo si la cantidad es diferente)
+                    if (newDetails[existingIndex].cantidad !== item.cantidad) {
+                        newDetails[existingIndex] = {
+                            ...newDetails[existingIndex],
+                            cantidad: item.cantidad,
+                            precio: item.precio,
+                            comentario: item.comentario || newDetails[existingIndex].comentario,
+                            maxQuantity: item.maxQuantity,
+                        };
+                    }
+                } else {
+                    // Agregar nuevo item
                     const newDetail: any = {
                         almacen_out_det_id: item.almacen_out_det_id,
-                        cantidad: item.cantidad || 1,
+                        cantidad: item.cantidad,
                         precio: item.precio,
                         comentario: item.comentario || '',
                         product: {
@@ -103,24 +230,15 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                             precio_venta: item.product.precio_venta || 0,
                         },
                         sale_id: item.sale_id,
+                        maxQuantity: item.maxQuantity,
                     };
 
-                    // Si es modo edición, añadir almacen_out_dev_det_id como null
                     if (isEditMode) {
                         newDetail.almacen_out_dev_det_id = null;
                     }
 
                     newDetails.push(newDetail as T);
                     addedIds.push(item.almacen_out_det_id);
-                } else {
-                    // Si ya existe, incrementar cantidad
-                    const index = newDetails.findIndex(d => d.almacen_out_det_id === item.almacen_out_det_id);
-                    if (index !== -1) {
-                        newDetails[index] = {
-                            ...newDetails[index],
-                            cantidad: newDetails[index].cantidad + (item.cantidad || 1)
-                        };
-                    }
                 }
             });
 
@@ -141,7 +259,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
     }, []);
 
     /**
-     * Modificar cantidad
+     * Modificar cantidad con validación de máximo
      */
     const updateCantidad = useCallback((id_detalle: number, cantidad: number) => {
         if (cantidad <= 0) {
@@ -153,11 +271,23 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
             return;
         }
 
-        setDetails((prev) =>
-            prev.map((d) =>
-                d.almacen_out_det_id === id_detalle ? { ...d, cantidad } : d
-            )
-        );
+        setDetails((prev) => {
+            return prev.map((d) => {
+                if (d.almacen_out_det_id !== id_detalle) return d;
+
+                // Validar contra maxQuantity
+                if (cantidad > d.maxQuantity) {
+                    showErrorToast({
+                        title: 'Cantidad excedida',
+                        description: `La cantidad máxima disponible es ${d.maxQuantity}`,
+                        duration: 3000
+                    });
+                    return d; // Mantener valor anterior
+                }
+
+                return { ...d, cantidad };
+            });
+        });
     }, []);
 
     /**
@@ -176,11 +306,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         setDetails((prev) =>
             prev.map((d) => {
                 if (d.almacen_out_det_id !== id_detalle) return d;
-
-                return {
-                    ...d,
-                    precio,
-                };
+                return { ...d, precio };
             })
         );
     }, []);
@@ -192,17 +318,13 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         setDetails((prev) =>
             prev.map((d) => {
                 if (d.almacen_out_det_id !== id_detalle) return d;
-
-                return {
-                    ...d,
-                    comentario,
-                };
+                return { ...d, comentario };
             })
         );
     }, []);
 
     /**
-     * Obtiene el total de la devolución sumando los totales de cada detalle
+     * Obtiene el total de la devolución
      */
     const getTotal = useCallback((): number => {
         return details.reduce((sum, detail) => {
@@ -214,7 +336,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
      * Obtener detalles en formato sin product (para enviar al backend)
      */
     const getReturnDetails = useCallback((): T extends UIReturnDetailUpdate ? ReturnDetailUpdate[] : ReturnDetailCreate[] => {
-        return details.map(({ product, sale_id, ...detail }) => detail) as any;
+        return details.map(({ product, sale_id, maxQuantity, ...detail }) => detail) as any;
     }, [details]);
 
     /**
@@ -246,7 +368,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
     }, [details]);
 
     /**
-     * Obtener cantidad total de items (suma de todas las cantidades)
+     * Obtener cantidad total de items
      */
     const getTotalItems = useCallback((): number => {
         return details.reduce((sum, detail) => sum + detail.cantidad, 0);
@@ -259,6 +381,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         // Métodos CRUD
         addProduct,
         addMultipleProducts,
+        applyModalChanges,
         removeProduct,
         updateCantidad,
         updatePrecio,

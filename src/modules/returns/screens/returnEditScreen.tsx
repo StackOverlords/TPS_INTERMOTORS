@@ -1,7 +1,7 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent"
 import { useNavigate, useParams } from "react-router"
 import TooltipButton from "@/components/common/TooltipButton"
-import { CornerUpLeft, Loader2, Save, Undo2 } from "lucide-react"
+import { CornerUpLeft, Loader2, Plus, Save, Undo2 } from "lucide-react"
 import { Kbd } from "@/components/atoms/kbd"
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { format } from "date-fns"
@@ -20,22 +20,31 @@ import ShortcutKey from "@/components/common/ShortcutKey"
 import { Textarea } from "@/components/atoms/textarea"
 import { formatCurrency } from "@/utils/formaters"
 import type { ReturnDetailTableRef } from "../components/returnDetailTable"
-import { useReturnDetails } from "../hooks/useReturnDetails"
+import { useReturnDetails, type ProductChange } from "../hooks/useReturnDetails"
 import type { ReturnUpdate, UIReturnDetailUpdate } from "../types/returnUpdate.types"
 import { useReturnTypes } from "../hooks/commons/useReturnTypes"
 import { useReturnResponsibles } from "../hooks/commons/useReturnResponsibles"
 import { useUpdateReturn } from "../hooks/useUpdateReturn"
 import { ReturnUpdateSchema } from "../schemas/returnUpdateSchema"
 import { useGetReturnById } from "../hooks/useGetReturnById"
-import type { SaleGetAll, SaleItemGetById } from "@/modules/sales/types/salesGetResponse"
+import type { SaleGetAll } from "@/modules/sales/types/salesGetResponse"
 import ReturnEditSkeleton from "../components/returnEditSkeleton"
-import ResizableBox from "@/components/atoms/resizable-box"
 import SaleReturnList from "../components/SalesReturnList"
 import ReturnDetailTable from "../components/returnDetailTable"
-import { Separator } from "@/components/atoms/separator"
 import SelectSalesReturnModal from "../components/SelectSalesReturnModal"
+import { cn } from "@/lib/utils"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
+import { Button } from "@/components/atoms/button"
+import { useSaleDetailSelectorWindow } from "@/hooks/useSecondaryWindow"
 
 const ReturnEditScreen = () => {
+    const configuraciones = {
+        inputs: false,
+        formulario: 'top',
+        selector_mode: 'window',
+    }
+    const [isReadOnly] = useState<boolean>(false)
+
     const navigate = useNavigate()
     const { returnId } = useParams()
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
@@ -109,7 +118,8 @@ const ReturnEditScreen = () => {
                     codigo_oem: "",
                     codigo_upc: "",
                     precio_venta: 0,
-                }
+                },
+                maxQuantity: Infinity,
             }));
 
             // Establecer detalles en el hook
@@ -127,6 +137,23 @@ const ReturnEditScreen = () => {
             setHasInitialized(true);
         }
     }, [returnData, returnTypesData, reset]);
+
+    // Validar si hay errores de cantidad (cantidades que exceden maxQuantity)
+    const hasQuantityErrors = useMemo(() => {
+        return returnDetailsHook.details.some(detail =>
+            detail.cantidad > detail.maxQuantity || detail.cantidad <= 0
+        );
+    }, [returnDetailsHook.details]);
+
+    // Validar si el formulario está listo para enviar
+    const canSubmit = useMemo(() => {
+        return (
+            !hasQuantityErrors &&
+            returnDetailsHook.details.length > 0 &&
+            !isReadOnly &&
+            !isSaving
+        );
+    }, [hasQuantityErrors, returnDetailsHook.details.length, isReadOnly, isSaving]);
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -151,6 +178,16 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Sin productos",
                 description: "Debes agregar al menos un producto para realizar una devolución",
+                duration: 5000
+            });
+            isValid = false;
+        }
+
+        // Validar cantidades
+        if (hasQuantityErrors) {
+            showErrorToast({
+                title: "Cantidades inválidas",
+                description: "Algunos productos tienen cantidades que exceden el máximo permitido",
                 duration: 5000
             });
             isValid = false;
@@ -193,7 +230,6 @@ const ReturnEditScreen = () => {
                         description: `Devolución modificada con éxito`,
                         duration: 5000,
                     });
-                    setTimeout(handleGoBack, 200);
                 },
                 onError: (error: unknown) => {
                     handleError({ error, customTitle: "No se pudo modificar la devolución" });
@@ -237,14 +273,6 @@ const ReturnEditScreen = () => {
         }
     };
 
-    const handleAddProductItem = (product: SaleItemGetById, saleId: number) => {
-        returnDetailsHook.addProduct(product, saleId);
-        // Enfocar el primer input de cantidad después de agregar
-        setTimeout(() => {
-            tableRef.current?.focusFirstQuantityInput();
-        }, 100);
-    };
-
     const handleSelectSale = (selectedSale: SaleGetAll) => {
         setIsDialogOpen(true)
         setSelectedSale(selectedSale)
@@ -254,6 +282,40 @@ const ReturnEditScreen = () => {
         setIsDialogOpen(false)
         setSelectedSale(null)
     }
+
+    const handleConfirmModalSelections = (changes: ProductChange[]) => {
+        if (!selectedSale || changes.length === 0) return;
+
+        // Aplicar solo los cambios detectados
+        const addedIds = returnDetailsHook.applyModalChanges(changes);
+
+        // Enfocar el primer producto agregado
+        setTimeout(() => {
+            if (addedIds.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(addedIds[0]);
+            }
+        }, 100);
+    };
+
+    const {
+        open: openSaleDetailSelector,
+        isOpen: isSaleDetailSelectorOpen,
+    } = useSaleDetailSelectorWindow({
+        context: 'update-return',
+        mode: 'edit',
+        selectedItems: returnDetailsHook.details,
+        onChangesApplied: (changes: ProductChange[]) => {
+            // Aplicar solo los cambios detectados
+            const addedIds = returnDetailsHook.applyModalChanges(changes);
+
+            // Enfocar el primer producto agregado
+            setTimeout(() => {
+                if (addedIds.length > 0) {
+                    tableRef.current?.focusQuantityInputByProductId(addedIds[0]);
+                }
+            }, 100);
+        }
+    });
 
     // Shortcuts
     useHotkeys('escape', (e) => {
@@ -266,8 +328,12 @@ const ReturnEditScreen = () => {
 
     useHotkeys('alt+s', (e) => {
         e.preventDefault();
-        handleSubmit(onSubmit, onError)();
-    })
+        if (canSubmit) {
+            handleSubmit(onSubmit, onError)();
+        }
+    }, {
+        enabled: canSubmit
+    });
 
     if (isLoadingReturn || isLoadingReturnTypes || isLoadingReturnResponsibles) {
         return <ReturnEditSkeleton />;
@@ -285,223 +351,310 @@ const ReturnEditScreen = () => {
     }
 
     return (
-        <main className="flex flex-col items-center">
-            <div className="w-full space-y-2">
-                <FormProvider {...formMethods}>
-                    <form
-                        className="space-y-2"
-                        onSubmit={handleSubmit(onSubmit, onError)}
-                    >
-                        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
-                            <div className="flex flex-wrap gap-2 items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <TooltipButton
-                                        tooltipContentProps={{
-                                            align: 'start'
-                                        }}
-                                        onClick={handleGoBack}
-                                        tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver atrás</p>}
-                                        buttonProps={{
-                                            variant: 'default',
-                                            type: 'button'
-                                        }}
-                                    >
-                                        <CornerUpLeft />
-                                    </TooltipButton>
-                                    <div>
-                                        <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
-                                            Editar Devolución #{returnData?.nro}
-                                        </h1>
-                                        {returnData && (
-                                            <p className="text-sm text-gray-600">
-                                                {returnData.cantidad_detalles} {returnData.cantidad_detalles === 1 ? 'producto' : 'productos'}
-                                            </p>
+        <main className="p-2 h-full">
+            <FormProvider {...formMethods}>
+                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2">
+                    {/* Header */}
+                    <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
+                        <div className="flex flex-wrap gap-2 items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <TooltipButton
+                                    tooltipContentProps={{
+                                        align: 'start'
+                                    }}
+                                    onClick={handleGoBack}
+                                    tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver atrás</p>}
+                                    buttonProps={{
+                                        variant: 'default',
+                                        type: 'button'
+                                    }}
+                                >
+                                    <CornerUpLeft />
+                                </TooltipButton>
+                                <div>
+                                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
+                                        Editar Devolución #{returnData?.nro}
+                                    </h1>
+                                    {returnData && (
+                                        <p className="text-sm text-gray-600">
+                                            {returnData.cantidad_detalles} {returnData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                        </p>
+                                    )}
+                                </div>
+                            </div >
+
+                            {/* Action Buttons */}
+                            < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
+
+                            </div >
+                        </div >
+                    </header >
+
+                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                        <div className={cn(
+                            "h-full gap-2",
+                            configuraciones.formulario === "top" && "flex flex-col",
+                            configuraciones.formulario === "left" && "flex flex-col md:grid md:grid-cols-3"
+                        )}>
+                            {/* Formulario de información de venta*/}
+                            <div className={cn(
+                                "gap-2 flex-shrink-0",
+                                configuraciones.formulario === "top" && "grid",
+                                configuraciones.formulario === "left" && "flex flex-col",
+                            )}>
+                                {/* 1. Datos de la venta */}
+                                <Card className={cn(
+                                    "shadow-none",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0",
+                                    configuraciones.formulario === "left" && "h-auto md:h-full",
+                                )}>
+
+                                    <CardContent className="p-2 sm:p-3">
+                                        <div className={cn(
+                                            "grid gap-2",
+                                            configuraciones.formulario === "top" && "grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2",
+                                            configuraciones.formulario === "left" && "grid-cols-2",
+                                        )}>
+                                            <div>
+                                                <Label htmlFor="fechaCotizacion">Fecha *</Label>
+                                                <Input
+                                                    id="fechaCotizacion"
+                                                    type="date"
+                                                    {...register("fecha")}
+                                                    className="w-full"
+                                                    autoFocus
+                                                />
+                                                {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="responsable">Responsable *</Label>
+                                                <Controller
+                                                    name="responsable"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <ComboboxSelect
+                                                            value={field.value || returnData?.responsable?.id}
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={returnResponsiblesData?.data || []}
+                                                            optionTag={"nombre"}
+                                                        />
+                                                    )}
+                                                />
+                                                {errors.responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+
+                                            <div>
+                                                <Label htmlFor="motivo_devolucion">Motivo de devolución *</Label>
+                                                <Controller
+                                                    name="motivo_devolucion"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <Select onValueChange={field.onChange} value={field.value || returnData?.forma_devolucion || ""}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Selecciona un motivo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {
+                                                                    returnTypesData && returnTypesData.map((type) => (
+                                                                        <SelectItem key={type.id} value={type.id}>
+                                                                            {type.label}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.motivo_devolucion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                                                <Input
+                                                    id="nroComprobante"
+                                                    {...register("nro_comprobante")}
+                                                    placeholder="Número de comprobante"
+                                                />
+                                            </div>
+
+                                            <div className={cn(
+                                                configuraciones.formulario === "top" && "col-span-2",
+                                                configuraciones.formulario === "left" && "md:col-span-2",
+                                            )}>
+                                                <Label htmlFor="comentarios">Comentarios</Label>
+                                                <Textarea
+                                                    id="comentarios"
+                                                    {...register("comentarios")}
+                                                    placeholder="Comentarios adicionales sobre la devolución"
+                                                    rows={configuraciones.formulario === "top" ? 1 : 2}
+                                                    disabled={isReadOnly}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className={cn(
+                                "flex-1 min-h-0",
+                                configuraciones.formulario === "top" && "",
+                                configuraciones.formulario === "top" && configuraciones.inputs && "",
+                                configuraciones.formulario === "left" && "col-span-2",
+                            )}>
+                                <div className={cn(
+                                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                                    configuraciones.selector_mode === "embebed" && "md:min-h-screen"
+                                )}>
+                                    <ResizablePanelGroup
+                                        className={cn(
+                                            "flex-1 min-h-0"
                                         )}
-                                    </div>
-                                </div >
-
-                                {/* Action Buttons */}
-                                < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-                                    <TooltipButton
-                                        onClick={handleGoBack}
-                                        tooltip="Cancelar Edicion"
-                                        buttonProps={{
-                                            variant: 'outline',
-                                            size: 'sm',
-                                            type: 'button'
-                                        }}
-                                    >
-                                        Cancelar
-                                    </TooltipButton>
-
-                                    <TooltipButton
-                                        tooltip={
-                                            <span className="flex items-center gap-1">Guardar Cambios <ShortcutKey combo="alt+s" /></span>
-                                        }
-                                        buttonProps={{
-                                            variant: 'default',
-                                            size: 'sm',
-                                            type: 'submit',
-                                            disabled: isSaving
-                                        }}
+                                        direction={"vertical"}
                                     >
                                         {
-                                            !isSaving ? (
+                                            configuraciones.selector_mode === "embebed" && (
                                                 <>
-                                                    <Save className="h-4 w-4" />
-                                                    Guardar Cambios
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Guardando...
+                                                    <ResizablePanel
+                                                        defaultSize={50}
+                                                    >
+                                                        <SaleReturnList
+                                                            onSaleSelect={handleSelectSale}
+                                                            selectedSales={returnDetailsHook.details}
+                                                        />
+                                                    </ResizablePanel>
+                                                    <ResizableHandle withHandle />
                                                 </>
                                             )
                                         }
-                                    </TooltipButton>
-                                </div >
-                            </div >
-                        </header >
-
-                        {/* 1. Datos de la devolucion */}
-                        <Card className="shadow-none h-full">
-                            <CardContent className="py-3">
-                                <div className="grid sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-y-3 gap-x-2">
-                                    <div>
-                                        <Label htmlFor="fechaCotizacion">Fecha *</Label>
-                                        <Input
-                                            id="fechaCotizacion"
-                                            type="date"
-                                            {...register("fecha")}
-                                            className="w-full"
-                                            autoFocus
-                                        />
-                                        {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="responsable">Responsable *</Label>
-                                        <Controller
-                                            name="responsable"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <ComboboxSelect
-                                                    value={field.value || returnData?.responsable?.id}
-                                                    onChange={(value) => {
-                                                        field.onChange(Number(value));
-                                                    }}
-                                                    options={returnResponsiblesData?.data || []}
-                                                    optionTag={"nombre"}
-                                                />
-                                            )}
-                                        />
-                                        {errors.responsable && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="motivo_devolucion">Motivo de devolución *</Label>
-                                        <Controller
-                                            name="motivo_devolucion"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select onValueChange={field.onChange} value={field.value || returnData?.forma_devolucion || ""}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecciona un motivo" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
+                                        <ResizablePanel
+                                            defaultSize={50}
+                                            className="h-full flex flex-col">
+                                            {/* 2. Productos */}
+                                            <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                                                <CardHeader className="flex-shrink-0">
+                                                    <CardTitle className="flex justify-between">
+                                                        <h2 className="text-primary text-base">
+                                                            Detalle de Productos
+                                                        </h2>
                                                         {
-                                                            returnTypesData && returnTypesData.map((type) => (
-                                                                <SelectItem key={type.id} value={type.id}>
-                                                                    {type.label}
-                                                                </SelectItem>
-                                                            ))
+                                                            configuraciones.selector_mode === "window" && (
+                                                                <Button
+                                                                    type="button"
+                                                                    onClick={openSaleDetailSelector}
+                                                                    disabled={isSaleDetailSelectorOpen || isSaving || isReadOnly}
+                                                                >
+                                                                    <Plus className="h-4 w-4" />
+                                                                    <span className="hidden sm:block">Agregar Productos</span>
+                                                                </Button>
+                                                            )
                                                         }
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.motivo_devolucion && <p className="text-red-500 text-sm mt-1">El campo es requerido</p>}
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="nroComprobante">N° Comprobante</Label>
-                                        <Input
-                                            id="nroComprobante"
-                                            {...register("nro_comprobante")}
-                                            placeholder="Número de comprobante"
-                                        />
-                                    </div>
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent className="flex-1 min-h-0">
+                                                    <div className="h-full overflow-auto">
+                                                        {returnDetailsHook.details.length === 0 ? (
+                                                            <div className="text-center py-8 text-gray-500">
+                                                                <Undo2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                                                <p>No hay productos agregados</p>
+                                                                <p className="text-sm">Haz clic en "Agregar" para añadir productos</p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col h-full">
+                                                                <div className="flex-1 min-h-0">
+                                                                    <div className="h-full overflow-auto">
+                                                                        <ReturnDetailTable
+                                                                            ref={tableRef}
+                                                                            details={returnDetailsHook.details}
+                                                                            onUpdateCantidad={returnDetailsHook.updateCantidad}
+                                                                            onUpdatePrecio={returnDetailsHook.updatePrecio}
+                                                                            onUpdateComentario={returnDetailsHook.updateComentario}
+                                                                            onRemoveProduct={returnDetailsHook.removeProduct}
+                                                                            isReadOnly={isReadOnly}
+                                                                            isSaving={isSaving}
+                                                                            isEditMode={true}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex justify-end flex-shrink-0 items-center px-2 pt-2 border-t border-border gap-3">
+                                                                    <span className="font-medium text-primary">Total:</span>
+                                                                    <span className="font-bold text-emerald-600">{formatCurrency(returnDetailsHook.getTotal())}</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </ResizablePanel>
+                                    </ResizablePanelGroup>
 
-                                    <div className="col-span-2">
-                                        <Label htmlFor="comentarios">Comentarios</Label>
-                                        <Textarea
-                                            id="comentarios"
-                                            {...register("comentarios")}
-                                            placeholder="Comentarios adicionales sobre la devolución"
-                                            rows={1}
-                                        />
-                                    </div>
+                                    <Card className="border border-border shadow-none pt-3">
+                                        <CardContent className="space-y-2">
+                                            <footer className="flex gap-2 items-center justify-between">
+                                                <span className="text-xs text-gray-500">* Campos requeridos</span>
+                                                <div className="flex gap-2">
+                                                    <TooltipButton
+                                                        onClick={handleGoBack}
+                                                        tooltip="Cancelar Edicion"
+                                                        buttonProps={{
+                                                            variant: 'outline',
+                                                            size: 'sm',
+                                                            type: 'button'
+                                                        }}
+                                                    >
+                                                        Cancelar
+                                                    </TooltipButton>
+
+                                                    <TooltipButton
+                                                        tooltip={
+                                                            !canSubmit && hasQuantityErrors ? (
+                                                                <span>Corrige las cantidades inválidas</span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1">Guardar Cambios <ShortcutKey combo="alt+s" /></span>
+                                                            )
+                                                        }
+                                                        buttonProps={{
+                                                            variant: 'default',
+                                                            size: 'sm',
+                                                            type: 'submit',
+                                                            disabled: !canSubmit || isSaving,
+                                                        }}
+                                                    >
+                                                        {
+                                                            !isSaving ? (
+                                                                <>
+                                                                    <Save className="h-4 w-4" />
+                                                                    Guardar Cambios
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    Guardando...
+                                                                </>
+                                                            )
+                                                        }
+                                                    </TooltipButton>
+                                                </div>
+                                            </footer>
+                                        </CardContent>
+                                    </Card>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </form >
-                    {/*sales */}
-                    <div className="flex-1 overflow-auto flex flex-col">
-                        {/* Panel de búsqueda de productos - Superior (altura para ~5 filas) */}
-                        <div className="flex-shrink-0">
-                            <ResizableBox
-                                direction="vertical"
-                                minSize={'100px'}
-                                initialSize={'350px'}
-                            >
-                                <SaleReturnList
-                                    onSaleSelect={handleSelectSale}
-                                    selectedSales={returnDetailsHook.details}
-                                />
-                            </ResizableBox>
+                            </div>
                         </div>
                     </div>
+                </form>
+            </FormProvider>
 
-                    <Card className="shadow-none">
-                        <CardHeader>
-                            <CardTitle className="text-base">
-                                Detalle de Devolución
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                {returnDetailsHook.details.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <Undo2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No hay productos agregados</p>
-                                        <p className="text-sm">Haz clic en "Agregar" para añadir productos</p>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <ReturnDetailTable
-                                            ref={tableRef}
-                                            details={returnDetailsHook.details}
-                                            onUpdateCantidad={returnDetailsHook.updateCantidad}
-                                            onUpdatePrecio={returnDetailsHook.updatePrecio}
-                                            onUpdateComentario={returnDetailsHook.updateComentario}
-                                            onRemoveProduct={returnDetailsHook.removeProduct}
-                                        />
-                                        <Separator className="h-[0.5px]" />
-                                        <div className="flex justify-between items-center px-2 pt-2">
-                                            <span className="font-medium text-gray-500">Total:</span>
-                                            <span className="font-bold text-emerald-600">{formatCurrency(returnDetailsHook.getTotal())}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </FormProvider>
-            </div>
             <SelectSalesReturnModal
                 isDialogOpen={isDialogOpen}
                 onCloseDialog={handleCloseSelectDialog}
                 saleId={selectedSale?.id ?? null}
-                onProductSelect={handleAddProductItem}
-                selectedProducts={returnDetailsHook.getReturnDetails()}
+                selectedProducts={returnDetailsHook.details.map(d => ({
+                    almacen_out_det_id: d.almacen_out_det_id,
+                    cantidad: d.cantidad,
+                    comentario: d.comentario
+                }))}
+                onConfirm={handleConfirmModalSelections}
             />
         </main >
     );
