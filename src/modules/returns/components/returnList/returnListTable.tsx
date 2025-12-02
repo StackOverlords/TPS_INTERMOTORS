@@ -209,7 +209,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                     <div className="space-y-1 flex flex-col">
                         <span className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>{nombreCompleto}</span>
                         {
-                            resp &&
+                            resp?.dni &&
                             <span className="text-xs text-muted-foreground">DNI: {resp.dni}</span>
                         }
                     </div>

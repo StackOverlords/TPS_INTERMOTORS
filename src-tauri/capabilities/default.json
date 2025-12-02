@@ -8,7 +8,8 @@
     "purchase-selector-*",
     "settings-routes-*",
     "debug-log-window",
-    "order-selector-*"
+    "order-selector-*",
+    "sale-detail-selector-*"
   ],
   "permissions": [
     "core:default",

@@ -55,7 +55,7 @@ const QuotationEditScreen = () => {
     const [isReadOnly] = useState<boolean>(false)
     const navigate = useNavigate()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
-    const { quotationId } = useParams()
+    const { updateQuotationId } = useParams()
     const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
@@ -65,7 +65,7 @@ const QuotationEditScreen = () => {
         data: pdfBlob,
         isLoading: isLoadingPdf,
         isError: isErrorPdf,
-    } = useQuotationPDF(Number(quotationId) || 0, isDialogOpen && !!Number(quotationId));
+    } = useQuotationPDF(Number(updateQuotationId) || 0, isDialogOpen && !!Number(updateQuotationId));
 
     const {
         data: quotationTypesData,
@@ -96,7 +96,7 @@ const QuotationEditScreen = () => {
         data: quotationData,
         isLoading: isLoadingQuotation,
         isError: isErrorQuotation
-    } = useQuotationGetById(Number(quotationId))
+    } = useQuotationGetById(Number(updateQuotationId))
 
     const handleGoBack = useGoBack("/dashboard/quotations");
     const { handleError } = useErrorHandler()
@@ -335,7 +335,7 @@ const QuotationEditScreen = () => {
 
         const transformedData = result.data;
         updateQuotation(
-            { quotationId: Number(quotationId), data: transformedData },
+            { quotationId: Number(updateQuotationId), data: transformedData },
             {
                 onSuccess: (updatedData) => {
                     showSuccessToast({
@@ -429,7 +429,7 @@ const QuotationEditScreen = () => {
         return <QuotationEditSkeleton />;
     }
 
-    if (isErrorQuotation || isNaN(Number(quotationId))) {
+    if (isErrorQuotation || isNaN(Number(updateQuotationId))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar la cotización."
             showButtonIcon={false}
@@ -477,7 +477,7 @@ const QuotationEditScreen = () => {
                             {/* Action Buttons */}
                             < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
                                 {
-                                    quotationId && (
+                                    updateQuotationId && (
                                         <>
                                             <TooltipButton
                                                 onClick={handleOpenPrintDialog}
@@ -499,7 +499,7 @@ const QuotationEditScreen = () => {
                                                 className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
                                                 variant={'success'}
                                             >
-                                                {quotationId}
+                                                {updateQuotationId}
                                             </Badge>
                                         </>
                                     )
@@ -929,14 +929,14 @@ const QuotationEditScreen = () => {
 
             {/* Modal PDF Viewer */}
             <PDFViewer
-                id={Number(quotationId)}
+                id={Number(updateQuotationId)}
                 pdfBlob={pdfBlob}
                 isLoading={isLoadingPdf}
                 isError={isErrorPdf}
                 onClose={handleClosePrintDialog}
                 isOpen={isDialogOpen}
                 pdfName="cotizacion"
-                title={`Cotizacion Nro. ${quotationId}`}
+                title={`Cotizacion Nro. ${updateQuotationId}`}
             />
         </main >
     );

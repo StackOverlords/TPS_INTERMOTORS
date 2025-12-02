@@ -20,13 +20,13 @@ import { useGetReturnById } from "../hooks/useGetReturnById";
 
 const ReturnDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: returnId } = useParams()
+    const { returnCod } = useParams()
 
     const {
         data: returnData,
         isLoading: isLoadingReturn,
         isError: isErrorReturn
-    } = useGetReturnById(Number(returnId))
+    } = useGetReturnById(Number(returnCod))
 
     const handleDeleteSuccess = (_data: unknown, returnId: number) => {
         showSuccessToast({
@@ -87,7 +87,7 @@ const ReturnDetailScreen = () => {
         return <ReturnDetailSkeleton />;
     }
 
-    if (isErrorReturn || !(Number(returnId))) {
+    if (isErrorReturn || !(Number(returnCod))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar la devolución."
             showButtonIcon={false}

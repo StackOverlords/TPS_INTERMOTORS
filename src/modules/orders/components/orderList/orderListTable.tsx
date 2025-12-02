@@ -289,12 +289,20 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
             minSize: 150,
             cell: ({ row }) => {
                 const resp = row.original.responsable;
-                const nombreCompleto = `${resp ? `${resp.nombre} ${resp.apellido_paterno}${resp.apellido_materno ? ` ${resp.apellido_materno}` : ''}` : 'Sin responsable'}`;
+                const nombreCompleto = resp
+                    ? [
+                        resp.nombre,
+                        resp.apellido_paterno,
+                        resp.apellido_materno
+                    ]
+                        .filter(item => item && item !== 'null' && item !== 'undefined')
+                        .join(' ')
+                    : 'Sin responsable';
                 return (
                     <div className="space-y-1 flex flex-col">
                         <span className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>{nombreCompleto}</span>
                         {
-                            resp &&
+                            resp?.dni &&
                             <span className="text-xs text-muted-foreground">DNI: {resp.dni}</span>
                         }
                     </div>
@@ -459,7 +467,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     const onShowRowsChange = (rows: number) => {
         setPageSize(rows)
     };
-    
+
     const handleDragStart = useCallback(() => {
         setIsDraggingColumn(true);
     }, []);

@@ -45,5 +45,7 @@ export const OrderByIdSchema = z.object({
     proveedor: SupplierSchema,
     responsable: ResponsableSchema.nullable(),
     cantidad_detalles: z.number(),
-    detalles: z.array(OrderDetailGetByIdSchema)
+    detalles: z.array(OrderDetailGetByIdSchema),
+    fecha_llegada: z.string().nullable(),
+    fecha_transito: z.string().nullable(),
 });

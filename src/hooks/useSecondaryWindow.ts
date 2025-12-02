@@ -27,6 +27,8 @@
  * ```
  */
 
+import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
+import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
 import type { SelectedItem } from '@/types/windowSelectedItems';
 import {
   closeSecondaryWindow,
@@ -528,8 +530,78 @@ export function useDebugLogWindow(): UseSecondaryWindowResult {
     listenToEvents: DEBUG_LOG_EVENTS as unknown as string[],
     autoCloseOnUnmount: false, // Permitir que persista
   });
-};
+}
 
+// ========= Hook específico para ventana de seleccionar detalles de venta =========
+export interface UseSaleDetailSelectorWindowConfig {
+  context: string;
+  instanceId?: string;
+  onChangesApplied?: (changes: ProductChange[]) => void;
+  initialFilters?: Record<string, any>;
+  mode?: 'create' | 'edit';
+  selectedItems?: UIReturnDetailCreate[];
+}
+
+// Array constante para evitar recreaciones
+const SALE_DETAIL_SELECTOR_EVENTS = [
+  'sale-details-changes-applied',
+  'window-closed',
+] as const;
+
+/**
+ * Hook para abrir ventana de selección de detalles de venta
+ * Permite seleccionar múltiples productos de diferentes ventas
+ */
+export function useSaleDetailSelectorWindow(
+  config: UseSaleDetailSelectorWindowConfig
+): UseSecondaryWindowResult {
+  const {
+    context,
+    instanceId,
+    onChangesApplied,
+    initialFilters,
+    mode = 'create',
+    selectedItems = [],
+  } = config;
+
+  // Generar windowId único
+  const windowId = instanceId
+    ? `sale-detail-selector-${context}-${instanceId}`
+    : `sale-detail-selector-${context}`;
+
+  // Refs para mantener callbacks actualizados sin causar re-renders
+  const onChangesAppliedRef = useRef(onChangesApplied);
+
+  useEffect(() => {
+    onChangesAppliedRef.current = onChangesApplied;
+  }, [onChangesApplied]);
+
+  // Callback estable que usa las refs
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    // Nuevo evento con solo cambios (recomendado)
+    if (eventName === 'sale-details-changes-applied' && onChangesAppliedRef.current) {
+      onChangesAppliedRef.current(data as ProductChange[]);
+      return;
+    }
+  }, []);
+
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html',
+    title: 'Seleccionar Items de Venta',
+    width: 1400,
+    height: 750,
+    queryParams: {
+      component: 'sale-detail-selector',
+      context,
+      mode,
+      selectedItems: JSON.stringify(selectedItems),
+      ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
+    },
+    listenToEvents: SALE_DETAIL_SELECTOR_EVENTS as unknown as string[],
+    onEvent: handleEvent,
+  });
+}
 
 // ========= Hook específico para ventana de selector de pedidos =========
 export interface UseOrderSelectorWindow {
@@ -592,4 +664,3 @@ export function useOrderSelectorWindow(
     onEvent: handleEvent, // ✅ Referencia estable
   });
 };
-

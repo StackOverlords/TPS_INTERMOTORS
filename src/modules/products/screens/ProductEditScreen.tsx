@@ -30,7 +30,7 @@ import ProductEditSkeleton from "../components/ProductEditSkeleton";
 
 const ProductEditScreen = () => {
     const navigate = useNavigate()
-    const { productId } = useParams()
+    const { updateProductId } = useParams()
     const isFirstLoad = useRef(true);
 
     const {
@@ -67,7 +67,7 @@ const ProductEditScreen = () => {
         data: productData,
         isLoading: isLoadingProduct,
         isError: isErrorProduct
-    } = useProductById(Number(productId))
+    } = useProductById(Number(updateProductId))
 
     const handleGoBack = useGoBack("/dashboard/productos");
     const { handleError } = useErrorHandler()
@@ -180,7 +180,7 @@ const ProductEditScreen = () => {
 
     const onSubmit = (data: ProductUpdate) => {
         handleUpdateProduct(
-            { id: Number(productId), data },
+            { id: Number(updateProductId), data },
             {
                 onSuccess: () => {
                     showSuccessToast({
@@ -250,7 +250,7 @@ const ProductEditScreen = () => {
 
     if (isLoading) return <ProductEditSkeleton />;
 
-    if (isErrorProduct || isNaN(Number(productId))) {
+    if (isErrorProduct || isNaN(Number(updateProductId))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar el producto."
             showButtonIcon={false}

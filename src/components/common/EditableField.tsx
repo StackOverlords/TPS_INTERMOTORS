@@ -217,7 +217,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
         <Edit3 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
       )}
       {error && (
-        <div className="mt-1 text-xs text-red-500">
+        <div className="mt-1 text-[10px] text-red-500">
           {error}
         </div>
       )}
