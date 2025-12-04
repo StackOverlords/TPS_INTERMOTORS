@@ -30,6 +30,7 @@ export const SaleItemSchema = z.object({
         },
         z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5)))
     ),
+    orden: z.number().nullable(),
 })
 
 export const SaleGetByIdSchema = z.object({
