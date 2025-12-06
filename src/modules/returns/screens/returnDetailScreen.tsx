@@ -20,13 +20,13 @@ import { useGetReturnById } from "../hooks/useGetReturnById";
 
 const ReturnDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: returnId } = useParams()
+    const { returnCod } = useParams()
 
     const {
         data: returnData,
         isLoading: isLoadingReturn,
         isError: isErrorReturn
-    } = useGetReturnById(Number(returnId))
+    } = useGetReturnById(Number(returnCod))
 
     const handleDeleteSuccess = (_data: unknown, returnId: number) => {
         showSuccessToast({
@@ -87,7 +87,7 @@ const ReturnDetailScreen = () => {
         return <ReturnDetailSkeleton />;
     }
 
-    if (isErrorReturn || !(Number(returnId))) {
+    if (isErrorReturn || !(Number(returnCod))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar la devolución."
             showButtonIcon={false}
@@ -97,9 +97,9 @@ const ReturnDetailScreen = () => {
     }
 
     return (
-        <main className="flex flex-col items-center">
-            <div className="max-w-7xl w-full space-y-2">
-                <header className="border-gray-200 border bg-white rounded-lg p-3">
+        <main className="h-full flex flex-col items-center overflow-hidden p-2">
+            <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
+                <header className="bg-card border border-border rounded-lg py-2 px-3 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -167,7 +167,7 @@ const ReturnDetailScreen = () => {
                     </div >
                 </header >
 
-                <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+                <Card className="bg-card border border-border shadow-none flex-shrink-0">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                             <FileText className="size-4 text-gray-700" />
@@ -198,20 +198,20 @@ const ReturnDetailScreen = () => {
                                 <Label className="text-xs text-muted-foreground">Comentarios</Label>
                                 <p className="text-sm font-medium">{formatCell(returnData?.comentarios)}</p>
                             </div>
-                                <div>
-                                    <Label className="text-xs text-muted-foreground">Responsable</Label>
-                                    <p className="text-sm font-medium">
-                                        {formatCell(
-                                            [
-                                                returnData?.responsable?.nombre,
-                                                returnData?.responsable?.apellido_paterno,
-                                                returnData?.responsable?.apellido_materno
-                                            ]
-                                                .filter(Boolean)
-                                                .join(" ")
-                                        )}
-                                    </p>
-                                </div>
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Responsable</Label>
+                                <p className="text-sm font-medium">
+                                    {formatCell(
+                                        [
+                                            returnData?.responsable?.nombre,
+                                            returnData?.responsable?.apellido_paterno,
+                                            returnData?.responsable?.apellido_materno
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ")
+                                    )}
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

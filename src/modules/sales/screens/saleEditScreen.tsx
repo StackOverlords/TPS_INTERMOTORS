@@ -106,7 +106,6 @@ const SaleEditScreen = () => {
             nro_motor: "",
             cliente_nombre: "",
             cliente_nit: "",
-            usuario: 1,
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: undefined,
             detalles: []
@@ -160,7 +159,6 @@ const SaleEditScreen = () => {
             cliente_nombre: sale.cliente?.cliente ?? "",
             cliente_nit: sale.cliente?.nit?.toString() ?? "",
             sucursal: Number(selectedBranchId) || 1,
-            usuario: 1,
             id_responsable: sale.responsable_venta?.id ?? 0,
             detalles: detallesTransformados,
             tipo_venta: sale.tipo_venta,

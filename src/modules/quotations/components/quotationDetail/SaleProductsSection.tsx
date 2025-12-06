@@ -5,9 +5,12 @@ import { formatCell } from "@/utils/formatCell";
 import { formatCurrency } from "@/utils/formaters";
 import { formatNumber } from "@/utils/numberFormatters";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
-import { Package } from "lucide-react";
-import { useMemo } from "react";
+import { Package, Search, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import type { QuotationItemGetById } from "../../types/quotationGet.types";
+import { Input } from "@/components/atoms/input";
+import { Button } from "@/components/atoms/button";
+import { cn } from "@/lib/utils";
 
 interface QuotationProductsSectionProps {
     products: QuotationItemGetById[],
@@ -19,21 +22,75 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
     products,
     totalAmount
 }) => {
+    const SEARCH_MODE: "realtime" | "manual" = "manual";
+    const [searchInput, setSearchInput] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const isManual = SEARCH_MODE === "manual";
+
+    const handleSearch = () => {
+        if (isManual) setSearchTerm(searchInput.trim());
+    };
+
+    const normalizedProducts = useMemo(() => {
+        return products
+            .map((item, index) => ({
+                ...item,
+                orden: item.orden ?? index + 1  // Asigna orden secuencial si es null
+            }))
+            .sort((a, b) => a.orden - b.orden); // Siempre ordenar por orden
+    }, [products]);
+
+    // Cuando el modo es realtime, el término de búsqueda es el input directamente
+    const termToFilter = isManual ? searchTerm : searchInput;
+
+    const filteredQuotationItems = useMemo(() => {
+        return normalizedProducts.filter(item =>
+            item.producto.descripcion.toLowerCase().includes(termToFilter.toLowerCase())
+        );
+    }, [normalizedProducts, termToFilter]);
 
     // Calcular total de cantidades
     const totalCantidad = useMemo(() => {
-        return products.reduce((total, product) => {
+        return filteredQuotationItems.reduce((total, product) => {
             const cantidad = typeof product.cantidad === "string"
                 ? parseFloat(product.cantidad)
                 : product.cantidad;
             return total + (isFinite(cantidad) ? cantidad : 0);
         }, 0);
-    }, [products]);
+    }, [filteredQuotationItems]);
+
+    const filteredTotalAmount = useMemo(() => {
+        return filteredQuotationItems.reduce((total, product) => {
+            const cantidad =
+                typeof product.cantidad === "string"
+                    ? parseFloat(product.cantidad)
+                    : product.cantidad;
+
+            const precio = product.precio;
+            const descuentoPercent = product.porcentaje_descuento ?? 0;
+
+            const subtotal = precio * cantidad;
+            const totalConDescuento = subtotal * (1 - descuentoPercent / 100);
+
+            return total + totalConDescuento;
+        }, 0);
+    }, [filteredQuotationItems]);
+
+    const finalTotal = termToFilter.trim()
+        ? filteredTotalAmount
+        : totalAmount;
 
     const columns = useMemo<ColumnDef<QuotationItemGetById>[]>(() => [
         {
+            accessorKey: "orden",
+            header: "N°",
+            size: 30,
+            minSize: 20,
+        },
+        {
             accessorKey: "id",
-            header: "#ID",
+            header: "Cód",
             size: 35,
             minSize: 30,
             enableHiding: false,
@@ -52,7 +109,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
                 const descripcion = getValue<string>()
                 return (
                     <div className="space-y-0.5">
-                        <h3 title="Descripción" className="text-sm font-medium text-gray-900 leading-tight truncate">
+                        <h3 title="Descripción" className="text-sm font-medium text-primary leading-tight truncate">
                             {descripcion}
                         </h3>
 
@@ -82,7 +139,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
             minSize: 80,
             cell: ({ getValue, row }) => (
                 <div className="space-y-0.5">
-                    <div className="font-mono text-xs text-gray-900 truncate">
+                    <div className="font-mono text-xs text-primary truncate">
                         {formatCell(getValue<string>())}
                     </div>
                     {row.original.producto.codigo_oem && (
@@ -175,7 +232,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
     ], []);
 
     const table = useReactTable<QuotationItemGetById>({
-        data: products,
+        data: filteredQuotationItems,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
@@ -186,27 +243,62 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
     })
 
     return (
-        <section className="border border-gray-200 rounded-lg bg-white flex-1 flex flex-col overflow-hidden">
-            <header className="p-4 border-b border-gray-200 flex-shrink-0">
-                <h3 className="text-base font-medium text-gray-900 flex gap-2 items-center">
+        <section className="border border-border rounded-lg bg-card flex-1 flex flex-col overflow-hidden">
+            <header className="p-2 border-b border-border flex-shrink-0 space-y-1">
+                <h3 className="text-base font-medium text-primary flex gap-2 items-center">
                     <Package className="size-4" />
                     Productos de la cotizacion
                 </h3>
-                <p className="text-xs text-gray-600 mt-1">
-                    {products.length} {products.length === 1 ? "producto" : "productos"} en total
+                <p className="text-xs text-gray-600">
+                    {filteredQuotationItems.length} {filteredQuotationItems.length === 1 ? "producto" : "productos"} en total
                 </p>
+
+                <div className="flex gap-2 w-full lg:w-1/2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar producto por descripción..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            className={cn(
+                                "pl-10",
+                                searchInput.trim() !== "" && "pr-10"
+                            )}
+                        />
+                        {searchInput.trim() !== "" && (
+                            <Button
+                                variant={'outline'}
+                                onClick={() => {
+                                    setSearchInput("");
+                                    if (isManual) setSearchTerm(""); // reset también en manual
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                            >
+                                <X className="size-3" />
+                            </Button>
+                        )}
+                    </div>
+
+                    {isManual && (
+                        <Button onClick={handleSearch}>
+                            <Search className="size-4" />
+                            Buscar
+                        </Button>
+                    )}
+                </div>
             </header>
             <div className="flex-1 overflow-auto">
                 <CustomizableTable
                     table={table}
                     isLoading={isLoading}
                     stickyHeader={true}
+                    rows={filteredQuotationItems.length}
                     renderBottomRow={() => (
-                        <TableRow className="bg-gray-50 font-semibold sticky bottom-0">
+                        <TableRow className="bg-gray-50 font-semibold sticky bottom-0 hover:bg-gray-50">
                             {table.getVisibleFlatColumns().map((column) => {
                                 if (column.id === 'cantidad') {
                                     return (
-                                        <TableCell key={column.id} className="text-center">
+                                        <TableCell key={column.id} className="text-center p-1">
                                             <div className="text-xs text-muted-foreground mb-0.5">Total Cantidad</div>
                                             <div className="text-sm font-bold text-blue-600">
                                                 {totalCantidad.toFixed(0)}
@@ -216,10 +308,10 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
                                 }
                                 if (column.id === 'subtotal') {
                                     return (
-                                        <TableCell key={column.id} className="text-right">
+                                        <TableCell key={column.id} className="text-right p-1">
                                             <div className="text-xs text-muted-foreground mb-0.5">Total</div>
                                             <div className="text-sm font-bold text-emerald-600">
-                                                {formatCurrency(totalAmount)}
+                                                {formatCurrency(finalTotal)}
                                             </div>
                                         </TableCell>
                                     );

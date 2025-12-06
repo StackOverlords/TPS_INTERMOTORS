@@ -21,7 +21,7 @@ import { useQuotationPDF } from "../hooks/useQuotationPDF";
 
 const QuotationDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: quotationId } = useParams()
+    const { quotationId } = useParams()
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
 
     const {
@@ -125,7 +125,7 @@ const QuotationDetailScreen = () => {
     return (
         <main className="h-full flex flex-col items-center overflow-hidden p-2">
             <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
-                <header className="bg-white border border-gray-200 rounded-lg p-3 flex-shrink-0">
+                <header className="bg-card border border-border rounded-lg py-2 px-3 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -141,7 +141,7 @@ const QuotationDetailScreen = () => {
                                 <CornerUpLeft />
                             </TooltipButton>
                             <div>
-                                <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                                <h1 className="text-lg font-bold text-primary leading-tight">
                                     Cotizacion Nro. {quotationData?.nro}
                                 </h1>
                                 {quotationData && (
@@ -206,9 +206,9 @@ const QuotationDetailScreen = () => {
                     </div>
                 </header>
 
-                <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+                <Card className="bg-card border border-border shadow-none flex-shrink-0">
                     <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-primary">
                             <FileText className="size-4 text-gray-700" />
                             Información General
                         </CardTitle>
@@ -274,15 +274,15 @@ const QuotationDetailScreen = () => {
 
                 {/* Información detallada de cliente y responsable - Comentado por si se necesita más adelante */}
                 {/* <div className="grid md:grid-cols-2 gap-2">
-                    <Card className="bg-white border border-gray-200 shadow-none">
+                    <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
                                 <Building2 className="h-5 w-5 text-gray-700" />
                                 Información del cliente
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
+                            <div className="text-xs text-primary space-y-4">
                                 <div>
                                     <Label>Cliente</Label>
                                     <p className="text-base text-blue-600 font-semibold">{quotationData?.cliente?.cliente}</p>
@@ -313,15 +313,15 @@ const QuotationDetailScreen = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white border border-gray-200 shadow-none">
+                    <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
                                 <User className="h-5 w-5 text-gray-700" />
                                 Responsable de cotizacion
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
+                            <div className="text-xs text-primary space-y-4">
                                 <div>
                                     <Label>Nombre</Label>
                                     <p className="text-base font-semibold">

@@ -3,6 +3,7 @@ import OrderSelectorWindow from '@/modules/orders/screens/OrderSelectorWindow';
 import ProductSelectorWindow from '@/modules/products/screens/ProductSelectorWindow';
 import PurchaseSelectorWindow from '@/modules/purchases/screens/PurchaseSelectorWindow';
 import React from 'react';
+import SaleDetailSelectorWindow from '@/modules/sales/screens/SaleDetailSelectorWindow';
 
 // Tipo para componentes que pueden renderizarse en ventanas
 export type WindowComponent = React.ComponentType<any>;
@@ -56,6 +57,7 @@ export function registerDefaultWindowComponents(): void {
   registerWindowComponent('purchase-selector', PurchaseSelectorWindow);
   registerWindowComponent('debug-log', DebugLogWindow);
   registerWindowComponent('order-selector', OrderSelectorWindow);
+  registerWindowComponent('sale-detail-selector', SaleDetailSelectorWindow);
   // registerWindowComponent('settings-routes', ViewSettingsWithSuspense);
 }
 

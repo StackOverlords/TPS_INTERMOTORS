@@ -40,7 +40,7 @@ const ordersProtectedRoutes: RouteType[] = [
                 showSidebar: true
             },
             {
-                path: "/dashboard/orders/:id",
+                path: "/dashboard/orders/:orderCod",
                 name: "Detalle de Pedido",
                 type: "protected",
                 element: OrderDetailScreen,

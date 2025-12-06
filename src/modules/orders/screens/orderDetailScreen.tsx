@@ -19,13 +19,13 @@ import { useGetOrderById } from "../hooks/useGetOrderById";
 
 const OrderDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: orderId } = useParams()
+    const { orderCod } = useParams()
 
     const {
         data: orderData,
         isLoading: isLoadingOrder,
         isError: isErrorOrder
-    } = useGetOrderById(Number(orderId))
+    } = useGetOrderById(Number(orderCod))
 
     const handleDeleteSuccess = (_data: unknown, orderId: number) => {
         showSuccessToast({
@@ -86,7 +86,7 @@ const OrderDetailScreen = () => {
         return <SaleDetailSkeleton />;
     }
 
-    if (isErrorOrder || !(Number(orderId))) {
+    if (isErrorOrder || !(Number(orderCod))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar el pedido."
             showButtonIcon={false}
@@ -98,7 +98,7 @@ const OrderDetailScreen = () => {
     return (
         <main className="h-full flex flex-col items-center overflow-hidden p-2">
             <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
-                <header className="border-gray-200 border bg-white rounded-lg p-3 flex-shrink-0">
+                <header className="border-border border bg-card rounded-lg py-2 px-3 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -167,7 +167,7 @@ const OrderDetailScreen = () => {
                     </div >
                 </header >
 
-                <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+                <Card className="bg-card border border-border shadow-none flex-shrink-0">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                             <FileText className="size-4 text-gray-700" />
@@ -225,7 +225,7 @@ const OrderDetailScreen = () => {
 
                 {/* Información detallada de proveedor y responsable - Comentado por si se necesita más adelante */}
                 {/* <div className="grid md:grid-cols-2 gap-2 flex-shrink-0">
-                    <Card className="bg-white border border-gray-200 shadow-none">
+                    <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
                                 <Building2 className="size-4 text-gray-700" />
@@ -256,7 +256,7 @@ const OrderDetailScreen = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white border border-gray-200 shadow-none">
+                    <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
                                 <User className="size-4 text-gray-700" />

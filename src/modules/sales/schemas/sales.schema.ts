@@ -21,7 +21,6 @@ export const SaleSchema = z.object({
   nro_motor: z.string().nullable(),
   cliente_nombre: z.string().nullable(),
   cliente_nit: z.string().nullable(),
-  usuario: z.number(),
   sucursal: z.number(),
   id_responsable: z.number(),
   detalles: z.array(SaleDetailSchema).nonempty()

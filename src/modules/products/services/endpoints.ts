@@ -1,10 +1,13 @@
+const BASE_PATH = "/products";
+
 export const PRODUCT_ENDPOINTS = {
-    all: "/products",
-    byId: (producto: string | number) => `/products/${producto}`,
-    update: (producto: string | number) => `/products/${producto}`,
-    delete: (producto: string | number) => `/products/${producto}`,
-    create: `/products`,
-    stockDetails: `/products/stocks`,
-    providerOrders: `/products/prov-orders`,
-    twoYearsSales: `/products/two-years-sales`,
-};
+    all: BASE_PATH,
+    byId: (producto: string | number) => `${BASE_PATH}/${producto}`,
+    update: (producto: string | number) => `${BASE_PATH}/${producto}`,
+    delete: (producto: string | number) => `${BASE_PATH}/${producto}`,
+    create: `${BASE_PATH}`,
+    stockDetails: `${BASE_PATH}/stocks`,
+    providerOrders: `${BASE_PATH}/prov-orders`,
+    twoYearsSales: `${BASE_PATH}/two-years-sales`,
+    getByIdWithStock: (producto: string | number, sucursal: string | number) => `${BASE_PATH}/${producto}/${sucursal}`
+} as const;

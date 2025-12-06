@@ -130,7 +130,7 @@ const OrderCreateScreen = () => {
 
     // Validaciones de fechas según estado
     const statusesDisablingTransit = ["P", "C"];
-    const statusesDisablingArrival = ["P", "C", "T"];
+    const statusesDisablingArrival = ["P", "C"];
 
     useEffect(() => {
         if (!currentStatus) return;
@@ -604,7 +604,7 @@ const OrderCreateScreen = () => {
                                                             <SelectContent className={cn(
                                                                 "shadow-lg",
                                                             )}>
-                                                                {orderStatusData?.map(({ id, label }) => (
+                                                                {orderStatusData?.filter((s) => s.id !== 'D').map(({ id, label }) => (
                                                                     <SelectItem key={id} value={id}>
                                                                         {label}
                                                                     </SelectItem>

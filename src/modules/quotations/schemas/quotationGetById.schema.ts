@@ -25,7 +25,8 @@ export const QuotationItemSchema = z.object({
         (val) => (val == null ? null : parseFloat(val as string)),
         z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))).nullable()
     ),
-    marca: z.string().nullable()
+    marca: z.string().nullable(),
+    orden: z.number().nullable(),
 })
 
 export const QuotationGetByIdSchema = z.object({

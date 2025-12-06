@@ -12,4 +12,5 @@ export interface UIReturnDetailCreate extends ReturnDetailCreate {
         precio_venta: number,
     };
     sale_id: number
+    maxQuantity: number;
 }

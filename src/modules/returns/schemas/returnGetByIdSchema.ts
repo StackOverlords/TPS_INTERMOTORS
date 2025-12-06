@@ -18,6 +18,9 @@ export const ReturnDetailGetByIdSchema = z.object({
     comentario: z.string().nullable(),
     almacen_out_dev_id: z.number().int().positive(),
     almacen_out_det_id: z.number().int().positive(),
+    orden: z.number().nullable(),
+    id_venta: z.number().nullable(),
+    producto: z.string().nullable(),
 })
 
 export const ReturnByIdSchema = z.object({

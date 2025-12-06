@@ -20,13 +20,13 @@ import { useSaleGetById } from "../hooks/useSaleGetById";
 
 const SaleDetailScreen = () => {
     const navigate = useNavigate()
-    const { id: saleId } = useParams()
+    const { saleCod } = useParams()
 
     const {
         data: saleData,
         isLoading: isLoadingSale,
         isError: isErrorSale
-    } = useSaleGetById(Number(saleId))
+    } = useSaleGetById(Number(saleCod))
 
     const handleDeleteSuccess = (_data: unknown, saleId: number) => {
         showSuccessToast({
@@ -97,7 +97,7 @@ const SaleDetailScreen = () => {
         return <SaleDetailSkeleton />;
     }
 
-    if (isErrorSale || !(Number(saleId))) {
+    if (isErrorSale || !(Number(saleCod))) {
         return <ErrorDataComponent
             errorMessage="No se pudo cargar la venta."
             showButtonIcon={false}
@@ -111,7 +111,7 @@ const SaleDetailScreen = () => {
     return (
         <main className="h-full flex flex-col items-center overflow-hidden p-2">
             <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
-                <header className="border-gray-200 border bg-white rounded-lg p-3">
+                <header className="border-border border bg-card rounded-lg py-2 px-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -180,7 +180,7 @@ const SaleDetailScreen = () => {
                     </div >
                 </header >
 
-                <Card className="bg-white border border-gray-200 shadow-none">
+                <Card className="bg-card border border-border shadow-none">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
                             <FileText className="size-4 text-gray-700" />
