@@ -114,14 +114,33 @@ const ViewSettings = () => {
   }, [selectedViewId, resetUserConfig]);
 
   const handleResetAll = useCallback(() => {
-    // Resetear todas las configuraciones
-    routeConfigs.forEach(c => {
-      if (c.id) {
-        const { resetUserConfig } = useUserViewConfig(c.id);
-        resetUserConfig();
+    // Resetear todas las configuraciones directamente desde localStorage
+    try {
+      localStorage.removeItem('user-view-configs');
+
+      // Invalidar cache y emitir eventos para cada vista
+      routeConfigs.forEach(c => {
+        if (c.id) {
+          window.dispatchEvent(
+            new CustomEvent('local-view-config:updated', {
+              detail: { viewId: c.id },
+            })
+          );
+        }
+      });
+
+      // Forzar re-render del componente actual
+      if (selectedViewId) {
+        window.dispatchEvent(
+          new CustomEvent('local-view-config:updated', {
+            detail: { viewId: selectedViewId },
+          })
+        );
       }
-    });
-  }, [routeConfigs]);
+    } catch (error) {
+      console.error('Error resetting all configs:', error);
+    }
+  }, [routeConfigs, selectedViewId]);
 
   const getFeatureEnabled = useCallback((featureName: keyof ViewFeaturesConfig): boolean => {
     if (!selectedViewId) return false;

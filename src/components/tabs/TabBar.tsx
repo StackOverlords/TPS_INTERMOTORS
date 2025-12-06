@@ -157,7 +157,7 @@ const TabBar: React.FC<TabBarProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  // Usar selectores específicos para evitar re-renders
+  // ✅ Optimizado: Selectores específicos con comparación shallow
   const tabs = useTabStore(state => state.tabs);
   const activeTabId = useTabStore(state => state.activeTabId);
   const setActiveTab = useTabStore(state => state.setActiveTab);
