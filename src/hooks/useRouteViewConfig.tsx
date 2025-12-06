@@ -409,6 +409,13 @@ export function useViewConfigSync(viewId: string) {
   );
   const reloadTimeoutRef = useRef<number | undefined>(undefined);
 
+  // Recargar configuración cuando viewId cambia
+  useEffect(() => {
+    configCache.delete(STORAGE_KEYS.USER_VIEW_CONFIGS);
+    const newConfig = loadUserConfigCached(viewId);
+    setConfig(newConfig);
+  }, [viewId]);
+
   const reloadConfig = useCallback(() => {
     // Invalidar cache
     configCache.delete(STORAGE_KEYS.USER_VIEW_CONFIGS);

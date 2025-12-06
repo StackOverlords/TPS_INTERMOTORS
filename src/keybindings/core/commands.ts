@@ -157,7 +157,7 @@ export const COMMANDS = {
     category: 'actions',
   },
   'actions.zoomIn': {
-    defaultKeys: 'ctrl + more',
+    defaultKeys: 'ctrl + plus',
     description: 'Acercar (Zoom In)',
     when: 'global',
     category: 'actions',

@@ -52,12 +52,12 @@ export function ZoomControls() {
         <Button
           variant="outline"
           size="sm"
-          className="size-8"
+          className="size-8 relative overflow-visible"
           title={`Zoom: ${Math.round(zoomLevel * 100)}%`}
         >
           <MonitorSmartphone className="h-4 w-4" />
           {zoomLevel !== 1 && (
-            <span className="absolute -top-2 -right-2 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] text-primary-foreground font-bold">
+            <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[8px] text-primary-foreground font-bold pointer-events-none">
               {zoomLevel > 1 ? '+' : '-'}
             </span>
           )}

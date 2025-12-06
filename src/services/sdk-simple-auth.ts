@@ -1,6 +1,7 @@
 // import { environment } from "@/utils/environment";
 import { environment } from "@/utils/environment";
 import { AuthSDK } from "sdk-simple-auth";
+// import apiClient from "./axios";
 
 const authSDK = new AuthSDK({
   authServiceUrl: environment.apiUrl,
@@ -26,7 +27,12 @@ const authSDK = new AuthSDK({
     enabled: true,
     validateOnStartup: true,
     autoLogoutOnInvalid: true
-  }
+  },
+  // interceptors:{
+  //   enabled: true,
+  //   axiosInstance: apiClient,
+  //   autoInjectToken: true
+  // }
 })
 
 export default authSDK;

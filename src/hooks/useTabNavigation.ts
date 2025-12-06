@@ -10,7 +10,12 @@ import { matchPath, useLocation, useNavigate } from 'react-router';
 export const useTabNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addTab, setActiveTab, findTabByPath, activeTabId, tabs, removeTab, updateTab } = useTabStore();
+
+  //Optimizado Selectores específicos en lugar de desestructurar todo
+  const tabs = useTabStore(state => state.tabs);
+  const activeTabId = useTabStore(state => state.activeTabId);
+  const setActiveTab = useTabStore(state => state.setActiveTab);
+  // removeTab, addTab, findTabByPath, updateTab se obtienen directamente del store donde se necesitan
 
   // Bandera para prevenir recreación de tabs después de cerrar
   const isClosingTabRef = useRef(false);
@@ -77,24 +82,25 @@ export const useTabNavigation = () => {
     return fallback;
   }, [flatRoutes]);
 
-  
+
   //Navegar a una ruta y crear/activar un tab
-  
+
   const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean }) => {
     const routeInfo = findRouteInfo(path);
-    const existingTab = findTabByPath(path);
+    const state = useTabStore.getState();
+    const existingTab = state.findTabByPath(path);
 
     if (options?.newTab || !existingTab) {
       // Crear nuevo tab
-      const tabId = addTab(path, routeInfo.name, routeInfo.icon);
-      setActiveTab(tabId);
+      const tabId = state.addTab(path, routeInfo.name, routeInfo.icon);
+      state.setActiveTab(tabId);
     } else {
       // Activar tab existente
-      setActiveTab(existingTab.id);
+      state.setActiveTab(existingTab.id);
     }
 
     navigate(path);
-  }, [addTab, setActiveTab, findTabByPath, navigate, findRouteInfo]);
+  }, [navigate, findRouteInfo]);
 
   
   //Navegar al siguiente tab
@@ -132,9 +138,12 @@ export const useTabNavigation = () => {
   //Cerrar tab actual o una tab específica
 
   const closeCurrentTab = useCallback((tabIdToClose?: string) => {
-    const targetTabId = tabIdToClose || activeTabId;
+    // ✅ FIX: Obtener estado fresco directamente del store
+    const state = useTabStore.getState();
+    const targetTabId = tabIdToClose || state.activeTabId;
+
     // No permitir cerrar si solo hay 1 tab
-    if (tabs.length <= 1) {
+    if (state.tabs.length <= 1) {
       return;
     }
 
@@ -147,17 +156,17 @@ export const useTabNavigation = () => {
 
     // Remover la tab actual o específica
     // IMPORTANTE: removeTab actualiza automáticamente el activeTabId al siguiente tab disponible
-    removeTab(targetTabId);
+    state.removeTab(targetTabId);
 
-    // Obtener el nuevo activeTabId del store y navegar a esa tab (sin setTimeout)
-    const state = useTabStore.getState();
-    const newActiveTab = state.tabs.find(tab => tab.id === state.activeTabId);
+    // Obtener el estado actualizado después de remover
+    const updatedState = useTabStore.getState();
+    const newActiveTab = updatedState.tabs.find(tab => tab.id === updatedState.activeTabId);
 
     if (newActiveTab) {
       navigate(newActiveTab.path);
-    } else if (state.tabs.length > 0) {
+    } else if (updatedState.tabs.length > 0) {
       // Fallback: navegar a la primera tab disponible
-      navigate(state.tabs[0].path);
+      navigate(updatedState.tabs[0].path);
     } else {
       // No quedan tabs, navegar al dashboard
       navigate('/dashboard');
@@ -167,7 +176,7 @@ export const useTabNavigation = () => {
     requestAnimationFrame(() => {
       isClosingTabRef.current = false;
     });
-  }, [activeTabId, removeTab, navigate, tabs]);
+  }, [navigate]);
 
 
   //Migrar tabs antiguos y recuperar iconos desde localStorage (solo una vez al montar)
@@ -186,9 +195,10 @@ export const useTabNavigation = () => {
     );
 
     if (tabsToUpdate.length > 0) {
+      const state = useTabStore.getState();
       tabsToUpdate.forEach(tab => {
         const routeInfo = findRouteInfo(tab.path);
-        updateTab(tab.id, {
+        state.updateTab(tab.id, {
           title: routeInfo.name,
           icon: routeInfo.icon
         });
@@ -197,7 +207,8 @@ export const useTabNavigation = () => {
   }, []);
 
 
-  //Si navegamos sin usar navigateWithTab, esto crea/activa el tab automáticamente
+  // Optimizado Si navegamos sin usar navigateWithTab, esto crea/activa el tab automáticamente
+  // Reducción de dependencias para evitar ejecuciones innecesarias
   useEffect(() => {
     const currentPath = location.pathname;
 
@@ -211,13 +222,15 @@ export const useTabNavigation = () => {
       return;
     }
 
-    const existingTab = findTabByPath(currentPath);
+    // Obtener estado fresco directamente del store para evitar dependencias
+    const state = useTabStore.getState();
+    const existingTab = state.findTabByPath(currentPath);
 
     if (!existingTab) {
       // Crear tab automáticamente si no existe
       const routeInfo = findRouteInfo(currentPath);
-      const tabId = addTab(currentPath, routeInfo.name, routeInfo.icon);
-      setActiveTab(tabId);
+      const tabId = state.addTab(currentPath, routeInfo.name, routeInfo.icon);
+      state.setActiveTab(tabId);
     } else {
       // Verificar si el tab necesita actualización de título
       const routeInfo = findRouteInfo(currentPath);
@@ -229,19 +242,19 @@ export const useTabNavigation = () => {
 
       if (needsUpdate) {
         // Actualizar el tab con el título correcto
-        const { updateTab } = useTabStore.getState();
-        updateTab(existingTab.id, {
+        state.updateTab(existingTab.id, {
           title: routeInfo.name,
           icon: routeInfo.icon
         });
       }
 
-      if (existingTab.id !== activeTabId) {
+      if (existingTab.id !== state.activeTabId) {
         // Activar el tab si ya existe pero no está activo
-        setActiveTab(existingTab.id);
+        state.setActiveTab(existingTab.id);
       }
     }
-  }, [location.pathname, findTabByPath, addTab, setActiveTab, activeTabId, findRouteInfo]);
+    // Solo depende de location.pathname y findRouteInfo
+  }, [location.pathname, findRouteInfo]);
 
   return {
     navigateWithTab,

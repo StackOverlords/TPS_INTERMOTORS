@@ -2,12 +2,14 @@ import NotFound from '@/modules/shared/screens/NotFound';
 import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import { useTabStore } from '@/states/tabStore';
-import { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { matchPath } from 'react-router';
 import TabContent from './TabContent';
 
 const TabContainer: React.FC = () => {
-  const { tabs, activeTabId } = useTabStore();
+  // ✅ Optimizado: Solo suscribirse a lo que realmente necesitamos
+  const tabs = useTabStore(state => state.tabs);
+  const activeTabId = useTabStore(state => state.activeTabId);
 
   // Aplanar todas las rutas protegidas
   const flatRoutes = useMemo(() => {
@@ -27,16 +29,15 @@ const TabContainer: React.FC = () => {
     return flatten(protectedRoutes);
   }, []);
 
-  // Cache de rutas ya resueltas para evitar recálculos
-  const routeCache = useMemo(() => new Map<string, RouteType | null>(), []);
+  // ✅ Cache persistente (no se recrea en cada render)
+  const routeCacheRef = useRef(new Map<string, RouteType | null>());
 
-  // Encontrar la ruta que coincide con el path actual
-  // Soporte para rutas dinámicas con parámetros (ej: /purchases/:id)
+  // ✅ Función de búsqueda optimizada con cache persistente
   const findMatchingRoute = useMemo(() => {
     return (path: string): RouteType | undefined => {
       // Verificar cache primero
-      if (routeCache.has(path)) {
-        return routeCache.get(path) || undefined;
+      if (routeCacheRef.current.has(path)) {
+        return routeCacheRef.current.get(path) || undefined;
       }
 
       const route = flatRoutes.find(route => {
@@ -55,47 +56,52 @@ const TabContainer: React.FC = () => {
       });
 
       // Guardar en cache
-      routeCache.set(path, route || null);
+      routeCacheRef.current.set(path, route || null);
       return route;
     };
-  }, [flatRoutes, routeCache]);
+  }, [flatRoutes]);
 
-  // Pre-computar componentes de tabs para evitar recálculos en cada render
-  const tabComponents = useMemo(() => {
-    return tabs.map(tab => {
-      const route = findMatchingRoute(tab.path);
+  // ✅ OPTIMIZACIÓN CRÍTICA: Solo obtener el componente del tab ACTIVO
+  // Esto evita renderizar todos los componentes al mismo tiempo
+  const activeTabComponent = useMemo(() => {
+    const activeTab = tabs.find(tab => tab.id === activeTabId);
+    if (!activeTab) return null;
 
-      if (!route || !route.element) {
-        return {
-          tabId: tab.id,
-          Component: NotFound,
-        };
-      }
+    const route = findMatchingRoute(activeTab.path);
 
+    if (!route || !route.element) {
       return {
-        tabId: tab.id,
-        Component: route.element,
+        tabId: activeTab.id,
+        Component: NotFound,
       };
-    });
-  }, [tabs, findMatchingRoute]);
+    }
+
+    return {
+      tabId: activeTab.id,
+      Component: route.element,
+    };
+  }, [activeTabId, tabs, findMatchingRoute]);
 
   return (
     <div className="h-full relative">
-      {tabComponents.map(({ tabId, Component }) => (
-        <TabContent key={tabId} tabId={tabId} isActive={tabId === activeTabId}>
-          <Component />
+      {/* ✅ LAZY RENDERING: Solo renderizamos el componente activo */}
+      {activeTabComponent ? (
+        <TabContent
+          key={activeTabComponent.tabId}
+          tabId={activeTabComponent.tabId}
+          isActive={true}
+        >
+          <activeTabComponent.Component />
         </TabContent>
-      ))}
-
-      {/* Si no hay tabs, mostrar un mensaje o el dashboard por defecto */}
-      {tabs.length === 0 && (
+      ) : tabs.length === 0 ? (
+        // Si no hay tabs, mostrar un mensaje o el dashboard por defecto
         <div className="flex items-center justify-center h-full">
           <div className="text-center text-gray-500">
             <p className="text-lg font-medium">No hay pestañas abiertas</p>
             <p className="text-sm mt-2">Navega a cualquier sección para comenzar</p>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
