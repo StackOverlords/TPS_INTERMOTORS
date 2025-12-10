@@ -1,5 +1,5 @@
-import { useTabStore } from '@/states/tabStore';
-import React, { useEffect, useRef, type ReactNode } from 'react';
+// import { useTabStore } from '@/states/tabStore';
+import React, { useRef, type ReactNode } from 'react';
 
 interface TabContentProps {
   children: ReactNode;
@@ -7,37 +7,38 @@ interface TabContentProps {
   isActive: boolean; // Recibir isActive como prop para evitar suscripción a activeTabId
 }
 
-const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId, isActive }) => {
+const TabContentComponent: React.FC<TabContentProps> = ({ children, /* tabId, */ isActive }) => {
   // Selectores específicos para evitar re-renders innecesarios
-  const updateTab = useTabStore(state => state.updateTab);
-  const getTab = useTabStore(state => state.getTab);
+  // const updateTab = useTabStore(state => state.updateTab);
+  // const getTab = useTabStore(state => state.getTab);
   const hasBeenActiveRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Solo marcar como activa sin causar re-render
+  // Solo marcar como activa sin causar re-render
   if (isActive && !hasBeenActiveRef.current) {
     hasBeenActiveRef.current = true;
   }
 
+  // TODO: Implementar scroll persistence optimizado con debounce
   // Guardar la posición del scroll cuando el tab se vuelve inactivo
-  useEffect(() => {
-    if (!isActive && containerRef.current) {
-      const scrollPosition = containerRef.current.scrollTop;
-      updateTab(tabId, { scrollPosition });
-    }
-  }, [isActive, tabId, updateTab]);
+  // useEffect(() => {
+  //   if (!isActive && containerRef.current) {
+  //     const scrollPosition = containerRef.current.scrollTop;
+  //     updateTab(tabId, { scrollPosition });
+  //   }
+  // }, [isActive, tabId, updateTab]);
 
   // Restaurar la posición del scroll cuando el tab se activa
-  useEffect(() => {
-    if (isActive && containerRef.current) {
-      const tab = getTab(tabId);
-      if (tab?.scrollPosition) {
-        containerRef.current.scrollTop = tab.scrollPosition;
-      }
-    }
-  }, [isActive, tabId, getTab]);
+  // useEffect(() => {
+  //   if (isActive && containerRef.current) {
+  //     const tab = getTab(tabId);
+  //     if (tab?.scrollPosition) {
+  //       containerRef.current.scrollTop = tab.scrollPosition;
+  //     }
+  //   }
+  // }, [isActive, tabId, getTab]);
 
-  // ✅ Solo renderiza si ya fue activada alguna vez (lazy load)
+  // Solo renderiza si ya fue activada alguna vez (lazy load)
   if (!hasBeenActiveRef.current) {
     return null;
   }

@@ -63,14 +63,14 @@ const UserDetailScreen = () => {
   const viewConfig = useRouteViewConfigWithSync();
 
   // Debug temporal
-  useEffect(() => {
-    console.log('[UserDetailScreen] Debug:', {
-      pathname: location.pathname,
-      viewConfig,
-      viewConfigId: viewConfig?.id,
-      permissionsEnabled: viewConfig?.features?.permissions?.enabled,
-    });
-  }, [viewConfig, location.pathname]);
+  // useEffect(() => {
+  //   console.log('[UserDetailScreen] Debug:', {
+  //     pathname: location.pathname,
+  //     viewConfig,
+  //     viewConfigId: viewConfig?.id,
+  //     permissionsEnabled: viewConfig?.features?.permissions?.enabled,
+  //   });
+  // }, [viewConfig, location.pathname]);
   // TODOS los hooks deben ir al inicio, sin condiciones
   const {
     data: user,
@@ -270,7 +270,7 @@ const UserDetailScreen = () => {
     const total = permissions.length;
     return { selected, total };
   };
-  console.log(viewConfig?.features?.permissions?.enabled )
+  // console.log(viewConfig?.features?.permissions?.enabled )
   if (isLoading) {
     return (
       <div className="min-h-screen max-w-4xl mx-auto p-6">
