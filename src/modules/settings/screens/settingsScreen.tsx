@@ -15,7 +15,7 @@ import {
   Link,
   Palette,
   RefreshCw,
-  Settings2,
+  Settings,
   Settings as SettingsIcon,
   Shield,
 } from 'lucide-react';
@@ -150,17 +150,17 @@ const SettingsScreen = () => {
     setActiveSection(section);
   };
   return (
-    <main className="max-w-7xl mx-auto space-y-2">
+    <main className="max-w-7xl mx-auto space-y-2 p-2 flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+      <header className="border-border border bg-card rounded-lg p-2 sm:px-3 sm:py-2 flex-shrink-0">
         <div className="flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-3">
-            <Settings2 className="h-6 w-6 lg:h-8 lg:w-8 text-gray-700" />
+            <Settings className="size-5 lg:size-7 text-gray-700" />
             <div>
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
                 Configuración
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs text-gray-500">
                 Gestiona la configuración del sistema
               </p>
             </div>
@@ -168,28 +168,30 @@ const SettingsScreen = () => {
         </div>
       </header>
 
-      <div className="flex flex-col space-y-4">
-        <SettingsNavigation
-          sections={settingsSections}
-          activeSection={activeSection}
-          onSectionChange={handleChangeSection}
-        />
+      <div className="flex-1 min-h-0">
+        <div className='flex flex-col space-y-2 h-full'>
+          <SettingsNavigation
+            sections={settingsSections}
+            activeSection={activeSection}
+            onSectionChange={handleChangeSection}
+          />
 
-        {/* Current Section Content */}
-        <Card className="shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              {currentSection && <currentSection.icon className="size-4" />}
-              {currentSection?.label}
-            </CardTitle>
-            <CardDescription className="">
-              {currentSection?.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CurrentComponent />
-          </CardContent>
-        </Card>
+          {/* Current Section Content */}
+          <Card className="shadow-none min-h-0 flex-1 overflow-auto bg-transparent border-none">
+            <CardHeader className='space-y-0.5 px-0 pt-0'>
+              <CardTitle className="flex items-center gap-2 text-base">
+                {currentSection && <currentSection.icon className="size-4" />}
+                {currentSection?.label}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                {currentSection?.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='p-0'>
+              <CurrentComponent />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );

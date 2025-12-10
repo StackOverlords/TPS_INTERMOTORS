@@ -36,7 +36,7 @@ export default function UpdateSettings() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh] py-2">
+    <div className="flex items-center justify-center min-h-[60vh] py-2 bg-card rounded-lg border border-border">
       <div className="flex flex-col items-center gap-6 max-w-4xl w-full px-6">
         <ReleaseNotes
           currentVersion={displayCurrentVersion}
