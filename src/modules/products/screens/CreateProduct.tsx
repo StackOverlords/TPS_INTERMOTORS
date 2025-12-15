@@ -28,7 +28,7 @@ const CreateProduct = () => {
         <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
-              <TooltipButton
+              {/* <TooltipButton
                 tooltipContentProps={{
                   align: 'start'
                 }}
@@ -40,7 +40,7 @@ const CreateProduct = () => {
                 }}
               >
                 <CornerUpLeft />
-              </TooltipButton>
+              </TooltipButton> */}
               <div>
                 <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
                   Nuevo Producto

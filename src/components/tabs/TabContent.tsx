@@ -7,17 +7,11 @@ interface TabContentProps {
   isActive: boolean; // Recibir isActive como prop para evitar suscripción a activeTabId
 }
 
-const TabContentComponent: React.FC<TabContentProps> = ({ children, /* tabId, */ isActive }) => {
-  // Selectores específicos para evitar re-renders innecesarios
-  // const updateTab = useTabStore(state => state.updateTab);
-  // const getTab = useTabStore(state => state.getTab);
-  const hasBeenActiveRef = useRef(false);
+const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId: _tabId, isActive }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Solo marcar como activa sin causar re-render
-  if (isActive && !hasBeenActiveRef.current) {
-    hasBeenActiveRef.current = true;
-  }
+  // 🎯 KEEP-ALIVE: Ahora el componente permanece montado, solo se oculta/muestra
+  // No usamos hasBeenActiveRef porque TabContainer decide qué tabs están montadas
 
   // TODO: Implementar scroll persistence optimizado con debounce
   // Guardar la posición del scroll cuando el tab se vuelve inactivo
@@ -37,11 +31,6 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, /* tabId, */
   //     }
   //   }
   // }, [isActive, tabId, getTab]);
-
-  // Solo renderiza si ya fue activada alguna vez (lazy load)
-  if (!hasBeenActiveRef.current) {
-    return null;
-  }
 
   return (
     <div

@@ -613,7 +613,7 @@ const PurchaseListScreen = () => {
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className='columns-button'>
                     <Settings className="w-4 h-4 mr-2" />
                     Columnas
                   </Button>

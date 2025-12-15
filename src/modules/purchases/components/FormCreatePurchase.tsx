@@ -5,10 +5,12 @@ import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import { useCommands } from '@/keybindings';
 import { HelpCircle, ShoppingBag } from 'lucide-react';
-import React from 'react';
+import React, { useRef } from 'react';
 import { useProviders } from '../hooks/useProviders';
 import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
 import { type FormData } from '../hooks/usePurchaseForm';
+import PopoverDatePicker from '@/components/common/PopoverDatePicker';
+import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
 interface Props {
   formData: FormData;
   errors: Record<string, string>;
@@ -30,7 +32,7 @@ const FormCreatePurchase: React.FC<Props> = ({
   onCancel,
 }) => {
   const { data: proveedores = [], isLoading: isLoadingProviders } =
-    useProviders(); 
+    useProviders();
   const {
     purchaseTypes,
     purchaseModalities,
@@ -43,11 +45,21 @@ const FormCreatePurchase: React.FC<Props> = ({
       ? 'text-sm border-red-500 focus:border-red-500'
       : 'text-sm';
 
-  // Helper para formatear la fecha a YYYY-MM-DD
-  const formatDate = (date: string) => {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return d.toISOString().split('T')[0];
+  // Convertir string a Date para PopoverDatePicker
+  const parseDateFromString = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Manejar cambio de fecha desde PopoverDatePicker
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      const dateString = date.toISOString().split('T')[0];
+      onChange('fecha', dateString);
+    } else {
+      onChange('fecha', '');
+    }
   };
 
   // ✨ Nuevo sistema de keybindings - más simple y reactivo
@@ -57,8 +69,25 @@ const FormCreatePurchase: React.FC<Props> = ({
     // 'forms.cancel': onCancel || undefined,
   });
 
+  // Habilitar navegación con Enter entre campos del formulario
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFormEnterNavigation({
+    submitOnLastField: false, // No ejecutar submit automáticamente
+    onSubmit: onSubmit,
+    containerRef:containerRef,
+    excludeSelectors: [
+      // Excluir inputs de la tabla de detalles (ya tienen su propia navegación)
+      '.editable-cell-input',
+      '[data-table-cell="true"]',
+      // Excluir botones de PopoverDatePicker (tienen su propio manejo de Enter)
+      'button[type="button"]',
+    ],
+    enabled: true,
+  });
+
+
   return (
-    <div className="p-3 bg-white border border-gray-200 rounded-lg">
+    <div  className="p-3 bg-white border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-3">
         <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
           <ShoppingBag className="w-4 h-4" />
@@ -118,16 +147,23 @@ const FormCreatePurchase: React.FC<Props> = ({
           </span>
         </TooltipWrapper>
       </div>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end mb-6">
+      <div ref={containerRef} className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end mb-6">
         <div className="flex flex-col relative">
           <Label className="text-xs font-medium mb-1">Fecha *</Label>
-          <Input
+          {/* <Input
             type="date"
             value={formatDate(formData.fecha)}
             onChange={e => onChange('fecha', e.target.value)}
             onBlur={() => onBlur('fecha')}
             className={inputClass('fecha')}
-          />
+          /> */}
+          <PopoverDatePicker
+            value={parseDateFromString(formData.fecha)}
+            onChange={handleDateChange}
+            className={inputClass('fecha')}
+          >
+
+          </PopoverDatePicker>
           {errors.fecha && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.fecha}</p>}
         </div>
         <div className="flex flex-col relative">
@@ -150,7 +186,7 @@ const FormCreatePurchase: React.FC<Props> = ({
           <Label className="text-xs font-medium mb-1">Nro comprobante *</Label>
           <Input
             type="text"
-            value={formData.nro_comprobante }
+            value={formData.nro_comprobante}
             onChange={e => onChange('nro_comprobante', e.target.value)}
             onBlur={() => onBlur('nro_comprobante')}
             placeholder="FA-01"

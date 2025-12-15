@@ -16,6 +16,7 @@ import ConfirmationModal from "@/components/common/confirmationModal";
 import { useDeleteSale } from "../hooks/useDeleteSale";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const SalesListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -116,7 +117,17 @@ const SalesListScreen = () => {
     const toggleShowFilters = () => {
         setShowFilters(!showFilters)
     }
-
+    useFormEnterNavigation({
+        submitOnLastField: false,
+        excludeSelectors: [
+            '.no-enter-nav', 
+            '.columns-button', 
+            '.toggle-mode', 
+            '.reload-button',
+            '.switch-button'
+        ],
+        enabled: true,
+    })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
             <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
@@ -142,7 +153,7 @@ const SalesListScreen = () => {
                             size="sm"
                             variant="ghost"
                             onClick={toggleSearchMode}
-                            className="text-xs h-7"
+                            className="text-xs h-7 toggle-mode"
                             title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
                         >
                             <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
@@ -152,6 +163,7 @@ const SalesListScreen = () => {
                             <Switch
                                 id="infinite-scroll"
                                 checked={isInfiniteScroll}
+                                className="switch-button"
                                 onCheckedChange={(checked) => {
                                     setIsInfiniteScroll(checked)
                                     setPage(1)
@@ -165,7 +177,7 @@ const SalesListScreen = () => {
                         <TooltipButton
                             onClick={handleRefetchSales}
                             buttonProps={{
-                                className: 'w-8',
+                                className: 'w-8 reload-button',
                                 disabled: isRefetchingSales || isFetching,
                             }}
                             tooltip={"Recargar ventas"}

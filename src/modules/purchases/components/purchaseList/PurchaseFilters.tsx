@@ -6,8 +6,9 @@ import { useState } from 'react';
 import { useProviders } from '../../hooks/useProviders';
 import type { usePurchaseFilters } from '../../hooks/usePurchaseFilters';
 import { format } from 'date-fns';
-import { PaginatedCombobox } from '@/components/common/paginatedCombobox';
 import PopoverDatePicker from '@/components/common/PopoverDatePicker';
+import { ComboboxSelect } from '@/components/common/SelectCombobox';
+import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
 
 interface PurchaseFiltersProps {
   filters: ReturnType<typeof usePurchaseFilters>['filters'];
@@ -24,6 +25,12 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 }) => {
 
   const [dateError, setDateError] = useState<string | null>(null);
+
+  useFormEnterNavigation({
+    submitOnLastField: false,
+    excludeSelectors: ['.no-enter-nav', '.columns-button'],
+    enabled: true,
+  })
 
   const {
     data: orderProvidersData,
@@ -102,7 +109,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
         <div className="space-y-2">
           <Label>Proveedor</Label>
-          <PaginatedCombobox
+          {/* <PaginatedCombobox
             value={filters.proveedor}
             onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
             optionsData={orderProvidersData || []}
@@ -112,7 +119,15 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             isLoading={isOrdersProvidersLoading}
             updatePage={(page) => { console.log("Update page:", page) }}
             placeholder='Seleccione un proveedor'
-          />
+          /> */}
+          <ComboboxSelect
+            value={filters.proveedor}
+            onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+            options={orderProvidersData || []}
+            optionTag="nombre"
+            placeholder='Seleccione un proveedor'
+          > 
+          </ComboboxSelect>
         </div>
         <div className="space-y-2">
           <Label>Código OEM</Label>

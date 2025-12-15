@@ -1,6 +1,6 @@
 import ResizableBox from '@/components/atoms/resizable-box';
 import ShortcutKey from '@/components/common/ShortcutKey';
-import TooltipButton from '@/components/common/TooltipButton';
+import TooltipButton from '@/components/common/TooltipButton'; 
 import { useOrderSelectorWindow, useProductSelectorWindow } from '@/hooks/useSecondaryWindow';
 import { useGetOrderById } from '@/modules/orders/hooks/useGetOrderById';
 import { useBranchStore } from '@/states/branchStore';
@@ -33,6 +33,8 @@ const CreatePurchase: React.FC = () => {
   const [creationMode, setCreationMode] = useState<CreationMode>('manual');
   const [selectorMode, setSelectorMode] = useState<'embedded' | 'window'>('window');
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+
+
 
   // Hook para obtener detalles del pedido seleccionado
   const {

@@ -223,6 +223,14 @@ export function ComboboxSelect({
                                     e.currentTarget.select()
                                 }}
                                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                    // Nota: La navegación con Enter ahora se maneja globalmente con useFormEnterNavigation
+                                    // Este código se deja comentado por si se necesita comportamiento específico
+
+                                    // Si presiona Enter y el dropdown está abierto, no hacer nada (dejar que Headless UI lo maneje)
+                                    // if (e.key === 'Enter' && open) {
+                                    //     // El comportamiento por defecto de Headless UI se encarga de seleccionar la opción
+                                    //     return;
+                                    // }
                                     // Si presiona Enter y el dropdown está cerrado, avanzar al siguiente campo
                                     if (e.key === 'Enter' && !open) {
                                         e.preventDefault();

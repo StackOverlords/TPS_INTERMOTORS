@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { formatInTimeZone } from 'date-fns-tz';
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, X } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "../atoms/badge";
 import { Button } from "../atoms/button";
 import { Calendar } from "../atoms/calendar";
@@ -31,6 +31,8 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
     hasError = false,
     className,
 }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
     const parseDateToLocal = (dateString: string): Date => {
         const [year, month, day] = dateString.split('-').map(Number);
         const localDate = new Date(year, month - 1, day);
@@ -53,12 +55,36 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
         return value ? formatInTimeZone(value, timeZone, 'dd/MM/yyyy', { locale: es }) : placeholder
     }, [value, placeholder])
 
+    // Función para seleccionar la fecha de hoy
+    const selectToday = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        onChange(today);
+        setIsOpen(false);
+    };
+
+    // Manejador de teclado para el botón trigger
+    const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            // Si NO hay fecha seleccionada, seleccionar hoy
+            if (!value) {
+                e.preventDefault();
+                e.stopPropagation();
+                selectToday();
+            }
+            // Si YA hay fecha, dejar que el evento de Enter se propague
+            // para que el hook useFormEnterNavigation lo maneje
+        }
+    };
+
     return (
-        <Popover>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     size="sm"
+                    type="button"
+                    onKeyDown={handleTriggerKeyDown}
                     className={cn(
                         "flex-1 justify-between text-left font-normal px-2",
                         !value && "text-muted-foreground",
@@ -86,11 +112,16 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
                 <Calendar
                     mode="single"
                     selected={localMidnightDate ?? undefined}
-                    onSelect={onChange}
+                    onSelect={(date) => {
+                        onChange(date);
+                        setIsOpen(false);
+                    }}
+                    onTodayClick={selectToday}
+                    autoFocusToday={false}
                     disabled={disabled}
                     className="p-3 pointer-events-auto"
                 />

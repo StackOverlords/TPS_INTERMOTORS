@@ -3,12 +3,12 @@ import type { useSalesFilters } from "../hooks/useSalesFilters";
 import { AlertCircle, Search, X } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { useState } from "react";
-import { useDebounce } from "use-debounce";
 import { Button } from "@/components/atoms/button";
 import { format } from "date-fns";
 import { useSaleCustomers } from "../hooks/useSaleCustomers";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface SalesFiltersProps {
     filters: ReturnType<typeof useSalesFilters>["filters"]
@@ -25,15 +25,18 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
 }) => {
     // Inputs locales
     const [dateError, setDateError] = useState<string | null>(null);
-    const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-
-    // Debounce
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     const {
         data: saleCustomersData,
         isLoading: isSaleCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+    } = useSaleCustomers('')
+
+    // Habilitar navegación con Enter entre campos del formulario
+    useFormEnterNavigation({
+        submitOnLastField: false,
+        excludeSelectors: ['.no-enter-nav', '.columns-button'],
+        enabled: true,
+    })
 
 
     // Función auxiliar para formatear fecha de manera segura
@@ -108,24 +111,13 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
                 </div>
                 <div className="space-y-2">
                     <Label>Cliente</Label>
-                    <PaginatedCombobox
+                    <ComboboxSelect
                         value={filters.cliente}
                         onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                        optionsData={saleCustomersData?.data || []}
-                        displayField="nombre"
-                        enableAllOption={true}
-                        allOptionLabel="TODOS"
-                        isLoading={isSaleCustomersLoading}
-                        updatePage={(page) => { console.log("Update page:", page) }}
-                        updateSearch={setCustomerSearchTerm}
-                        metaData={
-                            {
-                                current_page: saleCustomersData?.meta.current_page || 1,
-                                last_page: saleCustomersData?.meta.last_page || 1,
-                                total: saleCustomersData?.meta.total || 0,
-                                per_page: saleCustomersData?.meta.per_page || 10,
-                            }
-                        }
+                        options={saleCustomersData?.data || []}
+                        optionTag="nombre"
+                        placeholder={isSaleCustomersLoading ? 'Cargando clientes...' : 'Seleccione un cliente'}
+                        disabled={isSaleCustomersLoading}
                     />
                 </div>
                 <div className="space-y-2">
