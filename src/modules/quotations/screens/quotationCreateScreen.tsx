@@ -28,12 +28,12 @@ import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parse } from "date-fns";
 import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
 import { useDebounce } from "use-debounce";
-import ProductDetailTable from "../components/productDetailTable";
+import ProductDetailTable, { type ProductDetailTableRef } from "../components/productDetailTable";
 import QuotationsSummary from "../components/quotationsSummary";
 import { useCreateQuotation } from "../hooks/useCreateQuotation";
 import { useQuotationPDF } from "../hooks/useQuotationPDF";
@@ -68,6 +68,8 @@ const QuotationCreateScreen = () => {
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+
+    const tableRef = useRef<ProductDetailTableRef>(null);
 
     const {
         data: pdfBlob,
@@ -332,15 +334,29 @@ const QuotationCreateScreen = () => {
         });
     }, [getValues, reset]);
 
-    const handleAddProductItem = useCallback((product: ProductGet) => {
+    // Función para agregar un solo producto
+    const handleAddProductItem = (product: ProductGet) => {
         addItemToCart(product);
-    }, [addItemToCart]);
+        setTimeout(() => {
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(product.id);
+        }, 100);
+    };
 
-    const handleAddMultipleProducts = useCallback((
-        products: Array<ProductGet & { quantity?: number }>
-    ) => {
-        return addMultipleItemsWithQuantity(products);
-    }, [addMultipleItemsWithQuantity]);
+    // Función para agregar múltiples productos
+    const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
+        addMultipleItemsWithQuantity(products);
+
+        setTimeout(() => {
+            // Enfocar el primer producto nuevo que se agregó
+            if (products.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            } else if (products.length > 0) {
+                // Si todos ya existían, enfocar el primero de la lista
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            }
+        }, 100);
+    };
 
     const onSubmit = useCallback((data: QuotationCreate) => {
         if (!validateBeforeSubmit()) {
@@ -912,6 +928,7 @@ const QuotationCreateScreen = () => {
                                                             </div>
                                                         ) :
                                                             <ProductDetailTable
+                                                                ref={tableRef}
                                                                 details={createdQuotationDetails}
                                                                 isReadOnly={isReadOnly}
                                                             />

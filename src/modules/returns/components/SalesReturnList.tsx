@@ -25,7 +25,10 @@ import { useSaleCustomers } from '@/modules/sales/hooks/useSaleCustomers';
 import { PaginatedCombobox } from '@/components/common/paginatedCombobox';
 import PopoverDatePicker from '@/components/common/PopoverDatePicker';
 
-type BaseWithId = { sale_id: number };
+type BaseWithId = {
+    sale_id: number;
+    almacen_out_id: number | null
+};
 
 interface SaleReturnListProps<T extends BaseWithId> {
     selectedSales: T[];
@@ -88,7 +91,7 @@ function SaleReturnList<T extends BaseWithId>({
     const isSaleSelected = useCallback(
         (saleId: number) => {
             const item = selectedSales.find(
-                s => (s.sale_id === saleId)
+                s => s.almacen_out_id === saleId
             );
 
             return {
@@ -298,7 +301,7 @@ function SaleReturnList<T extends BaseWithId>({
                 },
             },
         ],
-        [onSaleSelect, onlySelectWithStock]
+        [onSaleSelect, onlySelectWithStock, isSaleSelected]
     );
 
     const {

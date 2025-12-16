@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useDebounce } from "use-debounce"
 import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
@@ -30,7 +30,7 @@ import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers"
 import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities"
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles"
 import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes"
-import QuotationDetailsEditingTable from "../components/quotationDetailsEditingTable"
+import QuotationDetailsEditingTable, { type QuotationDetailsEditingTableRef } from "../components/quotationDetailsEditingTable"
 import QuotationEditSkeleton from "../components/quotationEditSkeleton"
 import QuotationsSummary from "../components/quotationsSummary"
 import { useQuotationGetById } from "../hooks/useQuotationGetById"
@@ -43,6 +43,7 @@ import type { SelectedItem } from "@/types/windowSelectedItems"
 import type { QuotationUpdate, QuotationUpdateDetail } from "../types/quotationUpdate.types"
 import { Badge } from "@/components/atoms/badge"
 import { useClienteVarios } from "../hooks/useClienteVarios"
+import type { ProductGet } from "@/modules/products/types/ProductGet"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -59,6 +60,8 @@ const QuotationEditScreen = () => {
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+
+    const tableRef = useRef<QuotationDetailsEditingTableRef>(null);
 
     const {
         data: pdfBlob,
@@ -146,7 +149,7 @@ const QuotationEditScreen = () => {
             descuento: detalle.descuento ?? 0,
             porcentaje_descuento: detalle.porcentaje_descuento ?? 0,
             nueva_marca: detalle.marca,
-            orden: index + 1,
+            orden: detalle.orden ?? (index + 1),
             id_detalle_cotizacion: detalle.id,
         }));
 
@@ -324,6 +327,30 @@ const QuotationEditScreen = () => {
         addMultipleItemsWithQuantity,
     } = useQuotationProductDetails({ formMethods });
 
+    // Función para agregar un solo producto
+    const handleAddProductItem = (product: ProductGet) => {
+        addProduct(product);
+        setTimeout(() => {
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(product.id);
+        }, 100);
+    };
+
+    // Función para agregar múltiples productos
+    const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
+        addMultipleItemsWithQuantity(products);
+
+        setTimeout(() => {
+            // Enfocar el primer producto nuevo que se agregó
+            if (products.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            } else if (products.length > 0) {
+                // Si todos ya existían, enfocar el primero de la lista
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            }
+        }, 100);
+    };
+
     const onSubmit = (data: QuotationUpdate) => {
         if (!validateBeforeSubmit()) return;
 
@@ -368,7 +395,7 @@ const QuotationEditScreen = () => {
         }
         const firstErrorKey = Object.keys(errors)[0] as keyof QuotationUpdate;
         const firstError = errors[firstErrorKey];
-
+console.log(errors)
         if (firstError?.message) {
             showErrorToast({
                 title: "Error en formulario",
@@ -401,8 +428,8 @@ const QuotationEditScreen = () => {
     const productWindow = useProductSelectorWindow({
         context: 'cotizacion',
         instanceId: 'update-quotation',
-        onProductSelect: addProduct,
-        onMultiSelect: addMultipleItemsWithQuantity,
+        onProductSelect: handleAddProductItem,
+        onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: false,
         multiSelect: true,
         mode: 'edit',
@@ -867,6 +894,8 @@ const QuotationEditScreen = () => {
                                                             </div>
                                                         ) :
                                                             <QuotationDetailsEditingTable
+                                                                ref={tableRef}
+                                                                isReadOnly={isReadOnly}
                                                                 products={detalles}
                                                                 removeItem={removeProduct}
                                                                 updatePrice={updatePrice}

@@ -19,20 +19,50 @@ type SaleDetailsEditingTableProps = {
     updateQuantity: (productId: number, quantity: number) => void
     updatePrice: (productId: number, price: number) => void
     updateCustomSubtotal: (productId: number, customSubtotal: number) => void
+    isReadOnly?: boolean
 };
 
-export const SaleDetailsEditingTable = forwardRef<
-    { focusFirstQuantityInput: () => void }, // tipo del ref
-    SaleDetailsEditingTableProps                     // tipo de props
->(({
+export interface SaleDetailsEditingTableRef {
+    focusFirstQuantityInput: () => void;
+    focusQuantityInputByProductId: (productId: number) => void;
+}
+
+function SaleDetailsEditingTableInner({
     products,
     removeItem,
     updateQuantity,
     updatePrice,
-    updateCustomSubtotal
-}, ref) => {
+    updateCustomSubtotal,
+    isReadOnly = false,
+}: SaleDetailsEditingTableProps, ref: React.Ref<SaleDetailsEditingTableRef>) {
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+    const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+
+    // Exponer métodos para enfocar inputs
+    useImperativeHandle(ref, () => ({
+        focusFirstQuantityInput: () => {
+            if (firstQuantityInputRef.current) {
+                firstQuantityInputRef.current.focus();
+                firstQuantityInputRef.current.select();
+            }
+        },
+        focusQuantityInputByProductId: (productId: number) => {
+            const input = quantityInputRefs.current.get(productId);
+            if (input) {
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 50);
+            } else {
+                // Fallback: si no encuentra el input específico, enfoca el primero
+                if (firstQuantityInputRef.current) {
+                    firstQuantityInputRef.current.focus();
+                    firstQuantityInputRef.current.select();
+                }
+            }
+        }
+    }), []);
 
     const handleDeleteSuccess = (_data: unknown, detailId: number) => {
         const deletedItem = products.find(p => p.id_detalle_venta === detailId);
@@ -80,16 +110,15 @@ export const SaleDetailsEditingTable = forwardRef<
         handleOpenDeleteAlert(item.id_detalle_venta ?? undefined)
     }
 
-    // Exponer método focusFirstQuantityInput
-    useImperativeHandle(ref, () => ({
-        focusFirstQuantityInput: () => {
-            if (firstQuantityInputRef.current) {
-                firstQuantityInputRef.current.focus();
-            }
-        }
-    }));
-
     const columns = useMemo<ColumnDef<SaleUpdateDetailUI>[]>(() => [
+        {
+            accessorKey: 'orden',
+            id: "orden",
+            header: "N°",
+            size: 30,
+            minSize: 20,
+            enableSorting: true,
+        },
         {
             accessorKey: "id_detalle_venta",
             header: "Cód.",
@@ -114,6 +143,13 @@ export const SaleDetailsEditingTable = forwardRef<
                     </div>
                 )
             },
+        },
+        {
+            accessorKey: 'id_producto',
+            id: "id_producto",
+            header: "Cód P.",
+            size: 40,
+            minSize: 20,
         },
         {
             accessorFn: row => row.producto.descripcion,
@@ -154,21 +190,30 @@ export const SaleDetailsEditingTable = forwardRef<
             header: "Cantidad",
             minSize: 110,
             cell: ({ getValue, row }) => {
-                const quantity = getValue<number>()
-                const product = row.original.producto
-                // Solo asignar el ref al primer row (rowIndex === 0)
+                const cantidad = getValue<number>();
+                const productId = row.original.id_producto
                 const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
                 return (
                     <EditableQuantity
-                        value={quantity}
+                        value={cantidad}
                         className="w-full"
                         buttonClassName="w-full"
-                        onSubmit={(value) => updateQuantity(product.id, value as number)}
+                        onSubmit={(value) => updateQuantity(productId, value as number)}
                         validate={(val) => {
                             const num = parseInt(val);
                             return !isNaN(num) && num > 0;
                         }}
-                        inputRef={refToAssign}
+                        inputRef={(el) => {
+                            if (refToAssign) {
+                                refToAssign.current = el;
+                            }
+                            if (el) {
+                                quantityInputRefs.current.set(productId, el);
+                            } else {
+                                quantityInputRefs.current.delete(productId);
+                            }
+                        }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -188,6 +233,7 @@ export const SaleDetailsEditingTable = forwardRef<
                         className="w-full"
                         buttonClassName="w-full"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -207,6 +253,7 @@ export const SaleDetailsEditingTable = forwardRef<
                         className="w-full"
                         inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -222,6 +269,7 @@ export const SaleDetailsEditingTable = forwardRef<
                 return (
                     <div className='flex items-center justify-center'>
                         <Button
+                            disabled={isReadOnly}
                             type="button"
                             variant="outline"
                             size="sm"
@@ -250,6 +298,14 @@ export const SaleDetailsEditingTable = forwardRef<
         columnResizeMode: "onChange",
         enableColumnResizing: true,
         enableRowSelection: true,
+        initialState: {
+            sorting: [
+                {
+                    id: 'orden',
+                    desc: false,
+                },
+            ],
+        },
     })
 
     return (
@@ -269,5 +325,13 @@ export const SaleDetailsEditingTable = forwardRef<
             />
         </>
     );
-});
-export default SaleDetailsEditingTable
+}
+
+// Exportar con forwardRef tipado correctamente
+const SaleDetailsEditingTable = forwardRef(SaleDetailsEditingTableInner) as React.ForwardRefExoticComponent<
+    SaleDetailsEditingTableProps & React.RefAttributes<SaleDetailsEditingTableRef>
+>;
+
+SaleDetailsEditingTable.displayName = 'SaleDetailsEditingTable';
+
+export default SaleDetailsEditingTable;

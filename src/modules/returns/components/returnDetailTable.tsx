@@ -130,6 +130,17 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
     const columns = useMemo<ColumnDef<T>[]>(() => {
         const baseColumns: ColumnDef<T>[] = [];
 
+        baseColumns.push(
+            {
+                accessorKey: 'orden',
+                id: "orden",
+                header: "N°",
+                size: 30,
+                minSize: 20,
+                enableSorting: true,
+            },
+        )
+
         // Columna de código/badge solo en modo edición
         if (isEditMode) {
             baseColumns.push({
@@ -160,17 +171,28 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
 
         baseColumns.push(
             {
+                accessorKey: 'almacen_out_id',
+                id: "almacen_out_id",
+                header: "Cód Ven.",
+                size: 50,
+                minSize: 20,
+                enableSorting: true,
+            },
+        )
+
+        baseColumns.push(
+            {
                 accessorKey: "almacen_out_det_id",
-                header: "Det. ID",
-                size: 60,
-                minSize: 40,
+                header: "Cód Det.",
+                size: 50,
+                minSize: 30,
             },
             {
                 accessorFn: row => row.product.descripcion,
                 id: "descripcion",
                 header: "Descripción",
-                size: 300,
-                minSize: 250,
+                size: 250,
+                minSize: 200,
                 enableHiding: false,
                 cell: ({ getValue }) => (
                     <span>{getValue<string>()}</span>
@@ -320,6 +342,14 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
         columnResizeMode: "onChange",
         enableColumnResizing: true,
         enableRowSelection: true,
+        initialState: {
+            sorting: [
+                {
+                    id: 'orden',
+                    desc: false,
+                },
+            ],
+        },
     });
 
     return (

@@ -1,4 +1,4 @@
-import { moneySchema, requiredMoneySchema } from "@/modules/shared/schemas/numberSchemas";
+import { moneySchema, requiredMoneySchema, toNumber, toNumberOrNull } from "@/modules/shared/schemas/numberSchemas";
 import z from "zod";
 
 const ResponsableSchema = z.object({
@@ -18,7 +18,7 @@ export const ReturnDetailGetByIdSchema = z.object({
     comentario: z.string().nullable(),
     almacen_out_dev_id: z.number().int().positive(),
     almacen_out_det_id: z.number().int().positive(),
-    orden: z.number().nullable(),
+    orden: toNumberOrNull,
     id_venta: z.number().nullable(),
     producto: z.string().nullable(),
 })
@@ -32,6 +32,6 @@ export const ReturnByIdSchema = z.object({
     comprobante: z.string().nullable(),
     comentarios: z.string().nullable(),
     responsable: ResponsableSchema.nullable(),
-    cantidad_detalles: z.number(),
+    cantidad_detalles: toNumber,
     detalles: z.array(ReturnDetailGetByIdSchema)
 });

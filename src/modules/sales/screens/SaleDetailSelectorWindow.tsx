@@ -13,16 +13,32 @@ import SelectSalesReturnModal from '@/modules/returns/components/SelectSalesRetu
 import ReturnDetailTable, { type ReturnDetailTableRef } from '@/modules/returns/components/returnDetailTable';
 import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
 import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
+import type { UIReturnDetailUpdate } from '@/modules/returns/types/returnUpdate.types';
 
 interface WindowConfig {
     windowId: string;
     context: string;
     mode: 'create' | 'edit';
-    selectedItems: UIReturnDetailCreate[];
+    selectedItems: (UIReturnDetailCreate | UIReturnDetailUpdate)[];
 }
 
-interface SelectedItemWithSale extends UIReturnDetailCreate {
+interface SelectedItemWithSale {
+    almacen_out_det_id: number;
+    cantidad: number;
+    precio: number;
+    comentario: string;
+    orden: number;
+    almacen_out_id: number; 
     sale_id: number;
+    product: {
+        id: number;
+        descripcion: string;
+        codigo_oem: string | null;
+        codigo_upc: string | null;
+        precio_venta: number;
+    };
+    maxQuantity: number;
+    almacen_out_dev_det_id?: number | null; // Para modo edición
 }
 
 const SaleDetailSelectorWindow = () => {
@@ -32,7 +48,7 @@ const SaleDetailSelectorWindow = () => {
     const config: WindowConfig = useMemo(() => {
         const params = new URLSearchParams(window.location.search);
         const selectedItemsParam = params.get('selectedItems');
-        let selectedItems: UIReturnDetailCreate[] = [];
+        let selectedItems: (UIReturnDetailCreate | UIReturnDetailUpdate)[] = [];
 
         if (selectedItemsParam) {
             try {
@@ -57,17 +73,45 @@ const SaleDetailSelectorWindow = () => {
     // Estado inicial para detectar cambios
     const [initialItems, setInitialItems] = useState<SelectedItemWithSale[]>([]);
 
+    /**
+     * Reordenar items secuencialmente desde 1
+     */
+    const reorderItems = useCallback((items: SelectedItemWithSale[]): SelectedItemWithSale[] => {
+        return items.map((item, index) => ({
+            ...item,
+            orden: index + 1
+        }));
+    }, []);
+
     // Inicializar items desde config
     useEffect(() => {
         if (config.selectedItems.length > 0) {
-            const itemsWithSaleId = config.selectedItems.map(item => ({
-                ...item,
-                sale_id: (item as any).sale_id || 0
-            }));
-            setSelectedItems(itemsWithSaleId);
-            setInitialItems(itemsWithSaleId);
+            const itemsWithSaleId: SelectedItemWithSale[] = config.selectedItems.map(item => {
+                const almacenOutId = item.almacen_out_id ?? 0;
+                const saleId = ('sale_id' in item ? (item as any).sale_id : null) ?? almacenOutId;
+
+                return {
+                    almacen_out_det_id: item.almacen_out_det_id,
+                    cantidad: item.cantidad,
+                    precio: item.precio,
+                    comentario: item.comentario ?? '',
+                    orden: item.orden,
+                    almacen_out_id: almacenOutId || saleId,
+                    sale_id: saleId || almacenOutId,
+                    product: item.product,
+                    maxQuantity: item.maxQuantity,
+                    // Solo incluir almacen_out_dev_det_id si existe (modo edición)
+                    ...('almacen_out_dev_det_id' in item && {
+                        almacen_out_dev_det_id: (item as any).almacen_out_dev_det_id
+                    })
+                };
+            });
+
+            const orderedItems = reorderItems(itemsWithSaleId);
+            setSelectedItems(orderedItems);
+            setInitialItems(orderedItems);
         }
-    }, [config.selectedItems]);
+    }, [config.selectedItems, reorderItems]);
 
     const handleSelectSale = useCallback((sale: SaleGetAll) => {
         setSelectedSale(sale);
@@ -88,7 +132,7 @@ const SaleDetailSelectorWindow = () => {
         }
 
         setSelectedItems(prev => {
-            const newItems = [...prev];
+            let newItems = [...prev];
 
             changes.forEach(change => {
                 const existingIndex = newItems.findIndex(
@@ -110,22 +154,28 @@ const SaleDetailSelectorWindow = () => {
                         cantidad: change.cantidad,
                         precio: change.precio,
                         comentario: change.comentario || newItems[existingIndex].comentario,
-                        maxQuantity: change.maxQuantity, // Actualizar maxQuantity
+                        maxQuantity: change.maxQuantity,
                     };
                 } else {
-                    newItems.push({
+                    // 🔥 Nuevo item con tipos correctos
+                    const newItem: SelectedItemWithSale = {
                         almacen_out_det_id: change.almacen_out_det_id,
                         cantidad: change.cantidad,
                         precio: change.precio,
                         comentario: change.comentario || '',
+                        orden: newItems.length + 1,
+                        almacen_out_id: change.sale_id,
                         sale_id: change.sale_id,
                         product: change.product,
-                        maxQuantity: change.maxQuantity // Incluir maxQuantity
-                    });
+                        maxQuantity: change.maxQuantity,
+                        almacen_out_dev_det_id: null, // Para modo edición
+                    };
+                    newItems.push(newItem);
                 }
             });
 
-            return newItems;
+            // Reordenar después de aplicar cambios
+            return reorderItems(newItems);
         });
 
         setIsDialogOpen(false);
@@ -133,15 +183,15 @@ const SaleDetailSelectorWindow = () => {
 
         // Enfocar el primer input después del cambio
         setTimeout(() => {
-            tableRef.current?.focusFirstQuantityInput();
+            tableRef.current?.focusQuantityInputByProductId(changes[0].almacen_out_det_id);
         }, 100);
-    }, []);
+    }, [reorderItems]);
 
     const handleUpdateCantidad = useCallback((id_detalle: number, cantidad: number) => {
         setSelectedItems(prev =>
             prev.map(item => {
                 if (item.almacen_out_det_id !== id_detalle) return item;
-                
+
                 // Validar contra maxQuantity
                 if (cantidad > item.maxQuantity) {
                     showErrorToast({
@@ -151,7 +201,7 @@ const SaleDetailSelectorWindow = () => {
                     });
                     return item; // Mantener valor anterior
                 }
-                
+
                 return { ...item, cantidad };
             })
         );
@@ -178,8 +228,12 @@ const SaleDetailSelectorWindow = () => {
     }, []);
 
     const handleRemoveProduct = useCallback((id_detalle: number) => {
-        setSelectedItems(prev => prev.filter(item => item.almacen_out_det_id !== id_detalle));
-    }, []);
+        setSelectedItems(prev => {
+            const filtered = prev.filter(item => item.almacen_out_det_id !== id_detalle);
+            // Reordenar después de eliminar
+            return reorderItems(filtered);
+        });
+    }, [reorderItems]);
 
     const handleConfirmSelection = useCallback(async () => {
         // Detectar solo los cambios reales
@@ -203,10 +257,10 @@ const SaleDetailSelectorWindow = () => {
                     cantidad: item.cantidad,
                     precio: item.precio,
                     comentario: item.comentario || '',
-                    sale_id: item.sale_id,
+                    sale_id: item.sale_id, // Usar sale_id directamente
                     product: item.product,
                     isNew,
-                    maxQuantity: item.maxQuantity // Incluir maxQuantity
+                    maxQuantity: item.maxQuantity
                 });
             }
         });
@@ -220,10 +274,10 @@ const SaleDetailSelectorWindow = () => {
                     cantidad: 0, // Indica eliminación
                     precio: initialItem.precio,
                     comentario: '',
-                    sale_id: initialItem.sale_id,
+                    sale_id: initialItem.sale_id, // Usar sale_id directamente
                     product: initialItem.product,
                     isNew: false,
-                    maxQuantity: initialItem.maxQuantity // Incluir maxQuantity
+                    maxQuantity: initialItem.maxQuantity
                 });
             }
         });
