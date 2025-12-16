@@ -26,7 +26,7 @@ const ConfigCard: React.FC<ConfigCardProps> = ({
     return (
         <Card
             className={cn(
-                "cursor-pointer transition-color duration-200 bg-white hover:bg-gray-50 flex flex-col justify-between",
+                "cursor-pointer transition-color duration-200 bg-card hover:bg-gray-50 flex flex-col justify-between",
             )}
             onClick={onView}
         >

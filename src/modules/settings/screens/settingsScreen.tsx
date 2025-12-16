@@ -32,6 +32,7 @@ import { SettingsNavigation } from '../components/settings/SettingsNavigation';
 import SystemSettings from '../components/settings/SystemSettings';
 import UpdateSettings from '../components/settings/UpdateSettings';
 import ViewSettings from '../components/settings/ViewSettings';
+import { cn } from '@/lib/utils';
 
 export type SettingsSection = {
   id: string;
@@ -39,6 +40,7 @@ export type SettingsSection = {
   icon: React.ComponentType<{ className?: string }>;
   description: string;
   component: React.ComponentType;
+  stickyHeader?: boolean;
 };
 
 const settingsSections: SettingsSection[] = [
@@ -48,6 +50,7 @@ const settingsSections: SettingsSection[] = [
     icon: Database,
     description: 'Gestiona los datos maestros del sistema',
     component: MasterDataSettings,
+    stickyHeader: false,
   },
   {
     id: 'views',
@@ -55,6 +58,7 @@ const settingsSections: SettingsSection[] = [
     icon: Eye,
     description: 'Personaliza la funcionalidad de cada vista',
     component: ViewSettings,
+    stickyHeader: true,
   },
   {
     id: 'appearance',
@@ -62,6 +66,7 @@ const settingsSections: SettingsSection[] = [
     icon: Palette,
     description: 'Personaliza el tema y colores',
     component: AppearanceSettings,
+    stickyHeader: false,
   },
   {
     id: 'keybindings',
@@ -69,6 +74,7 @@ const settingsSections: SettingsSection[] = [
     icon: Keyboard,
     description: 'Personaliza los atajos de teclado',
     component: KeybindingsSettings,
+    stickyHeader: false,
   },
   {
     id: 'system',
@@ -76,6 +82,7 @@ const settingsSections: SettingsSection[] = [
     icon: SettingsIcon,
     description: 'Configuraciones de cuenta y sistema',
     component: SystemSettings,
+    stickyHeader: false,
   },
   {
     id: 'backups',
@@ -83,6 +90,7 @@ const settingsSections: SettingsSection[] = [
     icon: HardDrive,
     description: 'Gestiona copias de seguridad',
     component: BackupSettings,
+    stickyHeader: false,
   },
   {
     id: 'integrations',
@@ -90,6 +98,7 @@ const settingsSections: SettingsSection[] = [
     icon: Link,
     description: 'APIs y conexiones externas',
     component: IntegrationSettings,
+    stickyHeader: false,
   },
   {
     id: 'security',
@@ -97,6 +106,7 @@ const settingsSections: SettingsSection[] = [
     icon: Shield,
     description: 'Permisos y control de acceso',
     component: SecuritySettings,
+    stickyHeader: false,
   },
   {
     id: 'notifications',
@@ -104,6 +114,7 @@ const settingsSections: SettingsSection[] = [
     icon: Bell,
     description: 'Alertas y notificaciones',
     component: NotificationSettings,
+    stickyHeader: false,
   },
   {
     id: 'advanced',
@@ -111,6 +122,7 @@ const settingsSections: SettingsSection[] = [
     icon: Code,
     description: 'Configuraciones avanzadas',
     component: AdvancedSettings,
+    stickyHeader: false,
   },
   {
     id: 'updates',
@@ -118,6 +130,7 @@ const settingsSections: SettingsSection[] = [
     icon: RefreshCw,
     description: 'Gestiona las actualizaciones de la aplicación',
     component: UpdateSettings,
+    stickyHeader: false,
   },
 ];
 
@@ -178,18 +191,26 @@ const SettingsScreen = () => {
 
           {/* Current Section Content */}
           <Card className="shadow-none min-h-0 flex-1 overflow-auto bg-transparent border-none">
-            <CardHeader className='space-y-0.5 px-0 pt-0'>
-              <CardTitle className="flex items-center gap-2 text-base">
-                {currentSection && <currentSection.icon className="size-4" />}
-                {currentSection?.label}
-              </CardTitle>
-              <CardDescription className="text-xs">
-                {currentSection?.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='p-0'>
-              <CurrentComponent />
-            </CardContent>
+            <div className='h-full flex flex-col'>
+              <CardHeader className={cn(
+                'space-y-0.5 px-0 pt-0',
+                currentSection?.stickyHeader && 'flex-shrink-0'
+              )}>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  {currentSection && <currentSection.icon className="size-4" />}
+                  {currentSection?.label}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {currentSection?.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className={cn(
+                'p-0',
+                currentSection?.stickyHeader && 'flex-1 min-h-0 overflow-auto'
+              )}>
+                <CurrentComponent />
+              </CardContent>
+            </div>
           </Card>
         </div>
       </div>

@@ -4,6 +4,7 @@ import ProductEditScreen from "@/modules/products/screens/ProductEditScreen";
 import ProductListScreen from "@/modules/products/screens/ProductListScreen";
 import { BoxIcon, Package, Table2Icon } from "lucide-react";
 import type RouteType from "./RouteType";
+import { productsListViewConfig } from "@/modules/products/config/product.config";
 
 const productosProtectedRoutes: RouteType[] = [
   {
@@ -35,7 +36,8 @@ const productosProtectedRoutes: RouteType[] = [
         role: ["admin"],
         icon: Table2Icon,
         isHeader: false,
-        showSidebar: true
+        showSidebar: true,
+        viewConfig: productsListViewConfig
       },
       {
         path: "/dashboard/productos/:productId",

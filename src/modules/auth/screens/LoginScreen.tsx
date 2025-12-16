@@ -138,18 +138,22 @@ const LoginScreen = ({
                       placeholder="Ingresa tu contraseña"
                       autoComplete="current-password"
                       data-form-type="password"
-                      className={`px-10 h-10 ${errors.clave ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}`}
+                      className={`pl-10 h-10 ${errors.clave ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}`}
                       disabled={isPending || isSubmitting}
                       {...register("clave")}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      disabled={isPending || isSubmitting}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    {
+                      2 < 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          disabled={isPending || isSubmitting}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      )
+                    }
                   </div>
                   {errors.clave && (
                     <p className="text-xs text-red-600 flex items-center gap-1">
