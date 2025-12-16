@@ -51,9 +51,11 @@ import { useProductFilters } from "../hooks/useProductFilters"
 import { useProductSelection } from "../hooks/useProductSelection"
 import type { ProductGet } from "../types/ProductGet"
 import { useCustomTable } from "@/hooks/useCustomTable"
+import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tableShoppingCart"
 
 const ProductListScreen = () => {
     const tableRef = useRef<HTMLTableElement>(null)
+    const tableShoppingCartRef = useRef<TableShoppingCartRef>(null);
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
@@ -227,6 +229,11 @@ const ProductListScreen = () => {
                 setModalOpen(false);
                 setSelectedProductId(null);
             }
+
+            setTimeout(() => {
+                // Enfocar el input del producto agregado
+                tableShoppingCartRef.current?.focusQuantityInputByProductId(product.id);
+            }, 100);
         },
         [addItemToCart, modalOpen, getBehaviorValue]
     );
@@ -258,6 +265,14 @@ const ProductListScreen = () => {
 
         try {
             addMultipleItems(selectedProducts);
+
+            setTimeout(() => {
+                // Enfocar el primer producto nuevo que se agregó
+                if (selectedProducts.length > 0) {
+                    tableShoppingCartRef.current?.focusQuantityInputByProductId(selectedProducts[0].id);
+                }
+            }, 100);
+
             clearAllSelections();
         } catch (error) {
             showErrorToast({
@@ -670,6 +685,9 @@ const ProductListScreen = () => {
     const handleRowDoubleClick = (product: ProductGet) => {
         if (isFeatureEnabled('addToCart')) {
             addItemToCart(product);
+            setTimeout(() => {
+                tableShoppingCartRef.current?.focusQuantityInputByProductId(product.id);
+            }, 100);
         }
     };
 
@@ -720,7 +738,7 @@ const ProductListScreen = () => {
         'enter',
         (e) => {
             e.preventDefault();
-            if (modalOpen && selectedProductId && isFeatureEnabled('allowAddToCartFromModal')) {
+            if (modalOpen && selectedProductId) {
                 const product = products.find(p => p.id === Number(selectedProductId));
                 if (product) {
                     handleAddItemCart(product);
@@ -732,7 +750,7 @@ const ProductListScreen = () => {
         {
             enableOnFormTags: false,
             preventDefault: true,
-            enabled: modalOpen && isFeatureEnabled('allowAddToCartFromModal'),
+            enabled: modalOpen,
         },
         [modalOpen, selectedProductId, handleAddItemCart, isFeatureEnabled]
     );
@@ -1033,11 +1051,19 @@ const ProductListScreen = () => {
                     </div>
                 </ResizablePanel>
 
-                <ResizableHandle withHandle />
+                {
+                    isFeatureEnabled('bottomShoppingCartPanel') && (
+                        <>
+                            <ResizableHandle withHandle />
 
-                <ResizablePanel defaultSize={50}>
-                    <BottomShoppingCartBar callback={() => setIsFocusedTable(false)} />
-                </ResizablePanel>
+                            <ResizablePanel defaultSize={50}>
+                                <BottomShoppingCartBar
+                                    tableRef={tableShoppingCartRef}
+                                    callback={() => setIsFocusedTable(false)} />
+                            </ResizablePanel>
+                        </>
+                    )
+                }
             </ResizablePanelGroup>
 
             {/* Modales */}
@@ -1057,6 +1083,7 @@ const ProductListScreen = () => {
                     productId={Number(selectedProductId)}
                     open={modalOpen}
                     onOpenChange={setModalOpen}
+                    tableRef={tableShoppingCartRef}
                 />
             )}
 

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useDebounce } from "use-debounce"
 import { useSaleTypes } from "../hooks/useSaleTypes"
 import { useSaleModalities } from "../hooks/useSaleModalities"
@@ -23,7 +23,7 @@ import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { parse } from "date-fns"
 import { useHotkeys } from "react-hotkeys-hook"
-import SaleDetailsEditingTable from "../components/saleEdit/saleDetailsEditingTable"
+import SaleDetailsEditingTable, { type SaleDetailsEditingTableRef } from "../components/saleEdit/saleDetailsEditingTable"
 import { SaleUpdateFormSchema, SaleUpdateSchema } from "../schemas/saleUpdate.schema"
 import useSaleProductDetailsWithForm from "../hooks/useSaleProductDetails"
 import { useUpdateSale } from "../hooks/useUpdateSale"
@@ -56,6 +56,8 @@ const SaleEditScreen = () => {
     const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [originalDetails, setOriginalDetails] = useState<SaleUpdateDetailUI[]>([]);
+
+    const tableRef = useRef<SaleDetailsEditingTableRef>(null);
 
     const {
         data: saleTypesData,
@@ -126,13 +128,14 @@ const SaleEditScreen = () => {
 
     const loadFormData = (sale: SaleGetById) => {
         const detallesTransformados: SaleUpdateDetailUI[] =
-            (sale.detalles ?? []).map((d) => ({
+            (sale.detalles ?? []).map((d, index) => ({
                 cantidad: d.cantidad,
                 descuento: d.descuento,
                 id_detalle_venta: d.id,
                 id_producto: d.producto.id,
                 porcentaje_descuento: d.porcentaje_descuento,
                 precio: d.precio,
+                orden: d.orden ?? (index + 1),
                 producto: {
                     id: d.producto.id,
                     categoria: d.producto.categoria?.categoria ?? null,
@@ -311,11 +314,29 @@ const SaleEditScreen = () => {
         originalDetails
     });
 
-    const handleAddMultipleProducts = useCallback((
-        products: Array<ProductGet & { quantity?: number }>
-    ) => {
-        return addMultipleItemsWithQuantity(products);
-    }, [addMultipleItemsWithQuantity]);
+    // Función para agregar un solo producto
+    const handleAddProductItem = (product: ProductGet) => {
+        addProduct(product);
+        setTimeout(() => {
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(product.id);
+        }, 100);
+    };
+
+    // Función para agregar múltiples productos
+    const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
+        addMultipleItemsWithQuantity(products);
+
+        setTimeout(() => {
+            // Enfocar el primer producto nuevo que se agregó
+            if (products.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            } else if (products.length > 0) {
+                // Si todos ya existían, enfocar el primero de la lista
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            }
+        }, 100);
+    };
 
     const onSubmit = (data: SaleUpdate) => {
         if (!validateBeforeSubmit()) return;
@@ -388,7 +409,7 @@ const SaleEditScreen = () => {
     const productWindow = useProductSelectorWindow({
         context: 'venta',
         instanceId: 'update-sale',
-        onProductSelect: addProduct,
+        onProductSelect: handleAddProductItem,
         onMultiSelect: handleAddMultipleProducts,
         onlyWithStock: true,
         multiSelect: true,
@@ -769,6 +790,8 @@ const SaleEditScreen = () => {
                                                             </div>
                                                         ) :
                                                             <SaleDetailsEditingTable
+                                                                ref={tableRef}
+                                                                isReadOnly={isReadOnly}
                                                                 products={detalles}
                                                                 removeItem={removeProduct}
                                                                 updatePrice={updatePrice}

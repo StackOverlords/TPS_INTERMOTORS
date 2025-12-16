@@ -6,22 +6,22 @@ import { Label } from '@/components/atoms/label';
 import { EditablePercentage } from './EditablePercentage';
 import { EditablePrice } from './editablePrice';
 import { useNavigate } from 'react-router';
-import TableShoppingCart from './tableShoppingCart';
+import TableShoppingCart, { type TableShoppingCartRef } from './tableShoppingCart';
 import ShortcutKey from '@/components/common/ShortcutKey';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useRef } from 'react';
 import { formatCurrency } from '@/utils/formaters';
 import { Badge } from '@/components/atoms/badge';
 import { CartActionBar } from './CartActionBar';
 
 interface ShoppingCartProps {
     callback?: () => void;
+    tableRef: React.RefObject<TableShoppingCartRef | null>
 }
 
 const BottomShoppingCartBar: React.FC<ShoppingCartProps> = ({
-    callback
+    callback,
+    tableRef,
 }) => {
-    const tableRef = useRef<{ focusFirstQuantityInput: () => void }>(null);
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const navigate = useNavigate()

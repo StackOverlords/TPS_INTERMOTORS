@@ -63,7 +63,7 @@ export const quotationService = {
 
         const response = await ApiService.get(
             QUOTATION_ENDPOINTS.byId(id),
-            undefined, // QuotationGetByIdSchema - Temporalmente deshabilitado
+            QuotationGetByIdSchema, // QuotationGetByIdSchema - Temporalmente deshabilitado
             undefined,
             { unwrapData: true }
         );

@@ -21,12 +21,15 @@ type QuotationDetailsEditingTableProps = {
     updateCustomSubtotal: (productId: number, customSubtotal: number) => void
     updateDescription: (productId: number, description: string) => void;
     updateBrand: (productId: number, brand: string) => void;
+    isReadOnly?: boolean
 };
 
-export const QuotationDetailsEditingTable = forwardRef<
-    { focusFirstQuantityInput: () => void },
-    QuotationDetailsEditingTableProps
->(({
+export interface QuotationDetailsEditingTableRef {
+    focusFirstQuantityInput: () => void;
+    focusQuantityInputByProductId: (productId: number) => void;
+}
+
+function QuotationDetailsEditingTableInner({
     products,
     removeItem,
     updateQuantity,
@@ -34,9 +37,36 @@ export const QuotationDetailsEditingTable = forwardRef<
     updateCustomSubtotal,
     updateBrand,
     updateDescription,
-}, ref) => {
+    isReadOnly = false,
+}: QuotationDetailsEditingTableProps, ref: React.Ref<QuotationDetailsEditingTableRef>) {
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+    const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+
+    // Exponer métodos para enfocar inputs
+    useImperativeHandle(ref, () => ({
+        focusFirstQuantityInput: () => {
+            if (firstQuantityInputRef.current) {
+                firstQuantityInputRef.current.focus();
+                firstQuantityInputRef.current.select();
+            }
+        },
+        focusQuantityInputByProductId: (productId: number) => {
+            const input = quantityInputRefs.current.get(productId);
+            if (input) {
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 50);
+            } else {
+                // Fallback: si no encuentra el input específico, enfoca el primero
+                if (firstQuantityInputRef.current) {
+                    firstQuantityInputRef.current.focus();
+                    firstQuantityInputRef.current.select();
+                }
+            }
+        }
+    }), []);
 
     const handleDeleteSuccess = (_data: unknown, detailId: number) => {
         const deletedItem = products.find(p => p.id_detalle_cotizacion === detailId);
@@ -84,20 +114,14 @@ export const QuotationDetailsEditingTable = forwardRef<
         handleOpenDeleteAlert(item.id_detalle_cotizacion ?? undefined)
     }
 
-    // Exponer método focusFirstQuantityInput
-    useImperativeHandle(ref, () => ({
-        focusFirstQuantityInput: () => {
-            if (firstQuantityInputRef.current) {
-                firstQuantityInputRef.current.focus();
-            }
-        }
-    }));
-
     const columns = useMemo<ColumnDef<QuotationUpdateDetail>[]>(() => [
         {
-            accessorKey: "orden",
-            header: "#",
-            size: 25,
+            accessorKey: 'orden',
+            id: "orden",
+            header: "N°",
+            size: 30,
+            minSize: 20,
+            enableSorting: true,
         },
         {
             accessorKey: "id_detalle_cotizacion",
@@ -125,6 +149,13 @@ export const QuotationDetailsEditingTable = forwardRef<
             },
         },
         {
+            accessorKey: 'id_producto',
+            id: "id_producto",
+            header: "Cód P.",
+            size: 40,
+            minSize: 20,
+        },
+        {
             accessorKey: "descripcion",
             id: "descripcion",
             header: "Descripcion",
@@ -143,6 +174,7 @@ export const QuotationDetailsEditingTable = forwardRef<
                             onChange={(e) => updateDescription(item.id_producto, e.target.value)}
                             ref={refToAssign}
                             autoSelectOnFocus={true}
+                            disabled={isReadOnly}
                         />
                     </div>
                 )
@@ -160,27 +192,41 @@ export const QuotationDetailsEditingTable = forwardRef<
                         value={brand}
                         onChange={(e) => updateBrand(item.id_producto, e.target.value)}
                         autoSelectOnFocus={true}
+                        disabled={isReadOnly}
                     />
                 )
             },
         },
         {
             accessorKey: "cantidad",
+            id: 'cantidad',
             header: "Cantidad",
             minSize: 110,
             cell: ({ getValue, row }) => {
-                const quantity = getValue<number>()
-                const item = row.original
+                const cantidad = getValue<number>();
+                const productId = row.original.id_producto
+                const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
                 return (
                     <EditableQuantity
-                        value={quantity}
+                        value={cantidad}
                         className="w-full"
                         buttonClassName="w-full"
-                        onSubmit={(value) => updateQuantity(item.id_producto, value as number)}
+                        onSubmit={(value) => updateQuantity(productId, value as number)}
                         validate={(val) => {
                             const num = parseInt(val);
                             return !isNaN(num) && num > 0;
                         }}
+                        inputRef={(el) => {
+                            if (refToAssign) {
+                                refToAssign.current = el;
+                            }
+                            if (el) {
+                                quantityInputRefs.current.set(productId, el);
+                            } else {
+                                quantityInputRefs.current.delete(productId);
+                            }
+                        }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -199,6 +245,7 @@ export const QuotationDetailsEditingTable = forwardRef<
                         className="w-full"
                         buttonClassName="w-full"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -217,6 +264,7 @@ export const QuotationDetailsEditingTable = forwardRef<
                         className="w-full"
                         inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
                     />
                 )
             },
@@ -237,6 +285,7 @@ export const QuotationDetailsEditingTable = forwardRef<
                             size="sm"
                             onClick={() => isNew ? removeItem(item.id_producto) : handleRemoveItem(item)}
                             className="text-red-500 hover:text-red-500 size-7 cursor-pointer"
+                            disabled={isReadOnly}
                         >
                             {
                                 isNew ? (
@@ -260,6 +309,14 @@ export const QuotationDetailsEditingTable = forwardRef<
         columnResizeMode: "onChange",
         enableColumnResizing: true,
         enableRowSelection: true,
+        initialState: {
+            sorting: [
+                {
+                    id: 'orden',
+                    desc: false,
+                },
+            ],
+        },
     })
 
     return (
@@ -279,5 +336,13 @@ export const QuotationDetailsEditingTable = forwardRef<
             />
         </>
     );
-});
-export default QuotationDetailsEditingTable
+}
+
+// Exportar con forwardRef tipado correctamente
+const QuotationDetailsEditingTable = forwardRef(QuotationDetailsEditingTableInner) as React.ForwardRefExoticComponent<
+    QuotationDetailsEditingTableProps & React.RefAttributes<QuotationDetailsEditingTableRef>
+>;
+
+QuotationDetailsEditingTable.displayName = 'QuotationDetailsEditingTable';
+
+export default QuotationDetailsEditingTable;

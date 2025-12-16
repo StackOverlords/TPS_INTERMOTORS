@@ -11,14 +11,14 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
-import TableShoppingCart from "@/modules/shoppingCart/components/tableShoppingCart";
+import TableShoppingCart, { type TableShoppingCartRef } from "@/modules/shoppingCart/components/tableShoppingCart";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parse } from "date-fns";
 import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
@@ -67,6 +67,8 @@ const CreateSaleScreen = () => {
     const [showModeConversionModal, setShowModeConversionModal] = useState(false);
     const [targetModeForModal, setTargetModeForModal] = useState<CartMode>('sale-strict');
     const [lastProcessedMode, setLastProcessedMode] = useState<CartMode | null>(null);
+
+    const tableRef = useRef<TableShoppingCartRef>(null);
 
     const {
         data: saleTypesData,
@@ -215,12 +217,13 @@ const CreateSaleScreen = () => {
     const { tipo_venta, plazo_pago } = formValues;
 
     const detalles = useMemo((): SaleDetail[] => {
-        return items.map((item) => ({
+        return items.map((item, index) => ({
             id_producto: item.product.id,
             cantidad: item.quantity,
             precio: item.customPrice,
             descuento: ((item.customPrice ?? 0) * item.quantity) * ((discountPercent ?? 0) / 100),
             porcentaje_descuento: discountPercent ?? 0,
+            orden: index + 1
         }));
     }, [items, discountPercent]);
 
@@ -356,15 +359,29 @@ const CreateSaleScreen = () => {
         clearCart()
     }, [getValues, reset]);
 
-    const handleAddProductItem = useCallback((product: ProductGet) => {
+    // Función para agregar un solo producto
+    const handleAddProductItem = (product: ProductGet) => {
         addItemToCart(product);
-    }, [addItemToCart]);
+        setTimeout(() => {
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(product.id);
+        }, 100);
+    };
 
-    const handleAddMultipleProducts = useCallback((
-        products: Array<ProductGet & { quantity?: number }>
-    ) => {
-        return addMultipleItemsWithQuantity(products);
-    }, [addMultipleItemsWithQuantity]);
+    // Función para agregar múltiples productos
+    const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
+        addMultipleItemsWithQuantity(products);
+
+        setTimeout(() => {
+            // Enfocar el primer producto nuevo que se agregó
+            if (products.length > 0) {
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            } else if (products.length > 0) {
+                // Si todos ya existían, enfocar el primero de la lista
+                tableRef.current?.focusQuantityInputByProductId(products[0].id);
+            }
+        }, 100);
+    };
 
     // FUNCIÓN onSubmit corregida
     const onSubmit = (data: Sale) => {
@@ -869,6 +886,7 @@ const CreateSaleScreen = () => {
                                                             </div>
                                                         ) :
                                                             <TableShoppingCart
+                                                                ref={tableRef}
                                                                 isReadOnly={isReadOnly}
                                                                 details={createdSaleDetails}
                                                             />

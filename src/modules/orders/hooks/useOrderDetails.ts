@@ -50,7 +50,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
                 precio_venta,
                 inc_p_venta_alt: DEFAULT_INC_P_VENTA_ALT,
                 precio_venta_alt,
-                orden: prev.length,
+                orden: prev.length + 1,
                 product: {
                     id: product.id,
                     descripcion: product.descripcion,
@@ -122,7 +122,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
             });
 
             // Reordenar los índices
-            return newDetails.map((d, index) => ({ ...d, orden: index }));
+            return newDetails.map((d, index) => ({ ...d, orden: index + 1 }));
         });
 
         return addedProductIds;
@@ -133,7 +133,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
         setDetails((prev) => {
             const filtered = prev.filter((d) => d.id_producto !== id_producto);
             // Reordenar los índices
-            return filtered.map((d, index) => ({ ...d, orden: index }));
+            return filtered.map((d, index) => ({ ...d, orden: index + 1 }));
         });
     }, []);
 

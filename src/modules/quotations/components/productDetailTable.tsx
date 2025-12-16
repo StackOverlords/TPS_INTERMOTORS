@@ -17,23 +17,46 @@ interface ProductDetailTableProps {
     details: CartItem[] | null;
 }
 
-const ProductDetailTable = forwardRef(({
-    isReadOnly,
+export interface ProductDetailTableRef {
+    focusFirstQuantityInput: () => void;
+    focusQuantityInputByProductId: (productId: number) => void;
+}
+
+function ProductDetailTableInner({
+    isReadOnly = false,
     details
-}: ProductDetailTableProps, ref) => {
+}: ProductDetailTableProps, ref: React.Ref<ProductDetailTableRef>) {
+
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+    const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-    // Exponer método focusFirstQuantityInput
+    // Exponer métodos para enfocar inputs
     useImperativeHandle(ref, () => ({
         focusFirstQuantityInput: () => {
             if (firstQuantityInputRef.current) {
                 firstQuantityInputRef.current.focus();
+                firstQuantityInputRef.current.select();
+            }
+        },
+        focusQuantityInputByProductId: (productId: number) => {
+            const input = quantityInputRefs.current.get(productId);
+            if (input) {
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 50);
+            } else {
+                // Fallback: si no encuentra el input específico, enfoca el primero
+                if (firstQuantityInputRef.current) {
+                    firstQuantityInputRef.current.focus();
+                    firstQuantityInputRef.current.select();
+                }
             }
         }
-    }));
+    }), []);
 
     const {
         items: cart,
@@ -53,6 +76,27 @@ const ProductDetailTable = forwardRef(({
     }, [isReadOnly, details, cart]);
 
     const columns = useMemo<ColumnDef<CartItem>[]>(() => [
+        {
+            id: "orden",
+            header: "N°",
+            size: 30,
+            minSize: 20,
+            cell: ({ row }) => (
+                <span className="text-center block">
+                    {row.index + 1}
+                </span>
+            ),
+        },
+        {
+            accessorFn: row => row.product.id,
+            header: "Cód P.",
+            size: 45,
+            minSize: 30,
+            enableHiding: false,
+            cell: ({ getValue }) => (
+                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+            ),
+        },
         {
             accessorFn: row => row.product.codigo_oem,
             id: "codigo_oem",
@@ -108,18 +152,28 @@ const ProductDetailTable = forwardRef(({
             header: "Cantidad",
             minSize: 110,
             cell: ({ getValue, row }) => {
-                const quantity = getValue<number>()
-                const product = row.original.product
-
+                const cantidad = getValue<number>();
+                const productId = row.original.product.id;
+                const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
                 return (
                     <EditableQuantity
-                        value={quantity}
+                        value={cantidad}
                         className="w-full"
                         buttonClassName="w-full"
-                        onSubmit={(value) => updateQuantity(product.id, value as number)}
+                        onSubmit={(value) => updateQuantity(productId, value as number)}
                         validate={(val) => {
                             const num = parseInt(val);
                             return !isNaN(num) && num > 0;
+                        }}
+                        inputRef={(el) => {
+                            if (refToAssign) {
+                                refToAssign.current = el;
+                            }
+                            if (el) {
+                                quantityInputRefs.current.set(productId, el);
+                            } else {
+                                quantityInputRefs.current.delete(productId);
+                            }
                         }}
                         disabled={isReadOnly}
                     />
@@ -214,6 +268,14 @@ const ProductDetailTable = forwardRef(({
         columnResizeMode: "onChange",
         enableColumnResizing: true,
         enableRowSelection: true,
+        initialState: {
+            sorting: [
+                {
+                    id: 'orden',
+                    desc: false,
+                },
+            ],
+        },
     })
 
     return (
@@ -222,6 +284,13 @@ const ProductDetailTable = forwardRef(({
             isLoading={false}
         />
     );
-});
+}
 
-export default ProductDetailTable
+// Exportar con forwardRef tipado correctamente
+const ProductDetailTable = forwardRef(ProductDetailTableInner) as React.ForwardRefExoticComponent<
+    ProductDetailTableProps & React.RefAttributes<ProductDetailTableRef>
+>;
+
+ProductDetailTable.displayName = 'ProductDetailTable';
+
+export default ProductDetailTable;

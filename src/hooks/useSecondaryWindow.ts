@@ -29,6 +29,7 @@
 
 import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
 import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
+import type { UIReturnDetailUpdate } from '@/modules/returns/types/returnUpdate.types';
 import type { SelectedItem } from '@/types/windowSelectedItems';
 import {
   closeSecondaryWindow,
@@ -539,7 +540,7 @@ export interface UseSaleDetailSelectorWindowConfig {
   onChangesApplied?: (changes: ProductChange[]) => void;
   initialFilters?: Record<string, any>;
   mode?: 'create' | 'edit';
-  selectedItems?: UIReturnDetailCreate[];
+  selectedItems?: UIReturnDetailCreate[] | UIReturnDetailUpdate[];
 }
 
 // Array constante para evitar recreaciones

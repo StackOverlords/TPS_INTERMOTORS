@@ -744,7 +744,7 @@ const OrderCreateScreen = () => {
                                                     <TooltipButton
                                                         buttonProps={{
                                                             type: 'submit',
-                                                            disabled: isSaving,
+                                                            disabled: isSaving || isReadOnly,
                                                             variant: 'default',
                                                             className: "w-full"
                                                         }}
