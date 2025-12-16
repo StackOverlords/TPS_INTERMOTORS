@@ -2,13 +2,14 @@ import { Label } from "@/components/atoms/label";
 import type { useSalesFilters } from "../hooks/useSalesFilters";
 import { AlertCircle, Search, X } from "lucide-react";
 import { Input } from "@/components/atoms/input";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/atoms/button";
 import { format } from "date-fns";
 import { useSaleCustomers } from "../hooks/useSaleCustomers";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface SalesFiltersProps {
     filters: ReturnType<typeof useSalesFilters>["filters"]
@@ -91,10 +92,19 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
         updateFilter('fecha_inicio', undefined);
         updateFilter('fecha_fin', undefined);
     };
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]'
+        ],
+    })
 
     return (
         <section className="space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 {
                     isFeatureEnabled('saleNumberFilter') && (
                         <div className="space-y-2">
@@ -120,8 +130,10 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
                                 value={filters.cliente}
                                 onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
                                 options={saleCustomersData?.data || []}
-                                enableAllOption={true}
+                                enableAllOption={false}
                                 optionTag="nombre"
+                                allowClear={true}
+                                clearOnEmpty={true}
                             />
                         </div>
                     )

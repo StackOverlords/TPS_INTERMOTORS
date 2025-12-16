@@ -17,6 +17,7 @@ import { useDeleteSale } from "../hooks/useDeleteSale";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useViewConfig } from "@/hooks/useViewConfig";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const SalesListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -134,7 +135,17 @@ const SalesListScreen = () => {
     const toggleShowFilters = () => {
         setShowFilters(!showFilters);
     }
-
+    useFormEnterNavigation({
+        submitOnLastField: false,
+        excludeSelectors: [
+            '.no-enter-nav', 
+            '.columns-button', 
+            '.toggle-mode', 
+            '.reload-button',
+            '.switch-button'
+        ],
+        enabled: true,
+    })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
             <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">

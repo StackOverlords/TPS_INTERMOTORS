@@ -18,6 +18,7 @@ interface ComboboxSelectProps {
     className?: string
     optionTag: string // Requerido para evitar errores
     allowClear?: boolean // Nueva prop para permitir limpiar selección
+    clearOnEmpty?: boolean // Limpiar selección automáticamente cuando el texto se borra completamente
     disabled?: boolean
     error?: boolean
     enableAllOption?: boolean
@@ -27,6 +28,7 @@ interface ComboboxSelectProps {
     isSearching?: boolean // Estado de carga durante búsqueda
     searchDebounceMs?: number // Tiempo de debounce para la búsqueda (por defecto 300ms)
     enableExternalSearch?: boolean // Habilitar/deshabilitar búsqueda externa
+    name?: string // Nombre del input para formularios
 }
 
 export function ComboboxSelect({
@@ -37,6 +39,7 @@ export function ComboboxSelect({
     className,
     optionTag,
     allowClear = false,
+    clearOnEmpty = false,
     disabled = false,
     error = false,
     enableAllOption,
@@ -45,6 +48,8 @@ export function ComboboxSelect({
     isSearching = false,
     searchDebounceMs = 500,
     enableExternalSearch = false,
+    name,
+
 }: ComboboxSelectProps) {
     const internalValue = !value
         ? enableAllOption ? 'all' : ''
@@ -160,7 +165,16 @@ export function ComboboxSelect({
     }, [filteredOptions.length])
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(event.target.value)
+        const newQuery = event.target.value
+        setQuery(newQuery)
+
+        // Si clearOnEmpty está habilitado y el query está vacío, limpiar selección
+        if (clearOnEmpty && newQuery === '') {
+            onChange('')
+            if (enableExternalSearch && onSearch) {
+                onSearch('')
+            }
+        }
     }
 
     const handleClear = (e: React.MouseEvent) => {
@@ -206,6 +220,7 @@ export function ComboboxSelect({
                         <ComboboxButton className="w-full" disabled={disabled}>
                             <ComboboxInput
                                 ref={comboboxInputRef}
+                                name={name}
                                 placeholder={placeholder}
                                 className={cn(
                                     'flex h-8 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
@@ -223,7 +238,13 @@ export function ComboboxSelect({
                                     e.currentTarget.select()
                                 }}
                                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                    // Si presiona Enter y el dropdown está cerrado, avanzar al siguiente campo
+                                    // Solo manejar Enter cuando el dropdown está ABIERTO
+                                    // Cuando está cerrado, dejar que el hook global lo maneje
+                                    // if (e.key === 'Enter' && open) {
+                                    //     // Headless UI maneja la selección automáticamente
+                                    //     // No hacemos nada, solo dejamos que funcione normalmente
+                                    //     return;
+                                    // }
                                     if (e.key === 'Enter' && !open) {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -253,6 +274,9 @@ export function ComboboxSelect({
                                             }, 50);
                                         }
                                     }
+
+                                    // Si está cerrado, el evento se propagará naturalmente
+                                    // y el hook useFormEnterNavigation lo manejará
                                 }}
                                 autoComplete="off"
                             />
@@ -270,7 +294,7 @@ export function ComboboxSelect({
                         )}
 
                         {/* Ícono chevron o loading durante búsqueda */}
-                        <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2" disabled={disabled}>
+                        <ComboboxButton name='btn-chvron-right' className="absolute inset-y-0 right-0 flex items-center pr-2" disabled={disabled}>
                             {enableExternalSearch && isSearching ? (
                                 <Loader2 className="h-4 w-4 opacity-50 animate-spin" />
                             ) : (

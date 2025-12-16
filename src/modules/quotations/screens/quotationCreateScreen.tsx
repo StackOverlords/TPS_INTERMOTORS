@@ -10,7 +10,7 @@ import { Textarea } from "@/components/atoms/textarea";
 import { PDFViewer } from "@/components/common/PDFViewer";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -42,6 +42,7 @@ import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { useClienteVarios } from "../hooks/useClienteVarios";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -516,6 +517,16 @@ const QuotationCreateScreen = () => {
         handleSubmit(onSubmit, onError)();
     })
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]'
+        ],
+        enabled: true,
+    })
     return (
         <main className="p-2 h-full">
             <FormProvider {...methods}>
@@ -574,7 +585,7 @@ const QuotationCreateScreen = () => {
                         </div >
                     </header >
 
-                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                    <div ref={containerRef} className="gap-2 flex-1 min-h-screen md:min-h-0">
                         <div className={cn(
                             "h-full gap-2",
                             configuraciones.formulario === "top" && "flex flex-col",
@@ -624,6 +635,7 @@ const QuotationCreateScreen = () => {
                                                             }}
                                                             options={saleResponsiblesData || []}
                                                             optionTag={"nombre"}
+                                                            clearOnEmpty={true}
                                                             disabled={isReadOnly}
                                                         />
                                                     )}
@@ -768,24 +780,33 @@ const QuotationCreateScreen = () => {
                                                     name="id_cliente"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <PaginatedCombobox
+                                                        // <PaginatedCombobox
+                                                        //     value={field.value}
+                                                        //     onChange={(value) => field.onChange(Number(value))}
+                                                        //     optionsData={saleCustomersData?.data || []}
+                                                        //     displayField="nombre"
+                                                        //     isLoading={isSaleCustomersLoading}
+                                                        //     updatePage={(page) => { console.log("Update page:", page) }}
+                                                        //     updateSearch={setCustomerSearchTerm}
+                                                        //     disabled={isReadOnly}
+                                                        //     placeholder="Buscar cliente por nombre"
+                                                        //     metaData={
+                                                        //         {
+                                                        //             current_page: saleCustomersData?.meta.current_page || 1,
+                                                        //             last_page: saleCustomersData?.meta.last_page || 1,
+                                                        //             total: saleCustomersData?.meta.total || 0,
+                                                        //             per_page: saleCustomersData?.meta.per_page || 10,
+                                                        //         }
+                                                        //     }
+                                                        // />
+                                                        <ComboboxSelect
                                                             value={field.value}
                                                             onChange={(value) => field.onChange(Number(value))}
-                                                            optionsData={saleCustomersData?.data || []}
-                                                            displayField="nombre"
-                                                            isLoading={isSaleCustomersLoading}
-                                                            updatePage={(page) => { console.log("Update page:", page) }}
-                                                            updateSearch={setCustomerSearchTerm}
+                                                            options={saleCustomersData?.data || []}
+                                                            optionTag={"nombre"}
                                                             disabled={isReadOnly}
                                                             placeholder="Buscar cliente por nombre"
-                                                            metaData={
-                                                                {
-                                                                    current_page: saleCustomersData?.meta.current_page || 1,
-                                                                    last_page: saleCustomersData?.meta.last_page || 1,
-                                                                    total: saleCustomersData?.meta.total || 0,
-                                                                    per_page: saleCustomersData?.meta.per_page || 10,
-                                                                }
-                                                            }
+                                                            clearOnEmpty={true}
                                                         />
                                                     )}
                                                 />

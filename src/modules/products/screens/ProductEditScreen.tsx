@@ -367,7 +367,7 @@ const ProductEditScreen = () => {
                         </div>
 
                         {/* Subcategoría */}
-                        <div>
+                        {/* <div>
                             <Label>
                                 Subcategoría *
                             </Label>
@@ -390,6 +390,128 @@ const ProductEditScreen = () => {
                                 {errors.id_subcategoria && (
                                     <p className="text-xs text-red-500 truncate">
                                         {errors.id_subcategoria.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div> */}
+                        {/* Código OEM */}
+                        <div>
+                            <Label>
+                                Código OEM
+                            </Label>
+                            <Input
+                                {...register("codigo_oem")}
+                                placeholder="Código OEM"
+                            />
+                            <div className="mt-1">
+                                {errors.codigo_oem && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.codigo_oem.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        {/* Código UPC */}
+                        <div>
+                            <Label>
+                                Código UPC *
+                            </Label>
+                            <Controller
+                                name="codigo_upc"
+                                control={control}
+                                render={({ field }) => (
+                                    <Input
+                                        {...field}
+                                        placeholder="Código UPC"
+                                    />
+                                )}
+                            />
+                            <div className="mt-1">
+                                {errors.codigo_upc && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.codigo_upc.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        {/* Marca */}
+                        <div>
+                            <Label>Marca *</Label>
+                            <Controller
+                                name="id_marca"
+                                control={control}
+                                render={({ field }) => (
+                                    <ComboboxSelect
+                                        value={field.value}
+                                        onChange={(value) => field.onChange(Number(value))}
+                                        options={brandsData || []}
+                                        optionTag="marca"
+                                        placeholder="Seleccionar marca"
+                                        searchPlaceholder="Buscar marcas..."
+                                        className={getSelectClassName("id_marca")}
+                                    />
+                                )}
+                            />
+                            <div className="mt-1">
+                                {errors.id_marca && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.id_marca.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        {/* Procedencia */}
+                        <div>
+                            <Label>
+                                Procedencia *
+                            </Label>
+                            <Controller
+                                name="id_procedencia"
+                                control={control}
+                                render={({ field }) => (
+                                    <ComboboxSelect
+                                        value={field.value}
+                                        onChange={(value) => field.onChange(Number(value))}
+                                        options={originsData || []}
+                                        optionTag="procedencia"
+                                        placeholder="Seleccionar procedencia"
+                                        searchPlaceholder="Buscar procedencia..."
+                                        className={getSelectClassName("id_procedencia")}
+                                    />
+                                )}
+                            />
+                            <div className="mt-1">
+                                {errors.id_procedencia && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.id_procedencia.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        {/* Unidad */}
+                        <div>
+                            <Label>
+                                Unidad *
+                            </Label>
+                            <Controller
+                                name="id_unidad"
+                                control={control}
+                                render={({ field }) => (
+                                    <ComboboxSelect
+                                        value={field.value}
+                                        onChange={(value) => field.onChange(Number(value))}
+                                        options={measurementsData || []}
+                                        optionTag="unidad_medida"
+                                        placeholder="Seleccionar unidad"
+                                        searchPlaceholder="Buscar unidad..."
+                                        className={getSelectClassName("id_unidad")}
+                                    />
+                                )}
+                            />
+                            <div className="mt-1">
+                                {errors.id_unidad && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.id_unidad.message}
                                     </p>
                                 )}
                             </div>
@@ -424,35 +546,6 @@ const ProductEditScreen = () => {
                                 )}
                             </div>
                         </div>
-
-                        {/* P. Venta. Alt */}
-                        <div>
-                            <Label>
-                                P. Venta. Alt *
-                            </Label>
-                            <Controller
-                                name="precio_venta_alt"
-                                control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        type="number"
-                                        autoSelectOnFocus={true}
-                                        {...field}
-                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                        placeholder="0"
-                                        className={getInputClassName("precio_venta_alt")}
-                                    />
-                                )}
-                            />
-                            <div className="mt-1">
-                                {errors.precio_venta_alt && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.precio_venta_alt.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Stock mínimo */}
                         <div>
                             <Label>
@@ -481,41 +574,87 @@ const ProductEditScreen = () => {
                                 )}
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Especificaciones del Vehículo */}
-                <div className="p-3 bg-white border border-gray-200 rounded-lg">
-                    <h3 className="mb-3 text-sm font-semibold text-gray-900">
-                        Especificaciones del Vehículo
-                    </h3>
-                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                        {/* Marca */}
+                        {/* P. Venta. Alt */}
                         <div>
-                            <Label>Marca *</Label>
+                            <Label>
+                                P. Venta. Alt *
+                            </Label>
                             <Controller
-                                name="id_marca"
+                                name="precio_venta_alt"
                                 control={control}
                                 render={({ field }) => (
-                                    <ComboboxSelect
-                                        value={field.value}
-                                        onChange={(value) => field.onChange(Number(value))}
-                                        options={brandsData || []}
-                                        optionTag="marca"
-                                        placeholder="Seleccionar marca"
-                                        searchPlaceholder="Buscar marcas..."
-                                        className={getSelectClassName("id_marca")}
+                                    <Input
+                                        type="number"
+                                        autoSelectOnFocus={true}
+                                        {...field}
+                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                        placeholder="0"
+                                        className={getInputClassName("precio_venta_alt")}
                                     />
                                 )}
                             />
                             <div className="mt-1">
-                                {errors.id_marca && (
+                                {errors.precio_venta_alt && (
                                     <p className="text-xs text-red-500 truncate">
-                                        {errors.id_marca.message}
+                                        {errors.precio_venta_alt.message}
                                     </p>
                                 )}
                             </div>
                         </div>
+                        {/* Costo Referencia */}
+                        <div>
+                            <Label>
+                                Costo Referencia *
+                            </Label>
+                            <Controller
+                                name="costo_referencia"
+                                control={control}
+                                render={({ field }) => (
+                                    <Input
+                                        type="number"
+                                        autoSelectOnFocus={true}
+                                        step="0.01"
+                                        {...field}
+                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                        placeholder="0.00"
+                                        className={getInputClassName("costo_referencia")}
+                                    />
+                                )}
+                            />
+                            <div className="mt-1">
+                                {errors.costo_referencia && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.costo_referencia.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div> 
+
+                        
+                    </div>
+                </div>
+
+                
+
+                {/* Descripción Auto-generada */}
+                <div className="p-3 bg-white border border-gray-200 rounded-lg">
+                    <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
+                        <Wand2 className="w-4 h-4" />
+                        Descripción Auto-generada
+                    </h3>
+                    <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
+                        {autoDescription || "Completa los campos para generar la descripción"}
+                    </div>
+                </div>
+                
+                {/* Especificaciones del Vehículo */}
+                <div className="p-3 bg-white border border-gray-200 rounded-lg">
+                    <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                        Información complementaria
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        
 
                         {/* Marca vehículo */}
                         <div>
@@ -541,23 +680,6 @@ const ProductEditScreen = () => {
                                 {errors.id_marca_vehiculo && (
                                     <p className="text-xs text-red-500 truncate">
                                         {errors.id_marca_vehiculo.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Nro. Motor */}
-                        <div>
-                            <Label>Nro. Motor</Label>
-                            <Input
-                                {...register("nro_motor")}
-                                placeholder="Nro. Motor"
-                                className={getInputClassName("nro_motor")}
-                            />
-                            <div className="mt-1">
-                                {errors.nro_motor && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.nro_motor.message}
                                     </p>
                                 )}
                             </div>
@@ -595,6 +717,23 @@ const ProductEditScreen = () => {
                                 )}
                             </div>
                         </div>
+                        
+                        {/* Nro. Motor */}
+                        <div>
+                            <Label>Nro. Motor</Label>
+                            <Input
+                                {...register("nro_motor")}
+                                placeholder="Nro. Motor"
+                                className={getInputClassName("nro_motor")}
+                            />
+                            <div className="mt-1">
+                                {errors.nro_motor && (
+                                    <p className="text-xs text-red-500 truncate">
+                                        {errors.nro_motor.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div> 
 
                         {/* Descripción alt. */}
                         <div className="flex flex-col sm:col-span-2 lg:col-span-3 xl:col-span-2">
@@ -623,154 +762,16 @@ const ProductEditScreen = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Descripción Auto-generada */}
-                <div className="p-3 bg-white border border-gray-200 rounded-lg">
-                    <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
-                        <Wand2 className="w-4 h-4" />
-                        Descripción Auto-generada
-                    </h3>
-                    <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
-                        {autoDescription || "Completa los campos para generar la descripción"}
-                    </div>
-                </div>
-
+            
                 {/* Información Adicional */}
-                <div className="p-3 bg-white border border-gray-200 rounded-lg">
+                {/* <div className="p-3 bg-white border border-gray-200 rounded-lg">
                     <h3 className="mb-3 text-sm font-semibold text-gray-900">
                         Información Adicional
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                        {/* Costo Referencia */}
-                        <div>
-                            <Label>
-                                Costo Referencia *
-                            </Label>
-                            <Controller
-                                name="costo_referencia"
-                                control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        type="number"
-                                        autoSelectOnFocus={true}
-                                        step="0.01"
-                                        {...field}
-                                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                        placeholder="0.00"
-                                        className={getInputClassName("costo_referencia")}
-                                    />
-                                )}
-                            />
-                            <div className="mt-1">
-                                {errors.costo_referencia && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.costo_referencia.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Código OEM */}
-                        <div>
-                            <Label>
-                                Código OEM
-                            </Label>
-                            <Input
-                                {...register("codigo_oem")}
-                                placeholder="Código OEM"
-                            />
-                            <div className="mt-1">
-                                {errors.codigo_oem && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.codigo_oem.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Código UPC */}
-                        <div>
-                            <Label>
-                                Código UPC *
-                            </Label>
-                            <Controller
-                                name="codigo_upc"
-                                control={control}
-                                render={({ field }) => (
-                                    <Input
-                                        {...field}
-                                        placeholder="Código UPC"
-                                    />
-                                )}
-                            />
-                            <div className="mt-1">
-                                {errors.codigo_upc && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.codigo_upc.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Unidad */}
-                        <div>
-                            <Label>
-                                Unidad *
-                            </Label>
-                            <Controller
-                                name="id_unidad"
-                                control={control}
-                                render={({ field }) => (
-                                    <ComboboxSelect
-                                        value={field.value}
-                                        onChange={(value) => field.onChange(Number(value))}
-                                        options={measurementsData || []}
-                                        optionTag="unidad_medida"
-                                        placeholder="Seleccionar unidad"
-                                        searchPlaceholder="Buscar unidad..."
-                                        className={getSelectClassName("id_unidad")}
-                                    />
-                                )}
-                            />
-                            <div className="mt-1">
-                                {errors.id_unidad && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.id_unidad.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Procedencia */}
-                        <div>
-                            <Label>
-                                Procedencia *
-                            </Label>
-                            <Controller
-                                name="id_procedencia"
-                                control={control}
-                                render={({ field }) => (
-                                    <ComboboxSelect
-                                        value={field.value}
-                                        onChange={(value) => field.onChange(Number(value))}
-                                        options={originsData || []}
-                                        optionTag="procedencia"
-                                        placeholder="Seleccionar procedencia"
-                                        searchPlaceholder="Buscar procedencia..."
-                                        className={getSelectClassName("id_procedencia")}
-                                    />
-                                )}
-                            />
-                            <div className="mt-1">
-                                {errors.id_procedencia && (
-                                    <p className="text-xs text-red-500 truncate">
-                                        {errors.id_procedencia.message}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
+                        
                     </div>
-                </div>
+                </div> */}
             </form>
         </main>
     );

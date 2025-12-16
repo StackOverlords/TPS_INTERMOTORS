@@ -1,17 +1,19 @@
 import { Label } from "@/components/atoms/label";
 import { AlertCircle, Search, X } from "lucide-react";
 import { Input } from "@/components/atoms/input";
-import { useState } from "react";
+import { use, useRef, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { Button } from "@/components/atoms/button";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
 import { useOrderProvider } from "../../hooks/commons/useOrderProviders";
 import { useOrderStatus } from "../../hooks/commons/useOrderStatus";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface OrdersFiltersProps {
     filters: ReturnType<typeof useOrdersFilters>["filters"]
@@ -96,9 +98,18 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
         updateFilter('fecha_fin', undefined);
     };
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]',
+        ],
+    })
     return (
         <section className="space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+            <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                 <div className="space-y-2">
                     <Label>Nro. de pedido</Label>
                     <div className="relative">
@@ -114,7 +125,7 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                 </div>
                 <div className="space-y-2">
                     <Label>Proveedor</Label>
-                    <PaginatedCombobox
+                    {/* <PaginatedCombobox
                         value={filters.proveedor}
                         onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
                         optionsData={orderProvidersData?.data || []}
@@ -132,6 +143,18 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                                 per_page: orderProvidersData?.meta?.per_page || 10,
                             }
                         }
+                    /> */}
+                    <ComboboxSelect
+                        value={filters.proveedor?.toString() || ""}
+                        onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+                        options={orderProvidersData?.data || []}
+                        optionTag="nombre"
+                        placeholder="Buscar proveedor por nombre"
+                        className="w-full"
+                        enableAllOption={false} 
+                        clearOnEmpty={true}
+                        disabled={isOrdersProvidersLoading}
+                        onSearch={setProviderSearchTerm}
                     />
                 </div>
                 <div className="space-y-2">

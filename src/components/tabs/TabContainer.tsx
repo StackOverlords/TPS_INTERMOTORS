@@ -1,3 +1,4 @@
+import { TABS_CONFIG } from '@/config/tabsConfig';
 import NotFound from '@/modules/shared/screens/NotFound';
 import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
@@ -10,6 +11,9 @@ const TabContainer: React.FC = () => {
   // ✅ Optimizado: Solo suscribirse a lo que realmente necesitamos
   const tabs = useTabStore(state => state.tabs);
   const activeTabId = useTabStore(state => state.activeTabId);
+
+  // 🎯 Keep-Alive: Trackear qué tabs han sido visitadas
+  const mountedTabsRef = useRef<Set<string>>(new Set());
 
   // Aplanar todas las rutas protegidas
   const flatRoutes = useMemo(() => {
@@ -61,47 +65,71 @@ const TabContainer: React.FC = () => {
     };
   }, [flatRoutes]);
 
-  // ✅ OPTIMIZACIÓN CRÍTICA: Solo obtener el componente del tab ACTIVO
-  // Esto evita renderizar todos los componentes al mismo tiempo
-  const activeTabComponent = useMemo(() => {
-    const activeTab = tabs.find(tab => tab.id === activeTabId);
-    if (!activeTab) return null;
+  // 🎯 KEEP-ALIVE INTELIGENTE: Mantener tabs visitadas en memoria
+  // Límite de tabs en memoria (configurable en src/config/tabsConfig.ts)
+  const MAX_MOUNTED_TABS = TABS_CONFIG.MAX_MOUNTED_TABS;
 
-    const route = findMatchingRoute(activeTab.path);
+  // Agregar tab activo a las montadas
+  if (activeTabId && !mountedTabsRef.current.has(activeTabId)) {
+    mountedTabsRef.current.add(activeTabId);
+  }
 
-    if (!route || !route.element) {
-      return {
-        tabId: activeTab.id,
-        Component: NotFound,
-      };
+  // Limpiar tabs que ya no existen en el store
+  const existingTabIds = new Set(tabs.map(t => t.id));
+  mountedTabsRef.current.forEach(tabId => {
+    if (!existingTabIds.has(tabId)) {
+      mountedTabsRef.current.delete(tabId);
     }
+  });
 
-    return {
-      tabId: activeTab.id,
-      Component: route.element,
-    };
-  }, [activeTabId, tabs, findMatchingRoute]);
+  // Si excedemos el límite, remover las tabs más antiguas (LRU - Least Recently Used)
+  if (mountedTabsRef.current.size > MAX_MOUNTED_TABS) {
+    const mountedArray = Array.from(mountedTabsRef.current);
+    const toRemove = mountedArray.slice(0, mountedArray.length - MAX_MOUNTED_TABS);
+    toRemove.forEach(tabId => mountedTabsRef.current.delete(tabId));
+  }
+
+  // Obtener componentes de todas las tabs que deben estar montadas
+  const tabComponents = useMemo(() => {
+    const components: Array<{ tabId: string; Component: React.ComponentType }> = [];
+
+    mountedTabsRef.current.forEach(tabId => {
+      const tab = tabs.find(t => t.id === tabId);
+      if (!tab) return;
+
+      const route = findMatchingRoute(tab.path);
+
+      components.push({
+        tabId: tab.id,
+        Component: route?.element || NotFound,
+      });
+    });
+
+    return components;
+  }, [tabs, findMatchingRoute, activeTabId]); // activeTabId para forzar recalculo
 
   return (
     <div className="h-full relative">
-      {/* ✅ LAZY RENDERING: Solo renderizamos el componente activo */}
-      {activeTabComponent ? (
+      {/* 🎯 KEEP-ALIVE: Renderizar todas las tabs montadas, pero solo mostrar la activa */}
+      {tabComponents.map(({ tabId, Component }) => (
         <TabContent
-          key={activeTabComponent.tabId}
-          tabId={activeTabComponent.tabId}
-          isActive={true}
+          key={tabId}
+          tabId={tabId}
+          isActive={tabId === activeTabId}
         >
-          <activeTabComponent.Component />
+          <Component />
         </TabContent>
-      ) : tabs.length === 0 ? (
-        // Si no hay tabs, mostrar un mensaje o el dashboard por defecto
+      ))}
+
+      {/* Si no hay tabs, mostrar un mensaje o el dashboard por defecto */}
+      {tabs.length === 0 && (
         <div className="flex items-center justify-center h-full">
           <div className="text-center text-gray-500">
             <p className="text-lg font-medium">No hay pestañas abiertas</p>
             <p className="text-sm mt-2">Navega a cualquier sección para comenzar</p>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };

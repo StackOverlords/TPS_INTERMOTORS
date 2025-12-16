@@ -1,7 +1,7 @@
 import { Kbd } from '@/components/atoms/kbd';
 import ErrorDataComponent from '@/components/common/errorDataComponent';
 import TooltipButton from '@/components/common/TooltipButton';
-import { CornerUpLeft, Edit, Trash2 } from 'lucide-react';
+import { CornerUpLeft, Edit } from 'lucide-react';
 import { useCallback } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useNavigate, useParams } from 'react-router';
@@ -16,7 +16,6 @@ const PurchaseDetailScreen = () => {
   const navigate = useNavigate();
   const { purchaseId } = useParams();
 
-  // ✅ IMPORTANTE: Todos los hooks deben estar ANTES de cualquier return condicional
   const {
     data: purchase,
     isLoading: isLoadingPurchase,
@@ -27,7 +26,7 @@ const PurchaseDetailScreen = () => {
   const {
     showDeleteDialog,
     isDeleting,
-    initiateDeletion,
+    // initiateDeletion,
     cancelDeletion,
     confirmDeletion,
   } = usePurchaseDelete();
@@ -44,9 +43,9 @@ const PurchaseDetailScreen = () => {
     navigate(`/dashboard/purchases/${purchaseId}/editar`);
   }, [navigate, purchaseId]);
 
-  const handleDelete = useCallback(() => {
-    initiateDeletion(Number(purchaseId));
-  }, [initiateDeletion, purchaseId]);
+  // const handleDelete = useCallback(() => {
+  //   initiateDeletion(Number(purchaseId));
+  // }, [initiateDeletion, purchaseId]);
 
   const handleConfirmDelete = useCallback(async () => {
     const success = await confirmDeletion();
@@ -61,7 +60,6 @@ const PurchaseDetailScreen = () => {
     enabled: true,
   });
 
-  // ✅ Ahora validamos DESPUÉS de todos los hooks
   if (!Number(purchaseId)) {
     return (
       <ErrorDataComponent
@@ -131,7 +129,7 @@ const PurchaseDetailScreen = () => {
                     Editar
                   </TooltipButton>
 
-                  <TooltipButton
+                  {/* <TooltipButton
                     onClick={handleDelete}
                     tooltip="Eliminar compra"
                     buttonProps={{
@@ -141,7 +139,7 @@ const PurchaseDetailScreen = () => {
                   >
                     <Trash2 className="h-4 w-4" />
                     Eliminar
-                  </TooltipButton>
+                  </TooltipButton> */}
                 </div>
               </div>
             </header>

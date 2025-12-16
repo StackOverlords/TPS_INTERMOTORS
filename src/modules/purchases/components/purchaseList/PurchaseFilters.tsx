@@ -2,12 +2,13 @@ import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import { AlertCircle, Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useProviders } from '../../hooks/useProviders';
 import type { usePurchaseFilters } from '../../hooks/usePurchaseFilters';
 import { format } from 'date-fns';
-import { PaginatedCombobox } from '@/components/common/paginatedCombobox';
 import PopoverDatePicker from '@/components/common/PopoverDatePicker';
+import { ComboboxSelect } from '@/components/common/SelectCombobox';
+import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
 
 interface PurchaseFiltersProps {
   filters: ReturnType<typeof usePurchaseFilters>['filters'];
@@ -24,6 +25,13 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 }) => {
 
   const [dateError, setDateError] = useState<string | null>(null);
+  const filterContainerRef = useRef<HTMLDivElement>(null);
+  useFormEnterNavigation({
+    submitOnLastField: false,
+    containerRef: filterContainerRef,
+    excludeSelectors: ['.no-enter-nav', '.columns-button','[name="btn-chvron-right"]'],
+    enabled: true,
+  })
 
   const {
     data: orderProvidersData,
@@ -86,7 +94,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 
   return (
     <section className="space-y-2">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div ref={filterContainerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
         <div className="space-y-2">
           <Label>Nro. de Compra</Label>
           <div className="relative">
@@ -102,7 +110,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
         <div className="space-y-2">
           <Label>Proveedor</Label>
-          <PaginatedCombobox
+          {/* <PaginatedCombobox
             value={filters.proveedor}
             onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
             optionsData={orderProvidersData || []}
@@ -112,7 +120,16 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             isLoading={isOrdersProvidersLoading}
             updatePage={(page) => { console.log("Update page:", page) }}
             placeholder='Seleccione un proveedor'
-          />
+          /> */}
+          <ComboboxSelect
+            value={filters.proveedor}
+            onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+            options={orderProvidersData || []}
+            optionTag="nombre"
+            placeholder='Seleccione un proveedor'
+            clearOnEmpty={true}
+          > 
+          </ComboboxSelect>
         </div>
         <div className="space-y-2">
           <Label>Código OEM</Label>

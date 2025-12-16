@@ -115,7 +115,8 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                         options={transferResponsiblesData?.data || []}
                         optionTag={"nombre"}
                         isLoadingData={isTransferResponsiblesLoading}
-                        enableAllOption={true}
+                        enableAllOption={false}
+                        clearOnEmpty={true}
                     />
                 </div>
                 <div className="space-y-2">
@@ -126,7 +127,8 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                         options={branchesData?.data?.map(branch => ({ id: branch.id, nombre: branch.nombre, sigla: branch.sigla, nombre_comercial: branch.nombre_comercial, activo: branch.activo })) || []}
                         optionTag={"nombre"}
                         isLoadingData={isBranchesLoading}
-                        enableAllOption={true}
+                        enableAllOption={false}
+                        clearOnEmpty={true}
                     />
                 </div>
                 <div className="space-y-2">
@@ -137,7 +139,8 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                         options={branchesData?.data?.map(branch => ({ id: branch.id, nombre: branch.nombre, sigla: branch.sigla, nombre_comercial: branch.nombre_comercial, activo: branch.activo })) || []}
                         optionTag={"nombre"}
                         isLoadingData={isBranchesLoading}
-                        enableAllOption={true}
+                        enableAllOption={false}
+                        clearOnEmpty={true}
                     />
                 </div>
                 <div className="space-y-2">

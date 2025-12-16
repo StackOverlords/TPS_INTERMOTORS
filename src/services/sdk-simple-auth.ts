@@ -26,7 +26,8 @@ const authSDK = new AuthSDK({
   sessionValidation: {
     enabled: true,
     validateOnStartup: true,
-    autoLogoutOnInvalid: true
+    autoLogoutOnInvalid: true,
+    maxInactivityTime: 1800 // 30 minutes
   },
   // interceptors:{
   //   enabled: true,

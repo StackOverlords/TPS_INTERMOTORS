@@ -10,6 +10,8 @@ import { useCommonBrands } from "@/modules/shared/hooks/useCommonBrands";
 import { useCommonSubcategories } from "@/modules/shared/hooks/useCommonSubcategories";
 import { Search } from "lucide-react";
 import type { useProductFilters } from "../../hooks/useProductFilters";
+import { useRef } from "react";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface ProductFiltersProps {
   filters: ReturnType<typeof useProductFilters>["filters"]
@@ -38,8 +40,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     enabled: !!filters.categoria
   })
 
-  const { containerRef } = useFilterNavigation();
-
+  // const { containerRef } = useFilterNavigation();
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFormEnterNavigation({
+    containerRef: containerRef,
+    excludeSelectors: ['.no-enter-nav'],
+  })
   return (
     <div ref={containerRef}>
       <div className={cn(
@@ -62,7 +68,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 categoria: cat.categoria,
               }))}
               optionTag={"categoria"}
-              enableAllOption={true}
+              enableAllOption={false}
+              clearOnEmpty={true}
             />
           </div>
         )}
@@ -129,7 +136,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 marca: brand.marca,
               }))}
               optionTag={"marca"}
-              enableAllOption={true}
+              enableAllOption={false}
+              clearOnEmpty={true}
             />
           </div>
         )}

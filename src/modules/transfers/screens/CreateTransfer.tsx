@@ -314,6 +314,8 @@ const CreateTransfer = () => {
                                                 }}
                                                 options={transferResponsiblesData?.data || []}
                                                 optionTag={"nombre"}
+                                                clearOnEmpty={true}
+                                                placeholder="Selecciona responsable"
                                             />
                                         )}
                                     />
@@ -352,6 +354,7 @@ const CreateTransfer = () => {
                                                 }
                                                 optionTag={"nombre"}
                                                 placeholder="Selecciona destino"
+                                                clearOnEmpty={true}
                                             />
                                         )}
                                     />
