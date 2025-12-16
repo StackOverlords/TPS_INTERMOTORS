@@ -6,12 +6,11 @@ import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import { Switch } from "@/components/atoms/switch";
 import { Textarea } from "@/components/atoms/textarea";
 import { PDFViewer } from "@/components/common/PDFViewer";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -22,7 +21,6 @@ import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
 import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities";
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles";
 import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes";
-import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
 import authSDK from "@/services/sdk-simple-auth";
@@ -30,7 +28,7 @@ import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parse } from "date-fns";
 import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
@@ -43,6 +41,8 @@ import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
 import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import type { SelectedItem } from "@/types/windowSelectedItems";
+import { useClienteVarios } from "../hooks/useClienteVarios";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -163,7 +163,12 @@ const QuotationCreateScreen = () => {
     const total = getCartTotal()
 
     const formValues = watch();
-    const { tipo_cotizacion, plazo_pago } = formValues;
+    const { tipo_cotizacion, plazo_pago, id_cliente } = formValues;
+
+    const { shouldEnableInputs } = useClienteVarios({
+        currentClientId: id_cliente,
+        clientes: saleCustomersData?.data
+    });
 
     const detalles = useMemo((): QuotationDetail[] => {
         return items.map((item, index) => ({
@@ -496,6 +501,16 @@ const QuotationCreateScreen = () => {
         handleSubmit(onSubmit, onError)();
     })
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]'
+        ],
+        enabled: true,
+    })
     return (
         <main className="p-2 h-full">
             <FormProvider {...methods}>
@@ -554,7 +569,7 @@ const QuotationCreateScreen = () => {
                         </div >
                     </header >
 
-                    <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+                    <div ref={containerRef} className="gap-2 flex-1 min-h-screen md:min-h-0">
                         <div className={cn(
                             "h-full gap-2",
                             configuraciones.formulario === "top" && "flex flex-col",
@@ -563,20 +578,20 @@ const QuotationCreateScreen = () => {
                             {/* Formulario de información de cotización*/}
                             <div className={cn(
                                 "gap-2 flex-shrink-0",
-                                configuraciones.formulario === "top" && "grid md:grid-cols-3",
+                                configuraciones.formulario === "top" && "grid md:grid-cols-2",
                                 configuraciones.formulario === "left" && "flex flex-col",
                             )}>
                                 {/* 1. Datos de la cotización */}
                                 <Card className={cn(
                                     "shadow-none",
-                                    configuraciones.formulario === "top" && "h-full flex-shrink-0 md:col-span-2",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0",
                                     configuraciones.formulario === "left" && "h-auto md:col-auto",
                                 )}>
 
                                     <CardContent className="p-2 sm:p-3">
                                         <div className={cn(
                                             "grid gap-2",
-                                            configuraciones.formulario === "top" && "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+                                            configuraciones.formulario === "top" && "grid-cols-2 xl:grid-cols-3",
                                             configuraciones.formulario === "left" && "grid-cols-2",
                                         )}>
                                             <div>
@@ -604,6 +619,7 @@ const QuotationCreateScreen = () => {
                                                             }}
                                                             options={saleResponsiblesData || []}
                                                             optionTag={"nombre"}
+                                                            clearOnEmpty={true}
                                                             disabled={isReadOnly}
                                                         />
                                                     )}
@@ -729,39 +745,6 @@ const QuotationCreateScreen = () => {
                                                     </div>
                                                 )
                                             }
-                                            <div>
-                                                <Label htmlFor="anticipo">Anticipo</Label>
-                                                <Controller
-                                                    name="anticipo"
-                                                    control={control}
-                                                    render={({ field }) => (
-                                                        <EditablePrice
-                                                            value={field.value || 0}
-                                                            onSubmit={(value) => field.onChange(value as number)}
-                                                            className="w-full"
-                                                            buttonClassName="w-full"
-                                                            numberProps={{ min: 0, step: 0.01 }}
-                                                            disabled={isReadOnly}
-                                                        />
-                                                    )}
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="pedido">Es Pedido</Label>
-                                                <div>
-                                                    <Controller
-                                                        name="pedido"
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Switch
-                                                                checked={field.value}
-                                                                onCheckedChange={(checked) => field.onChange(checked)}
-                                                                disabled={isReadOnly}
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -773,7 +756,7 @@ const QuotationCreateScreen = () => {
                                 )}>
 
                                     <CardContent className="p-2 sm:p-3">
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-3 gap-2">
 
                                             <div>
                                                 <Label htmlFor="cliente">Cliente *</Label>
@@ -781,31 +764,40 @@ const QuotationCreateScreen = () => {
                                                     name="id_cliente"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <PaginatedCombobox
+                                                        // <PaginatedCombobox
+                                                        //     value={field.value}
+                                                        //     onChange={(value) => field.onChange(Number(value))}
+                                                        //     optionsData={saleCustomersData?.data || []}
+                                                        //     displayField="nombre"
+                                                        //     isLoading={isSaleCustomersLoading}
+                                                        //     updatePage={(page) => { console.log("Update page:", page) }}
+                                                        //     updateSearch={setCustomerSearchTerm}
+                                                        //     disabled={isReadOnly}
+                                                        //     placeholder="Buscar cliente por nombre"
+                                                        //     metaData={
+                                                        //         {
+                                                        //             current_page: saleCustomersData?.meta.current_page || 1,
+                                                        //             last_page: saleCustomersData?.meta.last_page || 1,
+                                                        //             total: saleCustomersData?.meta.total || 0,
+                                                        //             per_page: saleCustomersData?.meta.per_page || 10,
+                                                        //         }
+                                                        //     }
+                                                        // />
+                                                        <ComboboxSelect
                                                             value={field.value}
                                                             onChange={(value) => field.onChange(Number(value))}
-                                                            optionsData={saleCustomersData?.data || []}
-                                                            displayField="nombre"
-                                                            isLoading={isSaleCustomersLoading}
-                                                            updatePage={(page) => { console.log("Update page:", page) }}
-                                                            updateSearch={setCustomerSearchTerm}
+                                                            options={saleCustomersData?.data || []}
+                                                            optionTag={"nombre"}
                                                             disabled={isReadOnly}
                                                             placeholder="Buscar cliente por nombre"
-                                                            metaData={
-                                                                {
-                                                                    current_page: saleCustomersData?.meta.current_page || 1,
-                                                                    last_page: saleCustomersData?.meta.last_page || 1,
-                                                                    total: saleCustomersData?.meta.total || 0,
-                                                                    per_page: saleCustomersData?.meta.per_page || 10,
-                                                                }
-                                                            }
+                                                            clearOnEmpty={true}
                                                         />
                                                     )}
                                                 />
                                                 {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
-                                                configuraciones.inputs && (
+                                                (shouldEnableInputs || configuraciones.inputs) && (
                                                     <div>
                                                         <Label htmlFor="altClie">Cliente Alt.</Label>
                                                         <Input
@@ -818,7 +810,7 @@ const QuotationCreateScreen = () => {
                                                 )
                                             }
                                             {
-                                                configuraciones.inputs && (
+                                                (shouldEnableInputs || configuraciones.inputs) && (
                                                     <div>
                                                         <Label htmlFor="contacto">Contacto</Label>
                                                         <Input
@@ -857,7 +849,10 @@ const QuotationCreateScreen = () => {
                                                 )
                                             }
 
-                                            <div className="col-span-full">
+                                            <div className={cn(
+                                                "col-span-2",
+                                                (!shouldEnableInputs || configuraciones.inputs) && 'col-span-full'
+                                            )}>
                                                 <Label htmlFor="comentarios">Comentarios</Label>
                                                 <Textarea
                                                     id="comentarios"

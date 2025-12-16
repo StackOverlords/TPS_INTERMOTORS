@@ -92,6 +92,7 @@ const FormUpdatePrices: React.FC<Props> = ({
             className={inputClass('categoria')}
             disabled={loadingCategories || isLoading}
             error={!!errors.categoria}
+            clearOnEmpty={true}
           />
           {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria}</p>}
         </div>

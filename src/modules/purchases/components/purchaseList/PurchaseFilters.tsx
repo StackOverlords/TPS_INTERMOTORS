@@ -2,7 +2,7 @@ import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import { AlertCircle, Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useProviders } from '../../hooks/useProviders';
 import type { usePurchaseFilters } from '../../hooks/usePurchaseFilters';
 import { format } from 'date-fns';
@@ -25,10 +25,11 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 }) => {
 
   const [dateError, setDateError] = useState<string | null>(null);
-  
+  const filterContainerRef = useRef<HTMLDivElement>(null);
   useFormEnterNavigation({
     submitOnLastField: false,
-    excludeSelectors: ['.no-enter-nav', '.columns-button','[type="button"]'],
+    containerRef: filterContainerRef,
+    excludeSelectors: ['.no-enter-nav', '.columns-button','[name="btn-chvron-right"]'],
     enabled: true,
   })
 
@@ -93,7 +94,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 
   return (
     <section className="space-y-2">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div ref={filterContainerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
         <div className="space-y-2">
           <Label>Nro. de Compra</Label>
           <div className="relative">
@@ -126,6 +127,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             options={orderProvidersData || []}
             optionTag="nombre"
             placeholder='Seleccione un proveedor'
+            clearOnEmpty={true}
           > 
           </ComboboxSelect>
         </div>

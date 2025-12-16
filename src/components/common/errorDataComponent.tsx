@@ -1,5 +1,6 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "../atoms/button";
+import { cn } from "@/lib/utils";
 
 interface ErrorDataProps {
     onRetry?: () => void;
@@ -7,16 +8,21 @@ interface ErrorDataProps {
     isRetrying?: boolean;
     buttonText?: string
     showButtonIcon?: boolean
+    className?: string;
 }
 const ErrorDataComponent: React.FC<ErrorDataProps> = ({
     onRetry,
     errorMessage,
     isRetrying = false,
     buttonText = 'Intentar nuevamente',
-    showButtonIcon = true
+    showButtonIcon = true,
+    className = '',
 }) => {
     return (
-        <div className="flex flex-col items-center justify-center space-y-6 px-12 py-16 mx-auto bg-red-50 rounded-3xl border border-red-100">
+        <div className={cn(
+            "flex flex-col items-center justify-center space-y-6 px-12 py-16 mx-auto bg-red-50 rounded-3xl border border-red-100",
+            className
+        )}>
             <div className="p-3 rounded-full bg-red-100">
                 <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>

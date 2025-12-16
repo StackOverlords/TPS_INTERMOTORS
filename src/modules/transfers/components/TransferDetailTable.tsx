@@ -51,14 +51,17 @@ function TransferDetailTableInner({
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
   const hasSelectedRef = useRef<boolean>(false);
 
   // Exponer método focusFirstQuantityInput
   useImperativeHandle(ref, () => ({
     focusFirstQuantityInput: () => {
-      if (firstQuantityInputRef.current) {
-        firstQuantityInputRef.current.focus();
+      // Iniciar edición en la primera celda de cantidad del último producto agregado
+      if (details.length > 0) {
+        const lastRowIndex = details.length - 1;
+        setTimeout(() => {
+          startEdit(lastRowIndex, 'cantidad_entrada_salida');
+        }, 0);
       }
     }
   }));

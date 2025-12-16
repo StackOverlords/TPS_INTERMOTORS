@@ -11,7 +11,7 @@ import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
@@ -39,6 +39,7 @@ import type { OrderCreate } from "../types/orderCreate.types";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import type { SelectedItem } from "@/types/windowSelectedItems";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const OrderCreateScreen = () => {
     const configuraciones = {
@@ -414,6 +415,17 @@ const OrderCreateScreen = () => {
         handleSubmit(onSubmit, onError)();
     });
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]',
+            '[type="submit"]',
+        ],
+    })
+
     return (
         <main className="p-2 h-full">
             <FormProvider {...methods}>
@@ -501,6 +513,7 @@ const OrderCreateScreen = () => {
                                                             }}
                                                             options={orderResponsiblesData?.data || []}
                                                             optionTag={"nombre"}
+                                                            clearOnEmpty={true}
                                                         />
                                                     )}
                                                 />
@@ -612,23 +625,33 @@ const OrderCreateScreen = () => {
                                                     name="id_proveedor"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <PaginatedCombobox
+                                                        // <PaginatedCombobox
+                                                        //     disabled={isReadOnly}
+                                                        //     value={field.value}
+                                                        //     onChange={(value) => field.onChange(Number(value))}
+                                                        //     optionsData={orderProvidersData?.data || []}
+                                                        //     displayField="nombre"
+                                                        //     isLoading={isOrderProvidersLoading}
+                                                        //     updatePage={(page) => { console.log("Update page:", page) }}
+                                                        //     updateSearch={setProviderSearchTerm}
+                                                        //     metaData={
+                                                        //         {
+                                                        //             current_page: orderProvidersData?.meta?.current_page || 1,
+                                                        //             last_page: orderProvidersData?.meta?.last_page || 1,
+                                                        //             total: orderProvidersData?.meta?.total || 0,
+                                                        //             per_page: orderProvidersData?.meta?.per_page || 10,
+                                                        //         }
+                                                        //     }
+                                                        // />
+                                                        <ComboboxSelect
                                                             disabled={isReadOnly}
                                                             value={field.value}
-                                                            onChange={(value) => field.onChange(Number(value))}
-                                                            optionsData={orderProvidersData?.data || []}
-                                                            displayField="nombre"
-                                                            isLoading={isOrderProvidersLoading}
-                                                            updatePage={(page) => { console.log("Update page:", page) }}
-                                                            updateSearch={setProviderSearchTerm}
-                                                            metaData={
-                                                                {
-                                                                    current_page: orderProvidersData?.meta?.current_page || 1,
-                                                                    last_page: orderProvidersData?.meta?.last_page || 1,
-                                                                    total: orderProvidersData?.meta?.total || 0,
-                                                                    per_page: orderProvidersData?.meta?.per_page || 10,
-                                                                }
-                                                            }
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={orderProvidersData?.data || []}
+                                                            optionTag={"nombre"}
+                                                            clearOnEmpty={true}
                                                         />
                                                     )}
                                                 />

@@ -5,7 +5,7 @@ import type { ProductProviderOrder } from "../../types/ProductProviderOrder";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import CustomizableTable from "@/components/common/CustomizableTable";
-import { formatPrice } from "@/utils/numberFormatters";
+import { formatCurrency } from "@/utils/formaters";
 
 interface ProductLogisticsProps {
     ProductProviderOrders: ProductProviderOrder[]
@@ -60,7 +60,7 @@ const ProductLogistics: React.FC<ProductLogisticsProps> = ({
             minSize: 60,
             cell: ({ getValue }) => (
                 <div className="text-end">
-                    {formatPrice(getValue())}
+                    {formatCurrency(getValue<number>())}
                 </div>
             )
         },
@@ -95,7 +95,7 @@ const ProductLogistics: React.FC<ProductLogisticsProps> = ({
         enableRowSelection: true,
     })
     return (
-        <Card className="bg-white border border-gray-200">
+        <Card className="bg-card border border-border">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
                     <Truck className="size-4 text-gray-700" />

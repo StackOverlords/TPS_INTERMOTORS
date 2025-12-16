@@ -217,7 +217,7 @@ const KeybindingsSettings = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-card p-2 rounded-lg border border-border">
       {/* Toolbar compacto */}
       <div className="flex items-center gap-2 pb-2">
         {/* Búsqueda */}

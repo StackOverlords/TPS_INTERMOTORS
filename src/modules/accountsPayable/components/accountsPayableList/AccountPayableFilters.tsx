@@ -3,7 +3,7 @@ import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
 import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
 import { Search } from "lucide-react";
@@ -82,7 +82,7 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                 {/* Cliente */}
                 <div className="space-y-0.5" data-filter="cliente">
                     <Label className="text-xs">Cliente</Label>
-                    <PaginatedCombobox
+                    {/* <PaginatedCombobox
                         value={filters.cliente}
                         onChange={(value) => updateFilter("cliente", Number(value))}
                         optionsData={saleCustomersData?.data || []}
@@ -99,6 +99,23 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                                 per_page: saleCustomersData?.meta.per_page || 10,
                             }
                         }
+                    /> */}
+                    <ComboboxSelect
+                        value={filters.cliente ?? "all"}
+                        onChange={(value) => {
+                            updateFilter(
+                                "cliente",
+                                value === "all" ? undefined : Number(value)
+                            );
+                        }}
+                        options={saleCustomersData?.data.map((customer) => ({
+                            id: customer.id.toString(),
+                            label: customer.nombre,
+                        })) || []}
+                        optionTag="label"
+                        enableAllOption={false}
+                        placeholder="Buscar cliente..."
+                        clearOnEmpty={true}
                     />
                 </div>
 
@@ -115,7 +132,8 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                         }}
                         options={paymentTypeOptions}
                         optionTag="label"
-                        enableAllOption={true}
+                        enableAllOption={false}
+                        clearOnEmpty={true}
                     />
                 </div>
 
@@ -143,7 +161,8 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                         }}
                         options={termTypeOptions}
                         optionTag="label"
-                        enableAllOption={true}
+                        enableAllOption={false}
+                        clearOnEmpty={true}
                     />
                 </div>
 
@@ -175,6 +194,7 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                                 ]}
                                 optionTag="label"
                                 placeholder="Regla"
+                                clearOnEmpty={true}
                             />
                         </div>
                         <Input

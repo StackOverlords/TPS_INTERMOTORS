@@ -5,10 +5,11 @@ import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import { Button } from "@/components/atoms/button";
 import { format } from "date-fns";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
+// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
 import type { useSalesFilters } from "@/modules/sales/hooks/useSalesFilters";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
 
 interface QuotationsFiltersProps {
     filters: ReturnType<typeof useSalesFilters>["filters"]
@@ -106,7 +107,7 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
                 </div>
                 <div className="space-y-2">
                     <Label>Cliente</Label>
-                    <PaginatedCombobox
+                    {/* <PaginatedCombobox
                         value={filters.cliente}
                         onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
                         optionsData={saleCustomersData?.data || []}
@@ -124,6 +125,17 @@ const QuotationsFiltersComponent: React.FC<QuotationsFiltersProps> = ({
                                 per_page: saleCustomersData?.meta.per_page || 10,
                             }
                         }
+                    /> */}
+                    <ComboboxSelect
+                        value={filters.cliente}
+                        onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+                        options={saleCustomersData?.data || []}
+                        optionTag="nombre"
+                        placeholder="Buscar cliente por nombre"
+                        className="w-full"
+                        enableAllOption={false}
+                        onSearch={setCustomerSearchTerm}
+                        clearOnEmpty={true}
                     />
                 </div>
                 <div className="space-y-2">

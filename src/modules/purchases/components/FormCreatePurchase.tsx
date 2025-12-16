@@ -79,6 +79,7 @@ const FormCreatePurchase: React.FC<Props> = ({
       // Excluir inputs de la tabla de detalles (ya tienen su propia navegación)
       '.editable-cell-input',
       '[data-table-cell="true"]',
+      '[name="btn-chvron-right"]'
     ],
     enabled: true,
   });
@@ -174,6 +175,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={isLoadingProviders ? 'Cargando proveedores...' : 'Proveedor'}
             className={inputClass('id_proveedor')}
             disabled={isLoadingProviders}
+            clearOnEmpty={true}
             data-field="id_proveedor"
             name="id_proveedor"
           />
@@ -220,6 +222,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={loading.types ? 'Cargando...' : 'Tipo'}
             className={inputClass('tipo_compra')}
             disabled={loading.types}
+            clearOnEmpty={true}
             name="tipo_compra"
           />
           {errors.tipo_compra && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.tipo_compra}</p>}
@@ -235,6 +238,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={loading.modalities ? 'Cargando...' : 'Forma'}
             className={inputClass('forma_compra')}
             disabled={loading.modalities}
+            clearOnEmpty={true}
             name="forma_compra"
           />
           {errors.forma_compra && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.forma_compra}</p>}
@@ -250,6 +254,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={loading.responsibles ? 'Cargando...' : 'Responsable'}
             className={inputClass('id_responsable')}
             disabled={loading.responsibles}
+            clearOnEmpty={true}
             name="id_responsable"
           />
           {errors.id_responsable && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.id_responsable}</p>}

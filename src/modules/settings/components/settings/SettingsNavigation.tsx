@@ -32,7 +32,7 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
     const renderTabsNavigation = () => (
         <Tabs value={activeSection} onValueChange={onSectionChange} className="space-y-6">
             <div className="border-b border-border">
-                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-10 bg-transparent h-auto p-0 space-x-0">
+                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-11 bg-transparent h-auto p-0 space-x-0">
                     {sections.map((section) => {
                         const Icon = section.icon;
                         const isUpdateSection = section.id === 'updates';
@@ -43,13 +43,13 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
                                 key={section.id}
                                 value={section.id}
                                 className={cn(
-                                    "flex flex-col items-center gap-1 p-2 h-auto rounded-none border-b-2 border-transparent relative",
+                                    "flex flex-row items-center gap-1 p-1 h-auto rounded-none border-b-2 border-transparent relative",
                                     "data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary",
                                     "hover:bg-muted/50 hover:text-foreground transition-all duration-200"
                                 )}
                             >
-                                <Icon className="size-4" />
-                                <span className="text-xs font-medium hidden sm:block">{section.label}</span>
+                                <Icon className="size-3" />
+                                <span className="text-xs hidden sm:block">{section.label}</span>
                                 {showBadge && (
                                     <Badge
                                         variant="destructive"

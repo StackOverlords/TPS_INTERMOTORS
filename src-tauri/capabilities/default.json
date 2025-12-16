@@ -55,6 +55,18 @@
     "fs:allow-applog-write",
     "core:path:allow-resolve-directory",
     "shell:allow-open",
-    "core:webview:allow-set-webview-zoom"
+    "core:webview:allow-set-webview-zoom",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-save",
+    "store:allow-load",
+    "store:allow-delete",
+    "store:allow-clear",
+    "store:allow-entries",
+    "store:allow-keys",
+    "store:allow-values",
+    "store:allow-has",
+    "store:allow-length",
+    "store:default"
   ]
 }

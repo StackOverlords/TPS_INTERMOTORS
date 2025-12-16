@@ -18,6 +18,7 @@ interface ComboboxSelectProps {
     className?: string
     optionTag: string // Requerido para evitar errores
     allowClear?: boolean // Nueva prop para permitir limpiar selección
+    clearOnEmpty?: boolean // Limpiar selección automáticamente cuando el texto se borra completamente
     disabled?: boolean
     error?: boolean
     enableAllOption?: boolean
@@ -38,6 +39,7 @@ export function ComboboxSelect({
     className,
     optionTag,
     allowClear = false,
+    clearOnEmpty = false,
     disabled = false,
     error = false,
     enableAllOption,
@@ -163,7 +165,16 @@ export function ComboboxSelect({
     }, [filteredOptions.length])
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(event.target.value)
+        const newQuery = event.target.value
+        setQuery(newQuery)
+
+        // Si clearOnEmpty está habilitado y el query está vacío, limpiar selección
+        if (clearOnEmpty && newQuery === '') {
+            onChange('')
+            if (enableExternalSearch && onSearch) {
+                onSearch('')
+            }
+        }
     }
 
     const handleClear = (e: React.MouseEvent) => {
@@ -229,10 +240,39 @@ export function ComboboxSelect({
                                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                     // Solo manejar Enter cuando el dropdown está ABIERTO
                                     // Cuando está cerrado, dejar que el hook global lo maneje
-                                    if (e.key === 'Enter' && open) {
-                                        // Headless UI maneja la selección automáticamente
-                                        // No hacemos nada, solo dejamos que funcione normalmente
-                                        return;
+                                    // if (e.key === 'Enter' && open) {
+                                    //     // Headless UI maneja la selección automáticamente
+                                    //     // No hacemos nada, solo dejamos que funcione normalmente
+                                    //     return;
+                                    // }
+                                    if (e.key === 'Enter' && !open) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+
+                                        // Buscar inputs y combobox inputs en el orden del DOM
+                                        const allInputs = Array.from(
+                                            document.querySelectorAll<HTMLElement>(
+                                                'input:not([type="hidden"]):not([disabled]):not([type="file"]), button[type="submit"]:not([disabled])'
+                                            )
+                                        );
+
+                                        // Filtrar solo elementos visibles
+                                        const focusableElements = allInputs.filter(el => {
+                                            const rect = el.getBoundingClientRect();
+                                            const isVisible = rect.width > 0 && rect.height > 0;
+                                            // Excluir botones que no sean submit (como botones de combobox internos)
+                                            const isSubmitButton = el.getAttribute('type') === 'submit';
+                                            const isInput = el.tagName === 'INPUT';
+                                            return isVisible && (isInput || isSubmitButton);
+                                        });
+
+                                        const currentIndex = focusableElements.indexOf(e.currentTarget);
+                                        if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
+                                            const nextElement = focusableElements[currentIndex + 1];
+                                            setTimeout(() => {
+                                                nextElement?.focus();
+                                            }, 50);
+                                        }
                                     }
 
                                     // Si está cerrado, el evento se propagará naturalmente
@@ -254,7 +294,7 @@ export function ComboboxSelect({
                         )}
 
                         {/* Ícono chevron o loading durante búsqueda */}
-                        <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2" disabled={disabled}>
+                        <ComboboxButton name='btn-chvron-right' className="absolute inset-y-0 right-0 flex items-center pr-2" disabled={disabled}>
                             {enableExternalSearch && isSearching ? (
                                 <Loader2 className="h-4 w-4 opacity-50 animate-spin" />
                             ) : (

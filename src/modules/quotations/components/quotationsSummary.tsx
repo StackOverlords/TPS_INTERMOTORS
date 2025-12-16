@@ -8,6 +8,8 @@ import TooltipButton from "@/components/common/TooltipButton";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { formatCurrency } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
+import { Controller, useFormContext } from "react-hook-form";
+import { Switch } from "@/components/atoms/switch";
 
 type DiscountType = 'amount' | 'percentage';
 
@@ -43,6 +45,8 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
     hasProducts = false
 }) => {
 
+    const { control } = useFormContext();
+
     const handleSecondaryAction = () => {
         clearCart?.();
         callback();
@@ -58,7 +62,25 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
         <Card className="border border-border shadow-none md:flex-shrink-0">
             <CardContent className="space-y-2 p-2 sm:p-3">
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
+                    <div>
+                        <Label className="text-xs" htmlFor="anticipo">Anticipo</Label>
+                        <Controller
+                            name="anticipo"
+                            control={control}
+                            render={({ field }) => (
+                                <EditablePrice
+                                    value={field.value || 0}
+                                    onSubmit={(value) => field.onChange(value as number)}
+                                    className="w-full"
+                                    buttonClassName="w-full"
+                                    numberProps={{ min: 0, step: 0.01 }}
+                                    disabled={isReadOnly}
+                                />
+                            )}
+                        />
+                    </div>
+
                     <div className="space-y-1">
                         <Label className="text-xs">Desc. Porcentaje (%)</Label>
                         <EditablePercentage
@@ -130,7 +152,23 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-2 w-full md:w-auto md:flex gap-2">
+                    <div className="grid grid-cols-3 w-full md:w-auto md:flex gap-2 md:items-center">
+                        <div className="w-max flex items-center gap-2">
+                            <Label className="text-xs w-max" htmlFor="pedido">Es Pedido</Label>
+                            <div>
+                                <Controller
+                                    name="pedido"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => field.onChange(checked)}
+                                            disabled={isReadOnly}
+                                        />
+                                    )}
+                                />
+                            </div>
+                        </div>
                         <Button
                             type="button"
                             variant="outline"

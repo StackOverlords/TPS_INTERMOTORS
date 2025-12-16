@@ -1,5 +1,5 @@
 import { useBranchStore } from "@/states/branchStore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Switch } from "@/components/atoms/switch";
@@ -16,6 +16,7 @@ import { useQuotationsPaginated } from "../hooks/useQuotationsPaginated";
 import QuotationsListTable from "../components/quotationList/quotationListTable";
 import QuotationsFiltersComponent from "../components/quotationList/quotationFilterComponent";
 import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const QuotationListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -117,8 +118,21 @@ const QuotationListScreen = () => {
         setShowFilters(!showFilters)
     }
 
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]',
+            '[name="switch-change-mode"]',
+            '[name="switch-change-mode-btn"]',
+        ],
+        enabled: true,
+    })
+
     return (
-        <main className="h-full p-2 gap-2 flex flex-col">
+        <main ref={containerRef} className="h-full p-2 gap-2 flex flex-col">
             <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
                 <h1 className="text-lg font-bold text-primary">Cotizaciones</h1>
                 <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
@@ -143,6 +157,7 @@ const QuotationListScreen = () => {
                             variant="ghost"
                             onClick={toggleSearchMode}
                             className="text-xs h-7"
+                            name="switch-change-mode-btn"
                             title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
                         >
                             <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
@@ -156,6 +171,7 @@ const QuotationListScreen = () => {
                                     setIsInfiniteScroll(checked)
                                     setPage(1)
                                 }}
+                                name="switch-change-mode"
                             />
                             <Label htmlFor="infinite-scroll">
                                 Scroll Infinito

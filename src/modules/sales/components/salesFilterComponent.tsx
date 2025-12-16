@@ -2,12 +2,13 @@ import { Label } from "@/components/atoms/label";
 import type { useSalesFilters } from "../hooks/useSalesFilters";
 import { AlertCircle, Search, X } from "lucide-react";
 import { Input } from "@/components/atoms/input";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/atoms/button";
 import { format } from "date-fns";
 import { useSaleCustomers } from "../hooks/useSaleCustomers";
-import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { useViewConfig } from "@/hooks/useViewConfig";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface SalesFiltersProps {
@@ -23,20 +24,19 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
     handleManualSearch,
     searchMode,
 }) => {
+    const {
+        isFeatureEnabled,
+    } = useViewConfig('sales-list');
     // Inputs locales
     const [dateError, setDateError] = useState<string | null>(null);
+    // const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
+
+    // Debounce
+    // const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     const {
         data: saleCustomersData,
-        isLoading: isSaleCustomersLoading
-    } = useSaleCustomers('')
-
-    // Habilitar navegación con Enter entre campos del formulario
-    useFormEnterNavigation({
-        submitOnLastField: false,
-        excludeSelectors: ['.no-enter-nav', '.columns-button'],
-        enabled: true,
-    })
+    } = useSaleCustomers()
 
 
     // Función auxiliar para formatear fecha de manera segura
@@ -92,89 +92,119 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
         updateFilter('fecha_inicio', undefined);
         updateFilter('fecha_fin', undefined);
     };
+    const containerRef = useRef<HTMLDivElement>(null);
+    useFormEnterNavigation({
+        containerRef: containerRef,
+        excludeSelectors: [
+            '.editable-cell-input',
+            '[data-table-cell="true"]',
+            '[name="btn-chvron-right"]'
+        ],
+    })
 
     return (
         <section className="space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-                <div className="space-y-2">
-                    <Label>Nro. de Venta</Label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            type="number"
-                            placeholder="Ej: 2054"
-                            value={filters.codigo_interno ?? ''}
-                            onChange={(e) => updateFilter("codigo_interno", e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                            className="pl-10 font-mono text-xs"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label>Cliente</Label>
-                    <ComboboxSelect
-                        value={filters.cliente}
-                        onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                        options={saleCustomersData?.data || []}
-                        optionTag="nombre"
-                        placeholder={isSaleCustomersLoading ? 'Cargando clientes...' : 'Seleccione un cliente'}
-                        disabled={isSaleCustomersLoading}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Código OEM</Label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            placeholder="11122-10040-D..."
-                            value={filters.codigo_oem_producto}
-                            onChange={(e) => updateFilter("codigo_oem_producto", e.target.value)}
-                            className="pl-10 font-mono text-xs"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2 w-full">
-                    <Label>Fecha Inicio</Label>
-                    <div className="flex gap-2">
-                        <PopoverDatePicker
-                            value={filters.fecha_inicio}
-                            onChange={(date) => handleFechaInicioChange(date)}
-                            hasError={dateError}
-                            disabled={(date) => {
-                                // Deshabilitar fechas futuras
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
+            <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                {
+                    isFeatureEnabled('saleNumberFilter') && (
+                        <div className="space-y-2">
+                            <Label>Nro. de Venta</Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    type="number"
+                                    placeholder="Ej: 2054"
+                                    value={filters.codigo_interno ?? ''}
+                                    onChange={(e) => updateFilter("codigo_interno", e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                                    className="pl-10 font-mono text-xs"
+                                />
+                            </div>
+                        </div>
+                    )
+                }
+                {
+                    isFeatureEnabled('customerFilter') && (
+                        <div className="space-y-2">
+                            <Label>Cliente</Label>
+                            <ComboboxSelect
+                                value={filters.cliente}
+                                onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+                                options={saleCustomersData?.data || []}
+                                enableAllOption={false}
+                                optionTag="nombre"
+                                allowClear={true}
+                                clearOnEmpty={true}
+                            />
+                        </div>
+                    )
+                }
+                {
+                    isFeatureEnabled('productOemFilter') && (
+                        <div className="space-y-2">
+                            <Label>Código OEM</Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="11122-10040-D..."
+                                    value={filters.codigo_oem_producto}
+                                    onChange={(e) => updateFilter("codigo_oem_producto", e.target.value)}
+                                    className="pl-10 font-mono text-xs"
+                                />
+                            </div>
+                        </div>
+                    )
+                }
+                {
+                    isFeatureEnabled('startDateFilter') && (
+                        <div className="space-y-2 w-full">
+                            <Label>Fecha Inicio</Label>
+                            <div className="flex gap-2">
+                                <PopoverDatePicker
+                                    value={filters.fecha_inicio}
+                                    onChange={(date) => handleFechaInicioChange(date)}
+                                    hasError={dateError}
+                                    disabled={(date) => {
+                                        // Deshabilitar fechas futuras
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
 
-                                const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
-                                if (fechaFin && date > fechaFin) return true;
-                                return date > today;
-                            }}
-                        />
-                    </div>
-                </div>
+                                        const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
+                                        if (fechaFin && date > fechaFin) return true;
+                                        return date > today;
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )
+                }
 
                 {/* Fecha Fin */}
-                <div className="space-y-2 w-full">
-                    <Label>Fecha Fin</Label>
-                    <div className="flex gap-2">
-                        <PopoverDatePicker
-                            value={filters.fecha_fin}
-                            onChange={(date) => handleFechaFinChange(date)}
-                            hasError={dateError}
-                            disabled={(date) => {
-                                // Deshabilitar fechas futuras
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                if (date > today) return true;
+                {
+                    isFeatureEnabled('endDateFilter') && (
+                        <div className="space-y-2 w-full">
+                            <Label>Fecha Fin</Label>
+                            <div className="flex gap-2">
+                                <PopoverDatePicker
+                                    value={filters.fecha_fin}
+                                    onChange={(date) => handleFechaFinChange(date)}
+                                    hasError={dateError}
+                                    disabled={(date) => {
+                                        // Deshabilitar fechas futuras
+                                        const today = new Date();
+                                        today.setHours(0, 0, 0, 0);
+                                        if (date > today) return true;
 
-                                const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
-                                // Deshabilitar fechas anteriores a la fecha de inicio
-                                if (fechaInicio && date < fechaInicio) return true;
+                                        const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
+                                        // Deshabilitar fechas anteriores a la fecha de inicio
+                                        if (fechaInicio && date < fechaInicio) return true;
 
-                                return false;
-                            }}
-                        />
-                    </div>
-                </div>
+                                        return false;
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )
+                }
             </div>
 
             {/* Botones de acción adicionales */}
@@ -190,7 +220,7 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
                     </Button>
                 )}
 
-                {(filters.fecha_inicio || filters.fecha_fin) && (
+                {((filters.fecha_inicio || filters.fecha_fin) && isFeatureEnabled('clearDatesButton')) && (
                     <Button
                         variant="outline"
                         size="sm"
@@ -201,42 +231,55 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
                         Limpiar todas las fechas
                     </Button>
                 )}
+                {
+                    isFeatureEnabled('dateShortcuts') && (
+                        <>
+                            {/* Botón para establecer rango de última semana */}
+                            {
+                                isFeatureEnabled('lastWeekShortcut') && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            const today = new Date();
+                                            const lastWeek = new Date(today);
+                                            lastWeek.setDate(today.getDate() - 7);
 
-                {/* Botón para establecer rango de última semana */}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        const today = new Date();
-                        const lastWeek = new Date(today);
-                        lastWeek.setDate(today.getDate() - 7);
+                                            setDateError(null);
+                                            updateFilter('fecha_inicio', formatDateSafe(lastWeek));
+                                            updateFilter('fecha_fin', formatDateSafe(today));
+                                        }}
+                                        className="text-xs"
+                                    >
+                                        Última semana
+                                    </Button>
+                                )
+                            }
 
-                        setDateError(null);
-                        updateFilter('fecha_inicio', formatDateSafe(lastWeek));
-                        updateFilter('fecha_fin', formatDateSafe(today));
-                    }}
-                    className="text-xs"
-                >
-                    Última semana
-                </Button>
+                            {/* Botón para establecer rango del último mes */}
+                            {
+                                isFeatureEnabled('lastMonthShortcut') && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            const today = new Date();
+                                            const lastMonth = new Date(today);
+                                            lastMonth.setMonth(today.getMonth() - 1);
 
-                {/* Botón para establecer rango del último mes */}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        const today = new Date();
-                        const lastMonth = new Date(today);
-                        lastMonth.setMonth(today.getMonth() - 1);
-
-                        setDateError(null);
-                        updateFilter('fecha_inicio', formatDateSafe(lastMonth));
-                        updateFilter('fecha_fin', formatDateSafe(today));
-                    }}
-                    className="text-xs"
-                >
-                    Último mes
-                </Button>
+                                            setDateError(null);
+                                            updateFilter('fecha_inicio', formatDateSafe(lastMonth));
+                                            updateFilter('fecha_fin', formatDateSafe(today));
+                                        }}
+                                        className="text-xs"
+                                    >
+                                        Último mes
+                                    </Button>
+                                )
+                            }
+                        </>
+                    )
+                }
             </div>
 
             {/* Mostrar error de validación */}

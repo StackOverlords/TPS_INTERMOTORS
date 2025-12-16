@@ -4,8 +4,9 @@ import SaleEditScreen from "@/modules/sales/screens/saleEditScreen";
 import SalesListScreen from "@/modules/sales/screens/salesListScreen";
 import { Receipt, ShoppingBag, Table2 } from "lucide-react";
 import type RouteType from "./RouteType";
+import { salesListViewConfig } from "@/modules/sales/config/sale.config";
 
-const salesProtectedRoutes: RouteType[] = [ 
+const salesProtectedRoutes: RouteType[] = [
   {
     name: "Ventas",
     type: "protected",
@@ -35,7 +36,7 @@ const salesProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["admin"],
         icon: Table2,
-
+        viewConfig: salesListViewConfig,
         isHeader: false,
         showSidebar: true
       },
@@ -62,7 +63,7 @@ const salesProtectedRoutes: RouteType[] = [
         showInCommandPalette: false
       },
     ]
-  }, 
+  },
 ];
 
 export default salesProtectedRoutes;

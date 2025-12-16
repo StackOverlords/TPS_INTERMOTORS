@@ -2,7 +2,7 @@ import {
   Car,
   FolderOpen,
   GitBranchIcon,
-  Layers,
+  // Layers,
   MapPin,
   Ruler,
   Tag,
@@ -29,14 +29,14 @@ const configSections = [
     icon: FolderOpen,
     iconClassName: 'bg-purple-100 text-purple-600',
   },
-  {
-    key: 'subcategorias',
-    href: '/dashboard/settings/subcategories',
-    title: 'Subcategorías',
-    description: 'Subcategorías por categoría',
-    icon: Layers,
-    iconClassName: 'bg-orange-100 text-orange-600',
-  },
+  // {
+  //   key: 'subcategorias',
+  //   href: '/dashboard/settings/subcategories',
+  //   title: 'Subcategorías',
+  //   description: 'Subcategorías por categoría',
+  //   icon: Layers,
+  //   iconClassName: 'bg-orange-100 text-orange-600',
+  // },
   {
     key: 'procedencias',
     href: '/dashboard/settings/origins',
@@ -102,7 +102,7 @@ const MasterDataSettings = () => {
     });
   };
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
       {configSections.map(section => {
         return (
           <ConfigCard

@@ -13,13 +13,14 @@ import { useCommonOrigins } from '@/modules/shared/hooks/useCommonOrigins';
 import { useCommonVehicleBrands } from '@/modules/shared/hooks/useCommonVehicleBrands';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { HelpCircle, Loader2, Package, Save, Wand2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useCreateProduct } from '../hooks/mutations/useCreateProduct';
 import { useAutoDescription } from '../hooks/useAutoDescription';
 import { ProductCreateSchema } from '../schemas/productCreate.schema';
 import type { ProductCreate } from '../types/ProductCreate.types';
+import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
 
 const FormCreateProduct: React.FC = () => {
   const {
@@ -147,17 +148,17 @@ const FormCreateProduct: React.FC = () => {
       : baseClass;
   };
 
-  // Keyboard navigation helpers
-  const focusNextField = () => {
-    const focusableElements = document.querySelectorAll(
-      'input:not([disabled]), select:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
-    );
-    const currentIndex = Array.from(focusableElements).indexOf(
-      document.activeElement as Element
-    );
-    const nextIndex = (currentIndex + 1) % focusableElements.length;
-    (focusableElements[nextIndex] as HTMLElement)?.focus();
-  };
+  // // Keyboard navigation helpers
+  // const focusNextField = () => {
+  //   const focusableElements = document.querySelectorAll(
+  //     'input:not([disabled]), select:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
+  //   );
+  //   const currentIndex = Array.from(focusableElements).indexOf(
+  //     document.activeElement as Element
+  //   );
+  //   const nextIndex = (currentIndex + 1) % focusableElements.length;
+  //   (focusableElements[nextIndex] as HTMLElement)?.focus();
+  // };
 
   const focusPrevField = () => {
     const focusableElements = document.querySelectorAll(
@@ -185,7 +186,7 @@ const FormCreateProduct: React.FC = () => {
   // Navigation shortcuts
   useHotkeys('ctrl+tab', e => {
     e.preventDefault();
-    focusNextField();
+    // focusNextField();
   });
 
   useHotkeys('ctrl+shift+tab', e => {
@@ -194,21 +195,31 @@ const FormCreateProduct: React.FC = () => {
   });
 
   // Enter key navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (
-      e.key === 'Enter' &&
-      e.target !== document.querySelector('button[type="submit"]')
-    ) {
-      e.preventDefault();
-      focusNextField();
-    }
-  };
-
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (
+  //     e.key === 'Enter' &&
+  //     e.target !== document.querySelector('button[type="submit"]')
+  //   ) {
+  //     e.preventDefault();
+  //     focusNextField();
+  //   }
+  // };
+  const refForm = useRef<HTMLFormElement>(null);
+  useFormEnterNavigation({
+    containerRef: refForm,
+    submitOnLastField: false, 
+    excludeSelectors: [
+      '.editable-cell-input',
+      '[data-table-cell="true"]',
+      '[name="btn-chvron-right"]'
+    ],
+  });
   return (
     <form
       onSubmit={handleSubmit(onSubmitCreate)}
-      onKeyDown={handleKeyDown}
+      // onKeyDown={handleKeyDown}
       className="w-full space-y-2"
+      ref={refForm}
     >
       {/* Información Principal */}
       <div className="p-3 bg-white border border-gray-200 rounded-lg">
@@ -278,6 +289,7 @@ const FormCreateProduct: React.FC = () => {
                   placeholder="Seleccionar categoría"
                   searchPlaceholder="Buscar categorías..."
                   className={getSelectClassName('id_categoria')}
+                  clearOnEmpty={true}
                 />
               )}
             />
@@ -337,6 +349,7 @@ const FormCreateProduct: React.FC = () => {
                   placeholder="Seleccionar marca"
                   searchPlaceholder="Buscar marcas..."
                   className={getSelectClassName('id_marca')}
+                  clearOnEmpty={true}
                 />
               )}
             />
@@ -364,6 +377,7 @@ const FormCreateProduct: React.FC = () => {
                   placeholder="Seleccionar procedencia"
                   searchPlaceholder="Buscar procedencia..."
                   className={getSelectClassName('id_procedencia')}
+                  clearOnEmpty={true}
                 />
               )}
             />
@@ -391,6 +405,7 @@ const FormCreateProduct: React.FC = () => {
                   placeholder="Seleccionar unidad"
                   searchPlaceholder="Buscar unidad..."
                   className={getSelectClassName('id_unidad')}
+                  clearOnEmpty={true}
                 />
               )}
             />
@@ -539,6 +554,7 @@ const FormCreateProduct: React.FC = () => {
                   placeholder="Seleccionar marca vehículo"
                   searchPlaceholder="Buscar marcas..."
                   className={getSelectClassName('id_marca_vehiculo')}
+                  clearOnEmpty={true}
                 />
               )}
             />

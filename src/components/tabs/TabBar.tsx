@@ -92,9 +92,9 @@ const TabItem = React.memo(
               {...attributes}
               {...listeners}
               className={cn(
-                'group relative flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'group relative flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium transition-colors',
                 'hover:bg-gray-100',
-                'min-w-[120px] max-w-[200px]',
+                'min-w-[120px] max-w-[200px] h-7',
                 'cursor-grab active:cursor-grabbing',
                 isDragging && 'shadow-lg ring-2 ring-primary/20',
                 isActive
@@ -102,8 +102,8 @@ const TabItem = React.memo(
                   : 'text-gray-600 hover:text-primary'
               )}
             >
-              {tab.icon && <tab.icon className="h-4 w-4 flex-shrink-0" />}
-              <span className="truncate flex-1 text-left">
+              {tab.icon && <tab.icon className="size-3 flex-shrink-0" />}
+              <span className="truncate flex-1 text-left" title={tab.title}>
                 {tab.title || tab.path.split('/').pop() || 'Sin título'}
               </span>
               {canClose && (
@@ -117,12 +117,12 @@ const TabItem = React.memo(
                     e.stopPropagation();
                   }}
                   className={cn(
-                    'flex-shrink-0 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-gray-200 p-0.5 transition-opacity cursor-pointer',
+                    'flex-shrink-0 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-border p-0.5 transition-opacity cursor-pointer',
                     isActive && 'opacity-100'
                   )}
                   aria-label="Cerrar pestaña"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="size-3" />
                 </span>
               )}
               {isActive && (
@@ -245,7 +245,7 @@ const TabBar: React.FC<TabBarProps> = ({
         value={activeTabId || undefined}
         onValueChange={setActiveTab}
         className={cn(
-          'flex items-center border-b border-gray-200 bg-white',
+          'flex items-center border-b border-border bg-white',
           className
         )}
       >
@@ -272,15 +272,15 @@ const TabBar: React.FC<TabBarProps> = ({
           </SortableContext>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
-        <div className="flex-shrink-0 border-l border-gray-200 px-2">
+        <div className="flex-shrink-0 border-l border-border px-2">
           <TooltipWrapper tooltip="Nueva pestaña (Ctrl+T)">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleNewTab}
-              className="h-8 w-8 p-0"
+              className="size-7 p-0"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="size-3" />
             </Button>
           </TooltipWrapper>
         </div>
