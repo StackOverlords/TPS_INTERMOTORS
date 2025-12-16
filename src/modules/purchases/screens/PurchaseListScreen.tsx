@@ -23,14 +23,14 @@ import { type ColumnDef } from '@tanstack/react-table';
 import {
   Edit,
   Eye,
-  FileText,
+  // FileText,
   Filter,
   Loader2,
   MoreVertical,
   RefreshCcw,
   Search,
   Settings,
-  Trash2,
+  // Trash2,
   Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -115,14 +115,14 @@ const PurchaseListScreen = () => {
   const {
     showDeleteDialog,
     isDeleting,
-    initiateDeletion,
+    // initiateDeletion,
     cancelDeletion,
     confirmDeletion,
   } = usePurchaseDelete();
 
-  const handleDeletePurchase = (purchaseId: number) => {
-    initiateDeletion(purchaseId);
-  };
+  // const handleDeletePurchase = (purchaseId: number) => {
+  //   initiateDeletion(purchaseId);
+  // };
 
   const handleConfirmDelete = async () => {
     const success = await confirmDeletion();
@@ -181,14 +181,14 @@ const PurchaseListScreen = () => {
         ),
         enableSorting: false,
         enableHiding: true,
-        size: 40,
-        minSize: 40,
+        size: 30,
+        minSize: 30,
       },
       {
         accessorKey: 'nro_compra',
-        header: 'Nro. Compra',
+        header: 'Nro.Compra',
         size: 80,
-        minSize: 50,
+        minSize: 30,
         enableHiding: false,
         cell: ({ row, getValue }) => (
           <div className="flex font-semibold items-center gap-1">
@@ -224,13 +224,13 @@ const PurchaseListScreen = () => {
                     <Eye className="mr-2 h-4 w-4" />
                     Ver detalles
                   </DropdownMenuItem>
-                  <DropdownMenuItem
+                  {/* <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
                     onClick={() => { }}
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Ver comprobantes
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
                     onClick={() => handleEditPurchase(row.original.id)}
@@ -238,14 +238,14 @@ const PurchaseListScreen = () => {
                     <Edit className="mr-2 h-4 w-4" />
                     Editar compra
                   </DropdownMenuItem>
-                  <DropdownMenuItem
+                  {/* <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
                     onClick={() => handleDeletePurchase(row.original.id)}
                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Eliminar compra
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -261,12 +261,12 @@ const PurchaseListScreen = () => {
                 }
               >
                 <h3 className="font-medium text-gray-900 leading-tight hover:underline truncate">
-                  {getValue<string>()}
+                  {getValue<string>().split('-')[1]}
                 </h3>
               </TooltipWrapper>
-              <span className="text-xs text-gray-500">
+              {/* <span className="text-xs text-gray-500">
                 ID: {row.original.id}
-              </span>
+              </span> */}
             </div>
           </div>
         ),
@@ -274,8 +274,8 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'fecha',
         header: 'Fecha',
-        size: 120,
-        minSize: 100,
+        size: 70,
+        minSize: 30,
         cell: ({ getValue }) => (
           <div className="text-center">
             <div className="font-medium">{formatDate(getValue<string>())}</div>
@@ -285,8 +285,8 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'proveedor',
         header: 'Proveedor',
-        size: 200,
-        minSize: 180,
+        size: 130,
+        minSize: 30,
         cell: ({ row }) => {
           const proveedor = row.original.proveedor;
           if (!proveedor) {
@@ -297,12 +297,12 @@ const PurchaseListScreen = () => {
               <div className="text-blue-600">
                 {proveedor.proveedor}
               </div>
-              <div className="text-xs text-gray-800">ID: {proveedor.id}</div>
-              {proveedor.nit && (
+              {/* <div className="text-xs text-gray-800">ID: {proveedor.id}</div> */}
+              {/* {proveedor.nit && (
                 <div className="text-xs text-gray-500 font-mono">
                   NIT: {proveedor.nit}
                 </div>
-              )}
+              )} */}
             </div>
           );
         },
@@ -311,7 +311,7 @@ const PurchaseListScreen = () => {
         accessorKey: 'total',
         header: 'Total',
         size: 60,
-        minSize: 40,
+        minSize: 30,
         cell: ({ getValue }) => {
           const total = typeof getValue() === "string"
             ? parseFloat(getValue() as string)
@@ -329,17 +329,17 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'contexto',
         header: 'Tipo',
-        size: 110,
-        minSize: 90,
+        size: 70,
+        minSize: 30,
         cell: ({ getValue }) => {
           const contexto = getValue<string>();
           const [tipo, estado] = contexto.split('|');
           return (
             <div className="space-y-1">
               <Badge variant={getContextColor(contexto)} className="rounded">
-                {tipo}
+                {tipo} - {estado}
               </Badge>
-              <div className="text-xs text-gray-500">{estado}</div>
+              {/* <div className="text-xs text-gray-500">{estado}</div> */}
             </div>
           );
         },
@@ -347,8 +347,8 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'comprobantes',
         header: 'Comprobantes',
-        size: 100,
-        minSize: 80,
+        size: 70,
+        minSize: 30,
         cell: ({ getValue }) => {
           const comprobantes = getValue<string>();
           const comprobantesList = comprobantes
@@ -376,8 +376,8 @@ const PurchaseListScreen = () => {
       {
         accessorKey: 'responsable',
         header: 'Responsable',
-        size: 160,
-        minSize: 140,
+        size: 70,
+        minSize: 30,
         cell: ({ row }) => {
           const responsable = row.original.responsable;
           if (!responsable) {
@@ -388,9 +388,9 @@ const PurchaseListScreen = () => {
               <div className="font-medium">
                 {responsable.nombre} {responsable.apellido_paterno}
               </div>
-              <div className="text-xs text-gray-500 font-mono">
+              {/* <div className="text-xs text-gray-500 font-mono">
                 DNI: {responsable.dni}
-              </div>
+              </div> */}
             </div>
           );
         },

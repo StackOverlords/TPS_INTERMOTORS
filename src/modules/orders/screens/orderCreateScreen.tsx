@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/car
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import { CornerUpLeft, Loader2, Plus, Save, ShoppingCart } from "lucide-react";
+import { Switch } from "@/components/atoms/switch";
+import { ArrowRightLeft, CornerUpLeft, Loader2, Plus, Save, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/atoms/button";
 import { Kbd } from "@/components/atoms/kbd";
@@ -52,6 +53,13 @@ const OrderCreateScreen = () => {
     const [providerSearchTerm, setProviderSearchTerm] = useState<string>("");
     const [debouncedCustomerSearchTerm] = useDebounce<string>(providerSearchTerm, 500);
     const tableRef = useRef<OrderDetailTableRef>(null);
+
+    // Estados para conversión de moneda
+    const [isUSD, setIsUSD] = useState(false);
+    const [exchangeRate, setExchangeRate] = useState(() => {
+        const saved = localStorage.getItem('order_exchange_rate');
+        return saved ? parseFloat(saved) : 6.96;
+    });
 
     // Hook de detalles de orden
     const orderDetailsHook = useOrderDetails();
@@ -194,6 +202,48 @@ const OrderCreateScreen = () => {
         }
 
         return isValid;
+    };
+
+    // Guardar tipo de cambio en localStorage
+    useEffect(() => {
+        localStorage.setItem('order_exchange_rate', exchangeRate.toString());
+    }, [exchangeRate]);
+
+    // Función auxiliar para redondear a 2 decimales
+    const roundToTwo = (num: number): number =>
+        Math.round((num + Number.EPSILON) * 100) / 100;
+
+    // Función para convertir entre monedas
+    const handleConvertCurrency = () => {
+        if (orderDetailsHook.details.length === 0) return;
+
+        const updatedDetails = orderDetailsHook.details.map(detail => {
+            let newCosto: number;
+
+            if (isUSD) {
+                // Convertir de USD a BOB
+                newCosto = roundToTwo(detail.costo * exchangeRate);
+            } else {
+                // Convertir de BOB a USD
+                newCosto = roundToTwo(detail.costo / exchangeRate);
+            }
+
+            // Actualizar el costo del detalle
+            return { ...detail, costo: newCosto };
+        });
+
+        // Aplicar los costos actualizados uno por uno para que se recalculen los precios
+        updatedDetails.forEach(detail => {
+            orderDetailsHook.updateCosto(detail.id_producto, detail.costo);
+        });
+
+        setIsUSD(!isUSD); // Cambiar al estado opuesto
+
+        showSuccessToast({
+            title: 'Conversión completada',
+            description: `${orderDetailsHook.details.length} producto(s) convertido(s) ${isUSD ? 'de USD a BOB' : 'de BOB a USD'} con tipo de cambio ${exchangeRate}`,
+            duration: 3000,
+        });
     };
 
     const handleNewOrder = useCallback(() => {
@@ -668,10 +718,74 @@ const OrderCreateScreen = () => {
                                             {/* 2. Productos */}
                                             <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
                                                 <CardHeader className="flex-shrink-0">
-                                                    <CardTitle className="flex justify-between">
+                                                    <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
+                                                        {/* Título */}
                                                         <h2 className="text-primary text-base">
                                                             Detalle de Productos
                                                         </h2>
+
+                                                        {/* Controles de conversión de moneda - Centro */}
+                                                        <div className="flex items-center gap-3 flex-wrap">
+                                                            {/* Switch de moneda */}
+                                                            <div className="flex items-center gap-2">
+                                                                <Label htmlFor="currency-switch" className="text-xs font-medium text-gray-700">
+                                                                    Moneda:
+                                                                </Label>
+                                                                <div className="flex items-center gap-2 bg-gray-50 rounded-md px-2 py-1 border border-gray-300">
+                                                                    <span className={`text-xs font-medium ${!isUSD ? 'text-green-600' : 'text-gray-400'}`}>
+                                                                        BOB
+                                                                    </span>
+                                                                    <Switch
+                                                                        id="currency-switch"
+                                                                        checked={isUSD}
+                                                                        onCheckedChange={setIsUSD}
+                                                                    />
+                                                                    <span className={`text-xs font-medium ${isUSD ? 'text-blue-600' : 'text-gray-400'}`}>
+                                                                        USD
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Input de tipo de cambio */}
+                                                            <div className="flex items-center gap-2">
+                                                                <Label htmlFor="exchange-rate" className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                                                                    T.C:
+                                                                </Label>
+                                                                <Input
+                                                                    id="exchange-rate"
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    value={exchangeRate}
+                                                                    onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
+                                                                    className="w-20 h-8 text-sm"
+                                                                    placeholder="6.96"
+                                                                />
+                                                            </div>
+
+                                                            {/* Botón de conversión */}
+                                                            <TooltipButton
+                                                                tooltip={
+                                                                    orderDetailsHook.details.length === 0
+                                                                        ? "Agrega productos para convertir"
+                                                                        : isUSD
+                                                                        ? `Convertir ${orderDetailsHook.details.length} producto(s) de USD a BOB`
+                                                                        : `Convertir ${orderDetailsHook.details.length} producto(s) de BOB a USD`
+                                                                }
+                                                                buttonProps={{
+                                                                    onClick: handleConvertCurrency,
+                                                                    disabled: orderDetailsHook.details.length === 0 || isReadOnly || isSaving,
+                                                                    size: "sm",
+                                                                    variant: "default",
+                                                                    type: "button",
+                                                                }}
+                                                            >
+                                                                <ArrowRightLeft className="h-4 w-4" />
+                                                                {isUSD ? 'USD → BOB' : 'BOB → USD'}
+                                                            </TooltipButton>
+                                                        </div>
+
+                                                        {/* Botón de acción - Derecha */}
                                                         {
                                                             configuraciones.selector_mode === "window" && (
                                                                 <Button

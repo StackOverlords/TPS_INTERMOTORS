@@ -27,6 +27,7 @@ interface ComboboxSelectProps {
     isSearching?: boolean // Estado de carga durante búsqueda
     searchDebounceMs?: number // Tiempo de debounce para la búsqueda (por defecto 300ms)
     enableExternalSearch?: boolean // Habilitar/deshabilitar búsqueda externa
+    name?: string // Nombre del input para formularios
 }
 
 export function ComboboxSelect({
@@ -45,6 +46,8 @@ export function ComboboxSelect({
     isSearching = false,
     searchDebounceMs = 500,
     enableExternalSearch = false,
+    name,
+
 }: ComboboxSelectProps) {
     const internalValue = !value
         ? enableAllOption ? 'all' : ''
@@ -206,6 +209,7 @@ export function ComboboxSelect({
                         <ComboboxButton className="w-full" disabled={disabled}>
                             <ComboboxInput
                                 ref={comboboxInputRef}
+                                name={name}
                                 placeholder={placeholder}
                                 className={cn(
                                     'flex h-8 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
@@ -223,44 +227,16 @@ export function ComboboxSelect({
                                     e.currentTarget.select()
                                 }}
                                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                    // Nota: La navegación con Enter ahora se maneja globalmente con useFormEnterNavigation
-                                    // Este código se deja comentado por si se necesita comportamiento específico
-
-                                    // Si presiona Enter y el dropdown está abierto, no hacer nada (dejar que Headless UI lo maneje)
-                                    // if (e.key === 'Enter' && open) {
-                                    //     // El comportamiento por defecto de Headless UI se encarga de seleccionar la opción
-                                    //     return;
-                                    // }
-                                    // Si presiona Enter y el dropdown está cerrado, avanzar al siguiente campo
-                                    if (e.key === 'Enter' && !open) {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-
-                                        // Buscar inputs y combobox inputs en el orden del DOM
-                                        const allInputs = Array.from(
-                                            document.querySelectorAll<HTMLElement>(
-                                                'input:not([type="hidden"]):not([disabled]):not([type="file"]), button[type="submit"]:not([disabled])'
-                                            )
-                                        );
-
-                                        // Filtrar solo elementos visibles
-                                        const focusableElements = allInputs.filter(el => {
-                                            const rect = el.getBoundingClientRect();
-                                            const isVisible = rect.width > 0 && rect.height > 0;
-                                            // Excluir botones que no sean submit (como botones de combobox internos)
-                                            const isSubmitButton = el.getAttribute('type') === 'submit';
-                                            const isInput = el.tagName === 'INPUT';
-                                            return isVisible && (isInput || isSubmitButton);
-                                        });
-
-                                        const currentIndex = focusableElements.indexOf(e.currentTarget);
-                                        if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
-                                            const nextElement = focusableElements[currentIndex + 1];
-                                            setTimeout(() => {
-                                                nextElement?.focus();
-                                            }, 50);
-                                        }
+                                    // Solo manejar Enter cuando el dropdown está ABIERTO
+                                    // Cuando está cerrado, dejar que el hook global lo maneje
+                                    if (e.key === 'Enter' && open) {
+                                        // Headless UI maneja la selección automáticamente
+                                        // No hacemos nada, solo dejamos que funcione normalmente
+                                        return;
                                     }
+
+                                    // Si está cerrado, el evento se propagará naturalmente
+                                    // y el hook useFormEnterNavigation lo manejará
                                 }}
                                 autoComplete="off"
                             />

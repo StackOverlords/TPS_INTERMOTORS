@@ -1,4 +1,4 @@
-import { Badge } from "@/components/atoms/badge";
+// import { Badge } from "@/components/atoms/badge";
 import { Input } from "@/components/atoms/input";
 import { formatCell } from "@/utils/formatCell";
 import { Package } from "lucide-react";
@@ -118,7 +118,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
   }, [rows, debouncedSearch]);
 
   // Totales (ahora sobre los rows filtrados)
-  const totalItems = filteredRows.length;
+  // const totalItems = filteredRows.length;
   const totalCantidad = useMemo(
     () => filteredRows.reduce((acc, r) => acc + r.cantidad, 0),
     [filteredRows]
@@ -130,21 +130,39 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
 
   // Columnas
   const columns = useMemo<ColumnDef<ProductRow>[]>(() => [
+    // {
+    //   accessorKey: "index",
+    //   header: "#",
+    //   size: 40,
+    //   minSize: 30,
+    //   enableHiding: false,
+    //   cell: ({ getValue }) => (
+    //     <div className="text-center text-xs text-gray-600">{getValue<number>()}</div>
+    //   ),
+    // },
     {
-      accessorKey: "index",
-      header: "#",
-      size: 40,
+      accessorKey: "codigo_interno",
+      header: "Cód. interno",
+      size: 70,
       minSize: 30,
-      enableHiding: false,
       cell: ({ getValue }) => (
-        <div className="text-center text-xs text-gray-600">{getValue<number>()}</div>
+        <div className="space-y-0.5">
+          <div title="Código interno" className="font-mono text-xs text-gray-900 truncate">
+            {formatCell(getValue<string>())}
+          </div>
+          {/* {row.original.codigo_oem && (
+            <div title="Código OEM" className="font-mono text-[12px] text-gray-500 truncate">
+              OEM: {row.original.codigo_oem}
+            </div>
+          )} */}
+        </div>
       ),
     },
     {
       accessorKey: "descripcion",
       header: "Descripción",
       size: 300,
-      minSize: 200,
+      minSize: 30,
       cell: ({ row }) => (
         <div className="space-y-0.5">
           <div title="Descripción" className="text-sm font-medium text-gray-900 leading-tight truncate">
@@ -156,50 +174,56 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
             </div>
           )} */}
           <div className="flex flex-wrap gap-1 mt-1">
-            {row.original.categoria && (
+            {/* {row.original.categoria && (
               <Badge variant="outline" title="Categoria" className="text-[10px] border border-gray-300">Cat: {row.original.categoria}</Badge>
-            )}
-            {row.original.marca && (
+            )} */}
+            {/* {row.original.marca && (
               <Badge variant="outline" title="Marca" className="text-[10px] border border-gray-300">Marca: {row.original.marca}</Badge>
-            )}
-            {row.original.procedencia && (
+            )} */}
+            {/* {row.original.procedencia && (
               <Badge variant="outline" title="Procedencia" className="text-[10px] border border-gray-300">Procedencia: {row.original.procedencia}</Badge>
-            )}
-            {row.original.marca_vehiculo && (
+            )} */}
+            {/* {row.original.marca_vehiculo && (
               <Badge variant="secondary" title="Marca Vehículo" className="text-[10px]">Marca Vehículo: {row.original.marca_vehiculo}</Badge>
-            )}
+            )} */}
           </div>
         </div>
       ),
     },
     {
-      accessorKey: "codigo_interno",
-      header: "Código interno/Código OEM",
-      size: 140,
-      minSize: 120,
-      cell: ({ getValue, row }) => (
-        <div className="space-y-0.5">
-          <div title="Código interno" className="font-mono text-xs text-gray-900 truncate">
-            Interno:{formatCell(getValue<string>())}
-          </div>
-          {row.original.codigo_oem && (
-            <div title="Código OEM" className="font-mono text-[12px] text-gray-500 truncate">
-              OEM: {row.original.codigo_oem}
-            </div>
-          )}
+      accessorKey: "marca",
+      header: "Marca",
+      size: 90,
+      minSize: 30,
+      cell: ({ row }) => (
+        <div className="text-left">
+          <div className="text-sm font-medium">{row.original.marca}</div>
+         
         </div>
       ),
+      sortingFn: "alphanumeric",
     },
     {
       accessorKey: "motor",
-      header: "Motor / Medida",
+      header: "Motor",
       size: 140,
-      minSize: 120,
+      minSize: 30,
       cell: ({ row }) => (
         <div className="space-y-0.5">
           {row.original.motor && (
             <div className="text-xs text-gray-700 truncate">Motor: {row.original.motor}</div>
           )}
+          
+        </div>
+      ),
+    },
+    {
+      accessorKey: "medida",
+      header: "Medida",
+      size: 140,
+      minSize: 30,
+      cell: ({ row }) => (
+        <div className="space-y-0.5">
           {row.original.medida && (
             <div className="text-xs text-gray-500 truncate">Medida: {row.original.medida}</div>
           )}
@@ -220,6 +244,32 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
           {row.original.unidad && (
             <div className="text-[10px] text-gray-500">{row.original.unidad}</div>
           )}
+        </div>
+      ),
+      sortingFn: "alphanumeric",
+    },
+    {
+      accessorKey: "procedencia",
+      header: "Procedencia",
+      size: 90,
+      minSize: 30,
+      cell: ({ row }) => (
+        <div className="text-left">
+          <div className="text-sm font-medium">{row.original.procedencia}</div>
+         
+        </div>
+      ),
+      sortingFn: "alphanumeric",
+    },
+    {
+      accessorKey: "categoria",
+      header: "Categoría",
+      size: 90,
+      minSize: 30,
+      cell: ({ row }) => (
+        <div className="text-left">
+          <div className="text-sm font-medium">{row.original.categoria}</div>
+         
         </div>
       ),
       sortingFn: "alphanumeric",

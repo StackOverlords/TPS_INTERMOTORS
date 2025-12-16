@@ -25,10 +25,10 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 }) => {
 
   const [dateError, setDateError] = useState<string | null>(null);
-
+  
   useFormEnterNavigation({
     submitOnLastField: false,
-    excludeSelectors: ['.no-enter-nav', '.columns-button'],
+    excludeSelectors: ['.no-enter-nav', '.columns-button','[type="button"]'],
     enabled: true,
   })
 

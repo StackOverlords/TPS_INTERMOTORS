@@ -74,13 +74,11 @@ const FormCreatePurchase: React.FC<Props> = ({
   useFormEnterNavigation({
     submitOnLastField: false, // No ejecutar submit automáticamente
     onSubmit: onSubmit,
-    containerRef:containerRef,
+    containerRef: containerRef,
     excludeSelectors: [
       // Excluir inputs de la tabla de detalles (ya tienen su propia navegación)
       '.editable-cell-input',
       '[data-table-cell="true"]',
-      // Excluir botones de PopoverDatePicker (tienen su propio manejo de Enter)
-      'button[type="button"]',
     ],
     enabled: true,
   });
@@ -177,6 +175,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             className={inputClass('id_proveedor')}
             disabled={isLoadingProviders}
             data-field="id_proveedor"
+            name="id_proveedor"
           />
           {errors.id_proveedor && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.id_proveedor}</p>}
         </div>
@@ -192,6 +191,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder="FA-01"
             className={inputClass('nro_comprobante')}
             data-field="nro_comprobante"
+            name="nro_comprobante"
           />
           {errors.nro_comprobante && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.nro_comprobante}</p>}
         </div>
@@ -204,6 +204,8 @@ const FormCreatePurchase: React.FC<Props> = ({
             onChange={e => onChange('nro_comprobante2', e.target.value)}
             onBlur={() => onBlur('nro_comprobante2')}
             className={inputClass('nro_comprobante2')}
+            data-field="nro_comprobante2"
+            name="nro_comprobante2"
           />
           {errors.nro_comprobante2 && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.nro_comprobante2}</p>}
         </div>
@@ -218,6 +220,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={loading.types ? 'Cargando...' : 'Tipo'}
             className={inputClass('tipo_compra')}
             disabled={loading.types}
+            name="tipo_compra"
           />
           {errors.tipo_compra && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.tipo_compra}</p>}
         </div>
@@ -232,6 +235,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={loading.modalities ? 'Cargando...' : 'Forma'}
             className={inputClass('forma_compra')}
             disabled={loading.modalities}
+            name="forma_compra"
           />
           {errors.forma_compra && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.forma_compra}</p>}
         </div>
@@ -246,6 +250,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder={loading.responsibles ? 'Cargando...' : 'Responsable'}
             className={inputClass('id_responsable')}
             disabled={loading.responsibles}
+            name="id_responsable"
           />
           {errors.id_responsable && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.id_responsable}</p>}
         </div>

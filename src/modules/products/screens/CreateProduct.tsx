@@ -1,8 +1,8 @@
 // import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Kbd } from "@/components/atoms/kbd";
-import TooltipButton from "@/components/common/TooltipButton";
+// import { Kbd } from "@/components/atoms/kbd";
+// import TooltipButton from "@/components/common/TooltipButton";
 import { useGoBack } from "@/hooks/useGoBack";
-import { CornerUpLeft } from "lucide-react";
+// import { CornerUpLeft } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
 import FormCreateProduct from "../components/FormCreateProduct";
 // import TableCreateProduct from "../components/TableCreateProduct";

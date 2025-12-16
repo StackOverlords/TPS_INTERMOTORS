@@ -15,6 +15,15 @@ interface UseFormEnterNavigationOptions {
   // @default []
   excludeSelectors?: string[];
 
+  /**
+   * Selectores CSS de elementos que SÍ deben participar en la navegación con Enter (lista blanca)
+   * Si se especifica, SOLO estos elementos participarán en la navegación
+   * Por ejemplo: ['[data-form-nav]', '[name^="field-"]', '#input1, #input2']
+   * Nota: Si se usa includeSelectors, excludeSelectors se ignora
+   * @default undefined
+   */
+  includeSelectors?: string[];
+
   // Si es true, el hook está activo. Si es false, no hace nada.
   // @default true
   enabled?: boolean;
@@ -28,6 +37,7 @@ export const useFormEnterNavigation = (options: UseFormEnterNavigationOptions = 
     submitOnLastField = false,
     onSubmit,
     excludeSelectors = [],
+    includeSelectors,
     enabled = true,
     containerRef,
   } = options;
@@ -52,25 +62,39 @@ export const useFormEnterNavigation = (options: UseFormEnterNavigationOptions = 
 
       if (!isInput && !isTextarea && !isButton) return;
 
-      // Verificar si el elemento está en la lista de exclusión
-      const isExcluded = excludeSelectors.some(selector => {
-        try {
-          return target.matches(selector) || target.closest(selector);
-        } catch {
-          return false;
-        }
-      });
-
-      if (isExcluded) return;
-
-      // Para combobox, verificar si el dropdown está abierto
+      // IMPORTANTE: Para combobox, verificar PRIMERO si el dropdown está abierto
       // Si está abierto, no navegamos (dejamos que el combobox maneje el Enter)
       if (isComboboxInput) {
         const parent = target.closest('[data-headlessui-state]');
         const isExpanded = parent?.getAttribute('data-headlessui-state')?.includes('open');
 
-        // Si el dropdown está abierto, no hacemos nada
+        // Si el dropdown está abierto, no hacemos nada (Headless UI lo maneja)
         if (isExpanded) return;
+      }
+
+      // Si hay includeSelectors (lista blanca), verificar que el elemento esté incluido
+      if (includeSelectors && includeSelectors.length > 0) {
+        const isIncluded = includeSelectors.some(selector => {
+          try {
+            return target.matches(selector) || target.closest(selector);
+          } catch {
+            return false;
+          }
+        });
+
+        // Si no está en la lista blanca, ignorar
+        if (!isIncluded) return;
+      } else {
+        // Si NO hay includeSelectors, usar el sistema de excludeSelectors (lista negra)
+        const isExcluded = excludeSelectors.some(selector => {
+          try {
+            return target.matches(selector) || target.closest(selector);
+          } catch {
+            return false;
+          }
+        });
+
+        if (isExcluded) return;
       }
 
       // Para textarea, permitir Enter solo si tiene una sola fila (rows === 1)
@@ -81,21 +105,36 @@ export const useFormEnterNavigation = (options: UseFormEnterNavigationOptions = 
       }
 
       // Obtener todos los elementos focusables en el formulario
-      const focusableElements = Array.from(
-        container.querySelectorAll<HTMLElement>(
-          'input:not([type="hidden"]):not([disabled]):not([type="file"]):not([type="submit"]):not([type="reset"]), ' +
-          'textarea:not([disabled]), ' +
-          'button[type="submit"]:not([disabled]), ' +
-          'button[type="button"]:not([disabled]):not([aria-haspopup="dialog"])'  // Incluir buttons pero excluir popovers
-        )
-      );
+      let focusableElements: HTMLElement[];
 
-      // Filtrar elementos visibles y no excluidos
+      if (includeSelectors && includeSelectors.length > 0) {
+        // Si hay includeSelectors, buscar SOLO esos elementos
+        focusableElements = Array.from(
+          container.querySelectorAll<HTMLElement>(includeSelectors.join(', '))
+        );
+      } else {
+        // Si NO hay includeSelectors, buscar todos los elementos focusables por defecto
+        focusableElements = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'input:not([type="hidden"]):not([disabled]):not([type="file"]):not([type="submit"]):not([type="reset"]), ' +
+            'textarea:not([disabled]), ' +
+            'button[type="submit"]:not([disabled]), ' +
+            'button[type="button"]:not([disabled]):not([aria-haspopup="dialog"])'
+          )
+        );
+      }
+
+      // Filtrar elementos visibles y aplicar include/exclude
       const visibleFocusableElements = focusableElements.filter(el => {
         const rect = el.getBoundingClientRect();
         const isVisible = rect.width > 0 && rect.height > 0;
 
-        // Verificar si está excluido
+        // Si hay includeSelectors, ya están filtrados en la consulta inicial
+        if (includeSelectors && includeSelectors.length > 0) {
+          return isVisible;
+        }
+
+        // Si NO hay includeSelectors, aplicar excludeSelectors
         const isExcluded = excludeSelectors.some(selector => {
           try {
             return el.matches(selector) || el.closest(selector);
@@ -164,5 +203,5 @@ export const useFormEnterNavigation = (options: UseFormEnterNavigationOptions = 
     return () => {
       container.removeEventListener('keydown', handleKeyDown as EventListener);
     };
-  }, [enabled, submitOnLastField, onSubmit, excludeSelectors, containerRef]);
+  }, [enabled, submitOnLastField, onSubmit, excludeSelectors, includeSelectors, containerRef]);
 };

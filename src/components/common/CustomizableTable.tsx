@@ -313,7 +313,7 @@ const CustomizableTable = <T,>({
                                         return (
                                             <TableHead
                                                 key={header.id}
-                                                className="relative group select-none text-left border-b border-border overflow-hidden px-0.5 h-max py-2 max-h-12"
+                                                className="relative group select-none text-left border-b border-border overflow-hidden px-0.5 h-max py-2 max-h-12 truncate"
                                                 style={{ width: header.getSize() }}
                                             >
                                                 {header.isPlaceholder ? null : (
