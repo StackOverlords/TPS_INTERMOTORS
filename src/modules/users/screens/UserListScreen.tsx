@@ -14,8 +14,7 @@ import CustomizableTable from '@/components/common/CustomizableTable';
 import Pagination from '@/components/common/pagination';
 import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
 import TooltipButton from '@/components/common/TooltipButton';
-import { useCustomTable } from '@/hooks/useCustomTable';
-import { useRouteViewConfigWithSync } from '@/hooks/useRouteViewConfig';
+import { useViewConfig } from '@/hooks/useViewConfig'; // ← CAMBIO PRINCIPAL
 import authSDK from '@/services/sdk-simple-auth';
 import { formatCell } from '@/utils/formatCell';
 import { type ColumnDef } from '@tanstack/react-table';
@@ -39,16 +38,18 @@ import DeleteUserDialog from '../components/DeleteUserDialog';
 import { useUserFilters } from '../hooks/useUserFilters';
 import { useUsersPaginated } from '../hooks/useUsersPaginated';
 import type { User } from '../types/User';
+import { useCustomTable } from '@/hooks/useCustomTable';
 
 const UserListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
   const user = authSDK.getCurrentUser();
   const { filters, updateFilter, setPage, resetFilters } = useUserFilters();
 
-  // Configuración de vista con sincronización en tiempo real (optimizado)
-  const viewConfig = useRouteViewConfigWithSync();
+  const {
+    config: viewConfig,
+    //  isLoading: isLoadingConfig
+  } = useViewConfig('users-list');
 
-  // Datos de usuarios paginados
   const {
     data: userData,
     isLoading,
@@ -58,37 +59,26 @@ const UserListScreen = () => {
     refetch: refetchUsers,
     isRefetching: isRefetchingUsers,
   } = useUsersPaginated(filters);
+
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [searchKeywords, setSearchKeywords] = useState('');
 
-  // Estados para los diálogos
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Limpiar datos cuando se cambie el modo de scroll infinito
-  useEffect(() => {
-    if (!isInfiniteScroll) {
-      setUsers([]);
-      setPage(1);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInfiniteScroll]);
 
   useEffect(() => {
     if (!userData?.data || error) return;
 
     if (isInfiniteScroll && filters.pagina && filters.pagina > 1) {
       setUsers(prev => {
-        // Evitar duplicados
         const newUsers = userData.data.filter(
           newUser => !prev.some(existingUser => existingUser.id === newUser.id)
         );
         return [...prev, ...newUsers];
       });
     } else {
-      // En modo paginación normal, siempre reemplazar los datos
       setUsers(userData.data);
     }
   }, [userData?.data, isInfiniteScroll, filters.pagina, error]);
@@ -104,12 +94,8 @@ const UserListScreen = () => {
 
   const handleConfirmDelete = async () => {
     if (!selectedUser) return;
-
     setIsDeleting(true);
     try {
-      // Aquí iría la lógica de eliminación
-      // console.log('Eliminando usuario:', selectedUser.id);
-      // await deleteUser(selectedUser.id);
       setShowDeleteDialog(false);
       setSelectedUser(null);
       refetchUsers();
@@ -183,41 +169,21 @@ const UserListScreen = () => {
                   <Button
                     variant="outline"
                     className="size-6 px-0"
-                    onClick={e => {
-                      e.stopPropagation();
-                    }}
-                    onKeyDown={e => {
-                      if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
-                        e.stopPropagation();
-                      }
-                    }}
+                    onClick={e => e.stopPropagation()}
                   >
                     <MoreVertical className="size-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  onCloseAutoFocus={e => {
-                    e.preventDefault();
-                  }}
-                  align="start"
-                  className="w-48"
-                >
-                  <DropdownMenuItem
-                    onKeyDown={e => e.stopPropagation()}
-                    onClick={() => handleUserDetail(row.original)}
-                  >
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleUserDetail(row.original)}>
                     <Eye className="mr-2 h-4 w-4" />
                     Ver detalles
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={e => e.stopPropagation()}
-                    onClick={() => handleManagePermissions(row.original)}
-                  >
+                  <DropdownMenuItem onClick={() => handleManagePermissions(row.original)}>
                     <UserCog className="mr-2 h-4 w-4" />
                     Gestionar permisos
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onKeyDown={e => e.stopPropagation()}
                     onClick={() => handleDeleteUser(row.original)}
                     className="text-red-600 focus:text-red-600 focus:bg-red-50"
                   >
@@ -338,6 +304,11 @@ const UserListScreen = () => {
   const [isFocused, setIsFocused] = useState(false);
   const tableRef = useRef<HTMLTableElement | null>(null);
 
+  const handleInfiniteScrollChange = useCallback((checked: boolean) => {
+    setIsInfiniteScroll(checked);
+    setPage(1);
+  }, [setPage]);
+
   const handleTableClick = () => {
     setIsFocused(true);
   };
@@ -369,6 +340,15 @@ const UserListScreen = () => {
     resetAll();
   };
 
+  // Mostrar loading mientras carga la config
+  // if (isLoadingConfig) {
+  //   return (
+  //     <main className="h-full flex items-center justify-center">
+  //       <Loader2 className="size-8 animate-spin text-gray-400" />
+  //     </main>
+  //   );
+  // }
+
   return (
     <main className="h-full flex flex-col overflow-hidden p-2">
       <div className="bg-white rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
@@ -388,10 +368,7 @@ const UserListScreen = () => {
                   <Switch
                     id="infinite-scroll"
                     checked={isInfiniteScroll}
-                    onCheckedChange={checked => {
-                      setIsInfiniteScroll(checked);
-                      setPage(1);
-                    }}
+                    onCheckedChange={handleInfiniteScrollChange}
                   />
                   <Label htmlFor="infinite-scroll">
                     {viewConfig?.features?.infiniteScroll?.label || 'Scroll Infinito'}
@@ -421,7 +398,7 @@ const UserListScreen = () => {
                     variant: 'outline',
                     size: 'sm',
                   }}
-                  tooltip={viewConfig?.features?.resetTableButton?.description || "Resetear orden y visibilidad de columnas"}
+                  tooltip={viewConfig?.features?.resetTableButton?.description || "Resetear tabla"}
                 >
                   <Settings className="h-4 w-4" />
                   {viewConfig?.features?.resetTableButton?.label || 'Resetear Tabla'}
@@ -430,24 +407,26 @@ const UserListScreen = () => {
 
               {viewConfig?.features?.filters?.enabled && (
                 <Button variant="outline" size="sm" onClick={resetFilters}>
-                  Reset Filters
+                  Limpiar Filtros
                 </Button>
               )}
             </div>
           </section>
 
           {/* Search Bar */}
-          <section className="mt-2">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar usuarios por nickname o nombre..."
-                value={searchKeywords}
-                onChange={e => setSearchKeywords(e.target.value)}
-                className="pl-10 w-full"
-              />
-            </div>
-          </section>
+          {viewConfig?.features?.searchBar?.enabled && (
+            <section className="mt-2">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar usuarios por nickname o nombre..."
+                  value={searchKeywords}
+                  onChange={e => setSearchKeywords(e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+            </section>
+          )}
         </header>
 
         {/* Results Info */}
@@ -566,49 +545,41 @@ const UserListScreen = () => {
               </InfiniteScroll>
             </div>
           ) : (
-            // <ResizableBox
-            //   direction="vertical"
-            //   minSize={'100px'}
-            //   initialSize={'300px'}
-            // >
-              <div className="overflow-auto h-full">
-                <div onClick={handleTableClick} className="overflow-x-hidden">
-                  <CustomizableTable
-                    table={table}
-                    isError={isError}
-                    isFetching={isFetching}
-                    isLoading={isLoading}
-                    errorMessage="Ocurrió un error al cargar los usuarios"
-                    rows={filters.pagina_registros}
-                    noDataMessage="No se encontraron usuarios"
-                    selectedRowIndex={selectedIndex}
-                    onRowClick={handleRowClick}
-                    onRowDoubleClick={handleRowDoubleClick}
-                    tableRef={tableRef}
-                    focused={isFocused}
-                    keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
-                    enableColumnReordering={true}
-                    enableSorting={true}
-                  />
-                </div>
-
-                {/* Pagination */}
-                {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
-                  <Pagination
-                    currentPage={filters.pagina || 1}
-                    onPageChange={onPageChange}
-                    totalData={userData?.meta.total || 1}
-                    onShowRowsChange={onShowRowsChange}
-                    showRows={filters.pagina_registros}
-                  />
-                )}
+            <div className="overflow-auto h-full">
+              <div onClick={handleTableClick} className="overflow-x-hidden">
+                <CustomizableTable
+                  table={table}
+                  isError={isError}
+                  isFetching={isFetching}
+                  isLoading={isLoading}
+                  errorMessage="Ocurrió un error al cargar los usuarios"
+                  rows={filters.pagina_registros}
+                  noDataMessage="No se encontraron usuarios"
+                  selectedRowIndex={selectedIndex}
+                  onRowClick={handleRowClick}
+                  onRowDoubleClick={handleRowDoubleClick}
+                  tableRef={tableRef}
+                  focused={isFocused}
+                  keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
+                  enableColumnReordering={true}
+                  enableSorting={true}
+                />
               </div>
-            // </ResizableBox>
+
+              {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
+                <Pagination
+                  currentPage={filters.pagina || 1}
+                  onPageChange={onPageChange}
+                  totalData={userData?.meta.total || 1}
+                  onShowRowsChange={onShowRowsChange}
+                  showRows={filters.pagina_registros}
+                />
+              )}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Diálogos */}
       <DeleteUserDialog
         open={showDeleteDialog}
         onClose={() => {

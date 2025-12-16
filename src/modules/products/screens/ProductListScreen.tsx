@@ -8,6 +8,7 @@ import { Switch } from "@/components/atoms/switch"
 import { ColumnVisibilityDropdown } from "@/components/common/ColumnVisibilityDropdown"
 import ConfirmationModal from "@/components/common/confirmationModal"
 import CustomizableTable from "@/components/common/CustomizableTable"
+import { ImageViewer } from "@/components/common/ImageViewer"
 import Pagination from "@/components/common/pagination"
 import ShortcutKey from "@/components/common/ShortcutKey"
 import TooltipButton from "@/components/common/TooltipButton"
@@ -15,8 +16,8 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper"
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
-import { useCustomTable } from "@/hooks/useCustomTable"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
+import { useViewConfig } from "@/hooks/useViewConfig"
 import { COMMANDS, useKeybindingKeys } from "@/keybindings"
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
@@ -26,46 +27,59 @@ import { formatCell } from "@/utils/formatCell"
 import { formatCurrency } from "@/utils/formaters"
 import { type ColumnDef } from "@tanstack/react-table"
 import {
-  Edit,
-  Eye,
-  // Filter,
-  HelpCircle,
-  Image,
-  Loader2,
-  MoreVertical,
-  RefreshCcw,
-  X,
-  Zap
+    Edit,
+    Eye,
+    HelpCircle,
+    Image,
+    Loader2,
+    MoreVertical,
+    PackageSearch,
+    RefreshCcw,
+    Settings,
+    X,
+    Zap
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useHotkeys } from "react-hotkeys-hook"
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { useNavigate } from "react-router"
 import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
-import { ProductImageModal } from "../components/ProductImageModal"
 import ProductFilters from "../components/productList/productFilters"
 import { useDeleteProduct } from "../hooks/mutations/useDeleteProduct"
 import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
 import { useProductFilters } from "../hooks/useProductFilters"
 import { useProductSelection } from "../hooks/useProductSelection"
 import type { ProductGet } from "../types/ProductGet"
+import { useCustomTable } from "@/hooks/useCustomTable"
 
 const ProductListScreen = () => {
-    const [isInfiniteScroll, setIsInfiniteScroll] = useState(false)
     const tableRef = useRef<HTMLTableElement>(null)
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
-    // const [showFilters, setShowFilters] = useState<boolean>(true)
+
+    const {
+        config,
+        isFeatureEnabled,
+        getTableBehaviorValue,
+        getBehaviorValue,
+    } = useViewConfig('products-list');
+
+    // Estados
+    const [isInfiniteScroll, setIsInfiniteScroll] = useState(false)
+    const [showFilters, setShowFilters] = useState<boolean>(
+        getBehaviorValue<boolean>('showFiltersOnMount') ?? true
+    )
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
     const [modalOpen, setModalOpen] = useState(false)
     const [imageModalOpen, setImageModalOpen] = useState(false)
     const [selectedProductForImage, setSelectedProductForImage] = useState<ProductGet | null>(null)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
-    // Estado para el modo de búsqueda
-    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
+    const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>(
+        getBehaviorValue<'realtime' | 'manual'>('defaultSearchMode') ?? 'manual'
+    );
 
-    // ✨ Obtener teclas actuales del store (reactivas)
+    // Teclas de atajos
     const filter1Keys = useKeybindingKeys('tableAndFilters.filter1');
     const filter2Keys = useKeybindingKeys('tableAndFilters.filter2');
     const filter3Keys = useKeybindingKeys('tableAndFilters.filter3');
@@ -78,7 +92,7 @@ const ProductListScreen = () => {
         appliedFilters,
         updateFilter,
         setPage,
-        // resetFilters,
+        resetFilters,
         applyFilters,
         setPageSize
     } = useProductFilters(Number(selectedBranchId) || 1);
@@ -105,17 +119,27 @@ const ProductListScreen = () => {
         areAllProductsSelected,
     } = useProductSelection();
 
-    const { addItemToCart, addMultipleItems, decrementQuantity } = useCartWithUtils(user?.name ?? '', selectedBranchId ?? '')
-    const [products, setProducts] = useState<ProductGet[]>([]);
+    const { addItemToCart, addMultipleItems, decrementQuantity } = useCartWithUtils(
+        user?.name ?? '',
+        selectedBranchId ?? ''
+    )
 
+    const [products, setProducts] = useState<ProductGet[]>([]);
     const { handleError } = useErrorHandler()
+
+    // Sincronizar searchMode con configuración
+    useEffect(() => {
+        const defaultMode = getBehaviorValue<'realtime' | 'manual'>('defaultSearchMode');
+        if (defaultMode) {
+            setSearchMode(defaultMode);
+        }
+    }, [getBehaviorValue]);
 
     useEffect(() => {
         if (!productData?.data || error || isFetching) return;
 
         if (isInfiniteScroll && filters.pagina && filters.pagina > 1) {
             setProducts((prev) => {
-                // Evitar duplicados
                 const newProducts = productData.data.filter(
                     newProduct => !prev.some(existingProduct => existingProduct.id === newProduct.id)
                 );
@@ -126,9 +150,9 @@ const ProductListScreen = () => {
         }
     }, [productData?.data, isInfiniteScroll, filters.pagina, error, isFetching]);
 
-    // const handleResetFilters = () => {
-    //     resetFilters()
-    // }
+    const handleResetFilters = () => {
+        resetFilters()
+    }
 
     const handleDeleteSuccess = (_data: unknown, productId: number) => {
         showSuccessToast({
@@ -151,22 +175,34 @@ const ProductListScreen = () => {
         close: handleCloseDeleteAlert,
         confirm: handleConfirmDeleteAlert,
         isOpen: showDeleteAlert,
-        // open: handleOpenDeleteAlert,
         variables: productToDelete
     } = useConfirmMutation(deleteProduct, handleDeleteSuccess, handleDeleteError)
 
-    // Función para determinar el color del stock
     const getStockColor = (stock: number, stock_min: number) => {
-        const stockMin: number = stock_min || 10
+        const lowThreshold = getBehaviorValue<number>('stockLowThreshold') ?? 10;
+        const criticalThreshold = getBehaviorValue<number>('stockCriticalThreshold') ?? 5;
+
+        const stockMin = stock_min || criticalThreshold;
+
         if (stock <= stockMin) return "danger"
-        if (stock <= (stockMin + 10)) return "warning"
+        if (stock <= (stockMin + lowThreshold)) return "warning"
         return "success"
     }
+
     const handleProductDetail = useCallback(
         (productId: number) => {
-            navigate(`/dashboard/productos/${productId}`);
+            const openIn = getBehaviorValue<string>('openDetailsIn') ?? 'same-page';
+
+            if (openIn === 'new-tab') {
+                window.open(`/dashboard/productos/${productId}`, '_blank');
+            } else if (openIn === 'modal') {
+                setSelectedProductId(productId);
+                setModalOpen(true);
+            } else {
+                navigate(`/dashboard/productos/${productId}`);
+            }
         },
-        [navigate]
+        [navigate, getBehaviorValue]
     );
 
     const handleUpdateProduct = useCallback((productId: number) => {
@@ -176,14 +212,24 @@ const ProductListScreen = () => {
     const handleAddItemCart = useCallback(
         (product: ProductGet) => {
             addItemToCart(product);
-        },
-        [addItemToCart]
-    );
 
-    const handleViewDetails = useCallback((productId: number) => {
-        setSelectedProductId(productId)
-        setModalOpen(true)
-    }, [])
+            const showToast = getBehaviorValue<boolean>('showSuccessToastOnAddToCart');
+            const autoClose = getBehaviorValue<boolean>('autoCloseModalOnAddToCart');
+
+            if (showToast) {
+                showSuccessToast({
+                    title: "Producto agregado",
+                    description: `${product.descripcion} agregado al carrito`,
+                });
+            }
+
+            if (autoClose && modalOpen) {
+                setModalOpen(false);
+                setSelectedProductId(null);
+            }
+        },
+        [addItemToCart, modalOpen, getBehaviorValue]
+    );
 
     const handleViewImage = useCallback((product: ProductGet) => {
         setSelectedProductForImage(product)
@@ -192,11 +238,20 @@ const ProductListScreen = () => {
 
     const handleAddSelectedToCart = useCallback(() => {
         const selectedProducts = getAllSelectedProducts();
+        const maxItems = getBehaviorValue<number>('maxSelectableItems') ?? 100;
 
         if (selectedProducts.length === 0) {
             showErrorToast({
                 title: "Error al agregar los productos",
                 description: `No hay productos seleccionados para agregar al carrito.`,
+            })
+            return;
+        }
+
+        if (selectedProducts.length > maxItems) {
+            showErrorToast({
+                title: "Demasiados productos",
+                description: `Solo puedes agregar hasta ${maxItems} productos a la vez.`,
             })
             return;
         }
@@ -210,7 +265,7 @@ const ProductListScreen = () => {
                 description: `Error al procesar productos para el carrito`,
             })
         }
-    }, [getAllSelectedProducts, addMultipleItems, clearAllSelections]);
+    }, [getAllSelectedProducts, addMultipleItems, clearAllSelections, getBehaviorValue]);
 
     const columns = useMemo<ColumnDef<ProductGet>[]>(() => [
         {
@@ -282,24 +337,25 @@ const ProductListScreen = () => {
                                     <MoreVertical className="size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                onCloseAutoFocus={(e) => {
-                                    e.preventDefault();
-                                }}
-                                align="start"
-                                className="w-48">
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleProductDetail(row.original.id)}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Ver detalles
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleViewImage(row.original)}>
-                                    <Image className="mr-2 h-4 w-4" />
-                                    Ver imagen
-                                </DropdownMenuItem>
+                            <DropdownMenuContent align="start" className="w-48">
+                                {isFeatureEnabled('viewDetails') && (
+                                    <DropdownMenuItem onClick={() => handleProductDetail(row.original.id)}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Ver detalles
+                                    </DropdownMenuItem>
+                                )}
+                                {isFeatureEnabled('viewImage') && (
+                                    <DropdownMenuItem onClick={() => handleViewImage(row.original)}>
+                                        <Image className="mr-2 h-4 w-4" />
+                                        Ver imagen
+                                    </DropdownMenuItem>
+                                )}
+                                {isFeatureEnabled('editButton') && (
+                                    <DropdownMenuItem onClick={() => handleUpdateProduct(row.original.id)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Editar producto
+                                    </DropdownMenuItem>
+                                )}
                                 {/* <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleViewDetails(row.original.id)}>
@@ -312,12 +368,7 @@ const ProductListScreen = () => {
                                     <ShoppingCart className="mr-2 h-4 w-4" />
                                     Agregar al carrito
                                 </DropdownMenuItem> */}
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateProduct(row.original.id)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Editar producto
-                                </DropdownMenuItem>
+
                                 {/* <DropdownMenuItem
                                     onKeyDown={e => e.stopPropagation()}
                                     onClick={() => handleOpenDeleteAlert(row.original.id)}
@@ -364,13 +415,17 @@ const ProductListScreen = () => {
             size: 120,
             minSize: 30,
             cell: ({ row, getValue }) => {
+                const showAlt = isFeatureEnabled('priceAlternative');
                 const precioAlt = row.original.precio_venta_alt;
+
                 return (
                     <div className="space-y-1 flex items-end flex-col">
                         <div className="font-bold text-green-600">{formatCurrency(getValue<number>())}</div>
-                        <div className="flex items-center gap-1">
-                            <span>Alt: {formatCurrency(precioAlt)}</span>
-                        </div>
+                        {showAlt && (
+                            <div className="flex items-center gap-1">
+                                <span>Alt: {formatCurrency(precioAlt)}</span>
+                            </div>
+                        )}
                     </div>
                 );
             },
@@ -510,30 +565,63 @@ const ProductListScreen = () => {
         },
     ], [
         areAllProductsSelected,
-        products,
         toggleAllProductsSelection,
         isProductSelected,
         toggleProductSelection,
         handleProductDetail,
-        handleViewDetails,
         handleViewImage,
         handleUpdateProduct
     ]);
 
+    // const {
+    //     table,
+    //     resetAll,
+    //     // resetColumnOrder,
+    //     // resetColumnVisibility,
+    //     // resetColumnSizes,
+    //     // clearPersistedData,
+    //     isLoadingConfig,
+    // } = useCustomTable({
+    //     data: products,
+    //     columns,
+    //     viewId: 'products-list',
+
+    //     // Características habilitadas según config
+    //     enableSorting: true,
+    //     enableColumnResizing: getTableBehaviorValue('enableColumnResizing') ?? true,
+    //     enableRowSelection: isFeatureEnabled('multiSelect'),
+    //     enableColumnVisibility: isFeatureEnabled('columnSelector'),
+    //     enableColumnOrdering: getTableBehaviorValue('enableColumnReordering') ?? true,
+    //     enablePagination: isFeatureEnabled('pagination'),
+
+    //     // Configuración desde table.behaviors
+    //     columnResizeMode: getTableBehaviorValue('columnResizeMode') ?? 'onChange',
+    //     initialPageSize: getTableBehaviorValue('defaultPageSize') ?? 20,
+
+    //     // Estado inicial por defecto
+    //     initialColumnVisibility: getTableBehaviorValue('columnVisibility'),
+    //     defaultSortBy: [
+    //         {
+    //             id: getTableBehaviorValue('defaultSortField') ?? 'id',
+    //             desc: getTableBehaviorValue('defaultSortOrder') === 'desc'
+    //         }
+    //     ],
+    // });
+
     const {
         table,
-        // resetAll,
+        resetAll,
     } = useCustomTable({
         data: products,
         columns,
 
         // Configuración de características
         enableSorting: true,
-        enableColumnResizing: true,
-        enableRowSelection: true,
-        enableColumnVisibility: true,
-        enableColumnOrdering: true,
-        enablePagination: false,
+        enableColumnResizing: getTableBehaviorValue('enableColumnResizing') ?? true,
+        enableRowSelection: isFeatureEnabled('multiSelect'),
+        enableColumnVisibility: isFeatureEnabled('columnSelector'),
+        enableColumnOrdering: getTableBehaviorValue('enableColumnReordering') ?? true,
+        enablePagination: isFeatureEnabled('pagination'),
 
         // Columnas ocultas por defecto
         hiddenColumns: ['Select'],
@@ -557,26 +645,32 @@ const ProductListScreen = () => {
         items: products,
         containerRef: tableRef,
         isDragging: isDraggingColumn,
+        // enabled: isFeatureEnabled('keyboardNavigation'),
         onPrimaryAction: (product) => {
-            if (!modalOpen) {
+            if (!modalOpen && isFeatureEnabled('quickView')) {
                 setSelectedProductId(product.id);
                 setModalOpen(true);
             }
         },
         onSecondaryAction: (product) => {
-            handleProductDetail(product.id);
+            if (isFeatureEnabled('addToCart')) {
+                handleProductDetail(product.id);
+            }
         },
         onDeleteAction: (product) => {
             decrementQuantity(product.id)
         },
         getItemId: (product) => product.id
     });
+
     const handleRowClick = (index: number) => {
         setSelectedIndex(index);
     };
 
     const handleRowDoubleClick = (product: ProductGet) => {
-        addItemToCart(product);
+        if (isFeatureEnabled('addToCart')) {
+            addItemToCart(product);
+        }
     };
 
     const onPageChange = (page: number) => {
@@ -591,22 +685,25 @@ const ProductListScreen = () => {
         refetchProducts();
     }
 
-    // const toggleShowFilters = () => {
-    //     setShowFilters(!showFilters)
-    // }
+    const toggleShowFilters = () => {
+        setShowFilters(!showFilters)
+    }
 
-    // const handleResetTableConfig = () => {
-    //     resetAll();
-    // }
+    const handleResetTableConfig = () => {
+        resetAll();
+    }
 
-    // Manejar búsqueda manual
+    const handleInfiniteScrollChange = useCallback((checked: boolean) => {
+        setIsInfiniteScroll(checked);
+        setPage(1);
+    }, [setPage]);
+
     const handleManualSearch = () => {
         if (searchMode === 'manual') {
             applyFilters();
         }
     };
 
-    // Toggle del modo de búsqueda
     const toggleSearchMode = () => {
         setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
     };
@@ -623,9 +720,7 @@ const ProductListScreen = () => {
         'enter',
         (e) => {
             e.preventDefault();
-
-            // Si el modal está abierto, agregar al carrito y cerrar
-            if (modalOpen && selectedProductId) {
+            if (modalOpen && selectedProductId && isFeatureEnabled('allowAddToCartFromModal')) {
                 const product = products.find(p => p.id === Number(selectedProductId));
                 if (product) {
                     handleAddItemCart(product);
@@ -637,14 +732,22 @@ const ProductListScreen = () => {
         {
             enableOnFormTags: false,
             preventDefault: true,
-            enabled: modalOpen,
+            enabled: modalOpen && isFeatureEnabled('allowAddToCartFromModal'),
         },
-        [modalOpen, selectedProductId, handleAddItemCart]
+        [modalOpen, selectedProductId, handleAddItemCart, isFeatureEnabled]
     );
 
+    // Mostrar loading mientras carga la configuración
+    // if (isLoadingConfig) {
+    //     return (
+    //         <main className="h-full flex items-center justify-center">
+    //             <Loader2 className="size-8 animate-spin text-gray-400" />
+    //         </main>
+    //     );
+    // }
+
     return (
-        <main
-            className="h-full p-2 gap-2 flex flex-col">
+        <main className="h-full p-2 gap-2 flex flex-col">
             {/* Header */}
             <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
                 <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
@@ -654,107 +757,119 @@ const ProductListScreen = () => {
 
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* Toggle de modo de búsqueda */}
-                        <Button
-                            variant="ghost"
-                            onClick={toggleSearchMode}
-                            className="text-xs h-7"
-                            title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
-                        >
-                            <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
-                            {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
-                        </Button>
+                        {isFeatureEnabled('searchModeToggle') && (
+                            <Button
+                                variant="ghost"
+                                onClick={toggleSearchMode}
+                                className="text-xs h-7"
+                                title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+                            >
+                                <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                                {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+                            </Button>
+                        )}
 
-                        <div className="flex items-center space-x-2">
-                            <Switch
-                                id="infinite-scroll"
-                                checked={isInfiniteScroll}
-                                onCheckedChange={(checked) => {
-                                    setIsInfiniteScroll(checked)
-                                    setPage(1)
+                        {/* Scroll Infinito */}
+                        {isFeatureEnabled('infiniteScroll') && (
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="infinite-scroll"
+                                    checked={isInfiniteScroll}
+                                    onCheckedChange={handleInfiniteScrollChange}
+                                />
+                                <Label htmlFor="infinite-scroll">
+                                    {config?.features?.infiniteScroll?.label || 'Scroll Infinito'}
+                                </Label>
+                            </div>
+                        )}
+
+                        {/* Botón Refresh */}
+                        {isFeatureEnabled('refreshButton') && (
+                            <TooltipButton
+                                onClick={handleRefetchProducts}
+                                buttonProps={{
+                                    className: 'w-8',
+                                    disabled: isRefetchingProducts || isFetching,
                                 }}
-                            />
-                            <Label htmlFor="infinite-scroll">
-                                Scroll Infinito
-                            </Label>
-                        </div>
+                                tooltip={config?.features?.refreshButton?.description || "Recargar productos"}
+                            >
+                                <RefreshCcw className={`size-4 ${isRefetchingProducts || isFetching ? 'animate-spin' : ''}`} />
+                            </TooltipButton>
+                        )}
 
-                        <TooltipButton
-                            onClick={handleRefetchProducts}
-                            buttonProps={{
-                                className: 'w-8',
-                                disabled: isRefetchingProducts || isFetching,
-                            }}
-                            tooltip={"Recargar productos"}
-                        >
-                            <RefreshCcw className={`size-4 ${isRefetchingProducts || isFetching ? 'animate-spin' : ''}`} />
-                        </TooltipButton>
+                        {/* Resetear Tabla */}
+                        {isFeatureEnabled('resetTableButton') && (
+                            <TooltipButton
+                                onClick={handleResetTableConfig}
+                                buttonProps={{
+                                    variant: 'outline',
+                                    size: 'sm',
+                                }}
+                                tooltip={config?.features?.resetTableButton?.description || "Resetear tabla"}
+                            >
+                                <Settings className="h-4 w-4" />
+                                {config?.features?.resetTableButton?.label || 'Resetear Tabla'}
+                            </TooltipButton>
+                        )}
 
-                        {/* <TooltipButton
-                            onClick={handleResetTableConfig}
-                            buttonProps={{
-                                variant: 'outline',
-                                size: 'sm',
-                            }}
-                            tooltip="Resetear orden y visibilidad de columnas"
-                        >
-                            <Settings className="h-4 w-4" />
-                            Resetear Tabla
-                        </TooltipButton> */}
+                        {/* Toggle Filtros */}
+                        {isFeatureEnabled('hideFiltersButton') && (
+                            <Button variant={'outline'} onClick={toggleShowFilters}>
+                                {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+                            </Button>
+                        )}
 
-                        {/* <Button variant="outline" size="sm" onClick={handleResetFilters}>
-                                <Filter className="h-4 w-4" />
-                                Limpiar Filtros
-                            </Button> */}
-                        {/* <Button size={'sm'} onClick={toggleShowFilters}>
-                            {
-                                showFilters ?
-                                    "Ocultar filtros" :
-                                    "Mostrar filtros"
-                            }
-                        </Button> */}
-                        <TooltipWrapper
-                            tooltipContentProps={{
-                                align: 'end',
-                                className: 'max-w-xs'
-                            }}
-                            tooltip={
-                                <div className="flex flex-col space-y-3">
-                                    {/* Título del tooltip */}
-                                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                                        Atajos de teclado
-                                    </div>
+                        {/* Limpiar Filtros */}
+                        {isFeatureEnabled('newSearchButton') && (
+                            <Button onClick={handleResetFilters}>
+                                <PackageSearch className="h-4 w-4" />
+                                Nueva búsqueda
+                            </Button>
+                        )}
 
-                                    {/* Sección de navegación básica */}
-                                    <div className="space-y-1.5">
-                                        <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
-                                        <div className="space-y-1 text-gray-600 text-xs">
-                                            <p> <ShortcutKey combo={filter1Keys} />{COMMANDS['tableAndFilters.filter1'].description}: Categoria</p>
-                                            <p> <ShortcutKey combo={filter2Keys} />{COMMANDS['tableAndFilters.filter2'].description}: Descripción</p>
-                                            <p> <ShortcutKey combo={filter3Keys} />{COMMANDS['tableAndFilters.filter3'].description}: Cod. OEM</p>
-                                            <p> <ShortcutKey combo={filter4Keys} />{COMMANDS['tableAndFilters.filter4'].description}: Cod. Upc</p>
-                                            <p> <ShortcutKey combo={nextFilterKeys} />{COMMANDS['tableAndFilters.nextFilter'].description}</p>
+                        {/* Ayuda de Filtros */}
+                        {isFeatureEnabled('filterShortcutsHelp') && (
+                            <TooltipWrapper
+                                tooltipContentProps={{
+                                    align: 'end',
+                                    className: 'max-w-xs'
+                                }}
+                                tooltip={
+                                    <div className="flex flex-col space-y-3">
+                                        <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                            Atajos de teclado
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación filtros</h4>
+                                            <div className="space-y-1 text-gray-600 text-xs">
+                                                <p><ShortcutKey combo={filter1Keys} />{COMMANDS['tableAndFilters.filter1'].description}: Categoria</p>
+                                                <p><ShortcutKey combo={filter2Keys} />{COMMANDS['tableAndFilters.filter2'].description}: Descripción</p>
+                                                <p><ShortcutKey combo={filter3Keys} />{COMMANDS['tableAndFilters.filter3'].description}: Cod. OEM</p>
+                                                <p><ShortcutKey combo={filter4Keys} />{COMMANDS['tableAndFilters.filter4'].description}: Cod. Upc</p>
+                                                <p><ShortcutKey combo={nextFilterKeys} />{COMMANDS['tableAndFilters.nextFilter'].description}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            }
-                        >
-                            <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
-                                <HelpCircle />
-                            </span>
-                        </TooltipWrapper>
+                                }
+                            >
+                                <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                                    <HelpCircle />
+                                </span>
+                            </TooltipWrapper>
+                        )}
                     </div>
                 </section>
-                {/* Búsquedas individuales */}
-                {
-                    // showFilters &&
+
+                {/* Filtros */}
+                {isFeatureEnabled('searchBar') && showFilters && (
                     <ProductFilters
                         filters={filters}
                         updateFilter={updateFilter}
-                        showSubcategories={false}
+                        showSubcategories={isFeatureEnabled('advancedFilters')}
                         handleManualSearch={handleManualSearch}
                         searchMode={searchMode}
                     />
-                }
+                )}
             </header>
 
             <ResizablePanelGroup
@@ -768,41 +883,36 @@ const ProductListScreen = () => {
                     <div className="h-full flex flex-col">
                         {/* Results Info */}
                         <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
-                            {
-                                products.length > 0 ? (
-                                    isInfiniteScroll ? (
-                                        `Mostrando ${products.length} de ${productData?.meta.total} productos`
-                                    ) : (
-                                        (() => {
-                                            const pagina = filters.pagina ?? 1;
-                                            const porPagina = filters.pagina_registros ?? 1;
-
-                                            const inicio = (pagina - 1) * porPagina + 1;
-                                            const fin = pagina * porPagina;
-
-                                            return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
-                                        })()
-                                    )
+                            {products.length > 0 ? (
+                                isInfiniteScroll ? (
+                                    `Mostrando ${products.length} de ${productData?.meta.total} productos`
                                 ) : (
-                                    <span>Cargando...</span>
+                                    (() => {
+                                        const pagina = filters.pagina ?? 1;
+                                        const porPagina = filters.pagina_registros ?? 1;
+                                        const inicio = (pagina - 1) * porPagina + 1;
+                                        const fin = pagina * porPagina;
+                                        return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
+                                    })()
                                 )
-                            }
+                            ) : (
+                                <span>Cargando...</span>
+                            )}
 
                             <div className="flex items-center gap-2 flex-wrap">
-                                <ColumnVisibilityDropdown table={table} />
-                                {getSelectedCount() > 0 && (
+                                {/* Selector de Columnas */}
+                                {isFeatureEnabled('columnSelector') && (
+                                    <ColumnVisibilityDropdown table={table} />
+                                )}
+
+                                {/* Acciones de Selección Múltiple */}
+                                {isFeatureEnabled('bulkAddToCart') && getSelectedCount() > 0 && (
                                     <>
-                                        <Button
-                                            variant="outline"
-                                            onClick={clearAllSelections}
-                                        >
+                                        <Button variant="outline" onClick={clearAllSelections}>
                                             <X className="size-4" />
                                             Limpiar ({getSelectedCount()})
                                         </Button>
-                                        <Button
-                                            className="relative"
-                                            onClick={handleAddSelectedToCart}
-                                        >
+                                        <Button className="relative" onClick={handleAddSelectedToCart}>
                                             Agregar al carrito
                                             <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
                                                 {getSelectedCount()}
@@ -810,57 +920,51 @@ const ProductListScreen = () => {
                                         </Button>
                                     </>
                                 )}
-                                <TooltipWrapper
-                                    tooltipContentProps={{
-                                        align: 'end',
-                                        className: 'max-w-xs'
-                                    }}
-                                    tooltip={
-                                        <div className="flex flex-col space-y-3">
-                                            {/* Título del tooltip */}
-                                            <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                                                Atajos de teclado
-                                            </div>
 
-                                            {/* Sección de navegación básica */}
-                                            <div className="space-y-1.5">
-                                                <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación</h4>
-                                                <div className="space-y-1 text-gray-600 text-xs">
-                                                    <p> <ShortcutKey combo={hotkeys.activate ?? ''} /> Activar tabla </p>
-                                                    <p> <ShortcutKey combo={hotkeys.deactivate ?? ''} /> Salir de tabla </p>
-                                                    <p> <ShortcutKey combo={hotkeys.moveUp ?? ''} /> / <ShortcutKey combo={hotkeys.moveDown ?? ''} /> Navegar filas </p>
-                                                    <p> <ShortcutKey combo={hotkeys.navigate ?? ''} /> Cambiar columna</p>
+                                {/* Ayuda de Atajos de Teclado */}
+                                {isFeatureEnabled('keyboardShortcutsHelp') && (
+                                    <TooltipWrapper
+                                        tooltipContentProps={{
+                                            align: 'end',
+                                            className: 'max-w-xs'
+                                        }}
+                                        tooltip={
+                                            <div className="flex flex-col space-y-3">
+                                                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                                    Atajos de teclado
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación</h4>
+                                                    <div className="space-y-1 text-gray-600 text-xs">
+                                                        <p><ShortcutKey combo={hotkeys.activate ?? ''} /> Activar tabla </p>
+                                                        <p><ShortcutKey combo={hotkeys.deactivate ?? ''} /> Salir de tabla </p>
+                                                        <p><ShortcutKey combo={hotkeys.moveUp ?? ''} /> / <ShortcutKey combo={hotkeys.moveDown ?? ''} /> Navegar filas </p>
+                                                        <p><ShortcutKey combo={hotkeys.navigate ?? ''} /> Cambiar columna</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
+                                                    <div className="space-y-1 text-gray-600 text-xs">
+                                                        <p><ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de producto </p>
+                                                        <p><ShortcutKey combo={hotkeys.secondaryAction ?? ''} /> Agregar al carrito </p>
+                                                        <p><ShortcutKey combo={'ctrl+d'} /> Abrir modal de producto </p>
+                                                    </div>
                                                 </div>
                                             </div>
-
-                                            {/* Sección de acciones */}
-                                            <div className="space-y-1.5">
-                                                <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
-                                                <div className="space-y-1 text-gray-600 text-xs">
-                                                    <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de producto </p>
-                                                    <p> <ShortcutKey combo={hotkeys.secondaryAction ?? ''} /> Agregar al carrito </p>
-                                                    <p> <ShortcutKey combo={'ctrl+d'} /> Abrir modal de producto </p>
-                                                    {/* <p className="text-red-600">
-                                                <ShortcutKey combo={hotkeys.deleteAction ?? ''} /> Eliminar del carrito
-                                            </p> */}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                >
-                                    <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
-                                        <HelpCircle />
-                                    </span>
-                                </TooltipWrapper>
+                                        }
+                                    >
+                                        <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                                            <HelpCircle />
+                                        </span>
+                                    </TooltipWrapper>
+                                )}
                             </div>
                         </div>
 
-                        {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+                        {/* Tabla */}
                         <div className="flex-1 min-h-0">
                             {isInfiniteScroll ? (
-                                <div
-                                    className="h-full overflow-auto relative"
-                                    id="product-list-scroll-container">
+                                <div className="h-full overflow-auto relative" id="product-list-scroll-container">
                                     <InfiniteScroll
                                         dataLength={products.length}
                                         next={() => setPage((filters.pagina || 1) + 1)}
@@ -885,8 +989,8 @@ const ProductListScreen = () => {
                                             onRowDoubleClick={handleRowDoubleClick}
                                             tableRef={tableRef}
                                             focused={isFocused}
-                                            keyboardNavigationEnabled={true}
-                                            enableColumnReordering={true}
+                                            keyboardNavigationEnabled={isFeatureEnabled('keyboardNavigation')}
+                                            enableColumnReordering={getBehaviorValue<boolean>('enableColumnReordering') ?? true}
                                             enableSorting={false}
                                             onDragEnd={handleDragEnd}
                                             onDragStart={handleDragStart}
@@ -907,61 +1011,69 @@ const ProductListScreen = () => {
                                     onRowDoubleClick={handleRowDoubleClick}
                                     tableRef={tableRef}
                                     focused={isFocused}
-                                    keyboardNavigationEnabled={true}
-                                    enableColumnReordering={true}
-                                    enableSorting={false} //pendiente para usar configuraciones
+                                    keyboardNavigationEnabled={isFeatureEnabled('keyboardNavigation')}
+                                    enableColumnReordering={getBehaviorValue<boolean>('enableColumnReordering') ?? true}
+                                    enableSorting={false}
                                     onDragEnd={handleDragEnd}
                                     onDragStart={handleDragStart}
                                 />
                             )}
                         </div>
-                        {/* Pagination - FIJO en la parte inferior */}
-                        {
-                            !isInfiniteScroll && (productData?.data?.length ?? 0) > 0 && (
-                                <Pagination
-                                    currentPage={filters.pagina || 1}
-                                    onPageChange={onPageChange}
-                                    totalData={productData?.meta.total || 1}
-                                    onShowRowsChange={onShowRowsChange}
-                                    showRows={filters.pagina_registros}
-                                />
-                            )
-                        }
+
+                        {/* Paginación */}
+                        {isFeatureEnabled('pagination') && !isInfiniteScroll && (productData?.data?.length ?? 0) > 0 && (
+                            <Pagination
+                                currentPage={filters.pagina || 1}
+                                onPageChange={onPageChange}
+                                totalData={productData?.meta.total || 1}
+                                onShowRowsChange={onShowRowsChange}
+                                showRows={filters.pagina_registros}
+                            />
+                        )}
                     </div>
                 </ResizablePanel>
+
                 <ResizableHandle withHandle />
-                <ResizablePanel
-                    defaultSize={50}
-                >
-                    <BottomShoppingCartBar
-                        callback={() => setIsFocusedTable(false)}
-                    />
+
+                <ResizablePanel defaultSize={50}>
+                    <BottomShoppingCartBar callback={() => setIsFocusedTable(false)} />
                 </ResizablePanel>
             </ResizablePanelGroup>
 
-            <ConfirmationModal
-                isOpen={showDeleteAlert}
-                title="Eliminar producto"
-                message={`¿Estás seguro de que deseas eliminar el producto #${productToDelete}?`}
-                onClose={handleCloseDeleteAlert}
-                onConfirm={handleConfirmDeleteAlert}
-                isLoading={isDeletingProduct}
-            />
+            {/* Modales */}
+            {isFeatureEnabled('deleteButton') && (
+                <ConfirmationModal
+                    isOpen={showDeleteAlert}
+                    title="Eliminar producto"
+                    message={`¿Estás seguro de que deseas eliminar el producto #${productToDelete}?`}
+                    onClose={handleCloseDeleteAlert}
+                    onConfirm={handleConfirmDeleteAlert}
+                    isLoading={isDeletingProduct}
+                />
+            )}
 
-            <ProductDetailModal
-                productId={Number(selectedProductId)}
-                open={modalOpen}
-                onOpenChange={setModalOpen}
-            />
+            {isFeatureEnabled('viewDetails') && (
+                <ProductDetailModal
+                    productId={Number(selectedProductId)}
+                    open={modalOpen}
+                    onOpenChange={setModalOpen}
+                />
+            )}
 
-            <ProductImageModal
-                productId={selectedProductForImage?.id || null}
-                productName={selectedProductForImage?.descripcion}
-                imageUrl={"https://images.pexels.com/photos/162553/keys-workshop-mechanic-tools-162553.jpeg"}
-                open={imageModalOpen}
-                onOpenChange={setImageModalOpen}
-            />
+            {isFeatureEnabled('viewImage') && imageModalOpen && (
+                <ImageViewer
+                    open={imageModalOpen}
+                    onOpenChange={setImageModalOpen}
+                    imageSrc={"https://images.pexels.com/photos/162553/keys-workshop-mechanic-tools-162553.jpeg"}
+                    editMode={false}
+                    title={selectedProductForImage?.descripcion}
+                    onSave={(imageData) => {
+                        console.log('Imagen guardada:', imageData);
+                    }}
+                />
+            )}
         </main>
     )
 }
-export default ProductListScreen
+
+export default ProductListScreen;

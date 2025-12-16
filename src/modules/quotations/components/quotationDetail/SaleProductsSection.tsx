@@ -1,7 +1,5 @@
-import { Badge } from "@/components/atoms/badge";
 import { TableCell, TableRow } from "@/components/atoms/table";
 import CustomizableTable from "@/components/common/CustomizableTable";
-import { formatCell } from "@/utils/formatCell";
 import { formatCurrency } from "@/utils/formaters";
 import { formatNumber } from "@/utils/numberFormatters";
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
@@ -102,53 +100,46 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
             accessorFn: row => row.producto.descripcion,
             id: "descripcion",
             header: "Descripción",
-            size: 300,
+            size: 250,
             minSize: 40,
-            cell: ({ getValue, row }) => {
-                const product = row.original.producto
+            cell: ({ getValue }) => {
                 const descripcion = getValue<string>()
                 return (
                     <div className="space-y-0.5">
-                        <h3 title="Descripción" className="text-sm font-medium text-primary leading-tight truncate">
+                        <h3 title="Descripción" className="text-xs font-medium text-primary leading-tight truncate">
                             {descripcion}
                         </h3>
-
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {product.categoria && (
-                                <Badge variant="accent" title="Categoria" className="text-[10px] border-gray-300">{product.categoria.categoria}</Badge>
-                            )}
-                            {product.marca && (
-                                <Badge variant="outline" title="Marca" className="text-[10px] border-gray-300"> {product.marca.marca}</Badge>
-                            )}
-                            {product.procedencia && (
-                                <Badge variant="outline" title="Procedencia" className="text-[10px] border-gray-300">{product.procedencia.procedencia}</Badge>
-                            )}
-                            {product.marca_vehiculo && (
-                                <Badge variant="secondary" title="Marca Vehículo" className="text-[10px]">{product.marca_vehiculo.marca_vehiculo}</Badge>
-                            )}
-                        </div>
                     </div>
                 )
             },
         },
         {
-            accessorFn: row => row.producto.codigo_upc,
-            id: "codigo_upc",
-            header: "Código UPC/OEM",
+            accessorFn: row => row.producto.codigo_oem,
+            id: "codigo_oem",
+            header: "Código OEM",
             size: 100,
             minSize: 80,
-            cell: ({ getValue, row }) => (
-                <div className="space-y-0.5">
-                    <div className="font-mono text-xs text-primary truncate">
-                        {formatCell(getValue<string>())}
-                    </div>
-                    {row.original.producto.codigo_oem && (
-                        <div title="Código OEM" className="font-mono text-xs text-gray-500 truncate">
-                            OEM: {row.original.producto.codigo_oem}
-                        </div>
-                    )}
-                </div>
-            ),
+        },
+        {
+            accessorFn: row => row.producto.codigo_upc,
+            id: "codigo_upc",
+            header: "Código UPC",
+            size: 100,
+            minSize: 80,
+        },
+        {
+            accessorFn: row => row.producto.categoria?.categoria,
+            id: "categoria",
+            header: "Categoría",
+            size: 100,
+            minSize: 80,
+        },
+        {
+            accessorFn: row => row.producto.marca?.marca,
+            id: "marca",
+            header: "Marca",
+            size: 100,
+            minSize: 80,
         },
         {
             accessorKey: "cantidad",

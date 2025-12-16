@@ -1,4 +1,5 @@
-import type { ViewConfiguration } from "@/config/viewConfigTypes";
+// import type { ViewConfiguration } from "@/config/viewConfigTypes";
+import type { ViewConfiguration } from "@/view-configs/viewConfigTypes"
 
 export const userListConfig: ViewConfiguration = {
   id: 'users-list',

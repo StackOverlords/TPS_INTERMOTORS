@@ -22,4 +22,7 @@ export const ProductGetSchema = z.object({
     precio_venta: z.preprocess((v) => Number(v), z.number()),
     precio_venta_alt: z.preprocess((v) => Number(v), z.number()),
     sucursal: z.string(),
+    imagen: z.string().nullable(),
+    imagen_name: z.string().nullable(),
+    imagen_ext: z.string().nullable(),
 })

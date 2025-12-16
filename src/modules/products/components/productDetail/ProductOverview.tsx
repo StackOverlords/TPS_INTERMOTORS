@@ -1,12 +1,10 @@
-import { Badge } from "@/components/atoms/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { TabsContent } from "@/components/atoms/tabs";
-import CustomizableTable from "@/components/common/CustomizableTable";
-import { formatNumber, formatPrice } from "@/utils/numberFormatters";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Calendar, ImageIcon, ShoppingCart } from "lucide-react";
+import { Calendar, ImageIcon } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
+import { formatCurrency } from "@/utils/formaters";
+import ProductTableOverview from "./productTableOverview";
 
 interface ProductOverviewProps {
     productStockData: ProductStock[],
@@ -29,129 +27,6 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
         })
         : undefined;
 
-    const stockTotal = productStockData.reduce((total, item) => {
-        return total + item.saldo;
-    }, 0);
-
-    const columns: ColumnDef<ProductStock>[] = [
-        {
-            accessorKey: "fecha_adquisicion",
-            header: "Fecha Entrada",
-            enableHiding: false,
-            cell: ({ getValue }) => {
-                const rawFecha = getValue() as string;
-
-                if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
-
-                const fecha = new Date(rawFecha);
-                const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
-                return (
-                    <div className="flex flex-col gap-1">
-                        <span className="font-medium">{fechaFormatted}</span>
-                    </div>
-                );
-            },
-        },
-        {
-            accessorKey: "costo",
-            header: `Costo`,
-            cell: ({ getValue }) => (
-                <div className="text-end">
-                    {formatPrice(getValue<number>())}
-                </div>
-            )
-        },
-        {
-            accessorKey: "cantidad",
-            header: `Cantidad`,
-            cell: ({ getValue }) => {
-                const value = getValue<number>();
-                return (
-                    <div className="text-end">
-                        {formatNumber(value)}
-                    </div>
-                );
-            }
-        },
-        {
-            accessorKey: "precio_venta",
-            header: `Precio Venta F.`,
-            cell: ({ getValue }) => {
-                const value = getValue<number>();
-                return (
-                    <div className="text-end">
-                        ${formatPrice(value)}
-                    </div>
-                );
-            }
-        },
-        {
-            accessorKey: "precio_venta_alt",
-            header: `Precio Venta Alt.`,
-            cell: ({ getValue }) => (
-                <div className="text-end">
-                    {formatPrice(getValue<number>())}
-                </div>
-            )
-        },
-        {
-            accessorKey: "saldo",
-            header: "Stock",
-            cell: ({ row }) => (
-                <div className="flex items-center justify-center">
-                    <Badge
-                        variant={
-                            row.original.saldo > 20 ? "success" : row.original.saldo > 10 ? "warning" : "danger"
-                        }
-                        className="font-semibold"
-                    >
-                        {row.original.saldo}
-                    </Badge>
-                </div>
-            )
-        },
-        {
-            accessorKey: "tipo",
-            header: "Tipo",
-            cell: ({ getValue }) => (
-                <div className="flex items-center justify-center">
-                    <Badge variant="info" className="text-xs">
-                        {getValue<number>()}
-                    </Badge>
-                </div>
-            )
-        },
-        {
-            accessorKey: "fecha_actualizacion",
-            header: "Fecha Mod Precio",
-            cell: ({ getValue }) => {
-                const rawFecha = getValue() as string;
-
-                if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
-
-                const fecha = new Date(rawFecha);
-                const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
-                return (
-                    <span className="text-gray-400">{fechaFormatted}</span>
-                );
-            },
-        },
-    ];
-
-    const table = useReactTable<ProductStock>({
-        data: productStockData,
-        columns,
-        state: {
-        },
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
-        enableColumnResizing: true,
-        enableRowSelection: true,
-    })
     return (
         <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -162,10 +37,10 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                         {
                             compraReciente && (
                                 <>
-                                    <Card className="bg-white border border-gray-200 col-span-3 xl:col-span-4">
+                                    <Card className="bg-card border border-border col-span-3 xl:col-span-4">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                                                <Calendar className="h-5 w-5 text-gray-700" />
+                                                <Calendar className="size-4 text-gray-700" />
                                                 Compra Más Reciente (con saldo)
                                             </CardTitle>
                                         </CardHeader>
@@ -183,19 +58,19 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-600">Costo</label>
                                                     <p className="text-lg font-semibold text-gray-900">
-                                                        {formatPrice(compraReciente.costo)}
+                                                        {formatCurrency(compraReciente.costo)}
                                                     </p>
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-600">Precio de Venta F.</label>
                                                     <p className="text-lg font-semibold text-gray-900">
-                                                        {formatPrice(compraReciente.precio_venta)}
+                                                        {formatCurrency(compraReciente.precio_venta)}
                                                     </p>
                                                 </div>
                                                 <div>
                                                     <label className="text-sm font-medium text-gray-600">Precio de Venta S.F.</label>
                                                     <p className="text-lg font-semibold text-gray-900">
-                                                        {formatPrice(compraReciente.precio_venta_alt)}
+                                                        {formatCurrency(compraReciente.precio_venta_alt)}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -227,29 +102,12 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
 
 
                     {/* Stock Sucursal actual - Con todos los datos */}
-                    <Card className="bg-white border border-gray-200">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                                <ShoppingCart className="h-5 w-5 text-gray-700" />
-                                Compras Disponibles
-                                <Badge variant="secondary" className="ml-auto bg-gray-100 text-gray-700">
-                                    Stock Total: {stockTotal}
-                                </Badge>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="overflow-x-auto">
-                                <CustomizableTable
-                                    table={table}
-                                    isError={isError}
-                                    isFetching={isFetching}
-                                    isLoading={isLoading}
-                                    errorMessage="Ocurrió un error al cargar los productos"
-                                    noDataMessage="No se encontraron productos"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <ProductTableOverview
+                        isError={isError}
+                        isFetching={isFetching}
+                        isLoading={isLoading}
+                        productStockData={productStockData}
+                    />
                 </div>
 
                 {/* Sidebar */}
@@ -257,10 +115,10 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                     !compraReciente && (
                         <div className="space-y-4">
                             {/* Product Image */}
-                            <Card className="bg-white border border-gray-200">
+                            <Card className="bg-card border border-border">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-3 text-lg">
-                                        <ImageIcon className="h-5 w-5 text-gray-700" />
+                                        <ImageIcon className="size-4 text-gray-700" />
                                         Imagen del Producto
                                     </CardTitle>
                                 </CardHeader>

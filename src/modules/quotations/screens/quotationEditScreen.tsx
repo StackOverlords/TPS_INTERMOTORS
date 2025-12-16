@@ -20,7 +20,6 @@ import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { Button } from "@/components/atoms/button"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
-import { Switch } from "@/components/atoms/switch"
 import { Textarea } from "@/components/atoms/textarea"
 import { PDFViewer } from "@/components/common/PDFViewer"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
@@ -31,7 +30,6 @@ import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers"
 import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities"
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles"
 import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes"
-import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice"
 import QuotationDetailsEditingTable from "../components/quotationDetailsEditingTable"
 import QuotationEditSkeleton from "../components/quotationEditSkeleton"
 import QuotationsSummary from "../components/quotationsSummary"
@@ -44,6 +42,7 @@ import type { QuotationGetById } from "../types/quotationGet.types"
 import type { SelectedItem } from "@/types/windowSelectedItems"
 import type { QuotationUpdate, QuotationUpdateDetail } from "../types/quotationUpdate.types"
 import { Badge } from "@/components/atoms/badge"
+import { useClienteVarios } from "../hooks/useClienteVarios"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -269,7 +268,13 @@ const QuotationEditScreen = () => {
     };
 
     const formValues = watch();
-    const { tipo_cotizacion, plazo_pago, detalles } = formValues;
+    const { tipo_cotizacion, plazo_pago, detalles, id_cliente } = formValues;
+
+    const { shouldEnableInputs } = useClienteVarios({
+        currentClientId: id_cliente,
+        clientes: quotationCustomersData?.data
+    });
+
     // VALIDACIÓN DE FECHA DE PLAZO
     useEffect(() => {
         if (!hasInitialized) return;
@@ -517,20 +522,20 @@ const QuotationEditScreen = () => {
                             {/* Formulario de información de cotización*/}
                             <div className={cn(
                                 "gap-2 flex-shrink-0",
-                                configuraciones.formulario === "top" && "grid md:grid-cols-3",
+                                configuraciones.formulario === "top" && "grid md:grid-cols-2",
                                 configuraciones.formulario === "left" && "flex flex-col",
                             )}>
                                 {/* 1. Datos de la cotización */}
                                 <Card className={cn(
                                     "shadow-none",
-                                    configuraciones.formulario === "top" && "h-full flex-shrink-0 md:col-span-2",
+                                    configuraciones.formulario === "top" && "h-full flex-shrink-0",
                                     configuraciones.formulario === "left" && "h-auto md:col-auto",
                                 )}>
 
                                     <CardContent className="p-2 sm:p-3">
                                         <div className={cn(
                                             "grid gap-2",
-                                            configuraciones.formulario === "top" && "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+                                            configuraciones.formulario === "top" && "grid-cols-2 xl:grid-cols-3",
                                             configuraciones.formulario === "left" && "grid-cols-2",
                                         )}>
                                             <div>
@@ -683,39 +688,6 @@ const QuotationEditScreen = () => {
                                                     </div>
                                                 )
                                             }
-                                            <div>
-                                                <Label htmlFor="anticipo">Anticipo</Label>
-                                                <Controller
-                                                    name="anticipo"
-                                                    control={control}
-                                                    render={({ field }) => (
-                                                        <EditablePrice
-                                                            value={field.value || quotationData?.anticipo || 0}
-                                                            onSubmit={(value) => field.onChange(value as number)}
-                                                            className="w-full"
-                                                            buttonClassName="w-full"
-                                                            numberProps={{ min: 0, step: 0.01 }}
-                                                            disabled={isReadOnly}
-                                                        />
-                                                    )}
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="pedido">Es Pedido</Label>
-                                                <div>
-                                                    <Controller
-                                                        name="pedido"
-                                                        control={control}
-                                                        render={({ field }) => (
-                                                            <Switch
-                                                                checked={field.value}
-                                                                onCheckedChange={(checked) => field.onChange(checked)}
-                                                                disabled={isReadOnly}
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -727,7 +699,7 @@ const QuotationEditScreen = () => {
                                 )}>
 
                                     <CardContent className="p-2 sm:p-3">
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-3 gap-2">
 
                                             <div>
                                                 <Label htmlFor="cliente">Cliente *</Label>
@@ -759,7 +731,7 @@ const QuotationEditScreen = () => {
                                                 {errors.id_cliente && <p className="text-red-500 text-xs">El campo es requerido</p>}
                                             </div>
                                             {
-                                                configuraciones.inputs && (
+                                                (shouldEnableInputs || configuraciones.inputs) && (
                                                     <div>
                                                         <Label htmlFor="altClie">Cliente Alt.</Label>
                                                         <Input
@@ -772,7 +744,7 @@ const QuotationEditScreen = () => {
                                                 )
                                             }
                                             {
-                                                configuraciones.inputs && (
+                                                (shouldEnableInputs || configuraciones.inputs) && (
                                                     <div>
                                                         <Label htmlFor="contacto">Contacto</Label>
                                                         <Input
@@ -811,7 +783,10 @@ const QuotationEditScreen = () => {
                                                 )
                                             }
 
-                                            <div className="col-span-full">
+                                            <div className={cn(
+                                                "col-span-2",
+                                                (!shouldEnableInputs || configuraciones.inputs) && 'col-span-full'
+                                            )}>
                                                 <Label htmlFor="comentarios">Comentarios</Label>
                                                 <Textarea
                                                     id="comentarios"
