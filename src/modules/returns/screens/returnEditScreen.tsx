@@ -105,16 +105,18 @@ const ReturnEditScreen = () => {
     useEffect(() => {
         if (returnData && returnTypesData) {
             // Transformar detalles a UIReturnDetailUpdate
-            const detallesUI: UIReturnDetailUpdate[] = returnData.detalles.map((detalle) => ({
+            const detallesUI: UIReturnDetailUpdate[] = returnData.detalles.map((detalle, index) => ({
                 almacen_out_det_id: detalle.almacen_out_det_id,
                 almacen_out_dev_det_id: detalle.id,
                 cantidad: detalle.cantidad,
                 precio: detalle.costo ?? 0,
                 comentario: detalle.comentario ?? "",
-                sale_id: 0,
+                almacen_out_id: detalle.id_venta ?? 0,
+                orden: detalle.orden ?? (index + 1),
+                sale_id: detalle.id_venta ?? 0,
                 product: {
                     id: detalle.id,
-                    descripcion: "",
+                    descripcion: detalle.producto ?? "",
                     codigo_oem: "",
                     codigo_upc: "",
                     precio_venta: 0,
@@ -126,7 +128,7 @@ const ReturnEditScreen = () => {
             returnDetailsHook.setReturnDetails(detallesUI);
 
             const resetData: ReturnUpdate = {
-                fecha: format(returnData.fecha, "yyyy-MM-dd") ?? "",
+                fecha: returnData.fecha?.slice(0, 10) ?? "",
                 nro_comprobante: returnData.comprobante ?? "",
                 motivo_devolucion: returnData.forma_devolucion,
                 comentarios: returnData.comentarios ?? "",

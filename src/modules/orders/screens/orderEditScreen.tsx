@@ -164,9 +164,8 @@ const OrderEditScreen = () => {
 
             // Establecer detalles en el hook
             orderDetailsHook.setOrderDetails(detallesUI);
-
             const resetData: OrderUpdate = {
-                fecha: orderData.fecha ?? "",
+                fecha: orderData.fecha?.slice(0, 10) ?? "",
                 nro_comprobante: orderData.comprobante ?? "",
                 id_proveedor: orderData.proveedor?.id ?? 0,
                 comentario: orderData.comentarios ?? "",
@@ -472,9 +471,9 @@ const OrderEditScreen = () => {
                                             configuraciones.formulario === "left" && "grid-cols-2",
                                         )}>
                                             <div>
-                                                <Label htmlFor="fechaCotizacion">Fecha *</Label>
+                                                <Label htmlFor="fecha">Fecha *</Label>
                                                 <Input
-                                                    id="fechaCotizacion"
+                                                    id="fecha"
                                                     type="date"
                                                     {...register("fecha")}
                                                     className="w-full"

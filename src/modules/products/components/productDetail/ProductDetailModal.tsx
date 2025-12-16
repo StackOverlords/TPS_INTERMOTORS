@@ -16,14 +16,16 @@ import ProductInventory from './ProductInventory';
 import { useProductStock } from '../../hooks/queries/useProductStock';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/atoms/resizable';
 import ProductTableOverview from './productTableOverview';
+import type { TableShoppingCartRef } from '@/modules/shoppingCart/components/tableShoppingCart';
 
 interface ProductDetailModalProps {
     productId: number | null
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    tableRef: React.RefObject<TableShoppingCartRef | null>
 }
 
-export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDetailModalProps) => {
+export const ProductDetailModal = ({ productId, open, onOpenChange, tableRef }: ProductDetailModalProps) => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const user = authSDK.getCurrentUser()
     const [sucursalSeleccionada, setSucursalSeleccionada] = useState<number>(Number(selectedBranchId))
@@ -122,6 +124,11 @@ export const ProductDetailModal = ({ productId, open, onOpenChange }: ProductDet
         if (!productData) return;
 
         addItemToCart(productData);
+
+        setTimeout(() => {
+            // Enfocar el input del producto agregado
+            tableRef.current?.focusQuantityInputByProductId(productData.id);
+        }, 100);
         onOpenChange(false)
     }
 

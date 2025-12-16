@@ -6,6 +6,7 @@ export const SaleDetailSchema = z.object({
   precio: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))),
   descuento: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))),
   porcentaje_descuento: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))),
+  orden: z.number().int().nonnegative(),
 });
 
 export const SaleSchema = z.object({

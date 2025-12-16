@@ -2,29 +2,18 @@ import z from "zod";
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema";
 import { SaleCustomerGetSchema } from "@/modules/sales/schemas/saleCustomer.schema";
 import { SaleResponsibleSchema } from "@/modules/sales/schemas/saleResponsibles.schema";
-import { moneySchema } from "@/modules/shared/schemas/numberSchemas";
+import { moneySchema, requiredMoneySchema, toNumber } from "@/modules/shared/schemas/numberSchemas";
+import { toBoolean } from "@/modules/shared/schemas/booleanSchemas";
 
 export const QuotationItemSchema = z.object({
     id: z.number().int(),
     producto: ProductDetailSchema,
     descripcion: z.string().nullable(),
-    cantidad: z.preprocess(
-        (val) => (typeof val === "string" ? parseFloat(val) : val),
-        z.number()
-    ),
-    precio: z.preprocess(
-        (val) => (typeof val === "string" ? parseFloat(val) : val),
-        z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5)))
-    ),
+    cantidad: toNumber,
+    precio: requiredMoneySchema,
     monenda: z.string(),
-    descuento: z.preprocess(
-        (val) => (val == null ? null : parseFloat(val as string)),
-        z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))).nullable()
-    ),
-    porcentaje_descuento: z.preprocess(
-        (val) => (val == null ? null : parseFloat(val as string)),
-        z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))).nullable()
-    ),
+    descuento: moneySchema,
+    porcentaje_descuento: moneySchema,
     marca: z.string().nullable(),
     orden: z.number().nullable(),
 })
@@ -39,7 +28,7 @@ export const QuotationGetByIdSchema = z.object({
     comprobante2: z.string().nullable(),
     comentarios: z.string().nullable(),
     anticipo: moneySchema,
-    es_pedido: z.boolean(),
+    es_pedido: toBoolean,
     plazo_pago: z.string().nullable(),
     vehiculo: z.string().nullable(),
     nmotor: z.string().nullable(),
@@ -48,6 +37,6 @@ export const QuotationGetByIdSchema = z.object({
     cliente_contacto: z.string().nullable(),
     cliente_telefono: z.string().nullable(),
     responsable_cotizacion: SaleResponsibleSchema.nullable(),
-    cantidad_detalles: z.number().int(),
+    cantidad_detalles: toNumber,
     detalles: z.array(QuotationItemSchema),
 })

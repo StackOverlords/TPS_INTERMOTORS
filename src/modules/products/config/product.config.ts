@@ -150,6 +150,11 @@ export const productsListViewConfig: ViewConfiguration = {
       label: 'Ayuda de Filtros',
       description: 'Mostrar tooltip con atajos de filtros',
     },
+    bottomShoppingCartPanel: {
+      enabled: true,
+      label: 'Panel de Carrito',
+      description: 'Mostrar panel inferior con el carrito de compras',
+    },
   },
 
   behaviors: {

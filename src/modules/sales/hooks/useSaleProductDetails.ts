@@ -139,6 +139,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                     porcentaje_descuento: porcentaje_descuento,
                     id_detalle_venta: null,
                     precio: product.precio_venta,
+                    orden: currentProducts.length + 1,
                     producto: {
                         id: product.id,
                         categoria: product.categoria ?? null,
@@ -234,6 +235,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                     porcentaje_descuento: porcentaje_descuento,
                     id_detalle_venta: null,
                     precio: product.precio_venta,
+                    orden: currentProducts.length + 1,
                     producto: {
                         id: product.id,
                         categoria: product.categoria ?? null,

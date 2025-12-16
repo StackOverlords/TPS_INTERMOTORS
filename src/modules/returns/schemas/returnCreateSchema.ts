@@ -6,6 +6,8 @@ export const ReturnDetailCreateSchema = z.object({
     cantidad: z.number().positive(),
     precio: strictRequiredMoneySchema,
     comentario: z.string().nullable(),
+    orden: z.number(),
+    almacen_out_id: z.number(),
 });
 
 export const ReturnCreateSchema = z.object({

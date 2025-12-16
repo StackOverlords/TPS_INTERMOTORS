@@ -26,11 +26,21 @@ export interface ProductChange {
     sale_id: number;
     product: ProductMinimal;
     isNew: boolean;
-    maxQuantity: number; // Añadido
+    maxQuantity: number;
 }
 
 export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCreate>(isEditMode: boolean = false) => {
     const [details, setDetails] = useState<T[]>([]);
+
+    /**
+     * Reordenar los detalles secuencialmente a partir de 1
+     */
+    const reorderDetails = useCallback((items: T[]): T[] => {
+        return items.map((item, index) => ({
+            ...item,
+            orden: index + 1
+        }));
+    }, []);
 
     /**
      * Agregar un solo producto al detalle
@@ -71,6 +81,8 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 cantidad: 1,
                 precio: detail.precio - detail.descuento,
                 comentario: "",
+                orden: prev.length + 1,
+                almacen_out_id: saleId,
                 product: {
                     id: detail.producto.id,
                     descripcion: detail.producto.descripcion,
@@ -79,7 +91,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     precio_venta: detail.producto.precio_venta,
                 },
                 sale_id: saleId,
-                maxQuantity: detail.cantidad, // Guardar cantidad original de la venta
+                maxQuantity: detail.cantidad,
             };
 
             if (isEditMode) {
@@ -105,7 +117,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         let removedCount = 0;
 
         setDetails(prev => {
-            const newDetails = [...prev];
+            let newDetails = [...prev];
 
             changes.forEach(change => {
                 const existingIndex = newDetails.findIndex(
@@ -130,7 +142,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                             cantidad: change.cantidad,
                             precio: change.precio,
                             comentario: change.comentario || newDetails[existingIndex].comentario,
-                            maxQuantity: change.maxQuantity, // Actualizar maxQuantity
+                            maxQuantity: change.maxQuantity,
                         };
                         updatedCount++;
                     }
@@ -141,9 +153,11 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                         cantidad: change.cantidad,
                         precio: change.precio,
                         comentario: change.comentario || '',
+                        orden: newDetails.length + 1,
+                        almacen_out_id: change.sale_id,
                         product: change.product,
                         sale_id: change.sale_id,
-                        maxQuantity: change.maxQuantity, // Guardar maxQuantity
+                        maxQuantity: change.maxQuantity,
                     };
 
                     if (isEditMode) {
@@ -156,7 +170,8 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 }
             });
 
-            return newDetails;
+            // Reordenar después de todos los cambios
+            return reorderDetails(newDetails);
         });
 
         // Mostrar resumen de cambios
@@ -174,7 +189,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         }
 
         return addedIds;
-    }, [isEditMode]);
+    }, [isEditMode, reorderDetails]);
 
     /**
      * Agregar múltiples productos (MANTENER para compatibilidad con ventana)
@@ -193,13 +208,13 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 codigo_upc: string;
                 precio_venta?: number;
             };
-            maxQuantity: number; // Añadido
+            maxQuantity: number;
         }>
     ): number[] => {
         const addedIds: number[] = [];
 
         setDetails(prev => {
-            const newDetails = [...prev];
+            let newDetails = [...prev];
 
             items.forEach(item => {
                 const existingIndex = newDetails.findIndex(d => d.almacen_out_det_id === item.almacen_out_det_id);
@@ -222,6 +237,8 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                         cantidad: item.cantidad,
                         precio: item.precio,
                         comentario: item.comentario || '',
+                        orden: newDetails.length + 1,
+                        almacen_out_id: item.sale_id,
                         product: {
                             id: item.product.id,
                             descripcion: item.product.descripcion,
@@ -242,11 +259,12 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 }
             });
 
-            return newDetails;
+            // Reordenar después de agregar
+            return reorderDetails(newDetails);
         });
 
         return addedIds;
-    }, [isEditMode]);
+    }, [isEditMode, reorderDetails]);
 
     /**
      * Eliminar un producto del detalle
@@ -254,9 +272,10 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
     const removeProduct = useCallback((id_detalle: number) => {
         setDetails((prev) => {
             const filtered = prev.filter((d) => d.almacen_out_det_id !== id_detalle);
-            return filtered;
+            // Reordenar después de eliminar
+            return reorderDetails(filtered);
         });
-    }, []);
+    }, [reorderDetails]);
 
     /**
      * Modificar cantidad con validación de máximo
@@ -350,8 +369,9 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
      * Establecer detalles completos (útil para edición)
      */
     const setReturnDetails = useCallback((newDetails: T[]) => {
-        setDetails(newDetails);
-    }, []);
+        // Asegurar que tengan orden correcto al establecer
+        setDetails(reorderDetails(newDetails));
+    }, [reorderDetails]);
 
     /**
      * Verificar si un detalle específico existe

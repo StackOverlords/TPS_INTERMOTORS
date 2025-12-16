@@ -358,13 +358,14 @@ const ReturnCreateScreen = () => {
                                             configuraciones.formulario === "left" && "grid-cols-2",
                                         )}>
                                             <div>
-                                                <Label htmlFor="fechaCotizacion">Fecha *</Label>
+                                                <Label htmlFor="fecha">Fecha *</Label>
                                                 <Input
-                                                    id="fechaCotizacion"
+                                                    id="fecha"
                                                     type="date"
                                                     {...register("fecha")}
                                                     className="w-full"
                                                     autoFocus
+                                                    disabled={isReadOnly || isSaving}
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
                                             </div>
@@ -381,6 +382,7 @@ const ReturnCreateScreen = () => {
                                                             }}
                                                             options={returnResponsiblesData?.data || []}
                                                             optionTag={"nombre"}
+                                                            disabled={isReadOnly || isSaving}
                                                         />
                                                     )}
                                                 />
@@ -393,7 +395,9 @@ const ReturnCreateScreen = () => {
                                                     name="motivo_devolucion"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <Select onValueChange={field.onChange} value={field.value || returnTypesData?.[0]?.id || ""}>
+                                                        <Select
+                                                            disabled={isReadOnly || isSaving}
+                                                            onValueChange={field.onChange} value={field.value || returnTypesData?.[0]?.id || ""}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Selecciona un motivo" />
                                                             </SelectTrigger>
@@ -417,6 +421,7 @@ const ReturnCreateScreen = () => {
                                                     id="nroComprobante"
                                                     {...register("nro_comprobante")}
                                                     placeholder="Número de comprobante"
+                                                    disabled={isReadOnly || isSaving}
                                                 />
                                             </div>
 
@@ -430,7 +435,7 @@ const ReturnCreateScreen = () => {
                                                     {...register("comentarios")}
                                                     placeholder="Comentarios adicionales sobre la devolución"
                                                     rows={configuraciones.formulario === "top" ? 1 : 2}
-                                                    disabled={isReadOnly}
+                                                    disabled={isReadOnly || isSaving}
                                                 />
                                             </div>
                                         </div>

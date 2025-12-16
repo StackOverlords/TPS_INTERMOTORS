@@ -135,6 +135,17 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
     const columns = useMemo<ColumnDef<T>[]>(() => {
         const baseColumns: ColumnDef<T>[] = [];
 
+        baseColumns.push(
+            {
+                accessorKey: 'orden',
+                id: "orden",
+                header: "N°",
+                size: 30,
+                minSize: 20,
+                enableSorting: true,
+            },
+        )
+
         // Columna de código/badge solo en modo edición
         if (isEditMode) {
             baseColumns.push({
@@ -380,6 +391,14 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
         columnResizeMode: "onChange",
         enableColumnResizing: true,
         enableRowSelection: true,
+        initialState: {
+            sorting: [
+                {
+                    id: 'orden',
+                    desc: false,
+                },
+            ],
+        },
     });
 
     return (

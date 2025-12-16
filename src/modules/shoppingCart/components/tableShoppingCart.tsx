@@ -16,23 +16,47 @@ interface TableShoppingCartProps {
     details?: CartItem[] | null;
 }
 
-const TableShoppingCart = forwardRef(({
+export interface TableShoppingCartRef {
+    focusFirstQuantityInput: () => void;
+    focusQuantityInputByProductId: (productId: number) => void;
+}
+
+function TableShoppingCartInner({
     isReadOnly = false,
     details
-}: TableShoppingCartProps, ref) => {
+}: TableShoppingCartProps, ref: React.Ref<TableShoppingCartRef>) {
+
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+    const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-    // Exponer método focusFirstQuantityInput
+    // Exponer métodos para enfocar inputs
     useImperativeHandle(ref, () => ({
         focusFirstQuantityInput: () => {
             if (firstQuantityInputRef.current) {
                 firstQuantityInputRef.current.focus();
+                firstQuantityInputRef.current.select();
+            }
+        },
+        focusQuantityInputByProductId: (productId: number) => {
+            const input = quantityInputRefs.current.get(productId);
+            if (input) {
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 50);
+            } else {
+                // Fallback: si no encuentra el input específico, enfoca el primero
+                if (firstQuantityInputRef.current) {
+                    firstQuantityInputRef.current.focus();
+                    firstQuantityInputRef.current.select();
+                }
             }
         }
-    }));
+    }), []);
+
     const {
         items: cart,
         updateQuantity,
@@ -49,6 +73,27 @@ const TableShoppingCart = forwardRef(({
     }, [isReadOnly, details, cart]);
 
     const columns = useMemo<ColumnDef<CartItem>[]>(() => [
+        {
+            id: "orden",
+            header: "N°",
+            size: 30,
+            minSize: 20,
+            cell: ({ row }) => (
+                <span className="text-center block">
+                    {row.index + 1}
+                </span>
+            ),
+        },
+        {
+            accessorFn: row => row.product.id,
+            header: "Cód P.",
+            size: 45,
+            minSize: 30,
+            enableHiding: false,
+            cell: ({ getValue }) => (
+                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+            ),
+        },
         {
             accessorFn: row => row.product.descripcion,
             id: "descripcion",
@@ -82,21 +127,29 @@ const TableShoppingCart = forwardRef(({
             header: "Cantidad",
             minSize: 110,
             cell: ({ getValue, row }) => {
-                const quantity = getValue<number>()
-                const product = row.original.product
-                // Solo asignar el ref al primer row (rowIndex === 0)
+                const cantidad = getValue<number>();
+                const productId = row.original.product.id;
                 const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
                 return (
                     <EditableQuantity
-                        value={quantity}
+                        value={cantidad}
                         className="w-full"
                         buttonClassName="w-full"
-                        onSubmit={(value) => updateQuantity(product.id, value as number)}
+                        onSubmit={(value) => updateQuantity(productId, value as number)}
                         validate={(val) => {
                             const num = parseInt(val);
                             return !isNaN(num) && num > 0;
                         }}
-                        inputRef={refToAssign}
+                        inputRef={(el) => {
+                            if (refToAssign) {
+                                refToAssign.current = el;
+                            }
+                            if (el) {
+                                quantityInputRefs.current.set(productId, el);
+                            } else {
+                                quantityInputRefs.current.delete(productId);
+                            }
+                        }}
                         disabled={isReadOnly}
                     />
                 )
@@ -184,6 +237,14 @@ const TableShoppingCart = forwardRef(({
         columnResizeMode: "onChange",
         enableColumnResizing: true,
         enableRowSelection: true,
+        initialState: {
+            sorting: [
+                {
+                    id: "orden",
+                    desc: false,
+                },
+            ],
+        },
     })
 
     return (
@@ -192,5 +253,13 @@ const TableShoppingCart = forwardRef(({
             isLoading={false}
         />
     );
-});
-export default TableShoppingCart
+}
+
+// Exportar con forwardRef tipado correctamente
+const TableShoppingCart = forwardRef(TableShoppingCartInner) as React.ForwardRefExoticComponent<
+    TableShoppingCartProps & React.RefAttributes<TableShoppingCartRef>
+>;
+
+TableShoppingCart.displayName = 'TableShoppingCart';
+
+export default TableShoppingCart;
