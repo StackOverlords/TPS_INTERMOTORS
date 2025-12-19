@@ -24,15 +24,16 @@ import ProductDetailSkeleton from "../components/productDetail/ProductDetailSkel
 import ErrorDataComponent from "@/components/common/errorDataComponent"
 import authSDK from "@/services/sdk-simple-auth"
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
-import { useProductsPaginated } from "../hooks/queries/useProductsPaginated"
 import TooltipButton from "@/components/common/TooltipButton"
 import { Kbd } from "@/components/atoms/kbd"
 import { useHotkeys } from "react-hotkeys-hook"
+import { useProductByIdWithStock } from "../hooks/queries/useProductByIdWithStock"
+import type { ProductGet } from "../types/ProductGet"
 
 const ProductDetailScreen = () => {
     const navigate = useNavigate()
     const { productId } = useParams()
-    const { selectedBranchId } = useBranchStore()
+    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const user = authSDK.getCurrentUser()
     const [sucursalSeleccionada, setSucursalSeleccionada] = useState<number>(Number(selectedBranchId))
 
@@ -51,12 +52,7 @@ const ProductDetailScreen = () => {
         // error,
         // isFetching,
         // isError,
-    } = useProductsPaginated({
-        producto: Number(productId),
-        sucursal: Number(selectedBranchId),
-        pagina_registros: 1,
-        pagina: 1
-    });
+    } = useProductByIdWithStock(Number(productId), Number(selectedBranchId));
 
     const {
         data: product,
@@ -126,10 +122,34 @@ const ProductDetailScreen = () => {
     }
 
     const handleAddItemCart = () => {
-        const productData = productForCart?.data[0];
+        const productData = productForCart?.data;
         if (!productData) return;
-
-        addItemToCart(productData);
+        const transformedProduct: ProductGet = {
+            id: productData.id,
+            categoria: productData.categoria?.categoria ?? '',
+            codigo_oem: productData.codigo_oem,
+            codigo_upc: productData.codigo_upc,
+            descripcion: productData.descripcion,
+            imagen: productData.imagen,
+            imagen_ext: productData.imagen_ext,
+            imagen_name: productData.imagen_name,
+            marca: productData.marca?.marca ?? '',
+            medida: productData.medida,
+            modelo: productData.modelo,
+            nro_motor: productData.nro_motor,
+            pedido_almacen: 0,
+            pedido_transito: 0,
+            precio_venta: productData.precio_venta,
+            precio_venta_alt: productData.precio_venta_alt,
+            procedencia: productData.procedencia.procedencia,
+            stock_actual: productForCart.stock_actual,
+            stock_minimo: productData.stock_minimo,
+            stock_resto: productForCart.stock_resto,
+            subcategoria: productData.subcategoria?.subcategoria ?? '',
+            sucursal: '',
+            unidad_medida: productData.unidad_medida.unidad_medida
+        }
+        addItemToCart(transformedProduct);
     }
 
     const handleRetry = () => {
@@ -237,7 +257,7 @@ const ProductDetailScreen = () => {
                                     </TooltipButton>
                                 ))}
                                 <Button
-                                    disabled={!productForCart?.data || productForCart.data[0].stock_actual <= 0}
+                                    disabled={!productForCart?.data || productForCart.stock_actual <= 0}
                                     size={'sm'}
                                     className="cursor-pointer"
                                     onClick={handleAddItemCart}
@@ -253,6 +273,7 @@ const ProductDetailScreen = () => {
                     {/* Overview Tab */}
                     < ProductOverview
                         productStockData={productStockLocalData ?? []}
+                        product={product}
                         isError={isErrorStockLocalData}
                         isFetching={isFetchingStockLocalData}
                         isLoading={isLoadingStockLocalData}

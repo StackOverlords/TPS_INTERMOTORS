@@ -4,6 +4,7 @@ import OrderListScreen from "@/modules/orders/screens/orderListScreen";
 import OrderCreateScreen from "@/modules/orders/screens/orderCreateScreen";
 import OrderEditScreen from "@/modules/orders/screens/orderEditScreen";
 import OrderDetailScreen from "@/modules/orders/screens/orderDetailScreen";
+import { ordersListViewConfig } from "@/modules/orders/config/order.config";
 
 const ordersProtectedRoutes: RouteType[] = [
     {
@@ -35,7 +36,7 @@ const ordersProtectedRoutes: RouteType[] = [
                 isAdmin: true,
                 role: ["admin"],
                 icon: Table2,
-
+                viewConfig: ordersListViewConfig,
                 isHeader: false,
                 showSidebar: true
             },

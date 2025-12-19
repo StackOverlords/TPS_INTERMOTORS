@@ -52,6 +52,7 @@ import { useProductSelection } from "../hooks/useProductSelection"
 import type { ProductGet } from "../types/ProductGet"
 import { useCustomTable } from "@/hooks/useCustomTable"
 import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tableShoppingCart"
+import { useUpdateProductImage } from "../hooks/mutations/useUpdateProductImage"
 
 const ProductListScreen = () => {
     const tableRef = useRef<HTMLTableElement>(null)
@@ -110,6 +111,52 @@ const ProductListScreen = () => {
         refetch: refetchProducts,
         isRefetching: isRefetchingProducts,
     } = useProductsPaginated(activeFilters);
+
+    const {
+        mutate: updateProductImage,
+        isPending: isUpdatingImage
+    } = useUpdateProductImage({
+        onSuccess: () => {
+            showSuccessToast({
+                title: "Imagen actualizada",
+                description: "La imagen del producto se actualizó exitosamente",
+            });
+            // setImageModalOpen(false);
+            // setSelectedProductForImage(null);
+        },
+        onError: (error) => {
+            handleError({
+                error,
+                customTitle: "Error al actualizar la imagen del producto"
+            });
+        }
+    });
+    
+    const handleSaveImage = useCallback(async (imageData: string) => {
+        if (!selectedProductForImage) return;
+
+        try {
+            // Convertir base64 a File
+            const response = await fetch(imageData);
+            const blob = await response.blob();
+            const file = new File(
+                [blob],
+                `producto-${selectedProductForImage.id}.png`,
+                { type: 'image/png' }
+            );
+
+            // Llamar a la mutación
+            updateProductImage({
+                productId: selectedProductForImage.id,
+                imageFile: file
+            });
+        } catch (error) {
+            showErrorToast({
+                title: "Error",
+                description: "No se pudo procesar la imagen",
+            });
+        }
+    }, [selectedProductForImage, updateProductImage]);
 
     const {
         isProductSelected,
@@ -1087,16 +1134,22 @@ const ProductListScreen = () => {
                 />
             )}
 
-            {isFeatureEnabled('viewImage') && imageModalOpen && (
+            {imageModalOpen && selectedProductForImage && (
                 <ImageViewer
                     open={imageModalOpen}
-                    onOpenChange={setImageModalOpen}
-                    imageSrc={"https://images.pexels.com/photos/162553/keys-workshop-mechanic-tools-162553.jpeg"}
-                    editMode={false}
-                    title={selectedProductForImage?.descripcion}
-                    onSave={(imageData) => {
-                        console.log('Imagen guardada:', imageData);
+                    onOpenChange={(open) => {
+                        setImageModalOpen(open);
+                        if (!open) setSelectedProductForImage(null);
                     }}
+                    imageSrc={selectedProductForImage.imagen || undefined}
+                    editMode={!selectedProductForImage.imagen}
+                    title={selectedProductForImage.descripcion}
+                    onSave={handleSaveImage}
+                    imageMetadata={{
+                        fileName: selectedProductForImage.imagen_name,
+                        fileExtension: selectedProductForImage.imagen_ext,
+                    }}
+                    isLoading={isUpdatingImage}
                 />
             )}
         </main>

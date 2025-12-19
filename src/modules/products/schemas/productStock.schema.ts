@@ -1,3 +1,4 @@
+import { toNumberOrZeroStrict } from "@/modules/shared/schemas/numberSchemas";
 import { z } from "zod";
 
 const toNumber = z.preprocess((val) => {
@@ -17,6 +18,7 @@ export const ProductStockSchema = z.object({
     fecha_actualizacion: z.string().nullable(),
     tipo: z.string(),
     sucursal: z.string(),
+    tc_compra: toNumberOrZeroStrict
 });
 
 export const ProductStockListSchema = z.array(ProductStockSchema);

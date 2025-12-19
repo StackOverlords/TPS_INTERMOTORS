@@ -223,6 +223,7 @@ const ReturnEditScreen = () => {
         }
 
         const transformedData = result.data;
+        console.log(transformedData)
         updateReturn(
             { id: Number(returnId), data: transformedData },
             {

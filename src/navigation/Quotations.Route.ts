@@ -4,8 +4,9 @@ import QuotationEditScreen from "@/modules/quotations/screens/quotationEditScree
 import QuotationListScreen from "@/modules/quotations/screens/quotationListScreen";
 import { FileText, Package, ShoppingBag, Table2 } from "lucide-react";
 import type RouteType from "./RouteType";
+import { quotationsListViewConfig } from "@/modules/quotations/config/quotation.config";
 
-const quotationsProtectedRoutes: RouteType[] = [ 
+const quotationsProtectedRoutes: RouteType[] = [
   {
     name: "Cotizaciones",
     type: "protected",
@@ -35,7 +36,7 @@ const quotationsProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["admin"],
         icon: Table2,
-
+        viewConfig: quotationsListViewConfig,
         isHeader: false,
         showSidebar: true
       },
@@ -63,7 +64,7 @@ const quotationsProtectedRoutes: RouteType[] = [
         showInCommandPalette: false
       },
     ]
-  }, 
+  },
 ];
 
 export default quotationsProtectedRoutes;

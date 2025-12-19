@@ -68,3 +68,16 @@ export const toNumberOrZero = z.preprocess(
     },
     z.number()
 );
+
+/**
+ * Convierte un number a 0
+ */
+export const toNumberOrZeroStrict = z.preprocess(
+    (v) => {
+        if (v === "" || v === null || v === undefined) return 0;
+        if (typeof v === "number" && Number.isFinite(v)) return v;
+        if (typeof v === "string" && !isNaN(Number(v))) return Number(v);
+        return 0;
+    },
+    z.number()
+);
