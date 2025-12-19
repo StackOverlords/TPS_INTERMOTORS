@@ -78,4 +78,7 @@ export const ProductDetailSchema = z.object({
 
     id_marca_vehiculo: z.number(),
     marca_vehiculo: ProductMarcaVehiculoSchema.nullable(),
+    imagen: z.string().nullable(),
+    imagen_name: z.string().nullable(),
+    imagen_ext: z.string().nullable(),
 });

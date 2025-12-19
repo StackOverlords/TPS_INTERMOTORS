@@ -15,6 +15,8 @@ import type { ProductSalesStats } from "../types/ProductSalesStats";
 import type { ProductStock } from "../types/productStock";
 import type { ProductUpdate } from "../types/ProductUpdate.types";
 import { PRODUCT_ENDPOINTS } from "./endpoints";
+import { ProductGetByIdWithStockSchema } from "../schemas/ProductGetByIdWithStock.schema";
+import type { ProductGetByIdWithStock } from "../types/ProductGetByIdWithStock.type";
 
 const MODULE_NAME = "PRODUCTS_SERVICE";
 
@@ -55,16 +57,15 @@ export const productsService = {
 	 * @param id - ID del producto
 	 * @param sucursalId - ID de la sucursal
 	 */
-	async getByIdWithStock(id: number, sucursalId: number): Promise<ProductDetail> {
-		Logger.info("Fetching product detail", { id }, MODULE_NAME);
+	async getByIdWithStock(id: number, sucursalId: number): Promise<ProductGetByIdWithStock> {
+		Logger.info("Fetching product detail with stock", { id }, MODULE_NAME);
 		const response = await ApiService.get(
 			PRODUCT_ENDPOINTS.getByIdWithStock(id, sucursalId),
-			ProductDetailSchema,
-			undefined,
-			{ unwrapData: true }
+			ProductGetByIdWithStockSchema,
+			undefined
 		);
-		Logger.info("Product detail fetched successfully", { id, sucursalId }, MODULE_NAME);
-		return response as ProductDetail;
+		Logger.info("Product detail with stock fetched successfully", { id, sucursalId }, MODULE_NAME);
+		return response as ProductGetByIdWithStock;
 	},
 
 	/**
@@ -170,5 +171,32 @@ export const productsService = {
 			MODULE_NAME
 		);
 		return response as ProductDetail;
+	},
+
+	/**
+ * Actualizar imagen de un producto
+ * @param id - ID del producto
+ * @param imageFile - Archivo de imagen
+ */
+	async updateImage(id: number, imageFile: File): Promise<{ success: boolean }> {
+		Logger.info("Updating product image", { id, fileName: imageFile.name }, MODULE_NAME);
+
+		const formData = new FormData();
+		formData.append("imagen", imageFile);
+
+		// Usar el post existente con config para multipart/form-data
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.actions.updateImage(id),
+			formData,
+			undefined,
+			{
+				headers: {
+					'Content-Type': 'multipart/form-data',
+				},
+			}
+		);
+
+		Logger.info("Product image updated successfully", { id }, MODULE_NAME);
+		return response as { success: boolean };
 	},
 };

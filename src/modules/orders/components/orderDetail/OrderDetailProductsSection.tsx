@@ -114,7 +114,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       ),
     },
     {
-      // accessorFn: row => row.producto.descripcion,
+      accessorFn: row => row.producto.descripcion,
       id: "descripcion",
       header: "Descripción",
       size: 300,
@@ -124,7 +124,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
         const descripcion = getValue<string>()
         return (
           <div className="space-y-0.5">
-            <h3 title="Descripción" className="text-sm font-medium text-gray-900 leading-tight truncate">
+            <h3 title="Descripción" className="text-xs font-medium text-gray-900 leading-tight truncate">
               {descripcion}
             </h3>
 
@@ -230,7 +230,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       ),
     },
     {
-      accessorKey: "inc_precio_venta",
+      accessorFn:row=> row.inc_precio_venta,
       header: "Inc. %",
       size: 90,
       minSize: 80,
@@ -244,7 +244,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       sortingFn: "alphanumeric",
     },
     {
-      accessorKey: "precio_venta",
+      accessorFn:row=> row.precio_venta,
       id: 'precio_venta',
       header: "P. Venta",
       size: 110,
@@ -263,7 +263,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       sortingFn: "alphanumeric",
     },
     {
-      accessorKey: "inc_precio_venta_alt",
+      accessorFn:row=> row.inc_precio_venta_alt,
       id: 'inc_p_venta_alt',
       header: "Inc. Alt %",
       size: 110,
@@ -276,7 +276,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       sortingFn: "alphanumeric",
     },
     {
-      accessorKey: "precio_venta_alt",
+      accessorFn:row=> row.precio_venta_alt,
       id: 'precio_venta_alt',
       header: "P. Venta Alt",
       size: 110,

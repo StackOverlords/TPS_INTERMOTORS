@@ -27,8 +27,10 @@ import {
     Minimize,
     Info,
     Copy,
-    Share2,
+    // Share2,
     Image as ImageIcon,
+    Edit,
+    Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -36,6 +38,7 @@ import { Dialog, DialogContent, DialogTitle } from '../atoms/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../atoms/tooltip';
 import { Button } from '../atoms/button';
 import { Slider } from '../atoms/slider';
+import { downloadImage } from '@/lib/imageUtils';
 
 interface ImageViewerProps {
     open: boolean;
@@ -44,6 +47,11 @@ interface ImageViewerProps {
     editMode?: boolean;
     onSave?: (imageData: string) => void;
     title?: string;
+    imageMetadata?: {
+        fileName?: string | null;
+        fileExtension?: string | null;
+    };
+    isLoading?: boolean;
 }
 
 interface ImageState {
@@ -66,7 +74,7 @@ interface CropArea {
 
 interface AspectRatio {
     name: string;
-    ratio: number | null; // null = free
+    ratio: number | null;
     icon: React.ElementType;
 }
 
@@ -111,6 +119,8 @@ export function ImageViewer({
     editMode = false,
     onSave,
     title = 'Visor de Imagen',
+    imageMetadata,
+    isLoading = false,
 }: ImageViewerProps) {
     const [imageState, setImageState] = useState<ImageState>(initialState);
     const [history, setHistory] = useState<string[]>([]);
@@ -132,24 +142,99 @@ export function ImageViewer({
     const [showFullscreenControls, setShowFullscreenControls] = useState(false);
     const [imageInfo, setImageInfo] = useState<{ width: number; height: number; size?: string } | null>(null);
     const [showInfo, setShowInfo] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(editMode);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-    // const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageContainerRef = useRef<HTMLDivElement>(null);
     const imageRef = useRef<HTMLImageElement | null>(null);
     const fullscreenContainerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Cargar imagen 
+    const loadImageSafely = useCallback(async (url: string): Promise<string> => {
+        // Si ya es data URL, retornar directamente
+        if (url.startsWith('data:')) {
+            return url;
+        }
+
+        try {
+            // Verificar si estamos en Tauri
+            const { isTauriEnvironment } = await import('@/utils/environment');
+
+            if (isTauriEnvironment()) {
+                // Usar Tauri HTTP client que no tiene restricciones CORS
+                const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
+
+                const response = await tauriFetch(url, {
+                    method: 'GET',
+                });
+
+                const blob = await response.blob();
+
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } else {
+                // En navegador normal, intentar fetch regular
+                const response = await fetch(url, { mode: 'cors' });
+                const blob = await response.blob();
+
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading image safely:', error);
+            throw new Error(`No se pudo cargar la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
+    }, []);
+
     // Sync with prop changes
     useEffect(() => {
-        if (imageSrc !== currentImage) {
-            setCurrentImage(imageSrc);
-            setHistory([]);
-            setHistoryIndex(-1);
-            setImageState(initialState);
-            setImagePosition({ x: 0, y: 0 });
-        }
-    }, [imageSrc]);
+        const syncImage = async () => {
+            // Solo sincronizar si:
+            // 1. La imagen fuente cambió
+            // 2. NO estamos en modo edición (para no interferir con ediciones)
+            // 3. No hay historial de edición (para no perder cambios)
+            if (imageSrc !== currentImage && !isEditMode && !history.length) {
+                // Si es una URL externa, convertirla a data URL usando Tauri
+                if (imageSrc && (imageSrc.startsWith('http://') || imageSrc.startsWith('https://'))) {
+                    try {
+                        const dataUrl = await loadImageSafely(imageSrc);
+                        setCurrentImage(dataUrl);
+                        toast.success('Imagen cargada correctamente');
+                    } catch (error) {
+                        console.error('Failed to load image:', error);
+                        toast.error('Error al cargar la imagen');
+                        setCurrentImage(imageSrc); // Intentar cargar de todos modos
+                    }
+                } else if (imageSrc) {
+                    setCurrentImage(imageSrc);
+                }
+
+                setHistory([]);
+                setHistoryIndex(-1);
+                setImageState(initialState);
+                setImagePosition({ x: 0, y: 0 });
+            }
+        };
+
+        syncImage();
+        // Removemos isEditMode de las dependencias para que no se ejecute cuando cambie
+    }, [imageSrc, loadImageSafely, currentImage, history.length]);
+
+    // Sync editMode prop separately
+    useEffect(() => {
+        setIsEditMode(editMode);
+    }, [editMode]);
 
     // Reset position when zoom changes to 1
     useEffect(() => {
@@ -158,10 +243,9 @@ export function ImageViewer({
         }
     }, [imageState.zoom]);
 
-    // Check if image overflows container (needs drag)
     const needsDrag = imageState.zoom > 1;
 
-    // Add to history when image changes
+    // Add to history when image changes - CORREGIDO
     const addToHistory = useCallback((imageData: string) => {
         setHistory(prev => {
             const newHistory = prev.slice(0, historyIndex + 1);
@@ -169,6 +253,7 @@ export function ImageViewer({
             return newHistory;
         });
         setHistoryIndex(prev => prev + 1);
+        setCurrentImage(imageData); // Actualizar la imagen actual inmediatamente
     }, [historyIndex]);
 
     const updateState = (newState: Partial<ImageState>) => {
@@ -185,37 +270,55 @@ export function ImageViewer({
         setImagePosition({ x: 0, y: 0 });
         if (imageSrc) {
             setCurrentImage(imageSrc);
+            setHistory([]);
+            setHistoryIndex(-1);
         }
     };
 
+    // Undo/Redo CORREGIDO
     const handleUndo = () => {
         if (historyIndex > 0) {
-            setHistoryIndex(historyIndex - 1);
-            setCurrentImage(history[historyIndex - 1]);
-        } else if (historyIndex === 0 && imageSrc) {
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            setCurrentImage(history[newIndex]);
+            setImageState(initialState);
+        } else if (historyIndex === 0) {
             setHistoryIndex(-1);
-            setCurrentImage(imageSrc);
+            setCurrentImage(imageSrc || '');
+            setImageState(initialState);
         }
     };
 
     const handleRedo = () => {
         if (historyIndex < history.length - 1) {
-            setHistoryIndex(historyIndex + 1);
-            setCurrentImage(history[historyIndex + 1]);
+            const newIndex = historyIndex + 1;
+            setHistoryIndex(newIndex);
+            setCurrentImage(history[newIndex]);
+            setImageState(initialState);
         }
     };
 
+    // File upload CORREGIDO
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const newImage = event.target?.result as string;
+                // Limpiar historial y establecer nueva imagen
+                setHistory([]);
+                setHistoryIndex(-1);
                 setCurrentImage(newImage);
-                addToHistory(newImage);
-                handleReset();
+                setImageState(initialState);
+                setImagePosition({ x: 0, y: 0 });
+                setIsEditMode(true);
+                toast.success('Imagen cargada correctamente');
             };
             reader.readAsDataURL(file);
+        }
+        // Reset input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -229,85 +332,115 @@ export function ImageViewer({
     };
 
     // Apply transformations and get final image
-    const applyTransformations = useCallback((): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            if (!currentImage) {
-                reject('No image');
-                return;
+    const applyTransformations = useCallback(async (): Promise<string> => {
+        if (!currentImage) {
+            throw new Error('No image');
+        }
+
+        try {
+            let imageSrc = currentImage;
+
+            // Si es URL externa, cargarla primero
+            if (currentImage.startsWith('http://') || currentImage.startsWith('https://')) {
+                imageSrc = await loadImageSafely(currentImage);
             }
 
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    reject('No canvas context');
-                    return;
-                }
+            return new Promise((resolve, reject) => {
+                const img = new Image();
 
-                // Handle rotation dimensions
-                const isRotated90or270 = imageState.rotation === 90 || imageState.rotation === 270;
-                canvas.width = isRotated90or270 ? img.height : img.width;
-                canvas.height = isRotated90or270 ? img.width : img.height;
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            reject(new Error('No canvas context'));
+                            return;
+                        }
 
-                ctx.save();
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                ctx.rotate((imageState.rotation * Math.PI) / 180);
-                ctx.scale(imageState.flipX ? -1 : 1, imageState.flipY ? -1 : 1);
-                ctx.filter = `brightness(${imageState.brightness}%) contrast(${imageState.contrast}%) saturate(${imageState.saturation}%) ${imageState.filter}`;
-                ctx.drawImage(img, -img.width / 2, -img.height / 2);
-                ctx.restore();
+                        const isRotated90or270 = imageState.rotation === 90 || imageState.rotation === 270;
+                        canvas.width = isRotated90or270 ? img.height : img.width;
+                        canvas.height = isRotated90or270 ? img.width : img.height;
 
-                resolve(canvas.toDataURL('image/png'));
-            };
-            img.onerror = () => reject('Failed to load image');
-            img.src = currentImage;
-        });
-    }, [currentImage, imageState]);
+                        ctx.save();
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.rotate((imageState.rotation * Math.PI) / 180);
+                        ctx.scale(imageState.flipX ? -1 : 1, imageState.flipY ? -1 : 1);
+                        ctx.filter = `brightness(${imageState.brightness}%) contrast(${imageState.contrast}%) saturate(${imageState.saturation}%) ${imageState.filter}`;
+                        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                        ctx.restore();
 
-    // Apply crop
+                        resolve(canvas.toDataURL('image/png'));
+                    } catch (canvasError) {
+                        reject(new Error(`Canvas processing error: ${canvasError}`));
+                    }
+                };
+
+                img.onerror = () => {
+                    reject(new Error('Failed to load image for transformation'));
+                };
+
+                img.src = imageSrc;
+            });
+        } catch (error) {
+            throw new Error(`Transform error: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
+    }, [currentImage, imageState, loadImageSafely]);
+
+    // Apply crop 
     const applyCrop = useCallback(async () => {
         if (!cropArea || !currentImage || !imageRef.current || !imageContainerRef.current) return;
 
-        const img = imageRef.current;
-        const container = imageContainerRef.current;
-        const imgRect = img.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
+        try {
+            // Primero aplicar todas las transformaciones actuales a la imagen
+            const transformedImage = await applyTransformations();
 
-        // Calculate crop coordinates relative to the actual image
-        const scaleX = img.naturalWidth / imgRect.width;
-        const scaleY = img.naturalHeight / imgRect.height;
+            // Crear una imagen temporal con las transformaciones aplicadas
+            const tempImg = new Image();
+            tempImg.crossOrigin = 'anonymous';
 
-        const cropX = Math.min(cropArea.startX, cropArea.endX) - (imgRect.left - containerRect.left);
-        const cropY = Math.min(cropArea.startY, cropArea.endY) - (imgRect.top - containerRect.top);
-        const cropWidth = Math.abs(cropArea.endX - cropArea.startX);
-        const cropHeight = Math.abs(cropArea.endY - cropArea.startY);
+            await new Promise((resolve, reject) => {
+                tempImg.onload = resolve;
+                tempImg.onerror = reject;
+                tempImg.src = transformedImage;
+            });
 
-        // Clamp to image bounds
-        const clampedX = Math.max(0, cropX);
-        const clampedY = Math.max(0, cropY);
-        const clampedWidth = Math.min(cropWidth, imgRect.width - clampedX);
-        const clampedHeight = Math.min(cropHeight, imgRect.height - clampedY);
+            const img = imageRef.current;
+            const container = imageContainerRef.current;
+            const imgRect = img.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
 
-        if (clampedWidth < 10 || clampedHeight < 10) {
-            setIsCropping(false);
-            setCropArea(null);
-            return;
-        }
+            // Calcular la escala entre la imagen mostrada y la imagen real
+            const scaleX = tempImg.naturalWidth / imgRect.width;
+            const scaleY = tempImg.naturalHeight / imgRect.height;
 
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+            const cropX = Math.min(cropArea.startX, cropArea.endX) - (imgRect.left - containerRect.left);
+            const cropY = Math.min(cropArea.startY, cropArea.endY) - (imgRect.top - containerRect.top);
+            const cropWidth = Math.abs(cropArea.endX - cropArea.startX);
+            const cropHeight = Math.abs(cropArea.endY - cropArea.startY);
 
-        canvas.width = clampedWidth * scaleX;
-        canvas.height = clampedHeight * scaleY;
+            const clampedX = Math.max(0, cropX);
+            const clampedY = Math.max(0, cropY);
+            const clampedWidth = Math.min(cropWidth, imgRect.width - clampedX);
+            const clampedHeight = Math.min(cropHeight, imgRect.height - clampedY);
 
-        const sourceImg = new Image();
-        sourceImg.crossOrigin = 'anonymous';
-        sourceImg.onload = () => {
+            if (clampedWidth < 10 || clampedHeight < 10) {
+                toast.error('El área de recorte es demasiado pequeña');
+                setIsCropping(false);
+                setCropArea(null);
+                return;
+            }
+
+            // Crear canvas para el recorte
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            canvas.width = clampedWidth * scaleX;
+            canvas.height = clampedHeight * scaleY;
+
+            // Dibujar la porción recortada de la imagen transformada
             ctx.drawImage(
-                sourceImg,
+                tempImg,
                 clampedX * scaleX,
                 clampedY * scaleY,
                 clampedWidth * scaleX,
@@ -319,15 +452,17 @@ export function ImageViewer({
             );
 
             const croppedImage = canvas.toDataURL('image/png');
-            setCurrentImage(croppedImage);
             addToHistory(croppedImage);
             setIsCropping(false);
             setCropArea(null);
-            setImageState(prev => ({ ...prev, zoom: 1 }));
+            setImageState(initialState);
             setImagePosition({ x: 0, y: 0 });
-        };
-        sourceImg.src = currentImage;
-    }, [cropArea, currentImage, addToHistory]);
+            toast.success('Imagen recortada correctamente');
+        } catch (error) {
+            console.error('Error cropping image:', error);
+            toast.error('Error al recortar la imagen');
+        }
+    }, [cropArea, currentImage, addToHistory, applyTransformations]);
 
     const handleCropMouseDown = (e: React.MouseEvent) => {
         if (!isCropping || !imageContainerRef.current) return;
@@ -352,7 +487,6 @@ export function ImageViewer({
         let x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
         let y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
 
-        // Apply aspect ratio constraint
         if (selectedAspectRatio.ratio !== null) {
             const width = x - cropArea.startX;
             const height = y - cropArea.startY;
@@ -375,7 +509,6 @@ export function ImageViewer({
         setIsDraggingCrop(false);
     };
 
-    // Image drag handlers for when zoomed
     const handleImageMouseDown = (e: React.MouseEvent) => {
         if (isCropping || magnifierActive || !needsDrag) return;
         e.preventDefault();
@@ -384,20 +517,16 @@ export function ImageViewer({
     };
 
     const handleImageMouseMove = (e: React.MouseEvent) => {
-        // Magnifier logic - calculate position relative to the actual image
         if (magnifierActive && imageContainerRef.current && imageRef.current) {
             const containerRect = imageContainerRef.current.getBoundingClientRect();
             const imgRect = imageRef.current.getBoundingClientRect();
 
-            // Cursor position relative to container (for magnifier display position)
             const cursorX = e.clientX - containerRect.left;
             const cursorY = e.clientY - containerRect.top;
 
-            // Cursor position relative to the displayed image
             const imgRelativeX = e.clientX - imgRect.left;
             const imgRelativeY = e.clientY - imgRect.top;
 
-            // Calculate the position as a percentage of the image
             const imgPercentX = imgRelativeX / imgRect.width;
             const imgPercentY = imgRelativeY / imgRect.height;
 
@@ -405,13 +534,11 @@ export function ImageViewer({
             setMagnifierImagePosition({ x: imgPercentX, y: imgPercentY });
         }
 
-        // Drag logic
         if (!isDraggingImage || !needsDrag) return;
 
         const newX = e.clientX - dragStart.x;
         const newY = e.clientY - dragStart.y;
 
-        // Limit drag bounds based on zoom level
         const maxOffset = (imageState.zoom - 1) * 200;
         setImagePosition({
             x: Math.max(-maxOffset, Math.min(maxOffset, newX)),
@@ -430,7 +557,6 @@ export function ImageViewer({
         setIsDraggingImage(false);
     };
 
-    // Fullscreen handlers
     const toggleFullscreen = useCallback(() => {
         if (!document.fullscreenElement) {
             fullscreenContainerRef.current?.requestFullscreen();
@@ -449,7 +575,6 @@ export function ImageViewer({
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
-    // Fullscreen controls hover
     const handleFullscreenMouseMove = () => {
         if (!isFullscreen) return;
         setShowFullscreenControls(true);
@@ -461,7 +586,6 @@ export function ImageViewer({
         }, 2500);
     };
 
-    // Get image info
     useEffect(() => {
         if (currentImage && imageRef.current) {
             const img = new Image();
@@ -478,7 +602,6 @@ export function ImageViewer({
         }
     }, [currentImage]);
 
-    // Copy image to clipboard
     const handleCopyImage = async () => {
         if (!currentImage) return;
         try {
@@ -495,49 +618,101 @@ export function ImageViewer({
         }
     };
 
-    // Share image
-    const handleShareImage = async () => {
-        if (!currentImage || !navigator.share) {
-            toast.error('Compartir no disponible en este navegador');
-            return;
-        }
-        try {
-            const finalImage = await applyTransformations();
-            const response = await fetch(finalImage);
-            const blob = await response.blob();
-            const file = new File([blob], 'imagen.png', { type: blob.type });
-            await navigator.share({
-                files: [file],
-                title: 'Imagen',
-            });
-        } catch (error) {
-            if ((error as Error).name !== 'AbortError') {
-                console.error('Error sharing image:', error);
-            }
-        }
-    };
+    // const handleShareImage = async () => {
+    //     if (!currentImage || !navigator.share) {
+    //         toast.error('Compartir no disponible en este navegador');
+    //         return;
+    //     }
+    //     try {
+    //         const finalImage = await applyTransformations();
+    //         const response = await fetch(finalImage);
+    //         const blob = await response.blob();
+    //         const file = new File([blob], 'imagen.png', { type: blob.type });
+    //         await navigator.share({
+    //             files: [file],
+    //             title: 'Imagen',
+    //         });
+    //     } catch (error) {
+    //         if ((error as Error).name !== 'AbortError') {
+    //             console.error('Error sharing image:', error);
+    //             toast.error('Error al compartir imagen');
+    //         }
+    //     }
+    // };
 
+    // Download 
     const handleDownload = async () => {
         if (!currentImage) return;
+
+        setIsDownloading(true);
+        const downloadToast = toast.loading('Preparando descarga...');
+
         try {
-            const finalImage = await applyTransformations();
-            const link = document.createElement('a');
-            link.href = finalImage;
-            link.download = 'imagen.png';
-            link.click();
+            // Determinar si hay transformaciones
+            const hasTransformations =
+                imageState.rotation !== 0 ||
+                imageState.flipX ||
+                imageState.flipY ||
+                imageState.brightness !== 100 ||
+                imageState.contrast !== 100 ||
+                imageState.saturation !== 100 ||
+                imageState.filter !== '';
+
+            // Aplicar transformaciones si las hay, o cargar imagen si es URL externa
+            let finalImage: string;
+
+            if (hasTransformations) {
+                finalImage = await applyTransformations();
+            } else if (currentImage.startsWith('http://') || currentImage.startsWith('https://')) {
+                finalImage = await loadImageSafely(currentImage);
+            } else {
+                finalImage = currentImage;
+            }
+
+            const timestamp = Date.now();
+            const defaultName = imageMetadata?.fileName
+                ? `${imageMetadata.fileName.replace(/\.[^/.]+$/, '')}_${timestamp}.png`
+                : `imagen_${timestamp}.png`;
+
+            await downloadImage(finalImage, defaultName);
+
+            toast.success('Imagen guardada correctamente', { id: downloadToast });
         } catch (error) {
             console.error('Error downloading image:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            toast.error(`Error al descargar: ${errorMessage}`, { id: downloadToast });
+        } finally {
+            setIsDownloading(false);
         }
     };
 
+    // Save
     const handleSave = async () => {
         if (!currentImage || !onSave) return;
+
+        setIsSaving(true);
+        const saveToast = toast.loading('Guardando imagen...');
+
         try {
+            // Siempre aplicar transformaciones (esto cargará la imagen si es necesario)
             const finalImage = await applyTransformations();
-            onSave(finalImage);
-            onOpenChange(false);
+
+            await onSave(finalImage);
+
+            // Actualizar estados
+            setCurrentImage(finalImage);
+            setImageState(initialState);
+            setImagePosition({ x: 0, y: 0 });
+            setHistory([]);
+            setHistoryIndex(-1);
+
+            toast.success('Imagen guardada correctamente', { id: saveToast });
         } catch (error) {
             console.error('Error saving image:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            toast.error(`Error al guardar: ${errorMessage}`, { id: saveToast });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -616,25 +791,35 @@ export function ImageViewer({
                     )}
                     onMouseMove={handleFullscreenMouseMove}
                 >
-                    {/* Header - hidden in fullscreen unless hovering */}
+                    {/* Header */}
                     <div
                         className={cn(
                             "flex items-center justify-between px-4 py-3 border-b border-zinc-800 flex-shrink-0 transition-all duration-300",
-                            (isFullscreen && !showFullscreenControls && !editMode) && "opacity-0 -translate-y-full pointer-events-none absolute",
-                            (isFullscreen && showFullscreenControls && !editMode) && "opacity-90 translate-y-0 absolute top-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm z-10",
-                            // (isFullscreen && showFullscreenControls && editMode) && "opacity-100 translate-y-0 relative top-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm z-10",
+                            (isFullscreen && !showFullscreenControls && !isEditMode) && "opacity-0 -translate-y-full pointer-events-none absolute",
+                            (isFullscreen && showFullscreenControls && !isEditMode) && "opacity-90 translate-y-0 absolute top-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm z-10",
                         )}
                     >
                         <div className="flex items-center gap-4">
                             <h2 className="text-lg font-medium text-white">{title}</h2>
-                            {editMode && (
+                            {isEditMode && (
                                 <div className="flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 text-amber-500 text-xs">
                                     <span>Modo Edición</span>
                                 </div>
                             )}
+                            {(isSaving || isLoading) && (
+                                <div className="flex items-center gap-2 px-2 py-1 rounded bg-blue-500/10 text-blue-500 text-xs">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    <span>{isSaving ? 'Guardando...' : 'Cargando...'}</span>
+                                </div>
+                            )}
+                            {imageMetadata?.fileName && (
+                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-xs">
+                                    <span>{imageMetadata.fileName} - {imageMetadata.fileExtension}</span>
+                                </div>
+                            )}
                         </div>
                         <div className="flex items-center gap-2">
-                            {editMode && (
+                            {isEditMode && (
                                 <>
                                     <ToolButton
                                         side='bottom'
@@ -649,6 +834,17 @@ export function ImageViewer({
                                         label="Rehacer"
                                         onClick={handleRedo}
                                         disabled={historyIndex >= history.length - 1}
+                                    />
+                                    <div className="w-px h-6 bg-zinc-700 mx-2" />
+                                </>
+                            )}
+                            {!isEditMode && currentImage && (
+                                <>
+                                    <ToolButton
+                                        side='bottom'
+                                        icon={Edit}
+                                        label="Editar imagen"
+                                        onClick={() => setIsEditMode(true)}
                                     />
                                     <div className="w-px h-6 bg-zinc-700 mx-2" />
                                 </>
@@ -726,7 +922,7 @@ export function ImageViewer({
                                 <div className="flex flex-col items-center justify-center gap-4 text-zinc-500">
                                     <div className="w-24 h-24 border-2 border-dashed border-zinc-700 rounded-lg flex items-center justify-center">
                                         {
-                                            editMode ? (
+                                            isEditMode ? (
                                                 <Upload className="size-14" />
                                             ) : (
                                                 <ImageIcon className="size-14" />
@@ -734,7 +930,7 @@ export function ImageViewer({
                                         }
                                     </div>
                                     <p className="text-sm">No hay imagen cargada</p>
-                                    {editMode && (
+                                    {isEditMode && (
                                         <Button
                                             variant="outline"
                                             onClick={() => fileInputRef.current?.click()}
@@ -806,7 +1002,7 @@ export function ImageViewer({
                                 className={cn(
                                     "absolute bottom-4 left-4 flex flex-col gap-2 transition-opacity duration-300",
                                     isFullscreen && !showFullscreenControls && "opacity-0 pointer-events-none",
-                                    (isFullscreen && showFullscreenControls && !editMode) && "bottom-16",
+                                    (isFullscreen && showFullscreenControls && !isEditMode) && "bottom-16",
                                 )}
                             >
                                 <div className={cn(
@@ -841,7 +1037,7 @@ export function ImageViewer({
                         </div>
 
                         {/* Sidebar Tools (Edit Mode Only) */}
-                        {editMode && (
+                        {isEditMode && (
                             <div className="w-72 border-l border-zinc-800 bg-zinc-900 flex flex-col flex-shrink-0">
                                 {/* Tabs */}
                                 <div className="flex border-b border-zinc-800">
@@ -959,7 +1155,7 @@ export function ImageViewer({
                                                         onClick={handleFlipX}
                                                         className={cn(
                                                             'flex-1 bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 hover:text-white',
-                                                            imageState.flipX ? 'text-amber-500 border-amber-500 hover:text-amber-500' : 'text-white'
+                                                            imageState.flipX && 'border-amber-500 bg-amber-500/10'
                                                         )}
                                                     >
                                                         <FlipHorizontal className="size-4" />
@@ -970,7 +1166,7 @@ export function ImageViewer({
                                                         onClick={handleFlipY}
                                                         className={cn(
                                                             'flex-1 bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 hover:text-white',
-                                                            imageState.flipY ? 'text-amber-500 border-amber-500 hover:text-amber-500' : 'text-white'
+                                                            imageState.flipY && 'border-amber-500 bg-amber-500/10'
                                                         )}
                                                     >
                                                         <FlipVertical className="size-4" />
@@ -994,9 +1190,7 @@ export function ImageViewer({
                                                             onClick={() => setSelectedAspectRatio(ratio)}
                                                             className={cn(
                                                                 'h-11 p-2 gap-1 flex flex-col items-center justify-center text-xs bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 hover:text-white',
-                                                                selectedAspectRatio.name === ratio.name
-                                                                    ? 'text-amber-500 border-amber-500 hover:text-amber-500'
-                                                                    : 'text-white'
+                                                                selectedAspectRatio.name === ratio.name && 'border-amber-500 bg-amber-500/10'
                                                             )}
                                                         >
                                                             <ratio.icon className="w-3 h-3" />
@@ -1038,8 +1232,7 @@ export function ImageViewer({
                                                             <Button
                                                                 onClick={applyCrop}
                                                                 disabled={!cropArea}
-                                                                variant={'outline'}
-                                                            // className="flex-1 bg-amber-500 text-black hover:bg-amber-400"
+                                                                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
                                                             >
                                                                 <Check className="size-4" />
                                                                 Aplicar
@@ -1165,17 +1358,16 @@ export function ImageViewer({
                         )}
                     </div>
 
-                    {/* Bottom Toolbar - hidden in fullscreen unless hovering */}
+                    {/* Bottom Toolbar */}
                     <div
                         className={cn(
                             "flex items-center justify-between px-4 py-3 border-t border-zinc-800 flex-shrink-0 transition-all duration-300",
-                            (isFullscreen && !showFullscreenControls && !editMode) && "opacity-0 translate-y-full pointer-events-none absolute",
-                            (isFullscreen && showFullscreenControls && !editMode) && "opacity-90 translate-y-0 absolute bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm z-10",
-                            // (isFullscreen && showFullscreenControls && editMode) && "opacity-100 translate-y-0 relative bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm z-10",
+                            (isFullscreen && !showFullscreenControls && !isEditMode) && "opacity-0 translate-y-full pointer-events-none absolute",
+                            (isFullscreen && showFullscreenControls && !isEditMode) && "opacity-90 translate-y-0 absolute bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm z-10",
                         )}
                     >
                         <div className="flex items-center gap-1">
-                            {!editMode && (
+                            {!isEditMode && (
                                 <>
                                     <ToolButton icon={ZoomOut} label="Alejar" onClick={() => updateState({ zoom: Math.max(0.5, imageState.zoom - 0.25) })} />
                                     <ToolButton icon={ZoomIn} label="Acercar" onClick={() => updateState({ zoom: Math.min(4, imageState.zoom + 0.25) })} />
@@ -1192,14 +1384,14 @@ export function ImageViewer({
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {!editMode && (
+                            {!isEditMode && (
                                 <>
-                                    <ToolButton icon={Copy} label="Copiar imagen" onClick={handleCopyImage} />
-                                    <ToolButton icon={Share2} label="Compartir" onClick={handleShareImage} />
+                                    <ToolButton icon={Copy} label="Copiar imagen" onClick={handleCopyImage} disabled={!currentImage} />
+                                    {/* <ToolButton icon={Share2} label="Compartir" onClick={handleShareImage} disabled={!currentImage} /> */}
                                     <div className="w-px h-6 bg-zinc-700 mx-2" />
                                 </>
                             )}
-                            {editMode && (
+                            {isEditMode && (
                                 <>
                                     <input
                                         ref={fileInputRef}
@@ -1221,20 +1413,27 @@ export function ImageViewer({
                             <Button
                                 variant="outline"
                                 onClick={handleDownload}
-                                disabled={!currentImage}
+                                disabled={!currentImage || isDownloading}
                                 className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 hover:text-white"
                             >
-                                <Download className="w-4 h-4 mr-2" />
+                                {isDownloading ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Download className="w-4 h-4 mr-2" />
+                                )}
                                 Descargar
                             </Button>
-                            {editMode && (
+                            {isEditMode && (
                                 <Button
                                     onClick={handleSave}
-                                    disabled={!currentImage}
-                                    variant={'outline'}
-                                // className="bg-amber-500 text-black hover:bg-amber-400"
+                                    disabled={!currentImage || isSaving || isLoading}
+                                    className="bg-amber-500 hover:bg-amber-600 text-white"
                                 >
-                                    <Check className="w-4 h-4 mr-2" />
+                                    {isSaving ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <Check className="w-4 h-4 mr-2" />
+                                    )}
                                     Guardar
                                 </Button>
                             )}

@@ -360,22 +360,26 @@ const QuotationDetailScreen = () => {
             <ConfirmationModal
                 isOpen={showDeleteAlert}
                 title="Eliminar cotizacion"
-                message={`¿Estás seguro de que deseas eliminar la cotizacion #${quotationToDelete}?`}
+                message={`¿Estás seguro de que deseas eliminar la cotización #${quotationToDelete}?`}
                 onClose={handleCloseDeleteAlert}
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeleting}
             />
             {/* Modal PDF Viewer */}
-            <PDFViewer
-                id={Number(quotationId)}
-                pdfBlob={pdfBlob}
-                isLoading={isLoadingPdf}
-                isError={isErrorPdf}
-                onClose={handleClosePrintDialog}
-                isOpen={isDialogOpen}
-                pdfName="cotizacion"
-                title={`Cotizacion Nro. ${quotationData?.id}`}
-            />
+            {
+                isDialogOpen && (
+                    <PDFViewer
+                        id={Number(quotationId)}
+                        pdfBlob={pdfBlob}
+                        isLoading={isLoadingPdf}
+                        isError={isErrorPdf}
+                        onClose={handleClosePrintDialog}
+                        isOpen={isDialogOpen}
+                        pdfName="cotizacion"
+                        title={`Cotización Nro. ${quotationData?.id}`}
+                    />
+                )
+            }
         </main>
     );
 }

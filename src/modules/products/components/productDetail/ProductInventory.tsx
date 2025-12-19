@@ -47,7 +47,7 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
             accessorKey: "saldo",
             header: "Stock",
             minSize: 30,
-            size: 80,
+            size: 60,
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
                     <Badge
@@ -76,7 +76,7 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
             accessorKey: "cantidad",
             header: `Cantidad`,
             minSize: 30,
-            size: 80,
+            size: 60,
             cell: ({ getValue }) => {
                 const value = getValue<number>();
                 return (
@@ -115,10 +115,39 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
             }
         },
         {
+            accessorKey: "tc_compra",
+            header: `TC Compra`,
+            minSize: 30,
+            size: 60,
+            cell: ({ getValue }) => {
+                const value = getValue<number>();
+                return (
+                    <div className="text-end">
+                        {
+                            value > 0 ? (
+                                <>
+                                    {
+                                        formatCurrency(value,
+                                            {
+                                                currency: 'USD',
+                                                locale: "en-US",
+                                                usdFormat: 'us'
+                                            })
+                                    }
+                                </>
+                            ) : (
+                                <span className="font-medium">-</span>
+                            )
+                        }
+                    </div>
+                );
+            }
+        },
+        {
             accessorKey: "sucursal",
             header: "Sucursal",
             minSize: 30,
-            size: 80,
+            size: 60,
             cell: ({ getValue }) => (
                 <div className="flex items-center justify-center">
                     <Badge

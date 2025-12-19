@@ -4,6 +4,7 @@ import ReturnListScreen from "@/modules/returns/screens/returnListScreen";
 import ReturnDetailScreen from "@/modules/returns/screens/returnDetailScreen";
 import ReturnCreateScreen from "@/modules/returns/screens/returnCreateScreen";
 import ReturnEditScreen from "@/modules/returns/screens/returnEditScreen";
+import { returnsListViewConfig } from "@/modules/returns/config/return.config";
 
 const returnsProtectedRoutes: RouteType[] = [
     {
@@ -35,7 +36,7 @@ const returnsProtectedRoutes: RouteType[] = [
                 isAdmin: true,
                 role: ["admin"],
                 icon: Table2,
-
+                viewConfig: returnsListViewConfig,
                 isHeader: false,
                 showSidebar: true
             },

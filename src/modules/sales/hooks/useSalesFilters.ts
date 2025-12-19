@@ -14,9 +14,13 @@ export const useSalesFilters = (defaultSucursal: number) => {
     // Memoizar las fechas para evitar recrearlas en cada render
     const defaultDates = useMemo(() => {
         const today = new Date();
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(today.getMonth() - 1);
-        return { today, lastMonth };
+        const lastThreeMonths = new Date(today);
+        lastThreeMonths.setMonth(today.getMonth() - 3);
+
+        return {
+            today,
+            lastThreeMonths,
+        };
     }, []);
 
     const [filters, setFilters] = useState<SalesFilters>({
@@ -26,7 +30,7 @@ export const useSalesFilters = (defaultSucursal: number) => {
         codigo_oem_producto: "",
         keywords: "",
         fecha_fin: defaultDates.today,
-        fecha_inicio: defaultDates.lastMonth
+        fecha_inicio: defaultDates.lastThreeMonths
     });
 
     const [appliedFilters, setAppliedFilters] = useState<SalesFilters>(filters);
