@@ -25,7 +25,6 @@ import { format } from "date-fns";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import { useDebounce } from "use-debounce";
 import OrderDetailTable, { type OrderDetailTableRef } from "../components/OrderDetailTable";
 import { useOrderModalities } from "../hooks/commons/useOrderModalities";
 import { useOrderProvider } from "../hooks/commons/useOrderProviders";
@@ -51,8 +50,6 @@ const OrderCreateScreen = () => {
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser();
     const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
-    const [providerSearchTerm, setProviderSearchTerm] = useState<string>("");
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(providerSearchTerm, 500);
     const tableRef = useRef<OrderDetailTableRef>(null);
 
     // Estados para conversión de moneda
@@ -79,8 +76,8 @@ const OrderCreateScreen = () => {
 
     const {
         data: orderProvidersData,
-        isLoading: isOrderProvidersLoading
-    } = useOrderProvider(debouncedCustomerSearchTerm);
+        // isLoading: isOrderProvidersLoading
+    } = useOrderProvider();
 
     const {
         data: orderStatusData,
@@ -792,8 +789,8 @@ const OrderCreateScreen = () => {
                                                                     orderDetailsHook.details.length === 0
                                                                         ? "Agrega productos para convertir"
                                                                         : isUSD
-                                                                        ? `Convertir ${orderDetailsHook.details.length} producto(s) de USD a BOB`
-                                                                        : `Convertir ${orderDetailsHook.details.length} producto(s) de BOB a USD`
+                                                                            ? `Convertir ${orderDetailsHook.details.length} producto(s) de USD a BOB`
+                                                                            : `Convertir ${orderDetailsHook.details.length} producto(s) de BOB a USD`
                                                                 }
                                                                 buttonProps={{
                                                                     onClick: handleConvertCurrency,

@@ -23,7 +23,7 @@ const EditPurchase: React.FC = () => {
     data: purchase,
     isLoading: isLoadingPurchase,
     isError: isErrorPurchase,
-    refetch: refetchPurchase,
+    // refetch: refetchPurchase,
   } = usePurchaseById(Number(purchaseId) || 0);
 
   const {
@@ -104,32 +104,24 @@ const EditPurchase: React.FC = () => {
   //   scopes: ["esc-key"],
   //   enabled: true
   // });
-  useCommand('actions.closeModal',handleGoBack)
-
-  // ✅ Ahora validamos DESPUÉS de todos los hooks
-  if (!Number(purchaseId)) {
-    return (
-      <ErrorDataComponent
-        errorMessage="ID de compra inválido."
-        showButtonIcon={false}
-        buttonText="Ir a lista de compras"
-        onRetry={() => navigate("/dashboard/list-purchases")}
-      />
-    );
-  }
+  useCommand('actions.closeModal', handleGoBack)
 
   if (isLoadingPurchase) {
     return <PurchaseDetailSkeleton />;
   }
 
-  if (isErrorPurchase) {
+  if (isErrorPurchase || !purchase) {
     return (
-      <ErrorDataComponent
-        errorMessage="No se pudo cargar la compra."
-        onRetry={refetchPurchase}
-      />
-    );
-  }  
+      <div className="h-full flex items-center justify-center p-2 lg:p-8">
+        <ErrorDataComponent
+          errorMessage="No se pudo cargar la compra."
+          showButtonIcon={false}
+          buttonText="Ir a lista de compras"
+          onRetry={() => navigate("/dashboard/list-purchases")}
+        />
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto space-y-4">
@@ -202,7 +194,7 @@ const EditPurchase: React.FC = () => {
               onBlur={handleBlur}
               onSubmit={handleSave}
             />
-            
+
             <PurchaseDetailsTable
               detalles={formData.detalles}
               setDetalles={(detalles) => handleChange("detalles", detalles)}

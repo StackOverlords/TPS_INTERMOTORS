@@ -143,7 +143,7 @@ const ProductEditScreen = () => {
     } = watchedValues;
 
     const {
-        data: subcategoriesData,
+        // data: subcategoriesData,
         isLoading: isLoadingSubcategories
     } = useCommonSubcategories({
         categoria: id_categoria,
@@ -250,15 +250,20 @@ const ProductEditScreen = () => {
 
     if (isLoading) return <ProductEditSkeleton />;
 
-    if (isErrorProduct || isNaN(Number(updateProductId))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar el producto."
-            showButtonIcon={false}
-            buttonText="Ir a lista de productos"
-            onRetry={() => {
-                navigate("/dashboard/productos")
-            }}
-        />
+    if (isErrorProduct || !productData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar el producto."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de productos"
+                    onRetry={() => {
+                        navigate("/dashboard/productos")
+                    }}
+                />
+            </div>
+        )
     }
 
     return (
@@ -629,13 +634,13 @@ const ProductEditScreen = () => {
                                     </p>
                                 )}
                             </div>
-                        </div> 
+                        </div>
 
-                        
+
                     </div>
                 </div>
 
-                
+
 
                 {/* Descripción Auto-generada */}
                 <div className="p-3 bg-white border border-gray-200 rounded-lg">
@@ -647,14 +652,14 @@ const ProductEditScreen = () => {
                         {autoDescription || "Completa los campos para generar la descripción"}
                     </div>
                 </div>
-                
+
                 {/* Especificaciones del Vehículo */}
                 <div className="p-3 bg-white border border-gray-200 rounded-lg">
                     <h3 className="mb-3 text-sm font-semibold text-gray-900">
                         Información complementaria
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                        
+
 
                         {/* Marca vehículo */}
                         <div>
@@ -717,7 +722,7 @@ const ProductEditScreen = () => {
                                 )}
                             </div>
                         </div>
-                        
+
                         {/* Nro. Motor */}
                         <div>
                             <Label>Nro. Motor</Label>
@@ -733,7 +738,7 @@ const ProductEditScreen = () => {
                                     </p>
                                 )}
                             </div>
-                        </div> 
+                        </div>
 
                         {/* Descripción alt. */}
                         <div className="flex flex-col sm:col-span-2 lg:col-span-3 xl:col-span-2">
@@ -762,7 +767,7 @@ const ProductEditScreen = () => {
                         </div>
                     </div>
                 </div>
-            
+
                 {/* Información Adicional */}
                 {/* <div className="p-3 bg-white border border-gray-200 rounded-lg">
                     <h3 className="mb-3 text-sm font-semibold text-gray-900">

@@ -443,15 +443,20 @@ const SaleEditScreen = () => {
         return <SaleEditSkeleton />;
     }
 
-    if (isErrorSale || isNaN(Number(saleId))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar la venta."
-            showButtonIcon={false}
-            buttonText="Ir a lista de ventas"
-            onRetry={() => {
-                navigate("/dashboard/sales")
-            }}
-        />
+    if (isErrorSale || !saleData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar la venta."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de ventas"
+                    onRetry={() => {
+                        navigate("/dashboard/sales")
+                    }}
+                />
+            </div>
+        )
     }
 
     return (
