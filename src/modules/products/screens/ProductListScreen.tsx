@@ -136,13 +136,22 @@ const ProductListScreen = () => {
         if (!selectedProductForImage) return;
 
         try {
-            // Convertir base64 a File
-            const response = await fetch(imageData);
-            const blob = await response.blob();
+            // Convertir base64 a Blob manualmente (compatible con Tauri)
+            const parts = imageData.split(',');
+            const contentType = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+            const byteString = atob(parts[1]);
+            const arrayBuffer = new ArrayBuffer(byteString.length);
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            for (let i = 0; i < byteString.length; i++) {
+                uint8Array[i] = byteString.charCodeAt(i);
+            }
+
+            const blob = new Blob([arrayBuffer], { type: contentType });
             const file = new File(
                 [blob],
                 `producto-${selectedProductForImage.id}.png`,
-                { type: 'image/png' }
+                { type: contentType }
             );
 
             // Llamar a la mutación
