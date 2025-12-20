@@ -143,7 +143,7 @@ const ProductEditScreen = () => {
     } = watchedValues;
 
     const {
-        data: subcategoriesData,
+        // data: subcategoriesData,
         isLoading: isLoadingSubcategories
     } = useCommonSubcategories({
         categoria: id_categoria,
@@ -250,15 +250,20 @@ const ProductEditScreen = () => {
 
     if (isLoading) return <ProductEditSkeleton />;
 
-    if (isErrorProduct || isNaN(Number(updateProductId))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar el producto."
-            showButtonIcon={false}
-            buttonText="Ir a lista de productos"
-            onRetry={() => {
-                navigate("/dashboard/productos")
-            }}
-        />
+    if (isErrorProduct || !productData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar el producto."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de productos"
+                    onRetry={() => {
+                        navigate("/dashboard/productos")
+                    }}
+                />
+            </div>
+        )
     }
 
     return (
@@ -731,7 +736,7 @@ const ProductEditScreen = () => {
                         {autoDescription || "Completa los campos para generar la descripción"}
                     </div>
                 </div>
-            
+
                 {/* Información Adicional */}
                 {/* <div className="p-3 bg-white border border-gray-200 rounded-lg">
                     <h3 className="mb-3 text-sm font-semibold text-gray-900">

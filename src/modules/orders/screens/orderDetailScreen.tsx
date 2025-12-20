@@ -86,13 +86,20 @@ const OrderDetailScreen = () => {
         return <SaleDetailSkeleton />;
     }
 
-    if (isErrorOrder || !(Number(orderCod))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar el pedido."
-            showButtonIcon={false}
-            buttonText="Ir a lista de pedidos"
-            onRetry={() => navigate("/dashboard/orders")}
-        />;
+    if (isErrorOrder || !orderData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar el pedido."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de pedidos"
+                    onRetry={() => {
+                        navigate("/dashboard/orders")
+                    }}
+                />
+            </div>
+        )
     }
 
     return (

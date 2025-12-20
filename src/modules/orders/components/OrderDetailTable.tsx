@@ -7,13 +7,14 @@ import CustomizableTable from '@/components/common/CustomizableTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { UIOrderDetailCreate } from '../types/orderCreate.types';
-import { EditablePercentage } from '@/modules/shoppingCart/components/EditablePercentage';
+// import { EditablePercentage } from '@/modules/shoppingCart/components/EditablePercentage';
 import type { UIOrderDetailUpdate } from '../types/orderUpdate.types';
 import { Badge } from '@/components/atoms/badge';
 import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
 import useConfirmMutation from '@/hooks/useConfirmMutation';
 import ConfirmationModal from '@/components/common/confirmationModal';
 import { useDeleteOrderDetail } from '../hooks/useDeleteOrderDetail';
+import { formatCurrency } from '@/utils/formaters';
 
 type OrderDetailUnion = UIOrderDetailCreate | UIOrderDetailUpdate;
 
@@ -204,6 +205,33 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
                 ),
             },
             {
+                accessorFn: row => row.product.codigo_upc,
+                id: "codigo_upc",
+                header: "Cód. UPC",
+                size: 100,
+                minSize: 70,
+            },
+            {
+                accessorFn: row => row.product.marca,
+                id: "marca",
+                header: "Marca",
+                size: 100,
+                minSize: 70,
+                cell: ({ getValue }) => (
+                    <span>{formatCell(getValue<string>())}</span>
+                ),
+            },
+            {
+                accessorFn: row => row.product.procedencia,
+                id: "procedencia",
+                header: "Procedencia",
+                size: 100,
+                minSize: 70,
+                cell: ({ getValue }) => (
+                    <span>{formatCell(getValue<string>())}</span>
+                ),
+            },
+            {
                 accessorKey: "cantidad",
                 id: 'cantidad',
                 header: "Cantidad",
@@ -258,83 +286,98 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
                     )
                 },
             },
+            // {
+            //     accessorKey: "inc_p_venta",
+            //     id: 'inc_p_venta',
+            //     header: "Inc. %",
+            //     size: 110,
+            //     minSize: 80,
+            //     cell: ({ getValue, row }) => {
+            //         const inc = getValue<number>();
+            //         return (
+            //             <EditablePercentage
+            //                 value={inc}
+            //                 onSubmit={(value) => onUpdateIncPVenta(row.original.id_producto, value as number)}
+            //                 className="w-full"
+            //                 buttonClassName="w-full"
+            //                 disabled={isReadOnly || isSaving}
+            //             />
+            //         )
+            //     },
+            // },
+            // {
+            //     accessorKey: "precio_venta",
+            //     id: 'precio_venta',
+            //     header: "P. Venta",
+            //     size: 110,
+            //     minSize: 80,
+            //     cell: ({ getValue, row }) => {
+            //         const precio = getValue<number>();
+            //         return (
+            //             <EditablePrice
+            //                 value={precio}
+            //                 onSubmit={(value) => onUpdatePrecioVenta(row.original.id_producto, value as number)}
+            //                 className="w-full"
+            //                 buttonClassName="w-full"
+            //                 numberProps={{ min: 0, step: 0.01 }}
+            //                 disabled={isReadOnly || isSaving}
+            //             />
+            //         )
+            //     },
+            // },
+            // {
+            //     accessorKey: "inc_p_venta_alt",
+            //     id: 'inc_p_venta_alt',
+            //     header: "Inc. Alt %",
+            //     size: 110,
+            //     minSize: 80,
+            //     cell: ({ getValue, row }) => {
+            //         const inc = getValue<number>();
+            //         return (
+            //             <EditablePercentage
+            //                 value={inc}
+            //                 onSubmit={(value) => onUpdateIncPVentaAlt(row.original.id_producto, value as number)}
+            //                 className="w-full"
+            //                 buttonClassName="w-full"
+            //                 disabled={isReadOnly || isSaving}
+            //             />
+            //         )
+            //     },
+            // },
+            // {
+            //     accessorKey: "precio_venta_alt",
+            //     id: 'precio_venta_alt',
+            //     header: "P. Venta Alt",
+            //     size: 110,
+            //     minSize: 80,
+            //     cell: ({ getValue, row }) => {
+            //         const precio = getValue<number>();
+            //         return (
+            //             <EditablePrice
+            //                 value={precio}
+            //                 onSubmit={(value) => onUpdatePrecioVentaAlt(row.original.id_producto, value as number)}
+            //                 className="w-full"
+            //                 buttonClassName="w-full"
+            //                 numberProps={{ min: 0, step: 0.01 }}
+            //                 disabled={isReadOnly || isSaving}
+            //             />
+            //         )
+            //     },
+            // },
             {
-                accessorKey: "inc_p_venta",
-                id: 'inc_p_venta',
-                header: "Inc. %",
+                id: 'subtotal',
+                header: 'Subtotal',
                 size: 110,
                 minSize: 80,
-                cell: ({ getValue, row }) => {
-                    const inc = getValue<number>();
+                cell: ({ row }) => {
+                    const detail = row.original
+                    const subtotal = detail.costo * detail.cantidad
                     return (
-                        <EditablePercentage
-                            value={inc}
-                            onSubmit={(value) => onUpdateIncPVenta(row.original.id_producto, value as number)}
-                            className="w-full"
-                            buttonClassName="w-full"
-                            disabled={isReadOnly || isSaving}
-                        />
+                        <div className='font-medium text-end text-sm'>
+                            {formatCurrency(subtotal)}
+                        </div>
                     )
-                },
-            },
-            {
-                accessorKey: "precio_venta",
-                id: 'precio_venta',
-                header: "P. Venta",
-                size: 110,
-                minSize: 80,
-                cell: ({ getValue, row }) => {
-                    const precio = getValue<number>();
-                    return (
-                        <EditablePrice
-                            value={precio}
-                            onSubmit={(value) => onUpdatePrecioVenta(row.original.id_producto, value as number)}
-                            className="w-full"
-                            buttonClassName="w-full"
-                            numberProps={{ min: 0, step: 0.01 }}
-                            disabled={isReadOnly || isSaving}
-                        />
-                    )
-                },
-            },
-            {
-                accessorKey: "inc_p_venta_alt",
-                id: 'inc_p_venta_alt',
-                header: "Inc. Alt %",
-                size: 110,
-                minSize: 80,
-                cell: ({ getValue, row }) => {
-                    const inc = getValue<number>();
-                    return (
-                        <EditablePercentage
-                            value={inc}
-                            onSubmit={(value) => onUpdateIncPVentaAlt(row.original.id_producto, value as number)}
-                            className="w-full"
-                            buttonClassName="w-full"
-                            disabled={isReadOnly || isSaving}
-                        />
-                    )
-                },
-            },
-            {
-                accessorKey: "precio_venta_alt",
-                id: 'precio_venta_alt',
-                header: "P. Venta Alt",
-                size: 110,
-                minSize: 80,
-                cell: ({ getValue, row }) => {
-                    const precio = getValue<number>();
-                    return (
-                        <EditablePrice
-                            value={precio}
-                            onSubmit={(value) => onUpdatePrecioVentaAlt(row.original.id_producto, value as number)}
-                            className="w-full"
-                            buttonClassName="w-full"
-                            numberProps={{ min: 0, step: 0.01 }}
-                            disabled={isReadOnly || isSaving}
-                        />
-                    )
-                },
+                }
             },
             {
                 id: "action",

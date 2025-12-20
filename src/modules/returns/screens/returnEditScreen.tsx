@@ -342,15 +342,18 @@ const ReturnEditScreen = () => {
         return <ReturnEditSkeleton />;
     }
 
-    if (isErrorReturn || isNaN(Number(returnId))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar la devolución."
-            showButtonIcon={false}
-            buttonText="Ir a lista de devoluciones"
-            onRetry={() => {
-                navigate("/dashboard/returns")
-            }}
-        />
+    if (isErrorReturn || !returnData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar la devolución."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de devoluciones"
+                    onRetry={() => navigate("/dashboard/returns")}
+                />
+            </div>
+        )
     }
 
     return (

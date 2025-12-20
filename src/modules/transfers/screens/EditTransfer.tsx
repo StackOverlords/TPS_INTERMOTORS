@@ -305,10 +305,10 @@ const EditTransfer = () => {
     });
 
     const toggleSelectorMode = () => {
-      if(purchaseWindow.isOpen){
-        purchaseWindow.close();
-      }
-      purchaseWindow.open();
+        if (purchaseWindow.isOpen) {
+            purchaseWindow.close();
+        }
+        purchaseWindow.open();
     }
 
     // Loading state
@@ -320,14 +320,18 @@ const EditTransfer = () => {
         );
     }
 
-    // Error state
-    if (isErrorTransfer || !Number(transferId)) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar la transferencia."
-            showButtonIcon={false}
-            buttonText="Ir a lista de transferencias"
-            onRetry={() => navigate("/dashboard/transfers")}
-        />;
+    if (isErrorTransfer || !transferData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar la transferencia."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de transferencias"
+                    onRetry={() => navigate("/dashboard/transfers")}
+                />
+            </div>
+        )
     }
 
     return (
@@ -363,8 +367,8 @@ const EditTransfer = () => {
 
                     {/* 1. Datos de la transferencia */}
                     <Card className="shadow-none flex-shrink-0">
-                            <CardContent className="py-3">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                        <CardContent className="py-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                                 <div className="w-full">
                                     <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
                                     <Input

@@ -10,5 +10,7 @@ export interface UIOrderDetailCreate extends OrderDetailCreate {
         codigo_oem: string | null,
         codigo_upc: string | null,
         precio_venta: number,
+        marca: string | null,
+        procedencia: string | null
     };
 }

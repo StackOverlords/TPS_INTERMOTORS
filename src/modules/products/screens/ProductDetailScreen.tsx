@@ -170,12 +170,17 @@ const ProductDetailScreen = () => {
         return <ProductDetailSkeleton />;
     }
 
-    if (isErrorProduct || !(Number(productId))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar el producto."
-            showButtonIcon={false}
-            onRetry={handleRetry}
-        />;
+    if (isErrorProduct || !product) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar el producto."
+                    showButtonIcon={false}
+                    onRetry={handleRetry}
+                />
+            </div>
+        )
     }
 
     return (

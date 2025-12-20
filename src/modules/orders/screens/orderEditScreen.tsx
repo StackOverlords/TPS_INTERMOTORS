@@ -158,6 +158,8 @@ const OrderEditScreen = () => {
                         codigo_oem: detalle.producto.codigo_oem,
                         codigo_upc: detalle.producto.codigo_upc,
                         precio_venta: Number(detalle.producto.precio_venta),
+                        marca: detalle.producto.marca?.marca ?? '',
+                        procedencia: detalle.producto.procedencia.procedencia ?? '',
                     }
                 };
             });
@@ -393,15 +395,20 @@ const OrderEditScreen = () => {
         return <OrderEditSkeleton />;
     }
 
-    if (isErrorOrder || isNaN(Number(orderId))) {
-        return <ErrorDataComponent
-            errorMessage="No se pudo cargar el pedido."
-            showButtonIcon={false}
-            buttonText="Ir a lista de pedidos"
-            onRetry={() => {
-                navigate("/dashboard/orders")
-            }}
-        />
+    if (isErrorOrder || !orderData) {
+        return (
+            <div className="h-full flex items-center justify-center p-2 lg:p-8">
+                <ErrorDataComponent
+                    className="h-full w-full"
+                    errorMessage="No se pudo cargar el pedido."
+                    showButtonIcon={false}
+                    buttonText="Ir a lista de pedidos"
+                    onRetry={() => {
+                        navigate("/dashboard/orders")
+                    }}
+                />
+            </div>
+        )
     }
 
     return (

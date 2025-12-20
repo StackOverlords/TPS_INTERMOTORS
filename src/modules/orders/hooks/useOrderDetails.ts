@@ -3,8 +3,8 @@ import type { ProductGet } from "@/modules/products/types/ProductGet";
 import type { OrderDetailCreate, UIOrderDetailCreate } from "../types/orderCreate.types";
 import type { OrderDetailUpdate, UIOrderDetailUpdate } from "../types/orderUpdate.types";
 
-const DEFAULT_INC_P_VENTA = 30; // 30%
-const DEFAULT_INC_P_VENTA_ALT = 15; // 15%
+const DEFAULT_INC_P_VENTA = 0; // 30%
+const DEFAULT_INC_P_VENTA_ALT = 16; // 15%
 
 type OrderDetailUnion = UIOrderDetailCreate | UIOrderDetailUpdate;
 
@@ -57,6 +57,8 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
                     codigo_oem: product.codigo_oem,
                     codigo_upc: product.codigo_upc,
                     precio_venta: product.precio_venta,
+                    marca: product.marca,
+                    procedencia: product.procedencia,
                 },
             };
 
@@ -108,6 +110,8 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
                             codigo_oem: product.codigo_oem,
                             codigo_upc: product.codigo_upc,
                             precio_venta: product.precio_venta,
+                            marca: product.marca,
+                            procedencia: product.procedencia,
                         },
                     };
 
