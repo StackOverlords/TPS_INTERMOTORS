@@ -204,33 +204,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
                     <span>{formatCell(getValue<string>())}</span>
                 ),
             },
-            {
-                accessorFn: row => row.product.codigo_upc,
-                id: "codigo_upc",
-                header: "Cód. UPC",
-                size: 100,
-                minSize: 70,
-            },
-            {
-                accessorFn: row => row.product.marca,
-                id: "marca",
-                header: "Marca",
-                size: 100,
-                minSize: 70,
-                cell: ({ getValue }) => (
-                    <span>{formatCell(getValue<string>())}</span>
-                ),
-            },
-            {
-                accessorFn: row => row.product.procedencia,
-                id: "procedencia",
-                header: "Procedencia",
-                size: 100,
-                minSize: 70,
-                cell: ({ getValue }) => (
-                    <span>{formatCell(getValue<string>())}</span>
-                ),
-            },
+
             {
                 accessorKey: "cantidad",
                 id: 'cantidad',
@@ -285,6 +259,33 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
                         />
                     )
                 },
+            },
+            {
+                accessorFn: row => row.product.codigo_upc,
+                id: "codigo_upc",
+                header: "Cód. UPC",
+                size: 100,
+                minSize: 70,
+            },
+            {
+                accessorFn: row => row.product.marca,
+                id: "marca",
+                header: "Marca",
+                size: 100,
+                minSize: 70,
+                cell: ({ getValue }) => (
+                    <span>{formatCell(getValue<string>())}</span>
+                ),
+            },
+            {
+                accessorFn: row => row.product.procedencia,
+                id: "procedencia",
+                header: "Procedencia",
+                size: 100,
+                minSize: 70,
+                cell: ({ getValue }) => (
+                    <span>{formatCell(getValue<string>())}</span>
+                ),
             },
             // {
             //     accessorKey: "inc_p_venta",

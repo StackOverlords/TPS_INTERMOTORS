@@ -125,6 +125,10 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
           VITE_SOCKET_KEY: ${{ secrets.VITE_SOCKET_KEY }}
+          VITE_REVERB_HOST: ${{ secrets.VITE_REVERB_HOST }}
+          VITE_REVERB_PORT: ${{ secrets.VITE_REVERB_PORT }}
+          VITE_REVERB_APP_KEY: ${{ secrets.VITE_REVERB_APP_KEY }}
+          VITE_REVERB_SCHEME: ${{ secrets.VITE_REVERB_SCHEME }}
           VITE_APP_ENV: ${{ vars.VITE_APP_ENV || 'production' }}
           BRANCH_STORAGE_KEY: ${{ vars.BRANCH_STORAGE_KEY || 'selectedBranchId' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
