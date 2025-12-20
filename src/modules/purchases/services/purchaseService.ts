@@ -3,6 +3,7 @@ import { Logger } from "@/lib/logger";
 import { PurchaseDetailSchema } from "../schemas/purchase.schema";
 import { PurchaseListResponseSchema } from "../schemas/purchaseResponse.schema";
 import type { UpdatePricesFormData } from "../schemas/updatePrices.schema";
+import { transformToApiFormat } from "../schemas/updatePrices.schema";
 import { UpdatePricesResponseSchema } from "../schemas/updatePricesResponse.schema";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { PurchaseFilters } from "../types/purchaseFilters";
@@ -122,16 +123,19 @@ export const purchaseService = {
 
   /**
    * Actualizar precios de productos por categoría
-   * @param data - Datos para la actualización de precios
+   * @param data - Datos para la actualización de precios (formato del formulario)
    */
   async updatePrices(data: UpdatePricesFormData): Promise<UpdatePricesResponse> {
     Logger.info('Updating prices', { data }, MODULE_NAME);
+
+    // Transformar datos del formulario al formato del API
+    const apiData = transformToApiFormat(data);
 
     const response = await ApiService.post(
       PURCHASE_ENDPOINTS.updatePrices,
       undefined, // No body, params go in query string
       UpdatePricesResponseSchema,
-      { params: data }, // Send as query params
+      { params: apiData }, // Send as query params (con formato transformado)
       { unwrapData: false }
     );
 
@@ -139,7 +143,7 @@ export const purchaseService = {
     //   updated_count: response.updated_count,
     //   affected_products: response.affected_products
     // }, MODULE_NAME);
-    
+
     return response as UpdatePricesResponse;
   },
 

@@ -89,6 +89,7 @@ interface PurchaseDetail {
   subtotal?: number;
   inc_p_venta?: number;
   inc_p_venta_alt?: number;
+  tc_compra?: number; // Tipo de cambio
 }
 
 interface Props {
@@ -98,6 +99,7 @@ interface Props {
   toggleOrderSelector?: () => void;
   canAddProducts?: boolean;
   canImportOrder?: boolean;
+  onExchangeRateChange?: (rate: number) => void; // Callback para notificar cambio de TC
 }
 
 type NormalizedPurchaseDetail = PurchaseDetail & {
@@ -109,6 +111,7 @@ type NormalizedPurchaseDetail = PurchaseDetail & {
   inc_p_venta_alt: number;
   precio_venta_alt: number;
   subtotal: number;
+  tc_compra: number; // Tipo de cambio (obligatorio en normalizado)
 };
 
 type EditableNumericKey = keyof Pick<
@@ -128,6 +131,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   toggleOrderSelector,
   canAddProducts = true,
   canImportOrder = true,
+  onExchangeRateChange,
 }) => {
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
   const [tempValue, setTempValue] = useState('');
@@ -175,6 +179,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
           ? parseFloat(detail.precio_venta_alt)
           : (detail.precio_venta_alt as number),
       subtotal: 0,
+      tc_compra: detail.tc_compra ?? exchangeRate, // Usar el tipo de cambio del detalle o el actual
     };
   };
 
@@ -243,10 +248,13 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     return updatedDetail;
   };
 
-  // Guardar tipo de cambio en localStorage
+  // Guardar tipo de cambio en localStorage y notificar al padre
   useEffect(() => {
     localStorage.setItem('purchase_exchange_rate', exchangeRate.toString());
-  }, [exchangeRate]);
+    if (onExchangeRateChange) {
+      onExchangeRateChange(exchangeRate);
+    }
+  }, [exchangeRate, onExchangeRateChange]);
 
   // Función para convertir entre monedas
   const handleConvertCurrency = () => {
@@ -266,7 +274,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
       // Recalcular precios con el nuevo costo
       const updated = calculatePrecise(normalized, 'costo', newCosto);
-      return { ...detalle, ...updated };
+      // Mantener el tc_compra actualizado
+      return { ...detalle, ...updated, tc_compra: exchangeRate };
     });
 
     setDetalles(updatedDetalles);

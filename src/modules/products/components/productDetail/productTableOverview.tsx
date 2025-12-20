@@ -26,7 +26,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
     const stockTotal = productStockData.reduce((total, item) => {
         return total + item.saldo;
     }, 0);
-
+    console.log(productStockData)
     const columns: ColumnDef<ProductStock>[] = [
         {
             accessorKey: "fecha_adquisicion",

@@ -1,4 +1,3 @@
-import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
@@ -21,8 +20,8 @@ interface TransferFiltersProps {
 const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
     filters,
     updateFilter,
-    searchMode,
-    handleManualSearch,
+    // searchMode,
+    // handleManualSearch,
 }) => {
     const [dateError, setDateError] = useState<string | null>(null);
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -201,8 +200,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
             </div>
 
             {/* Botones de acción adicionales */}
-            <div className="flex gap-2 items-end justify-end flex-wrap">
-                {/* Botón de búsqueda solo visible en modo manual */}
+            {/* <div className="flex gap-2 items-end justify-end flex-wrap">
                 {searchMode === 'manual' && (
                     <Button
                         onClick={handleManualSearch}
@@ -225,7 +223,6 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                     </Button>
                 )}
 
-                {/* Botón para establecer rango de última semana */}
                 <Button
                     variant="outline"
                     size="sm"
@@ -243,7 +240,6 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                     Última semana
                 </Button>
 
-                {/* Botón para establecer rango del último mes */}
                 <Button
                     variant="outline"
                     size="sm"
@@ -260,7 +256,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                 >
                     Último mes
                 </Button>
-            </div>
+            </div> */}
 
             {/* Mostrar error de validación */}
             {dateError && (

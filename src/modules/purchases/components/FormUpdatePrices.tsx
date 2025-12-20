@@ -1,5 +1,6 @@
 import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
+import { RadioGroup, RadioGroupItem } from '@/components/atoms/radio-group';
 import { Switch } from '@/components/atoms/switch';
 import PopoverDatePicker from '@/components/common/PopoverDatePicker';
 import { ComboboxSelect } from '@/components/common/SelectCombobox';
@@ -7,7 +8,7 @@ import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import { useCommands } from '@/keybindings';
 import { format } from 'date-fns';
-import { HelpCircle, RefreshCw } from 'lucide-react';
+import { ArrowDown, ArrowUp, HelpCircle, RefreshCw } from 'lucide-react';
 import React from 'react';
 import type { UpdatePricesFormData } from '../schemas/updatePrices.schema';
 
@@ -78,69 +79,109 @@ const FormUpdatePrices: React.FC<Props> = ({
         </TooltipWrapper>
       </div>
 
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-        
-        {/* Categoría */}
-        <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Categoría *</Label>
-          <ComboboxSelect
-            value={formData.categoria || undefined}
-            onChange={v => onChange('categoria', Number(v))}
-            options={categories}
-            optionTag="categoria" 
-            placeholder={loadingCategories ? 'Cargando...' : 'Seleccionar categoría'}
-            className={inputClass('categoria')}
-            disabled={loadingCategories || isLoading}
-            error={!!errors.categoria}
-            clearOnEmpty={true}
-          />
-          {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria}</p>}
-        </div>
-
-        {/* Incremento */}
-        <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Incremento (%) *</Label>
-          <div className="relative">
-            <Input
-              type="number"
-              value={formData.incremento}
-              onChange={e => onChange('incremento', parseFloat(e.target.value))}
-              className={inputClass('incremento')}
+      <div className="space-y-3 mb-6">
+        {/* Primera fila: Categoría, Tipo, Porcentaje, Fecha */}
+        <Label className="text-xs font-medium mb-1">Tipo de Ajuste *</Label>
+        <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0 mb-3">
+            <RadioGroup
+              value={formData.tipo_ajuste}
+              onValueChange={(value) => onChange('tipo_ajuste', value as 'incremento' | 'decremento')}
               disabled={isLoading}
-              step="0.01"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">%</span>
+              className="grid grid-cols-2 gap-2 h-10"
+            >
+              <Label
+                htmlFor="incremento"
+                className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-md px-2 cursor-pointer hover:border-green-500 hover:bg-green-50/50 transition-colors"
+              >
+                <RadioGroupItem value="incremento" id="incremento" className="h-3 w-3" />
+                <span className="flex items-center gap-1 text-xs whitespace-nowrap">
+                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <span>Incremento</span>
+                </span>
+              </Label>
+
+              <Label
+                htmlFor="decremento"
+                className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-md px-2 cursor-pointer hover:border-red-500 hover:bg-red-50/50 transition-colors"
+              >
+                <RadioGroupItem value="decremento" id="decremento" className="h-3 w-3" />
+                <span className="flex items-center gap-1 text-xs whitespace-nowrap">
+                  <ArrowDown className="h-3 w-3 text-red-600" />
+                  <span>Decremento</span>
+                </span>
+              </Label>
+            </RadioGroup>
+            {errors.tipo_ajuste && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.tipo_ajuste}</p>}
           </div>
-          {errors.incremento && <p className="text-xs text-red-500 mt-1">{errors.incremento}</p>}
-        </div>
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Categoría */}
+          <div className="flex flex-col relative">
+            <Label className="text-xs font-medium mb-1">Categoría *</Label>
+            <ComboboxSelect
+              value={formData.categoria || undefined}
+              onChange={v => onChange('categoria', Number(v))}
+              options={categories}
+              optionTag="categoria"
+              placeholder={loadingCategories ? 'Cargando...' : 'Seleccionar categoría'}
+              className={inputClass('categoria')}
+              disabled={loadingCategories || isLoading}
+              error={!!errors.categoria}
+              clearOnEmpty={true}
+            />
+            {errors.categoria && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.categoria}</p>}
+          </div>
 
-        {/* Fecha */}
-        <div className="flex flex-col">
-          <Label className="text-xs font-medium mb-1">Fecha de aplicación</Label>
-          <PopoverDatePicker
-            value={formData.fecha ? new Date(formData.fecha + 'T00:00:00') : undefined}
-            onChange={(date) => {
-              if (date) {
-                try {
-                  onChange('fecha', format(date, 'yyyy-MM-dd'));
-                } catch (e) {
-                  console.error('Error formatting date', e);
+          
+
+          {/* Porcentaje */}
+          <div className="flex flex-col relative">
+            <Label className="text-xs font-medium mb-1">Porcentaje (%) *</Label>
+            <div className="relative">
+              <Input
+                type="number"
+                value={formData.porcentaje || ''}
+                onChange={e => {
+                  const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                  onChange('porcentaje', value);
+                }}
+                className={inputClass('porcentaje')}
+                disabled={isLoading}
+                step="0.01"
+                min="0"
+                placeholder="10"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">%</span>
+            </div>
+            {errors.porcentaje && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.porcentaje}</p>}
+          </div>
+
+          {/* Fecha */}
+          <div className="flex flex-col relative">
+            <Label className="text-xs font-medium mb-1">Fecha de aplicación</Label>
+            <PopoverDatePicker
+              value={formData.fecha ? new Date(formData.fecha + 'T00:00:00') : undefined}
+              onChange={(date) => {
+                if (date) {
+                  try {
+                    onChange('fecha', format(date, 'yyyy-MM-dd'));
+                  } catch (e) {
+                    console.error('Error formatting date', e);
+                  }
+                } else {
+                  onChange('fecha', '');
                 }
-              } else {
-                onChange('fecha', '');
-              }
-            }}
-            hasError={errors.fecha}
-            disabled={() => isLoading}
-          />
-          {errors.fecha && <p className="text-xs text-red-500 mt-1">{errors.fecha}</p>}
+              }}
+              hasError={errors.fecha}
+              disabled={() => isLoading}
+            />
+            {errors.fecha && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.fecha}</p>}
+          </div>
         </div>
-
       </div>
 
-      <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 items-center">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 items-start">
         {/* Aplicar a todas */}
-        <div className="flex items-center space-x-2 p-3 rounded-md">
+        <div className="flex items-center space-x-2 h-10">
           <Switch
             checked={formData.aplicar_todas}
             onCheckedChange={v => onChange('aplicar_todas', v)}
@@ -154,7 +195,7 @@ const FormUpdatePrices: React.FC<Props> = ({
 
         {/* Sucursal (Condicional) */}
         {!formData.aplicar_todas && (
-          <div className="flex flex-col">
+          <div className="flex flex-col relative">
             <Label className="text-xs font-medium mb-1">Sucursal *</Label>
             <ComboboxSelect
               value={formData.sucursal || undefined}
@@ -166,7 +207,7 @@ const FormUpdatePrices: React.FC<Props> = ({
               disabled={loadingBranches || isLoading}
               error={!!errors.sucursal}
             />
-            {errors.sucursal && <p className="text-xs text-red-500 mt-1">{errors.sucursal}</p>}
+            {errors.sucursal && <p className="text-xs text-red-500 absolute -bottom-5 left-0">{errors.sucursal}</p>}
           </div>
         )}
       </div>

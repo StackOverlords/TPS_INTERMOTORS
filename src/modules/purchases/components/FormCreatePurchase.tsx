@@ -5,7 +5,7 @@ import ShortcutKey from '@/components/common/ShortcutKey';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import { useCommands } from '@/keybindings';
 import { HelpCircle, ShoppingBag } from 'lucide-react';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useProviders } from '../hooks/useProviders';
 import { usePurchaseCommons } from '../hooks/usePurchaseCommons';
 import { type FormData } from '../hooks/usePurchaseForm';
@@ -46,16 +46,27 @@ const FormCreatePurchase: React.FC<Props> = ({
       : 'text-sm';
 
   // Convertir string a Date para PopoverDatePicker
+  // Usar hora local para evitar problemas de zona horaria
   const parseDateFromString = (dateString: string): Date | null => {
     if (!dateString) return null;
-    const date = new Date(dateString);
+
+    // Parsear la fecha en hora local (no UTC)
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
     return isNaN(date.getTime()) ? null : date;
   };
 
   // Manejar cambio de fecha desde PopoverDatePicker
+  // Formatear en hora local para evitar desfases
   const handleDateChange = (date: Date | undefined) => {
     if (date) {
-      const dateString = date.toISOString().split('T')[0];
+      // Formatear en hora local (no UTC)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+
       onChange('fecha', dateString);
     } else {
       onChange('fecha', '');
@@ -83,6 +94,21 @@ const FormCreatePurchase: React.FC<Props> = ({
     ],
     enabled: true,
   });
+
+  // Establecer valores por defecto para tipo_compra y forma_compra
+  // Esto se ejecuta cuando se carga el formulario o cuando se limpia (reset)
+  useEffect(() => {
+    // Si tipo_compra está vacío y hay tipos de compra disponibles, seleccionar el primero
+    if (!formData.tipo_compra && purchaseTypes.length > 0 && !loading.types) {
+      onChange('tipo_compra', purchaseTypes[0].value);
+    }
+
+    // Si forma_compra está vacío y hay modalidades disponibles, seleccionar la primera
+    if (!formData.forma_compra && purchaseModalities.length > 0 && !loading.modalities) {
+      onChange('forma_compra', purchaseModalities[0].value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [purchaseTypes, purchaseModalities, formData.tipo_compra, formData.forma_compra, loading.types, loading.modalities]);
 
 
   return (
@@ -146,9 +172,8 @@ const FormCreatePurchase: React.FC<Props> = ({
           </span>
         </TooltipWrapper>
       </div>
-      <div ref={containerRef} className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end mb-6">
-        <div className="flex flex-col relative">
-          <Label className="text-xs font-medium mb-1">Fecha *</Label>
+      <div ref={containerRef} className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 items-end mb-4">
+        <div className="flex flex-col relative"> 
           {/* <Input
             type="date"
             value={formatDate(formData.fecha)}
@@ -261,7 +286,7 @@ const FormCreatePurchase: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="p-3 bg-white rounded-lg">
+      <div className="bg-white rounded-lg">
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">Comentarios (Opcional)</Label>
           <textarea

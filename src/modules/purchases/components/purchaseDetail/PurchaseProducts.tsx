@@ -45,6 +45,7 @@ type ProductRow = {
   costo: number;
   subtotal: number;
   moneda?: string | null;
+  tc_compra: string | null;
 };
 
 const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
@@ -84,6 +85,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         cantidad: isFinite(cantidad) ? cantidad : 0,
         unidad: d.producto.unidad_medida?.unidad_medida ?? null,
         costo: isFinite(costo) ? costo : 0,
+        tc_compra: d.tc_compra,
         subtotal,
         moneda: d.moneda ?? null,
       };
@@ -111,7 +113,8 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         r.procedencia || "",
         r.marca_vehiculo || "",
         r.motor || "",
-        r.medida || ""
+        r.medida || "",
+        r.tc_compra?.toString() || ""
       ].join(" ").toLowerCase();
       return haystack.includes(debouncedSearch);
     });
@@ -278,7 +281,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
       accessorKey: "costo",
       header: "Costo U.",
       size: 80,
-      minSize: 70,
+      minSize: 30,
       cell: ({ getValue }) => (
         <div className="text-left font-medium">
           {formatCurrency(getValue<number>())}
@@ -287,10 +290,22 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
       sortingFn: "alphanumeric",
     },
     {
+      accessorKey: "tc_compra",
+      header: "TC Compra",
+      size: 70,
+      minSize: 30,
+      cell: ({ getValue }) => (
+        <div className="text-left font-medium">
+          ${Number(getValue<number>()).toFixed(2)}
+        </div>
+      ),
+      sortingFn: "alphanumeric",
+    },
+    {
       accessorKey: "subtotal",
       header: "Subtotal",
       size: 80,
-      minSize: 70,
+      minSize: 30,
       cell: ({ getValue, row }) => (
         <div className="text-center font-semibold text-emerald-600">
           {formatCurrency(getValue<number>())}

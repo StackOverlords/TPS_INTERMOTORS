@@ -29,9 +29,9 @@ export class WebSocketService {
     return new Promise((resolve, reject) => {
       try {
         const host = import.meta.env.VITE_REVERB_HOST || window.location.hostname;
-        const port = import.meta.env.VITE_REVERB_PORT || '8080';
+        const port = import.meta.env.VITE_REVERB_PORT || '8589';
         const appKey = import.meta.env.VITE_REVERB_APP_KEY;
-        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'ws';
+        const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
         const useTLS = scheme === 'https' || scheme === 'wss';
 
         // console.log('🔌 Configurando conexión a Reverb:', {
@@ -64,12 +64,8 @@ export class WebSocketService {
           },
         });
 
-        // console.log('📡 Echo instance created, waiting for connection...');
-
         // Escuchar eventos de conexión
         this.echo.connector.pusher.connection.bind('connected', () => {
-            // console.log('✅ Conectado a Reverb WebSocket');
-            // console.log('📊 Socket ID:', this.echo?.socketId());
             resolve();
         });
 
@@ -83,15 +79,15 @@ export class WebSocketService {
         });
 
         this.echo.connector.pusher.connection.bind('disconnected', () => {
-            // console.log('⚠️ Desconectado de Reverb');
+            // console.log('Desconectado de Reverb');
         });
 
         this.echo.connector.pusher.connection.bind('state_change', (states: any) => {
-            // console.log('🔄 Estado de conexión cambió:', states.previous, '->', states.current);
+            // console.log('Estado de conexión cambió:', states.previous, '->', states.current);
         });
 
       } catch (error) {
-        console.error('💥 Error inicializando Echo:', error);
+        console.error(' Error inicializando Echo:', error);
         reject(error);
       }
     });
@@ -113,11 +109,11 @@ export class WebSocketService {
    */
   listen(channelName: string, eventName: string, callback: Function): void {
     if (!this.echo) {
-      console.warn('⚠️ Echo no está conectado. Llama a connect() primero.');
+      console.warn('Echo no está conectado. Llama a connect() primero.');
       return;
     }
 
-    // console.log(`🎯 Intentando suscribirse a canal: "${channelName}" con evento: "${eventName}"`);
+    // console.log(`Intentando suscribirse a canal: "${channelName}" con evento: "${eventName}"`);
 
     // Reutilizar instancia del canal si ya existe
     let channel = this.channels.get(channelName);
@@ -126,14 +122,14 @@ export class WebSocketService {
       // Determinar el tipo de canal basado en el nombre
       if (channelName.startsWith('private-')) {
         const privateChannelName = channelName.replace('private-', '');
-        // // console.log(`🔒 Creando canal privado: ${privateChannelName}`);
+        // // console.log(`Creando canal privado: ${privateChannelName}`);
         channel = this.echo.private(privateChannelName);
       } else if (channelName.startsWith('presence-')) {
         const presenceChannelName = channelName.replace('presence-', '');
-        // // console.log(`👥 Creando canal de presencia: ${presenceChannelName}`);
+        // // console.log(`Creando canal de presencia: ${presenceChannelName}`);
         channel = this.echo.join(presenceChannelName);
       } else {
-        // // console.log(`📢 Creando canal público: ${channelName}`);
+        // // console.log(`Creando canal público: ${channelName}`);
         channel = this.echo.channel(channelName);
       }
 
@@ -141,7 +137,7 @@ export class WebSocketService {
 
       // Escuchar eventos de suscripción
       channel.on('pusher:subscription_succeeded', () => {
-        // console.log(`✅ Suscripción exitosa al canal: ${channelName}`);
+        // console.log(`Suscripción exitosa al canal: ${channelName}`);
       });
 
       channel.on('pusher:subscription_error', (error: any) => {
@@ -155,7 +151,7 @@ export class WebSocketService {
     const formattedEvent = eventName.startsWith('.') ? eventName : `.${eventName}`;
 
     channel.listen(formattedEvent, (data: any) => {
-      // console.log(`📨 Evento recibido [${channelName}] [${eventName}]:`, data);
+      // console.log(`Evento recibido [${channelName}] [${eventName}]:`, data);
       callback(data);
     });
 

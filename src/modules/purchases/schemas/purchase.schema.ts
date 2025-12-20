@@ -84,6 +84,7 @@ export const DetalleCompraSchema = z.object({
   precio_venta_alt: z.string(),
   moneda: z.string(),
   fecha_mod_precio: z.string().nullable(),
+  tc_compra: z.string().nullable(),
 })
 
 export const ProveedorDetalleSchema = z.object({

@@ -207,7 +207,7 @@ const FormCreateProduct: React.FC = () => {
   const refForm = useRef<HTMLFormElement>(null);
   useFormEnterNavigation({
     containerRef: refForm,
-    submitOnLastField: false, 
+    submitOnLastField: false,
     excludeSelectors: [
       '.editable-cell-input',
       '[data-table-cell="true"]',
@@ -301,8 +301,35 @@ const FormCreateProduct: React.FC = () => {
               )}
             </div>
           </div>
+          {/* 2. Marca */}
+          <div>
+            <Label>Marca *</Label>
+            <Controller
+              name="id_marca"
+              control={control}
+              render={({ field }) => (
+                <ComboboxSelect
+                  value={field.value}
+                  onChange={value => field.onChange(Number(value))}
+                  options={brands || []}
+                  optionTag="marca"
+                  placeholder="Seleccionar marca"
+                  searchPlaceholder="Buscar marcas..."
+                  className={getSelectClassName('id_marca')}
+                  clearOnEmpty={true}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.id_marca && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.id_marca.message}
+                </p>
+              )}
+            </div>
+          </div>
 
-          {/* 2. Código OEM */}
+          {/* 3. Código OEM */}
           <div>
             <Label>Código OEM (Opcional)</Label>
             <Input {...register('codigo_oem')} placeholder="Código OEM" />
@@ -334,33 +361,7 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-          {/* 4. Marca */}
-          <div>
-            <Label>Marca *</Label>
-            <Controller
-              name="id_marca"
-              control={control}
-              render={({ field }) => (
-                <ComboboxSelect
-                  value={field.value}
-                  onChange={value => field.onChange(Number(value))}
-                  options={brands || []}
-                  optionTag="marca"
-                  placeholder="Seleccionar marca"
-                  searchPlaceholder="Buscar marcas..."
-                  className={getSelectClassName('id_marca')}
-                  clearOnEmpty={true}
-                />
-              )}
-            />
-            <div className="mt-1">
-              {errors.id_marca && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.id_marca.message}
-                </p>
-              )}
-            </div>
-          </div>
+
 
           {/* 5. Procedencia */}
           <div>
@@ -418,6 +419,60 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
+          {/* 8. Stock min */}
+          <div>
+            <Label>Stock mínimo *</Label>
+            <Controller
+              name="stock_minimo"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  autoSelectOnFocus={true}
+                  min={0}
+                  {...field}
+                  onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                  className={getInputClassName('stock_minimo')}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.stock_minimo && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.stock_minimo.message}
+                </p>
+              )}
+            </div>
+          </div>
+          {/* Costo Referencia */}
+          <div>
+            <Label>Costo Referencia *</Label>
+            <Controller
+              name="costo_referencia"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  autoSelectOnFocus={true}
+                  step="0.01"
+                  {...field}
+                  onChange={e =>
+                    field.onChange(parseFloat(e.target.value) || 0)
+                  }
+                  placeholder="0.00"
+                  className={getInputClassName('costo_referencia')}
+                />
+              )}
+            />
+            <div className="mt-1">
+              {errors.costo_referencia && (
+                <p className="text-xs text-red-500 truncate">
+                  {errors.costo_referencia.message}
+                </p>
+              )}
+            </div>
+          </div>
           {/* 7. Precio */}
           <div>
             <Label>Precio de venta *</Label>
@@ -448,32 +503,7 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-          {/* 8. Stock min */}
-          <div>
-            <Label>Stock mínimo *</Label>
-            <Controller
-              name="stock_minimo"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  autoSelectOnFocus={true}
-                  min={0}
-                  {...field}
-                  onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                  className={getInputClassName('stock_minimo')}
-                />
-              )}
-            />
-            <div className="mt-1">
-              {errors.stock_minimo && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.stock_minimo.message}
-                </p>
-              )}
-            </div>
-          </div>
+
 
           {/* 9. Precio alt */}
           <div>
@@ -502,44 +532,6 @@ const FormCreateProduct: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* 10. Motor */}
-          <div>
-            <Label>Nro. Motor (Opcional)</Label>
-            <Input
-              {...register('nro_motor')}
-              placeholder="Nro. Motor"
-              className={getInputClassName('nro_motor')}
-            />
-            <div className="mt-1">
-              {errors.nro_motor && (
-                <p className="text-xs text-red-500 truncate">
-                  {errors.nro_motor.message}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 11. Descripción Auto-generada */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
-          <Wand2 className="w-4 h-4" />
-          Descripción Auto-generada
-        </h3>
-        <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
-          {autoDescription || 'Completa los campos para generar la descripción'}
-        </div>
-      </div>
-
-      {/* Campos adicionales para la generación de descripción */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h3 className="mb-3 text-sm font-semibold text-gray-900">
-          Información Complementaria
-        </h3>
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {/* Marca vehículo */}
           <div>
             <Label>Marca vehículo *</Label>
             <Controller
@@ -566,7 +558,6 @@ const FormCreateProduct: React.FC = () => {
               )}
             </div>
           </div>
-
           {/* Medida */}
           <div>
             <Label>Medida (Opcional)</Label>
@@ -583,20 +574,30 @@ const FormCreateProduct: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* Modelo */}
+          {/* 10. Motor */}
           <div>
-            <Label>Modelo (Opcional)</Label>
-            <Input {...register('modelo')} placeholder="Ej: 2020-2024" />
+            <Label>Nro. Motor (Opcional)</Label>
+            <Input
+              {...register('nro_motor')}
+              placeholder="Nro. Motor"
+              className={getInputClassName('nro_motor')}
+            />
             <div className="mt-1">
-              {errors.modelo && (
+              {errors.nro_motor && (
                 <p className="text-xs text-red-500 truncate">
-                  {errors.modelo.message}
+                  {errors.nro_motor.message}
                 </p>
               )}
             </div>
-          </div>
-
+          </div> 
+        </div>
+      </div>
+              {/* Campos adicionales para la generación de descripción */}
+      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+        {/* <h3 className="mb-3 text-sm font-semibold text-gray-900">
+          Información Complementaria
+        </h3> */}
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {/* Descripción alt. */}
           <div className="flex flex-col sm:col-span-2">
             <div>
@@ -617,31 +618,14 @@ const FormCreateProduct: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Costo Referencia */}
+          {/* Modelo */}
           <div>
-            <Label>Costo Referencia *</Label>
-            <Controller
-              name="costo_referencia"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="number"
-                  autoSelectOnFocus={true}
-                  step="0.01"
-                  {...field}
-                  onChange={e =>
-                    field.onChange(parseFloat(e.target.value) || 0)
-                  }
-                  placeholder="0.00"
-                  className={getInputClassName('costo_referencia')}
-                />
-              )}
-            />
+            <Label>Modelo (Opcional)</Label>
+            <Input {...register('modelo')} placeholder="Ej: 2020-2024" />
             <div className="mt-1">
-              {errors.costo_referencia && (
+              {errors.modelo && (
                 <p className="text-xs text-red-500 truncate">
-                  {errors.costo_referencia.message}
+                  {errors.modelo.message}
                 </p>
               )}
             </div>
@@ -649,6 +633,16 @@ const FormCreateProduct: React.FC = () => {
         </div>
       </div>
 
+      {/* 11. Descripción Auto-generada */}
+      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+        <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
+          <Wand2 className="w-4 h-4" />
+          Descripción Auto-generada
+        </h3>
+        <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
+          {autoDescription || 'Completa los campos para generar la descripción'}
+        </div>
+      </div> 
       {/* Botones de acción */}
       <div className="p-3 bg-white border border-gray-200 rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

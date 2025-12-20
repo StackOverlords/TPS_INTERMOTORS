@@ -30,7 +30,7 @@ const purchasesProtectedRoutes: RouteType[] = [
       },
       {
         path: "/dashboard/list-purchases",
-        name: "Listado de compras",
+        name: "Lista de compras",
         type: "protected",
         element: PurchaseListScreen,
         isAdmin: true,

@@ -106,6 +106,7 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
             '.editable-cell-input',
             '[data-table-cell="true"]',
             '[name="btn-chvron-right"]',
+            
         ],
     })
     return (

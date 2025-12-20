@@ -2,7 +2,7 @@ import { useBranchStore } from "@/states/branchStore";
 import { useSalesPaginated } from "../hooks/useSalesPaginated";
 import { useSalesFilters } from "../hooks/useSalesFilters";
 import { useEffect, useState } from "react";
-import { FilterX, RefreshCcw, Search, Zap } from "lucide-react";
+import { FilterX, PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
@@ -210,9 +210,13 @@ const SalesListScreen = () => {
 
                         {
                             isFeatureEnabled('clearFiltersButton') && (
-                                <Button title={config.features?.clearFiltersButton?.description} variant="outline" size="sm" onClick={handleResetFilters}>
-                                    <FilterX className="h-4 w-4" />
-                                    Limpiar Filtros
+                                // <Button title={config.features?.clearFiltersButton?.description} variant="outline" size="sm" onClick={handleResetFilters}>
+                                //     <FilterX className="h-4 w-4" />
+                                //     Limpiar Filtros
+                                // </Button>
+                                <Button onClick={handleResetFilters}>
+                                    <PackageSearch className="h-4 w-4" />
+                                    Nueva búsqueda
                                 </Button>
                             )
                         }

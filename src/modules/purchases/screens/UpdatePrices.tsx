@@ -27,7 +27,8 @@ const UpdatePrices = () => {
   
   const [formData, setFormData] = useState<UpdatePricesFormData>({
     aplicar_todas: true,
-    incremento: 0,
+    tipo_ajuste: 'incremento',
+    porcentaje: 0,
     fecha: null,
     categoria: 0,
     sucursal: null,
@@ -88,7 +89,8 @@ const UpdatePrices = () => {
   const handleReset = () => {
     setFormData({
       aplicar_todas: true,
-      incremento: 0,
+      tipo_ajuste: 'incremento',
+      porcentaje: 0,
       fecha: "",
       categoria: 0,
       sucursal: null,
@@ -98,6 +100,7 @@ const UpdatePrices = () => {
   };
 
   const handleConfirmUpdate = () => {
+    // El servicio se encarga de transformar los datos al formato del API
     updatePricesMutation.mutate(formData, {
       onSuccess: (response) => {
         setShowConfirmDialog(false);
@@ -135,14 +138,7 @@ const UpdatePrices = () => {
         )} */}
 
         {/* Error Alert */}
-        {updatePricesMutation.isError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {updatePricesMutation.error?.message || 'Error al actualizar precios'}
-            </AlertDescription>
-          </Alert>
-        )}
+        
 
         <Card>
           <CardHeader>
@@ -217,26 +213,33 @@ const UpdatePrices = () => {
                         {formData.categoria ? getCategoryName(formData.categoria) : 'N/A'}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex justify-between">
                       <span className="font-medium">Aplicar a:</span>
                       <Badge variant="secondary">
-                        {formData.aplicar_todas 
-                          ? 'Todas las sucursales' 
+                        {formData.aplicar_todas
+                          ? 'Todas las sucursales'
                           : formData.sucursal ? getBranchName(formData.sucursal) : 'N/A'}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex justify-between">
-                      <span className="font-medium">Incremento:</span>
-                      <Badge variant={formData.incremento >= 0 ? 'default' : 'destructive'}>
-                        {formData.incremento >= 0 ? '+' : ''}{formData.incremento}%
+                      <span className="font-medium">Tipo de Ajuste:</span>
+                      <Badge variant={formData.tipo_ajuste === 'incremento' ? 'default' : 'destructive'}>
+                        {formData.tipo_ajuste === 'incremento' ? 'Incrementar' : 'Decrementar'}
                       </Badge>
                     </div>
-                    
+
+                    <div className="flex justify-between">
+                      <span className="font-medium">Porcentaje:</span>
+                      <Badge variant="outline" className="font-mono">
+                        {formData.tipo_ajuste === 'incremento' ? '+' : '-'}{formData.porcentaje}%
+                      </Badge>
+                    </div>
+
                     <div className="flex justify-between">
                       <span className="font-medium">Fecha:</span>
-                      <span className="text-muted-foreground">{formData.fecha}</span>
+                      <span className="text-muted-foreground">{formData.fecha || 'No especificada'}</span>
                     </div>
                   </div>
 
@@ -263,6 +266,14 @@ const UpdatePrices = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {updatePricesMutation.isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {updatePricesMutation.error?.message || 'Error al actualizar precios'}
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
     </main>
   );

@@ -8,7 +8,7 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { useBranchStore } from "@/states/branchStore";
-import { Filter, RefreshCcw, Search, Zap } from "lucide-react";
+import { Filter, PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import TransferFiltersComponent from "../components/transferList/TransferFiltersComponent";
 import TransferListTable from "../components/transferList/TransferListTable";
@@ -244,17 +244,18 @@ const TransferListScreen = () => {
                             <RefreshCcw className={`size-4 ${isRefetchingTransfers || isFetching ? 'animate-spin' : ''}`} />
                         </TooltipButton>
 
-                        <Button variant="outline" size="sm" onClick={handleResetFilters}>
-                            <Filter className="h-4 w-4" />
-                            Limpiar Filtros
+                        <Button onClick={handleResetFilters}>
+                            <PackageSearch className="h-4 w-4" />
+                            Nueva búsqueda
                         </Button>
-                        <Button size={'sm'} onClick={toggleShowFilters}>
+
+                        {/* <Button size={'sm'} onClick={toggleShowFilters}>
                             {
                                 showFilters ?
                                     "Ocultar filtros" :
                                     "Mostrar filtros"
                             }
-                        </Button>
+                        </Button> */}
                     </div>
                 </section>
                 {/* Búsquedas individuales */}

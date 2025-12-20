@@ -1,6 +1,6 @@
 import { useBranchStore } from "@/states/branchStore";
 import { useEffect, useState } from "react";
-import { FilterX, RefreshCcw, Search, Zap } from "lucide-react";
+import { FilterX, PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
@@ -211,9 +211,13 @@ const OrderListScreen = () => {
 
                         {
                             isFeatureEnabled('clearFiltersButton') && (
-                                <Button title={config.features?.clearFiltersButton?.description} variant="outline" size="sm" onClick={handleResetFilters}>
-                                    <FilterX className="h-4 w-4" />
-                                    Limpiar Filtros
+                                // <Button title={config.features?.clearFiltersButton?.description} variant="outline" size="sm" onClick={handleResetFilters}>
+                                //     <FilterX className="h-4 w-4" />
+                                //     Limpiar Filtros
+                                // </Button>
+                                <Button onClick={handleResetFilters}>
+                                    <PackageSearch className="h-4 w-4" />
+                                    Nueva búsqueda
                                 </Button>
                             )
                         }

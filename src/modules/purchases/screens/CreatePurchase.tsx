@@ -33,6 +33,10 @@ const CreatePurchase: React.FC = () => {
   const [creationMode, setCreationMode] = useState<CreationMode>('manual');
   const [selectorMode, setSelectorMode] = useState<'embedded' | 'window'>('window');
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [exchangeRate, setExchangeRate] = useState(() => {
+    const saved = localStorage.getItem('purchase_exchange_rate');
+    return saved ? parseFloat(saved) : 6.96;
+  });
 
 
 
@@ -75,11 +79,12 @@ const CreatePurchase: React.FC = () => {
         precio_venta_alt: Number(precio_venta_alt.toFixed(2)),
         producto: product,
         subtotal: Number(subtotal.toFixed(2)),
+        tc_compra: exchangeRate, // Agregar tipo de cambio actual
       };
 
       handleChange('detalles', [...formData.detalles, newDetail]);
     },
-    [formData.detalles, handleChange]
+    [formData.detalles, handleChange, exchangeRate]
   );
   
   // Hook para manejar la ventana secundaria de productos
@@ -123,9 +128,10 @@ const CreatePurchase: React.FC = () => {
           inc_p_venta: Number(inc_p_venta.toFixed(2)), // Number
           precio_venta: Number(precio_venta.toFixed(2)), // Number
           inc_p_venta_alt: Number(inc_p_venta_alt.toFixed(2)), // Number
-          precio_venta_alt: Number(precio_venta_alt.toFixed(2)), // Number - ESTE ERA EL PROBLEMA
+          precio_venta_alt: Number(precio_venta_alt.toFixed(2)), // Number
           producto: detalle.producto,
           subtotal: Number(subtotal.toFixed(2)), // Number
+          tc_compra: exchangeRate, // Agregar tipo de cambio actual
         };
       }) || [];
 
@@ -142,7 +148,7 @@ const CreatePurchase: React.FC = () => {
       // Cambiar al modo de importación
       setCreationMode('order-import');
     }
-  }, [orderData, selectedOrderId, handleChange]);
+  }, [orderData, selectedOrderId, handleChange, exchangeRate]);
 
   // Función para abrir selector de productos
   const handleOpenProductSelector = () => {
@@ -277,6 +283,7 @@ const CreatePurchase: React.FC = () => {
               canAddProducts={canAddProducts}
               canImportOrder={canImportOrder}
               setDetalles={detalles => handleChange('detalles', detalles)}
+              onExchangeRateChange={setExchangeRate}
             />
           </div>
         </div>

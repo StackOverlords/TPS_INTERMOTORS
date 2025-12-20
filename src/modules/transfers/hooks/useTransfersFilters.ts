@@ -13,6 +13,25 @@ const cleanFilters = (filters: TransfersFilters): TransfersFilters => ({
 });
 
 export const useTransfersFilters = (defaultSucursal: number) => {
+    // Memoizar las fechas para evitar recrearlas en cada render
+    const defaultDates = useMemo(() => {
+        const today = new Date();
+        const threeMonthsAgo = new Date(today);
+        threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+        // Formatear fechas a string YYYY-MM-DD
+        const formatDate = (date: Date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        return {
+            today: formatDate(today),
+            threeMonthsAgo: formatDate(threeMonthsAgo)
+        };
+    }, []);
 
     const [filters, setFilters] = useState<TransfersFilters>({
         pagina: 1,
@@ -21,8 +40,8 @@ export const useTransfersFilters = (defaultSucursal: number) => {
         sucursal: defaultSucursal,
         codigo_oem_producto: "",
         keywords: "",
-        fecha_fin: undefined,
-        fecha_inicio: undefined,
+        fecha_fin: defaultDates.today,
+        fecha_inicio: defaultDates.threeMonthsAgo,
     });
 
     const [appliedFilters, setAppliedFilters] = useState<TransfersFilters>(filters);
@@ -75,12 +94,12 @@ export const useTransfersFilters = (defaultSucursal: number) => {
             sucursal: defaultSucursal,
             codigo_oem_producto: "",
             keywords: "",
-            fecha_fin: undefined,
-            fecha_inicio: undefined
+            fecha_fin: defaultDates.today,
+            fecha_inicio: defaultDates.threeMonthsAgo
         };
         setFilters(emptyFilters);
         setAppliedFilters(emptyFilters);
-    }, [defaultSucursal]);
+    }, [defaultSucursal, defaultDates]);
 
     const applyFilters = useCallback(() => {
         setAppliedFilters({ ...filters, pagina: 1 }); // Reset página al aplicar
