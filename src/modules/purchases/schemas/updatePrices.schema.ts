@@ -7,10 +7,19 @@ export const UpdatePricesSchema = z.object({
 
   aplicar_todas: z.boolean(),
 
-  incremento: z.number({
-    required_error: 'El incremento es requerido',
-  }).min(-100, 'El incremento mínimo es -100%')
-    .max(1000, 'El incremento máximo es 1000%'),
+  tipo_ajuste: z.enum(['incremento', 'decremento'], {
+    required_error: 'Selecciona el tipo de ajuste',
+  }),
+
+  porcentaje: z.number({
+    required_error: 'El porcentaje es requerido',
+    invalid_type_error: 'Ingresa un valor numérico',
+  })
+    .positive('El porcentaje debe ser mayor a 0')
+    .max(1000, 'El porcentaje máximo es 1000%')
+    .refine((val) => val !== 0, {
+      message: 'El porcentaje debe ser mayor a 0',
+    }),
 
   sucursal: z.number().int().positive().optional().nullable(),
 
@@ -30,3 +39,27 @@ export const UpdatePricesSchema = z.object({
 );
 
 export type UpdatePricesFormData = z.infer<typeof UpdatePricesSchema>;
+
+// Tipo para el API (formato que espera el backend)
+export interface UpdatePricesApiData {
+  categoria: number;
+  aplicar_todas: boolean;
+  incremento: number;
+  sucursal?: number | null;
+  fecha?: string | null;
+}
+
+// Helper para convertir el formulario al formato del API
+export const transformToApiFormat = (data: UpdatePricesFormData): UpdatePricesApiData => {
+  const incremento = data.tipo_ajuste === 'incremento'
+    ? data.porcentaje
+    : -data.porcentaje;
+
+  return {
+    categoria: data.categoria,
+    aplicar_todas: data.aplicar_todas,
+    incremento,
+    sucursal: data.sucursal,
+    fecha: data.fecha,
+  };
+};

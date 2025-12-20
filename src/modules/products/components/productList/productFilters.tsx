@@ -2,7 +2,7 @@ import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
+// import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
 import { useViewConfig } from "@/hooks/useViewConfig"; // ← NUEVO
 import { cn } from "@/lib/utils";
 import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";

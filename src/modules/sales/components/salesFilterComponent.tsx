@@ -104,7 +104,7 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
 
     return (
         <section className="space-y-2">
-            <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                 {
                     isFeatureEnabled('saleNumberFilter') && (
                         <div className="space-y-2">
@@ -205,20 +205,23 @@ const SalesFiltersComponent: React.FC<SalesFiltersProps> = ({
                         </div>
                     )
                 }
+
+                {/* Botón de búsqueda solo visible en modo manual */}
+                {searchMode === 'manual' && (
+                    <div className="h-full flex items-end">
+                        <Button
+                            onClick={handleManualSearch}
+                            className="w-full"
+                        >
+                            <Search className="size-4" />
+                            Buscar
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Botones de acción adicionales */}
             <div className="flex gap-2 items-end justify-end flex-wrap">
-                {/* Botón de búsqueda solo visible en modo manual */}
-                {searchMode === 'manual' && (
-                    <Button
-                        onClick={handleManualSearch}
-                        className="w-full sm:w-auto"
-                    >
-                        <Search className="size-4" />
-                        Buscar
-                    </Button>
-                )}
 
                 {((filters.fecha_inicio || filters.fecha_fin) && isFeatureEnabled('clearDatesButton')) && (
                     <Button

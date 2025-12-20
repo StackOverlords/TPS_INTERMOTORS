@@ -33,7 +33,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
             header: "Fecha Entrada",
             enableHiding: false,
             minSize: 30,
-            size: 80,
+            size: 70,
             cell: ({ getValue }) => {
                 const rawFecha = getValue() as string;
 
@@ -64,7 +64,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
             accessorKey: "cantidad",
             header: `Cantidad`,
             minSize: 30,
-            size: 80,
+            size: 60,
             cell: ({ getValue }) => {
                 const value = getValue<number>();
                 return (
@@ -100,10 +100,39 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
             )
         },
         {
+            accessorKey: "tc_compra",
+            header: `TC Compra`,
+            minSize: 30,
+            size: 60,
+            cell: ({ getValue }) => {
+                const value = getValue<number>();
+                return (
+                    <div className="text-end">
+                        {
+                            value > 0 ? (
+                                <>
+                                    {
+                                        formatCurrency(value,
+                                            {
+                                                currency: 'USD',
+                                                locale: "en-US",
+                                                usdFormat: 'us'
+                                            })
+                                    }
+                                </>
+                            ) : (
+                                <span className="font-medium">-</span>
+                            )
+                        }
+                    </div>
+                );
+            }
+        },
+        {
             accessorKey: "saldo",
             header: "Stock",
             minSize: 30,
-            size: 80,
+            size: 60,
             cell: ({ row }) => (
                 <div className="flex items-center justify-center">
                     <Badge
@@ -121,7 +150,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
             accessorKey: "tipo",
             header: "Tipo",
             minSize: 30,
-            size: 80,
+            size: 50,
             cell: ({ getValue }) => (
                 <div className="flex items-center justify-center">
                     <Badge variant="info" className="text-xs">

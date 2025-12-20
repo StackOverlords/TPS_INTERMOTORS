@@ -11,14 +11,27 @@ const cleanFilters = (filters: OrdersFilters): OrdersFilters => ({
 
 
 export const useOrdersFilters = (defaultSucursal: number) => {
+
+    // Memoizar las fechas para evitar recrearlas en cada render
+    const defaultDates = useMemo(() => {
+        const today = new Date();
+        const lastThreeMonths = new Date(today);
+        lastThreeMonths.setMonth(today.getMonth() - 3);
+
+        return {
+            today,
+            lastThreeMonths,
+        };
+    }, []);
+
     const [filters, setFilters] = useState<OrdersFilters>({
         pagina: 1,
         pagina_registros: 25,
         sucursal: defaultSucursal,
         codigo_oem_producto: "",
         keywords: "",
-        fecha_fin: undefined,
-        fecha_inicio: undefined
+        fecha_fin: defaultDates.today,
+        fecha_inicio: defaultDates.lastThreeMonths
     });
 
     const [appliedFilters, setAppliedFilters] = useState<OrdersFilters>(filters);

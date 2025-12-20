@@ -94,7 +94,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 
   return (
     <section className="space-y-2">
-      <div ref={filterContainerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div ref={filterContainerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
         <div className="space-y-2">
           <Label>Nro. de Compra</Label>
           <div className="relative">
@@ -110,17 +110,6 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
         <div className="space-y-2">
           <Label>Proveedor</Label>
-          {/* <PaginatedCombobox
-            value={filters.proveedor}
-            onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-            optionsData={orderProvidersData || []}
-            displayField="nombre"
-            allOptionLabel="TODOS"
-            enableAllOption={true}
-            isLoading={isOrdersProvidersLoading}
-            updatePage={(page) => { console.log("Update page:", page) }}
-            placeholder='Seleccione un proveedor'
-          /> */}
           <ComboboxSelect
             value={filters.proveedor}
             onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
@@ -128,7 +117,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             optionTag="nombre"
             placeholder='Seleccione un proveedor'
             clearOnEmpty={true}
-          > 
+          >
           </ComboboxSelect>
         </div>
         <div className="space-y-2">
@@ -187,21 +176,23 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             />
           </div>
         </div>
+
+        {/* Botón de búsqueda - Visible solo en modo manual */}
+        {searchMode === 'manual' && (
+          <div className="space-y-2 w-full flex flex-col justify-end">
+            <Button
+              onClick={handleManualSearch}
+              className="w-full"
+            >
+              <Search className="size-4 mr-2" />
+              Buscar
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Botones de acción adicionales */}
-      <div className="flex gap-2 items-end justify-end flex-wrap">
-        {/* Botón de búsqueda solo visible en modo manual */}
-        {searchMode === 'manual' && (
-          <Button
-            onClick={handleManualSearch}
-            className="w-full sm:w-auto"
-          >
-            <Search className="size-4" />
-            Buscar
-          </Button>
-        )}
-
+      {/* <div className="flex gap-2 items-end justify-end flex-wrap">
         {(filters.fecha_inicio || filters.fecha_fin) && (
           <Button
             variant="outline"
@@ -209,47 +200,11 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             onClick={clearAllDateFilters}
             className="text-xs"
           >
-            <X className="h-3 w-3" />
-            Limpiar todas las fechas
+            <X className="h-3 w-3 mr-1" />
+            Limpiar fechas
           </Button>
         )}
-
-        {/* Botón para establecer rango de última semana */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const today = new Date();
-            const lastWeek = new Date(today);
-            lastWeek.setDate(today.getDate() - 7);
-
-            setDateError(null);
-            updateFilter('fecha_inicio', formatDateSafe(lastWeek));
-            updateFilter('fecha_fin', formatDateSafe(today));
-          }}
-          className="text-xs"
-        >
-          Última semana
-        </Button>
-
-        {/* Botón para establecer rango del último mes */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const today = new Date();
-            const lastMonth = new Date(today);
-            lastMonth.setMonth(today.getMonth() - 1);
-
-            setDateError(null);
-            updateFilter('fecha_inicio', formatDateSafe(lastMonth));
-            updateFilter('fecha_fin', formatDateSafe(today));
-          }}
-          className="text-xs"
-        >
-          Último mes
-        </Button>
-      </div>
+      </div> */}
 
       {/* Mostrar error de validación */}
       {dateError && (

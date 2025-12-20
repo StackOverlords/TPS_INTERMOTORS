@@ -1,16 +1,16 @@
 import type { ViewConfiguration } from "@/view-configs/viewConfigTypes";
 
-export const salesListViewConfig: ViewConfiguration = {
-  id: 'sales-list',
-  name: 'Lista de Ventas',
-  module: 'Ventas',
-  path: '/dashboard/sales',
+export const ordersListViewConfig: ViewConfiguration = {
+  id: 'orders-list',
+  name: 'Lista de Pedidos',
+  module: 'Pedidos',
+  path: '/dashboard/orders',
 
   features: {
     refreshButton: {
       enabled: true,
       label: 'Recargar',
-      description: 'Recargar la lista de ventas',
+      description: 'Recargar la lista de pedidos',
     },
 
     resetTableButton: {
@@ -40,37 +40,43 @@ export const salesListViewConfig: ViewConfiguration = {
     keywordFilter: {
       enabled: true,
       label: 'Palabras clave',
-      description: 'Buscar ventas por texto libre',
+      description: 'Buscar pedidos por texto libre',
     },
 
-    saleNumberFilter: {
+    orderNumberFilter: {
       enabled: true,
-      label: 'Nro. de venta',
-      description: 'Filtrar por número interno de la venta',
+      label: 'Nro. de pedido',
+      description: 'Filtrar por número interno del pedido',
     },
 
-    customerFilter: {
+    providerFilter: {
       enabled: true,
-      label: 'Cliente',
-      description: 'Filtrar ventas por cliente',
+      label: 'Proveedor',
+      description: 'Filtrar pedidos por proveedor',
+    },
+
+    statusFilter: {
+      enabled: true,
+      label: 'Filtro por estado',
+      description: 'Filtrar pedidos por estado',
     },
 
     startDateFilter: {
       enabled: true,
       label: 'Fecha inicio',
-      description: 'Fecha mínima de la venta',
+      description: 'Fecha mínima del pedido',
     },
 
     endDateFilter: {
       enabled: true,
       label: 'Fecha fin',
-      description: 'Fecha máxima de la venta',
+      description: 'Fecha máxima del pedido',
     },
 
     productOemFilter: {
       enabled: true,
       label: 'Código OEM',
-      description: 'Filtrar ventas por código OEM del producto',
+      description: 'Filtrar pedidos por código OEM del producto',
     },
 
     dateShortcuts: {
@@ -82,13 +88,13 @@ export const salesListViewConfig: ViewConfiguration = {
     lastWeekShortcut: {
       enabled: false,
       label: 'Última semana',
-      description: 'Filtrar ventas de los últimos 7 días',
+      description: 'Filtrar pedidos de los últimos 7 días',
     },
 
     lastMonthShortcut: {
       enabled: false,
       label: 'Último mes',
-      description: 'Filtrar ventas del último mes',
+      description: 'Filtrar pedidos del último mes',
     },
 
     clearDatesButton: {
@@ -124,7 +130,7 @@ export const salesListViewConfig: ViewConfiguration = {
     infiniteScrollToggle: {
       enabled: true,
       label: 'Botón de scroll infinito',
-      description: 'Cargar más ventas automáticamente al hacer scroll',
+      description: 'Cargar más pedidos automáticamente al hacer scroll',
     },
 
     pagination: {
@@ -136,7 +142,7 @@ export const salesListViewConfig: ViewConfiguration = {
     multiSelect: {
       enabled: true,
       label: 'Selección Múltiple',
-      description: 'Permitir seleccionar múltiples ventas',
+      description: 'Permitir seleccionar múltiples pedidos',
     },
 
     keyboardNavigation: {
@@ -147,14 +153,14 @@ export const salesListViewConfig: ViewConfiguration = {
 
     editButton: {
       enabled: true,
-      label: 'Editar Venta',
-      description: 'Permitir editar ventas desde la lista',
+      label: 'Editar Pedido',
+      description: 'Permitir editar pedidos desde la lista',
     },
 
     deleteButton: {
       enabled: true,
-      label: 'Eliminar Venta',
-      description: 'Permitir eliminar ventas',
+      label: 'Eliminar Pedido',
+      description: 'Permitir eliminar pedidos',
     },
 
     keyboardShortcutsHelp: {
@@ -200,7 +206,7 @@ export const salesListViewConfig: ViewConfiguration = {
 
     // Exportación
     exportFormat: 'xlsx',
-    exportFileName: 'ventas',
+    exportFileName: 'pedidos',
     includeHiddenColumns: false,
   },
 

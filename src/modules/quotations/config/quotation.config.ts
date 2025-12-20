@@ -1,16 +1,16 @@
 import type { ViewConfiguration } from "@/view-configs/viewConfigTypes";
 
-export const salesListViewConfig: ViewConfiguration = {
-  id: 'sales-list',
-  name: 'Lista de Ventas',
-  module: 'Ventas',
-  path: '/dashboard/sales',
+export const quotationsListViewConfig: ViewConfiguration = {
+  id: 'quotations-list',
+  name: 'Lista de Cotizaciónes',
+  module: 'Cotizaciónes',
+  path: '/dashboard/quotations',
 
   features: {
     refreshButton: {
       enabled: true,
       label: 'Recargar',
-      description: 'Recargar la lista de ventas',
+      description: 'Recargar la lista de cotizaciónes',
     },
 
     resetTableButton: {
@@ -40,37 +40,37 @@ export const salesListViewConfig: ViewConfiguration = {
     keywordFilter: {
       enabled: true,
       label: 'Palabras clave',
-      description: 'Buscar ventas por texto libre',
+      description: 'Buscar cotizaciónes por texto libre',
     },
 
-    saleNumberFilter: {
+    quotationNumberFilter: {
       enabled: true,
-      label: 'Nro. de venta',
-      description: 'Filtrar por número interno de la venta',
+      label: 'Nro. de cotización',
+      description: 'Filtrar por número interno de la cotización',
     },
 
     customerFilter: {
       enabled: true,
       label: 'Cliente',
-      description: 'Filtrar ventas por cliente',
+      description: 'Filtrar cotizaciónes por cliente',
     },
 
     startDateFilter: {
       enabled: true,
       label: 'Fecha inicio',
-      description: 'Fecha mínima de la venta',
+      description: 'Fecha mínima de la cotización',
     },
 
     endDateFilter: {
       enabled: true,
       label: 'Fecha fin',
-      description: 'Fecha máxima de la venta',
+      description: 'Fecha máxima de la cotización',
     },
 
     productOemFilter: {
       enabled: true,
       label: 'Código OEM',
-      description: 'Filtrar ventas por código OEM del producto',
+      description: 'Filtrar cotizaciónes por código OEM del producto',
     },
 
     dateShortcuts: {
@@ -82,13 +82,13 @@ export const salesListViewConfig: ViewConfiguration = {
     lastWeekShortcut: {
       enabled: false,
       label: 'Última semana',
-      description: 'Filtrar ventas de los últimos 7 días',
+      description: 'Filtrar cotizaciónes de los últimos 7 días',
     },
 
     lastMonthShortcut: {
       enabled: false,
       label: 'Último mes',
-      description: 'Filtrar ventas del último mes',
+      description: 'Filtrar cotizaciónes del último mes',
     },
 
     clearDatesButton: {
@@ -124,7 +124,7 @@ export const salesListViewConfig: ViewConfiguration = {
     infiniteScrollToggle: {
       enabled: true,
       label: 'Botón de scroll infinito',
-      description: 'Cargar más ventas automáticamente al hacer scroll',
+      description: 'Cargar más cotizaciónes automáticamente al hacer scroll',
     },
 
     pagination: {
@@ -136,7 +136,7 @@ export const salesListViewConfig: ViewConfiguration = {
     multiSelect: {
       enabled: true,
       label: 'Selección Múltiple',
-      description: 'Permitir seleccionar múltiples ventas',
+      description: 'Permitir seleccionar múltiples cotizaciónes',
     },
 
     keyboardNavigation: {
@@ -147,14 +147,14 @@ export const salesListViewConfig: ViewConfiguration = {
 
     editButton: {
       enabled: true,
-      label: 'Editar Venta',
-      description: 'Permitir editar ventas desde la lista',
+      label: 'Editar Cotización',
+      description: 'Permitir editar cotizaciónes desde la lista',
     },
 
     deleteButton: {
       enabled: true,
-      label: 'Eliminar Venta',
-      description: 'Permitir eliminar ventas',
+      label: 'Eliminar Cotización',
+      description: 'Permitir eliminar cotizaciónes',
     },
 
     keyboardShortcutsHelp: {
@@ -200,7 +200,7 @@ export const salesListViewConfig: ViewConfiguration = {
 
     // Exportación
     exportFormat: 'xlsx',
-    exportFileName: 'ventas',
+    exportFileName: 'cotizaciónes',
     includeHiddenColumns: false,
   },
 

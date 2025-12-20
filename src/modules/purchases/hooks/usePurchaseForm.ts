@@ -2,6 +2,14 @@ import { toast } from "@/hooks/use-toast";
 import { apiConstructor } from "@/modules/products/services/api";
 import { useCallback, useState } from "react";
 
+// Helper para obtener fecha actual en formato YYYY-MM-DD (hora local)
+const getTodayDateString = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export interface FormData {
   fecha: string;
@@ -22,9 +30,10 @@ interface FormErrors { [key: string]: string; }
 interface FormTouched { [key: string]: boolean; }
 
 export function usePurchaseForm(initialBranch: number, onSuccessCallback?: () => void) {
+
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    fecha: new Date().toISOString().split("T")[0],
+    fecha: getTodayDateString(),
     nro_comprobante: "",
     nro_comprobante2: "",
     id_proveedor: null,
@@ -72,7 +81,7 @@ export function usePurchaseForm(initialBranch: number, onSuccessCallback?: () =>
 
   const reset = useCallback(() => {
     setFormData({
-      fecha: new Date().toISOString().split("T")[0],
+      fecha: getTodayDateString(),
       nro_comprobante: "",
       nro_comprobante2: "",
       id_proveedor: null,

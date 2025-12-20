@@ -9,5 +9,9 @@ export const PRODUCT_ENDPOINTS = {
     stockDetails: `${BASE_PATH}/stocks`,
     providerOrders: `${BASE_PATH}/prov-orders`,
     twoYearsSales: `${BASE_PATH}/two-years-sales`,
-    getByIdWithStock: (producto: string | number, sucursal: string | number) => `${BASE_PATH}/${producto}/${sucursal}`
+    getByIdWithStock: (producto: string | number, sucursal: string | number) => `${BASE_PATH}/stocks/${producto}/${sucursal}`,
+    actions: {
+        updateImage: (producto: string | number) =>
+            `${BASE_PATH}/actions/update_image/${producto}`,
+    }
 } as const;

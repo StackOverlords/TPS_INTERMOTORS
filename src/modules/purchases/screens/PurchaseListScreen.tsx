@@ -24,9 +24,10 @@ import {
   Edit,
   Eye,
   // FileText,
-  Filter,
+  // Filter,
   Loader2,
   MoreVertical,
+  PackageSearch,
   RefreshCcw,
   Search,
   Settings,
@@ -567,13 +568,17 @@ const PurchaseListScreen = () => {
               Resetear Tabla
             </TooltipButton>
 
-            <Button variant="outline" size="sm" onClick={resetFilters}>
+            {/* <Button variant="outline" size="sm" onClick={resetFilters}>
               <Filter className="h-4 w-4 mr-2" />
               Reset Filters
+            </Button> */}
+            <Button onClick={resetFilters}>
+              <PackageSearch className="h-4 w-4" />
+              Nueva búsqueda
             </Button>
-            <Button size={'sm'} onClick={toggleShowFilters}>
+            {/* <Button size={'sm'} onClick={toggleShowFilters}>
               {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
-            </Button>
+            </Button> */}
           </div>
         </section>
 

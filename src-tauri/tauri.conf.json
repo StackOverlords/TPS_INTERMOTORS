@@ -21,7 +21,10 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://* https://*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*;"
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://* https://*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*;",
+      "capabilities": [
+        "default"
+      ]
     },
     "withGlobalTauri": true
   },
@@ -78,6 +81,7 @@
       "requireLiteralLeadingDot": false
     },
     "shell": null,
-    "store": null
+    "store": null,
+    "http": null
   }
 }
