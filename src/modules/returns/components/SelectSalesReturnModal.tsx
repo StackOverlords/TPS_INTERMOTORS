@@ -229,8 +229,9 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
 
     const columns = useMemo<ColumnDef<SaleItemGetById>[]>(() => [
         {
-            accessorKey: "id",
-            header: "#ID",
+            accessorFn: row => row.producto.id,
+            id: 'product_id',
+            header: "Cód. Int.",
             size: 50,
             minSize: 30,
             enableHiding: false,

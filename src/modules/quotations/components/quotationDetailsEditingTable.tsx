@@ -1,20 +1,21 @@
 import { Button } from '@/components/atoms/button';
 import { Trash2, X } from 'lucide-react';
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
 import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import { Input } from '@/components/atoms/input';
-import type { QuotationUpdateDetail } from '../types/quotationUpdate.types';
 import { Badge } from '@/components/atoms/badge';
 import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
 import { useDeleteQuotationDetail } from '../hooks/useDeleteQuotationDetail';
 import useConfirmMutation from '@/hooks/useConfirmMutation';
 import ConfirmationModal from '@/components/common/confirmationModal';
+import type { QuotationUpdateDetailUI } from '../hooks/useQuotationProductDetails';
+import { formatCell } from '@/utils/formatCell';
 
 type QuotationDetailsEditingTableProps = {
-    products: QuotationUpdateDetail[]
+    products: QuotationUpdateDetailUI[]
     removeItem: (id: number) => void
     updateQuantity: (productId: number, quantity: number) => void
     updatePrice: (productId: number, price: number) => void
@@ -104,7 +105,7 @@ function QuotationDetailsEditingTableInner({
         variables: detailToDelete
     } = useConfirmMutation(deleteQuotationDetail, handleDeleteSuccess, handleDeleteError)
 
-    const handleRemoveItem = (item: QuotationUpdateDetail) => {
+    const handleRemoveItem = useCallback((item: QuotationUpdateDetailUI) => {
         const isNew = !item.id_detalle_cotizacion
         if (isNew) {
             removeItem(item.id_producto)
@@ -112,9 +113,9 @@ function QuotationDetailsEditingTableInner({
         }
 
         handleOpenDeleteAlert(item.id_detalle_cotizacion ?? undefined)
-    }
+    }, [removeItem, handleOpenDeleteAlert])
 
-    const columns = useMemo<ColumnDef<QuotationUpdateDetail>[]>(() => [
+    const columns = useMemo<ColumnDef<QuotationUpdateDetailUI>[]>(() => [
         {
             accessorKey: 'orden',
             id: "orden",
@@ -125,6 +126,7 @@ function QuotationDetailsEditingTableInner({
         },
         {
             accessorKey: "id_detalle_cotizacion",
+            id: "id_detalle_cotizacion",
             header: "Cód.",
             size: 40,
             cell({ row, getValue }) {
@@ -151,14 +153,24 @@ function QuotationDetailsEditingTableInner({
         {
             accessorKey: 'id_producto',
             id: "id_producto",
-            header: "Cód P.",
-            size: 40,
+            header: "Cód Int.",
+            size: 45,
             minSize: 20,
+        },
+        {
+            accessorKey: 'codigo_oem',
+            id: "codigo_oem",
+            header: "Cód. OEM",
+            size: 100,
+            minSize: 70,
+            cell: ({ getValue }) => (
+                <div>{formatCell(getValue<string>())}</div>
+            ),
         },
         {
             accessorKey: "descripcion",
             id: "descripcion",
-            header: "Descripcion",
+            header: "Descripción",
             size: 300,
             minSize: 250,
             enableHiding: false,
@@ -170,30 +182,14 @@ function QuotationDetailsEditingTableInner({
                     <div
                         className="flex items-center">
                         <Input
-                            value={description}
+                            type='text'
+                            value={description ?? ''}
                             onChange={(e) => updateDescription(item.id_producto, e.target.value)}
                             ref={refToAssign}
                             autoSelectOnFocus={true}
                             disabled={isReadOnly}
                         />
                     </div>
-                )
-            },
-        },
-        {
-            accessorKey: "nueva_marca",
-            id: "marca",
-            header: "Marca",
-            cell: ({ row, getValue }) => {
-                const brand = getValue<string>()
-                const item = row.original
-                return (
-                    <Input
-                        value={brand}
-                        onChange={(e) => updateBrand(item.id_producto, e.target.value)}
-                        autoSelectOnFocus={true}
-                        disabled={isReadOnly}
-                    />
                 )
             },
         },
@@ -270,6 +266,24 @@ function QuotationDetailsEditingTableInner({
             },
         },
         {
+            accessorKey: "nueva_marca",
+            id: "marca",
+            header: "Marca",
+            cell: ({ row, getValue }) => {
+                const brand = getValue<string>()
+                const item = row.original
+                return (
+                    <Input
+                        type='text'
+                        value={brand ?? ''}
+                        onChange={(e) => updateBrand(item.id_producto, e.target.value)}
+                        autoSelectOnFocus={true}
+                        disabled={isReadOnly}
+                    />
+                )
+            },
+        },
+        {
             id: "action",
             header: "Acciones",
             size: 60,
@@ -300,7 +314,7 @@ function QuotationDetailsEditingTableInner({
             }
         }
     ], [removeItem, updateQuantity, updatePrice, updateCustomSubtotal, updateBrand, updateDescription]);
-    const table = useReactTable<QuotationUpdateDetail>({
+    const table = useReactTable<QuotationUpdateDetailUI>({
         data: products,
         columns,
         getCoreRowModel: getCoreRowModel(),
@@ -316,6 +330,9 @@ function QuotationDetailsEditingTableInner({
                     desc: false,
                 },
             ],
+            columnVisibility: {
+                'id_detalle_cotizacion': false
+            }
         },
     })
 

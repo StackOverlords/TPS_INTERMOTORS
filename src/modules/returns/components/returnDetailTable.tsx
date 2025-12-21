@@ -176,7 +176,6 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                 header: "Cód Ven.",
                 size: 50,
                 minSize: 20,
-                enableSorting: true,
             },
         )
 
@@ -349,6 +348,11 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                     desc: false,
                 },
             ],
+            columnVisibility:{
+                "almacen_out_dev_det_id":false,
+                "almacen_out_id":false,
+                "almacen_out_det_id":false,
+            }
         },
     });
 

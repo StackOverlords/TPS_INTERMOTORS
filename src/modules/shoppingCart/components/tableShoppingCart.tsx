@@ -86,26 +86,12 @@ function TableShoppingCartInner({
         },
         {
             accessorFn: row => row.product.id,
-            header: "Cód P.",
+            header: "Cód Int.",
             size: 45,
             minSize: 30,
             enableHiding: false,
             cell: ({ getValue }) => (
                 <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
-            ),
-        },
-        {
-            accessorFn: row => row.product.descripcion,
-            id: "descripcion",
-            header: "Descripcion",
-            size: 300,
-            minSize: 250,
-            enableHiding: false,
-            cell: ({ getValue }) => (
-                <div
-                    className="flex items-center">
-                    <h3 className="font-medium text-gray-700 truncate">{getValue<string>()}</h3>
-                </div>
             ),
         },
         {
@@ -117,9 +103,18 @@ function TableShoppingCartInner({
             ),
         },
         {
-            accessorFn: row => row.product.marca,
-            id: "marca",
-            header: "Marca",
+            accessorFn: row => row.product.descripcion,
+            id: "descripcion",
+            header: "Descripción",
+            size: 300,
+            minSize: 250,
+            enableHiding: false,
+            cell: ({ getValue }) => (
+                <div
+                    className="flex items-center">
+                    <h3 className="font-medium text-gray-700 truncate">{getValue<string>()}</h3>
+                </div>
+            ),
         },
         {
             accessorKey: "quantity",
@@ -194,6 +189,11 @@ function TableShoppingCartInner({
                     />
                 )
             },
+        },
+        {
+            accessorFn: row => row.product.marca,
+            id: "marca",
+            header: "Marca",
         },
         {
             id: "action",
