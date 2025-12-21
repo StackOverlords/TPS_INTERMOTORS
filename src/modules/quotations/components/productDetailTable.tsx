@@ -89,7 +89,7 @@ function ProductDetailTableInner({
         },
         {
             accessorFn: row => row.product.id,
-            header: "Cód P.",
+            header: "Cód Int.",
             size: 45,
             minSize: 30,
             enableHiding: false,
@@ -110,7 +110,7 @@ function ProductDetailTableInner({
         {
             accessorKey: "customDescription",
             id: "descripcion",
-            header: "Descripcion",
+            header: "Descripción",
             size: 300,
             minSize: 250,
             enableHiding: false,
@@ -127,22 +127,6 @@ function ProductDetailTableInner({
                             disabled={isReadOnly}
                         />
                     </div>
-                )
-            },
-        },
-        {
-            accessorKey: "customBrand",
-            id: "marca",
-            header: "Marca",
-            cell: ({ row, getValue }) => {
-                const customBrand = getValue<string>()
-                return (
-                    <Input
-                        value={customBrand}
-                        onChange={(e) => !isReadOnly && updateCustomBrand(row.original.product.id, e.target.value)}
-                        autoSelectOnFocus={true}
-                        disabled={isReadOnly}
-                    />
                 )
             },
         },
@@ -217,6 +201,22 @@ function ProductDetailTableInner({
                         className="w-full"
                         inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
                         numberProps={{ min: 0, step: 0.01 }}
+                        disabled={isReadOnly}
+                    />
+                )
+            },
+        },
+        {
+            accessorKey: "customBrand",
+            id: "marca",
+            header: "Marca",
+            cell: ({ row, getValue }) => {
+                const customBrand = getValue<string>()
+                return (
+                    <Input
+                        value={customBrand}
+                        onChange={(e) => !isReadOnly && updateCustomBrand(row.original.product.id, e.target.value)}
+                        autoSelectOnFocus={true}
                         disabled={isReadOnly}
                     />
                 )

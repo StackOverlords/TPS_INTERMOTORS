@@ -5,7 +5,6 @@ import { Label } from "@/components/atoms/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { Textarea } from "@/components/atoms/textarea"
 import ErrorDataComponent from "@/components/common/errorDataComponent"
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
 import ShortcutKey from "@/components/common/ShortcutKey"
 import TooltipButton from "@/components/common/TooltipButton"
@@ -22,7 +21,6 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
 import { useHotkeys } from "react-hotkeys-hook"
 import { useNavigate, useParams } from "react-router"
-import { useDebounce } from "use-debounce"
 import type { OrderDetailTableRef } from "../components/OrderDetailTable"
 import OrderDetailTable from "../components/OrderDetailTable"
 import OrderEditSkeleton from "../components/orderEditSkeleton"
@@ -50,8 +48,6 @@ const OrderEditScreen = () => {
     }
     const navigate = useNavigate()
     const { orderId } = useParams()
-    const [providerSearchTerm, setProviderSearchTerm] = useState<string>("");
-    const [debouncedProviderSearchTerm] = useDebounce<string>(providerSearchTerm, 500)
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const tableRef = useRef<OrderDetailTableRef>(null);
 
@@ -75,8 +71,8 @@ const OrderEditScreen = () => {
 
     const {
         data: orderProvidersData,
-        isLoading: isOrderProvidersLoading
-    } = useOrderProvider(debouncedProviderSearchTerm)
+        // isLoading: isOrderProvidersLoading
+    } = useOrderProvider()
 
     const {
         data: orderStatusData,
@@ -605,22 +601,31 @@ const OrderEditScreen = () => {
                                                     name="id_proveedor"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <PaginatedCombobox
+                                                        // <PaginatedCombobox
+                                                        //     value={field.value}
+                                                        //     onChange={(value) => field.onChange(Number(value))}
+                                                        //     optionsData={orderProvidersData?.data || []}
+                                                        //     displayField="nombre"
+                                                        //     isLoading={isOrderProvidersLoading}
+                                                        //     updatePage={(page) => { console.log("Update page:", page) }}
+                                                        //     updateSearch={setProviderSearchTerm}
+                                                        //     metaData={
+                                                        //         {
+                                                        //             current_page: orderProvidersData?.meta?.current_page || 1,
+                                                        //             last_page: orderProvidersData?.meta?.last_page || 1,
+                                                        //             total: orderProvidersData?.meta?.total || 0,
+                                                        //             per_page: orderProvidersData?.meta?.per_page || 10,
+                                                        //         }
+                                                        //     }
+                                                        // />
+                                                        <ComboboxSelect
                                                             value={field.value}
-                                                            onChange={(value) => field.onChange(Number(value))}
-                                                            optionsData={orderProvidersData?.data || []}
-                                                            displayField="nombre"
-                                                            isLoading={isOrderProvidersLoading}
-                                                            updatePage={(page) => { console.log("Update page:", page) }}
-                                                            updateSearch={setProviderSearchTerm}
-                                                            metaData={
-                                                                {
-                                                                    current_page: orderProvidersData?.meta?.current_page || 1,
-                                                                    last_page: orderProvidersData?.meta?.last_page || 1,
-                                                                    total: orderProvidersData?.meta?.total || 0,
-                                                                    per_page: orderProvidersData?.meta?.per_page || 10,
-                                                                }
-                                                            }
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={orderProvidersData?.data || []}
+                                                            optionTag={"nombre"}
+                                                            clearOnEmpty={true}
                                                         />
                                                     )}
                                                 />

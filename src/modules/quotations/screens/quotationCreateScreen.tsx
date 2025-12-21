@@ -32,7 +32,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import { useDebounce } from "use-debounce";
 import ProductDetailTable, { type ProductDetailTableRef } from "../components/productDetailTable";
 import QuotationsSummary from "../components/quotationsSummary";
 import { useCreateQuotation } from "../hooks/useCreateQuotation";
@@ -64,9 +63,6 @@ const QuotationCreateScreen = () => {
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
-    const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
 
@@ -92,8 +88,8 @@ const QuotationCreateScreen = () => {
 
     const {
         data: saleCustomersData,
-        isLoading: isSaleCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+        // isLoading: isSaleCustomersLoading
+    } = useSaleCustomers()
 
     const {
         mutate: createQuotation,

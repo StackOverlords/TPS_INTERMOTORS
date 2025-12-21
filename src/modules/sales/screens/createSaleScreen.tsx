@@ -4,7 +4,6 @@ import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
 import { Textarea } from "@/components/atoms/textarea";
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
@@ -22,7 +21,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import { useDebounce } from "use-debounce";
 import SalesSummary from "../components/salesSummary";
 import { useCreateSale } from "../hooks/useCreateSale";
 import { useSaleCustomers } from "../hooks/useSaleCustomers";
@@ -60,8 +58,6 @@ const CreateSaleScreen = () => {
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
-    const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     // Estado de modales de conversión
     const DEFAULT_SALE_MODE: CartMode = 'sale-strict' as CartMode;
@@ -85,8 +81,8 @@ const CreateSaleScreen = () => {
 
     const {
         data: saleCustomersData,
-        isLoading: isSaleCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+        // isLoading: isSaleCustomersLoading
+    } = useSaleCustomers()
 
     const {
         mutate: createSale,
