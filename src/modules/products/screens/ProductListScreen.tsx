@@ -18,7 +18,7 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { useViewConfig } from "@/hooks/useViewConfig"
-import { COMMANDS, useKeybindingKeys } from "@/keybindings"
+import { COMMANDS, useCommands, useKeybindingKeys } from "@/keybindings"
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
 import authSDK from "@/services/sdk-simple-auth"
@@ -820,6 +820,10 @@ const ProductListScreen = () => {
     //     );
     // }
 
+    useCommands({
+    'searchFilters.focusSearch':handleManualSearch,
+    'forms.reset':handleResetFilters
+    })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
             {/* Header */}

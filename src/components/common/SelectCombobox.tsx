@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions, Transition } from '@headlessui/react'
 import { Check, ChevronDown, Loader2, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDebounce } from 'use-debounce'
 
@@ -67,6 +67,7 @@ export function ComboboxSelect({
     const comboboxInputRef = useRef<HTMLInputElement>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
+    const justSelectedRef = useRef(false) // Track si acabamos de seleccionar algo
 
     const baseOptions = useMemo(() => {
         return enableAllOption
@@ -199,88 +200,112 @@ export function ComboboxSelect({
 
     const showLoading = isLoadingData || (enableExternalSearch && isSearching)
 
+    const handleComboboxChange = useCallback((selectedValue: string) => {
+        if (selectedValue !== null) {
+            // Si el valor seleccionado es igual al valor actual, forzar un "cambio"
+            // limpiando primero y luego volviendo a setear el mismo valor
+            if (selectedValue === internalValue.toString()) {
+                // Limpiar temporalmente
+                onChange('')
+                // Luego volver a setear el valor en el siguiente tick
+                setTimeout(() => {
+                    onChange(selectedValue)
+                    // Marcar que acabamos de seleccionar
+                    justSelectedRef.current = true
+                    setTimeout(() => {
+                        justSelectedRef.current = false
+                    }, 100)
+                }, 0)
+            } else {
+                // Valor diferente, cambio normal
+                onChange(selectedValue)
+                // Marcar que acabamos de seleccionar
+                justSelectedRef.current = true
+                setTimeout(() => {
+                    justSelectedRef.current = false
+                }, 100)
+            }
+        }
+        setQuery('')
+
+        if (enableExternalSearch && onSearch) {
+            onSearch('')
+        }
+    }, [onChange, enableExternalSearch, onSearch, internalValue])
+
     return (
         <Combobox
             value={internalValue.toString()}
-            onChange={(selectedValue: string) => {
-                if (selectedValue !== null) {
-                    onChange(selectedValue)
-                }
-                setQuery('')
-
-                if (enableExternalSearch && onSearch) {
-                    onSearch('')
-                }
-            }}
+            onChange={handleComboboxChange}
             disabled={disabled}
         >
-            {({ open }) => (
-                <div className={cn('relative', className)}>
-                    <div className="relative w-full">
-                        <ComboboxButton className="w-full" disabled={disabled}>
-                            <ComboboxInput
-                                ref={comboboxInputRef}
-                                name={name}
-                                placeholder={placeholder}
-                                className={cn(
-                                    'flex h-8 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-                                    error ? 'border-red-500 focus:ring-red-500' : 'border-input',
-                                    'pr-10'
-                                )}
-                                displayValue={() => String(selectedOption?.[optionTag] || (enableAllOption ? 'TODAS' : ''))}
-                                onChange={handleInputChange}
-                                onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    // Seleccionar todo el texto cuando el input recibe el foco
-                                    e.currentTarget.select()
-                                }}
-                                onClick={(e: React.MouseEvent<HTMLInputElement>) => {
-                                    // Seleccionar todo el texto cuando se hace click
-                                    e.currentTarget.select()
-                                }}
-                                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                                    // Solo manejar Enter cuando el dropdown está ABIERTO
-                                    // Cuando está cerrado, dejar que el hook global lo maneje
-                                    // if (e.key === 'Enter' && open) {
-                                    //     // Headless UI maneja la selección automáticamente
-                                    //     // No hacemos nada, solo dejamos que funcione normalmente
-                                    //     return;
-                                    // }
-                                    if (e.key === 'Enter' && !open) {
-                                        e.preventDefault();
-                                        e.stopPropagation();
+            {({ open }) => {
+                const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === 'Enter') {
+                        // Si el dropdown está abierto, dejar que Headless UI maneje la selección
+                        if (open) {
+                            return
+                        }
 
-                                        // Buscar inputs y combobox inputs en el orden del DOM
-                                        const allInputs = Array.from(
-                                            document.querySelectorAll<HTMLElement>(
-                                                'input:not([type="hidden"]):not([disabled]):not([type="file"]), button[type="submit"]:not([disabled])'
-                                            )
-                                        );
+                        // Si acabamos de seleccionar algo (cerrar con Enter), navegar al siguiente campo
+                        if (justSelectedRef.current) {
+                            e.preventDefault()
+                            e.stopPropagation()
 
-                                        // Filtrar solo elementos visibles
-                                        const focusableElements = allInputs.filter(el => {
-                                            const rect = el.getBoundingClientRect();
-                                            const isVisible = rect.width > 0 && rect.height > 0;
-                                            // Excluir botones que no sean submit (como botones de combobox internos)
-                                            const isSubmitButton = el.getAttribute('type') === 'submit';
-                                            const isInput = el.tagName === 'INPUT';
-                                            return isVisible && (isInput || isSubmitButton);
-                                        });
+                            // Navegar al siguiente elemento
+                            const allInputs = Array.from(
+                                document.querySelectorAll<HTMLElement>(
+                                    'input:not([type="hidden"]):not([disabled]):not([type="file"]), button[type="submit"]:not([disabled])'
+                                )
+                            )
 
-                                        const currentIndex = focusableElements.indexOf(e.currentTarget);
-                                        if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
-                                            const nextElement = focusableElements[currentIndex + 1];
-                                            setTimeout(() => {
-                                                nextElement?.focus();
-                                            }, 50);
-                                        }
-                                    }
+                            const focusableElements = allInputs.filter(el => {
+                                const rect = el.getBoundingClientRect()
+                                return rect.width > 0 && rect.height > 0
+                            })
 
-                                    // Si está cerrado, el evento se propagará naturalmente
-                                    // y el hook useFormEnterNavigation lo manejará
-                                }}
-                                autoComplete="off"
-                            />
-                        </ComboboxButton>
+                            const currentIndex = focusableElements.indexOf(e.currentTarget)
+                            if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
+                                const nextElement = focusableElements[currentIndex + 1]
+                                setTimeout(() => {
+                                    nextElement?.focus()
+                                }, 50)
+                            }
+                            return
+                        }
+
+                        // Si no acabamos de seleccionar y está cerrado, dejar que el ComboboxButton lo abra
+                        // No hacemos preventDefault aquí para que el ComboboxButton pueda manejar el evento
+                    }
+                }
+
+                return (
+                    <div className={cn('relative', className)}>
+                        <div className="relative w-full">
+                            <ComboboxButton className="w-full" disabled={disabled}>
+                                <ComboboxInput
+                                    ref={comboboxInputRef}
+                                    name={name}
+                                    placeholder={placeholder}
+                                    className={cn(
+                                        'flex h-8 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                                        error ? 'border-red-500 focus:ring-red-500' : 'border-input',
+                                        'pr-10'
+                                    )}
+                                    displayValue={() => String(selectedOption?.[optionTag] || (enableAllOption ? 'TODAS' : ''))}
+                                    onChange={handleInputChange}
+                                    onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                                        // Seleccionar todo el texto cuando el input recibe el foco
+                                        e.currentTarget.select()
+                                    }}
+                                    onClick={(e: React.MouseEvent<HTMLInputElement>) => {
+                                        // Seleccionar todo el texto cuando se hace click
+                                        e.currentTarget.select()
+                                    }}
+                                    onKeyDown={handleKeyDown}
+                                    autoComplete="off"
+                                />
+                            </ComboboxButton>
 
                         {/* Botón para limpiar selección */}
                         {allowClear && internalValue && !disabled && (
@@ -389,7 +414,8 @@ export function ComboboxSelect({
                         portalContainer
                     )}
                 </div>
-            )}
+                )
+            }}
         </Combobox>
     )
 }
