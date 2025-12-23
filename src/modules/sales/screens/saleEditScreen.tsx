@@ -12,12 +12,10 @@ import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useDebounce } from "use-debounce"
 import { useSaleTypes } from "../hooks/useSaleTypes"
 import { useSaleModalities } from "../hooks/useSaleModalities"
 import { useSaleResponsibles } from "../hooks/useSaleResponsibles"
 import { useSaleCustomers } from "../hooks/useSaleCustomers"
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
@@ -52,8 +50,6 @@ const SaleEditScreen = () => {
     const navigate = useNavigate()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const { saleId } = useParams()
-    const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [originalDetails, setOriginalDetails] = useState<SaleUpdateDetailUI[]>([]);
 
@@ -76,8 +72,8 @@ const SaleEditScreen = () => {
 
     const {
         data: saleCustomersData,
-        isLoading: isSaleCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+        // isLoading: isSaleCustomersLoading
+    } = useSaleCustomers()
 
     const {
         mutate: updateSale,
@@ -562,24 +558,35 @@ const SaleEditScreen = () => {
                                                     name="id_cliente"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <PaginatedCombobox
+                                                        // <PaginatedCombobox
+                                                        //     value={field.value}
+                                                        //     onChange={(value) => field.onChange(Number(value))}
+                                                        //     optionsData={saleCustomersData?.data || []}
+                                                        //     displayField="nombre"
+                                                        //     isLoading={isSaleCustomersLoading}
+                                                        //     updatePage={(page) => { console.log("Update page:", page) }}
+                                                        //     updateSearch={setCustomerSearchTerm}
+                                                        //     disabled={isReadOnly}
+                                                        //     placeholder="Buscar cliente por nombre"
+                                                        //     metaData={
+                                                        //         {
+                                                        //             current_page: saleCustomersData?.meta.current_page || 1,
+                                                        //             last_page: saleCustomersData?.meta.last_page || 1,
+                                                        //             total: saleCustomersData?.meta.total || 0,
+                                                        //             per_page: saleCustomersData?.meta.per_page || 10,
+                                                        //         }
+                                                        //     }
+                                                        // />
+                                                        <ComboboxSelect
                                                             value={field.value}
-                                                            onChange={(value) => field.onChange(Number(value))}
-                                                            optionsData={saleCustomersData?.data || []}
-                                                            displayField="nombre"
-                                                            isLoading={isSaleCustomersLoading}
-                                                            updatePage={(page) => { console.log("Update page:", page) }}
-                                                            updateSearch={setCustomerSearchTerm}
+                                                            onChange={(value) => {
+                                                                field.onChange(Number(value));
+                                                            }}
+                                                            options={saleCustomersData?.data || []}
+                                                            optionTag={"nombre"}
                                                             disabled={isReadOnly}
+                                                            clearOnEmpty={true}
                                                             placeholder="Buscar cliente por nombre"
-                                                            metaData={
-                                                                {
-                                                                    current_page: saleCustomersData?.meta.current_page || 1,
-                                                                    last_page: saleCustomersData?.meta.last_page || 1,
-                                                                    total: saleCustomersData?.meta.total || 0,
-                                                                    per_page: saleCustomersData?.meta.per_page || 10,
-                                                                }
-                                                            }
                                                         />
                                                     )}
                                                 />

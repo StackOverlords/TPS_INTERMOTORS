@@ -147,23 +147,9 @@ function SaleDetailsEditingTableInner({
         {
             accessorKey: 'id_producto',
             id: "id_producto",
-            header: "Cód P.",
-            size: 40,
+            header: "Cód Int.",
+            size: 45,
             minSize: 20,
-        },
-        {
-            accessorFn: row => row.producto.descripcion,
-            id: "descripcion",
-            header: "Descripcion",
-            size: 300,
-            minSize: 250,
-            enableHiding: false,
-            cell: ({ getValue }) => (
-                <div
-                    className="flex items-center">
-                    <h3 className="font-medium text-gray-700 truncate">{getValue<string>()}</h3>
-                </div>
-            ),
         },
         {
             accessorFn: row => row.producto.codigo_oem,
@@ -174,15 +160,18 @@ function SaleDetailsEditingTableInner({
             ),
         },
         {
-            accessorFn: row => row.producto.marca,
-            id: "marca",
-            header: "Marca",
-            cell: ({ getValue }) => {
-                const marca = getValue<string>()
-                return (
-                    <span>{marca}</span>
-                )
-            }
+            accessorFn: row => row.producto.descripcion,
+            id: "descripcion",
+            header: "Descripción",
+            size: 300,
+            minSize: 250,
+            enableHiding: false,
+            cell: ({ getValue }) => (
+                <div
+                    className="flex items-center">
+                    <h3 className="font-medium text-gray-700 truncate">{getValue<string>()}</h3>
+                </div>
+            ),
         },
         {
             accessorKey: "cantidad",
@@ -259,6 +248,17 @@ function SaleDetailsEditingTableInner({
             },
         },
         {
+            accessorFn: row => row.producto.marca,
+            id: "marca",
+            header: "Marca",
+            cell: ({ getValue }) => {
+                const marca = getValue<string>()
+                return (
+                    <span>{marca}</span>
+                )
+            }
+        },
+        {
             id: "action",
             header: "Acciones",
             size: 60,
@@ -305,6 +305,9 @@ function SaleDetailsEditingTableInner({
                     desc: false,
                 },
             ],
+            columnVisibility: {
+                "id_detalle_venta": false,
+            }
         },
     })
 

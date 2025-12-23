@@ -18,6 +18,7 @@ import QuotationsFiltersComponent from "../components/quotationList/quotationFil
 import { useDeleteQuotation } from "../hooks/useDeleteQuotation";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { useViewConfig } from "@/hooks/useViewConfig";
+import { useCommands } from "@/keybindings";
 
 const QuotationListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -147,6 +148,11 @@ const QuotationListScreen = () => {
             '[name="switch-change-mode-btn"]',
         ],
         enabled: true,
+    })
+
+    useCommands({
+    'searchFilters.focusSearch':handleManualSearch,
+    'forms.reset':handleResetFilters
     })
 
     return (

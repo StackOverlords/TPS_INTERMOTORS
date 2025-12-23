@@ -18,6 +18,7 @@ import ReturnsFiltersComponent from "../components/returnList/returnFilterCompon
 import ReturnsListTable from "../components/returnList/returnListTable";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { useCommands } from "@/keybindings";
 
 const ReturnListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -145,6 +146,11 @@ const ReturnListScreen = () => {
             '.switch-button'
         ],
         enabled: true,
+    })
+
+    useCommands({
+        'searchFilters.focusSearch': handleManualSearch,
+        'forms.reset': handleResetFilters
     })
 
     return (

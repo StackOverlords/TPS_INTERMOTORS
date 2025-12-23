@@ -10,8 +10,6 @@ import { Label } from "@/components/atoms/label"
 import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useDebounce } from "use-debounce"
-import { PaginatedCombobox } from "@/components/common/paginatedCombobox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
@@ -35,12 +33,12 @@ import QuotationEditSkeleton from "../components/quotationEditSkeleton"
 import QuotationsSummary from "../components/quotationsSummary"
 import { useQuotationGetById } from "../hooks/useQuotationGetById"
 import { useQuotationPDF } from "../hooks/useQuotationPDF"
-import useQuotationProductDetails from "../hooks/useQuotationProductDetails"
+import useQuotationProductDetails, { type QuotationUpdateDetailUI } from "../hooks/useQuotationProductDetails"
 import { useUpdateQuotation } from "../hooks/useUpdateQuotation"
 import { QuotationUpdateSchema } from "../schemas/quotationUpdate.schema"
 import type { QuotationGetById } from "../types/quotationGet.types"
 import type { SelectedItem } from "@/types/windowSelectedItems"
-import type { QuotationUpdate, QuotationUpdateDetail } from "../types/quotationUpdate.types"
+import type { QuotationUpdate } from "../types/quotationUpdate.types"
 import { Badge } from "@/components/atoms/badge"
 import { useClienteVarios } from "../hooks/useClienteVarios"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
@@ -56,8 +54,6 @@ const QuotationEditScreen = () => {
     const navigate = useNavigate()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const { updateQuotationId } = useParams()
-    const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
 
@@ -86,8 +82,8 @@ const QuotationEditScreen = () => {
 
     const {
         data: quotationCustomersData,
-        isLoading: isQuotationCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+        // isLoading: isQuotationCustomersLoading
+    } = useSaleCustomers()
 
     const {
         mutate: updateQuotation,
@@ -137,11 +133,14 @@ const QuotationEditScreen = () => {
         getValues,
         setError,
         clearErrors,
+        setValue,
         formState: { errors, isDirty }
     } = formMethods
 
+    const quotationDetailsHook = useQuotationProductDetails();
+
     const loadFormData = (quotation: QuotationGetById) => {
-        const detallesTransformados: QuotationUpdateDetail[] = quotation.detalles.map((detalle, index) => ({
+        const detallesTransformados: QuotationUpdateDetailUI[] = quotation.detalles.map((detalle, index) => ({
             id_producto: detalle.producto.id,
             descripcion: detalle.descripcion,
             cantidad: Number(detalle.cantidad),
@@ -151,6 +150,7 @@ const QuotationEditScreen = () => {
             nueva_marca: detalle.marca,
             orden: detalle.orden ?? (index + 1),
             id_detalle_cotizacion: detalle.id,
+            codigo_oem: detalle.producto.codigo_oem ?? '',
         }));
 
         const resetData: QuotationUpdate = {
@@ -166,7 +166,7 @@ const QuotationEditScreen = () => {
             cliente_nit: quotation.cliente_nit ?? "",
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: quotation.responsable_cotizacion?.id ?? 1,
-            detalles: detallesTransformados,
+            detalles: [],
             tipo_cotizacion: quotation.tipo_cotizacion,
             forma_cotizacion: quotation.forma_cotizacion,
             cliente_contacto: quotation.cliente_contacto ?? "",
@@ -175,6 +175,7 @@ const QuotationEditScreen = () => {
             pedido: quotation.es_pedido,
         };
         reset(resetData);
+        quotationDetailsHook.initializeDetails(detallesTransformados)
         setHasInitialized(true);
     }
 
@@ -184,6 +185,18 @@ const QuotationEditScreen = () => {
         }
         return
     }, [quotationData, quotationTypesData, quotationModalitiesData]);
+
+    // Sincronizar detalles con el formulario
+    useEffect(() => {
+        if (hasInitialized) {
+            const detalles = quotationDetailsHook.getCleanDetailsForSubmit();
+
+            if (detalles.length > 0) {
+                setValue("detalles", detalles);
+                clearErrors("detalles");
+            }
+        }
+    }, [quotationDetailsHook.details, hasInitialized, setValue, clearErrors]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -311,25 +324,9 @@ const QuotationEditScreen = () => {
         }
     }, [tipo_cotizacion, plazo_pago, formValues.fecha, setError, clearErrors, hasInitialized]);
 
-    const {
-        addProduct,
-        removeProduct,
-        updateQuantity,
-        updatePrice,
-        updateCustomSubtotal,
-        applyGlobalDiscount,
-        calculateTotal,
-        calculateTotalDiscount,
-        calculateTotalBeforeDiscount,
-        getDiscountPercentage,
-        updateDescription,
-        updateBrand,
-        addMultipleItemsWithQuantity,
-    } = useQuotationProductDetails({ formMethods });
-
     // Función para agregar un solo producto
     const handleAddProductItem = (product: ProductGet) => {
-        addProduct(product);
+        quotationDetailsHook.addProduct(product);
         setTimeout(() => {
             // Enfocar el input del producto agregado
             tableRef.current?.focusQuantityInputByProductId(product.id);
@@ -338,7 +335,7 @@ const QuotationEditScreen = () => {
 
     // Función para agregar múltiples productos
     const handleAddMultipleProducts = (products: Array<ProductGet & { quantity?: number }>) => {
-        addMultipleItemsWithQuantity(products);
+        quotationDetailsHook.addMultipleItemsWithQuantity(products);
 
         setTimeout(() => {
             // Enfocar el primer producto nuevo que se agregó
@@ -737,24 +734,33 @@ const QuotationEditScreen = () => {
                                                     name="id_cliente"
                                                     control={control}
                                                     render={({ field }) => (
-                                                        <PaginatedCombobox
+                                                        // <PaginatedCombobox
+                                                        //     value={field.value}
+                                                        //     onChange={(value) => field.onChange(Number(value))}
+                                                        //     optionsData={quotationCustomersData?.data || []}
+                                                        //     displayField="nombre"
+                                                        //     isLoading={isQuotationCustomersLoading}
+                                                        //     updatePage={(page) => { console.log("Update page:", page) }}
+                                                        //     updateSearch={setCustomerSearchTerm}
+                                                        //     disabled={isReadOnly}
+                                                        //     placeholder="Buscar cliente por nombre"
+                                                        //     metaData={
+                                                        //         {
+                                                        //             current_page: quotationCustomersData?.meta.current_page || 1,
+                                                        //             last_page: quotationCustomersData?.meta.last_page || 1,
+                                                        //             total: quotationCustomersData?.meta.total || 0,
+                                                        //             per_page: quotationCustomersData?.meta.per_page || 10,
+                                                        //         }
+                                                        //     }
+                                                        // />
+                                                        <ComboboxSelect
                                                             value={field.value}
                                                             onChange={(value) => field.onChange(Number(value))}
-                                                            optionsData={quotationCustomersData?.data || []}
-                                                            displayField="nombre"
-                                                            isLoading={isQuotationCustomersLoading}
-                                                            updatePage={(page) => { console.log("Update page:", page) }}
-                                                            updateSearch={setCustomerSearchTerm}
+                                                            options={quotationCustomersData?.data || []}
+                                                            optionTag={"nombre"}
                                                             disabled={isReadOnly}
                                                             placeholder="Buscar cliente por nombre"
-                                                            metaData={
-                                                                {
-                                                                    current_page: quotationCustomersData?.meta.current_page || 1,
-                                                                    last_page: quotationCustomersData?.meta.last_page || 1,
-                                                                    total: quotationCustomersData?.meta.total || 0,
-                                                                    per_page: quotationCustomersData?.meta.per_page || 10,
-                                                                }
-                                                            }
+                                                            clearOnEmpty={true}
                                                         />
                                                     )}
                                                 />
@@ -855,7 +861,7 @@ const QuotationEditScreen = () => {
                                                     >
                                                         <ProductSearchPanel
                                                             selectedProducts={detalles}
-                                                            onProductSelect={addProduct}
+                                                            onProductSelect={quotationDetailsHook.addProduct}
                                                             allowExceedStock={true}
                                                         />
                                                     </ResizablePanel>
@@ -889,7 +895,7 @@ const QuotationEditScreen = () => {
                                                 </CardHeader>
                                                 <CardContent className="flex-1 min-h-0">
                                                     <div className="h-full overflow-auto">
-                                                        {quotationData?.detalles.length === 0 ? (
+                                                        {detalles.length === 0 ? (
                                                             <div className="text-center py-8 text-gray-500">
                                                                 <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                                                 <p>No hay productos agregados</p>
@@ -899,13 +905,13 @@ const QuotationEditScreen = () => {
                                                             <QuotationDetailsEditingTable
                                                                 ref={tableRef}
                                                                 isReadOnly={isReadOnly}
-                                                                products={detalles}
-                                                                removeItem={removeProduct}
-                                                                updatePrice={updatePrice}
-                                                                updateQuantity={updateQuantity}
-                                                                updateCustomSubtotal={updateCustomSubtotal}
-                                                                updateBrand={updateBrand}
-                                                                updateDescription={updateDescription}
+                                                                products={quotationDetailsHook.details}
+                                                                removeItem={quotationDetailsHook.removeProduct}
+                                                                updatePrice={quotationDetailsHook.updatePrice}
+                                                                updateQuantity={quotationDetailsHook.updateQuantity}
+                                                                updateCustomSubtotal={quotationDetailsHook.updateCustomSubtotal}
+                                                                updateBrand={quotationDetailsHook.updateBrand}
+                                                                updateDescription={quotationDetailsHook.updateDescription}
                                                             />
                                                         }
                                                     </div>
@@ -918,13 +924,13 @@ const QuotationEditScreen = () => {
                                     <QuotationsSummary
                                         isReadOnly={isReadOnly}
                                         isEditMode={true}
-                                        discountAmount={calculateTotalDiscount()}
-                                        discountPercent={getDiscountPercentage()}
-                                        subtotal={calculateTotalBeforeDiscount()}
-                                        total={calculateTotal()}
+                                        discountAmount={quotationDetailsHook.calculateTotalDiscount()}
+                                        discountPercent={quotationDetailsHook.getDiscountPercentage()}
+                                        subtotal={quotationDetailsHook.calculateTotalBeforeDiscount()}
+                                        total={quotationDetailsHook.calculateTotal()}
                                         isPending={isSaving}
                                         callback={handleGoBack}
-                                        aplyGlobalDiscount={applyGlobalDiscount}
+                                        aplyGlobalDiscount={quotationDetailsHook.applyGlobalDiscount}
                                         hasProducts={detalles.length > 0}
                                     />
                                 </div>
