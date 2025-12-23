@@ -194,6 +194,14 @@ export const COMMANDS = {
     when: 'global',
     category: 'tabs',
   },
+  // ==================== SEARCH-FILTERS ====================
+  // Para que ejecute el boton de busca en los listados etc. en lugar de presionar el boton
+  'searchFilters.focusSearch': {
+    defaultKeys: 'alt+b',
+    description: 'Foco en campo de búsqueda o filtros',
+    when: 'global',
+    category: 'tableAndFilters',
+  },
 } as const satisfies Record<string, CommandDefinition>;
 
 /**

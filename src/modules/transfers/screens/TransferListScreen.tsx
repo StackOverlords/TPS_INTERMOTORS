@@ -18,6 +18,7 @@ import { useAcceptTransfer } from "../hooks/useAcceptTransfer";
 import { useTransfersFilters } from "../hooks/useTransfersFilters";
 import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
 import type { TransferGetAll } from "../types/transferGet.types";
+import { useCommands } from "@/keybindings";
 
 const TransferListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -176,6 +177,11 @@ const TransferListScreen = () => {
     const toggleShowFilters = () => {
         setShowFilters(!showFilters)
     }
+
+    useCommands({
+        'searchFilters.focusSearch': handleManualSearch,
+        'forms.reset': handleResetFilters
+    })
 
     return (
         <main className="h-full p-2 gap-2 flex flex-col">

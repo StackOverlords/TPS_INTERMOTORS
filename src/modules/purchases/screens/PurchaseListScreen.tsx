@@ -44,6 +44,7 @@ import { usePurchaseFilters } from '../hooks/usePurchaseFilters';
 import { usePurchasesPaginated } from '../hooks/usePurchasesPaginated';
 import type { PurchaseGet } from '../types/PurchaseGet';
 import { useKeyboardNavigation } from '@/hooks/keyBindings/useKeyboardNavigation';
+import { useCommands } from '@/keybindings';
 
 const PurchaseListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
@@ -155,6 +156,11 @@ const PurchaseListScreen = () => {
     return 'secondary';
   };
   // console.log(authSDK.getAccessToken());
+
+  useCommands({
+    'searchFilters.focusSearch':handleManualSearch,
+    'forms.reset':resetFilters
+  });
   const columns = useMemo<ColumnDef<PurchaseGet>[]>(
     () => [
       {

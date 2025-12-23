@@ -41,6 +41,9 @@ export default defineConfig({
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
   },
+  esbuild:{
+    drop: ['console', 'debugger'],
+  },
   // Clear screen on rebuild
   clearScreen: false,
   // Tauri expects a fixed port

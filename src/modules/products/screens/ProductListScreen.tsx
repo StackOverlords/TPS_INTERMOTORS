@@ -18,7 +18,7 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import useConfirmMutation from "@/hooks/useConfirmMutation"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import { useViewConfig } from "@/hooks/useViewConfig"
-import { COMMANDS, useKeybindingKeys } from "@/keybindings"
+import { COMMANDS, useCommands, useKeybindingKeys } from "@/keybindings"
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar"
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
 import authSDK from "@/services/sdk-simple-auth"
@@ -136,13 +136,22 @@ const ProductListScreen = () => {
         if (!selectedProductForImage) return;
 
         try {
-            // Convertir base64 a File
-            const response = await fetch(imageData);
-            const blob = await response.blob();
+            // Convertir base64 a Blob manualmente (compatible con Tauri)
+            const parts = imageData.split(',');
+            const contentType = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+            const byteString = atob(parts[1]);
+            const arrayBuffer = new ArrayBuffer(byteString.length);
+            const uint8Array = new Uint8Array(arrayBuffer);
+
+            for (let i = 0; i < byteString.length; i++) {
+                uint8Array[i] = byteString.charCodeAt(i);
+            }
+
+            const blob = new Blob([arrayBuffer], { type: contentType });
             const file = new File(
                 [blob],
                 `producto-${selectedProductForImage.id}.png`,
-                { type: 'image/png' }
+                { type: contentType }
             );
 
             // Llamar a la mutación
@@ -811,6 +820,10 @@ const ProductListScreen = () => {
     //     );
     // }
 
+    useCommands({
+    'searchFilters.focusSearch':handleManualSearch,
+    'forms.reset':handleResetFilters
+    })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
             {/* Header */}

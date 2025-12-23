@@ -120,7 +120,7 @@ const ReturnsFiltersComponent: React.FC<OrdersFiltersProps> = ({
                                 optionTag={"nombre"}
                                 isLoadingData={isReturnResponsiblesLoading}
                                 clearOnEmpty={true}
-                                enableAllOption={true}
+                                enableAllOption={false}
                             />
                         </div>
                     )

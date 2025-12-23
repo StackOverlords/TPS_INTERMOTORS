@@ -18,6 +18,7 @@ import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { useCommands } from "@/keybindings";
 
 const SalesListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -145,6 +146,11 @@ const SalesListScreen = () => {
             '.switch-button'
         ],
         enabled: true,
+    })
+
+    useCommands({
+    'searchFilters.focusSearch':handleManualSearch,
+    'forms.reset':handleResetFilters
     })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">

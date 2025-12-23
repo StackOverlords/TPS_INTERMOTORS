@@ -12,6 +12,7 @@ import { Search } from "lucide-react";
 import type { useProductFilters } from "../../hooks/useProductFilters";
 import { useRef } from "react";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { useCommands } from "@/keybindings";
 
 interface ProductFiltersProps {
   filters: ReturnType<typeof useProductFilters>["filters"]
@@ -39,12 +40,12 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     categoria: filters.categoria,
     enabled: !!filters.categoria
   })
-
+  
   // const { containerRef } = useFilterNavigation();
   const containerRef = useRef<HTMLDivElement>(null);
   useFormEnterNavigation({
     containerRef: containerRef,
-    excludeSelectors: ['.no-enter-nav'],
+    excludeSelectors: ['.no-enter-nav','.columns-button','[name="btn-chvron-right"]'],
   })
   return (
     <div ref={containerRef}>
@@ -68,7 +69,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
                 categoria: cat.categoria,
               }))}
               optionTag={"categoria"}
-              enableAllOption={false}
               clearOnEmpty={true}
             />
           </div>
