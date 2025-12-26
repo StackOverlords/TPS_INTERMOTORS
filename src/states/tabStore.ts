@@ -10,6 +10,8 @@ export interface Tab {
   scrollPosition?: number;
   // Metadata adicional que puedas necesitar
   metadata?: Record<string, any>;
+  // ID de instancia para permitir múltiples tabs con la misma ruta
+  instanceId?: string;
 }
 
 interface TabState {
@@ -17,14 +19,14 @@ interface TabState {
   activeTabId: string | null;
 
   // Acciones
-  addTab: (path: string, title: string, icon?: any) => string;
+  addTab: (path: string, title: string, icon?: any, instanceId?: string) => string;
   removeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   updateTab: (tabId: string, updates: Partial<Tab>) => void;
   closeAllTabs: () => void;
   closeOtherTabs: (tabId: string) => void;
   getTab: (tabId: string) => Tab | undefined;
-  findTabByPath: (path: string) => Tab | undefined;
+  findTabByPath: (path: string, instanceId?: string) => Tab | undefined;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
 }
 
@@ -90,11 +92,13 @@ export const useTabStore = create<TabState>()(
       tabs: [],
       activeTabId: null,
 
-      addTab: (path: string, title: string, icon?: any) => {
+      addTab: (path: string, title: string, icon?: any, instanceId?: string) => {
         const state = get();
 
-        // Verificar si ya existe un tab con esta ruta
-        const existingTab = state.tabs.find(tab => tab.path === path);
+        // Verificar si ya existe un tab con esta ruta E instanceId
+        const existingTab = state.tabs.find(tab =>
+          tab.path === path && tab.instanceId === instanceId
+        );
 
         if (existingTab) {
           // Si existe, solo activarlo
@@ -109,7 +113,8 @@ export const useTabStore = create<TabState>()(
           title,
           icon,
           scrollPosition: 0,
-          metadata: {}
+          metadata: {},
+          instanceId
         };
 
         set(state => ({
@@ -184,8 +189,10 @@ export const useTabStore = create<TabState>()(
         return get().tabs.find(tab => tab.id === tabId);
       },
 
-      findTabByPath: (path: string) => {
-        return get().tabs.find(tab => tab.path === path);
+      findTabByPath: (path: string, instanceId?: string) => {
+        return get().tabs.find(tab =>
+          tab.path === path && tab.instanceId === instanceId
+        );
       },
 
       reorderTabs: (fromIndex: number, toIndex: number) => {
@@ -209,6 +216,7 @@ export const useTabStore = create<TabState>()(
           title: tab.title,
           scrollPosition: tab.scrollPosition,
           metadata: tab.metadata,
+          instanceId: tab.instanceId,
           // Omitir icon intencionalmente
         })),
       }),

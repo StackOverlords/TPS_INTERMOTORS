@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 import SalesSummary from "../components/salesSummary";
 import { useCreateSale } from "../hooks/useCreateSale";
 import { useSaleCustomers } from "../hooks/useSaleCustomers";
@@ -56,6 +57,7 @@ const CreateSaleScreen = () => {
     } | null>(null);
     const isReadOnly = useMemo(() => createdSaleDetails !== null, [createdSaleDetails]);
     const navigate = useNavigate();
+    const { closeCurrentTab, tabs, currentTab } = useTabNavigation();
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
 
@@ -404,7 +406,7 @@ const CreateSaleScreen = () => {
                 showSuccessToast({
                     title: "Venta Creada",
                     description: `Venta #${createdSale.id} creada exitosamente`,
-                    duration: 5000
+                    duration: 2000  // 2 segundos para cerrar más rápido
                 });
 
                 const details: CartItem[] = createdSale.detalles.map((det) => ({
@@ -427,6 +429,31 @@ const CreateSaleScreen = () => {
                     customBrand: '',
                 }));
                 setCreatedSaleDetails(details);
+
+                // Capturar el ID del tab actual (el de registro de venta) AHORA
+                const saleTabId = currentTab?.id;
+
+                // Cerrar automáticamente la ventana después de 2.5 segundos
+                setTimeout(() => {
+                    // Solo cerrar si tenemos el ID del tab de venta
+                    if (!saleTabId) return;
+
+                    // Buscar si existe una ventana de "Listar productos" antes de cerrar
+                    const productListTab = tabs.find(tab =>
+                        tab.path === '/dashboard/products' ||
+                        tab.title.toLowerCase().includes('producto')
+                    );
+
+                    // Cerrar específicamente el tab de registro de venta (no el activo actual)
+                    closeCurrentTab(saleTabId);
+
+                    // Si existe el tab de productos, enfocarlo después de cerrar
+                    if (productListTab) {
+                        setTimeout(() => {
+                            navigate(productListTab.path);
+                        }, 100);
+                    }
+                }, 2500);
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear la venta" });

@@ -182,6 +182,23 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       sortingFn: "alphanumeric",
     },
     {
+      accessorKey: "tc_compra",
+      header: "T.C.",
+      size: 70,
+      minSize: 60,
+      cell: ({ getValue }) => {
+        const value = getValue<number>()
+        return (
+          <div className="text-center">
+            <span className="text-xs font-medium text-blue-600">
+              {formatNumber(value)}
+            </span>
+          </div>
+        )
+      },
+      sortingFn: "alphanumeric",
+    },
+    {
       id: "subtotal",
       header: "Subtotal",
       size: 80,

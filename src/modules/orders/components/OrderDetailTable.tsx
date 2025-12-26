@@ -1,9 +1,10 @@
 import { Button } from '@/components/atoms/button';
 import { Trash2, X } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import { formatCell } from '@/utils/formatCell';
 import CustomizableTable from '@/components/common/CustomizableTable';
+import { useCustomTable } from '@/hooks/useCustomTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { UIOrderDetailCreate } from '../types/orderCreate.types';
@@ -425,26 +426,25 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
         isDeleting
     ]);
 
-    const table = useReactTable<T>({
+    const { table } = useCustomTable<T>({
         data: details,
         columns,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+        enableSorting: true,
         enableColumnResizing: true,
         enableRowSelection: true,
-        initialState: {
-            sorting: [
-                {
-                    id: 'orden',
-                    desc: false,
-                },
-            ],
-            columnVisibility: {
-                "id_detalle_pedido": false,
-            }
-        },
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            {
+                id: 'orden',
+                desc: false,
+            },
+        ],
+        hiddenColumns: ['id_detalle_pedido'],
+        persistenceKey: 'order-details-table',
+        persistColumnOrder: true,
+        persistColumnVisibility: true,
     });
 
     return (
@@ -452,6 +452,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
             <CustomizableTable
                 table={table}
                 isLoading={isLoading}
+                enableColumnReordering={true}
             />
 
             <ConfirmationModal

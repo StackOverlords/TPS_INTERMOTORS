@@ -10,7 +10,7 @@ export interface OrganizationConfigResponse {
 }
 
 class ViewConfigService {
-  private baseUrl = '/api/view-configs';
+  private baseUrl = '/view-configs';
 
   /**
    * Obtener configuración de organización para una vista
