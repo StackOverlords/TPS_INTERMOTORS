@@ -35,7 +35,7 @@ import {
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 import { Button } from "../atoms/button";
 import { cn } from "@/lib/utils";
 
@@ -238,6 +238,9 @@ const CustomizableTable = <T,>({
     onDragEnd,
 }: Props<T>) => {
 
+    // ✅ Estado interno para trackear si estamos dragging
+    const [isDragging, setIsDragging] = useState(false);
+
     const sensors = useSensors(
         useSensor(MouseSensor, {
             activationConstraint: {
@@ -267,20 +270,25 @@ const CustomizableTable = <T,>({
             const newColumnOrder = arrayMove(columnOrder, oldIndex, newIndex);
             table.setColumnOrder(newColumnOrder);
         }
+
+        // ✅ Actualizar estado de drag
+        setIsDragging(false);
+        onDragEnd?.();
     };
 
     return (
         <DndContext
             sensors={sensors}
             onDragStart={() => {
-                onDragStart?.()
+                // ✅ Actualizar estado de drag
+                setIsDragging(true);
+                onDragStart?.();
             }}
-            onDragEnd={(event) => {
-                handleDragEnd(event);
-                onDragEnd?.()
-            }}
+            onDragEnd={handleDragEnd}
             onDragCancel={() => {
-                onDragEnd?.()
+                // ✅ Actualizar estado de drag en cancelación
+                setIsDragging(false);
+                onDragEnd?.();
             }}
             collisionDetection={closestCenter}
             modifiers={[restrictToHorizontalAxis, restrictToTableContainer]}
@@ -398,8 +406,18 @@ const CustomizableTable = <T,>({
                                                 ? 'bg-blue-100 hover:bg-blue-100'
                                                 : ''
                                                 }`}
-                                            onClick={() => onRowClick?.(index)}
-                                            onDoubleClick={() => onRowDoubleClick?.(row.original)}
+                                            onClick={() => {
+                                                // ✅ No ejecutar onClick durante drag
+                                                if (!isDragging) {
+                                                    onRowClick?.(index);
+                                                }
+                                            }}
+                                            onDoubleClick={() => {
+                                                // ✅ No ejecutar onDoubleClick durante drag
+                                                if (!isDragging) {
+                                                    onRowDoubleClick?.(row.original);
+                                                }
+                                            }}
                                         >
                                             {enableColumnReordering ? (
                                                 <SortableContext
