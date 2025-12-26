@@ -39,6 +39,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../atoms/tooltip';
 import { Button } from '../atoms/button';
 import { Slider } from '../atoms/slider';
 import { downloadImage } from '@/lib/imageUtils';
+import {
+    smartCompressToWebP,
+    formatFileSize,
+    calculateSavings,
+    type CompressionResult
+} from '@/utils/imageCompression';
 
 interface ImageViewerProps {
     open: boolean;
@@ -130,7 +136,7 @@ export function ImageViewer({
     const [isDraggingCrop, setIsDraggingCrop] = useState(false);
     const [activeTab, setActiveTab] = useState<'transform' | 'adjust' | 'filters'>('transform');
     const [currentImage, setCurrentImage] = useState(imageSrc);
-    const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>(aspectRatios[0]);
+    const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio | null>(null);
     const [magnifierActive, setMagnifierActive] = useState(false);
     const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
     const [magnifierImagePosition, setMagnifierImagePosition] = useState({ x: 0, y: 0 });
@@ -145,6 +151,8 @@ export function ImageViewer({
     const [isEditMode, setIsEditMode] = useState(editMode);
     const [isSaving, setIsSaving] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [webpQuality, setWebpQuality] = useState(75);
+    const [compressionInfo, setCompressionInfo] = useState<CompressionResult | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -224,6 +232,7 @@ export function ImageViewer({
                 setHistoryIndex(-1);
                 setImageState(initialState);
                 setImagePosition({ x: 0, y: 0 });
+                setCompressionInfo(null);
             }
         };
 
@@ -298,7 +307,7 @@ export function ImageViewer({
         }
     };
 
-    // File upload CORREGIDO
+    // File upload
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -312,6 +321,7 @@ export function ImageViewer({
                 setImageState(initialState);
                 setImagePosition({ x: 0, y: 0 });
                 setIsEditMode(true);
+                setCompressionInfo(null);
                 toast.success('Imagen cargada correctamente');
             };
             reader.readAsDataURL(file);
@@ -487,7 +497,7 @@ export function ImageViewer({
         let x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
         let y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
 
-        if (selectedAspectRatio.ratio !== null) {
+        if (selectedAspectRatio && selectedAspectRatio.ratio !== null) {
             const width = x - cropArea.startX;
             const height = y - cropArea.startY;
             const absWidth = Math.abs(width);
@@ -648,7 +658,6 @@ export function ImageViewer({
         const downloadToast = toast.loading('Preparando descarga...');
 
         try {
-            // Determinar si hay transformaciones
             const hasTransformations =
                 imageState.rotation !== 0 ||
                 imageState.flipX ||
@@ -658,29 +667,42 @@ export function ImageViewer({
                 imageState.saturation !== 100 ||
                 imageState.filter !== '';
 
-            // Aplicar transformaciones si las hay, o cargar imagen si es URL externa
-            let finalImage: string;
+            let imageToCompress: string;
 
             if (hasTransformations) {
-                finalImage = await applyTransformations();
+                imageToCompress = await applyTransformations();
             } else if (currentImage.startsWith('http://') || currentImage.startsWith('https://')) {
-                finalImage = await loadImageSafely(currentImage);
+                imageToCompress = await loadImageSafely(currentImage);
             } else {
-                finalImage = currentImage;
+                imageToCompress = currentImage;
             }
 
-            const timestamp = Date.now();
-            const defaultName = imageMetadata?.fileName
-                ? `${imageMetadata.fileName.replace(/\.[^/.]+$/, '')}_${timestamp}.png`
-                : `imagen_${timestamp}.png`;
+            // COMPRIMIR
+            toast.loading('Comprimiendo a WebP...', { id: downloadToast });
+            const result = await smartCompressToWebP(imageToCompress, {
+                quality: webpQuality,
+                effort: 4,
+            });
 
-            await downloadImage(finalImage, defaultName);
+            // Mostrar info
+            if (result.skipped) {
+                toast.success(result.reason || 'Imagen lista', { id: downloadToast, duration: 4000 });
+            } else {
+                const savings = calculateSavings(result.originalSize, result.compressedSize);
+                toast.success(
+                    `${formatFileSize(result.originalSize)} → ${formatFileSize(result.compressedSize)} (${savings}% menor)`,
+                    { id: downloadToast, duration: 5000 }
+                );
+            }
 
-            toast.success('Imagen guardada correctamente', { id: downloadToast });
+            // Nombre con calidad
+            const baseName = imageMetadata?.fileName?.replace(/\.[^/.]+$/, '') || 'imagen';
+            const defaultName = `${baseName}_q${webpQuality}.webp`;
+
+            await downloadImage(result.data, defaultName);
         } catch (error) {
             console.error('Error downloading image:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-            toast.error(`Error al descargar: ${errorMessage}`, { id: downloadToast });
+            toast.error(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`, { id: downloadToast });
         } finally {
             setIsDownloading(false);
         }
@@ -694,23 +716,38 @@ export function ImageViewer({
         const saveToast = toast.loading('Guardando imagen...');
 
         try {
-            // Siempre aplicar transformaciones (esto cargará la imagen si es necesario)
-            const finalImage = await applyTransformations();
+            const transformedImage = await applyTransformations();
 
-            await onSave(finalImage);
+            // COMPRIMIR
+            toast.loading('Comprimiendo a WebP...', { id: saveToast });
+            const result = await smartCompressToWebP(transformedImage, {
+                quality: webpQuality,
+                effort: 4,
+            });
+
+            await onSave(result.data);
 
             // Actualizar estados
-            setCurrentImage(finalImage);
+            setCurrentImage(result.data);
             setImageState(initialState);
             setImagePosition({ x: 0, y: 0 });
             setHistory([]);
             setHistoryIndex(-1);
+            setCompressionInfo(result);
 
-            toast.success('Imagen guardada correctamente', { id: saveToast });
+            // Mostrar resultado
+            if (result.skipped) {
+                toast.success(result.reason || 'Guardado', { id: saveToast });
+            } else {
+                const savings = calculateSavings(result.originalSize, result.compressedSize);
+                toast.success(
+                    `Guardado: ${formatFileSize(result.compressedSize)} (${savings}% menor)`,
+                    { id: saveToast, duration: 5000 }
+                );
+            }
         } catch (error) {
             console.error('Error saving image:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-            toast.error(`Error al guardar: ${errorMessage}`, { id: saveToast });
+            toast.error(`Error: ${error instanceof Error ? error.message : 'Error desconocido'}`, { id: saveToast });
         } finally {
             setIsSaving(false);
         }
@@ -1101,6 +1138,9 @@ export function ImageViewer({
                                                         step={0.1}
                                                         onValueChange={([val]) => updateState({ zoom: val })}
                                                         className="flex-1"
+                                                        trackClassName='bg-zinc-700'
+                                                        rangeClassName='bg-white'
+                                                        thumbClassName='bg-white'
                                                     />
                                                     <Button
                                                         variant="ghost"
@@ -1185,12 +1225,17 @@ export function ImageViewer({
                                                 <div className="grid grid-cols-4 gap-1">
                                                     {aspectRatios.map((ratio) => (
                                                         <Button
+                                                            disabled={!currentImage}
                                                             key={ratio.name}
                                                             variant="outline"
-                                                            onClick={() => setSelectedAspectRatio(ratio)}
+                                                            onClick={() => {
+                                                                setSelectedAspectRatio(ratio)
+                                                                setIsCropping(true);
+                                                                setCropArea(null);
+                                                            }}
                                                             className={cn(
                                                                 'h-11 p-2 gap-1 flex flex-col items-center justify-center text-xs bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 hover:text-white',
-                                                                selectedAspectRatio.name === ratio.name && 'border-amber-500 bg-amber-500/10'
+                                                                selectedAspectRatio?.name === ratio.name && 'border-amber-500 bg-amber-500/10'
                                                             )}
                                                         >
                                                             <ratio.icon className="w-3 h-3" />
@@ -1199,20 +1244,7 @@ export function ImageViewer({
                                                     ))}
                                                 </div>
 
-                                                {!isCropping ? (
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={() => {
-                                                            setIsCropping(true);
-                                                            setCropArea(null);
-                                                        }}
-                                                        disabled={!currentImage}
-                                                        className="w-full bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 hover:text-white"
-                                                    >
-                                                        <Crop className="w-4 h-4 mr-2" />
-                                                        Seleccionar área
-                                                    </Button>
-                                                ) : (
+                                                {isCropping && (
                                                     <div className="space-y-2">
                                                         <p className="text-xs text-zinc-400 text-center">
                                                             Arrastra sobre la imagen para seleccionar el área a recortar
@@ -1221,6 +1253,7 @@ export function ImageViewer({
                                                             <Button
                                                                 variant="outline"
                                                                 onClick={() => {
+                                                                    setSelectedAspectRatio(null);
                                                                     setIsCropping(false);
                                                                     setCropArea(null);
                                                                 }}
@@ -1289,6 +1322,9 @@ export function ImageViewer({
                                                         step={1}
                                                         onValueChange={([val]) => updateState({ brightness: val })}
                                                         className="flex-1"
+                                                        trackClassName='bg-zinc-700'
+                                                        rangeClassName='bg-white'
+                                                        thumbClassName='bg-white'
                                                     />
                                                     <span className="text-sm text-zinc-400 w-12 text-right">
                                                         {imageState.brightness}%
@@ -1312,6 +1348,9 @@ export function ImageViewer({
                                                         step={1}
                                                         onValueChange={([val]) => updateState({ contrast: val })}
                                                         className="flex-1"
+                                                        trackClassName='bg-zinc-700'
+                                                        rangeClassName='bg-white'
+                                                        thumbClassName='bg-white'
                                                     />
                                                     <span className="text-sm text-zinc-400 w-12 text-right">
                                                         {imageState.contrast}%
@@ -1335,11 +1374,55 @@ export function ImageViewer({
                                                         step={1}
                                                         onValueChange={([val]) => updateState({ saturation: val })}
                                                         className="flex-1"
+                                                        trackClassName='bg-zinc-700'
+                                                        rangeClassName='bg-white'
+                                                        thumbClassName='bg-white'
                                                     />
                                                     <span className="text-sm text-zinc-400 w-12 text-right">
                                                         {imageState.saturation}%
                                                     </span>
                                                 </div>
+                                            </div>
+
+                                            {/* Separador */}
+                                            <div className="border-t border-zinc-800 my-4" />
+
+                                            {/* Control de calidad WebP */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                                                        Calidad de Imagen
+                                                    </label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Slider
+                                                        value={[webpQuality]}
+                                                        min={1}
+                                                        max={100}
+                                                        step={1}
+                                                        onValueChange={([val]) => setWebpQuality(val)}
+                                                        className="flex-1"
+                                                        trackClassName='bg-zinc-700'
+                                                        rangeClassName='bg-white'
+                                                        thumbClassName='bg-white'
+                                                    />
+                                                    <span className="text-sm text-zinc-400 w-12 text-right">
+                                                        {webpQuality}%
+                                                    </span>
+                                                </div>
+
+                                                <div className="text-xs text-zinc-500 space-y-1">
+                                                    <p>• 1-60: Compresión alta</p>
+                                                    <p>• 61-85: Balance óptimo (Recomendado)</p>
+                                                    <p>• 86-100: Máxima calidad</p>
+                                                </div>
+                                                {compressionInfo && !compressionInfo.skipped && (
+                                                    <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded text-xs text-green-400">
+                                                        <p className="font-medium">Última compresión:</p>
+                                                        <p>Ahorro: {calculateSavings(compressionInfo.originalSize, compressionInfo.compressedSize)}%</p>
+                                                        <p>Tamaño: {formatFileSize(compressionInfo.compressedSize)}</p>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Reset Adjustments */}

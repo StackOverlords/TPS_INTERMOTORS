@@ -53,6 +53,7 @@ import type { ProductGet } from "../types/ProductGet"
 import { useCustomTable } from "@/hooks/useCustomTable"
 import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tableShoppingCart"
 import { useUpdateProductImage } from "../hooks/mutations/useUpdateProductImage"
+import { base64ToFile } from "@/utils/base64Utils"
 
 const ProductListScreen = () => {
     const tableRef = useRef<HTMLTableElement>(null)
@@ -131,18 +132,15 @@ const ProductListScreen = () => {
             });
         }
     });
-    
+
     const handleSaveImage = useCallback(async (imageData: string) => {
         if (!selectedProductForImage) return;
 
         try {
             // Convertir base64 a File
-            const response = await fetch(imageData);
-            const blob = await response.blob();
-            const file = new File(
-                [blob],
-                `producto-${selectedProductForImage.id}.png`,
-                { type: 'image/png' }
+            const file = base64ToFile(
+                imageData,
+                `producto-${selectedProductForImage.id}.webp`
             );
 
             // Llamar a la mutación
@@ -262,15 +260,7 @@ const ProductListScreen = () => {
         (product: ProductGet) => {
             addItemToCart(product);
 
-            const showToast = getBehaviorValue<boolean>('showSuccessToastOnAddToCart');
             const autoClose = getBehaviorValue<boolean>('autoCloseModalOnAddToCart');
-
-            if (showToast) {
-                showSuccessToast({
-                    title: "Producto agregado",
-                    description: `${product.descripcion} agregado al carrito`,
-                });
-            }
 
             if (autoClose && modalOpen) {
                 setModalOpen(false);
@@ -292,20 +282,11 @@ const ProductListScreen = () => {
 
     const handleAddSelectedToCart = useCallback(() => {
         const selectedProducts = getAllSelectedProducts();
-        const maxItems = getBehaviorValue<number>('maxSelectableItems') ?? 100;
 
         if (selectedProducts.length === 0) {
             showErrorToast({
                 title: "Error al agregar los productos",
                 description: `No hay productos seleccionados para agregar al carrito.`,
-            })
-            return;
-        }
-
-        if (selectedProducts.length > maxItems) {
-            showErrorToast({
-                title: "Demasiados productos",
-                description: `Solo puedes agregar hasta ${maxItems} productos a la vez.`,
             })
             return;
         }
