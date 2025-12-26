@@ -10,8 +10,8 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
-import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { COMMANDS, useKeybindingKeys } from "@/keybindings";
+// import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { COMMANDS, useCommands, useKeybindingKeys } from "@/keybindings";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCell } from "@/utils/formatCell";
@@ -65,7 +65,7 @@ const AccountsPayableListScreen = () => {
 
   const [accountsPayable, setAccountsPayable] = useState<AccountPayable[]>([]);
 
-  const { handleError } = useErrorHandler();
+  // const { handleError } = useErrorHandler();
 
   useEffect(() => {
     if (!accountsPayableData?.data || error || isFetching) return;
@@ -98,6 +98,7 @@ const AccountsPayableListScreen = () => {
     const diferencia = fechaPlazo.getTime() - hoy.getTime();
     return Math.ceil(diferencia / (1000 * 60 * 60 * 24));
   };
+
 
   const columns = useMemo<ColumnDef<AccountPayable>[]>(
     () => [
@@ -476,6 +477,10 @@ const AccountsPayableListScreen = () => {
     setIsDraggingColumn(false);
   }, []);
 
+  useCommands({
+    'searchFilters.focusSearch': handleManualSearch,
+    // 'forms.reset': handleResetFilters
+  })
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       {/* Header */}

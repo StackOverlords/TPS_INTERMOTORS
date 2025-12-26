@@ -18,6 +18,7 @@ import OrdersFiltersComponent from "../components/orderList/orderFilterComponent
 import OrdersListTable from "../components/orderList/orderListTable";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { useCommands } from "@/keybindings";
 
 const OrderListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -145,6 +146,14 @@ const OrderListScreen = () => {
             '.switch-button'
         ],
         enabled: true,
+    })
+
+    useCommands({
+        'searchFilters.focusSearch':handleManualSearch,
+        'forms.reset':handleResetFilters
+    },{
+        enabled: true,
+        enableOnFormTags: true
     })
 
     return (

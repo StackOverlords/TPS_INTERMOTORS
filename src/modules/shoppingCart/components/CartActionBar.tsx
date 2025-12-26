@@ -30,13 +30,15 @@ const modeConfig = {
 } as const
 
 interface CartActionBarProps {
-    onAction?: (path: string) => void
+    onAction?: (path: string) => void  // Callback para navegación personalizada
+    onAfterNavigate?: () => void       // Callback después de navegar
     className?: string
     showhClearBottom?: boolean
 }
 
 export const CartActionBar = ({
     onAction,
+    onAfterNavigate,
     className,
     showhClearBottom = false
 }: CartActionBarProps) => {
@@ -119,8 +121,16 @@ export const CartActionBar = ({
                 <Button
                     className="cursor-pointer"
                     onClick={() => {
-                        if (onAction) return onAction(path)
+                        if (onAction) {
+                            onAction(path)
+                            return
+                        }
+
+                        // Navegar normalmente (reutiliza tab si existe)
                         navigate(path)
+
+                        // Ejecutar callback adicional si existe
+                        onAfterNavigate?.()
                     }}
                 >
                     <Icon className="size-4" />
