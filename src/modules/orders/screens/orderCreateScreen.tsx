@@ -129,10 +129,15 @@ const OrderCreateScreen = () => {
         const detalles = orderDetailsHook.getOrderDetails();
 
         if (detalles.length > 0) {
-            setValue("detalles", detalles);
+            // Agregar tc_compra a cada detalle antes de sincronizar con el formulario
+            const detallesWithTC = detalles.map(detalle => ({
+                ...detalle,
+                tc_compra: exchangeRate
+            }));
+            setValue("detalles", detallesWithTC);
             clearErrors("detalles");
         }
-    }, [orderDetailsHook.details, setValue, clearErrors]);
+    }, [orderDetailsHook.details, setValue, clearErrors, exchangeRate]);
 
     // Validaciones de fechas según estado
     const statusesDisablingTransit = ["P", "C"];
@@ -299,7 +304,17 @@ const OrderCreateScreen = () => {
         if (data.fecha_llegada === '') {
             data.fecha_llegada = undefined;
         }
-        createOrder(data, {
+
+        // Agregar tc_compra (tipo de cambio) a cada detalle
+        const dataWithTC = {
+            ...data,
+            detalles: data.detalles.map(detalle => ({
+                ...detalle,
+                tc_compra: exchangeRate
+            }))
+        };
+
+        createOrder(dataWithTC, {
             onSuccess: () => {
                 setIsReadOnly(true)
                 showSuccessToast({

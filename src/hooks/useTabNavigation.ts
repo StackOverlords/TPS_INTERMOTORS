@@ -85,14 +85,15 @@ export const useTabNavigation = () => {
 
   //Navegar a una ruta y crear/activar un tab
 
-  const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean }) => {
+  const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean; instanceId?: string }) => {
     const routeInfo = findRouteInfo(path);
     const state = useTabStore.getState();
-    const existingTab = state.findTabByPath(path);
+    const instanceId = options?.instanceId;
+    const existingTab = state.findTabByPath(path, instanceId);
 
     if (options?.newTab || !existingTab) {
-      // Crear nuevo tab
-      const tabId = state.addTab(path, routeInfo.name, routeInfo.icon);
+      // Crear nuevo tab con instanceId opcional
+      const tabId = state.addTab(path, routeInfo.name, routeInfo.icon, instanceId);
       state.setActiveTab(tabId);
     } else {
       // Activar tab existente
@@ -224,12 +225,13 @@ export const useTabNavigation = () => {
 
     // Obtener estado fresco directamente del store para evitar dependencias
     const state = useTabStore.getState();
-    const existingTab = state.findTabByPath(currentPath);
+    // Para navegación automática, buscar sin instanceId (undefined)
+    const existingTab = state.findTabByPath(currentPath, undefined);
 
     if (!existingTab) {
-      // Crear tab automáticamente si no existe
+      // Crear tab automáticamente si no existe (sin instanceId)
       const routeInfo = findRouteInfo(currentPath);
-      const tabId = state.addTab(currentPath, routeInfo.name, routeInfo.icon);
+      const tabId = state.addTab(currentPath, routeInfo.name, routeInfo.icon, undefined);
       state.setActiveTab(tabId);
     } else {
       // Verificar si el tab necesita actualización de título

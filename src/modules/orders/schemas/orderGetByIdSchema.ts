@@ -28,6 +28,7 @@ export const OrderDetailGetByIdSchema = z.object({
     precio_venta: moneySchema,
     inc_precio_venta_alt: moneySchema,
     precio_venta_alt: moneySchema,
+    tc_compra: requiredMoneySchema,  // Tipo de cambio
     orden: toNumberOrNull,
     moneda: z.string()
 })
