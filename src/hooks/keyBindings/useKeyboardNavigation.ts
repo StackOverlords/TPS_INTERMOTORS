@@ -117,20 +117,25 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
             activeElement.closest('[role="dialog"]') !== null ||
             activeElement.closest('[data-radix-popper-content-wrapper]') !== null ||
             activeElement.closest('.dropdown-content') !== null ||
-            activeElement.hasAttribute('data-dragging') // 🆕 Verificar atributo drag
+            activeElement.hasAttribute('data-dragging')
         );
     }, [isDragging]);
 
-    // Activar navegación por teclado
+    // ✅ Activar navegación por teclado - SIN restricciones de contexto
     useHotkeys(
         hotkeys.activate!,
-        () => {
+        (e) => {
+            e.preventDefault();
             setIsFocused(true);
             setIsNavigatingWithinRow(false);
             setCurrentElementIndex(-1);
             containerRef.current?.focus();
         },
-        { enabled: isHotkeysEnabled }
+        { 
+            enabled: isHotkeysEnabled,
+            enableOnFormTags: true, // ✅ Permitir en inputs/textareas
+            preventDefault: true
+        }
     );
 
     // Desactivar navegación por teclado
@@ -281,7 +286,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         setCurrentElementIndex(-1);
     }, [selectedIndex]);
 
-    // Manejar clics para activar/desactivar foco
+    // ✅ Manejar clics para activar/desactivar foco
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
             // 🆕 Ignorar clicks durante drag
@@ -289,25 +294,54 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
 
             const target = e.target as HTMLElement;
 
+            // ✅ Verificar si el click es DENTRO del contenedor
             if (containerRef.current && containerRef.current.contains(target)) {
-                setIsFocused(true);
+                // ✅ Verificar si el click fue en un elemento interactivo
+                const isInteractiveElement = target.closest(
+                    'button, input, textarea, select, a[href], [role="button"], [role="menuitem"]'
+                ) as HTMLElement;
 
-                const clickedRow = target.closest('[data-row-index]') as HTMLElement;
+                // ✅ ACTIVAR si no estaba activo (excepto si es un elemento interactivo que está fuera de las filas)
+                if (!isFocused) {
+                    setIsFocused(true);
+                }
+
+                // ✅ Buscar la fila más cercana desde el target hacia arriba
+                let clickedRow = target.closest('[data-row-index]') as HTMLElement;
+                
+                // Si no encontramos la fila directamente, buscar en los padres del contenedor
+                if (!clickedRow && containerRef.current) {
+                    // Buscar todas las filas en el contenedor
+                    const allRows = containerRef.current.querySelectorAll('[data-row-index]');
+                    // Verificar si el target está dentro de alguna fila
+                    for (const row of Array.from(allRows)) {
+                        if (row.contains(target)) {
+                            clickedRow = row as HTMLElement;
+                            break;
+                        }
+                    }
+                }
+
                 if (clickedRow) {
                     const rowIndex = parseInt(clickedRow.getAttribute('data-row-index') || '0');
                     setSelectedIndex(rowIndex);
-                }
 
-                const focusableElement = target.closest('button, input, textarea, select, a') as HTMLElement;
-                if (focusableElement && clickedRow) {
-                    const focusableElements = getFocusableElementsInSelectedRow();
-                    const elementIndex = focusableElements.indexOf(focusableElement);
-                    if (elementIndex !== -1) {
-                        setIsNavigatingWithinRow(true);
-                        setCurrentElementIndex(elementIndex);
+                    // ✅ Solo manejar navegación dentro de fila si es un elemento focuseable
+                    if (isInteractiveElement) {
+                        const focusableElements = getFocusableElementsInSelectedRow();
+                        const elementIndex = focusableElements.indexOf(isInteractiveElement);
+                        if (elementIndex !== -1) {
+                            setIsNavigatingWithinRow(true);
+                            setCurrentElementIndex(elementIndex);
+                        }
+                    } else {
+                        // Si no es un elemento interactivo, resetear navegación dentro de fila
+                        setIsNavigatingWithinRow(false);
+                        setCurrentElementIndex(-1);
                     }
                 }
             } else {
+                // ✅ DESACTIVAR solo si el click es FUERA del contenedor
                 setIsFocused(false);
                 setIsNavigatingWithinRow(false);
                 setCurrentElementIndex(-1);
@@ -316,7 +350,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
 
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [getFocusableElementsInSelectedRow, containerRef, isDragging]);
+    }, [getFocusableElementsInSelectedRow, containerRef, isDragging, isFocused]);
 
     // Funciones de utilidad
     const navigateToItem = useCallback((index: number) => {
