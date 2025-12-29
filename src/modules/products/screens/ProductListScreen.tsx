@@ -337,7 +337,7 @@ const ProductListScreen = () => {
             minSize: 30,
         },
         {
-            accessorKey: 'id',
+            accessorKey: 'codigo_interno',
             header: "Cod.",
             enableSorting: true,
             enableHiding: true,

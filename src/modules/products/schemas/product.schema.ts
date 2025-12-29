@@ -3,6 +3,7 @@ import { z } from "zod"
 
 export const ProductGetSchema = z.object({
     id: z.number(),
+    codigo_interno: z.number(),
     descripcion: z.string(),
     codigo_oem: z.string().nullable(),
     codigo_upc: z.string().nullable(),

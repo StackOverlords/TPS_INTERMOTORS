@@ -8,7 +8,10 @@ const DEFAULT_INC_P_VENTA_ALT = 16; // 15%
 
 type OrderDetailUnion = UIOrderDetailCreate | UIOrderDetailUpdate;
 
-export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate>(isEditMode: boolean = false) => {
+export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate>(
+    isEditMode: boolean = false,
+    exchangeRate: number = 6.96 // Parámetro para tipo de cambio
+) => {
     const [details, setDetails] = useState<T[]>([]);
 
     // Función auxiliar para calcular precio basado en costo e incremento
@@ -51,6 +54,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
                 inc_p_venta_alt: DEFAULT_INC_P_VENTA_ALT,
                 precio_venta_alt,
                 orden: prev.length + 1,
+                tc_compra: exchangeRate, // ✅ Agregar tipo de cambio
                 product: {
                     id: product.id,
                     descripcion: product.descripcion,
@@ -69,7 +73,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
 
             return [...prev, newDetail as T];
         });
-    }, [isEditMode]);
+    }, [isEditMode, exchangeRate]);
 
     // Añadir múltiples productos al detalle
     const addMultipleProducts = useCallback((products: Array<ProductGet & { quantity?: number }>): number[] => {
@@ -104,6 +108,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
                         inc_p_venta_alt: DEFAULT_INC_P_VENTA_ALT,
                         precio_venta_alt,
                         orden: newDetails.length,
+                        tc_compra: exchangeRate, // ✅ Agregar tipo de cambio
                         product: {
                             id: product.id,
                             descripcion: product.descripcion,
@@ -130,7 +135,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
         });
 
         return addedProductIds;
-    }, [isEditMode]);
+    }, [isEditMode, exchangeRate]);
 
     // Eliminar un producto del detalle
     const removeProduct = useCallback((id_producto: number) => {
@@ -300,6 +305,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
             inc_p_venta_alt: Number(detail.inc_p_venta_alt),
             precio_venta_alt: Number(detail.precio_venta_alt),
             orden: Number(detail.orden),
+            tc_compra: Number(detail.tc_compra),
         })) as any;
     }, [details]);
 

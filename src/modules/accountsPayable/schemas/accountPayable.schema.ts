@@ -13,15 +13,15 @@ const ClienteSchema = z.object({
 const ResponsableSchema = z.object({
     id: z.number(),
     nombre: z.string(),
-    apellido_paterno: z.string(),
+    apellido_paterno: z.string().nullable(),
     apellido_materno: z.string().nullable(),
-    dni: z.number(),
+    dni: z.number().nullable(),
     dni_comp: z.string().nullable(),
-    dni_tipo: z.string(),
+    dni_tipo: z.string().nullable(),
     celular: z.string().nullable(),
     telefono: z.string().nullable(),
     direccion: z.string().nullable(),
-    sexo: z.string(),
+    sexo: z.string().nullable(),
 }).nullable();
 
 // Schema para una cuenta por pagar individual

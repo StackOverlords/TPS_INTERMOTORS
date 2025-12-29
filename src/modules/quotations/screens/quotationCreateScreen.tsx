@@ -606,7 +606,6 @@ const QuotationCreateScreen = () => {
                                                     type="date"
                                                     {...register("fecha")}
                                                     className="w-full"
-                                                    autoFocus
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
                                             </div>

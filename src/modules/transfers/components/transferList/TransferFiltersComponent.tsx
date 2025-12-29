@@ -3,12 +3,12 @@ import { Label } from "@/components/atoms/label";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useBranchStore } from "@/states/branchStore";
-import { AlertCircle, Search, X } from "lucide-react";
+import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Search } from "lucide-react";
 import { useState } from "react";
-import { useTransferBranches } from "../../hooks/commons/useTransferBranches";
 import { useTransferResponsibles } from "../../hooks/commons/useTransferResponsibles";
 import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
 import { format } from "date-fns";
+import { Button } from "@/components/atoms/button";
 
 interface TransferFiltersProps {
     filters: ReturnType<typeof useTransfersFilters>["filters"]
@@ -24,17 +24,11 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
     // handleManualSearch,
 }) => {
     const [dateError, setDateError] = useState<string | null>(null);
-    const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
 
     const {
         data: transferResponsiblesData,
         isLoading: isTransferResponsiblesLoading
     } = useTransferResponsibles();
-
-    const {
-        data: branchesData,
-        isLoading: isBranchesLoading
-    } = useTransferBranches(Number(selectedBranchId));
 
     // Función auxiliar para formatear fecha de manera segura
     const formatDateSafe = (date: Date): string => {
@@ -92,7 +86,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
 
     return (
         <section className="space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                 <div className="space-y-2">
                     <Label>Nro. de transferencia</Label>
                     <div className="relative">
@@ -114,30 +108,6 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                         options={transferResponsiblesData?.data || []}
                         optionTag={"nombre"}
                         isLoadingData={isTransferResponsiblesLoading}
-                        enableAllOption={false}
-                        clearOnEmpty={true}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Sucursal Origen</Label>
-                    <ComboboxSelect
-                        value={filters.sucursal_origen}
-                        onChange={(value) => updateFilter("sucursal_origen", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                        options={branchesData?.data?.map(branch => ({ id: branch.id, nombre: branch.nombre, sigla: branch.sigla, nombre_comercial: branch.nombre_comercial, activo: branch.activo })) || []}
-                        optionTag={"nombre"}
-                        isLoadingData={isBranchesLoading}
-                        enableAllOption={false}
-                        clearOnEmpty={true}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Sucursal Destino</Label>
-                    <ComboboxSelect
-                        value={filters.sucursal_destino}
-                        onChange={(value) => updateFilter("sucursal_destino", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                        options={branchesData?.data?.map(branch => ({ id: branch.id, nombre: branch.nombre, sigla: branch.sigla, nombre_comercial: branch.nombre_comercial, activo: branch.activo })) || []}
-                        optionTag={"nombre"}
-                        isLoadingData={isBranchesLoading}
                         enableAllOption={false}
                         clearOnEmpty={true}
                     />
@@ -195,6 +165,33 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                                 return false;
                             }}
                         />
+                    </div>
+                </div>
+
+                {/* Botones de dirección al final */}
+                <div className="space-y-2 col-span-2 md:col-span-1">
+                    <Label className="invisible">Filtros</Label>
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={filters.direccion === 'entrantes' ? 'default' : 'outline'}
+                            onClick={() => updateFilter('direccion', filters.direccion === 'entrantes' ? undefined : 'entrantes')}
+                            className="gap-2 flex-1"
+                        >
+                            <ArrowDownToLine className="h-4 w-4" />
+                            Entrantes
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={filters.direccion === 'salientes' ? 'default' : 'outline'}
+                            onClick={() => updateFilter('direccion', filters.direccion === 'salientes' ? undefined : 'salientes')}
+                            className="gap-2 flex-1"
+                        >
+                            <ArrowUpFromLine className="h-4 w-4" />
+                            Salientes
+                        </Button>
                     </div>
                 </div>
             </div>

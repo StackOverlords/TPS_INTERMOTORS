@@ -1,19 +1,22 @@
 import ResizableBox from '@/components/atoms/resizable-box';
 import ShortcutKey from '@/components/common/ShortcutKey';
-import TooltipButton from '@/components/common/TooltipButton'; 
+import TooltipButton from '@/components/common/TooltipButton';
 import { useOrderSelectorWindow, useProductSelectorWindow } from '@/hooks/useSecondaryWindow';
 import { useGetOrderById } from '@/modules/orders/hooks/useGetOrderById';
 import { useBranchStore } from '@/states/branchStore';
 import { AlertCircle, RotateCcw, Save, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import FormCreatePurchase from '../components/FormCreatePurchase';
 import ProductSearchPanel from '../components/ProductSearchPanel';
 import PurchaseDetailsTable from '../components/PurchaseDetailsTable';
 import { usePurchaseForm } from '../hooks/usePurchaseForm';
+import { showSuccessToast } from '@/hooks/use-toast-enhanced';
 
 type CreationMode = 'manual' | 'order-import';
 
 const CreatePurchase: React.FC = () => {
+  const navigate = useNavigate();
   const branchId = useBranchStore(state => state.selectedBranchId);
   const {
     formData,
@@ -23,10 +26,23 @@ const CreatePurchase: React.FC = () => {
     handleBlur,
     handleSubmit,
     reset,
-  } = usePurchaseForm(Number(branchId), () => {
-    // Clear local state after successful purchase creation
-    setCreationMode('manual');
-    setSelectedOrderId(null);
+  } = usePurchaseForm(Number(branchId), (createdPurchase) => {
+    console.log("Created purchase received:", createdPurchase);
+    // Show success toast
+    showSuccessToast({
+      title: "Compra Creada",
+      description: `Compra #${createdPurchase.id} creada exitosamente`,
+      duration: 2000
+    });
+
+    // Navigate to edit route - los datos se cargarán del servidor
+    navigate(`/dashboard/purchases/${createdPurchase.id}/editar`);
+
+    // Clear local state after navigation
+    setTimeout(() => {
+      setCreationMode('manual');
+      setSelectedOrderId(null);
+    }, 2500);
   });
 
   // Estados para controlar el modo de creación
