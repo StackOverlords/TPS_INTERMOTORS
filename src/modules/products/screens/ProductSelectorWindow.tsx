@@ -121,7 +121,7 @@ const ProductSelectorWindow: React.FC = () => {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = sessionStorage.getItem(STORAGE_KEY);
         if (saved && !hasLoadedFilters.current) {
           const parsed: ProductFiltersTypes = JSON.parse(saved);
 
@@ -163,7 +163,7 @@ const ProductSelectorWindow: React.FC = () => {
   // 🔥 Guardar filtros cuando cambien
   const saveFilters = useCallback(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
     } catch (e) {
       console.error('Error saving filters:', e);
     }
@@ -757,7 +757,7 @@ const ProductSelectorWindow: React.FC = () => {
 
   const handleResetFilters = () => {
     resetFilters()
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
   }
 
   const toggleSearchMode = () => {
