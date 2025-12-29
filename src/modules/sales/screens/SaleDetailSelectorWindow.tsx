@@ -80,7 +80,7 @@ const SaleDetailSelectorWindow = () => {
     useEffect(() => {
         const loadFilters = async () => {
             try {
-                const saved = localStorage.getItem(STORAGE_KEY);
+                const saved = sessionStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed: Partial<SalesFilters> = JSON.parse(saved);
 
@@ -115,7 +115,7 @@ const SaleDetailSelectorWindow = () => {
     // 🔥 Guardar filtros cuando cambien
     const saveFilters = useCallback((newFilters: Partial<SalesFilters>) => {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newFilters));
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newFilters));
             setFilters(newFilters);
         } catch (e) {
             console.error('Error saving filters:', e);
@@ -468,7 +468,7 @@ const SaleDetailSelectorWindow = () => {
                         savedFilters={filters}
                         onSavedFiltersChange={saveFilters}
                         onResetSavedFilters={() => {
-                            localStorage.removeItem(STORAGE_KEY);
+                            sessionStorage.removeItem(STORAGE_KEY);
                             setFilters(undefined);
                         }}
                     />
