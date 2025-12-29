@@ -749,7 +749,7 @@ const CreateSaleScreen = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="forma">Forma de venta *</Label>
+                                                <Label htmlFor="forma">Forma de pago *</Label>
                                                 <Controller
                                                     name="forma_venta"
                                                     control={control}
