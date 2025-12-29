@@ -5,6 +5,13 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/atoms/context-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/atoms/dropdown-menu';
 import { ScrollArea, ScrollBar } from '@/components/atoms/scroll-area';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import { cn } from '@/lib/utils';
@@ -30,9 +37,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import * as Tabs from '@radix-ui/react-tabs';
-import { Plus, X } from 'lucide-react';
-import React, { useCallback } from 'react';
+import { X, ChevronDown, Check } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useCommand } from '@/keybindings';
 
 interface TabBarProps {
   className?: string;
@@ -130,12 +138,12 @@ const TabItem = React.memo(
               )}
             </Button>
           </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem
+          <ContextMenuContent className='border-none'>
+            {/* <ContextMenuItem
               onClick={() => onCloseTab({} as React.MouseEvent, tab.id)}
             >
               Cerrar
-            </ContextMenuItem>
+            </ContextMenuItem> */}
             <ContextMenuItem onClick={() => onCloseOthers(tab.id)}>
               Cerrar otras pestañas
             </ContextMenuItem>
@@ -157,6 +165,9 @@ const TabBar: React.FC<TabBarProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // Estado para controlar el dropdown
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   // ✅ Optimizado: Selectores específicos con comparación shallow
   const tabs = useTabStore(state => state.tabs);
   const activeTabId = useTabStore(state => state.activeTabId);
@@ -164,6 +175,14 @@ const TabBar: React.FC<TabBarProps> = ({
   const reorderTabs = useTabStore(state => state.reorderTabs);
   const closeOtherTabs = useTabStore(state => state.closeOtherTabs);
   const closeAllTabs = useTabStore(state => state.closeAllTabs);
+
+  // Keybinding para Ctrl+T - abrir/cerrar menú de tabs
+  useCommand('tabs.toggleMenu', () => {
+    setIsDropdownOpen(prev => !prev);
+  }, {
+    enableOnFormTags: true,
+    preventDefault: true,
+  });
 
   // Configurar sensores para drag & drop
   const sensors = useSensors(
@@ -214,10 +233,6 @@ const TabBar: React.FC<TabBarProps> = ({
     [externalOnCloseTab]
   );
 
-  const handleNewTab = useCallback(() => {
-    navigate('/dashboard');
-  }, [navigate]);
-
   const handleCloseOthers = useCallback(
     (tabId: string) => {
       closeOtherTabs(tabId);
@@ -233,7 +248,7 @@ const TabBar: React.FC<TabBarProps> = ({
   if (tabs.length === 0) {
     return null;
   }
-
+  
   return (
     <DndContext
       sensors={sensors}
@@ -273,16 +288,42 @@ const TabBar: React.FC<TabBarProps> = ({
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
         <div className="flex-shrink-0 border-l border-border px-2">
-          <TooltipWrapper tooltip="Nueva pestaña (Ctrl+T)">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNewTab}
-              className="size-7 p-0"
-            >
-              <Plus className="size-3" />
-            </Button>
-          </TooltipWrapper>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0 hover:bg-gray-100"
+              >
+                <ChevronDown className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
+                Pestañas abiertas ({tabs.length})
+              </div>
+              <DropdownMenuSeparator />
+              {tabs.map((tab) => (
+                <DropdownMenuItem
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab)}
+                  className={cn(
+                    "flex items-center gap-2 cursor-pointer",
+                    "hover:bg-blue-50 focus:bg-blue-100",
+                    tab.id === activeTabId && "bg-primary/10 text-primary hover:bg-primary/15 focus:bg-primary/20"
+                  )}
+                >
+                  {tab.icon && <tab.icon className="size-3 flex-shrink-0" />}
+                  <span className="flex-1 truncate text-xs">
+                    {tab.title || tab.path.split('/').pop() || 'Sin título'}
+                  </span>
+                  {tab.id === activeTabId && (
+                    <Check className="size-3 text-primary flex-shrink-0" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </Tabs.Root>
     </DndContext>

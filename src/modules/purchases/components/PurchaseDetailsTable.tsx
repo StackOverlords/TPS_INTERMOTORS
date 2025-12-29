@@ -13,7 +13,7 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table';
 import { ArrowRightLeft, Edit3, Maximize2, Trash2 } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 
 interface PurchaseDetail {
@@ -138,6 +138,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevDetallesLengthRef = useRef(detalles.length);
+  const pendingDetallesRef = useRef<PurchaseDetail[] | null>(null);
 
   // Estados para conversión de moneda
   const [isUSD, setIsUSD] = useState(false);
@@ -297,53 +299,107 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     'precio_venta_alt',
   ];
 
-  const startEdit = (rowIndex: number, fieldName: EditableNumericKey) => {
-    // Si ya estamos editando, guardar primero
-    if (editing && (editing.row !== rowIndex || editing.col !== fieldName)) {
-      saveEdit();
-    }
-
-    const detail = normalizedDetalles[rowIndex];
-    if (!detail) return;
-
-    const currentValue = detail[fieldName] as number;
-
-    let formattedValue: string;
-    if (fieldName === 'cantidad') {
-      formattedValue = Math.round(currentValue).toString();
-    } else if (fieldName.includes('inc_p_venta')) {
-      formattedValue = roundToTwo(currentValue).toFixed(1);
-    } else {
-      formattedValue = roundToTwo(currentValue).toFixed(2);
-    }
-
-    setEditing({ row: rowIndex, col: fieldName });
-    setTempValue(formattedValue);
-    setSelectedRow(null);
-  };
-
   const saveEdit = () => {
     if (!editing) return;
 
     const numValue = parseFloat(tempValue);
     if (isNaN(numValue) || numValue < 0) {
       setEditing(null);
+      setTempValue('');
       return;
     }
 
     const fieldName = editing.col as EditableNumericKey;
-    const newDetalles = [...normalizedDetalles];
-    const detail = { ...newDetalles[editing.row] };
+    const editingRow = editing.row;
 
-    const updatedDetail = calculatePrecise(detail, fieldName, numValue);
+    // Verificar que el detalle existe
+    if (!detalles[editingRow]) {
+      setEditing(null);
+      setTempValue('');
+      return;
+    }
 
-    newDetalles[editing.row] = updatedDetail;
+    // Normalizar el detalle actual
+    const currentDetail = normalizeDetail(detalles[editingRow]);
+    currentDetail.subtotal = roundToTwo(currentDetail.cantidad * currentDetail.costo);
+
+    // Calcular los valores actualizados
+    const updatedDetail = calculatePrecise(currentDetail, fieldName, numValue);
+
+    // Crear nuevo array con el detalle actualizado
+    const newDetalles = [...detalles];
+    newDetalles[editingRow] = updatedDetail;
+
+    // Guardar temporalmente los detalles actualizados para navegación inmediata
+    pendingDetallesRef.current = newDetalles;
+
+    // Actualizar usando el valor directo en lugar de una función callback
     setDetalles(newDetalles);
-    setSelectedRow(editing.row);
+
     setEditing(null);
+    setTempValue('');
+  };
+
+  const startEdit = (rowIndex: number, fieldName: EditableNumericKey) => {
+    // Función helper para obtener y formatear el valor desde detalles directamente
+    const getFormattedValue = () => {
+      // Usar pendingDetalles si está disponible (recién actualizado), sino usar detalles
+      const currentDetalles = pendingDetallesRef.current || detalles;
+      const rawDetail = currentDetalles[rowIndex];
+      if (!rawDetail) return null;
+
+      // Normalizar para obtener el valor correcto
+      const detail = normalizeDetail(rawDetail);
+      const currentValue = detail[fieldName] as number;
+
+      let formattedValue: string;
+      if (fieldName === 'cantidad') {
+        formattedValue = Math.round(currentValue).toString();
+      } else if (fieldName.includes('inc_p_venta')) {
+        formattedValue = roundToTwo(currentValue).toFixed(1);
+      } else {
+        formattedValue = roundToTwo(currentValue).toFixed(2);
+      }
+
+      return formattedValue;
+    };
+
+    // Si ya estamos editando otra celda, guardar primero
+    if (editing && (editing.row !== rowIndex || editing.col !== fieldName)) {
+      saveEdit();
+      // Esperar un poco más para que React actualice el estado
+      setTimeout(() => {
+        const formattedValue = getFormattedValue();
+        // Limpiar el ref después de usarlo
+        pendingDetallesRef.current = null;
+
+        if (!formattedValue) return;
+
+        setEditing({ row: rowIndex, col: fieldName });
+        setTempValue(formattedValue);
+        setSelectedRow(null);
+      }, 50);
+      return;
+    }
+
+    // No estamos editando otra celda, podemos editar directamente
+    const formattedValue = getFormattedValue();
+    // Limpiar el ref después de usarlo
+    pendingDetallesRef.current = null;
+
+    if (!formattedValue) return;
+
+    setEditing({ row: rowIndex, col: fieldName });
+    setTempValue(formattedValue);
+    setSelectedRow(null);
   };
 
   const cancelEdit = () => {
+    // Cancelar cualquier guardado pendiente
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
     setEditing(null);
     setTempValue('');
   };
@@ -353,30 +409,27 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
     switch (e.key) {
       case 'Enter':
-        e.preventDefault();
-        saveEdit();
-        // Mover a la siguiente fila en la misma columna
-        if (editing && editing.row < normalizedDetalles.length - 1) {
-          setTimeout(() => {
-            startEdit(editing.row + 1, editing.col as EditableNumericKey);
-          }, 0);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        cancelEdit();
-        break;
       case 'Tab':
         e.preventDefault();
+
+        // Cancelar cualquier guardado pendiente del blur
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+        }
+
+        // Guardar el estado actual de editing antes de que saveEdit() lo limpie
+        const currentEditing = editing;
+
         saveEdit();
 
-        if (!editing) return;
+        if (!currentEditing) return;
 
         // Navegar a la siguiente celda
-        const currentColIndex = editableColumns.indexOf(editing.col as EditableNumericKey);
-        const isShiftTab = e.shiftKey;
+        const currentColIndex = editableColumns.indexOf(currentEditing.col as EditableNumericKey);
+        const isShiftTab = e.shiftKey && e.key === 'Tab';
 
-        let nextRow = editing.row;
+        let nextRow = currentEditing.row;
         let nextColIndex = currentColIndex;
 
         if (isShiftTab) {
@@ -396,11 +449,17 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         }
 
         // Verificar límites de filas
-        if (nextRow >= 0 && nextRow < normalizedDetalles.length) {
+        if (nextRow >= 0 && nextRow < detalles.length) {
+          // Usar un delay para que React procese la actualización del estado
+          // antes de navegar a la siguiente celda
           setTimeout(() => {
             startEdit(nextRow, editableColumns[nextColIndex]);
-          }, 0);
+          }, 100);
         }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        cancelEdit();
         break;
     }
   };
@@ -442,8 +501,38 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
+      // Seleccionar todo el texto para facilitar el reemplazo
+      inputRef.current.select();
     }
   }, [editing]);
+
+  // Auto-focus en cantidad cuando se agrega un nuevo producto
+  useEffect(() => {
+    const currentLength = detalles.length;
+    const prevLength = prevDetallesLengthRef.current;
+
+    // Si se agregó un producto nuevo (aumentó la longitud)
+    if (currentLength > prevLength && currentLength > 0) {
+      // Cancelar cualquier edición pendiente
+      if (editing) {
+        cancelEdit();
+      }
+
+      // Limpiar pendingDetallesRef para evitar conflictos
+      pendingDetallesRef.current = null;
+
+      // Esperar más tiempo para asegurar que el DOM esté completamente actualizado
+      // y que React haya procesado el nuevo estado
+      setTimeout(() => {
+        // Enfocar en la celda de cantidad del último producto agregado
+        startEdit(currentLength - 1, 'cantidad');
+      }, 150);
+    }
+
+    // Actualizar la referencia
+    prevDetallesLengthRef.current = currentLength;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detalles.length]);
 
   // Limpiar timeout al desmontar
   useEffect(() => {
@@ -507,7 +596,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onBlur={handleCellBlur}
-          className="w-full h-8 text-sm text-center"
+          className="w-full h-8 text-sm text-center border-2 border-blue-500"
           autoFocus
         />
       );
@@ -531,16 +620,25 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         id: 'descripcion',
         header: 'Producto',
         size: 300,
-        minSize: 250,
+        minSize: 30,
         enableHiding: false,
-        cell: ({ getValue, row }) => (
+        cell: ({ getValue }) => (
           <div className="flex flex-col space-y-1">
             <h3 className="font-medium text-gray-700 truncate text-sm">
               {getValue<string>()}
             </h3>
-            <span className="text-xs text-gray-500 font-mono">
-              OEM: {row.original.producto.codigo_oem}
-            </span>
+          </div>
+        ),
+      },
+      {
+        accessorKey:"codigo_oem",
+        id: 'codigo_oem',
+        header: 'Cód. OEM',
+        size: 120,
+        minSize: 100,
+        cell: ({ row }) => (
+          <div className="text-sm text-gray-700 font-mono text-center">
+            {row.original.producto.codigo_oem}
           </div>
         ),
       },
@@ -735,7 +833,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
                 min="0"
                 value={exchangeRate}
                 onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
-                className="w-20 h-8 text-sm"
+                onFocus={(e) => e.target.select()}
+                className="w-20 h-8 text-sm text-center"
                 placeholder="6.96"
               />
             </div>
@@ -815,23 +914,23 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       {normalizedDetalles.length > 0 && (
         <div className="bg-gray-50 border-t border-gray-200 p-4 flex-shrink-0">
           <div className="grid grid-cols-4 gap-4 text-sm">
-            <div className="flex justify-between">
+            <div className="flex gap-2 justify-end">
               <span className="font-semibold">Total Costo:</span>
               <span className="font-medium">${totalCosto.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex gap-2 justify-end">
               <span className="font-semibold">Total P. Venta:</span>
               <span className="font-medium text-green-600">
                 ${totalGeneral.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex gap-2 justify-end">
               <span className="font-semibold">Total P. Alt:</span>
               <span className="font-medium text-blue-600">
                 ${totalMenor.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex gap-2 justify-end">
               <span className="font-semibold">Subtotal:</span>
               <span className="font-medium">${totalCosto.toFixed(2)}</span>
             </div>

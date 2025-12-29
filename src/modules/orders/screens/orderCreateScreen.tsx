@@ -506,7 +506,6 @@ const OrderCreateScreen = () => {
                                                     type="date"
                                                     {...register("fecha")}
                                                     className="w-full"
-                                                    autoFocus
                                                     disabled={isReadOnly}
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
