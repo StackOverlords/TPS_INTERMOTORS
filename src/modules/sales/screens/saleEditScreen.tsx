@@ -1,5 +1,5 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent"
-import { useNavigate, useParams } from "react-router"
+import { useLocation, useNavigate, useParams } from "react-router"
 import { useSaleGetById } from "../hooks/useSaleGetById"
 import TooltipButton from "@/components/common/TooltipButton"
 import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react"
@@ -46,12 +46,20 @@ const SaleEditScreen = () => {
         selector_mode: 'window'
     }
 
+    const location = useLocation();
+    const { tempFormData, tempCreatedSale, fromCreate } = (location.state as {
+        tempFormData?: SaleUpdateForm;
+        tempCreatedSale?: SaleGetById;
+        fromCreate?: boolean
+    }) || {};
+
     const [isReadOnly] = useState<boolean>(false)
     const navigate = useNavigate()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const { saleId } = useParams()
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [originalDetails, setOriginalDetails] = useState<SaleUpdateDetailUI[]>([]);
+    const [isUsingTempData, setIsUsingTempData] = useState(false);
 
     const tableRef = useRef<SaleDetailsEditingTableRef>(null);
 
@@ -156,7 +164,7 @@ const SaleEditScreen = () => {
             vehiculo: sale.vehiculo ?? "",
             nro_motor: sale.nmotor ?? "",
             cliente_nombre: sale.cliente?.cliente ?? "",
-            cliente_nit: sale.cliente?.nit?.toString() ?? "",
+            cliente_nit: sale.cliente_nit ?? "",
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: sale.responsable_venta?.id ?? 0,
             detalles: detallesTransformados,
@@ -165,14 +173,26 @@ const SaleEditScreen = () => {
         };
         reset(resetData);
         setHasInitialized(true);
+        setIsUsingTempData(false);
     }
 
     useEffect(() => {
-        if (saleData && saleTypesData && saleModalitiesData) {
-            loadFormData(saleData)
+        // Si viene de crear venta, cargar datos temporales primero
+        if (fromCreate && tempFormData && !hasInitialized) {
+            reset(tempFormData);
+            setOriginalDetails(tempFormData.detalles);
+            setHasInitialized(true);
+            setIsUsingTempData(true);
+
+            // Limpiar el estado de navegación para evitar recargas
+            window.history.replaceState({}, document.title);
         }
-        return
-    }, [saleData, saleTypesData, saleModalitiesData]);
+
+        // Cuando lleguen los datos reales del backend, reemplazar
+        if (saleData && saleTypesData && saleModalitiesData) {
+            loadFormData(saleData);
+        }
+    }, [saleData, saleTypesData, saleModalitiesData, fromCreate, tempFormData, hasInitialized]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -435,11 +455,11 @@ const SaleEditScreen = () => {
         handleSubmit(onSubmit, onError)();
     })
 
-    if (isLoadingSale || isLoadingSaleTypes || isLoadingSaleModalities || isLoadingSaleResponsibles) {
+    if ((isLoadingSale || isLoadingSaleTypes || isLoadingSaleModalities || isLoadingSaleResponsibles) && !isUsingTempData) {
         return <SaleEditSkeleton />;
     }
 
-    if (isErrorSale || !saleData) {
+    if ((isErrorSale || !saleData) && !isUsingTempData) {
         return (
             <div className="h-full flex items-center justify-center p-2 lg:p-8">
                 <ErrorDataComponent
@@ -478,12 +498,18 @@ const SaleEditScreen = () => {
                                 </TooltipButton>
                                 <div>
                                     <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
-                                        Editar venta #{saleData?.nro}
+                                        Editar venta #{isUsingTempData ? tempCreatedSale?.nro : saleData?.nro}
                                     </h1>
                                     {saleData && (
                                         <p className="text-sm text-gray-600">
                                             {saleData.cliente ? `${saleData.cliente?.cliente} - ` : ''}
                                             {saleData.cantidad_detalles} {saleData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                        </p>
+                                    )}
+                                    {isUsingTempData && (
+                                        <p className="text-sm text-gray-600">
+                                            {tempCreatedSale?.cliente ? `${tempCreatedSale.cliente?.cliente} - ` : ''}
+                                            {tempCreatedSale?.cantidad_detalles} {tempCreatedSale?.cantidad_detalles === 1 ? 'producto' : 'productos'}
                                         </p>
                                     )}
                                 </div>

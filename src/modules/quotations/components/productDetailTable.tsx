@@ -13,8 +13,8 @@ import type { CartItem } from '@/modules/shoppingCart/types/cart.types';
 import { Input } from '@/components/atoms/input';
 
 interface ProductDetailTableProps {
-    isReadOnly: boolean
-    details: CartItem[] | null;
+    isReadOnly?: boolean
+    details?: CartItem[] | null;
 }
 
 export interface ProductDetailTableRef {

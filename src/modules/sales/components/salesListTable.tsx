@@ -155,7 +155,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     >
                         <div className="space-y-1 flex flex-col">
                             <span className="font-medium text-foreground">{getValue<string>()}</span>
-                            <span className="text-xs text-muted-foreground">ID: {row.original.id}</span>
+                            {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
                         </div>
                     </TooltipWrapper>
                 </div>

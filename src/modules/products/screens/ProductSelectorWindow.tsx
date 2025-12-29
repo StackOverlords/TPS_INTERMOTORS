@@ -30,12 +30,15 @@ import {
   X,
   Zap,
   Trash2,
+  PackageSearch,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProductSelection } from '../hooks/useProductSelection';
 import type { SelectedItem } from '@/types/windowSelectedItems';
 import { showErrorToast, showSuccessToast, showWarningToast } from '@/hooks/use-toast-enhanced';
 import { ColumnVisibilityDropdown } from '@/components/common/ColumnVisibilityDropdown';
+import type { ProductFilters as ProductFiltersTypes } from '../types/productFilters';
+import { useCommands } from '@/keybindings';
 
 type ProductSelectorContext =
   | 'purchase'
@@ -54,6 +57,7 @@ interface WindowConfig {
   selectedItems: SelectedItem[];
   initialFilters?: Record<string, any>;
 }
+
 
 const ProductSelectorWindow: React.FC = () => {
   const currentWindow = getCurrentWebviewWindow();
@@ -83,10 +87,12 @@ const ProductSelectorWindow: React.FC = () => {
     };
   }, []);
 
+  const STORAGE_KEY = config.windowId + '-product-filters';
   const [isMultiSelect, setIsMultiSelect] = useState<boolean>(false);
   const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
   const [showFilters, setShowFilters] = useState<boolean>(true);
+  const hasLoadedFilters = useRef(false);
 
   // Map de items seleccionados para búsqueda rápida
   const selectedItemsMap = useMemo(() => {
@@ -105,9 +111,63 @@ const ProductSelectorWindow: React.FC = () => {
     setPage,
     applyFilters,
     setPageSize,
+    setFilters,
+    resetFilters,
   } = useProductFilters(Number(selectedBranchId) || 1);
 
   const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
+
+  // 🔥 Cargar filtros persistidos al montar
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && !hasLoadedFilters.current) {
+          const parsed: ProductFiltersTypes = JSON.parse(saved);
+
+          // Aplicar filtros guardados
+          setFilters({
+            pagina: parsed.pagina ?? 1,
+            pagina_registros: parsed.pagina_registros ?? 10,
+            sucursal: parsed.sucursal ?? 0,
+            descripcion: parsed.descripcion || "",
+            codigo_oem: parsed.codigo_oem || "",
+            codigo_upc: parsed.codigo_upc || "",
+            categoria: parsed.categoria || 0,
+            marca: parsed.marca || '',
+            medida: parsed.medida || "",
+            nro_motor: parsed.nro_motor || "",
+            modelo: parsed.modelo || "",
+            producto: parsed.producto || 0,
+            subcategoria: parsed.subcategoria || 0,
+          });
+          hasLoadedFilters.current = true;
+        }
+      } catch (e) {
+        console.error('Error loading filters:', e);
+      }
+    };
+    loadFilters();
+  }, []);
+
+  useEffect(() => {
+    if (hasLoadedFilters.current && searchMode === 'manual') {
+      const timer = setTimeout(() => {
+        applyFilters();
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasLoadedFilters.current]);
+
+  // 🔥 Guardar filtros cuando cambien
+  const saveFilters = useCallback(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+    } catch (e) {
+      console.error('Error saving filters:', e);
+    }
+  }, [filters]);
 
   const {
     data: productData,
@@ -692,7 +752,13 @@ const ProductSelectorWindow: React.FC = () => {
     if (searchMode === 'manual') {
       applyFilters();
     }
+    saveFilters();
   };
+
+  const handleResetFilters = () => {
+    resetFilters()
+    localStorage.removeItem(STORAGE_KEY);
+  }
 
   const toggleSearchMode = () => {
     setSearchMode(prev => (prev === 'realtime' ? 'manual' : 'realtime'));
@@ -727,11 +793,16 @@ const ProductSelectorWindow: React.FC = () => {
     return title;
   }, [config.context]);
 
+  useCommands({
+    'searchFilters.focusSearch': handleManualSearch,
+    'forms.reset': handleResetFilters
+  })
+
   return (
     <main className="h-full p-2 flex flex-col bg-gray-50 gap-2">
       {/* Header */}
       <header className="bg-background rounded-lg p-2 border border-border flex-shrink-0 flex flex-col divide-y divide-border gap-1">
-        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap pb-2">
           <div className="flex items-center gap-2 md:gap-4 grow">
             <Package className="h-5 w-5 text-primary" />
             <div className="flex items-center gap-2 flex-wrap">
@@ -784,8 +855,13 @@ const ProductSelectorWindow: React.FC = () => {
               />
             </TooltipButton>
 
-            <Button onClick={toggleShowFilters}>
+            <Button variant={'outline'} onClick={toggleShowFilters}>
               {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </Button>
+
+            <Button onClick={handleResetFilters}>
+              <PackageSearch className="h-4 w-4" />
+              Nueva búsqueda
             </Button>
 
             {isMultiSelect && getSelectedCount() > 0 && (
