@@ -19,13 +19,20 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
     sucursal: 1, // ID por defecto
     detalles: [],
     id_responsable: null, // Cambiado a null para consistencia
+    id_pedido: null, // ID del pedido asociado (opcional)
   });
 
   // Poblar formulario con datos existentes
   useEffect(() => {
     if (initialData) {
+      console.log("📅 Initial data received:", initialData);
+      console.log("📅 Fecha from API:", initialData.fecha);
+
+      const formattedFecha = initialData.fecha ? initialData.fecha.split('T')[0] : "";
+      console.log("📅 Formatted fecha:", formattedFecha);
+
       setFormData({
-        fecha: initialData.fecha ? initialData.fecha.split('T')[0] : "",
+        fecha: formattedFecha,
         // Corregir mapeo: usar 'comprobante' no 'nro'
         nro_comprobante: (initialData as any).comprobante || "",
         // Usar 'comprobante2' del API
@@ -40,6 +47,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
         sucursal: 1, // Valor por defecto si no existe
         detalles: initialData.detalles || [],
         id_responsable: initialData.responsable?.id || null, // Cambiar a null si no existe
+        id_pedido: (initialData as any).id_pedido || null, // ID del pedido asociado (opcional)
       });
     }
   }, [initialData]);
@@ -54,7 +62,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
       }
     }
     if (field === "fecha" && !value) return "La fecha es requerida.";
-    if (field === "nro_comprobante" && !value) return "El número de comprobante es requerido.";
+    // nro_comprobante NO es requerido (igual que en crear)
     return "";
   }, []);
 
@@ -118,7 +126,8 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               inc_p_venta_alt: Number(detalle.inc_precio_venta_alt || detalle.inc_p_venta_alt || 0),
               precio_venta_alt: Number(detalle.precio_venta_alt),
               moneda: detalle.moneda || 'BOB ',
-              fecha_mod_precio: detalle.fecha_mod_precio || new Date().toISOString()
+              fecha_mod_precio: detalle.fecha_mod_precio || new Date().toISOString(),
+              tc_compra: Number(detalle.tc_compra || 6.96) // ✅ Agregar tipo de cambio
             };
 
             // Validar que los campos numéricos no sean NaN
@@ -128,6 +137,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             if (isNaN(transformedDetalle.costo)) transformedDetalle.costo = 0;
             if (isNaN(transformedDetalle.precio_venta)) transformedDetalle.precio_venta = 0;
             if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
+            if (isNaN(transformedDetalle.tc_compra)) transformedDetalle.tc_compra = 6.96;
 
             console.log(`🔍 Detalle existente ${index} (ID: ${transformedDetalle.id_detalle_compra}):`, transformedDetalle);
             return transformedDetalle;
@@ -151,6 +161,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               inc_p_venta_alt: incPVentaAlt,
               precio_venta_alt: Number(precioVentaAlt),
               moneda: detalle.moneda || 'BOB ',
+              tc_compra: Number(detalle.tc_compra || 6.96) // ✅ Agregar tipo de cambio
             };
             // Usar null para productos nuevos
 
@@ -161,6 +172,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             if (isNaN(transformedDetalle.costo)) transformedDetalle.costo = 0;
             if (isNaN(transformedDetalle.precio_venta)) transformedDetalle.precio_venta = 0;
             if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
+            if (isNaN(transformedDetalle.tc_compra)) transformedDetalle.tc_compra = 6.96;
 
             console.log(`🆕 Detalle nuevo ${index} (ID: null, Producto ID: ${transformedDetalle.id_producto}):`, transformedDetalle);
             return transformedDetalle;

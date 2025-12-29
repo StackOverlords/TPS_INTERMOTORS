@@ -59,8 +59,8 @@ const OrderCreateScreen = () => {
         return saved ? parseFloat(saved) : 6.96;
     });
 
-    // Hook de detalles de orden
-    const orderDetailsHook = useOrderDetails();
+    // Hook de detalles de orden (pasar exchangeRate)
+    const orderDetailsHook = useOrderDetails(false, exchangeRate);
 
     const {
         data: orderTypesData,

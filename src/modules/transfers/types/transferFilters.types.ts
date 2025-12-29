@@ -10,4 +10,5 @@ export interface TransfersFilters {
     sucursal_origen?: number;
     sucursal_destino?: number;
     codigo_oem_producto?: string;
+    direccion?: 'entrantes' | 'salientes'; // Nuevo filtro simplificado
 }

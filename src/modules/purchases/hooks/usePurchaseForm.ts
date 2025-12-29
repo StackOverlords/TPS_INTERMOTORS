@@ -29,7 +29,7 @@ export interface FormData {
 interface FormErrors { [key: string]: string; }
 interface FormTouched { [key: string]: boolean; }
 
-export function usePurchaseForm(initialBranch: number, onSuccessCallback?: () => void) {
+export function usePurchaseForm(initialBranch: number, onSuccessCallback?: (createdPurchase: any) => void) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -104,10 +104,16 @@ export function usePurchaseForm(initialBranch: number, onSuccessCallback?: () =>
     setIsLoading(true);
     console.log(formData)
     try {
-      await apiConstructor({ url: "/purchases", method: "POST", data: formData });
+      const createdPurchase = await apiConstructor({ url: "/purchases", method: "POST", data: formData });
+      console.log("Purchase created:", createdPurchase);
       reset();
-      if (onSuccessCallback) onSuccessCallback();
-      toast({ title: "Compra creada exitosamente", description: "La compra se ha guardado correctamente." });
+      if (onSuccessCallback) {
+        onSuccessCallback(createdPurchase);
+      } else {
+        // Solo mostrar toast si no hay callback (para compatibilidad con usos anteriores)
+        toast({ title: "Compra creada exitosamente", description: "La compra se ha guardado correctamente." });
+      }
+      return createdPurchase;
     } finally {
       setIsLoading(false);
     }
