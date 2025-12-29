@@ -13,7 +13,6 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useBranchStore } from "@/states/branchStore";
 import { useHotkeys } from "react-hotkeys-hook";
 import TooltipButton from "@/components/common/TooltipButton";
-import { format } from "date-fns";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { Textarea } from "@/components/atoms/textarea";
@@ -34,6 +33,7 @@ import SelectSalesReturnModal from "../components/SelectSalesReturnModal";
 import { useSaleDetailSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { cn } from "@/lib/utils";
+import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 
 const ReturnCreateScreen = () => {
     const configuraciones = {
@@ -41,7 +41,6 @@ const ReturnCreateScreen = () => {
         formulario: 'top',
         selector_mode: 'window',
     }
-    const [isReadOnly, setIsReadOnly] = useState<boolean>(false)
 
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser();
@@ -71,7 +70,7 @@ const ReturnCreateScreen = () => {
     const methods = useForm<ReturnCreate>({
         resolver: zodResolver(ReturnCreateSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             motivo_devolucion: "",
             comentarios: "",
@@ -115,10 +114,9 @@ const ReturnCreateScreen = () => {
         return (
             !hasQuantityErrors &&
             returnDetailsHook.details.length > 0 &&
-            !isReadOnly &&
             !isSaving
         );
-    }, [hasQuantityErrors, returnDetailsHook.details.length, isReadOnly, isSaving]);
+    }, [hasQuantityErrors, returnDetailsHook.details.length, isSaving]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -159,19 +157,21 @@ const ReturnCreateScreen = () => {
         return isValid;
     };
 
-    const handleNewReturn = () => {
-        returnDetailsHook.clearDetails();
-        setIsReadOnly(false)
+    const handleNewReturn = (canClearDetails = true) => {
         const currentValues = getValues();
         reset({
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             motivo_devolucion: currentValues.motivo_devolucion,
             comentarios: "",
             sucursal: currentValues.sucursal,
             responsable: currentValues.responsable,
-            detalles: [],
+            detalles: canClearDetails ? [] : currentValues.detalles,
         });
+
+        if (canClearDetails) {
+            returnDetailsHook.clearDetails();
+        }
     };
 
     const onSubmit = (data: ReturnCreate) => {
@@ -179,14 +179,36 @@ const ReturnCreateScreen = () => {
             return;
         }
 
-        createReturn(data, {
-            onSuccess: () => {
-                setIsReadOnly(true)
+        const dataToSend = {
+            ...data,
+            fecha: formatDateForSubmission(data.fecha),
+        };
+        createReturn(dataToSend, {
+            onSuccess: (createdReturn) => {
                 showSuccessToast({
                     title: "Devolución Exitosa",
                     description: `Devolución realizada con éxito`,
                     duration: 5000
                 });
+
+                // Capturar el ID del tab actual
+                // const saleTabId = currentTab?.id;
+
+                // Navegar a edición con estado temporal
+                navigate(`/dashboard/returns/${createdReturn.id}/update`, {
+                    state: {
+                        tempCreatedReturn: createdReturn,
+                        fromCreate: true,
+                    }
+                });
+
+                // // Cerrar el tab de creación después de navegar
+                setTimeout(() => {
+                    handleNewReturn()
+                    // if (saleTabId) {
+                    //     closeCurrentTab(saleTabId);
+                    // }
+                }, 2500);
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear la devolución" });
@@ -365,7 +387,7 @@ const ReturnCreateScreen = () => {
                                                     {...register("fecha")}
                                                     className="w-full"
                                                     autoFocus
-                                                    disabled={isReadOnly || isSaving}
+                                                    disabled={isSaving}
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
                                             </div>
@@ -382,7 +404,7 @@ const ReturnCreateScreen = () => {
                                                             }}
                                                             options={returnResponsiblesData?.data || []}
                                                             optionTag={"nombre"}
-                                                            disabled={isReadOnly || isSaving}
+                                                            disabled={isSaving}
                                                         />
                                                     )}
                                                 />
@@ -396,7 +418,7 @@ const ReturnCreateScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly || isSaving}
+                                                            disabled={isSaving}
                                                             onValueChange={field.onChange} value={field.value || returnTypesData?.[0]?.id || ""}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Selecciona un motivo" />
@@ -421,7 +443,7 @@ const ReturnCreateScreen = () => {
                                                     id="nroComprobante"
                                                     {...register("nro_comprobante")}
                                                     placeholder="Número de comprobante"
-                                                    disabled={isReadOnly || isSaving}
+                                                    disabled={isSaving}
                                                 />
                                             </div>
 
@@ -435,7 +457,7 @@ const ReturnCreateScreen = () => {
                                                     {...register("comentarios")}
                                                     placeholder="Comentarios adicionales sobre la devolución"
                                                     rows={configuraciones.formulario === "top" ? 1 : 2}
-                                                    disabled={isReadOnly || isSaving}
+                                                    disabled={isSaving}
                                                 />
                                             </div>
                                         </div>
@@ -489,7 +511,7 @@ const ReturnCreateScreen = () => {
                                                                 <Button
                                                                     type="button"
                                                                     onClick={openSaleDetailSelector}
-                                                                    disabled={isSaleDetailSelectorOpen || isSaving || isReadOnly}
+                                                                    disabled={isSaleDetailSelectorOpen || isSaving}
                                                                 >
                                                                     <Plus className="h-4 w-4" />
                                                                     <span className="hidden sm:block">Agregar Productos</span>
@@ -517,7 +539,6 @@ const ReturnCreateScreen = () => {
                                                                             onUpdatePrecio={returnDetailsHook.updatePrecio}
                                                                             onUpdateComentario={returnDetailsHook.updateComentario}
                                                                             onRemoveProduct={returnDetailsHook.removeProduct}
-                                                                            isReadOnly={isReadOnly}
                                                                             isSaving={isSaving}
                                                                         />
                                                                     </div>
@@ -544,7 +565,7 @@ const ReturnCreateScreen = () => {
                                                         size={'sm'}
                                                         variant="outline"
                                                         className="w-full py-3 font-medium"
-                                                        onClick={handleNewReturn}
+                                                        onClick={() => handleNewReturn()}
                                                     >
                                                         Nueva Devolución
                                                     </Button>

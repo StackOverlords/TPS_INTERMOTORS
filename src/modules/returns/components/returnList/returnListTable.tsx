@@ -20,6 +20,8 @@ import { useNavigate } from "react-router";
 import type { ReturnGetAll, ReturnsGetAllResponse } from "../../types/returnGet.types";
 import type { useReturnsFilters } from "../../hooks/useReturnsFilters";
 import { useCustomTable } from "@/hooks/useCustomTable";
+import { formatInTimeZone } from "date-fns-tz";
+import { getTodayDate, parseDateFromBackend } from "@/utils/dateFormatters";
 
 interface ReturnsListTableProps {
     data: ReturnsGetAllResponse
@@ -50,6 +52,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const handleSeeDetails = useCallback((id: number) => {
         navigate(`/dashboard/returns/${id}`)
@@ -171,12 +174,12 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
 
                 try {
                     const date = new Date(dateString);
-                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+                    const isToday = parseDateFromBackend(dateString) === getTodayDate();
 
                     return (
                         <div className="text-center text-xs">
                             <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
-                                {format(date, "dd/MM/yyyy", { locale: es })}
+                                {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
                             </div>
                             <div className="text-muted-foreground flex items-center justify-center gap-1">
                                 <Clock className="size-3" />

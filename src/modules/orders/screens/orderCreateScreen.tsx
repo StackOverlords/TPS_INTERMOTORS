@@ -21,7 +21,6 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
@@ -39,6 +38,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 
 const OrderCreateScreen = () => {
     const configuraciones = {
@@ -46,7 +46,6 @@ const OrderCreateScreen = () => {
         formulario: 'top',
         selector_mode: 'window'
     }
-    const [isReadOnly, setIsReadOnly] = useState<boolean>(false)
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser();
     const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
@@ -94,7 +93,7 @@ const OrderCreateScreen = () => {
     const methods = useForm<OrderCreate>({
         resolver: zodResolver(OrderCreateSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             id_proveedor: undefined,
             tipo_pedido: "",
@@ -249,12 +248,10 @@ const OrderCreateScreen = () => {
         });
     };
 
-    const handleNewOrder = useCallback(() => {
-        orderDetailsHook.clearDetails();
-        setIsReadOnly(false)
+    const handleNewOrder = useCallback((canClearDetails = true) => {
         const currentValues = getValues();
         reset({
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             id_proveedor: currentValues.id_proveedor,
             tipo_pedido: currentValues.tipo_pedido,
@@ -262,11 +259,15 @@ const OrderCreateScreen = () => {
             comentario: "",
             sucursal: currentValues.sucursal,
             id_responsable: currentValues.id_responsable,
-            detalles: [],
+            detalles: canClearDetails ? [] : currentValues.detalles,
             fecha_inicio_transito: "",
             fecha_llegada: "",
             estado_actual: orderStatusData?.[0]?.id || "",
         });
+
+        if (canClearDetails) {
+            orderDetailsHook.clearDetails();
+        }
     }, [getValues, reset]);
 
     // Función para agregar un solo producto
@@ -308,6 +309,7 @@ const OrderCreateScreen = () => {
         // Agregar tc_compra (tipo de cambio) a cada detalle
         const dataWithTC = {
             ...data,
+            fecha: formatDateForSubmission(data.fecha),
             detalles: data.detalles.map(detalle => ({
                 ...detalle,
                 tc_compra: exchangeRate
@@ -315,13 +317,31 @@ const OrderCreateScreen = () => {
         };
 
         createOrder(dataWithTC, {
-            onSuccess: () => {
-                setIsReadOnly(true)
+            onSuccess: (createdOrder) => {
                 showSuccessToast({
                     title: "Pedido Exitoso",
                     description: `Pedido realizado con éxito`,
                     duration: 5000
                 });
+
+                // Capturar el ID del tab actual
+                // const saleTabId = currentTab?.id;
+
+                // Navegar a edición con estado temporal
+                navigate(`/dashboard/orders/${createdOrder.id}/update`, {
+                    state: {
+                        tempCreatedOrder: createdOrder,
+                        fromCreate: true,
+                    }
+                });
+
+                // // Cerrar el tab de creación después de navegar
+                setTimeout(() => {
+                    handleNewOrder()
+                    // if (saleTabId) {
+                    //     closeCurrentTab(saleTabId);
+                    // }
+                }, 2500);
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear el pedido" });
@@ -507,7 +527,6 @@ const OrderCreateScreen = () => {
                                                     {...register("fecha")}
                                                     className="w-full"
                                                     autoFocus
-                                                    disabled={isReadOnly}
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
                                             </div>
@@ -518,7 +537,6 @@ const OrderCreateScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <ComboboxSelect
-                                                            disabled={isReadOnly}
                                                             value={field.value}
                                                             onChange={(value) => {
                                                                 field.onChange(Number(value));
@@ -539,7 +557,6 @@ const OrderCreateScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly}
                                                             onValueChange={field.onChange}
                                                             value={field.value || orderModalitiesData?.[0]?.id || ""}>
                                                             <SelectTrigger>
@@ -567,7 +584,6 @@ const OrderCreateScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly}
                                                             onValueChange={field.onChange}
                                                             value={field.value || orderTypesData?.[0]?.id || ""}>
                                                             <SelectTrigger>
@@ -595,7 +611,7 @@ const OrderCreateScreen = () => {
                                                     id="fechaTransito"
                                                     type="date"
                                                     {...register("fecha_inicio_transito")}
-                                                    disabled={statusesDisablingTransit.includes(currentStatus) || isReadOnly}
+                                                    disabled={statusesDisablingTransit.includes(currentStatus)}
                                                 />
                                             </div>
                                             <div>
@@ -606,7 +622,7 @@ const OrderCreateScreen = () => {
                                                     id="fechaLlegada"
                                                     type="date"
                                                     {...register("fecha_llegada")}
-                                                    disabled={statusesDisablingArrival.includes(currentStatus) || isReadOnly}
+                                                    disabled={statusesDisablingArrival.includes(currentStatus)}
                                                 />
                                             </div>
                                             <div>
@@ -615,7 +631,6 @@ const OrderCreateScreen = () => {
                                                     id="nroComprobante"
                                                     {...register("nro_comprobante")}
                                                     placeholder="Número de comprobante"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                         </div>
@@ -638,7 +653,6 @@ const OrderCreateScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         // <PaginatedCombobox
-                                                        //     disabled={isReadOnly}
                                                         //     value={field.value}
                                                         //     onChange={(value) => field.onChange(Number(value))}
                                                         //     optionsData={orderProvidersData?.data || []}
@@ -656,7 +670,6 @@ const OrderCreateScreen = () => {
                                                         //     }
                                                         // />
                                                         <ComboboxSelect
-                                                            disabled={isReadOnly}
                                                             value={field.value}
                                                             onChange={(value) => {
                                                                 field.onChange(Number(value));
@@ -678,7 +691,7 @@ const OrderCreateScreen = () => {
                                                     render={({ field }) => (
                                                         <Select
                                                             value={field.value || orderStatusData?.[0]?.id || ""}
-                                                            disabled={isOrderStatusLoading || isReadOnly}
+                                                            disabled={isOrderStatusLoading}
                                                             onValueChange={(value) => field.onChange(value)}
                                                         >
                                                             <SelectTrigger className={cn(
@@ -707,7 +720,6 @@ const OrderCreateScreen = () => {
                                                     {...register("comentario")}
                                                     placeholder="Comentarios adicionales sobre el pedido"
                                                     rows={configuraciones.formulario === "top" ? 1 : 2}
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                         </div>
@@ -809,7 +821,7 @@ const OrderCreateScreen = () => {
                                                                 }
                                                                 buttonProps={{
                                                                     onClick: handleConvertCurrency,
-                                                                    disabled: orderDetailsHook.details.length === 0 || isReadOnly || isSaving,
+                                                                    disabled: orderDetailsHook.details.length === 0 || isSaving,
                                                                     size: "sm",
                                                                     variant: "default",
                                                                     type: "button",
@@ -826,7 +838,7 @@ const OrderCreateScreen = () => {
                                                                 <Button
                                                                     type="button"
                                                                     onClick={toggleWindowSelector}
-                                                                    disabled={isSaving || isReadOnly}
+                                                                    disabled={isSaving}
                                                                 >
                                                                     <Plus className="size-4" />
                                                                     <span className="hidden sm:block">Seleccionar Productos</span>
@@ -857,7 +869,6 @@ const OrderCreateScreen = () => {
                                                                             onUpdatePrecioVentaAlt={orderDetailsHook.updatePrecioVentaAlt}
                                                                             onUpdateIncPVentaAlt={orderDetailsHook.updateIncPVentaAlt}
                                                                             onRemoveProduct={orderDetailsHook.removeProduct}
-                                                                            isReadOnly={isReadOnly}
                                                                             isSaving={isSaving}
                                                                         />
                                                                     </div>
@@ -885,7 +896,7 @@ const OrderCreateScreen = () => {
                                                         size={'sm'}
                                                         variant="outline"
                                                         className="w-full py-3 font-medium"
-                                                        onClick={handleNewOrder}
+                                                        onClick={() => handleNewOrder()}
                                                     >
                                                         Nuevo Pedido
                                                     </Button>
@@ -893,7 +904,7 @@ const OrderCreateScreen = () => {
                                                     <TooltipButton
                                                         buttonProps={{
                                                             type: 'submit',
-                                                            disabled: isSaving || isReadOnly,
+                                                            disabled: isSaving || orderDetailsHook.details.length === 0,
                                                             variant: 'default',
                                                             className: "w-full"
                                                         }}
