@@ -91,8 +91,8 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
         {
             accessorKey: "nro",
             header: "Nro. Devolución",
-            size: 120,
-            minSize: 100,
+            size: 80,
+            minSize: 40,
             enableHiding: false,
             cell: ({ row, getValue }) => (
                 <div
@@ -155,7 +155,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                     >
                         <div className="space-y-1 flex flex-col">
                             <span className="font-medium text-foreground">{getValue<number>()}</span>
-                            <span className="text-xs text-muted-foreground">ID: {row.original.id}</span>
+                            {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
                         </div>
                     </TooltipWrapper>
                 </div>
@@ -317,6 +317,10 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
 
         // Configuración de resize
         columnResizeMode: "onChange",
+
+        defaultSortBy: [
+            { id: 'fecha', desc: true }
+        ],
 
         // Persistencia con key única por usuario
         persistenceKey: `returns-table-${user?.name}`,

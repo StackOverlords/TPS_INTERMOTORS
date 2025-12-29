@@ -1,5 +1,5 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent"
-import { useNavigate, useParams } from "react-router"
+import { useLocation, useNavigate, useParams } from "react-router"
 import TooltipButton from "@/components/common/TooltipButton"
 import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react"
 import { Kbd } from "@/components/atoms/kbd"
@@ -50,12 +50,21 @@ const QuotationEditScreen = () => {
         selector_mode: 'window'
     }
 
+    const location = useLocation();
+    const { tempFormData, tempCreatedQuotation, tempCreatedDetails, fromCreate } = (location.state as {
+        tempFormData?: QuotationUpdate;
+        tempCreatedQuotation?: QuotationGetById;
+        tempCreatedDetails?: QuotationUpdateDetailUI[];
+        fromCreate?: boolean
+    }) || {};
+
     const [isReadOnly] = useState<boolean>(false)
     const navigate = useNavigate()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
     const { updateQuotationId } = useParams()
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
+    const [isUsingTempData, setIsUsingTempData] = useState(false);
 
     const tableRef = useRef<QuotationDetailsEditingTableRef>(null);
 
@@ -177,14 +186,27 @@ const QuotationEditScreen = () => {
         reset(resetData);
         quotationDetailsHook.initializeDetails(detallesTransformados)
         setHasInitialized(true);
+        setIsUsingTempData(false);
     }
 
     useEffect(() => {
+        // Si viene de crear venta, cargar datos temporales primero
+        if (fromCreate && tempFormData && !hasInitialized) {
+            reset(tempFormData);
+            setHasInitialized(true);
+            setIsUsingTempData(true);
+            quotationDetailsHook.initializeDetails(tempCreatedDetails || []);
+
+            // Limpiar el estado de navegación para evitar recargas
+            window.history.replaceState({}, document.title);
+        }
+
+        // Cuando lleguen los datos reales del backend, reemplazar
         if (quotationData && quotationTypesData && quotationModalitiesData) {
             loadFormData(quotationData)
         }
         return
-    }, [quotationData, quotationTypesData, quotationModalitiesData]);
+    }, [quotationData, quotationTypesData, quotationModalitiesData, fromCreate, tempFormData, hasInitialized, reset]);
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -454,11 +476,11 @@ const QuotationEditScreen = () => {
         handleSubmit(onSubmit, onError)();
     })
 
-    if (isLoadingQuotation || isLoadingQuotationTypes || isLoadingQuotationModalities || isLoadingQuotationResponsibles) {
+    if ((isLoadingQuotation || isLoadingQuotationTypes || isLoadingQuotationModalities || isLoadingQuotationResponsibles) && !isUsingTempData) {
         return <QuotationEditSkeleton />;
     }
 
-    if (isErrorQuotation || !quotationData) {
+    if ((isErrorQuotation || !quotationData) && !isUsingTempData) {
         return (
             <div className="h-full flex items-center justify-center p-2 lg:p-8">
                 <ErrorDataComponent
@@ -495,12 +517,18 @@ const QuotationEditScreen = () => {
                                 </TooltipButton>
                                 <div>
                                     <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
-                                        Editar cotización #{quotationData?.nro}
+                                        Editar cotización #{isUsingTempData ? tempCreatedQuotation?.nro : quotationData?.nro}
                                     </h1>
                                     {quotationData && (
                                         <p className="text-sm text-gray-600">
                                             {quotationData.cliente ? `${quotationData.cliente?.cliente} - ` : ''}
                                             {quotationData.cantidad_detalles} {quotationData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                        </p>
+                                    )}
+                                    {isUsingTempData && (
+                                        <p className="text-sm text-gray-600">
+                                            {tempCreatedQuotation?.cliente ? `${tempCreatedQuotation.cliente?.cliente} - ` : ''}
+                                            {tempCreatedQuotation?.cantidad_detalles} {tempCreatedQuotation?.cantidad_detalles === 1 ? 'producto' : 'productos'}
                                         </p>
                                     )}
                                 </div>

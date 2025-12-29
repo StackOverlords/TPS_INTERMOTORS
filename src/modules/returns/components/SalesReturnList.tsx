@@ -9,7 +9,7 @@ import {
     type ColumnDef,
 } from '@tanstack/react-table';
 import { AlertCircle, Clock, Phone, Plus, RotateCcw, Search, Zap } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBranchStore } from '@/states/branchStore';
 import type { SaleGetAll } from '@/modules/sales/types/salesGetResponse';
 import { TooltipWrapper } from '@/components/common/TooltipWrapper';
@@ -20,10 +20,12 @@ import { useSalesFilters } from '@/modules/sales/hooks/useSalesFilters';
 import { useSalesPaginated } from '@/modules/sales/hooks/useSalesPaginated';
 import { useCustomTable } from '@/hooks/useCustomTable';
 import authSDK from '@/services/sdk-simple-auth';
-import { useDebounce } from 'use-debounce';
 import { useSaleCustomers } from '@/modules/sales/hooks/useSaleCustomers';
-import { PaginatedCombobox } from '@/components/common/paginatedCombobox';
 import PopoverDatePicker from '@/components/common/PopoverDatePicker';
+import type { SalesFilters } from '@/modules/sales/types/salesFilters';
+import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
+import { useCommands } from '@/keybindings';
+import { ComboboxSelect } from '@/components/common/SelectCombobox';
 
 type BaseWithId = {
     sale_id: number;
@@ -35,6 +37,9 @@ interface SaleReturnListProps<T extends BaseWithId> {
     onSaleSelect: (sale: SaleGetAll) => void;
     defaultSearchMode?: 'realtime' | 'manual';
     onlySelectWithStock?: boolean;
+    savedFilters?: Partial<SalesFilters>;
+    onSavedFiltersChange?: (filters: Partial<SalesFilters>) => void;
+    onResetSavedFilters?: () => void;
 }
 
 function SaleReturnList<T extends BaseWithId>({
@@ -42,15 +47,17 @@ function SaleReturnList<T extends BaseWithId>({
     onSaleSelect,
     defaultSearchMode = 'manual',
     onlySelectWithStock = false,
+    savedFilters,
+    onSavedFiltersChange,
+    onResetSavedFilters,
 }: SaleReturnListProps<T>) {
-    // Estado para el modo de búsqueda
+    const { selectedBranchId } = useBranchStore();
+    const user = authSDK.getCurrentUser();
+
     const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>(defaultSearchMode);
     const [dateError, setDateError] = useState<string | null>(null);
+    const hasLoadedFilters = useRef(false);
 
-    const { selectedBranchId } = useBranchStore();
-    const user = authSDK.getCurrentUser()
-
-    // Hook de filtros con el nuevo applyFilters
     const {
         filters,
         debouncedFilters,
@@ -59,21 +66,37 @@ function SaleReturnList<T extends BaseWithId>({
         setPage,
         resetFilters,
         applyFilters,
-        setPageSize
+        setPageSize,
+        setFilters
     } = useSalesFilters(Number(selectedBranchId));
-
-    // Obtener datos de filtros
-    const [customerSearchTerm, setCustomerSearchTerm] = useState<string>("");
-
-    // Debounce
-    const [debouncedCustomerSearchTerm] = useDebounce<string>(customerSearchTerm, 500)
 
     const {
         data: saleCustomersData,
-        isLoading: isSaleCustomersLoading
-    } = useSaleCustomers(debouncedCustomerSearchTerm)
+    } = useSaleCustomers();
 
-    // Determinar qué filtros usar según el modo
+    // 🔥 Cargar filtros guardados INMEDIATAMENTE
+    useEffect(() => {
+        if (savedFilters && !hasLoadedFilters.current) {
+            setFilters(prev => ({
+                ...prev,
+                ...savedFilters,
+                pagina: 1,
+                sucursal: Number(selectedBranchId)
+            }));
+            hasLoadedFilters.current = true;
+        }
+    }, [savedFilters]); // Solo al montar
+
+    useEffect(() => {
+        if (hasLoadedFilters.current && searchMode === 'manual') {
+            const timer = setTimeout(() => {
+                applyFilters();
+            }, 0);
+
+            return () => clearTimeout(timer);
+        }
+    }, [hasLoadedFilters.current]);
+
     const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
 
     const {
@@ -83,11 +106,9 @@ function SaleReturnList<T extends BaseWithId>({
         isFetching,
     } = useSalesPaginated(activeFilters);
 
-    // Obtener productos y meta información
     const sales = salesData?.data || [];
     const totalSales = salesData?.meta?.total || 0;
 
-    // Verificar si un producto ya está seleccionado
     const isSaleSelected = useCallback(
         (saleId: number) => {
             const item = selectedSales.find(
@@ -102,19 +123,23 @@ function SaleReturnList<T extends BaseWithId>({
         [selectedSales]
     );
 
-    // Manejar búsqueda manual
     const handleManualSearch = () => {
         if (searchMode === 'manual') {
             applyFilters();
         }
+
+        if (onSavedFiltersChange) {
+            onSavedFiltersChange(filters);
+        }
     };
 
-    // Limpiar filtros
     const handleClearFilters = () => {
         resetFilters();
+        if (onResetSavedFilters) {
+            onResetSavedFilters();
+        }
     };
 
-    // Toggle del modo de búsqueda
     const toggleSearchMode = () => {
         setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
     };
@@ -293,7 +318,6 @@ function SaleReturnList<T extends BaseWithId>({
                             onClick={() => onSaleSelect(sale)}
                             className='h-7 text-xs'
                         >
-
                             <Plus className="size-3" />
                             Agregar
                         </Button>
@@ -306,12 +330,10 @@ function SaleReturnList<T extends BaseWithId>({
 
     const {
         table,
-        // resetAll,
     } = useCustomTable({
         data: sales,
         columns,
 
-        // Configuración de características
         enableSorting: true,
         enableColumnResizing: true,
         enableRowSelection: true,
@@ -319,16 +341,13 @@ function SaleReturnList<T extends BaseWithId>({
         enableColumnOrdering: true,
         enablePagination: false,
 
-        // Configuración de resize
         columnResizeMode: "onChange",
 
-        // Persistencia con key única por usuario
         persistenceKey: `returns-select-table-${user?.name}`,
         persistColumnVisibility: true,
         persistColumnOrder: true,
     });
 
-    // Manejadores de paginación
     const handlePageChange = (newPage: number) => {
         setPage(newPage);
     };
@@ -337,7 +356,6 @@ function SaleReturnList<T extends BaseWithId>({
         setPageSize(rows)
     };
 
-    // Función auxiliar para formatear fecha de manera segura
     const formatDateSafe = (date: Date): string => {
         try {
             return format(date, 'yyyy-MM-dd');
@@ -348,10 +366,9 @@ function SaleReturnList<T extends BaseWithId>({
     };
 
     const handleFechaInicioChange = (date: Date | undefined) => {
-        setDateError(null); // Limpiar errores anteriores
+        setDateError(null);
 
         if (date) {
-            // Validar que la fecha inicio no sea posterior a fecha fin
             if (filters.fecha_fin && date > filters.fecha_fin) {
                 setDateError('La fecha de inicio no puede ser posterior a la fecha de fin');
                 return;
@@ -362,17 +379,14 @@ function SaleReturnList<T extends BaseWithId>({
     };
 
     const handleFechaFinChange = (date: Date | undefined) => {
-        setDateError(null); // Limpiar errores anteriores
+        setDateError(null);
 
         if (date) {
-
-            // Validar que la fecha fin no sea anterior a fecha inicio
             if (filters.fecha_inicio && date < filters.fecha_inicio) {
                 setDateError('La fecha de fin no puede ser anterior a la fecha de inicio');
                 return;
             }
 
-            // Validar que la fecha no sea futura (opcional, según tu caso de uso)
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             if (date > today) {
@@ -384,9 +398,25 @@ function SaleReturnList<T extends BaseWithId>({
         updateFilter('fecha_fin', date ? formatDateSafe(date) : undefined);
     };
 
+    useFormEnterNavigation({
+        submitOnLastField: false,
+        excludeSelectors: [
+            '.no-enter-nav',
+            '.columns-button',
+            '.toggle-mode',
+            '.reload-button',
+            '.switch-button'
+        ],
+        enabled: true,
+    })
+
+    useCommands({
+        'searchFilters.focusSearch': handleManualSearch,
+        'forms.reset': handleClearFilters
+    })
+
     return (
         <div className="h-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
-            {/* Header con Filtros */}
             <div className="p-2 border-b border-border space-y-1">
                 <header className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -395,7 +425,6 @@ function SaleReturnList<T extends BaseWithId>({
                         </h3>
                     </div>
                     <div className="flex gap-1">
-                        {/* Toggle de modo de búsqueda */}
                         <Button
                             type='button'
                             size="sm"
@@ -417,7 +446,6 @@ function SaleReturnList<T extends BaseWithId>({
                             <RotateCcw className="h-3 w-3" />
                             Limpiar
                         </Button>
-                        {/* Botón de búsqueda solo visible en modo manual */}
                         {searchMode === 'manual' && (
                             <Button
                                 type='button'
@@ -432,7 +460,6 @@ function SaleReturnList<T extends BaseWithId>({
                     </div>
                 </header>
 
-                {/* Filtros en Grid */}
                 <section className="space-y-2">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                         <div className="space-y-2">
@@ -450,24 +477,14 @@ function SaleReturnList<T extends BaseWithId>({
                         </div>
                         <div className="space-y-2">
                             <Label>Cliente</Label>
-                            <PaginatedCombobox
+                            <ComboboxSelect
                                 value={filters.cliente}
                                 onChange={(value) => updateFilter("cliente", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                                optionsData={saleCustomersData?.data || []}
-                                displayField="nombre"
-                                enableAllOption={true}
-                                allOptionLabel="TODOS"
-                                isLoading={isSaleCustomersLoading}
-                                updatePage={(page) => { console.log("Update page:", page) }}
-                                updateSearch={setCustomerSearchTerm}
-                                metaData={
-                                    {
-                                        current_page: saleCustomersData?.meta.current_page || 1,
-                                        last_page: saleCustomersData?.meta.last_page || 1,
-                                        total: saleCustomersData?.meta.total || 0,
-                                        per_page: saleCustomersData?.meta.per_page || 10,
-                                    }
-                                }
+                                options={saleCustomersData?.data || []}
+                                enableAllOption={false}
+                                optionTag="nombre"
+                                allowClear={true}
+                                clearOnEmpty={true}
                             />
                         </div>
                         <div className="space-y-2">
@@ -491,7 +508,6 @@ function SaleReturnList<T extends BaseWithId>({
                                     onChange={(date) => handleFechaInicioChange(date)}
                                     hasError={dateError}
                                     disabled={(date) => {
-                                        // Deshabilitar fechas futuras
                                         const today = new Date();
                                         today.setHours(0, 0, 0, 0);
 
@@ -503,7 +519,6 @@ function SaleReturnList<T extends BaseWithId>({
                             </div>
                         </div>
 
-                        {/* Fecha Fin */}
                         <div className="space-y-2 w-full">
                             <Label>Fecha Fin</Label>
                             <div className="flex gap-2">
@@ -512,13 +527,11 @@ function SaleReturnList<T extends BaseWithId>({
                                     onChange={(date) => handleFechaFinChange(date)}
                                     hasError={dateError}
                                     disabled={(date) => {
-                                        // Deshabilitar fechas futuras
                                         const today = new Date();
                                         today.setHours(0, 0, 0, 0);
                                         if (date > today) return true;
 
                                         const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
-                                        // Deshabilitar fechas anteriores a la fecha de inicio
                                         if (fechaInicio && date < fechaInicio) return true;
 
                                         return false;
@@ -527,10 +540,7 @@ function SaleReturnList<T extends BaseWithId>({
                             </div>
                         </div>
 
-                        {/* Botones de acción adicionales */}
                         <div className="flex gap-2 items-end">
-
-                            {/* Botón para establecer rango de última semana */}
                             <Button
                                 variant="outline"
                                 type='button'
@@ -549,7 +559,6 @@ function SaleReturnList<T extends BaseWithId>({
                                 Última semana
                             </Button>
 
-                            {/* Botón para establecer rango del último mes */}
                             <Button
                                 variant="outline"
                                 type='button'
@@ -568,21 +577,17 @@ function SaleReturnList<T extends BaseWithId>({
                                 Último mes
                             </Button>
                         </div>
-
                     </div>
 
-                    {/* Mostrar error de validación */}
                     {dateError && (
                         <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
                             <AlertCircle className="h-4 w-4 flex-shrink-0" />
                             <span>{dateError}</span>
                         </div>
                     )}
-
                 </section>
             </div>
 
-            {/* Table Container */}
             <div className="flex-1 min-h-0 overflow-hidden">
                 <div className="h-full overflow-auto px-2">
                     <CustomizableTable
@@ -597,7 +602,6 @@ function SaleReturnList<T extends BaseWithId>({
                 </div>
             </div>
 
-            {/* Footer con Paginación */}
             {sales.length > 0 && (
                 <div className="flex-shrink-0 border-t border-border bg-card">
                     <Pagination

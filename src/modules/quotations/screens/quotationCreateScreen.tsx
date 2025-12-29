@@ -1,4 +1,3 @@
-import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Input } from "@/components/atoms/input";
@@ -7,7 +6,6 @@ import { Label } from "@/components/atoms/label";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
 import { Textarea } from "@/components/atoms/textarea";
-import { PDFViewer } from "@/components/common/PDFViewer";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
 // import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
@@ -22,26 +20,27 @@ import { useSaleModalities } from "@/modules/sales/hooks/useSaleModalities";
 import { useSaleResponsibles } from "@/modules/sales/hooks/useSaleResponsibles";
 import { useSaleTypes } from "@/modules/sales/hooks/useSaleTypes";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
-import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, parse } from "date-fns";
-import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parse } from "date-fns";
+import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
 import ProductDetailTable, { type ProductDetailTableRef } from "../components/productDetailTable";
 import QuotationsSummary from "../components/quotationsSummary";
 import { useCreateQuotation } from "../hooks/useCreateQuotation";
-import { useQuotationPDF } from "../hooks/useQuotationPDF";
 import { QuotationCreateSchema } from "../schemas/quotationCreate.schema";
 import type { QuotationCreate, QuotationDetail } from "../types/quotationCreate.types";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { useClienteVarios } from "../hooks/useClienteVarios";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
+import type { QuotationUpdate } from "../types/quotationUpdate.types";
+import type { QuotationUpdateDetailUI } from "../hooks/useQuotationProductDetails";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -51,28 +50,12 @@ const QuotationCreateScreen = () => {
         formulario: 'top',
         selector_mode: 'window'
     }
-    const [createdQuotationId, setCreatedQuotationId] = useState<number | null>(null);
-    const [createdQuotationDetails, setCreatedQuotationDetails] = useState<CartItem[] | null>(null);
-    const [createdQuotationSummary, setCreatedQuotationSummary] = useState<{
-        subtotal: number;
-        total: number;
-        discount: number;
-        discountPercent: number;
-    } | null>(null);
-    const isReadOnly = useMemo(() => createdQuotationId !== null && createdQuotationDetails !== null, [createdQuotationId, createdQuotationDetails]);
+
     const navigate = useNavigate();
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
-    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
-
     const tableRef = useRef<ProductDetailTableRef>(null);
-
-    const {
-        data: pdfBlob,
-        isLoading: isLoadingPdf,
-        isError: isErrorPdf,
-    } = useQuotationPDF(createdQuotationId || 0, isDialogOpen && !!createdQuotationId);
 
     const {
         data: saleTypesData,
@@ -101,7 +84,7 @@ const QuotationCreateScreen = () => {
     const methods = useForm<QuotationCreate>({
         resolver: zodResolver(QuotationCreateSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             nro_comprobante2: "",
             id_cliente: undefined,
@@ -152,10 +135,10 @@ const QuotationCreateScreen = () => {
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '')
 
     useTabEffect(SCREEN_PATH, () => {
-        if (mode !== 'quote' && !isReadOnly) {
+        if (mode !== 'quote') {
             setCartMode('quote')
         }
-    }, [mode, isReadOnly, setCartMode]);
+    }, [mode, setCartMode]);
 
     const subtotal = getCartSubtotal()
     const total = getCartTotal()
@@ -303,13 +286,10 @@ const QuotationCreateScreen = () => {
         }
     }, [tipo_cotizacion, plazo_pago, formValues.fecha, setError, clearErrors]);
 
-    const handleNewQuotation = useCallback(() => {
-        setCreatedQuotationId(null);
-        setCreatedQuotationDetails(null);
-        setCreatedQuotationSummary(null);
+    const handleNewQuotation = useCallback((canClearCart = true) => {
         const currentValues = getValues();
         reset({
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             nro_comprobante2: "",
             id_cliente: currentValues.id_cliente,
@@ -323,12 +303,16 @@ const QuotationCreateScreen = () => {
             cliente_nit: "",
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: currentValues.id_responsable,
-            detalles: [],
+            detalles: canClearCart ? [] : currentValues.detalles,
             cliente_contacto: "",
             cliente_telefono: "",
             anticipo: 0,
             pedido: false,
         });
+
+        if (canClearCart) {
+            clearCart()
+        }
     }, [getValues, reset]);
 
     // Función para agregar un solo producto
@@ -359,49 +343,88 @@ const QuotationCreateScreen = () => {
         if (!validateBeforeSubmit()) {
             return;
         }
-        createQuotation(data, {
+
+        const dataToSend: QuotationCreate = {
+            ...data,
+            fecha: formatDateForSubmission(data.fecha),
+        };
+
+        createQuotation(dataToSend, {
             onSuccess: (createdQuotation) => {
 
-                const finalSubtotal = subtotal;
-                const finalTotal = total;
-                const finalDiscountAmount = discountAmount || 0;
-                const finalDiscountPercent = discountPercent || 0;
-
-                setCreatedQuotationSummary({
-                    subtotal: finalSubtotal,
-                    total: finalTotal,
-                    discount: finalDiscountAmount,
-                    discountPercent: finalDiscountPercent
-                });
-
-                clearCart();
                 showSuccessToast({
                     title: "Cotización Creada",
                     description: `Cotización #${createdQuotation.id} creada exitosamente`,
                     duration: 5000
                 });
 
-                setCreatedQuotationId(createdQuotation.id);
-                const details: CartItem[] = createdQuotation.detalles.map((det) => ({
-                    product: {
-                        id: det.producto.id,
-                        descripcion: det.producto.descripcion,
-                        codigo_oem: det.producto.codigo_oem,
-                        codigo_upc: det.producto.codigo_upc,
-                        precio_venta: det.producto.precio_venta,
-                        precio_venta_alt: det.producto.precio_venta_alt,
-                        stock_actual: 0,
-                        marca: det.producto.marca?.marca || '',
-                        unidad_medida: det.producto.unidad_medida.unidad_medida,
-                        sucursal: ''
-                    },
-                    quantity: det.cantidad,
-                    customDescription: det.descripcion || '',
-                    customPrice: det.precio,
-                    customSubtotal: det.cantidad * det.precio,
-                    customBrand: det.marca || '',
+                // Preparar datos temporales para la navegación
+                const tempFormData: QuotationUpdate = {
+                    fecha: data.fecha,
+                    nro_comprobante: data.nro_comprobante,
+                    nro_comprobante2: data.nro_comprobante2,
+                    id_cliente: data.id_cliente,
+                    tipo_cotizacion: data.tipo_cotizacion,
+                    forma_cotizacion: data.forma_cotizacion,
+                    comentarios: data.comentarios,
+                    plazo_pago: data.plazo_pago,
+                    vehiculo: data.vehiculo,
+                    nro_motor: data.nro_motor,
+                    cliente_nombre: data.cliente_nombre,
+                    cliente_nit: data.cliente_nit,
+                    sucursal: data.sucursal,
+                    id_responsable: data.id_responsable,
+                    cliente_contacto: data.cliente_contacto,
+                    cliente_telefono: data.cliente_telefono,
+                    anticipo: data.anticipo,
+                    pedido: data.pedido,
+                    detalles: createdQuotation.detalles.map((item, index) => ({
+                        id_producto: item.producto.id,
+                        descripcion: item.descripcion,
+                        cantidad: Number(item.cantidad),
+                        precio: Number(item.precio),
+                        descuento: item.descuento ?? 0,
+                        porcentaje_descuento: item.porcentaje_descuento ?? 0,
+                        nueva_marca: item.marca,
+                        orden: item.orden ?? (index + 1),
+                        id_detalle_cotizacion: item.id,
+                    }))
+                };
+
+                const detallesTransformados: QuotationUpdateDetailUI[] = createdQuotation.detalles.map((detalle, index) => ({
+                    id_producto: detalle.producto.id,
+                    descripcion: detalle.descripcion,
+                    cantidad: Number(detalle.cantidad),
+                    precio: Number(detalle.precio),
+                    descuento: detalle.descuento ?? 0,
+                    porcentaje_descuento: detalle.porcentaje_descuento ?? 0,
+                    nueva_marca: detalle.marca,
+                    orden: detalle.orden ?? (index + 1),
+                    id_detalle_cotizacion: detalle.id,
+                    codigo_oem: detalle.producto.codigo_oem ?? '',
                 }));
-                setCreatedQuotationDetails(details);
+
+                // Capturar el ID del tab actual
+                // const saleTabId = currentTab?.id;
+
+                // Navegar a edición con estado temporal
+                navigate(`/dashboard/quotations/${createdQuotation.id}/update`, {
+                    state: {
+                        tempFormData,
+                        tempCreatedQuotation: createdQuotation,
+                        tempCreatedDetails: detallesTransformados,
+                        fromCreate: true,
+                        quotationMethod: mode
+                    }
+                });
+
+                // // Cerrar el tab de creación después de navegar
+                setTimeout(() => {
+                    handleNewQuotation(false)
+                    // if (saleTabId) {
+                    //     closeCurrentTab(saleTabId);
+                    // }
+                }, 2500);
             },
             onError: (error: unknown) => {
                 handleError({ error, customTitle: "No se pudo crear la cotización" });
@@ -465,14 +488,6 @@ const QuotationCreateScreen = () => {
             }
         }
     }, [saleTypesData, saleModalitiesData, getValues, setValue])
-
-    const handleOpenPrintDialog = () => {
-        setIsDialogOpen(true)
-    }
-
-    const handleClosePrintDialog = () => {
-        setIsDialogOpen(false)
-    }
 
     const selectedItems = useMemo<SelectedItem[]>(() => {
         return detalles.map(detail => ({
@@ -554,29 +569,7 @@ const QuotationCreateScreen = () => {
 
                             {/* Action Buttons */}
                             < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-                                {
-                                    createdQuotationId && (
-                                        <>
-                                            <TooltipButton
-                                                onClick={handleOpenPrintDialog}
-                                                tooltip="Imprimir cotizacion"
-                                                buttonProps={{
-                                                    variant: 'default',
-                                                }}
-                                            >
-                                                <Printer className="h-4 w-4" />
-                                                Imprimir
-                                            </TooltipButton>
 
-                                            <Badge
-                                                className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
-                                                variant={'success'}
-                                            >
-                                                {createdQuotationId}
-                                            </Badge>
-                                        </>
-                                    )
-                                }
                             </div >
                         </div >
                     </header >
@@ -614,7 +607,6 @@ const QuotationCreateScreen = () => {
                                                     {...register("fecha")}
                                                     className="w-full"
                                                     autoFocus
-                                                    disabled={isReadOnly}
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
                                             </div>
@@ -632,7 +624,6 @@ const QuotationCreateScreen = () => {
                                                             options={saleResponsiblesData || []}
                                                             optionTag={"nombre"}
                                                             clearOnEmpty={true}
-                                                            disabled={isReadOnly}
                                                         />
                                                     )}
                                                 />
@@ -648,7 +639,6 @@ const QuotationCreateScreen = () => {
                                                             control={control}
                                                             render={({ field }) => (
                                                                 <Select
-                                                                    disabled={isReadOnly}
                                                                     onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
                                                                     <SelectTrigger>
                                                                         <SelectValue placeholder="Selecciona una forma" />
@@ -677,7 +667,6 @@ const QuotationCreateScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly}
                                                             onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Selecciona un tipo" />
@@ -704,7 +693,6 @@ const QuotationCreateScreen = () => {
                                                             id="nroComprobante"
                                                             {...register("nro_comprobante")}
                                                             placeholder="Número de comprobante"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -717,7 +705,6 @@ const QuotationCreateScreen = () => {
                                                             id="nroComprobanteSecundario"
                                                             {...register("nro_comprobante2")}
                                                             placeholder="Comprobante secundario"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -731,7 +718,7 @@ const QuotationCreateScreen = () => {
                                                     id="fechaPlazo"
                                                     type="date"
                                                     {...register("plazo_pago")}
-                                                    disabled={formValues.tipo_cotizacion !== "VC" || isReadOnly}
+                                                    disabled={formValues.tipo_cotizacion !== "VC"}
                                                 />
                                                 {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
                                             </div>
@@ -741,7 +728,6 @@ const QuotationCreateScreen = () => {
                                                     id="vehiculo"
                                                     {...register("vehiculo")}
                                                     placeholder="Modelo del vehículo"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                             {
@@ -752,7 +738,6 @@ const QuotationCreateScreen = () => {
                                                             id="motor"
                                                             {...register("nro_motor")}
                                                             placeholder="Tipo de motor"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -784,7 +769,6 @@ const QuotationCreateScreen = () => {
                                                         //     isLoading={isSaleCustomersLoading}
                                                         //     updatePage={(page) => { console.log("Update page:", page) }}
                                                         //     updateSearch={setCustomerSearchTerm}
-                                                        //     disabled={isReadOnly}
                                                         //     placeholder="Buscar cliente por nombre"
                                                         //     metaData={
                                                         //         {
@@ -800,7 +784,6 @@ const QuotationCreateScreen = () => {
                                                             onChange={(value) => field.onChange(Number(value))}
                                                             options={saleCustomersData?.data || []}
                                                             optionTag={"nombre"}
-                                                            disabled={isReadOnly}
                                                             placeholder="Buscar cliente por nombre"
                                                             clearOnEmpty={true}
                                                         />
@@ -816,7 +799,6 @@ const QuotationCreateScreen = () => {
                                                             id="altClie"
                                                             {...register("cliente_nombre")}
                                                             placeholder="Cliente alternativo"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -829,7 +811,6 @@ const QuotationCreateScreen = () => {
                                                             id="contacto"
                                                             {...register("cliente_contacto")}
                                                             placeholder="Nombre de contacto"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -842,7 +823,6 @@ const QuotationCreateScreen = () => {
                                                             id="nit"
                                                             {...register("cliente_nit")}
                                                             placeholder="Nro de nit del cliente"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -855,7 +835,6 @@ const QuotationCreateScreen = () => {
                                                             id="telefono"
                                                             {...register("cliente_telefono")}
                                                             placeholder="Teléfono del cliente"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -871,7 +850,6 @@ const QuotationCreateScreen = () => {
                                                     {...register("comentarios")}
                                                     placeholder="Comentarios adicionales sobre la Cotización"
                                                     rows={configuraciones.formulario === "top" ? 1 : 2}
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                         </div>
@@ -926,7 +904,7 @@ const QuotationCreateScreen = () => {
                                                                 <Button
                                                                     type="button"
                                                                     onClick={toggleWindowSelector}
-                                                                    disabled={isSaving || isReadOnly}
+                                                                    disabled={isSaving}
                                                                 >
                                                                     <Plus className="size-4" />
                                                                     <span className="hidden sm:block">Seleccionar Productos</span>
@@ -937,7 +915,7 @@ const QuotationCreateScreen = () => {
                                                 </CardHeader>
                                                 <CardContent className="flex-1 min-h-0">
                                                     <div className="h-full overflow-auto">
-                                                        {items.length === 0 && !createdQuotationDetails ? (
+                                                        {items.length === 0 ? (
                                                             <div className="text-center py-8 text-gray-500">
                                                                 <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                                                 <p>No hay productos agregados</p>
@@ -946,8 +924,6 @@ const QuotationCreateScreen = () => {
                                                         ) :
                                                             <ProductDetailTable
                                                                 ref={tableRef}
-                                                                details={createdQuotationDetails}
-                                                                isReadOnly={isReadOnly}
                                                             />
                                                         }
                                                     </div>
@@ -959,12 +935,11 @@ const QuotationCreateScreen = () => {
                                     {/* <div className="flex flex-col flex-shrink-0"> */}
                                     {/* Resumen de Cotización  */}
                                     <QuotationsSummary
-                                        isReadOnly={isReadOnly}
                                         clearCart={clearCart}
-                                        discountAmount={isReadOnly ? createdQuotationSummary?.discount ?? 0 : discountAmount}
-                                        discountPercent={isReadOnly ? createdQuotationSummary?.discountPercent ?? 0 : discountPercent}
-                                        subtotal={isReadOnly ? createdQuotationSummary?.subtotal ?? 0 : subtotal}
-                                        total={isReadOnly ? createdQuotationSummary?.total ?? 0 : total}
+                                        discountAmount={discountAmount}
+                                        discountPercent={discountPercent}
+                                        subtotal={subtotal}
+                                        total={total}
                                         isPending={isSaving}
                                         callback={handleNewQuotation}
                                         setDiscountAmount={setDiscountAmount}
@@ -978,18 +953,6 @@ const QuotationCreateScreen = () => {
                     </div>
                 </form>
             </FormProvider>
-
-            {/* Modal PDF Viewer */}
-            <PDFViewer
-                id={createdQuotationId}
-                pdfBlob={pdfBlob}
-                isLoading={isLoadingPdf}
-                isError={isErrorPdf}
-                onClose={handleClosePrintDialog}
-                isOpen={isDialogOpen}
-                pdfName="cotizacion"
-                title={`Cotizacion Nro. ${createdQuotationId}`}
-            />
         </main >
     );
 };
