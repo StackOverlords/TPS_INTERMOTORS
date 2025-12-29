@@ -1,25 +1,41 @@
 import { Badge } from "@/components/atoms/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import CustomizableTable from "@/components/common/CustomizableTable";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { Building2 } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
+import { useCustomTable } from "@/hooks/useCustomTable";
+import authSDK from "@/services/sdk-simple-auth";
 
 interface ProductInventoryProps {
     productStockData: ProductStock[]
     isLoadingData: boolean
     isErrorData: boolean
     className?: string
+    filterByStock?: boolean
+    sortByDate?: boolean
 }
+
 const ProductInventory: React.FC<ProductInventoryProps> = ({
     productStockData,
     isErrorData,
     isLoadingData,
     className,
+    filterByStock = false,
+    sortByDate = false,
 }) => {
+
+    const user = authSDK.getCurrentUser()
+
+    // 🔥 Filtrar datos por stock si filterByStock = true
+    const filteredData = useMemo(() => {
+        if (!filterByStock) return productStockData;
+        return productStockData.filter(item => item.saldo > 0);
+    }, [productStockData, filterByStock]);
 
     const columns: ColumnDef<ProductStock>[] = [
         {
@@ -161,18 +177,29 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
         },
     ];
 
-    const table = useReactTable<ProductStock>({
-        data: productStockData,
+    const {
+        table,
+    } = useCustomTable({
+        data: filteredData,
         columns,
-        state: {
-        },
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
-        enableRowSelection: true,
-    })
+        enableColumnOrdering: true,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            ...(sortByDate ? [{ id: 'fecha_adquisicion', desc: true }] : [])
+        ],
+
+        // Persistencia con key única por usuario
+        persistenceKey: `products-inventory-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
+
     return (
         <Card className={cn(
             "bg-card border border-border flex flex-col",
@@ -182,6 +209,11 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
                 <CardTitle className="flex items-center gap-3 text-base font-semibold text-gray-900">
                     <Building2 className="size-4 text-gray-700" />
                     Detalle disponibles en otras sucursales
+                    {filterByStock && (
+                        <Badge variant="info" className="text-xs">
+                            Solo con stock
+                        </Badge>
+                    )}
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0">

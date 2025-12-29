@@ -233,6 +233,8 @@ export const ProductDetailModal = ({ productId, open, onOpenChange, tableRef }: 
                                                     isFetching={isFetchingStockLocalData}
                                                     isLoading={isLoadingStockLocalData}
                                                     className='h-full'
+                                                    filterByStock={true}
+                                                    sortByDate={true}
                                                 />
                                             </ResizablePanel>
 
@@ -244,6 +246,8 @@ export const ProductDetailModal = ({ productId, open, onOpenChange, tableRef }: 
                                                     isErrorData={isErrorStockSucursalesData}
                                                     isLoadingData={isLoadingStockSucursalesData}
                                                     className='h-full'
+                                                    filterByStock={true}
+                                                    sortByDate={true}
                                                 />
                                             </ResizablePanel>
                                         </ResizablePanelGroup>
