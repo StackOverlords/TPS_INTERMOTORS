@@ -42,6 +42,7 @@ import type { QuotationUpdate } from "../types/quotationUpdate.types"
 import { Badge } from "@/components/atoms/badge"
 import { useClienteVarios } from "../hooks/useClienteVarios"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
+import { getTodayDate } from "@/utils/dateFormatters"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -111,7 +112,7 @@ const QuotationEditScreen = () => {
     const formMethods = useForm<QuotationUpdate>({
         resolver: zodResolver(QuotationUpdateSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             nro_comprobante2: "",
             id_cliente: undefined,

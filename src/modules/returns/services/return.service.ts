@@ -15,12 +15,15 @@ export const returnService = {
      * Crear una nueva devolucion
      * @param data - Datos de la devolucion a crear
     */
-    async create(data: ReturnCreate): Promise<unknown> {
+    async create(data: ReturnCreate): Promise<ReturnGetById> {
         Logger.info('Creating Return', { data }, MODULE_NAME);
 
         const response = await ApiService.post(
             RETURN_ENDPOINTS.create,
             data,
+            ReturnByIdSchema,
+            undefined,
+            { unwrapData: true }
         );
 
         Logger.info(
@@ -29,7 +32,7 @@ export const returnService = {
             // response.data.id && { id: response.data.id },
             MODULE_NAME
         );
-        return response
+        return response as ReturnGetById;
     },
 
     /**
