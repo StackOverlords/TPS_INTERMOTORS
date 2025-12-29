@@ -45,6 +45,7 @@ import {
     calculateSavings,
     type CompressionResult
 } from '@/utils/imageCompression';
+import { base64ToBlob } from '@/utils/base64Utils';
 
 interface ImageViewerProps {
     open: boolean;
@@ -616,8 +617,7 @@ export function ImageViewer({
         if (!currentImage) return;
         try {
             const finalImage = await applyTransformations();
-            const response = await fetch(finalImage);
-            const blob = await response.blob();
+            const blob = base64ToBlob(finalImage);
             await navigator.clipboard.write([
                 new ClipboardItem({ [blob.type]: blob })
             ]);
@@ -635,8 +635,7 @@ export function ImageViewer({
     //     }
     //     try {
     //         const finalImage = await applyTransformations();
-    //         const response = await fetch(finalImage);
-    //         const blob = await response.blob();
+    //         const blob = base64ToBlob(finalImage); 
     //         const file = new File([blob], 'imagen.png', { type: blob.type });
     //         await navigator.share({
     //             files: [file],

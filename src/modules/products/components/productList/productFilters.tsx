@@ -12,7 +12,6 @@ import { Search } from "lucide-react";
 import type { useProductFilters } from "../../hooks/useProductFilters";
 import { useRef } from "react";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
-import { useCommands } from "@/keybindings";
 
 interface ProductFiltersProps {
   filters: ReturnType<typeof useProductFilters>["filters"]

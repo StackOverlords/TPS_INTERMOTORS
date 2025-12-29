@@ -2,7 +2,7 @@ import { useBranchStore } from "@/states/branchStore";
 import { useSalesPaginated } from "../hooks/useSalesPaginated";
 import { useSalesFilters } from "../hooks/useSalesFilters";
 import { useEffect, useState } from "react";
-import { FilterX, PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
+import { PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
@@ -139,9 +139,9 @@ const SalesListScreen = () => {
     useFormEnterNavigation({
         submitOnLastField: false,
         excludeSelectors: [
-            '.no-enter-nav', 
-            '.columns-button', 
-            '.toggle-mode', 
+            '.no-enter-nav',
+            '.columns-button',
+            '.toggle-mode',
             '.reload-button',
             '.switch-button'
         ],
@@ -149,8 +149,8 @@ const SalesListScreen = () => {
     })
 
     useCommands({
-    'searchFilters.focusSearch':handleManualSearch,
-    'forms.reset':handleResetFilters
+        'searchFilters.focusSearch': handleManualSearch,
+        'forms.reset': handleResetFilters
     })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">

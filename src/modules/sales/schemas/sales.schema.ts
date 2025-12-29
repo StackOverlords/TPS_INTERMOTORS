@@ -24,6 +24,6 @@ export const SaleSchema = z.object({
   cliente_nit: z.string().nullable(),
   sucursal: z.number(),
   id_responsable: z.number(),
-  detalles: z.array(SaleDetailSchema).nonempty()
+  detalles: z.array(SaleDetailSchema).nonempty('La venta debe tener al menos un detalle de producto'),
 });
 export const SaleDetailListSchema = z.array(SaleDetailSchema).nonempty()

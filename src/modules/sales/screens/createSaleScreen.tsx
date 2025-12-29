@@ -15,13 +15,13 @@ import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils"
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, parse } from "date-fns";
+import { parse } from "date-fns";
 import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+// import { useTabNavigation } from "@/hooks/useTabNavigation";
 import SalesSummary from "../components/salesSummary";
 import { useCreateSale } from "../hooks/useCreateSale";
 import { useSaleCustomers } from "../hooks/useSaleCustomers";
@@ -32,13 +32,15 @@ import { SaleSchema } from "../schemas/sales.schema";
 import type { Sale, SaleDetail } from "../types/sale";
 import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel";
 import { cn } from "@/lib/utils";
-import type { CartItem, CartMode } from "@/modules/shoppingCart/types/cart.types";
+import type { CartMode } from "@/modules/shoppingCart/types/cart.types";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { Button } from "@/components/atoms/button";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeConversionModal";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import type { SaleUpdateForm } from "../types/saleUpdate.type";
+import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 
 const SCREEN_PATH = "/dashboard/create-sale"
 
@@ -48,16 +50,8 @@ const CreateSaleScreen = () => {
         formulario: 'top',
         selector_mode: 'window'
     }
-    const [createdSaleDetails, setCreatedSaleDetails] = useState<CartItem[] | null>(null);
-    const [createdSaleSummary, setCreatedSaleSummary] = useState<{
-        subtotal: number;
-        total: number;
-        discount: number;
-        discountPercent: number;
-    } | null>(null);
-    const isReadOnly = useMemo(() => createdSaleDetails !== null, [createdSaleDetails]);
     const navigate = useNavigate();
-    const { closeCurrentTab, tabs, currentTab } = useTabNavigation();
+    // const { closeCurrentTab, currentTab } = useTabNavigation();
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
 
@@ -96,7 +90,7 @@ const CreateSaleScreen = () => {
     const methods = useForm<Sale>({
         resolver: zodResolver(SaleSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             nro_comprobante2: "",
             id_cliente: undefined,
@@ -144,7 +138,6 @@ const CreateSaleScreen = () => {
     } = useCartWithUtils(user?.name || '', selectedBranchId ?? '');
 
     useTabEffect(SCREEN_PATH, () => {
-        if (isReadOnly) return;
 
         if (lastProcessedMode === mode) return;
 
@@ -179,7 +172,7 @@ const CreateSaleScreen = () => {
                 }
             }
         }
-    }, [mode, items.length, isReadOnly, lastProcessedMode, previewConversion, setCartMode]);
+    }, [mode, items.length, lastProcessedMode, previewConversion, setCartMode]);
 
     const handleManualModeChange = useCallback((newMode: 'sale-strict' | 'sale-permissive') => {
         if (mode === newMode) return;
@@ -333,13 +326,11 @@ const CreateSaleScreen = () => {
         }
     }, [tipo_venta, plazo_pago, formValues.fecha, setError, clearErrors]);
 
-    const handleNewSale = useCallback(() => {
-        setCreatedSaleDetails(null);
-        setCreatedSaleSummary(null);
+    const handleNewSale = useCallback((canClearCart = true) => {
         setLastProcessedMode(null);
         const currentValues = getValues();
         reset({
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             nro_comprobante2: "",
             id_cliente: currentValues.id_cliente,
@@ -353,9 +344,11 @@ const CreateSaleScreen = () => {
             cliente_nit: "",
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: currentValues.id_responsable,
-            detalles: []
+            detalles: canClearCart ? [] : currentValues.detalles
         });
-        clearCart()
+        if (canClearCart) {
+            clearCart()
+        }
     }, [getValues, reset]);
 
     // Función para agregar un solo producto
@@ -388,71 +381,76 @@ const CreateSaleScreen = () => {
             return;
         }
 
-        createSale(data, {
+        const dataToSend: Sale = {
+            ...data,
+            fecha: formatDateForSubmission(data.fecha),
+        };
+
+        createSale(dataToSend, {
             onSuccess: (createdSale) => {
-                const finalSubtotal = subtotal;
-                const finalTotal = total;
-                const finalDiscountAmount = discountAmount || 0;
-                const finalDiscountPercent = discountPercent || 0;
 
-                setCreatedSaleSummary({
-                    subtotal: finalSubtotal,
-                    total: finalTotal,
-                    discount: finalDiscountAmount,
-                    discountPercent: finalDiscountPercent
-                });
+                // Preparar datos temporales para la navegación
+                const tempFormData: SaleUpdateForm = {
+                    fecha: data.fecha,
+                    nro_comprobante: data.nro_comprobante,
+                    nro_comprobante2: data.nro_comprobante2,
+                    id_cliente: data.id_cliente,
+                    tipo_venta: data.tipo_venta,
+                    forma_venta: data.forma_venta,
+                    comentario: data.comentario,
+                    plazo_pago: data.plazo_pago,
+                    vehiculo: data.vehiculo,
+                    nro_motor: data.nro_motor,
+                    cliente_nombre: data.cliente_nombre,
+                    cliente_nit: data.cliente_nit,
+                    sucursal: data.sucursal,
+                    id_responsable: data.id_responsable,
+                    detalles: items.map((item, index) => ({
+                        cantidad: item.quantity,
+                        descuento: discountAmount ? (item.quantity * item.customPrice) * (discountPercent! / 100) : 0,
+                        id_detalle_venta: 0, // temporal
+                        id_producto: item.product.id,
+                        porcentaje_descuento: discountPercent ?? 0,
+                        precio: item.customPrice,
+                        orden: index + 1,
+                        producto: {
+                            id: item.product.id,
+                            categoria: null,
+                            codigo_oem: item.product.codigo_oem,
+                            codigo_upc: item.product.codigo_upc,
+                            descripcion: item.product.descripcion,
+                            marca: item.product.marca,
+                            precio_venta: item.product.precio_venta,
+                            stock_actual: item.product.stock_actual
+                        }
+                    }))
+                };
 
-                clearCart();
                 showSuccessToast({
                     title: "Venta Creada",
                     description: `Venta #${createdSale.id} creada exitosamente`,
                     duration: 2000  // 2 segundos para cerrar más rápido
                 });
 
-                const details: CartItem[] = createdSale.detalles.map((det) => ({
-                    product: {
-                        id: det.producto.id,
-                        descripcion: det.producto.descripcion,
-                        codigo_oem: det.producto.codigo_oem,
-                        codigo_upc: det.producto.codigo_upc,
-                        precio_venta: det.producto.precio_venta,
-                        precio_venta_alt: det.producto.precio_venta_alt,
-                        stock_actual: 0,
-                        marca: det.producto.marca?.marca || '',
-                        unidad_medida: det.producto.unidad_medida.unidad_medida,
-                        sucursal: ''
-                    },
-                    quantity: det.cantidad,
-                    customPrice: det.precio,
-                    customSubtotal: det.cantidad * det.precio,
-                    customDescription: '',
-                    customBrand: '',
-                }));
-                setCreatedSaleDetails(details);
+                // Capturar el ID del tab actual
+                // const saleTabId = currentTab?.id;
 
-                // Capturar el ID del tab actual (el de registro de venta) AHORA
-                const saleTabId = currentTab?.id;
-
-                // Cerrar automáticamente la ventana después de 2.5 segundos
-                setTimeout(() => {
-                    // Solo cerrar si tenemos el ID del tab de venta
-                    if (!saleTabId) return;
-
-                    // Buscar si existe una ventana de "Listar productos" antes de cerrar
-                    const productListTab = tabs.find(tab =>
-                        tab.path === '/dashboard/products' ||
-                        tab.title.toLowerCase().includes('producto')
-                    );
-
-                    // Cerrar específicamente el tab de registro de venta (no el activo actual)
-                    closeCurrentTab(saleTabId);
-
-                    // Si existe el tab de productos, enfocarlo después de cerrar
-                    if (productListTab) {
-                        setTimeout(() => {
-                            navigate(productListTab.path);
-                        }, 100);
+                // Navegar a edición con estado temporal
+                navigate(`/dashboard/sales/${createdSale.id}/update`, {
+                    state: {
+                        tempFormData,
+                        tempCreatedSale: createdSale,
+                        fromCreate: true,
+                        saleMethod: mode
                     }
+                });
+
+                // // Cerrar el tab de creación después de navegar
+                setTimeout(() => {
+                    handleNewSale(false)
+                    // if (saleTabId) {
+                    //     closeCurrentTab(saleTabId);
+                    // }
                 }, 2500);
             },
             onError: (error: unknown) => {
@@ -607,7 +605,6 @@ const CreateSaleScreen = () => {
                                         size="sm"
                                         variant={mode === 'sale-strict' ? 'default' : 'ghost'}
                                         onClick={() => handleManualModeChange('sale-strict')}
-                                        disabled={isReadOnly}
                                         className="h-7 text-xs"
                                     >
                                         Estricta
@@ -617,7 +614,6 @@ const CreateSaleScreen = () => {
                                         size="sm"
                                         variant={mode === 'sale-permissive' ? 'default' : 'ghost'}
                                         onClick={() => handleManualModeChange('sale-permissive')}
-                                        disabled={isReadOnly}
                                         className="h-7 text-xs"
                                     >
                                         Permisiva
@@ -660,7 +656,6 @@ const CreateSaleScreen = () => {
                                                     {...register("fecha")}
                                                     className="w-full"
                                                     autoFocus
-                                                    disabled={isReadOnly}
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-xs">{errors.fecha.message}</p>}
                                             </div>
@@ -677,7 +672,6 @@ const CreateSaleScreen = () => {
                                                             }}
                                                             options={saleResponsiblesData || []}
                                                             optionTag={"nombre"}
-                                                            disabled={isReadOnly}
                                                             clearOnEmpty={true}
                                                         />
                                                     )}
@@ -698,7 +692,6 @@ const CreateSaleScreen = () => {
                                                         //     isLoading={isSaleCustomersLoading}
                                                         //     updatePage={(page) => { console.log("Update page:", page) }}
                                                         //     updateSearch={setCustomerSearchTerm}
-                                                        //     disabled={isReadOnly}
                                                         //     placeholder="Buscar cliente por nombre"
                                                         //     metaData={
                                                         //         {
@@ -716,7 +709,6 @@ const CreateSaleScreen = () => {
                                                             }}
                                                             options={saleCustomersData?.data || []}
                                                             optionTag={"nombre"}
-                                                            disabled={isReadOnly}
                                                             clearOnEmpty={true}
                                                             placeholder="Buscar cliente por nombre"
                                                         />
@@ -730,7 +722,6 @@ const CreateSaleScreen = () => {
                                                     id="altClie"
                                                     {...register("cliente_nombre")}
                                                     placeholder="Cliente alternativo"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                             <div>
@@ -739,7 +730,6 @@ const CreateSaleScreen = () => {
                                                     id="cliente_nit"
                                                     {...register("cliente_nit")}
                                                     placeholder="Nit del Cliente"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                             <div>
@@ -748,7 +738,6 @@ const CreateSaleScreen = () => {
                                                     id="nroComprobante"
                                                     {...register("nro_comprobante")}
                                                     placeholder="Número de comprobante"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                             <div>
@@ -757,7 +746,6 @@ const CreateSaleScreen = () => {
                                                     id="nroComprobanteSecundario"
                                                     {...register("nro_comprobante2")}
                                                     placeholder="Número secundario"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                             <div>
@@ -767,7 +755,6 @@ const CreateSaleScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly}
                                                             onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Selecciona una forma" />
@@ -794,7 +781,6 @@ const CreateSaleScreen = () => {
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly}
                                                             onValueChange={field.onChange} value={field.value || saleTypesData?.[0]?.code || ""}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Selecciona un tipo" />
@@ -822,7 +808,7 @@ const CreateSaleScreen = () => {
                                                     id="fechaPlazo"
                                                     type="date"
                                                     {...register("plazo_pago")}
-                                                    disabled={formValues.tipo_venta !== "VC" || isReadOnly}
+                                                    disabled={formValues.tipo_venta !== "VC"}
                                                 />
                                                 {errors.plazo_pago && <p className="text-red-500 text-xs">{errors.plazo_pago.message}</p>}
                                             </div>
@@ -832,7 +818,6 @@ const CreateSaleScreen = () => {
                                                     id="vehiculo"
                                                     {...register("vehiculo")}
                                                     placeholder="Modelo del vehículo"
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                             {
@@ -843,7 +828,6 @@ const CreateSaleScreen = () => {
                                                             id="motor"
                                                             {...register("nro_motor")}
                                                             placeholder="Tipo de motor"
-                                                            disabled={isReadOnly}
                                                         />
                                                     </div>
                                                 )
@@ -858,7 +842,6 @@ const CreateSaleScreen = () => {
                                                     {...register("comentario")}
                                                     placeholder="Comentarios adicionales sobre la venta"
                                                     rows={configuraciones.formulario === "top" ? 1 : 2}
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                         </div>
@@ -913,7 +896,7 @@ const CreateSaleScreen = () => {
                                                                 <Button
                                                                     type="button"
                                                                     onClick={toggleWindowSelector}
-                                                                    disabled={isSaving || isReadOnly}
+                                                                    disabled={isSaving}
                                                                 >
                                                                     <Plus className="size-4" />
                                                                     <span className="hidden sm:block">Seleccionar Productos</span>
@@ -924,7 +907,7 @@ const CreateSaleScreen = () => {
                                                 </CardHeader>
                                                 <CardContent className="flex-1 min-h-0">
                                                     <div className="h-full overflow-auto">
-                                                        {items.length === 0 && !createdSaleDetails ? (
+                                                        {items.length === 0 ? (
                                                             <div className="text-center py-8 text-gray-500">
                                                                 <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                                                 <p>No hay productos agregados</p>
@@ -933,8 +916,6 @@ const CreateSaleScreen = () => {
                                                         ) :
                                                             <TableShoppingCart
                                                                 ref={tableRef}
-                                                                isReadOnly={isReadOnly}
-                                                                details={createdSaleDetails}
                                                             />
                                                         }
                                                     </div>
@@ -945,12 +926,11 @@ const CreateSaleScreen = () => {
 
                                     {/* Resumen de venta  */}
                                     <SalesSummary
-                                        isReadOnly={isReadOnly}
                                         clearCart={clearCart}
-                                        discountAmount={isReadOnly ? createdSaleSummary?.discount ?? 0 : discountAmount}
-                                        discountPercent={isReadOnly ? createdSaleSummary?.discountPercent ?? 0 : discountPercent}
-                                        subtotal={isReadOnly ? createdSaleSummary?.subtotal ?? 0 : subtotal}
-                                        total={isReadOnly ? createdSaleSummary?.total ?? 0 : total}
+                                        discountAmount={discountAmount}
+                                        discountPercent={discountPercent}
+                                        subtotal={subtotal}
+                                        total={total}
                                         isPending={isSaving}
                                         callback={handleNewSale}
                                         setDiscountAmount={setDiscountAmount}

@@ -7,7 +7,7 @@ export const useDeleteSale = () => {
     return useMutation({
         mutationFn: (idSale: number) => salesService.delete(idSale),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["sales"] });
+            queryClient.invalidateQueries({ queryKey: ["sales", "products", "product-detail", "product-detail-with-stock", "product-sales-stats"] });
         },
         retry: false,
         networkMode: 'offlineFirst',
