@@ -50,7 +50,12 @@ const HeaderTagRoute = ({
     <SidebarMenuItem>
       <SidebarMenuButton
         onClick={() => toggleHeader(route.name)}
-        className="flex items-center justify-between gap-2 p-2 text-sm font-medium text-gray-700 hover:bg-secondary hover:text-secondary-foreground cursor-pointer rounded-md transition-colors"
+        className={cn(
+          "flex items-center justify-between gap-2 p-2 text-sm font-medium cursor-pointer rounded-md transition-colors",
+          isInSubRoute
+            ? "bg-primary text-white"
+            : "text-gray-700 hover:bg-secondary hover:text-secondary-foreground"
+        )}
       >
         <div className="flex items-center gap-2">
           {route.icon && <route.icon className="h-4 w-4 flex-shrink-0" />}
@@ -70,7 +75,7 @@ const HeaderTagRoute = ({
 
       {hasSubRoutes && isExpanded && (
         <SidebarMenuSub className={cn(
-          "ml-3 mt-1 border-l border-gray-200 pl-2 mr-0 pr-0 py-0",
+          "ml-3 mt-1 border-l border-gray-400 pl-2 mr-0 pr-0 py-0",
         )}>
           {route.subRoutes
             ?.filter((subRoute) => subRoute.showSidebar && subRoute.path)

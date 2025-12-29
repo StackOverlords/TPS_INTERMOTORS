@@ -241,3 +241,13 @@
   width: 100%;
   height: 100%;
 }
+
+/* Estilos para evitar los botones de incremento/descremento en inputs de tipo number */
+input[type="number"].no-spinners::-webkit-inner-spin-button,
+  input[type="number"].no-spinners::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+input[type="number"].no-spinners {
+    -moz-appearance: textfield;
+  }

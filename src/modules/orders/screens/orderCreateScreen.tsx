@@ -58,8 +58,8 @@ const OrderCreateScreen = () => {
         return saved ? parseFloat(saved) : 6.96;
     });
 
-    // Hook de detalles de orden
-    const orderDetailsHook = useOrderDetails();
+    // Hook de detalles de orden (pasar exchangeRate)
+    const orderDetailsHook = useOrderDetails(false, exchangeRate);
 
     const {
         data: orderTypesData,
@@ -526,7 +526,6 @@ const OrderCreateScreen = () => {
                                                     type="date"
                                                     {...register("fecha")}
                                                     className="w-full"
-                                                    autoFocus
                                                 />
                                                 {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>}
                                             </div>

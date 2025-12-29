@@ -59,8 +59,14 @@ const OrderEditScreen = () => {
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const tableRef = useRef<OrderDetailTableRef>(null);
 
+    // Exchange rate state
+    const [exchangeRate, setExchangeRate] = useState(() => {
+        const saved = localStorage.getItem('order_exchange_rate');
+        return saved ? parseFloat(saved) : 6.96;
+    });
+
     // Hook de detalles de orden en modo edición
-    const orderDetailsHook = useOrderDetails<UIOrderDetailUpdate>(true);
+    const orderDetailsHook = useOrderDetails<UIOrderDetailUpdate>(true, exchangeRate);
 
     const {
         data: orderTypesData,
@@ -155,6 +161,7 @@ const OrderEditScreen = () => {
                 inc_p_venta_alt: detalle.inc_precio_venta_alt !== null ? Number(detalle.inc_precio_venta_alt) : 0,
                 precio_venta_alt: precioVentaAltFinal,
                 orden: detalle.orden ?? (index + 1),
+                    tc_compra: Number(detalle.tc_compra || exchangeRate),
                 product: {
                     id: detalle.producto.id,
                     descripcion: detalle.producto.descripcion,

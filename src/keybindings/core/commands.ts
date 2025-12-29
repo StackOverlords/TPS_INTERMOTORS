@@ -194,6 +194,12 @@ export const COMMANDS = {
     when: 'global',
     category: 'tabs',
   },
+  'tabs.toggleMenu': {
+    defaultKeys: 'ctrl+t',
+    description: 'Abrir/cerrar menú de pestañas',
+    when: 'global',
+    category: 'tabs',
+  },
   // ==================== SEARCH-FILTERS ====================
   // Para que ejecute el boton de busca en los listados etc. en lugar de presionar el boton
   'searchFilters.focusSearch': {
