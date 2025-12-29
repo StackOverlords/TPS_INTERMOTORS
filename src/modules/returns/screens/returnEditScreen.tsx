@@ -1,5 +1,5 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent"
-import { useNavigate, useParams } from "react-router"
+import { useLocation, useNavigate, useParams } from "react-router"
 import TooltipButton from "@/components/common/TooltipButton"
 import { CornerUpLeft, Loader2, Plus, Save, Undo2 } from "lucide-react"
 import { Kbd } from "@/components/atoms/kbd"
@@ -12,7 +12,6 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
-import { format } from "date-fns"
 import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
@@ -36,6 +35,8 @@ import { cn } from "@/lib/utils"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
 import { Button } from "@/components/atoms/button"
 import { useSaleDetailSelectorWindow } from "@/hooks/useSecondaryWindow"
+import type { ReturnGetById } from "../types/returnGet.types"
+import { getTodayDate } from "@/utils/dateFormatters"
 
 const ReturnEditScreen = () => {
     const configuraciones = {
@@ -43,8 +44,13 @@ const ReturnEditScreen = () => {
         formulario: 'top',
         selector_mode: 'window',
     }
-    const [isReadOnly] = useState<boolean>(false)
+    const location = useLocation();
+    const { tempCreatedReturn, fromCreate } = (location.state as {
+        tempCreatedReturn?: ReturnGetById;
+        fromCreate?: boolean
+    }) || {};
 
+    const [isUsingTempData, setIsUsingTempData] = useState(false);
     const navigate = useNavigate()
     const { returnId } = useParams()
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
@@ -81,7 +87,7 @@ const ReturnEditScreen = () => {
     const formMethods = useForm<ReturnUpdate>({
         resolver: zodResolver(ReturnUpdateSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             motivo_devolucion: undefined,
             responsable: 1,
@@ -102,43 +108,57 @@ const ReturnEditScreen = () => {
         formState: { errors }
     } = formMethods
 
+    const loadFormData = (returnLoadData: ReturnGetById) => {
+        // Transformar detalles a UIReturnDetailUpdate
+        const detallesUI: UIReturnDetailUpdate[] = returnLoadData.detalles.map((detalle, index) => ({
+            almacen_out_det_id: detalle.almacen_out_det_id,
+            almacen_out_dev_det_id: detalle.id,
+            cantidad: detalle.cantidad,
+            precio: detalle.costo ?? 0,
+            comentario: detalle.comentario ?? "",
+            almacen_out_id: detalle.id_venta ?? 0,
+            orden: detalle.orden ?? (index + 1),
+            sale_id: detalle.id_venta ?? 0,
+            product: {
+                id: detalle.id,
+                descripcion: detalle.producto ?? "",
+                codigo_oem: "",
+                codigo_upc: "",
+                precio_venta: 0,
+            },
+            maxQuantity: Infinity,
+        }));
+
+        // Establecer detalles en el hook
+        returnDetailsHook.setReturnDetails(detallesUI);
+
+        const resetData: ReturnUpdate = {
+            fecha: returnLoadData.fecha?.slice(0, 10) ?? "",
+            nro_comprobante: returnLoadData.comprobante ?? "",
+            motivo_devolucion: returnLoadData.forma_devolucion,
+            comentarios: returnLoadData.comentarios ?? "",
+            responsable: returnLoadData.responsable?.id ?? 1,
+            detalles: [],
+        };
+        reset(resetData);
+        setHasInitialized(true);
+    }
+
     useEffect(() => {
-        if (returnData && returnTypesData) {
-            // Transformar detalles a UIReturnDetailUpdate
-            const detallesUI: UIReturnDetailUpdate[] = returnData.detalles.map((detalle, index) => ({
-                almacen_out_det_id: detalle.almacen_out_det_id,
-                almacen_out_dev_det_id: detalle.id,
-                cantidad: detalle.cantidad,
-                precio: detalle.costo ?? 0,
-                comentario: detalle.comentario ?? "",
-                almacen_out_id: detalle.id_venta ?? 0,
-                orden: detalle.orden ?? (index + 1),
-                sale_id: detalle.id_venta ?? 0,
-                product: {
-                    id: detalle.id,
-                    descripcion: detalle.producto ?? "",
-                    codigo_oem: "",
-                    codigo_upc: "",
-                    precio_venta: 0,
-                },
-                maxQuantity: Infinity,
-            }));
+        // Si viene de crear venta, cargar datos temporales primero
+        if (fromCreate && tempCreatedReturn && !hasInitialized) {
+            loadFormData(tempCreatedReturn)
+            setIsUsingTempData(true);
 
-            // Establecer detalles en el hook
-            returnDetailsHook.setReturnDetails(detallesUI);
-
-            const resetData: ReturnUpdate = {
-                fecha: returnData.fecha?.slice(0, 10) ?? "",
-                nro_comprobante: returnData.comprobante ?? "",
-                motivo_devolucion: returnData.forma_devolucion,
-                comentarios: returnData.comentarios ?? "",
-                responsable: returnData.responsable?.id ?? 1,
-                detalles: [],
-            };
-            reset(resetData);
-            setHasInitialized(true);
+            // Limpiar el estado de navegación para evitar recargas
+            window.history.replaceState({}, document.title);
         }
-    }, [returnData, returnTypesData, reset]);
+
+        if (returnData && returnTypesData) {
+            loadFormData(returnData)
+            setIsUsingTempData(false)
+        }
+    }, [returnData, returnTypesData, reset, fromCreate, tempCreatedReturn, hasInitialized]);
 
     // Validar si hay errores de cantidad (cantidades que exceden maxQuantity)
     const hasQuantityErrors = useMemo(() => {
@@ -152,10 +172,9 @@ const ReturnEditScreen = () => {
         return (
             !hasQuantityErrors &&
             returnDetailsHook.details.length > 0 &&
-            !isReadOnly &&
             !isSaving
         );
-    }, [hasQuantityErrors, returnDetailsHook.details.length, isReadOnly, isSaving]);
+    }, [hasQuantityErrors, returnDetailsHook.details.length, isSaving]);
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -223,7 +242,6 @@ const ReturnEditScreen = () => {
         }
 
         const transformedData = result.data;
-        console.log(transformedData)
         updateReturn(
             { id: Number(returnId), data: transformedData },
             {
@@ -338,11 +356,11 @@ const ReturnEditScreen = () => {
         enabled: canSubmit
     });
 
-    if (isLoadingReturn || isLoadingReturnTypes || isLoadingReturnResponsibles) {
+    if ((isLoadingReturn || isLoadingReturnTypes || isLoadingReturnResponsibles) && !isUsingTempData) {
         return <ReturnEditSkeleton />;
     }
 
-    if (isErrorReturn || !returnData) {
+    if ((isErrorReturn || !returnData) && !isUsingTempData) {
         return (
             <div className="h-full flex items-center justify-center p-2 lg:p-8">
                 <ErrorDataComponent
@@ -379,11 +397,16 @@ const ReturnEditScreen = () => {
                                 </TooltipButton>
                                 <div>
                                     <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
-                                        Editar Devolución #{returnData?.nro}
+                                        Editar Devolución #{isUsingTempData ? tempCreatedReturn?.nro : returnData?.nro}
                                     </h1>
                                     {returnData && (
                                         <p className="text-sm text-gray-600">
                                             {returnData.cantidad_detalles} {returnData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                        </p>
+                                    )}
+                                    {isUsingTempData && (
+                                        <p className="text-sm text-gray-600">
+                                            {tempCreatedReturn?.cantidad_detalles} {tempCreatedReturn?.cantidad_detalles === 1 ? 'producto' : 'productos'}
                                         </p>
                                     )}
                                 </div>
@@ -494,7 +517,6 @@ const ReturnEditScreen = () => {
                                                     {...register("comentarios")}
                                                     placeholder="Comentarios adicionales sobre la devolución"
                                                     rows={configuraciones.formulario === "top" ? 1 : 2}
-                                                    disabled={isReadOnly}
                                                 />
                                             </div>
                                         </div>
@@ -548,7 +570,7 @@ const ReturnEditScreen = () => {
                                                                 <Button
                                                                     type="button"
                                                                     onClick={openSaleDetailSelector}
-                                                                    disabled={isSaleDetailSelectorOpen || isSaving || isReadOnly}
+                                                                    disabled={isSaleDetailSelectorOpen || isSaving}
                                                                 >
                                                                     <Plus className="h-4 w-4" />
                                                                     <span className="hidden sm:block">Agregar Productos</span>
@@ -576,7 +598,6 @@ const ReturnEditScreen = () => {
                                                                             onUpdatePrecio={returnDetailsHook.updatePrecio}
                                                                             onUpdateComentario={returnDetailsHook.updateComentario}
                                                                             onRemoveProduct={returnDetailsHook.removeProduct}
-                                                                            isReadOnly={isReadOnly}
                                                                             isSaving={isSaving}
                                                                             isEditMode={true}
                                                                         />

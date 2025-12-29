@@ -15,12 +15,11 @@ import { cn } from "@/lib/utils"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
 import { formatCurrency } from "@/utils/formaters"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { format } from "date-fns"
 import { CornerUpLeft, Loader2, Plus, Save, ShoppingCart } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
 import { useHotkeys } from "react-hotkeys-hook"
-import { useNavigate, useParams } from "react-router"
+import { useLocation, useNavigate, useParams } from "react-router"
 import type { OrderDetailTableRef } from "../components/OrderDetailTable"
 import OrderDetailTable from "../components/OrderDetailTable"
 import OrderEditSkeleton from "../components/orderEditSkeleton"
@@ -39,6 +38,8 @@ import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel
 import { Button } from "@/components/atoms/button"
 import type { SelectedItem } from "@/types/windowSelectedItems"
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow"
+import type { OrderGetById } from "../types/orderGet.types"
+import { getTodayDate } from "@/utils/dateFormatters"
 
 const OrderEditScreen = () => {
     const configuraciones = {
@@ -46,6 +47,13 @@ const OrderEditScreen = () => {
         formulario: 'top',
         selector_mode: 'window'
     }
+
+    const location = useLocation();
+    const { tempCreatedOrder, fromCreate } = (location.state as {
+        tempCreatedOrder?: OrderGetById;
+        fromCreate?: boolean
+    }) || {};
+    const [isUsingTempData, setIsUsingTempData] = useState(false);
     const navigate = useNavigate()
     const { orderId } = useParams()
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
@@ -102,7 +110,7 @@ const OrderEditScreen = () => {
     const formMethods = useForm<OrderUpdate>({
         resolver: zodResolver(OrderUpdateSchema),
         defaultValues: {
-            fecha: format(new Date(), "yyyy-MM-dd"),
+            fecha: getTodayDate(),
             nro_comprobante: "",
             id_proveedor: undefined,
             tipo_pedido: "",
@@ -131,61 +139,76 @@ const OrderEditScreen = () => {
 
     const currentStatus = watch("estado_actual")
 
-    useEffect(() => {
-        if (orderData && orderTypesData && orderModalitiesData) {
-            // Transformar detalles a UIOrderDetailUpdate
-            const detallesUI: UIOrderDetailUpdate[] = orderData.detalles.map((detalle, index) => {
-                // Si precio_venta es null, usar el precio del producto
-                const precioVentaFinal = detalle.precio_venta !== null
-                    ? Number(detalle.precio_venta)
-                    : Number(detalle.producto.precio_venta);
+    const loadFormData = (order: OrderGetById) => {
+        // Transformar detalles a UIOrderDetailUpdate
+        const detallesUI: UIOrderDetailUpdate[] = order.detalles.map((detalle, index) => {
+            // Si precio_venta es null, usar el precio del producto
+            const precioVentaFinal = detalle.precio_venta !== null
+                ? Number(detalle.precio_venta)
+                : Number(detalle.producto.precio_venta);
 
-                const precioVentaAltFinal = detalle.precio_venta_alt !== null
-                    ? Number(detalle.precio_venta_alt)
-                    : Number(detalle.producto.precio_venta_alt);
+            const precioVentaAltFinal = detalle.precio_venta_alt !== null
+                ? Number(detalle.precio_venta_alt)
+                : Number(detalle.producto.precio_venta_alt);
 
-                return {
-                    id_detalle_pedido: detalle.id,
-                    id_producto: detalle.producto.id,
-                    cantidad: Number(detalle.cantidad),
-                    costo: Number(detalle.costo),
-                    inc_p_venta: detalle.inc_precio_venta !== null ? Number(detalle.inc_precio_venta) : 0,
-                    precio_venta: precioVentaFinal,
-                    inc_p_venta_alt: detalle.inc_precio_venta_alt !== null ? Number(detalle.inc_precio_venta_alt) : 0,
-                    precio_venta_alt: precioVentaAltFinal,
-                    orden: detalle.orden ?? (index + 1),
+            return {
+                id_detalle_pedido: detalle.id,
+                id_producto: detalle.producto.id,
+                cantidad: Number(detalle.cantidad),
+                costo: Number(detalle.costo),
+                inc_p_venta: detalle.inc_precio_venta !== null ? Number(detalle.inc_precio_venta) : 0,
+                precio_venta: precioVentaFinal,
+                inc_p_venta_alt: detalle.inc_precio_venta_alt !== null ? Number(detalle.inc_precio_venta_alt) : 0,
+                precio_venta_alt: precioVentaAltFinal,
+                orden: detalle.orden ?? (index + 1),
                     tc_compra: Number(detalle.tc_compra || exchangeRate),
-                    product: {
-                        id: detalle.producto.id,
-                        descripcion: detalle.producto.descripcion,
-                        codigo_oem: detalle.producto.codigo_oem,
-                        codigo_upc: detalle.producto.codigo_upc,
-                        precio_venta: Number(detalle.producto.precio_venta),
-                        marca: detalle.producto.marca?.marca ?? '',
-                        procedencia: detalle.producto.procedencia.procedencia ?? '',
-                    }
-                };
-            });
-
-            // Establecer detalles en el hook
-            orderDetailsHook.setOrderDetails(detallesUI);
-            const resetData: OrderUpdate = {
-                fecha: orderData.fecha?.slice(0, 10) ?? "",
-                nro_comprobante: orderData.comprobante ?? "",
-                id_proveedor: orderData.proveedor?.id ?? 0,
-                comentario: orderData.comentarios ?? "",
-                id_responsable: orderData.responsable?.id ?? 1,
-                detalles: [],
-                tipo_pedido: orderData.tipo_pedido,
-                forma_pedido: orderData.forma_pedido,
-                estado_actual: orderData.situacion_actual,
-                fecha_inicio_transito: orderData.fecha_transito ?? "",
-                fecha_llegada: orderData.fecha_llegada ?? "",
+                product: {
+                    id: detalle.producto.id,
+                    descripcion: detalle.producto.descripcion,
+                    codigo_oem: detalle.producto.codigo_oem,
+                    codigo_upc: detalle.producto.codigo_upc,
+                    precio_venta: Number(detalle.producto.precio_venta),
+                    marca: detalle.producto.marca?.marca ?? '',
+                    procedencia: detalle.producto.procedencia.procedencia ?? '',
+                }
             };
-            reset(resetData);
-            setHasInitialized(true);
+        });
+
+        // Establecer detalles en el hook
+        orderDetailsHook.setOrderDetails(detallesUI);
+        const resetData: OrderUpdate = {
+            fecha: order.fecha?.slice(0, 10) ?? "",
+            nro_comprobante: order.comprobante ?? "",
+            id_proveedor: order.proveedor?.id ?? 0,
+            comentario: order.comentarios ?? "",
+            id_responsable: order.responsable?.id ?? 1,
+            detalles: [],
+            tipo_pedido: order.tipo_pedido,
+            forma_pedido: order.forma_pedido,
+            estado_actual: order.situacion_actual,
+            fecha_inicio_transito: order.fecha_transito ?? "",
+            fecha_llegada: order.fecha_llegada ?? "",
+        };
+        reset(resetData);
+        setHasInitialized(true);
+    }
+
+    useEffect(() => {
+        // Si viene de crear venta, cargar datos temporales primero
+        if (fromCreate && tempCreatedOrder && !hasInitialized) {
+            loadFormData(tempCreatedOrder)
+            setIsUsingTempData(true);
+
+            // Limpiar el estado de navegación para evitar recargas
+            window.history.replaceState({}, document.title);
         }
-    }, [orderData, orderTypesData, orderModalitiesData, reset]);
+
+        // Cuando lleguen los datos reales del backend, reemplazar
+        if (orderData && orderTypesData && orderModalitiesData) {
+            loadFormData(orderData)
+            setIsUsingTempData(false)
+        }
+    }, [orderData, orderTypesData, orderModalitiesData, reset, fromCreate, tempCreatedOrder, hasInitialized]);
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -312,6 +335,7 @@ const OrderEditScreen = () => {
         if (transformedData.fecha_llegada === '') {
             transformedData.fecha_llegada = undefined;
         }
+
         updateOrder(
             { id: Number(orderId), data: transformedData },
             {
@@ -394,11 +418,11 @@ const OrderEditScreen = () => {
         handleSubmit(onSubmit, onError)();
     })
 
-    if (isLoadingOrder || isLoadingOrderTypes || isLoadingOrderModalities || isLoadingOrderResponsibles) {
+    if ((isLoadingOrder || isLoadingOrderTypes || isLoadingOrderModalities || isLoadingOrderResponsibles) && !isUsingTempData) {
         return <OrderEditSkeleton />;
     }
 
-    if (isErrorOrder || !orderData) {
+    if ((isErrorOrder || !orderData) && !isUsingTempData) {
         return (
             <div className="h-full flex items-center justify-center p-2 lg:p-8">
                 <ErrorDataComponent
@@ -437,12 +461,18 @@ const OrderEditScreen = () => {
                                 </TooltipButton>
                                 <div>
                                     <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
-                                        Editar pedido #{orderData?.nro}
+                                        Editar pedido #{isUsingTempData ? tempCreatedOrder?.nro : orderData?.nro}
                                     </h1>
                                     {orderData && (
                                         <p className="text-sm text-gray-600">
                                             {orderData.proveedor ? `${orderData.proveedor.proveedor} - ` : ''}
                                             {orderData.cantidad_detalles} {orderData.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                                        </p>
+                                    )}
+                                    {isUsingTempData && (
+                                        <p className="text-sm text-gray-600">
+                                            {tempCreatedOrder?.proveedor ? `${tempCreatedOrder.proveedor?.proveedor} - ` : ''}
+                                            {tempCreatedOrder?.cantidad_detalles} {tempCreatedOrder?.cantidad_detalles === 1 ? 'producto' : 'productos'}
                                         </p>
                                     )}
                                 </div>
