@@ -248,7 +248,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
                         isFetching={isFetching}
                         isLoading={isLoading}
                         errorMessage="Ocurrió un error al cargar los productos"
-                        noDataMessage="No se encontraron productos"
+                        enableColumnReordering={true}
                     />
                 </div>
             </CardContent>
