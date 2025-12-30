@@ -111,6 +111,10 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                         descuento = subtotal * (existingDiscountPercentage / 100);
                     }
 
+                    const composedDescription = [product.categoria, product.medida]
+                        .filter((v): v is string => Boolean(v && v.trim()))
+                        .join(" ");
+
                     const newDetail: QuotationUpdateDetailUI = {
                         id_producto: product.id,
                         cantidad: 1,
@@ -118,7 +122,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                         porcentaje_descuento: porcentaje_descuento,
                         id_detalle_cotizacion: null,
                         precio: product.precio_venta,
-                        descripcion: `${product.categoria ?? ''} ${product.medida ?? ''}`.trim(),
+                        descripcion: composedDescription || product.descripcion,
                         nueva_marca: product.marca,
                         orden: updated.length + 1,
                         codigo_oem: product.codigo_oem ?? '',
@@ -188,6 +192,10 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                         descuento = subtotal * (existingDiscountPercentage / 100);
                     }
 
+                    const composedDescription = [product.categoria, product.medida]
+                        .filter((v): v is string => Boolean(v && v.trim()))
+                        .join(" ");
+
                     const newDetail: QuotationUpdateDetailUI = {
                         id_producto: product.id,
                         cantidad: quantity,
@@ -195,7 +203,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                         porcentaje_descuento: porcentaje_descuento,
                         id_detalle_cotizacion: null,
                         precio: product.precio_venta,
-                        descripcion: `${product.categoria ?? ''} ${product.medida ?? ''}`.trim(),
+                        descripcion: composedDescription || product.descripcion,
                         nueva_marca: product.marca,
                         orden: updated.length + 1,
                         codigo_oem: product.codigo_oem ?? '',

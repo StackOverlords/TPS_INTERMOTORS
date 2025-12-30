@@ -55,6 +55,8 @@ import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tab
 import { useUpdateProductImage } from "../hooks/mutations/useUpdateProductImage"
 import { base64ToFile } from "@/utils/base64Utils"
 
+const SCREEN_PATH = "/dashboard/productos"
+
 const ProductListScreen = () => {
     const tableRef = useRef<HTMLTableElement>(null)
     const tableShoppingCartRef = useRef<TableShoppingCartRef>(null);
@@ -687,6 +689,7 @@ const ProductListScreen = () => {
     } = useKeyboardNavigation<ProductGet, HTMLTableElement>({
         items: products,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         // enabled: isFeatureEnabled('keyboardNavigation'),
         onPrimaryAction: (product) => {
@@ -793,8 +796,8 @@ const ProductListScreen = () => {
     // }
 
     useCommands({
-    'searchFilters.focusSearch':handleManualSearch,
-    'forms.reset':handleResetFilters
+        'searchFilters.focusSearch': handleManualSearch,
+        'forms.reset': handleResetFilters
     })
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
