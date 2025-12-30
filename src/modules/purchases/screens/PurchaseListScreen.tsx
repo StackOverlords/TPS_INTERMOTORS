@@ -160,6 +160,8 @@ const PurchaseListScreen = () => {
   useCommands({
     'searchFilters.focusSearch':handleManualSearch,
     'forms.reset':resetFilters
+  },{
+    enableOnFormTags:true
   });
   const columns = useMemo<ColumnDef<PurchaseGet>[]>(
     () => [

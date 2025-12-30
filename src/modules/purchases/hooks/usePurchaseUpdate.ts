@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { purchaseService } from "../services/purchaseService";
 import { PRUCHASE_QUERY_KEYS } from "../constants/purchasesQueryKeys";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
+import { PRODUCTS_QUERY_KEYS } from "@/lib/queryKeys";
 
 interface UpdatePurchaseVariables {
   id: number;
@@ -30,6 +31,16 @@ export const usePurchaseUpdate = () => {
         PRUCHASE_QUERY_KEYS.detail(variables.id),
         updatedPurchase
       );
+
+      queryClient.invalidateQueries({
+        queryKey: PRODUCTS_QUERY_KEYS.all
+      })
+      queryClient.invalidateQueries({
+        queryKey: PRODUCTS_QUERY_KEYS.details()
+      })
+      queryClient.invalidateQueries({
+        queryKey: PRODUCTS_QUERY_KEYS.stock({})
+      })
     },
   });
 };

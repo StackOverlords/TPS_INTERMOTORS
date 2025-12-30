@@ -153,6 +153,8 @@ const QuotationListScreen = () => {
     useCommands({
     'searchFilters.focusSearch':handleManualSearch,
     'forms.reset':handleResetFilters
+    },{
+        enableOnFormTags:true
     })
 
     return (

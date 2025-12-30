@@ -480,6 +480,8 @@ const AccountsPayableListScreen = () => {
   useCommands({
     'searchFilters.focusSearch': handleManualSearch,
     // 'forms.reset': handleResetFilters
+  },{
+    enableOnFormTags:true
   })
   return (
     <main className="h-full p-2 gap-2 flex flex-col">

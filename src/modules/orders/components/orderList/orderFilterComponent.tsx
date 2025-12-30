@@ -105,9 +105,9 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
         excludeSelectors: [
             '.editable-cell-input',
             '[data-table-cell="true"]',
-            '[name="btn-chvron-right"]',
-            
+            '[name="btn-chvron-right"]',  
         ],
+        enabled: true,
     })
     return (
         <section className="space-y-2">
@@ -140,9 +140,9 @@ const OrdersFiltersComponent: React.FC<OrdersFiltersProps> = ({
                                 optionTag="nombre"
                                 placeholder="Buscar proveedor por nombre"
                                 className="w-full"
-                                enableAllOption={false}
+                                // enableAllOption={false}
                                 clearOnEmpty={true}
-                                disabled={isOrdersProvidersLoading}
+                                // disabled={isOrdersProvidersLoading}
                             />
                         </div>
                     )

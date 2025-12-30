@@ -25,12 +25,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
   // Poblar formulario con datos existentes
   useEffect(() => {
     if (initialData) {
-      console.log("📅 Initial data received:", initialData);
-      console.log("📅 Fecha from API:", initialData.fecha);
-
       const formattedFecha = initialData.fecha ? initialData.fecha.split('T')[0] : "";
-      console.log("📅 Formatted fecha:", formattedFecha);
-
       setFormData({
         fecha: formattedFecha,
         // Corregir mapeo: usar 'comprobante' no 'nro'
@@ -139,7 +134,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
             if (isNaN(transformedDetalle.tc_compra)) transformedDetalle.tc_compra = 6.96;
 
-            console.log(`🔍 Detalle existente ${index} (ID: ${transformedDetalle.id_detalle_compra}):`, transformedDetalle);
             return transformedDetalle;
           } else {
             // Detalle nuevo - usar el ID de referencia del primer detalle existente
@@ -174,13 +168,10 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
             if (isNaN(transformedDetalle.tc_compra)) transformedDetalle.tc_compra = 6.96;
 
-            console.log(`🆕 Detalle nuevo ${index} (ID: null, Producto ID: ${transformedDetalle.id_producto}):`, transformedDetalle);
             return transformedDetalle;
           }
         })
       };
-
-      console.log('📤 Payload completo a enviar:', dataToSend);
 
       // Usar la mutación de React Query que invalida el caché automáticamente
       await updateMutation.mutateAsync({ id: purchaseId, data: dataToSend });
@@ -191,7 +182,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
       });
       return true;
     } catch (error) {
-      console.error('Error al actualizar:', error);
       toast({
         title: "Error al actualizar",
         description: "No se pudo actualizar la compra. Inténtalo de nuevo.",

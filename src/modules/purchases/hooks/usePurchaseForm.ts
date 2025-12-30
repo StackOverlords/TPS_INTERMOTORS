@@ -1,4 +1,6 @@
 import { toast } from "@/hooks/use-toast";
+import { PRODUCTS_QUERY_KEYS } from "@/lib/queryKeys";
+import { queryClient } from "@/lib/reactQueryConfig";
 import { apiConstructor } from "@/modules/products/services/api";
 import { useCallback, useState } from "react";
 
@@ -102,15 +104,15 @@ export function usePurchaseForm(initialBranch: number, onSuccessCallback?: (crea
     setTouched(Object.keys(formData).reduce((a, k) => ({ ...a, [k]: true }), {} as FormTouched));
     if (!validateAll()) return;
     setIsLoading(true);
-    console.log(formData)
     try {
       const createdPurchase = await apiConstructor({ url: "/purchases", method: "POST", data: formData });
-      console.log("Purchase created:", createdPurchase);
+      queryClient.invalidateQueries({
+        queryKey: ['product-stock']
+      }) 
       reset();
       if (onSuccessCallback) {
         onSuccessCallback(createdPurchase);
       } else {
-        // Solo mostrar toast si no hay callback (para compatibilidad con usos anteriores)
         toast({ title: "Compra creada exitosamente", description: "La compra se ha guardado correctamente." });
       }
       return createdPurchase;
