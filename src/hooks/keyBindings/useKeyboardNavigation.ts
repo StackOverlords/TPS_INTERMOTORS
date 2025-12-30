@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useTabActive } from '../tabs/useTabActive';
 
 interface UseKeyboardNavigationProps<T, E extends HTMLElement = HTMLElement> {
     items: T[];
@@ -10,6 +11,7 @@ interface UseKeyboardNavigationProps<T, E extends HTMLElement = HTMLElement> {
     enableHotkeys?: boolean;
     containerRef?: React.RefObject<E | null>;
     isDragging?: boolean;
+    screenPath?: string; // 🆕 Path del tab para verificar si está activo
     hotkeys?: {
         activate?: string;
         deactivate?: string;
@@ -31,6 +33,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     enableHotkeys = true,
     containerRef: externalRef,
     isDragging = false,
+    screenPath, // 🆕
     hotkeys = {
         activate: 'alt+t',
         deactivate: 'escape',
@@ -51,12 +54,15 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     const containerRef = externalRef || internalRef;
     const selectedItem = items[selectedIndex];
 
-    // 🆕 Desactivar hotkeys durante drag
-    const isHotkeysEnabled = enableHotkeys && !isDragging;
+    // 🆕 Verificar si el tab está activo
+    const isTabActive = useTabActive(screenPath);
+
+    // 🆕 Hotkeys solo habilitados si el tab está activo
+    const isHotkeysEnabled = enableHotkeys && !isDragging && isTabActive;
 
     // Auto-scroll al elemento seleccionado
     useEffect(() => {
-        if (!isFocused || isDragging) return;
+        if (!isFocused || isDragging || !isTabActive) return;
         if (containerRef.current) {
             const selectedRow = containerRef.current.querySelector(
                 `[data-row-index="${selectedIndex}"]`
@@ -69,7 +75,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                 });
             }
         }
-    }, [selectedIndex, isFocused, containerRef, isDragging]);
+    }, [selectedIndex, isFocused, containerRef, isDragging, isTabActive]);
 
     // Resetear índice cuando cambien los items
     useEffect(() => {
@@ -85,6 +91,15 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
             setCurrentElementIndex(-1);
         }
     }, [isDragging, isNavigatingWithinRow]);
+
+    // 🆕 Desactivar foco cuando el tab se desactiva
+    useEffect(() => {
+        if (!isTabActive && isFocused) {
+            setIsFocused(false);
+            setIsNavigatingWithinRow(false);
+            setCurrentElementIndex(-1);
+        }
+    }, [isTabActive, isFocused]);
 
     // Función para obtener elementos focuseables en la fila seleccionada
     const getFocusableElementsInSelectedRow = useCallback((): HTMLElement[] => {
@@ -133,7 +148,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         },
         { 
             enabled: isHotkeysEnabled,
-            enableOnFormTags: true, // ✅ Permitir en inputs/textareas
+            enableOnFormTags: true,
             preventDefault: true
         }
     );
@@ -289,8 +304,8 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     // ✅ Manejar clics para activar/desactivar foco
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            // 🆕 Ignorar clicks durante drag
-            if (isDragging) return;
+            // 🆕 Ignorar clicks durante drag o si el tab no está activo
+            if (isDragging || !isTabActive) return;
 
             const target = e.target as HTMLElement;
 
@@ -301,7 +316,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                     'button, input, textarea, select, a[href], [role="button"], [role="menuitem"]'
                 ) as HTMLElement;
 
-                // ✅ ACTIVAR si no estaba activo (excepto si es un elemento interactivo que está fuera de las filas)
+                // ✅ ACTIVAR si no estaba activo
                 if (!isFocused) {
                     setIsFocused(true);
                 }
@@ -311,9 +326,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                 
                 // Si no encontramos la fila directamente, buscar en los padres del contenedor
                 if (!clickedRow && containerRef.current) {
-                    // Buscar todas las filas en el contenedor
                     const allRows = containerRef.current.querySelectorAll('[data-row-index]');
-                    // Verificar si el target está dentro de alguna fila
                     for (const row of Array.from(allRows)) {
                         if (row.contains(target)) {
                             clickedRow = row as HTMLElement;
@@ -335,7 +348,6 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                             setCurrentElementIndex(elementIndex);
                         }
                     } else {
-                        // Si no es un elemento interactivo, resetear navegación dentro de fila
                         setIsNavigatingWithinRow(false);
                         setCurrentElementIndex(-1);
                     }
@@ -350,7 +362,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
 
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [getFocusableElementsInSelectedRow, containerRef, isDragging, isFocused]);
+    }, [getFocusableElementsInSelectedRow, containerRef, isDragging, isTabActive, isFocused]);
 
     // Funciones de utilidad
     const navigateToItem = useCallback((index: number) => {
@@ -375,6 +387,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         isFocused,
         isNavigatingWithinRow,
         currentElementIndex,
+        isTabActive, // 🆕 Exponer el estado del tab
 
         // Refs
         containerRef,

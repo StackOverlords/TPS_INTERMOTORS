@@ -222,6 +222,7 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
                         table={table}
                         isLoading={isLoadingData}
                         isError={isErrorData}
+                        enableColumnReordering={true}
                     />
                 </div>
             </CardContent>

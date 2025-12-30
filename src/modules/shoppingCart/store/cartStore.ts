@@ -248,12 +248,16 @@ export const createCartStore = (user: string) => {
                         } else {
                             const quantity = 1;
                             const subtotal = calculateSubtotalByItem(basePrice, quantity);
+                            const composedDescription = [product.categoria, product.medida]
+                                .filter((v): v is string => Boolean(v && v.trim()))
+                                .join(" ");
+
                             const newItem: CartItem = {
                                 product,
                                 quantity,
                                 customPrice: basePrice,
                                 customSubtotal: subtotal,
-                                customDescription: `${product.categoria ?? ''} ${product.medida ?? ''}`.trim(),
+                                customDescription: composedDescription || product.descripcion,
                                 customBrand: product.marca
                             };
 
