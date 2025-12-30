@@ -118,7 +118,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                         porcentaje_descuento: porcentaje_descuento,
                         id_detalle_cotizacion: null,
                         precio: product.precio_venta,
-                        descripcion: product.descripcion,
+                        descripcion: `${product.categoria ?? ''} ${product.medida ?? ''}`.trim(),
                         nueva_marca: product.marca,
                         orden: updated.length + 1,
                         codigo_oem: product.codigo_oem ?? '',
@@ -195,7 +195,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                         porcentaje_descuento: porcentaje_descuento,
                         id_detalle_cotizacion: null,
                         precio: product.precio_venta,
-                        descripcion: product.descripcion,
+                        descripcion: `${product.categoria ?? ''} ${product.medida ?? ''}`.trim(),
                         nueva_marca: product.marca,
                         orden: updated.length + 1,
                         codigo_oem: product.codigo_oem ?? '',
@@ -235,7 +235,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
             }
 
             const updated = prevDetails.filter(detail => detail.id_producto !== productId);
-            
+
             // Reordenar después de eliminar
             return updated.map((product, index) => ({
                 ...product,
@@ -255,7 +255,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
             return;
         }
 
-        setDetails(prevDetails => 
+        setDetails(prevDetails =>
             prevDetails.map(detail => {
                 if (detail.id_producto === productId) {
                     let newDiscount = detail.descuento;

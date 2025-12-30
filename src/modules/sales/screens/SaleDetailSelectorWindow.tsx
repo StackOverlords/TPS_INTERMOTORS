@@ -69,6 +69,7 @@ const SaleDetailSelectorWindow = () => {
     }, []);
 
     const STORAGE_KEY = config.windowId + '-sale-detail-filters';
+    const FILTER_EXPIRATION_HOURS = 2;
     const [selectedSale, setSelectedSale] = useState<SaleGetAll | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
     const [selectedItems, setSelectedItems] = useState<SelectedItemWithSale[]>([]);
@@ -80,9 +81,20 @@ const SaleDetailSelectorWindow = () => {
     useEffect(() => {
         const loadFilters = async () => {
             try {
-                const saved = sessionStorage.getItem(STORAGE_KEY);
+                const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
-                    const parsed: Partial<SalesFilters> = JSON.parse(saved);
+                    const { filters: parsed, timestamp } = JSON.parse(saved);
+
+                    // Verificar si los filtros han expirado
+                    const now = Date.now();
+                    const expirationTime = FILTER_EXPIRATION_HOURS * 60 * 60 * 1000; // en milisegundos
+
+                    if (now - timestamp > expirationTime) {
+                        // Filtros expirados, limpiar
+                        localStorage.removeItem(STORAGE_KEY);
+                        console.log('Filtros expirados, se han limpiado');
+                        return;
+                    }
 
                     // Reconstruir fechas desde strings
                     if (parsed.fecha_inicio && typeof parsed.fecha_inicio === 'string') {
@@ -106,7 +118,7 @@ const SaleDetailSelectorWindow = () => {
                     });
                 }
             } catch (e) {
-                console.error('Error loading filters:', e);
+                localStorage.removeItem(STORAGE_KEY);
             }
         };
         loadFilters();
@@ -115,7 +127,11 @@ const SaleDetailSelectorWindow = () => {
     // 🔥 Guardar filtros cuando cambien
     const saveFilters = useCallback((newFilters: Partial<SalesFilters>) => {
         try {
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newFilters));
+            const dataToSave = {
+                filters: newFilters,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
             setFilters(newFilters);
         } catch (e) {
             console.error('Error saving filters:', e);
@@ -468,7 +484,7 @@ const SaleDetailSelectorWindow = () => {
                         savedFilters={filters}
                         onSavedFiltersChange={saveFilters}
                         onResetSavedFilters={() => {
-                            sessionStorage.removeItem(STORAGE_KEY);
+                            localStorage.removeItem(STORAGE_KEY);
                             setFilters(undefined);
                         }}
                     />

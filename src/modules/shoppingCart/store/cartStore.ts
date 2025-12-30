@@ -253,7 +253,7 @@ export const createCartStore = (user: string) => {
                                 quantity,
                                 customPrice: basePrice,
                                 customSubtotal: subtotal,
-                                customDescription: product.descripcion,
+                                customDescription: `${product.categoria ?? ''} ${product.medida ?? ''}`.trim(),
                                 customBrand: product.marca
                             };
 

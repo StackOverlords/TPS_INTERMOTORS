@@ -38,6 +38,7 @@ import SalesSummary from "../components/salesSummary"
 import type { SaleGetById } from "../types/salesGetResponse"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
 import type { SelectedItem } from "@/types/windowSelectedItems"
+import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes"
 
 const SaleEditScreen = () => {
     const configuraciones = {
@@ -74,6 +75,10 @@ const SaleEditScreen = () => {
     } = useSaleModalities()
 
     const {
+        data: salePaymentTypesData,
+    } = useSalePaymentTypes()
+
+    const {
         data: saleResponsiblesData,
         isLoading: isLoadingSaleResponsibles
     } = useSaleResponsibles()
@@ -106,6 +111,7 @@ const SaleEditScreen = () => {
             id_cliente: undefined,
             tipo_venta: "",
             forma_venta: "",
+            forma_pago: "",
             comentario: "",
             plazo_pago: "",
             vehiculo: "",
@@ -170,6 +176,7 @@ const SaleEditScreen = () => {
             detalles: detallesTransformados,
             tipo_venta: sale.tipo_venta,
             forma_venta: sale.forma_venta,
+            forma_pago: sale.forma_pago ?? salePaymentTypesData?.[0]?.code ?? "",
         };
         reset(resetData);
         setHasInitialized(true);
@@ -189,10 +196,10 @@ const SaleEditScreen = () => {
         }
 
         // Cuando lleguen los datos reales del backend, reemplazar
-        if (saleData && saleTypesData && saleModalitiesData) {
+        if (saleData && saleTypesData && saleModalitiesData && salePaymentTypesData) {
             loadFormData(saleData);
         }
-    }, [saleData, saleTypesData, saleModalitiesData, fromCreate, tempFormData, hasInitialized]);
+    }, [saleData, saleTypesData, saleModalitiesData, fromCreate, tempFormData, hasInitialized, salePaymentTypesData, reset]);
 
     const validateBeforeSubmit = (): boolean => {
         let isValid = true;
@@ -236,6 +243,14 @@ const SaleEditScreen = () => {
             setError("forma_venta", {
                 type: "manual",
                 message: "Debes seleccionar una forma de venta"
+            });
+            isValid = false;
+        }
+
+        if (!formData.forma_pago) {
+            setError("forma_pago", {
+                type: "manual",
+                message: "Debes seleccionar una forma de pago"
             });
             isValid = false;
         }
@@ -654,22 +669,52 @@ const SaleEditScreen = () => {
                                                     disabled={isReadOnly}
                                                 />
                                             </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="forma_venta">Forma de venta *</Label>
+                                                        <Controller
+                                                            name="forma_venta"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <Select
+                                                                    disabled={isReadOnly}
+                                                                    onValueChange={field.onChange}
+                                                                    value={field.value || saleData?.forma_venta || ""}>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Selecciona una forma" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {
+                                                                            saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                                <SelectItem key={modality.code} value={modality.code}>
+                                                                                    {modality.label}
+                                                                                </SelectItem>
+                                                                            ))
+                                                                        }
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        />
+                                                        {errors.forma_venta && <p className="text-red-500 text-xs">{errors.forma_venta.message}</p>}
+                                                    </div>
+                                                )
+                                            }
+
                                             <div>
-                                                <Label htmlFor="forma">Forma de venta *</Label>
+                                                <Label htmlFor="forma_pago">Forma de pago *</Label>
                                                 <Controller
-                                                    name="forma_venta"
+                                                    name="forma_pago"
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            disabled={isReadOnly}
-                                                            onValueChange={field.onChange}
-                                                            value={field.value || saleData?.forma_venta || ""}>
+                                                            onValueChange={field.onChange} value={field.value || saleData?.forma_pago || ""}>
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="Selecciona una forma" />
+                                                                <SelectValue placeholder="Selecciona una forma de pago" />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {
-                                                                    saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                    salePaymentTypesData && salePaymentTypesData.map((modality) => (
                                                                         <SelectItem key={modality.code} value={modality.code}>
                                                                             {modality.label}
                                                                         </SelectItem>
@@ -679,7 +724,7 @@ const SaleEditScreen = () => {
                                                         </Select>
                                                     )}
                                                 />
-                                                {errors.forma_venta && <p className="text-red-500 text-xs">{errors.forma_venta.message}</p>}
+                                                {errors.forma_pago && <p className="text-red-500 text-xs">{errors.forma_pago.message}</p>}
                                             </div>
 
                                             <div>

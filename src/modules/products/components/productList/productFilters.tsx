@@ -45,6 +45,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   useFormEnterNavigation({
     containerRef: containerRef,
     excludeSelectors: ['.no-enter-nav','.columns-button','[name="btn-chvron-right"]'],
+    enabled:true
   })
   return (
     <div ref={containerRef}>

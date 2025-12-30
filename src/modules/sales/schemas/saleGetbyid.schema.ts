@@ -39,6 +39,7 @@ export const SaleGetByIdSchema = z.object({
     nro: z.string(),
     tipo_venta: z.string(),
     forma_venta: z.string(),
+    forma_pago: z.string().nullable(),
     cliente: SaleCustomerGetSchema.nullable(),
     responsable_venta: SaleResponsibleSchema.nullable(),
     cantidad_detalles: z.number().int(),

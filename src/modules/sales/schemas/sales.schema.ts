@@ -17,6 +17,7 @@ export const SaleSchema = z.object({
   tipo_venta: z.string().nonempty(),
   forma_venta: z.string().nonempty(),
   comentario: z.string().nullable(),
+  forma_pago: z.string().nonempty(),
   plazo_pago: z.string().nullable(),
   vehiculo: z.string().nullable(),
   nro_motor: z.string().nullable(),

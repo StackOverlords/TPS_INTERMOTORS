@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
-import { format, parse } from "date-fns"
+import { parse } from "date-fns"
 import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { Button } from "@/components/atoms/button"
@@ -42,7 +42,7 @@ import type { QuotationUpdate } from "../types/quotationUpdate.types"
 import { Badge } from "@/components/atoms/badge"
 import { useClienteVarios } from "../hooks/useClienteVarios"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
-import { getTodayDate } from "@/utils/dateFormatters"
+import { parseDateFromBackend } from "@/utils/dateFormatters"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -112,7 +112,7 @@ const QuotationEditScreen = () => {
     const formMethods = useForm<QuotationUpdate>({
         resolver: zodResolver(QuotationUpdateSchema),
         defaultValues: {
-            fecha: getTodayDate(),
+            fecha: "",
             nro_comprobante: "",
             nro_comprobante2: "",
             id_cliente: undefined,
@@ -164,7 +164,7 @@ const QuotationEditScreen = () => {
         }));
 
         const resetData: QuotationUpdate = {
-            fecha: format(quotation.fecha, "yyyy-MM-dd") ?? "",
+            fecha: parseDateFromBackend(quotation.fecha) ?? "",
             nro_comprobante2: quotation.comprobante2 ?? "",
             nro_comprobante: quotation.comprobante ?? "",
             id_cliente: quotation.cliente?.id ?? 0,

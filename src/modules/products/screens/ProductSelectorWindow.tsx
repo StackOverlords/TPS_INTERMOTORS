@@ -37,7 +37,6 @@ import { useProductSelection } from '../hooks/useProductSelection';
 import type { SelectedItem } from '@/types/windowSelectedItems';
 import { showErrorToast, showSuccessToast, showWarningToast } from '@/hooks/use-toast-enhanced';
 import { ColumnVisibilityDropdown } from '@/components/common/ColumnVisibilityDropdown';
-import type { ProductFilters as ProductFiltersTypes } from '../types/productFilters';
 import { useCommands } from '@/keybindings';
 
 type ProductSelectorContext =
@@ -88,6 +87,7 @@ const ProductSelectorWindow: React.FC = () => {
   }, []);
 
   const STORAGE_KEY = config.windowId + '-product-filters';
+  const FILTER_EXPIRATION_HOURS = 2;
   const [isMultiSelect, setIsMultiSelect] = useState<boolean>(false);
   const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
@@ -121,9 +121,20 @@ const ProductSelectorWindow: React.FC = () => {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const saved = sessionStorage.getItem(STORAGE_KEY);
+        const saved = localStorage.getItem(STORAGE_KEY);
         if (saved && !hasLoadedFilters.current) {
-          const parsed: ProductFiltersTypes = JSON.parse(saved);
+          const { filters: parsed, timestamp } = JSON.parse(saved);
+
+          // Verificar si los filtros han expirado
+          const now = Date.now();
+          const expirationTime = FILTER_EXPIRATION_HOURS * 60 * 60 * 1000; // en milisegundos
+
+          if (now - timestamp > expirationTime) {
+            // Filtros expirados, limpiar
+            localStorage.removeItem(STORAGE_KEY);
+            console.log('Filtros expirados, se han limpiado');
+            return;
+          }
 
           // Aplicar filtros guardados
           setFilters({
@@ -163,7 +174,11 @@ const ProductSelectorWindow: React.FC = () => {
   // 🔥 Guardar filtros cuando cambien
   const saveFilters = useCallback(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+      const dataToSave = {
+        filters: filters,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     } catch (e) {
       console.error('Error saving filters:', e);
     }
@@ -757,7 +772,7 @@ const ProductSelectorWindow: React.FC = () => {
 
   const handleResetFilters = () => {
     resetFilters()
-    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   const toggleSearchMode = () => {

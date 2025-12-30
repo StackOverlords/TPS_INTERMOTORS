@@ -89,13 +89,13 @@ const AppSidebar = () => {
               >
                 Configuración
               </NavItem>
-              <NavItem
+              {/* <NavItem
                 href="#"
                 handleNavigation={handleNavigation}
                 icon={HelpCircle}
               >
                 Ayuda
-              </NavItem>
+              </NavItem> */}
               <ButtonItem
                 className="bg-primary text-primary-foreground hover:text-primary-foreground hover:bg-primary/90"
                 icon={LogOut}

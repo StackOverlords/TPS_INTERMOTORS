@@ -1,32 +1,49 @@
 import { Badge } from "@/components/atoms/badge";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { formatNumber } from "@/utils/numberFormatters";
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
+import { useCustomTable } from "@/hooks/useCustomTable";
+import authSDK from "@/services/sdk-simple-auth";
 
 interface ProductTableOverviewProps {
-    productStockData: ProductStock[],
-    isLoading: boolean;
+    productStockData: ProductStock[]
+    isLoading: boolean
     isFetching: boolean
-    isError: boolean,
+    isError: boolean
     className?: string
+    filterByStock?: boolean
+    sortByDate?: boolean
 }
+
 const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
     productStockData,
     isError,
     isFetching,
     isLoading,
     className,
+    filterByStock = false,
+    sortByDate = false,
 }) => {
-    const stockTotal = productStockData.reduce((total, item) => {
-        return total + item.saldo;
-    }, 0);
-    console.log(productStockData)
+    const user = authSDK.getCurrentUser()
+
+    // 🔥 Filtrar datos por stock si filterByStock = true
+    const filteredData = useMemo(() => {
+        if (!filterByStock) return productStockData;
+        return productStockData.filter(item => item.saldo > 0);
+    }, [productStockData, filterByStock]);
+
+    // 🔥 Calcular stock total de datos filtrados
+    const stockTotal = useMemo(() => {
+        return filteredData.reduce((total, item) => total + item.saldo, 0);
+    }, [filteredData]);
+
     const columns: ColumnDef<ProductStock>[] = [
         {
             accessorKey: "fecha_adquisicion",
@@ -179,20 +196,30 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
         },
     ];
 
-    const table = useReactTable<ProductStock>({
-        data: productStockData,
+    const {
+        table,
+    } = useCustomTable({
+        data: filteredData,
         columns,
-        state: {
-        },
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
-        enableColumnResizing: true,
-        enableRowSelection: true,
-    })
-    return (
 
+        // Configuración de características
+        enableSorting: true,
+        enableColumnResizing: true,
+        enableColumnOrdering: true,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            ...(sortByDate ? [{ id: 'fecha_adquisicion', desc: true }] : [])
+        ],
+
+        // Persistencia con key única por usuario
+        persistenceKey: `products-overview-table-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
+
+    return (
         <Card className={cn(
             "bg-card border border-border flex flex-col",
             className
@@ -202,6 +229,11 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
                     <span className="flex items-center gap-2">
                         <ShoppingCart className="size-4 text-gray-700" />
                         Compras Disponibles
+                        {filterByStock && (
+                            <Badge variant="info" className="text-xs ml-2">
+                                Solo con stock
+                            </Badge>
+                        )}
                     </span>
                     <Badge variant="secondary">
                         Stock Total: {stockTotal}
@@ -221,7 +253,6 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
                 </div>
             </CardContent>
         </Card>
-
     );
 }
 

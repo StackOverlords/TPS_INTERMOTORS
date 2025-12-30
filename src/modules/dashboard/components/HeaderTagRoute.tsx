@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import { SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/atoms/sidebar";
+import { useEffect } from "react";
 
 const HeaderTagRoute = ({
   route,
@@ -25,7 +26,14 @@ const HeaderTagRoute = ({
     )
     : false;
 
-  const isExpanded = expandedHeaders.includes(route.name) || isInSubRoute;
+  const isExpanded = expandedHeaders.includes(route.name);
+
+  // Auto-expandir cuando navegas a una subruta, pero permitir colapsarlo manualmente
+  useEffect(() => {
+    if (isInSubRoute && !isExpanded) {
+      toggleHeader(route.name);
+    }
+  }, [isInSubRoute]);
 
   if (!route.showSidebar) return null
 
@@ -52,9 +60,7 @@ const HeaderTagRoute = ({
         onClick={() => toggleHeader(route.name)}
         className={cn(
           "flex items-center justify-between gap-2 p-2 text-sm font-medium cursor-pointer rounded-md transition-colors",
-          isInSubRoute
-            ? "bg-primary text-white"
-            : "text-gray-700 hover:bg-secondary hover:text-secondary-foreground"
+          "bg-primary/90 text-white hover:bg-primary/80"
         )}
       >
         <div className="flex items-center gap-2">
@@ -62,6 +68,9 @@ const HeaderTagRoute = ({
           <span className="text-xs font-semibold uppercase tracking-wider">
             {route.name}
           </span>
+          {isInSubRoute && !isExpanded && (
+            <span className="h-2 w-2 rounded-full bg-white animate-pulse" title="Ruta activa" />
+          )}
         </div>
         {hasSubRoutes && (
           <div className="ml-2">

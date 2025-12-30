@@ -3,4 +3,5 @@ export const SALECOMMONS_ENDPOINTS = {
     types: "/products/sales/commons/types",
     modalities: "/products/sales/commons/modalities",
     responsibles: "/products/sales/commons/responsibles",
+    payment_types: "/products/sales/commons/payment-types",
 };

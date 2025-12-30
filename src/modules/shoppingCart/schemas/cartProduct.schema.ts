@@ -11,4 +11,6 @@ export const CartProductSchema = ProductGetSchema.pick({
     marca: true,
     unidad_medida: true,
     sucursal: true,
+    categoria: true,
+    medida: true,
 })
