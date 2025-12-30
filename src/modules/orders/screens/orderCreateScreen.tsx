@@ -350,6 +350,7 @@ const OrderCreateScreen = () => {
     };
 
     const onError = (errors: FieldErrors<OrderCreate>) => {
+        console.log("Errores de validación:", errors);
         if (errors.id_proveedor || errors.tipo_pedido || errors.forma_pedido || errors.id_responsable) {
             showErrorToast({
                 title: "Error de validación",

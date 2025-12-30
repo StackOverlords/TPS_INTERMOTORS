@@ -41,6 +41,7 @@ import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeC
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import type { SaleUpdateForm } from "../types/saleUpdate.type";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
+import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
 
 const SCREEN_PATH = "/dashboard/create-sale"
 
@@ -72,6 +73,10 @@ const CreateSaleScreen = () => {
     } = useSaleModalities()
 
     const {
+        data: salePaymentTypesData,
+    } = useSalePaymentTypes()
+
+    const {
         data: saleResponsiblesData,
     } = useSaleResponsibles()
 
@@ -96,6 +101,7 @@ const CreateSaleScreen = () => {
             id_cliente: undefined,
             tipo_venta: "",
             forma_venta: "",
+            forma_pago: "",
             comentario: "",
             plazo_pago: "",
             vehiculo: "",
@@ -271,6 +277,14 @@ const CreateSaleScreen = () => {
             isValid = false;
         }
 
+        if (!formValues.forma_pago) {
+            setError("forma_pago", {
+                type: "manual",
+                message: "Debes seleccionar una forma de pago"
+            });
+            isValid = false;
+        }
+
         if (formValues.tipo_venta === "VC" && formValues.plazo_pago && formValues.fecha) {
             const fechaVenta = parse(formValues.fecha, "yyyy-MM-dd", new Date());
             fechaVenta.setHours(0, 0, 0, 0);
@@ -336,6 +350,7 @@ const CreateSaleScreen = () => {
             id_cliente: currentValues.id_cliente,
             tipo_venta: currentValues.tipo_venta,
             forma_venta: currentValues.forma_venta,
+            forma_pago: currentValues.forma_pago,
             comentario: "",
             plazo_pago: "",
             vehiculo: "",
@@ -397,6 +412,7 @@ const CreateSaleScreen = () => {
                     id_cliente: data.id_cliente,
                     tipo_venta: data.tipo_venta,
                     forma_venta: data.forma_venta,
+                    forma_pago: data.forma_pago,
                     comentario: data.comentario,
                     plazo_pago: data.plazo_pago,
                     vehiculo: data.vehiculo,
@@ -506,15 +522,18 @@ const CreateSaleScreen = () => {
     }, [saleCustomersData, setValue, getValues]);
 
     useEffect(() => {
-        if (saleTypesData && saleModalitiesData) {
+        if (saleTypesData && saleModalitiesData && salePaymentTypesData) {
             if (!getValues("tipo_venta")) {
                 setValue("tipo_venta", saleTypesData[0].code)
             }
             if (!getValues("forma_venta")) {
                 setValue("forma_venta", saleModalitiesData[0].code)
             }
+            if (!getValues("forma_pago")) {
+                setValue("forma_pago", salePaymentTypesData[0].code)
+            }
         }
-    }, [saleTypesData, saleModalitiesData, getValues, setValue])
+    }, [saleTypesData, saleModalitiesData, salePaymentTypesData, getValues, setValue])
 
     const selectedItems = useMemo<SelectedItem[]>(() => {
         return detalles.map(detail => ({
@@ -748,20 +767,50 @@ const CreateSaleScreen = () => {
                                                     placeholder="Número secundario"
                                                 />
                                             </div>
+                                            {
+                                                configuraciones.inputs && (
+                                                    <div>
+                                                        <Label htmlFor="forma">Forma de venta *</Label>
+                                                        <Controller
+                                                            name="forma_venta"
+                                                            control={control}
+                                                            render={({ field }) => (
+                                                                <Select
+                                                                    onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Selecciona una forma" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {
+                                                                            saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                                <SelectItem key={modality.code} value={modality.code}>
+                                                                                    {modality.label}
+                                                                                </SelectItem>
+                                                                            ))
+                                                                        }
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        />
+                                                        {errors.forma_venta && <p className="text-red-500 text-xs">{errors.forma_venta.message}</p>}
+                                                    </div>
+                                                )
+                                            }
+
                                             <div>
-                                                <Label htmlFor="forma">Forma de pago *</Label>
+                                                <Label htmlFor="forma_pago">Forma de pago *</Label>
                                                 <Controller
-                                                    name="forma_venta"
+                                                    name="forma_pago"
                                                     control={control}
                                                     render={({ field }) => (
                                                         <Select
-                                                            onValueChange={field.onChange} value={field.value || saleModalitiesData?.[0]?.code || ""}>
+                                                            onValueChange={field.onChange} value={field.value || salePaymentTypesData?.[0]?.code || ""}>
                                                             <SelectTrigger>
-                                                                <SelectValue placeholder="Selecciona una forma" />
+                                                                <SelectValue placeholder="Selecciona una forma de pago" />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {
-                                                                    saleModalitiesData && saleModalitiesData.map((modality) => (
+                                                                    salePaymentTypesData && salePaymentTypesData.map((modality) => (
                                                                         <SelectItem key={modality.code} value={modality.code}>
                                                                             {modality.label}
                                                                         </SelectItem>
@@ -771,7 +820,7 @@ const CreateSaleScreen = () => {
                                                         </Select>
                                                     )}
                                                 />
-                                                {errors.forma_venta && <p className="text-red-500 text-xs">{errors.forma_venta.message}</p>}
+                                                {errors.forma_pago && <p className="text-red-500 text-xs">{errors.forma_pago.message}</p>}
                                             </div>
 
                                             <div>
