@@ -42,7 +42,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
   esbuild:{
-    drop: ['console', 'debugger'],
+    drop: [ 'debugger'],
   },
   // Clear screen on rebuild
   clearScreen: false,

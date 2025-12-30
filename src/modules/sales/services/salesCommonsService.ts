@@ -82,6 +82,22 @@ export const saleCommonsService = {
     },
 
     /**
+     * Obtener los tipos de pago de venta
+     */
+    async getSalePaymentTypes(): Promise<SaleModalitiesList> {
+        Logger.info("Fetching sale payment types", undefined, MODULE_NAME);
+
+        const response = await ApiService.get(
+            SALECOMMONS_ENDPOINTS.payment_types,
+            SaleTypesResponseSchema
+        );
+
+        Logger.info("Sale payment types fetched successfully", undefined, MODULE_NAME);
+
+        return this.convertToOptions(response);
+    },
+
+    /**
      * Convertir tipos de venta en opciones para selects
      */
     convertToOptions(saleTypes: SaleTypesResponse): SaleTypesList {

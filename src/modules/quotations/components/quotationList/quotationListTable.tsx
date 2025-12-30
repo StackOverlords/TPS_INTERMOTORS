@@ -268,41 +268,41 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                 </div>
             ),
         },
-        {
-            accessorKey: "comprobantes",
-            header: "Comprobantes",
-            size: 140,
-            minSize: 120,
-            cell: ({ getValue }) => {
-                const comprobantes = getValue<string>();
+        // {
+        //     accessorKey: "comprobantes",
+        //     header: "Comprobantes",
+        //     size: 140,
+        //     minSize: 120,
+        //     cell: ({ getValue }) => {
+        //         const comprobantes = getValue<string>();
 
-                if (!comprobantes || comprobantes.trim() === "" || comprobantes === "|") {
-                    return (
-                        <div className="text-center">
-                            <span className="text-muted-foreground italic text-xs">
-                                Sin comprobantes
-                            </span>
-                        </div>
-                    );
-                }
+        //         if (!comprobantes || comprobantes.trim() === "" || comprobantes === "|") {
+        //             return (
+        //                 <div className="text-center">
+        //                     <span className="text-muted-foreground italic text-xs">
+        //                         Sin comprobantes
+        //                     </span>
+        //                 </div>
+        //             );
+        //         }
 
-                const [comprobante1, comprobante2] = comprobantes
-                    .split("|")
-                    .map(comp => comp.trim())
-                    .filter(comp => comp !== "");
+        //         const [comprobante1, comprobante2] = comprobantes
+        //             .split("|")
+        //             .map(comp => comp.trim())
+        //             .filter(comp => comp !== "");
 
-                return (
-                    <div className="flex flex-col space-y-0.5 text-xs text-foreground items-center">
-                        {comprobante1 && (
-                            <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante1}</Badge>
-                        )}
-                        {comprobante2 && (
-                            <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante2}</Badge>
-                        )}
-                    </div>
-                );
-            },
-        },
+        //         return (
+        //             <div className="flex flex-col space-y-0.5 text-xs text-foreground items-center">
+        //                 {comprobante1 && (
+        //                     <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante1}</Badge>
+        //                 )}
+        //                 {comprobante2 && (
+        //                     <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante2}</Badge>
+        //                 )}
+        //             </div>
+        //         );
+        //     },
+        // },
         {
             accessorKey: "comentarios",
             header: "Comentarios",
