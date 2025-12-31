@@ -36,6 +36,8 @@ interface ReturnsListTableProps {
     handleDeleteSale: (id: number) => void
 }
 
+const SCREEN_PATH = "/dashboard/returns"
+
 const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
     data,
     returns,
@@ -340,6 +342,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
     } = useKeyboardNavigation<ReturnGetAll, HTMLTableElement>({
         items: returns,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)

@@ -34,6 +34,8 @@ interface QuotationsListTableProps {
     handleDeleteSale: (quotationId: number) => void
 }
 
+const SCREEN_PATH = "/dashboard/quotations"
+
 const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     data,
     quotations,
@@ -356,6 +358,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     } = useKeyboardNavigation<QuotationGetAll, HTMLTableElement>({
         items: quotations,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)

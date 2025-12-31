@@ -81,4 +81,5 @@ export const ProductDetailSchema = z.object({
     imagen: z.string().nullable(),
     imagen_name: z.string().nullable(),
     imagen_ext: z.string().nullable(),
+    stock_actual: z.number().optional(),
 });
