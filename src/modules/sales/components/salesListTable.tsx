@@ -94,7 +94,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "nro_venta",
             header: "Nro. Venta",
             size: 120,
-            minSize: 100,
             enableHiding: false,
             cell: ({ row, getValue }) => (
                 <div
@@ -167,7 +166,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "fecha",
             header: "Fecha",
             size: 140,
-            minSize: 120,
             cell: ({ getValue }) => {
                 const dateString = getValue<string>();
 
@@ -194,8 +192,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
         {
             accessorKey: "cliente",
             header: "Cliente",
-            size: 250,
-            minSize: 200,
+            size: 200,
             cell: ({ row }) => {
                 const cliente = row.original.cliente;
                 return (
@@ -206,12 +203,12 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                         {
                             cliente &&
                             <div className="text-xs text-muted-foreground space-y-0.5">
-                                {cliente.nit && <div>NIT: {cliente.nit}</div>}
-                                {cliente.contacto &&
+                                {(cliente.contacto || cliente.celular) &&
                                     <div className="flex items-center gap-1">
                                         <Phone className="size-3" />
-                                        {cliente.contacto}
-                                    </div>}
+                                        {cliente.celular ? cliente.celular : cliente.contacto}
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
@@ -222,7 +219,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "responsable",
             header: "Responsable",
             size: 180,
-            minSize: 150,
             cell: ({ row }) => {
                 const resp = row.original.responsable;
                 const nombreCompleto = resp
@@ -237,10 +233,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                 return (
                     <div className="space-y-1 flex flex-col">
                         <span className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>{nombreCompleto}</span>
-                        {
-                            resp?.dni &&
-                            <span className="text-xs text-muted-foreground">DNI: {resp.dni}</span>
-                        }
                     </div>
                 );
             },
@@ -249,7 +241,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "contexto",
             header: "Contexto",
             size: 120,
-            minSize: 100,
             cell: ({ getValue }) => {
                 const contexto = getValue<string>();
                 const [tipo, categoria] = contexto.split('|');
@@ -267,7 +258,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "total",
             header: "Total",
             size: 120,
-            minSize: 100,
             cell: ({ getValue }) => (
                 <div className="text-right font-medium text-green-600">
                     {formatCurrency(getValue<number>())}
@@ -278,7 +268,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "comprobantes",
             header: "Comprobantes",
             size: 140,
-            minSize: 120,
             cell: ({ getValue }) => {
                 const comprobantes = getValue<string>();
 
@@ -313,7 +302,6 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             accessorKey: "comentarios",
             header: "Comentarios",
             size: 200,
-            minSize: 150,
             cell: ({ getValue }) => {
                 const comentarios = getValue<string | null>();
                 return (

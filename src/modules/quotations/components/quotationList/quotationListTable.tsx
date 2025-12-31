@@ -14,7 +14,7 @@ import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Settings, Trash2 } from "lucide-react";
+import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Phone, Settings, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
@@ -203,8 +203,12 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                         {
                             cliente &&
                             <div className="text-xs text-muted-foreground space-y-0.5">
-                                {cliente.nit && <div>NIT: {cliente.nit}</div>}
-                                {cliente.contacto && <div>Tel: {cliente.contacto}</div>}
+                                {(cliente.contacto || cliente.celular) &&
+                                    <div className="flex items-center gap-1">
+                                        <Phone className="size-3" />
+                                        {cliente.celular ? cliente.celular : cliente.contacto}
+                                    </div>
+                                }
                             </div>
                         }
                     </div>
@@ -229,10 +233,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                 return (
                     <div className="space-y-1 flex flex-col">
                         <span className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>{nombreCompleto}</span>
-                        {
-                            resp?.dni &&
-                            <span className="text-xs text-muted-foreground">DNI: {resp.dni}</span>
-                        }
                     </div>
                 );
             },

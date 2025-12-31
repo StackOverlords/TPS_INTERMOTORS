@@ -11,7 +11,7 @@ import { Input } from "@/components/atoms/input"
 import { ComboboxSelect } from "@/components/common/SelectCombobox"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
+import { showErrorToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced"
 import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
@@ -126,7 +126,7 @@ const ReturnEditScreen = () => {
                 codigo_upc: "",
                 precio_venta: 0,
             },
-            maxQuantity: Infinity,
+            maxQuantity: detalle.cantidad_maxima || detalle.cantidad,
         }));
 
         // Establecer detalles en el hook
@@ -260,7 +260,17 @@ const ReturnEditScreen = () => {
     };
 
     const onError = (errors: FieldErrors<ReturnUpdate>) => {
-        console.log(errors)
+        if (Array.isArray(errors.detalles)) {
+            const hasComentarioError = errors.detalles.some(detail => detail?.comentario);
+            if (hasComentarioError) {
+                showWarningToast({
+                    title: "Hay un problema en detalle de devolución",
+                    description: `El comentario es obligatorio para cada producto devuelto.`,
+                    duration: 2000
+                });
+            }
+        }
+
         if (errors.motivo_devolucion || errors.responsable) {
             showErrorToast({
                 title: "Error de validación",

@@ -666,7 +666,6 @@ const ProductListScreen = () => {
         enableRowSelection: isFeatureEnabled('multiSelect'),
         enableColumnVisibility: isFeatureEnabled('columnSelector'),
         enableColumnOrdering: getTableBehaviorValue('enableColumnReordering') ?? true,
-        enablePagination: isFeatureEnabled('pagination'),
 
         // Columnas ocultas por defecto
         hiddenColumns: ['Select'],
@@ -690,6 +689,7 @@ const ProductListScreen = () => {
         items: products,
         containerRef: tableRef,
         screenPath: SCREEN_PATH,
+        rowCount: products.length,
         isDragging: isDraggingColumn,
         // enabled: isFeatureEnabled('keyboardNavigation'),
         onPrimaryAction: (product) => {
