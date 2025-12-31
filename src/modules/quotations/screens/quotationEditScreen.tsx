@@ -172,7 +172,7 @@ const QuotationEditScreen = () => {
             plazo_pago: quotation.plazo_pago?.slice(0, 10) ?? "",
             vehiculo: quotation.vehiculo ?? "",
             nro_motor: quotation.nmotor ?? "",
-            cliente_nombre: quotation.cliente?.cliente ?? "",
+            cliente_nombre: quotation.cliente_nombre ?? "",
             cliente_nit: quotation.cliente_nit ?? "",
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: quotation.responsable_cotizacion?.id ?? 1,

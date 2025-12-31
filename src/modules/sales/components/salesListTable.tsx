@@ -34,6 +34,8 @@ interface SalesListTableProps {
     handleDeleteSale: (saleId: number) => void
 }
 
+const SCREEN_PATH = "/dashboard/sales"
+
 const SalesListTable: React.FC<SalesListTableProps> = ({
     data,
     sales,
@@ -360,6 +362,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     } = useKeyboardNavigation<SaleGetAll, HTMLTableElement>({
         items: sales,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (sale) => {
             handleSeeDetails(sale.id)

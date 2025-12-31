@@ -52,6 +52,8 @@ const getStatusBadge = (estado: string) => {
     }
 };
 
+const SCREEN_PATH = "/dashboard/orders"
+
 const OrdersListTable: React.FC<OrdersListTableProps> = ({
     data,
     orders,
@@ -444,6 +446,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     } = useKeyboardNavigation<OrderGetAll, HTMLTableElement>({
         items: orders,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)

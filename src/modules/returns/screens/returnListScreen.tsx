@@ -1,6 +1,6 @@
 import { useBranchStore } from "@/states/branchStore";
 import { useEffect, useState } from "react";
-import { FilterX, PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
+import { PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
@@ -151,8 +151,8 @@ const ReturnListScreen = () => {
     useCommands({
         'searchFilters.focusSearch': handleManualSearch,
         'forms.reset': handleResetFilters
-    },{
-        enableOnFormTags:true
+    }, {
+        enableOnFormTags: true
     })
 
     return (

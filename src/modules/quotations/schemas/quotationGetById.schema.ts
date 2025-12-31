@@ -36,6 +36,7 @@ export const QuotationGetByIdSchema = z.object({
     cliente_nit: z.string().nullable(),
     cliente_contacto: z.string().nullable(),
     cliente_telefono: z.string().nullable(),
+    cliente_nombre: z.string().nullable(),
     responsable_cotizacion: SaleResponsibleSchema.nullable(),
     cantidad_detalles: toNumber,
     detalles: z.array(QuotationItemSchema),

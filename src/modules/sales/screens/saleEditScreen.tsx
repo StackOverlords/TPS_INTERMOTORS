@@ -154,7 +154,7 @@ const SaleEditScreen = () => {
                     descripcion: d.producto.descripcion,
                     marca: d.producto.marca?.marca ?? '',
                     precio_venta: d.producto.precio_venta,
-                    stock_actual: 0
+                    stock_actual: d.producto.stock_actual ?? 0
                 }
             }));
         // Guardar los detalles originales
@@ -169,7 +169,7 @@ const SaleEditScreen = () => {
             plazo_pago: sale.plazo_pago?.slice(0, 10) ?? "",
             vehiculo: sale.vehiculo ?? "",
             nro_motor: sale.nmotor ?? "",
-            cliente_nombre: sale.cliente?.cliente ?? "",
+            cliente_nombre: sale.cliente_nombre ?? "",
             cliente_nit: sale.cliente_nit ?? "",
             sucursal: Number(selectedBranchId) || 1,
             id_responsable: sale.responsable_venta?.id ?? 0,
