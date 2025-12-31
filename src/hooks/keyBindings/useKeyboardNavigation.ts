@@ -11,7 +11,8 @@ interface UseKeyboardNavigationProps<T, E extends HTMLElement = HTMLElement> {
     enableHotkeys?: boolean;
     containerRef?: React.RefObject<E | null>;
     isDragging?: boolean;
-    screenPath?: string; // 🆕 Path del tab para verificar si está activo
+    screenPath?: string;
+    rowCount?: number; // 🆕 Número explícito de filas (override de items.length)
     hotkeys?: {
         activate?: string;
         deactivate?: string;
@@ -33,7 +34,8 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     enableHotkeys = true,
     containerRef: externalRef,
     isDragging = false,
-    screenPath, // 🆕
+    screenPath,
+    rowCount, // 🆕
     hotkeys = {
         activate: 'alt+t',
         deactivate: 'escape',
@@ -54,10 +56,10 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     const containerRef = externalRef || internalRef;
     const selectedItem = items[selectedIndex];
 
-    // 🆕 Verificar si el tab está activo
-    const isTabActive = useTabActive(screenPath);
+    // 🆕 Usar rowCount si está definido, sino items.length
+    const effectiveRowCount = rowCount ?? items.length;
 
-    // 🆕 Hotkeys solo habilitados si el tab está activo
+    const isTabActive = useTabActive(screenPath);
     const isHotkeysEnabled = enableHotkeys && !isDragging && isTabActive;
 
     // Auto-scroll al elemento seleccionado
@@ -79,12 +81,11 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
 
     // Resetear índice cuando cambien los items
     useEffect(() => {
-        if (items.length > 0 && selectedIndex >= items.length) {
-            setSelectedIndex(Math.max(0, items.length - 1));
+        if (effectiveRowCount > 0 && selectedIndex >= effectiveRowCount) {
+            setSelectedIndex(Math.max(0, effectiveRowCount - 1));
         }
-    }, [items.length, selectedIndex]);
+    }, [effectiveRowCount, selectedIndex]);
 
-    // 🆕 Desactivar navegación durante drag
     useEffect(() => {
         if (isDragging && isNavigatingWithinRow) {
             setIsNavigatingWithinRow(false);
@@ -92,7 +93,6 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         }
     }, [isDragging, isNavigatingWithinRow]);
 
-    // 🆕 Desactivar foco cuando el tab se desactiva
     useEffect(() => {
         if (!isTabActive && isFocused) {
             setIsFocused(false);
@@ -101,7 +101,6 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         }
     }, [isTabActive, isFocused]);
 
-    // Función para obtener elementos focuseables en la fila seleccionada
     const getFocusableElementsInSelectedRow = useCallback((): HTMLElement[] => {
         if (!containerRef.current) return [];
 
@@ -115,13 +114,11 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         return Array.from(focusableElements) as HTMLElement[];
     }, [selectedIndex, containerRef]);
 
-    // Función mejorada para verificar contexto restringido
     const isInRestrictedContext = useCallback((): boolean => {
         const activeElement = document.activeElement as HTMLElement;
 
         if (!activeElement) return false;
 
-        // 🆕 Agregar verificación de drag
         if (isDragging) return true;
 
         return (
@@ -136,7 +133,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         );
     }, [isDragging]);
 
-    // ✅ Activar navegación por teclado - SIN restricciones de contexto
+    // Activar navegación por teclado
     useHotkeys(
         hotkeys.activate!,
         (e) => {
@@ -146,7 +143,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
             setCurrentElementIndex(-1);
             containerRef.current?.focus();
         },
-        { 
+        {
             enabled: isHotkeysEnabled,
             enableOnFormTags: true,
             preventDefault: true
@@ -164,13 +161,21 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         { enabled: isFocused && isHotkeysEnabled }
     );
 
-    // Navegación hacia arriba
+    // 🔧 FIX: Navegación hacia arriba - Con protección contra múltiples actualizaciones
     useHotkeys(
         hotkeys.moveUp!,
         (e) => {
+            e.preventDefault();
+
             if (!isInRestrictedContext()) {
-                e.preventDefault();
-                setSelectedIndex(prev => Math.max(0, prev - 1));
+                setSelectedIndex(prev => {
+                    const newIndex = prev - 1;
+                    // ✅ Solo actualizar si realmente hay cambio y está en rango válido
+                    if (newIndex >= 0 && newIndex !== prev) {
+                        return newIndex;
+                    }
+                    return prev; // No cambiar si ya está en 0
+                });
                 setIsNavigatingWithinRow(false);
                 setCurrentElementIndex(-1);
             }
@@ -182,13 +187,22 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         }
     );
 
-    // Navegación hacia abajo
+    // 🔧 FIX: Navegación hacia abajo - Con protección contra múltiples actualizaciones
     useHotkeys(
         hotkeys.moveDown!,
         (e) => {
+            e.preventDefault();
+
             if (!isInRestrictedContext()) {
-                e.preventDefault();
-                setSelectedIndex(prev => Math.min(items.length - 1, prev + 1));
+                setSelectedIndex(prev => {
+                    const maxIndex = effectiveRowCount - 1;
+                    const newIndex = prev + 1;
+                    // ✅ Solo actualizar si realmente hay cambio y está en rango válido
+                    if (newIndex <= maxIndex && newIndex !== prev) {
+                        return newIndex;
+                    }
+                    return prev; // No cambiar si ya está en el máximo
+                });
                 setIsNavigatingWithinRow(false);
                 setCurrentElementIndex(-1);
             }
@@ -301,30 +315,24 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         setCurrentElementIndex(-1);
     }, [selectedIndex]);
 
-    // ✅ Manejar clics para activar/desactivar foco
+    // Manejar clics para activar/desactivar foco
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            // 🆕 Ignorar clicks durante drag o si el tab no está activo
             if (isDragging || !isTabActive) return;
 
             const target = e.target as HTMLElement;
 
-            // ✅ Verificar si el click es DENTRO del contenedor
             if (containerRef.current && containerRef.current.contains(target)) {
-                // ✅ Verificar si el click fue en un elemento interactivo
                 const isInteractiveElement = target.closest(
                     'button, input, textarea, select, a[href], [role="button"], [role="menuitem"]'
                 ) as HTMLElement;
 
-                // ✅ ACTIVAR si no estaba activo
                 if (!isFocused) {
                     setIsFocused(true);
                 }
 
-                // ✅ Buscar la fila más cercana desde el target hacia arriba
                 let clickedRow = target.closest('[data-row-index]') as HTMLElement;
-                
-                // Si no encontramos la fila directamente, buscar en los padres del contenedor
+
                 if (!clickedRow && containerRef.current) {
                     const allRows = containerRef.current.querySelectorAll('[data-row-index]');
                     for (const row of Array.from(allRows)) {
@@ -339,7 +347,6 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                     const rowIndex = parseInt(clickedRow.getAttribute('data-row-index') || '0');
                     setSelectedIndex(rowIndex);
 
-                    // ✅ Solo manejar navegación dentro de fila si es un elemento focuseable
                     if (isInteractiveElement) {
                         const focusableElements = getFocusableElementsInSelectedRow();
                         const elementIndex = focusableElements.indexOf(isInteractiveElement);
@@ -353,7 +360,6 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
                     }
                 }
             } else {
-                // ✅ DESACTIVAR solo si el click es FUERA del contenedor
                 setIsFocused(false);
                 setIsNavigatingWithinRow(false);
                 setCurrentElementIndex(-1);
@@ -364,12 +370,11 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
         return () => document.removeEventListener('click', handleClick);
     }, [getFocusableElementsInSelectedRow, containerRef, isDragging, isTabActive, isFocused]);
 
-    // Funciones de utilidad
     const navigateToItem = useCallback((index: number) => {
-        if (index >= 0 && index < items.length) {
+        if (index >= 0 && index < effectiveRowCount) {
             setSelectedIndex(index);
         }
-    }, [items.length]);
+    }, [effectiveRowCount]);
 
     const navigateToItemById = useCallback((id: string | number) => {
         if (!getItemId) return;
@@ -381,33 +386,22 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     }, [items, getItemId]);
 
     return {
-        // Estado
         selectedIndex,
         selectedItem,
         isFocused,
         isNavigatingWithinRow,
         currentElementIndex,
-        isTabActive, // 🆕 Exponer el estado del tab
-
-        // Refs
+        isTabActive,
         containerRef,
-
-        // Setters
         setSelectedIndex,
         setIsFocused,
-
-        // Funciones de utilidad
         navigateToItem,
         navigateToItemById,
         getFocusableElementsInSelectedRow,
-
-        // Información del estado actual
-        hasItems: items.length > 0,
-        totalItems: items.length,
+        hasItems: effectiveRowCount > 0,
+        totalItems: effectiveRowCount,
         isFirstItem: selectedIndex === 0,
-        isLastItem: selectedIndex === items.length - 1,
-
-        // Atajos de teclado
+        isLastItem: selectedIndex === effectiveRowCount - 1,
         hotkeys,
     };
 };

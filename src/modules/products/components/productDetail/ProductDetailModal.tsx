@@ -17,6 +17,8 @@ import { useProductStock } from '../../hooks/queries/useProductStock';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/atoms/resizable';
 import ProductTableOverview from './productTableOverview';
 import type { TableShoppingCartRef } from '@/modules/shoppingCart/components/tableShoppingCart';
+import ProductLogistics from './ProductLogistics';
+import { useProductProviderOrders } from '../../hooks/queries/useProductProviderOrders';
 
 interface ProductDetailModalProps {
     productId: number | null
@@ -93,14 +95,15 @@ export const ProductDetailModal = ({ productId, open, onOpenChange, tableRef }: 
         resto_only: 0
     })
 
-    // const {
-    //     data: productProviderOrders,
-    //     isError: isErrorProviderOrders,
-    //     isLoading: isLoadingProviderOrders,
-    // } = useProductProviderOrders({
-    //     producto: Number(productId),
-    //     sucursal: sucursalSeleccionada,
-    // })
+    const {
+        data: productProviderOrders,
+        isError: isErrorProviderOrders,
+        isLoading: isLoadingProviderOrders,
+        isFetching: isFetchingProviderOrders,
+    } = useProductProviderOrders({
+        producto: Number(productId),
+        sucursal: sucursalSeleccionada,
+    })
 
     useEffect(() => {
         setSucursalSeleccionada(Number(selectedBranchId))
@@ -138,7 +141,7 @@ export const ProductDetailModal = ({ productId, open, onOpenChange, tableRef }: 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="max-w-7xl h-[80vh] overflow-auto p-2" aria-describedby='Estadisticas del producto'>
+            <DialogContent showCloseButton={false} className="max-w-[90%] h-[90vh] overflow-auto p-2" aria-describedby='Estadisticas del producto'>
                 {
                     isErrorProduct || !(Number(productId)) ? (
                         <ErrorDataComponent
@@ -203,26 +206,38 @@ export const ProductDetailModal = ({ productId, open, onOpenChange, tableRef }: 
                                 </div >
                             </DialogHeader >
 
-                            <div className='flex-1 min-h-0 overflow-auto'>
-                                <div className='grid grid-cols-1 md:grid-cols-5 gap-2 h-full'>
-                                    <div className='md:col-span-2'>
-                                        <ProductSales
-                                            isLoadingData={isLoadingTwoYearSalesData}
-                                            gestion_1={gestiones.gestion_1}
-                                            gestion_2={gestiones.gestion_2}
-                                            handleChangeGestion1={handleChangeGestion1}
-                                            handleChangeGestion2={handleChangeGestion2}
-                                            productSalesData={twoYearSalesData ?? { meta: { getion_1: "", getion_2: "" }, data: [] }}
-                                            isErrorData={isErrorTwoYearSalesData}
-                                            isFetchingData={isFetchingTwoYearSalesData}
-                                            showComparisonColumns={false}
-                                        />
+                            <div className='flex-1 min-h-0 overflow-hidden'>
+                                <div className='grid grid-cols-1 md:grid-cols-5 gap-2 h-full overflow-hidden'>
+                                    <div className='md:col-span-2 flex flex-col gap-2 h-full overflow-auto'>
+                                        <div className='flex-shrink-0'>
+                                            <ProductSales
+                                                isLoadingData={isLoadingTwoYearSalesData}
+                                                gestion_1={gestiones.gestion_1}
+                                                gestion_2={gestiones.gestion_2}
+                                                handleChangeGestion1={handleChangeGestion1}
+                                                handleChangeGestion2={handleChangeGestion2}
+                                                productSalesData={twoYearSalesData ?? { meta: { getion_1: "", getion_2: "" }, data: [] }}
+                                                isErrorData={isErrorTwoYearSalesData}
+                                                isFetchingData={isFetchingTwoYearSalesData}
+                                                showComparisonColumns={false}
+                                            />
+                                        </div>
+                                        <div className='flex-1 min-h-0'>
+                                            <ProductLogistics
+                                                ProductProviderOrders={productProviderOrders ?? []}
+                                                isErrorData={isErrorProviderOrders}
+                                                isLoadingData={isLoadingProviderOrders}
+                                                isFetchingData={isFetchingProviderOrders}
+                                                className='h-full'
+                                                sortByDate={true}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className='md:col-span-3 h-full flex flex-col'>
                                         <ResizablePanelGroup
                                             direction="vertical"
-                                            className="flex-1 min-h-screen md:min-h-0 overflow-hidden"
+                                            className="flex-1 min-h-screen md:min-h-0 overflow-hidden gap-1"
                                         >
                                             <ResizablePanel
                                                 defaultSize={50}

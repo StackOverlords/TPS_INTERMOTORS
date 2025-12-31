@@ -129,6 +129,7 @@ const ProductDetailScreen = () => {
             categoria: productData.categoria?.categoria ?? '',
             codigo_oem: productData.codigo_oem,
             codigo_upc: productData.codigo_upc,
+            codigo_interno: productData.codigo_interno,
             descripcion: productData.descripcion,
             imagen: productData.imagen,
             imagen_ext: productData.imagen_ext,
@@ -141,13 +142,13 @@ const ProductDetailScreen = () => {
             pedido_transito: 0,
             precio_venta: productData.precio_venta,
             precio_venta_alt: productData.precio_venta_alt,
-            procedencia: productData.procedencia.procedencia,
+            procedencia: productData.procedencia?.procedencia ?? '',
             stock_actual: productForCart.stock_actual,
             stock_minimo: productData.stock_minimo,
             stock_resto: productForCart.stock_resto,
             subcategoria: productData.subcategoria?.subcategoria ?? '',
             sucursal: '',
-            unidad_medida: productData.unidad_medida.unidad_medida
+            unidad_medida: productData.unidad_medida?.unidad_medida ?? ''
         }
         addItemToCart(transformedProduct);
     }

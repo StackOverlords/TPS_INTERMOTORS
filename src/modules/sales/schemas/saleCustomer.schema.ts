@@ -1,3 +1,4 @@
+import { toNumberOrZero } from "@/modules/shared/schemas/numberSchemas"
 import { z } from "zod"
 
 export const SaleCustomerSchema = z.object({
@@ -10,6 +11,9 @@ export const SaleCustomerGetSchema = SaleCustomerSchema.omit({ nombre: true }).e
     cliente: z.string(),
     direccion: z.string().nullable(),
     contacto: z.string().nullable(),
+    celular: z.string().nullable(),
+    id: z.number().int(),
+    nro_cliente: toNumberOrZero,
 })
 
 export const SaleCustomerListResponseSchema = z.object({

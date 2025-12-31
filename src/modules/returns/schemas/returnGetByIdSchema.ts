@@ -1,4 +1,4 @@
-import { moneySchema, requiredMoneySchema, toNumber, toNumberOrNull } from "@/modules/shared/schemas/numberSchemas";
+import { moneySchema, requiredMoneySchema, toNumber, toNumberOrNull, toNumberOrZeroStrict } from "@/modules/shared/schemas/numberSchemas";
 import z from "zod";
 
 const ResponsableSchema = z.object({
@@ -21,6 +21,7 @@ export const ReturnDetailGetByIdSchema = z.object({
     orden: toNumberOrNull,
     id_venta: z.number().nullable(),
     producto: z.string().nullable(),
+    cantidad_maxima: toNumberOrZeroStrict,
 })
 
 export const ReturnByIdSchema = z.object({
