@@ -151,6 +151,8 @@ const ReturnListScreen = () => {
     useCommands({
         'searchFilters.focusSearch': handleManualSearch,
         'forms.reset': handleResetFilters
+    },{
+        enableOnFormTags:true
     })
 
     return (

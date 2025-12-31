@@ -32,8 +32,6 @@ const EditPurchase: React.FC = () => {
     // refetch: refetchPurchase,
   } = usePurchaseById(Number(purchaseId) || 0);
 
-  console.log("🔍 EditPurchase - purchase from server:", purchase);
-
   const {
     formData,
     errors,

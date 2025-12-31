@@ -287,7 +287,7 @@ const ProductEditScreen = () => {
                             </TooltipButton>
                             <div>
                                 <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
-                                    Editar producto #{productData?.id}
+                                    Editar producto #{productData?.codigo_interno}
                                 </h1>
                                 <p className="text-sm text-gray-600">
                                 </p>

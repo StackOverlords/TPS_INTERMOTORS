@@ -85,12 +85,12 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
     updateFilter('fecha_fin', date ? formatDateSafe(date) : undefined);
   };
 
-  // Función para limpiar ambas fechas
-  const clearAllDateFilters = () => {
-    setDateError(null);
-    updateFilter('fecha_inicio', undefined);
-    updateFilter('fecha_fin', undefined);
-  };
+  // // Función para limpiar ambas fechas
+  // const clearAllDateFilters = () => {
+  //   setDateError(null);
+  //   updateFilter('fecha_inicio', undefined);
+  //   updateFilter('fecha_fin', undefined);
+  // };
 
   return (
     <section className="space-y-2">

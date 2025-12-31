@@ -22,6 +22,8 @@ export default function Layout() {
     'tabs.next': nextTab,
     'tabs.previous': previousTab,
     'tabs.close': closeCurrentTab
+  },{
+    enableOnFormTags: true
   })
   useEffect(() => {
     setMounted(true);
