@@ -161,7 +161,7 @@ const OrderEditScreen = () => {
                 inc_p_venta_alt: detalle.inc_precio_venta_alt !== null ? Number(detalle.inc_precio_venta_alt) : 0,
                 precio_venta_alt: precioVentaAltFinal,
                 orden: detalle.orden ?? (index + 1),
-                    tc_compra: Number(detalle.tc_compra || exchangeRate),
+                tc_compra: Number(detalle.tc_compra || exchangeRate),
                 product: {
                     id: detalle.producto.id,
                     descripcion: detalle.producto.descripcion,
@@ -169,7 +169,7 @@ const OrderEditScreen = () => {
                     codigo_upc: detalle.producto.codigo_upc,
                     precio_venta: Number(detalle.producto.precio_venta),
                     marca: detalle.producto.marca?.marca ?? '',
-                    procedencia: detalle.producto.procedencia.procedencia ?? '',
+                    procedencia: detalle.producto?.procedencia?.procedencia ?? '',
                 }
             };
         });

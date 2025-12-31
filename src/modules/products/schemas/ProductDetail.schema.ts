@@ -1,3 +1,4 @@
+import { toNumberOrZero, toNumberOrZeroStrict } from "@/modules/shared/schemas/numberSchemas";
 import { z } from "zod";
 
 export const ProductCategoriaSchema = z.object({
@@ -48,7 +49,7 @@ export const ProductMarcaVehiculoSchema = z.object({
 
 export const ProductDetailSchema = z.object({
     id: z.number(),
-    codigo_interno: z.number(),
+    codigo_interno: toNumberOrZero,
     descripcion: z.string(),
     descripcion_alt: z.string().nullable(),
     codigo_oem: z.string().nullable(),
@@ -56,30 +57,30 @@ export const ProductDetailSchema = z.object({
     modelo: z.string().nullable(),
     medida: z.string().nullable(),
     nro_motor: z.string().nullable(),
-    costo_referencia: z.preprocess((v) => v === null ? null : Number(v), z.number().nullable()),
-    stock_minimo: z.preprocess((v) => v === null ? null : Number(v), z.number().nullable()),
-    precio_venta: z.preprocess((v) => Number(v), z.number()),
-    precio_venta_alt: z.preprocess((v) => Number(v), z.number()),
+    costo_referencia: toNumberOrZeroStrict,
+    stock_minimo: toNumberOrZeroStrict,
+    precio_venta: toNumberOrZero,
+    precio_venta_alt: toNumberOrZero,
 
-    id_categoria: z.number(),
+    id_categoria: toNumberOrZeroStrict,
     categoria: ProductCategoriaSchema.nullable(),
 
     id_subcategora: z.number().nullable(),
     subcategoria: ProductSubcategoriaSchema.nullable(),
 
-    id_marca: z.number(),
+    id_marca: toNumberOrZeroStrict,
     marca: ProductMarcaSchema.nullable(),
 
-    id_procedencia: z.number(),
-    procedencia: ProductProcedenciaSchema,
+    id_procedencia: toNumberOrZeroStrict,
+    procedencia: ProductProcedenciaSchema.nullable(),
 
-    id_unidad_medida: z.number(),
-    unidad_medida: ProductUnidadMedidaSchema,
+    id_unidad_medida: toNumberOrZeroStrict,
+    unidad_medida: ProductUnidadMedidaSchema.nullable(),
 
-    id_marca_vehiculo: z.number(),
+    id_marca_vehiculo: toNumberOrZeroStrict,
     marca_vehiculo: ProductMarcaVehiculoSchema.nullable(),
     imagen: z.string().nullable(),
     imagen_name: z.string().nullable(),
     imagen_ext: z.string().nullable(),
-    stock_actual: z.number().optional(),
+    stock_actual: toNumberOrZero.optional(),
 });
