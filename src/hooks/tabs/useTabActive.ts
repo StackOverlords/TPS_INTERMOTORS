@@ -1,21 +1,24 @@
 import { useTabStore } from '@/states/tabStore';
-import { useLocation } from 'react-router';
+  import { useLocation } from 'react-router';
 
-/**
- * Hook que retorna true si la tab actual está activa
- * Útil para ejecutar lógica solo cuando la vista está visible
- */
-export const useTabActive = (tabPath?: string) => {
+  export const useTabActive = (tabPath?: string) => {
+      // 🔥 Intentar usar useLocation, si falla retornar true
+      let location;
+      try {
+          location = useLocation();
+      } catch (e) {
+          // No hay Router, retornar true (tab activa por defecto)
+          return true;
+      }
 
-    const location = useLocation();
-    const pathToCheck = tabPath || location.pathname;
+      const pathToCheck = tabPath || location.pathname;
 
-    const isActive = useTabStore(
-        state => {
-            const currentTab = state.tabs.find(tab => tab.path === pathToCheck);
-            return currentTab?.id === state.activeTabId;
-        }
-    );
+      const isActive = useTabStore(
+          state => {
+              const currentTab = state.tabs.find(tab => tab.path === pathToCheck);
+              return currentTab?.id === state.activeTabId;
+          }
+      );
 
-    return isActive;
-};
+      return isActive;
+  };
