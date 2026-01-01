@@ -14,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { parse } from "date-fns"
-import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { Button } from "@/components/atoms/button"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable"
@@ -43,6 +42,7 @@ import { Badge } from "@/components/atoms/badge"
 import { useClienteVarios } from "../hooks/useClienteVarios"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
 import { parseDateFromBackend } from "@/utils/dateFormatters"
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
 
 const QuotationEditScreen = () => {
     const configuraciones = {
@@ -233,7 +233,6 @@ const QuotationEditScreen = () => {
             showErrorToast({
                 title: "No hay productos seleccionados",
                 description: "Debes agregar al menos un producto para realizar una cotización",
-                duration: 5000
             });
             isValid = false;
             return isValid;
@@ -247,7 +246,6 @@ const QuotationEditScreen = () => {
             showErrorToast({
                 title: "Cliente requerido",
                 description: "Debes seleccionar un cliente para la cotización",
-                duration: 5000
             });
             isValid = false;
         }
@@ -276,7 +274,6 @@ const QuotationEditScreen = () => {
             showErrorToast({
                 title: "Plazo requerido",
                 description: "Las ventas a crédito requieren una fecha de plazo",
-                duration: 5000
             });
             isValid = false;
         }
@@ -297,7 +294,6 @@ const QuotationEditScreen = () => {
                 showErrorToast({
                     title: "Fecha inválida",
                     description: "La fecha de plazo debe ser posterior a la fecha de cotización",
-                    duration: 5000
                 });
                 isValid = false;
             }
@@ -380,7 +376,6 @@ const QuotationEditScreen = () => {
             showErrorToast({
                 title: "Datos inválidos",
                 description: "Revisa los campos antes de continuar.",
-                duration: 5000,
             });
             return;
         }
@@ -393,7 +388,6 @@ const QuotationEditScreen = () => {
                     showSuccessToast({
                         title: "Cotización Modificada",
                         description: `Cotización modificada con éxito`,
-                        duration: 5000,
                     });
                     loadFormData(updatedData)
                 },
@@ -409,7 +403,6 @@ const QuotationEditScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -420,7 +413,6 @@ const QuotationEditScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -464,7 +456,7 @@ const QuotationEditScreen = () => {
     };
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -472,7 +464,7 @@ const QuotationEditScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     })

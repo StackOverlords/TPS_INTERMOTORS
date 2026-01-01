@@ -13,7 +13,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/atoms/dropdown-menu';
 import { ScrollArea, ScrollBar } from '@/components/atoms/scroll-area';
-import { TooltipWrapper } from '@/components/common/TooltipWrapper';
 import { cn } from '@/lib/utils';
 import { useTabStore, type Tab } from '@/states/tabStore';
 import {

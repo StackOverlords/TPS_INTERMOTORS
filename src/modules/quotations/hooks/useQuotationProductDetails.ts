@@ -141,7 +141,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                 showSuccessToast({
                     title: Array.isArray(input) ? "Productos agregados" : "Producto agregado",
                     description: message,
-                    duration: 3000
+                    duration: 2000
                 });
             }
 
@@ -218,7 +218,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                 showSuccessToast({
                     title: "Productos agregados",
                     description: `${addedCount} producto(s) agregados correctamente`,
-                    duration: 3000
+                    duration: 2000
                 });
             }
 
@@ -237,7 +237,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                 showErrorToast({
                     title: "No se puede eliminar",
                     description: "Debe haber al menos un producto en la cotización",
-                    duration: 3000
+                    duration: 2000
                 });
                 return prevDetails;
             }
@@ -258,7 +258,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
             showErrorToast({
                 title: "Cantidad inválida",
                 description: "La cantidad debe ser mayor a 0",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -289,7 +289,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
             showErrorToast({
                 title: "Monto inválido",
                 description: "El monto debe ser mayor a 0",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -320,7 +320,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
             showErrorToast({
                 title: "Precio inválido",
                 description: "El precio no puede ser negativo",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -373,7 +373,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
             showErrorToast({
                 title: "Descuento inválido",
                 description: "El descuento no puede ser negativo",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -383,7 +383,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                 showErrorToast({
                     title: "Sin productos",
                     description: "No hay productos para aplicar descuento",
-                    duration: 3000
+                    duration: 2000
                 });
                 return prevDetails;
             }
@@ -395,7 +395,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                     showErrorToast({
                         title: "Descuento inválido",
                         description: "El descuento porcentual no puede ser mayor a 100%",
-                        duration: 3000
+                        duration: 2000
                     });
                     return prevDetails;
                 }
@@ -420,7 +420,7 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
                     showErrorToast({
                         title: "Descuento inválido",
                         description: "El descuento no puede ser mayor al total de la cotización",
-                        duration: 3000
+                        duration: 2000
                     });
                     return prevDetails;
                 }

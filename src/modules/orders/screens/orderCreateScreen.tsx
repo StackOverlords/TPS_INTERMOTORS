@@ -22,7 +22,6 @@ import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
 import OrderDetailTable, { type OrderDetailTableRef } from "../components/OrderDetailTable";
 import { useOrderModalities } from "../hooks/commons/useOrderModalities";
@@ -39,6 +38,7 @@ import ProductSearchPanel from "@/modules/products/components/ProductSearchPanel
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 
 const OrderCreateScreen = () => {
     const configuraciones = {
@@ -167,7 +167,6 @@ const OrderCreateScreen = () => {
             showErrorToast({
                 title: "Sin productos",
                 description: "Debes agregar al menos un producto para realizar un pedido",
-                duration: 5000
             });
             isValid = false;
         }
@@ -182,7 +181,6 @@ const OrderCreateScreen = () => {
             showErrorToast({
                 title: "Proveedor requerido",
                 description: "Debes seleccionar un proveedor para el pedido",
-                duration: 5000
             });
             isValid = false;
         }
@@ -321,7 +319,6 @@ const OrderCreateScreen = () => {
                 showSuccessToast({
                     title: "Pedido Exitoso",
                     description: `Pedido realizado con éxito`,
-                    duration: 5000
                 });
 
                 // Capturar el ID del tab actual
@@ -355,7 +352,6 @@ const OrderCreateScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -366,7 +362,6 @@ const OrderCreateScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -435,7 +430,7 @@ const OrderCreateScreen = () => {
     };
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -443,7 +438,7 @@ const OrderCreateScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     });

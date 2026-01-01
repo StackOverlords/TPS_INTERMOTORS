@@ -11,7 +11,6 @@ import { Kbd } from "@/components/atoms/kbd";
 import { useNavigate } from "react-router";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useBranchStore } from "@/states/branchStore";
-import { useHotkeys } from "react-hotkeys-hook";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -34,6 +33,7 @@ import { useSaleDetailSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { cn } from "@/lib/utils";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 
 const ReturnCreateScreen = () => {
     const configuraciones = {
@@ -326,7 +326,7 @@ const ReturnCreateScreen = () => {
     });
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -334,7 +334,7 @@ const ReturnCreateScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         if (canSubmit) {
             handleSubmit(onSubmit, onError)();

@@ -12,7 +12,6 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select"
 import { showErrorToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced"
-import { useHotkeys } from "react-hotkeys-hook"
 import { useGoBack } from "@/hooks/useGoBack"
 import { useErrorHandler } from "@/hooks/useErrorHandler"
 import ShortcutKey from "@/components/common/ShortcutKey"
@@ -37,6 +36,7 @@ import { Button } from "@/components/atoms/button"
 import { useSaleDetailSelectorWindow } from "@/hooks/useSecondaryWindow"
 import type { ReturnGetById } from "../types/returnGet.types"
 import { getTodayDate } from "@/utils/dateFormatters"
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
 
 const ReturnEditScreen = () => {
     const configuraciones = {
@@ -199,7 +199,6 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Sin productos",
                 description: "Debes agregar al menos un producto para realizar una devolución",
-                duration: 5000
             });
             isValid = false;
         }
@@ -209,7 +208,6 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Cantidades inválidas",
                 description: "Algunos productos tienen cantidades que exceden el máximo permitido",
-                duration: 5000
             });
             isValid = false;
         }
@@ -236,7 +234,6 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Datos inválidos",
                 description: "Revisa los campos antes de continuar.",
-                duration: 5000,
             });
             return;
         }
@@ -249,7 +246,6 @@ const ReturnEditScreen = () => {
                     showSuccessToast({
                         title: "Devolución Modificada",
                         description: `Devolución modificada con éxito`,
-                        duration: 5000,
                     });
                 },
                 onError: (error: unknown) => {
@@ -275,7 +271,6 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -284,7 +279,6 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los items de devolución",
-                duration: 5000
             });
             return;
         }
@@ -295,7 +289,6 @@ const ReturnEditScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -349,7 +342,7 @@ const ReturnEditScreen = () => {
     });
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -357,7 +350,7 @@ const ReturnEditScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         if (canSubmit) {
             handleSubmit(onSubmit, onError)();

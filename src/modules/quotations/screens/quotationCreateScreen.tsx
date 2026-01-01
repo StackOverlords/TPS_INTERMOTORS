@@ -27,7 +27,6 @@ import { parse } from "date-fns";
 import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
 import ProductDetailTable, { type ProductDetailTableRef } from "../components/productDetailTable";
 import QuotationsSummary from "../components/quotationsSummary";
@@ -41,6 +40,7 @@ import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import type { QuotationUpdate } from "../types/quotationUpdate.types";
 import type { QuotationUpdateDetailUI } from "../hooks/useQuotationProductDetails";
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 
 const SCREEN_PATH = "/dashboard/create-quotation"
 
@@ -182,7 +182,6 @@ const QuotationCreateScreen = () => {
             showErrorToast({
                 title: "Carrito vacío",
                 description: "Debes agregar al menos un producto para realizar una cotización",
-                duration: 5000
             });
             isValid = false;
             return isValid;
@@ -196,7 +195,6 @@ const QuotationCreateScreen = () => {
             showErrorToast({
                 title: "Cliente requerido",
                 description: "Debes seleccionar un cliente para la cotización",
-                duration: 5000
             });
             isValid = false;
         }
@@ -225,7 +223,6 @@ const QuotationCreateScreen = () => {
             showErrorToast({
                 title: "Plazo requerido",
                 description: "Las ventas a crédito requieren una fecha de plazo",
-                duration: 5000
             });
             isValid = false;
         }
@@ -246,7 +243,6 @@ const QuotationCreateScreen = () => {
                 showErrorToast({
                     title: "Fecha inválida",
                     description: "La fecha de plazo debe ser posterior a la fecha de cotización",
-                    duration: 5000
                 });
                 isValid = false;
             }
@@ -355,7 +351,6 @@ const QuotationCreateScreen = () => {
                 showSuccessToast({
                     title: "Cotización Creada",
                     description: `Cotización #${createdQuotation.id} creada exitosamente`,
-                    duration: 5000
                 });
 
                 // Preparar datos temporales para la navegación
@@ -438,7 +433,6 @@ const QuotationCreateScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -449,7 +443,6 @@ const QuotationCreateScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -515,7 +508,7 @@ const QuotationCreateScreen = () => {
     };
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -523,7 +516,7 @@ const QuotationCreateScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     })

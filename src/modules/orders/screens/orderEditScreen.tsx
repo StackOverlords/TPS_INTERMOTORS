@@ -18,7 +18,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { CornerUpLeft, Loader2, Plus, Save, ShoppingCart } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
-import { useHotkeys } from "react-hotkeys-hook"
 import { useLocation, useNavigate, useParams } from "react-router"
 import type { OrderDetailTableRef } from "../components/OrderDetailTable"
 import OrderDetailTable from "../components/OrderDetailTable"
@@ -40,6 +39,7 @@ import type { SelectedItem } from "@/types/windowSelectedItems"
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow"
 import type { OrderGetById } from "../types/orderGet.types"
 import { getTodayDate } from "@/utils/dateFormatters"
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
 
 const OrderEditScreen = () => {
     const configuraciones = {
@@ -252,7 +252,6 @@ const OrderEditScreen = () => {
             showErrorToast({
                 title: "No hay productos seleccionados",
                 description: "Debes agregar al menos un producto para realizar un pedido",
-                duration: 5000
             });
             isValid = false;
         }
@@ -265,7 +264,6 @@ const OrderEditScreen = () => {
             showErrorToast({
                 title: "Proveedor requerido",
                 description: "Debes seleccionar un proveedor para el pedido",
-                duration: 5000
             });
             isValid = false;
         }
@@ -322,7 +320,6 @@ const OrderEditScreen = () => {
             showErrorToast({
                 title: "Datos inválidos",
                 description: "Revisa los campos antes de continuar.",
-                duration: 5000,
             });
             return;
         }
@@ -343,7 +340,6 @@ const OrderEditScreen = () => {
                     showSuccessToast({
                         title: "Pedido Modificado",
                         description: `Pedido modificado con éxito`,
-                        duration: 5000,
                     });
                 },
                 onError: (error: unknown) => {
@@ -359,7 +355,6 @@ const OrderEditScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -370,7 +365,6 @@ const OrderEditScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -405,7 +399,7 @@ const OrderEditScreen = () => {
     };
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -413,7 +407,7 @@ const OrderEditScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     })
