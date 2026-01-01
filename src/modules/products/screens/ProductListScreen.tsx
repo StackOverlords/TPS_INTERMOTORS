@@ -40,7 +40,6 @@ import {
     Zap
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useHotkeys } from "react-hotkeys-hook"
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { useNavigate } from "react-router"
 import { ProductDetailModal } from "../components/productDetail/ProductDetailModal"
@@ -54,6 +53,7 @@ import { useCustomTable } from "@/hooks/useCustomTable"
 import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tableShoppingCart"
 import { useUpdateProductImage } from "../hooks/mutations/useUpdateProductImage"
 import { base64ToFile } from "@/utils/base64Utils"
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
 
 const SCREEN_PATH = "/dashboard/productos"
 
@@ -765,7 +765,7 @@ const ProductListScreen = () => {
         setIsDraggingColumn(false);
     }, []);
 
-    useHotkeys(
+    useTabHotkeys(
         'enter',
         (e) => {
             e.preventDefault();
@@ -798,7 +798,7 @@ const ProductListScreen = () => {
     useCommands({
         'searchFilters.focusSearch': handleManualSearch,
         'forms.reset': handleResetFilters
-    },{
+    }, {
         enableOnFormTags: true
     })
     return (

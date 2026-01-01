@@ -164,7 +164,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showSuccessToast({
                 title: "Productos agregados",
                 description: `${addedCount} producto(s) agregados correctamente`,
-                duration: 3000
+                duration: 2000
             });
         }
         if (skippedCount > 0) {
@@ -173,7 +173,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                 description: skippedProducts.length > 0
                     ? skippedProducts.join(', ')
                     : `${skippedCount} producto(s) no agregados por stock insuficiente`,
-                duration: 5000
+                duration: 2000
             });
         }
     }, [setValue, getValues, hasDiscount, getAvailableStock]);
@@ -265,7 +265,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showErrorToast({
                 title: "No se puede eliminar",
                 description: "Debe haber al menos un producto en la venta",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -280,7 +280,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showErrorToast({
                 title: "Cantidad inválida",
                 description: "La cantidad debe ser mayor a 0",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -295,7 +295,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                 showErrorToast({
                     title: "Stock insuficiente",
                     description: `Solo hay ${availableStock} unidades disponibles`,
-                    duration: 3000
+                    duration: 2000
                 });
                 return;
             }
@@ -327,7 +327,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showErrorToast({
                 title: "Monto inválido",
                 description: "El monto debe ser mayor a 0",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -359,7 +359,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showErrorToast({
                 title: "Precio inválido",
                 description: "El precio no puede ser negativo",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -391,7 +391,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showErrorToast({
                 title: "Descuento inválido",
                 description: "El descuento no puede ser negativo",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -402,7 +402,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
             showErrorToast({
                 title: "Sin productos",
                 description: "No hay productos para aplicar descuento",
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -414,7 +414,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                 showErrorToast({
                     title: "Descuento inválido",
                     description: "El descuento porcentual no puede ser mayor a 100%",
-                    duration: 3000
+                    duration: 2000
                 });
                 return;
             }
@@ -438,7 +438,7 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                 showErrorToast({
                     title: "Descuento inválido",
                     description: "El descuento no puede ser mayor al total de la venta",
-                    duration: 3000
+                    duration: 2000
                 });
                 return;
             }
@@ -518,14 +518,14 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                 showSuccessToast({
                     title: "Productos agregados",
                     description: `${addedCount} producto(s) agregados correctamente`,
-                    duration: 3000
+                    duration: 2000
                 });
             }
             if (skippedCount > 0) {
                 showErrorToast({
                     title: "Stock insuficiente",
                     description: `${skippedCount} producto(s) no agregados por stock insuficiente`,
-                    duration: 5000
+                    duration: 2000
                 });
             }
         } else {
@@ -533,14 +533,14 @@ const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: Us
                 showSuccessToast({
                     title: "Producto agregado",
                     description: `${products[0].descripcion} agregado correctamente`,
-                    duration: 3000
+                    duration: 2000
                 });
             }
             if (skippedCount > 0) {
                 showErrorToast({
                     title: "Stock insuficiente",
                     description: `No hay stock disponible para ${products[0].descripcion}`,
-                    duration: 5000
+                    duration: 2000
                 });
             }
         }

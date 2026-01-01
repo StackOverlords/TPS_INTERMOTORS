@@ -20,7 +20,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useBranchStore } from "@/states/branchStore"
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced"
 import { parse } from "date-fns"
-import { useHotkeys } from "react-hotkeys-hook"
 import SaleDetailsEditingTable, { type SaleDetailsEditingTableRef } from "../components/saleEdit/saleDetailsEditingTable"
 import { SaleUpdateFormSchema, SaleUpdateSchema } from "../schemas/saleUpdate.schema"
 import useSaleProductDetailsWithForm from "../hooks/useSaleProductDetails"
@@ -39,6 +38,7 @@ import type { SaleGetById } from "../types/salesGetResponse"
 import type { ProductGet } from "@/modules/products/types/ProductGet"
 import type { SelectedItem } from "@/types/windowSelectedItems"
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes"
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
 
 const SaleEditScreen = () => {
     const configuraciones = {
@@ -213,7 +213,6 @@ const SaleEditScreen = () => {
             showErrorToast({
                 title: "No hay productos seleccionados",
                 description: "Debes agregar al menos un producto para realizar una venta",
-                duration: 5000
             });
             isValid = false;
         }
@@ -226,7 +225,6 @@ const SaleEditScreen = () => {
             showErrorToast({
                 title: "Cliente requerido",
                 description: "Debes seleccionar un cliente para la venta",
-                duration: 5000
             });
             isValid = false;
         }
@@ -263,7 +261,6 @@ const SaleEditScreen = () => {
             showErrorToast({
                 title: "Plazo requerido",
                 description: "Las ventas a crédito requieren una fecha de plazo",
-                duration: 5000
             });
             isValid = false;
         }
@@ -283,7 +280,6 @@ const SaleEditScreen = () => {
                 showErrorToast({
                     title: "Fecha inválida",
                     description: "La fecha de plazo debe ser posterior a la fecha de venta",
-                    duration: 5000
                 });
                 isValid = false;
             }
@@ -378,7 +374,6 @@ const SaleEditScreen = () => {
             showErrorToast({
                 title: "Datos inválidos",
                 description: "Revisa los campos antes de continuar.",
-                duration: 5000,
             });
             return;
         }
@@ -391,7 +386,6 @@ const SaleEditScreen = () => {
                     showSuccessToast({
                         title: "Venta Modificada",
                         description: `Venta modificada con éxito`,
-                        duration: 5000,
                     });
                     loadFormData(updatedData)
                 },
@@ -408,7 +402,6 @@ const SaleEditScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -419,7 +412,6 @@ const SaleEditScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -457,7 +449,7 @@ const SaleEditScreen = () => {
     };
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -465,7 +457,7 @@ const SaleEditScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     })

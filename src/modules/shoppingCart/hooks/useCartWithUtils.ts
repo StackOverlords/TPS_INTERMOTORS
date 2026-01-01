@@ -49,7 +49,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showSuccessToast({
                 title: "Convertido a Venta Estricta",
                 description: result.message,
-                duration: 5000
+                duration: 2000
             });
         } else {
             const details: string[] = [];
@@ -69,7 +69,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showWarningToast({
                 title: "Carrito convertido a Venta Estricta",
                 description: details.join('\n'),
-                duration: 5000
+                duration: 2000
             });
         }
 
@@ -81,7 +81,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         showInfoToast({
             title: "Modo Venta Permisiva",
             description: "Puedes agregar productos aunque no tengan stock suficiente",
-            duration: 5000
+            duration: 2000
         });
     }, [state.convertToSalePermissive]);
 
@@ -90,7 +90,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
         showInfoToast({
             title: "Convertido a Cotización",
             description: "Ahora puedes agregar productos sin restricción de stock",
-            duration: 5000
+            duration: 2000
         });
     }, [state.convertToQuote]);
 
@@ -104,13 +104,13 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showWarningToast({
                 title: "Advertencia de stock",
                 description: result.message,
-                duration: 5000,
+                duration: 2000,
             });
         } else if (!result.success) {
             showErrorToast({
                 title: "Error al incrementar",
                 description: result.message,
-                duration: 5000,
+                duration: 2000,
             });
         }
 
@@ -136,20 +136,20 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 showWarningToast({
                     title: "Producto agregado con advertencia",
                     description: result.message,
-                    duration: 5000,
+                    duration: 2000,
                 });
             } else {
                 showSuccessToast({
                     title: "Producto agregado",
                     description: result.message,
-                    duration: 5000,
+                    duration: 2000,
                 });
             }
         } else {
             showErrorToast({
                 title: "No se pudo agregar producto",
                 description: result.message,
-                duration: 5000,
+                duration: 2000,
             });
         }
 
@@ -163,13 +163,13 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showWarningToast({
                 title: "Advertencia de stock",
                 description: result.message,
-                duration: 5000
+                duration: 2000
             });
         } else if (!result.success) {
             showErrorToast({
                 title: "Error al actualizar cantidad",
                 description: result.message,
-                duration: 5000
+                duration: 2000
             });
         }
 
@@ -225,13 +225,13 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 showWarningToast({
                     title: "Productos agregados con advertencias",
                     description: `${bulkResult.message} Algunos productos no tienen stock disponible.`,
-                    duration: 5000,
+                    duration: 2000,
                 });
             } else {
                 showSuccessToast({
                     title: "Productos agregados",
                     description: bulkResult.message,
-                    duration: 5000,
+                    duration: 2000,
                 });
             }
         }
@@ -245,7 +245,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showErrorToast({
                 title: "Algunos productos no se agregaron",
                 description: errorMessage,
-                duration: 5000,
+                duration: 2000,
             });
         }
 
@@ -269,7 +269,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 showErrorToast({
                     title: "Sin stock",
                     description: result.message,
-                    duration: 5000,
+                    duration: 2000,
                 });
 
                 return result;
@@ -286,7 +286,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 showErrorToast({
                     title: "Stock insuficiente",
                     description: result.message,
-                    duration: 5000,
+                    duration: 2000,
                 });
 
                 return result;
@@ -318,20 +318,20 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 showWarningToast({
                     title: "Productos agregados con advertencia",
                     description: `${result.message} (sin stock disponible)`,
-                    duration: 5000
+                    duration: 2000
                 });
             } else {
                 showSuccessToast({
                     title: "Productos agregados",
                     description: result.message,
-                    duration: 5000
+                    duration: 2000
                 });
             }
         } else {
             showWarningToast({
                 title: "Agregado parcial",
                 description: result.message,
-                duration: 5000
+                duration: 2000
             });
         }
 
@@ -442,7 +442,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
                 showSuccessToast({
                     title: "Productos agregados",
                     description: message,
-                    duration: 5000,
+                    duration: 2000,
                 });
             }
         }
@@ -454,13 +454,13 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showErrorToast({
                 title: "No se pudieron agregar productos",
                 description: errorMessages.join('\n') + (moreCount > 0 ? `\n... y ${moreCount} más` : ''),
-                duration: 5000,
+                duration: 2000,
             });
         } else if (totalFailed > 0) {
             showInfoToast({
                 title: "Algunos productos no se agregaron",
                 description: `${totalFailed} producto${totalFailed !== 1 ? 's no pudieron' : ' no pudo'} agregarse. Revisa el stock disponible.`,
-                duration: 5000,
+                duration: 2000,
             });
         }
 
@@ -480,7 +480,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showErrorToast({
                 title: "Problemas en el carrito",
                 description: issueMessages.join(', '),
-                duration: 5000
+                duration: 2000
             });
         } else if (state.mode === 'sale-strict') {
             showSuccessToast({
@@ -505,7 +505,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showInfoToast({
                 title: "Productos removidos",
                 description: `Se removieron ${outOfStockItems.length} productos sin stock`,
-                duration: 5000
+                duration: 2000
             });
         }
 
@@ -531,7 +531,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
             showInfoToast({
                 title: "Cantidades ajustadas",
                 description: `Se ajustaron las cantidades de ${adjustedCount} productos según el stock disponible`,
-                duration: 5000
+                duration: 2000
             });
         }
 

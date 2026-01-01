@@ -19,7 +19,6 @@ import { parse } from "date-fns";
 import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
-import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate } from "react-router";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 import SalesSummary from "../components/salesSummary";
@@ -42,6 +41,7 @@ import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import type { SaleUpdateForm } from "../types/saleUpdate.type";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 
 const SCREEN_PATH = "/dashboard/create-sale"
 
@@ -243,7 +243,6 @@ const CreateSaleScreen = () => {
             showErrorToast({
                 title: "Carrito vacío",
                 description: "Debes agregar al menos un producto para realizar una venta",
-                duration: 5000
             });
             isValid = false;
         }
@@ -256,7 +255,6 @@ const CreateSaleScreen = () => {
             showErrorToast({
                 title: "Cliente requerido",
                 description: "Debes seleccionar un cliente para la venta",
-                duration: 5000
             });
             isValid = false;
         }
@@ -300,7 +298,6 @@ const CreateSaleScreen = () => {
                 showErrorToast({
                     title: "Fecha inválida",
                     description: "La fecha de plazo debe ser posterior a la fecha de venta",
-                    duration: 5000
                 });
                 isValid = false;
             }
@@ -481,7 +478,6 @@ const CreateSaleScreen = () => {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
             });
             return;
         }
@@ -492,7 +488,6 @@ const CreateSaleScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
             });
         }
 
@@ -563,7 +558,7 @@ const CreateSaleScreen = () => {
     };
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -571,7 +566,7 @@ const CreateSaleScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     })

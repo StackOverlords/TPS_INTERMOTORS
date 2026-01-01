@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
 import { useTabActive } from '../tabs/useTabActive';
+import { useTabHotkeys } from '../tabs/useTabHotkeys';
 
 interface UseKeyboardNavigationProps<T, E extends HTMLElement = HTMLElement> {
     items: T[];
@@ -134,7 +134,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     }, [isDragging]);
 
     // Activar navegación por teclado
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.activate!,
         (e) => {
             e.preventDefault();
@@ -151,7 +151,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // Desactivar navegación por teclado
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.deactivate!,
         () => {
             setIsFocused(false);
@@ -162,7 +162,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // 🔧 FIX: Navegación hacia arriba - Con protección contra múltiples actualizaciones
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.moveUp!,
         (e) => {
             e.preventDefault();
@@ -188,7 +188,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // 🔧 FIX: Navegación hacia abajo - Con protección contra múltiples actualizaciones
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.moveDown!,
         (e) => {
             e.preventDefault();
@@ -215,7 +215,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // TAB - Navegar elementos dentro de la fila seleccionada
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.navigate!,
         (e) => {
             if (!isInRestrictedContext()) {
@@ -262,7 +262,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // Acción primaria
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.primaryAction!,
         (e) => {
             if (!isInRestrictedContext() && !isNavigatingWithinRow && selectedItem && onPrimaryAction) {
@@ -278,7 +278,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // Acción secundaria
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.secondaryAction!,
         (e) => {
             if (!isInRestrictedContext() && selectedItem && onSecondaryAction) {
@@ -294,7 +294,7 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
     );
 
     // Acción de eliminar
-    useHotkeys(
+    useTabHotkeys(
         hotkeys.deleteAction!,
         (e) => {
             if (!isInRestrictedContext() && selectedItem && onDeleteAction) {
