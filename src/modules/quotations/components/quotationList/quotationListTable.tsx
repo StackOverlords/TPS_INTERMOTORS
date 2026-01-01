@@ -34,6 +34,8 @@ interface QuotationsListTableProps {
     handleDeleteSale: (quotationId: number) => void
 }
 
+const SCREEN_PATH = "/dashboard/quotations"
+
 const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     data,
     quotations,
@@ -92,7 +94,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             accessorKey: "nro_cotizacion",
             header: "Nro. Cotizacion",
             size: 120,
-            minSize: 100,
             enableHiding: false,
             cell: ({ row, getValue }) => (
                 <div
@@ -165,7 +166,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             accessorKey: "fecha",
             header: "Fecha",
             size: 140,
-            minSize: 120,
             cell: ({ getValue }) => {
                 const dateString = getValue<string>();
 
@@ -192,8 +192,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         {
             accessorKey: "cliente",
             header: "Cliente",
-            size: 250,
-            minSize: 200,
+            size: 200,
             cell: ({ row }) => {
                 const cliente = row.original.cliente;
                 return (
@@ -216,7 +215,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             accessorKey: "responsable",
             header: "Responsable",
             size: 180,
-            minSize: 150,
             cell: ({ row }) => {
                 const resp = row.original.responsable;
                 const nombreCompleto = resp
@@ -243,7 +241,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             accessorKey: "contexto",
             header: "Contexto",
             size: 120,
-            minSize: 100,
             cell: ({ getValue }) => {
                 const contexto = getValue<string>();
                 const [tipo, categoria] = contexto.split('|');
@@ -258,10 +255,19 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
             },
         },
         {
+            accessorKey: "anticipo",
+            header: "Anticipo",
+            size: 100,
+            cell: ({ getValue }) => (
+                <div className="text-right font-medium">
+                    {formatCurrency(getValue<number>())}
+                </div>
+            ),
+        },
+        {
             accessorKey: "total",
             header: "Total",
             size: 120,
-            minSize: 100,
             cell: ({ getValue }) => (
                 <div className="text-right font-medium text-green-600">
                     {formatCurrency(getValue<number>())}
@@ -272,7 +278,6 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         //     accessorKey: "comprobantes",
         //     header: "Comprobantes",
         //     size: 140,
-        //     minSize: 120,
         //     cell: ({ getValue }) => {
         //         const comprobantes = getValue<string>();
 
@@ -304,10 +309,22 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
         //     },
         // },
         {
+            accessorKey: "vehiculo",
+            header: "Vehículo/Motor",
+            size: 150,
+            cell: ({ getValue }) => {
+                const vehiculo = getValue<string | null>();
+                return (
+                    <div className={`text-xs truncate ${!vehiculo ? "italic text-muted-foreground " : ""}`}>
+                        {vehiculo || "Sin vehiculo"}
+                    </div>
+                );
+            },
+        },
+        {
             accessorKey: "comentarios",
             header: "Comentarios",
             size: 200,
-            minSize: 150,
             cell: ({ getValue }) => {
                 const comentarios = getValue<string | null>();
                 return (
@@ -356,6 +373,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     } = useKeyboardNavigation<QuotationGetAll, HTMLTableElement>({
         items: quotations,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)

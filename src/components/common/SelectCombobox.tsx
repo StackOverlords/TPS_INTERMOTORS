@@ -67,7 +67,8 @@ export function ComboboxSelect({
     const comboboxInputRef = useRef<HTMLInputElement>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
-    const justSelectedRef = useRef(false) // Track si acabamos de seleccionar algo
+    const enterPressCountRef = useRef(0) // Contar cuántas veces se presiona Enter en secuencia
+    const lastOpenStateRef = useRef(false) // Track del último estado de apertura
 
     const baseOptions = useMemo(() => {
         return enableAllOption
@@ -210,21 +211,14 @@ export function ComboboxSelect({
                 // Luego volver a setear el valor en el siguiente tick
                 setTimeout(() => {
                     onChange(selectedValue)
-                    // Marcar que acabamos de seleccionar
-                    justSelectedRef.current = true
-                    setTimeout(() => {
-                        justSelectedRef.current = false
-                    }, 100)
                 }, 0)
             } else {
                 // Valor diferente, cambio normal
                 onChange(selectedValue)
-                // Marcar que acabamos de seleccionar
-                justSelectedRef.current = true
-                setTimeout(() => {
-                    justSelectedRef.current = false
-                }, 100)
             }
+
+            // Incrementar el contador para indicar que acabamos de seleccionar
+            enterPressCountRef.current = 2
         }
         setQuery('')
 
@@ -240,22 +234,22 @@ export function ComboboxSelect({
             disabled={disabled}
         >
             {({ open }) => {
-                const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === 'Enter') {
-                        // Si el dropdown está abierto, dejar que Headless UI maneje la selección
-                        if (open) {
-                            return
-                        }
+                // Detectar cambios en el estado de apertura
+                if (lastOpenStateRef.current !== open) {
+                    lastOpenStateRef.current = open
 
-                        // Si acabamos de seleccionar algo (cerrar con Enter), navegar al siguiente campo
-                        if (justSelectedRef.current) {
-                            e.preventDefault()
-                            e.stopPropagation()
+                    // Si se cerró el dropdown y teníamos 2 Enters (abrió y seleccionó)
+                    if (!open && enterPressCountRef.current === 2) {
+                        // Navegar inmediatamente al siguiente campo
+                        setTimeout(() => {
+                            if (!comboboxInputRef.current) return
 
-                            // Navegar al siguiente elemento
+                            const container = comboboxInputRef.current.closest('form') || document
                             const allInputs = Array.from(
-                                document.querySelectorAll<HTMLElement>(
-                                    'input:not([type="hidden"]):not([disabled]):not([type="file"]), button[type="submit"]:not([disabled])'
+                                container.querySelectorAll<HTMLElement>(
+                                    'input:not([type="hidden"]):not([disabled]):not([type="file"]):not([type="submit"]):not([type="reset"]), ' +
+                                    'textarea:not([disabled]), ' +
+                                    'button[type="submit"]:not([disabled])'
                                 )
                             )
 
@@ -264,18 +258,44 @@ export function ComboboxSelect({
                                 return rect.width > 0 && rect.height > 0
                             })
 
-                            const currentIndex = focusableElements.indexOf(e.currentTarget)
+                            const currentIndex = focusableElements.indexOf(comboboxInputRef.current)
                             if (currentIndex !== -1 && currentIndex < focusableElements.length - 1) {
                                 const nextElement = focusableElements[currentIndex + 1]
-                                setTimeout(() => {
-                                    nextElement?.focus()
-                                }, 50)
+                                nextElement?.focus()
+                                // Si es un input de texto, seleccionar todo el contenido
+                                if (nextElement instanceof HTMLInputElement &&
+                                    (nextElement.type === 'text' || nextElement.type === 'number' || nextElement.type === 'date')) {
+                                    nextElement.select()
+                                }
                             }
+
+                            // Resetear contador
+                            enterPressCountRef.current = 0
+                        }, 0)
+                    }
+                }
+
+                const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === 'Enter') {
+                        // Incrementar contador
+                        enterPressCountRef.current++
+
+                        // Si el dropdown está abierto, dejar que Headless UI maneje la selección
+                        if (open) {
                             return
                         }
 
-                        // Si no acabamos de seleccionar y está cerrado, dejar que el ComboboxButton lo abra
-                        // No hacemos preventDefault aquí para que el ComboboxButton pueda manejar el evento
+                        // Si está cerrado y es el primer Enter, dejar que se abra
+                        if (enterPressCountRef.current === 1) {
+                            return
+                        }
+
+                        // Si llegamos aquí y el contador es > 1, prevenir más aperturas
+                        e.preventDefault()
+                        e.stopPropagation()
+                    } else {
+                        // Cualquier otra tecla resetea el contador
+                        enterPressCountRef.current = 0
                     }
                 }
 
@@ -307,19 +327,8 @@ export function ComboboxSelect({
                                 />
                             </ComboboxButton>
 
-                        {/* Botón para limpiar selección */}
-                        {allowClear && internalValue && !disabled && (
-                            <button
-                                type="button"
-                                onClick={handleClear}
-                                className="absolute inset-y-0 right-8 flex items-center pr-1 hover:text-red-500 transition-colors"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
-
                         {/* Ícono chevron o loading durante búsqueda */}
-                        <ComboboxButton name='btn-chvron-right' className="absolute inset-y-0 right-0 flex items-center pr-2" disabled={disabled}>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                             {enableExternalSearch && isSearching ? (
                                 <Loader2 className="h-4 w-4 opacity-50 animate-spin" />
                             ) : (
@@ -331,7 +340,7 @@ export function ComboboxSelect({
                                     )}
                                 />
                             )}
-                        </ComboboxButton>
+                        </div>
                     </div>
 
                     {portalContainer && open && createPortal(

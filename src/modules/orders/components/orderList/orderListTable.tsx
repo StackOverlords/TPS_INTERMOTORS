@@ -10,7 +10,7 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
-import { formatCurrency } from "@/utils/formaters";
+import { formatColumnNumber, formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
@@ -51,6 +51,8 @@ const getStatusBadge = (estado: string) => {
             return "default"
     }
 };
+
+const SCREEN_PATH = "/dashboard/orders"
 
 const OrdersListTable: React.FC<OrdersListTableProps> = ({
     data,
@@ -174,7 +176,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                         }
                     >
                         <div className="space-y-1 flex flex-col">
-                            <span className="font-medium text-foreground">{getValue<string>()}</span>
+                            <span className="font-semibold text-blue-600">{formatColumnNumber(getValue<string>(), "-")}</span>
                             {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
                         </div>
                     </TooltipWrapper>
@@ -444,6 +446,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
     } = useKeyboardNavigation<OrderGetAll, HTMLTableElement>({
         items: orders,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (quotation) => {
             handleSeeDetails(quotation.id)

@@ -444,7 +444,7 @@ const CreateSaleScreen = () => {
 
                 showSuccessToast({
                     title: "Venta Creada",
-                    description: `Venta #${createdSale.id} creada exitosamente`,
+                    description: `Venta #${createdSale.nro || createdSale.id} creada exitosamente`,
                     duration: 2000  // 2 segundos para cerrar más rápido
                 });
 
@@ -577,12 +577,18 @@ const CreateSaleScreen = () => {
     })
 
     const containerRef = useRef<HTMLDivElement>(null);
+
     useFormEnterNavigation({
         containerRef: containerRef,
         excludeSelectors: [
             '.editable-cell-input',
             '[data-table-cell="true"]',
-            '[name="btn-chvron-right"]'
+            '[name="btn-chvron-right"]',
+            '.no-enter-nav',
+            '.columns-button',
+            '.toggle-mode',
+            '.reload-button',
+            '.switch-button'
         ], enabled: true,
     })
 

@@ -51,4 +51,5 @@ export const SaleGetByIdSchema = z.object({
     vehiculo: z.string().nullable(),
     nmotor: z.string().nullable(),
     cliente_nit: z.string().nullable(),
+    cliente_nombre: z.string().nullable(),
 })

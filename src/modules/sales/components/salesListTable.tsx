@@ -9,7 +9,7 @@ import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import authSDK from "@/services/sdk-simple-auth";
-import { formatCurrency } from "@/utils/formaters";
+import { formatColumnNumber, formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -33,6 +33,8 @@ interface SalesListTableProps {
     isError: boolean,
     handleDeleteSale: (saleId: number) => void
 }
+
+const SCREEN_PATH = "/dashboard/sales"
 
 const SalesListTable: React.FC<SalesListTableProps> = ({
     data,
@@ -154,7 +156,9 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                         }
                     >
                         <div className="space-y-1 flex flex-col">
-                            <span className="font-medium text-foreground">{getValue<string>()}</span>
+                            <span className="font-semibold text-blue-600">
+                                {formatColumnNumber(getValue<string>(), "-")}
+                            </span>
                             {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
                         </div>
                     </TooltipWrapper>
@@ -360,6 +364,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     } = useKeyboardNavigation<SaleGetAll, HTMLTableElement>({
         items: sales,
         containerRef: tableRef,
+        screenPath: SCREEN_PATH,
         isDragging: isDraggingColumn,
         onPrimaryAction: (sale) => {
             handleSeeDetails(sale.id)

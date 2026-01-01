@@ -64,6 +64,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 accessorKey: "nro_pago",
                 header: "Nro. Pago",
                 size: 100,
+                minSize:30,
                 cell: ({ getValue }) => (
                     <div className="text-center font-medium">#{getValue<number>()}</div>
                 ),
@@ -72,6 +73,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 accessorKey: "fecha",
                 header: "Fecha",
                 size: 120,
+                minSize: 100,
                 cell: ({ getValue }) => {
                     const date = getValue<string>();
                     return (
@@ -84,7 +86,8 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
             {
                 accessorKey: "tipo_pago",
                 header: "Tipo de Pago",
-                size: 130,
+                size: 100,
+                minSize: 30,
                 cell: ({ getValue }) => {
                     const tipo = getValue<string>();
                     const variant = tipo === "EFECTIVO" ? "default" : tipo === "CHEQUE" ? "secondary" : "outline";
@@ -99,6 +102,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 accessorKey: "monto",
                 header: "Monto",
                 size: 120,
+                minSize: 30,
                 cell: ({ getValue }) => (
                     <div className="text-right font-semibold text-green-600">
                         {formatCurrency(getValue<number>())}
@@ -109,6 +113,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 accessorKey: "comentarios",
                 header: "Comentarios",
                 size: 250,
+                minSize: 30,
                 cell: ({ getValue }) => {
                     const comentarios = getValue<string | null>();
                     return (
@@ -122,6 +127,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 id: "actions",
                 header: "Acciones",
                 size: 80,
+                minSize: 30,
                 cell: ({ row }) => (
                     <div className="flex justify-center">
                         <Button
@@ -166,9 +172,9 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
     }
 
     return (
-        <div className="flex flex-col h-full space-y-4">
+        <div className="flex flex-col h-full space-y-4 border border-border rounded-lg bg-card">
             {/* Header con botón para crear pago */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-1">
                 <div>
                     <h3 className="text-lg font-semibold">Lista de Pagos</h3>
                     <p className="text-sm text-gray-500">
