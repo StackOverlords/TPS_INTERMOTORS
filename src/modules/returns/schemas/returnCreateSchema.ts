@@ -5,7 +5,7 @@ export const ReturnDetailCreateSchema = z.object({
     almacen_out_det_id: z.number(),
     cantidad: z.number().positive(),
     precio: strictRequiredMoneySchema,
-    comentario: z.string().nullable(),
+    comentario: z.string().nonempty(),
     orden: z.number(),
     almacen_out_id: z.number(),
 });

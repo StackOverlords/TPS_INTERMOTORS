@@ -58,7 +58,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     showWarningToast({
                         title: 'Cantidad máxima alcanzada',
                         description: `${detail.producto.descripcion} ya tiene la cantidad máxima (${exists.maxQuantity})`,
-                        duration: 3000
+                        duration: 2000
                     });
                     return prev;
                 }
@@ -66,7 +66,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 showWarningToast({
                     title: 'Producto ya agregado',
                     description: `${detail.producto.descripcion} ya está en la lista. Se incrementó la cantidad.`,
-                    duration: 3000
+                    duration: 2000
                 });
 
                 return prev.map((d) =>
@@ -184,7 +184,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
             showSuccessToast({
                 title: 'Cambios aplicados',
                 description: messages.join(', '),
-                duration: 3000
+                duration: 2000
             });
         }
 
@@ -285,7 +285,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
             showErrorToast({
                 title: 'Cantidad inválida',
                 description: 'La cantidad debe ser mayor a 0',
-                duration: 3000
+                duration: 2000
             });
             return;
         }
@@ -299,7 +299,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     showErrorToast({
                         title: 'Cantidad excedida',
                         description: `La cantidad máxima disponible es ${d.maxQuantity}`,
-                        duration: 3000
+                        duration: 2000
                     });
                     return d; // Mantener valor anterior
                 }
@@ -317,7 +317,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
             showErrorToast({
                 title: 'Precio inválido',
                 description: 'El precio no puede ser negativo',
-                duration: 3000
+                duration: 2000
             });
             return;
         }

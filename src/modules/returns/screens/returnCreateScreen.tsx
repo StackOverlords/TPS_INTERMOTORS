@@ -11,9 +11,8 @@ import { Kbd } from "@/components/atoms/kbd";
 import { useNavigate } from "react-router";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useBranchStore } from "@/states/branchStore";
-import { useHotkeys } from "react-hotkeys-hook";
 import TooltipButton from "@/components/common/TooltipButton";
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { showErrorToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { Textarea } from "@/components/atoms/textarea";
 import { Button } from "@/components/atoms/button";
@@ -34,6 +33,7 @@ import { useSaleDetailSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/atoms/resizable";
 import { cn } from "@/lib/utils";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
+import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 
 const ReturnCreateScreen = () => {
     const configuraciones = {
@@ -129,7 +129,7 @@ const ReturnCreateScreen = () => {
             showErrorToast({
                 title: "Sin productos",
                 description: "Debes agregar al menos un producto para realizar una devolución",
-                duration: 5000
+                duration: 2000
             });
             isValid = false;
         }
@@ -139,7 +139,7 @@ const ReturnCreateScreen = () => {
             showErrorToast({
                 title: "Cantidades inválidas",
                 description: "Algunos productos tienen cantidades que exceden el máximo permitido",
-                duration: 5000
+                duration: 2000
             });
             isValid = false;
         }
@@ -188,7 +188,7 @@ const ReturnCreateScreen = () => {
                 showSuccessToast({
                     title: "Devolución Exitosa",
                     description: `Devolución realizada con éxito`,
-                    duration: 5000
+                    duration: 2000
                 });
 
                 // Capturar el ID del tab actual
@@ -217,11 +217,32 @@ const ReturnCreateScreen = () => {
     };
 
     const onError = (errors: FieldErrors<ReturnCreate>) => {
+
+        if (Array.isArray(errors.detalles)) {
+            const hasComentarioError = errors.detalles.some(detail => detail?.comentario);
+            if (hasComentarioError) {
+                showWarningToast({
+                    title: "Hay un problema en detalle de devolución",
+                    description: `El comentario es obligatorio para cada producto devuelto.`,
+                    duration: 2000
+                });
+            }
+        }
+
         if (errors.motivo_devolucion || errors.responsable) {
             showErrorToast({
                 title: "Error de validación",
                 description: "Revisa los campos obligatorios del formulario",
-                duration: 5000
+                duration: 2000
+            });
+            return;
+        }
+
+        if (errors.detalles && errors.detalles.message) {
+            showErrorToast({
+                title: "Error en detalles",
+                description: errors.detalles.message,
+                duration: 2000
             });
             return;
         }
@@ -232,7 +253,7 @@ const ReturnCreateScreen = () => {
             showErrorToast({
                 title: "Error en formulario",
                 description: firstError.message,
-                duration: 5000
+                duration: 2000
             });
         }
 
@@ -305,7 +326,7 @@ const ReturnCreateScreen = () => {
     });
 
     // Shortcuts
-    useHotkeys('escape', (e) => {
+    useTabHotkeys('escape', (e) => {
         e.preventDefault();
         handleGoBack();
     }, {
@@ -313,7 +334,7 @@ const ReturnCreateScreen = () => {
         enabled: true
     });
 
-    useHotkeys('alt+s', (e) => {
+    useTabHotkeys('alt+s', (e) => {
         e.preventDefault();
         if (canSubmit) {
             handleSubmit(onSubmit, onError)();

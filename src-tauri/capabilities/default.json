@@ -119,6 +119,8 @@
           "url": "https://**"
         }
       ]
-    }
+    },
+    "log:default",
+    "log:allow-log"
   ]
 }

@@ -1,4 +1,5 @@
 // import { useTabStore } from '@/states/tabStore';
+import { TabActiveProvider } from '@/contexts/TabActiveContext';
 import React, { useRef, type ReactNode } from 'react';
 
 interface TabContentProps {
@@ -33,16 +34,19 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId: _tabI
   // }, [isActive, tabId, getTab]);
 
   return (
-    <div
-      ref={containerRef}
-      className="h-full overflow-auto transition-opacity duration-150"
-      style={{
-        display: isActive ? 'block' : 'none',
-        opacity: isActive ? 1 : 0,
-      }}
-    >
-      {children}
-    </div>
+    <TabActiveProvider isActive={isActive}>
+      <div
+        ref={containerRef}
+        className="h-full overflow-auto transition-opacity duration-150"
+        style={{
+          display: isActive ? 'block' : 'none',
+          opacity: isActive ? 1 : 0,
+        }}
+        {...(!isActive && { inert: '' as any })}
+      >
+        {children}
+      </div>
+    </TabActiveProvider>
   );
 };
 

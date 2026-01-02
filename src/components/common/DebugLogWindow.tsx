@@ -2,9 +2,11 @@ import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { ScrollArea } from '@/components/atoms/scroll-area';
 import { appLogDir } from '@tauri-apps/api/path';
+import { save } from '@tauri-apps/plugin-dialog';
 import { BaseDirectory, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { ArrowUpDown, RefreshCw, Search, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { LogLine } from './LogLine';
 
 type LogLevel = 'ALL' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
 
@@ -22,7 +24,6 @@ export function DebugLogWindow() {
   const [reverseOrder, setReverseOrder] = useState(false);
   const [maxLines, setMaxLines] = useState(1000);
   const [systemStats, setSystemStats] = useState<SystemStats>({ memoryUsage: 0, cpuUsage: 0 });
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const loadLogs = async () => {
     try {
@@ -64,14 +65,73 @@ export function DebugLogWindow() {
     }
   };
 
-  const downloadLogs = () => {
-    const element = document.createElement('a');
-    const file = new Blob([logs], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `app-logs-${new Date().toISOString()}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const downloadLogs = async () => {
+    try {
+      // Usar logs filtrados (lo que el usuario está viendo)
+      const logsToDownload = processedLogs.lines.join('\n');
+
+      if (!logsToDownload || logsToDownload.length === 0) {
+        console.error('No logs to download');
+        return;
+      }
+
+      // Generar nombre de archivo con timestamp y filtros aplicados
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('.')[0];
+      let fileName = `app-logs-${timestamp}`;
+
+      // Agregar nivel al nombre si hay filtro activo
+      if (selectedLevel !== 'ALL') {
+        fileName += `-${selectedLevel}`;
+      }
+
+      // Agregar indicador de búsqueda si hay filtro de texto
+      if (searchTerm) {
+        fileName += `-search`;
+      }
+
+      fileName += '.txt';
+
+      // Abrir diálogo nativo "Guardar como"
+      const filePath = await save({
+        defaultPath: fileName,
+        filters: [
+          {
+            name: 'Text Files',
+            extensions: ['txt']
+          },
+          {
+            name: 'All Files',
+            extensions: ['*']
+          }
+        ]
+      });
+
+      // Si el usuario canceló, no hacer nada
+      if (!filePath) {
+        console.log('Download cancelled by user');
+        return;
+      }
+
+      // Crear header con información de los filtros
+      let header = `# TPS Intermotors - Log Export\n`;
+      header += `# Export Date: ${new Date().toLocaleString()}\n`;
+      header += `# Total Lines: ${processedLogs.lines.length}\n`;
+      header += `# Level Filter: ${selectedLevel}\n`;
+      if (searchTerm) {
+        header += `# Search Term: "${searchTerm}"\n`;
+      }
+      header += `# Stats: INFO=${processedLogs.stats.info}, WARN=${processedLogs.stats.warn}, ERROR=${processedLogs.stats.error}, DEBUG=${processedLogs.stats.debug}\n`;
+      header += `#${'='.repeat(80)}\n\n`;
+
+      const finalContent = header + logsToDownload;
+
+      // Guardar el archivo en la ruta seleccionada
+      await writeTextFile(filePath, finalContent);
+
+      console.log('Filtered logs saved successfully to:', filePath);
+    } catch (error) {
+      console.error('Error downloading logs:', error);
+    }
   };
 
   // Cargar stats del sistema
@@ -130,15 +190,6 @@ export function DebugLogWindow() {
     return { lines, stats };
   }, [logs, selectedLevel, searchTerm, maxLines, reverseOrder]);
 
-  // Colorizar una línea de log según su nivel
-  const getLogLineColor = (line: string): string => {
-    if (line.includes('[ERROR')) return 'text-rose-400';
-    if (line.includes('[WARN')) return 'text-amber-300';
-    if (line.includes('[INFO')) return 'text-sky-300';
-    if (line.includes('[DEBUG')) return 'text-zinc-500';
-    return 'text-zinc-300';
-  };
-
   // Auto-refresh cada 2 segundos si está activado
   useEffect(() => {
     if (autoRefresh) {
@@ -188,7 +239,7 @@ export function DebugLogWindow() {
             <Button
               variant="ghost"
               size="sm"
-              className='text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 h-7 sm:h-8 px-2 sm:px-3 text-xs hidden xs:flex'
+              className='text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 h-7 sm:h-8 px-2 sm:px-3 text-xs'
               onClick={downloadLogs}
             >
               Download
@@ -320,14 +371,12 @@ export function DebugLogWindow() {
       </div>
 
       {/* Contenido de logs */}
-      <ScrollArea className="flex-1 p-2 sm:p-3 md:p-4 bg-[#0a0a0a]" ref={scrollAreaRef}>
-        <pre className="text-[10px] sm:text-xs font-mono whitespace-pre-wrap break-words leading-[1.5] sm:leading-[1.6]">
+      <ScrollArea className="flex-1 p-2 sm:p-3 md:p-4 bg-[#0a0a0a]">
+        <div className="space-y-1">
           {processedLogs.lines.map((line, index) => (
-            <div key={index} className={getLogLineColor(line)}>
-              {line}
-            </div>
+            <LogLine key={index} line={line} index={index} />
           ))}
-        </pre>
+        </div>
       </ScrollArea>
 
       {/* Footer */}
