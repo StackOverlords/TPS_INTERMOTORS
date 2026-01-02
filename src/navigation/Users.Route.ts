@@ -4,11 +4,11 @@ import UserListScreen from "@/modules/users/screens/UserListScreen";
 import { BoxIcon, UserCogIcon, Users } from "lucide-react";
 import type RouteType from "./RouteType";
 
-const usuariosProtectedRoutes: RouteType[] = [ 
+const usuariosProtectedRoutes: RouteType[] = [
   {
     name: "Usuarios",
     type: "protected",
-    role: ["admin"],
+    role: ["Administrador"],
     isHeader: true,
     showSidebar: true,
     icon: Users,
@@ -19,7 +19,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UserListScreen,
         isAdmin: true,
-        role: ["admin"],
+        role: ["Administrador"],
         icon: UserCogIcon,
 
         isHeader: false,
@@ -33,17 +33,17 @@ const usuariosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UserDetailScreen,
         isAdmin: true,
-        role: ["admin"],
+        role: ["Administrador"],
         icon: BoxIcon,
 
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false,
-        
+
         viewConfig: userDetailsConfig
       },
     ]
-  }  
+  }
 ];
 
 export default usuariosProtectedRoutes;

@@ -2,6 +2,8 @@ import Layout from "@/modules/dashboard/screens/layout";
 import type React from "react";
 import { Navigate, useLocation } from "react-router";
 import type RouteType from "./RouteType";
+import { useUserRole } from "@/hooks/useUserRole";
+import { hasRouteAccess } from "@/utils/permissions";
 
 interface RouteRendererProps {
   route: RouteType;
@@ -18,8 +20,9 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 }) => {
   const Component = route.element;
   const location = useLocation();
+  const { rol: userRole, isLoading: isLoadingRole } = useUserRole();
 
-  if (isLoading) {
+  if (isLoading || isLoadingRole) {
     return <div>Cargando...</div>;
   }
 
@@ -33,6 +36,11 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
 
   if (route.type === "protected" && !isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
+  }
+
+  // Validar permisos por rol
+  if (route.type === "protected" && isAuthenticated && !hasRouteAccess(route, userRole)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (route.type === "public" && isAuthenticated) {
