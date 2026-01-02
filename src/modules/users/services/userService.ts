@@ -97,12 +97,10 @@ export const updateUserPermissions = async (userPermissionsData: UserPermissions
  * @param data - Datos del usuario a crear
  */
 export const createUser = async (data: UserCreate): Promise<UserCreateResponse> => {
-  // Eliminar campo de confirmación antes de enviar
-  const { clave_acceso_confirmation, ...userData } = data;
-
+  // NO eliminar clave_acceso_confirmation - el backend lo necesita para validar
   // Limpiar campos vacíos/null para evitar problemas con el backend
   const cleanedData = Object.fromEntries(
-    Object.entries(userData).filter(([_, value]) => {
+    Object.entries(data).filter(([_, value]) => {
       // Mantener el valor si es: número (incluso 0), boolean, o string no vacío
       if (typeof value === 'number') return true;
       if (typeof value === 'boolean') return true;
@@ -111,10 +109,14 @@ export const createUser = async (data: UserCreate): Promise<UserCreateResponse> 
     })
   );
 
+  console.log('🔵 Datos a enviar al crear usuario:', cleanedData);
+
   try {
     const response = await apiClient.post(USER_ENDPOINTS.create, cleanedData);
+    console.log('✅ Usuario creado exitosamente:', response.data);
     return response.data.data;
   } catch (error: any) {
+    console.error('❌ Error al crear usuario:', error.response?.data);
     throw error;
   }
 };
@@ -132,8 +134,25 @@ export const updateUser = async (
   return response.data.data;
 };
 
+/**
+ * Eliminar un usuario
+ * @param id - ID del usuario a eliminar
+ */
+export const deleteUser = async (id: number): Promise<void> => {
+  console.log('🗑️ Eliminando usuario con ID:', id);
+
+  try {
+    await apiClient.delete(USER_ENDPOINTS.delete(id));
+    console.log('✅ Usuario eliminado exitosamente');
+  } catch (error: any) {
+    console.error('❌ Error al eliminar usuario:', error.response?.data);
+    throw error;
+  }
+};
+
 // Exportar objeto de servicio
 export const userService = {
   create: createUser,
   update: updateUser,
+  delete: deleteUser,
 };

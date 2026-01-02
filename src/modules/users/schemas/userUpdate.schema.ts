@@ -23,8 +23,8 @@ export const UserUpdateSchema = z.object({
   dni: z.number()
     .int("El DNI debe ser un número entero")
     .positive("El DNI debe ser un número positivo")
-    .refine((val) => val.toString().length >= 7 && val.toString().length <= 11, {
-      message: "El DNI debe tener entre 7 y 11 dígitos"
+    .refine((val) => val.toString().length >= 5 && val.toString().length <= 11, {
+      message: "El DNI debe tener entre 5 y 11 dígitos"
     }),
 
   dni_comp: z.string()

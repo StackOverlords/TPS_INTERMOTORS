@@ -14,13 +14,14 @@ export { default as FormUser } from './components/FormUser';
 // Hooks
 export { usePermissions } from './hooks/usePermissions';
 export { useUpdateUserPermissions } from './hooks/useUpdateUserPermissions';
-export { useDeleteUser, useToggleUserStatus } from './hooks/useUserActions';
+export { useToggleUserStatus } from './hooks/useUserActions';
 export { usePermissionsByUserId } from './hooks/useUserById';
 export { useUserFilters } from './hooks/useUserFilters';
 export { useUserPermissions } from './hooks/useUserPermissions';
 export { useUsersPaginated } from './hooks/useUsersPaginated';
 export { useCreateUser } from './hooks/mutations/useCreateUser';
 export { useUpdateUser } from './hooks/mutations/useUpdateUser';
+export { useDeleteUser } from './hooks/mutations/useDeleteUser';
 export { useUserByIdForEdit } from './hooks/useUserByIdForEdit';
 
 // Services

@@ -4,6 +4,7 @@ export const USER_ENDPOINTS = {
   byId: (id: number) => `/users/${id}`,
   create: "/users",
   update: (id: number) => `/users/${id}`,
+  delete: (id: number) => `/users/${id}`,
   permissions: "/permissions/list",
   userPermissions: (userId: number) => `/users/permissions?usuario=${userId}`,
   updatePermissions: "/users/permissions",
