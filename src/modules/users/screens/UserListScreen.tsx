@@ -28,6 +28,7 @@ import {
   Settings,
   Trash2,
   UserCog,
+  UserPlus,
   Users,
   XCircle
 } from 'lucide-react';
@@ -363,6 +364,15 @@ const UserListScreen = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate('/dashboard/user/create')}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Nuevo Usuario
+              </Button>
+
               {viewConfig?.features?.infiniteScroll?.enabled && (
                 <div className="flex items-center space-x-2">
                   <Switch

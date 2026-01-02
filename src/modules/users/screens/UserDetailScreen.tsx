@@ -366,7 +366,11 @@ const UserDetailScreen = () => {
               <UserMinus2 className="h-4 w-4" />
               Eliminar usuario
             </Button>
-            <Button disabled={true} variant="default" size={'sm'}>
+            <Button
+              variant="default"
+              size={'sm'}
+              onClick={() => navigate(`/dashboard/user/edit/${user.id}`)}
+            >
               <Edit className="h-4 w-4" />
               Editar Usuario
             </Button>

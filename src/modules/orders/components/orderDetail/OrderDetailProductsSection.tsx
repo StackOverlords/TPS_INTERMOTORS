@@ -187,11 +187,11 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
       size: 70,
       minSize: 60,
       cell: ({ getValue }) => {
-        const value = getValue<number>()
+        const value = getValue<number | null>()
         return (
           <div className="text-center">
             <span className="text-xs font-medium text-blue-600">
-              {formatNumber(value)}
+              {value !== null && value !== undefined ? formatNumber(value) : '-'}
             </span>
           </div>
         )

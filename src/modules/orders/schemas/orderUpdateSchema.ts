@@ -11,7 +11,7 @@ export const OrderDetailUpdateSchema = z.object({
     inc_p_venta_alt: strictRequiredMoneySchema,
     precio_venta_alt: strictRequiredMoneySchema,
     orden: z.number().int(),
-    tc_compra: z.number().positive(),  // Tipo de cambio
+    tc_compra: z.number().positive().nullable(),  // Tipo de cambio (puede ser null cuando moneda es BOB)
 });
 
 export const OrderUpdateSchema = z.object({
