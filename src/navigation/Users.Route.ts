@@ -1,7 +1,7 @@
-import { UserDetailScreen } from "@/modules/users";
+import { UserDetailScreen, CreateUserScreen, EditUserScreen } from "@/modules/users";
 import { userDetailsConfig, userListConfig } from "@/modules/users/config/user.config";
 import UserListScreen from "@/modules/users/screens/UserListScreen";
-import { BoxIcon, UserCogIcon, Users } from "lucide-react";
+import { BoxIcon, UserCogIcon, UserPlus, Users } from "lucide-react";
 import type RouteType from "./RouteType";
 
 const usuariosProtectedRoutes: RouteType[] = [
@@ -13,6 +13,20 @@ const usuariosProtectedRoutes: RouteType[] = [
     showSidebar: true,
     icon: Users,
     subRoutes: [
+
+      {
+        path: "/dashboard/user/create",
+        name: "Crear Usuario",
+        type: "protected",
+        element: CreateUserScreen,
+        isAdmin: true,
+        role: ["Administrador"],
+        icon: UserPlus,
+
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+      },
       {
         path: "/dashboard/user",
         name: "Listar Usuarios",
@@ -26,6 +40,19 @@ const usuariosProtectedRoutes: RouteType[] = [
         showSidebar: true,
 
         viewConfig:userListConfig
+      },
+      {
+        path: "/dashboard/user/edit/:id",
+        name: "Editar Usuario",
+        type: "protected",
+        element: EditUserScreen,
+        isAdmin: true,
+        role: ["Administrador"],
+        icon: BoxIcon,
+
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: false,
       },
       {
         path: "/dashboard/user/:nickname",

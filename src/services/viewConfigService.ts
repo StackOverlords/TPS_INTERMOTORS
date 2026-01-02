@@ -28,6 +28,12 @@ class ViewConfigService {
       if (error.response?.status === 404) {
         return null;
       }
+      // Si es error de red/CORS (ERR_NETWORK), retornar null sin loguear
+      // Esto permite que la app funcione solo con config local cuando el backend tiene problemas de CORS
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        console.warn(`[ViewConfigService] CORS/Network error for ${viewId}, usando solo config local`);
+        return null;
+      }
       console.error('Error fetching organization config:', error);
       throw error;
     }
