@@ -2,6 +2,7 @@ import axios from 'axios';
 axios.defaults.baseURL = environment.apiUrl;
 import authSDK from '@/services/sdk-simple-auth';
 import { environment } from '@/utils/environment';
+import logger from '@/utils/logger';
 
 interface ApiConstructor {
     url: string;
@@ -33,7 +34,7 @@ export const apiConstructor = async ({
         const response = await axios(config);
         return response.data.data || response.data;
     } catch (error: any) {
-        console.error('API Error:', error);
+        logger.error("API Error:", error);
         throw error.response?.data || error.message || 'Unknown error';
     }
 }

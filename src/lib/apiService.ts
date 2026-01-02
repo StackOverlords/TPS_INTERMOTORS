@@ -1,8 +1,8 @@
 import apiClient from '@/services/axios';
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { z } from 'zod';
-import { Logger } from './logger';
 import { Validator } from './validator';
+import logger from '@/utils/logger';
 
 interface ApiOptions {
   unwrapData?: boolean;
@@ -10,7 +10,7 @@ interface ApiOptions {
 
 export class ApiService {
   private static logRequest(method: string, url: string, data?: unknown) {
-    Logger.info(`API Request: ${method.toUpperCase()} ${url}`, {
+    logger.info(`API Request: ${method.toUpperCase()} ${url}`, {
       method,
       url,
       data: data ? 'included' : 'none',
@@ -18,14 +18,14 @@ export class ApiService {
   }
 
   private static logResponse(method: string, url: string, response: AxiosResponse) {
-    Logger.info(`API Response: ${method.toUpperCase()} ${url}`, {
+    logger.info(`API Response: ${method.toUpperCase()} ${url}`, {
       status: response.status,
       dataSize: JSON.stringify(response.data).length,
     }, 'API');
   }
 
   private static logError(method: string, url: string, error: AxiosError) {
-    Logger.error(`API Error: ${method.toUpperCase()} ${url}`, {
+    logger.error(`API Error: ${method.toUpperCase()} ${url}`, {
       message: error.message,
       status: error.response?.status,
       data: error.response?.data,

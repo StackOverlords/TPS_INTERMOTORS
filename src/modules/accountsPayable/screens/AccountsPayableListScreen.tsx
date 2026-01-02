@@ -15,7 +15,7 @@ import { COMMANDS, useCommands, useKeybindingKeys } from "@/keybindings";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCell } from "@/utils/formatCell";
-import { formatCurrency } from "@/utils/formaters";
+import { formatColumnNumber, formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { HelpCircle, Loader2, RefreshCcw, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -102,27 +102,29 @@ const AccountsPayableListScreen = () => {
 
   const columns = useMemo<ColumnDef<AccountPayable>[]>(
     () => [
-      {
-        accessorKey: "id",
-        header: "ID",
-        enableSorting: true,
-        enableHiding: true,
-        size: 60,
-        minSize: 30,
-        cell: ({ getValue }) => {
-          const id = getValue<number>();
-          return <div className="text-center font-medium">{id}</div>;
-        },
-      },
+      // {
+      //   accessorKey: "id",
+      //   header: "ID",
+      //   enableSorting: true,
+      //   enableHiding: true,
+      //   size: 60,
+      //   minSize: 30,
+      //   cell: ({ getValue }) => {
+      //     const id = getValue<number>();
+      //     return <div className="text-center font-medium">{id}</div>;
+      //   },
+      // },
       {
         accessorKey: "nro_venta",
         header: "Nro. Venta",
-        size: 120,
+        size: 110,
         minSize: 30,
         enableHiding: true,
         cell: ({ getValue }) => (
-          <div className="text-center font-medium text-blue-600">
-            {getValue<string>()}
+          <div className="text-center font-semibold text-blue-600">
+            {
+              formatColumnNumber(getValue<string>(), "-")
+            }
           </div>
         ),
       },

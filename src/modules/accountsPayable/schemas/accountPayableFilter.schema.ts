@@ -12,7 +12,7 @@ export const accountPayableFiltersSchema = baseFilterSchema.extend({
     // Filtro por tipo de pago
     tipo_pago: z.preprocess(
         toUndefinedIfEmpty,
-        z.enum(["EFECTIVO", "CHEQUE", "TRASNF"]).optional()
+        z.enum(["EFECTIVO", "CHEQUE", "TRASNF", "QR", "QR-EFECTIVO"]).optional()
     ),
 
     // Filtros de rango de fecha de registro (no requiere condicion_fecha_especifica)

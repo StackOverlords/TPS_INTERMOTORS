@@ -6,7 +6,7 @@ import { z } from "zod";
 export const CreatePaymentSchema = z.object({
     id_venta: z.number().int(),
     fecha: z.string(), // formato: yyyy-mm-dd
-    tipo_pago: z.enum(["EFECTIVO", "CHEQUE", "TRASNF"]),
+    tipo_pago: z.enum(["EFECTIVO", "CHEQUE", "TRASNF", "QR", "QR-EFECTIVO"]),
     monto: z.number().positive(),
     comentarios: z.string().optional(),
 });

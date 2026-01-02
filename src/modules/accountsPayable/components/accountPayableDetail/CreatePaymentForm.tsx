@@ -123,7 +123,7 @@ export const CreatePaymentForm = ({
                         onChange={(value) =>
                             setFormData({
                                 ...formData,
-                                tipo_pago: value as "EFECTIVO" | "CHEQUE" | "TRASNF",
+                                tipo_pago: value as "EFECTIVO" | "CHEQUE" | "TRASNF" | "QR" | "QR-EFECTIVO",
                             })
                         }
                         options={paymentTypeOptions}

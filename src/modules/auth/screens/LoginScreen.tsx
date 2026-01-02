@@ -179,7 +179,7 @@ const LoginScreen = ({
                 </Button>
               </form>
 
-              <div className="text-center pt-4 border-t border-gray-200">
+              {/* <div className="text-center pt-4 border-t border-gray-200">
                 <p className="text-sm text-gray-600">
                   ¿Olvidaste tu contraseña?{" "}
                   <a
@@ -189,7 +189,7 @@ const LoginScreen = ({
                     Recuperar acceso
                   </a>
                 </p>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
           {/* <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary  ">
