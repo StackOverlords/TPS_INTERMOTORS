@@ -15,7 +15,7 @@ import type RouteType from "./RouteType";
 const Navigation = () => {
   // Auto-cerrar ventanas secundarias cuando se cierra la app
   useCloseSecondaryWindowsOnExit();
-
+  // console.log(authSDK.getState().user?.sucursales)
   // Estado de autenticación
   const [authState, setAuthState] = useState<{
     user: AuthUser | null;
