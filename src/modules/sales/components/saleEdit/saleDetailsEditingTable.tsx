@@ -1,7 +1,7 @@
 import { Button } from '@/components/atoms/button';
 import { Trash2, X } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import { formatCell } from '@/utils/formatCell';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
@@ -9,9 +9,10 @@ import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { SaleUpdateDetailUI } from '../../types/saleUpdate.type';
 import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
 import useConfirmMutation from '@/hooks/useConfirmMutation';
-import { Badge } from '@/components/atoms/badge';
 import ConfirmationModal from '@/components/common/confirmationModal';
 import { useDeleteSaleDetail } from '../../hooks/useDeleteSaleDetail';
+import { useCustomTable } from '@/hooks/useCustomTable';
+import authSDK from '@/services/sdk-simple-auth';
 
 type SaleDetailsEditingTableProps = {
     products: SaleUpdateDetailUI[]
@@ -35,6 +36,9 @@ function SaleDetailsEditingTableInner({
     updateCustomSubtotal,
     isReadOnly = false,
 }: SaleDetailsEditingTableProps, ref: React.Ref<SaleDetailsEditingTableRef>) {
+
+    const user = authSDK.getCurrentUser()
+
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
     const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -119,34 +123,34 @@ function SaleDetailsEditingTableInner({
             minSize: 20,
             enableSorting: true,
         },
-        {
-            accessorKey: "id_detalle_venta",
-            header: "Cód.",
-            size: 40,
-            cell({ row, getValue }) {
-                const value = getValue<number>()
-                const isNew = !row.original.id_detalle_venta
-                return (
-                    <div className='flex items-center'>
-                        {
-                            isNew ? (
-                                <Badge
-                                    variant={'accent'}
-                                    className='text-[10px] px-1 py-0'
-                                >
-                                    Nuevo
-                                </Badge>
-                            ) : (
-                                <span>{value}</span>
-                            )
-                        }
-                    </div>
-                )
-            },
-        },
+        // {
+        //     accessorKey: "id_detalle_venta",
+        //     header: "Cód.",
+        //     size: 40,
+        //     cell({ row, getValue }) {
+        //         const value = getValue<number>()
+        //         const isNew = !row.original.id_detalle_venta
+        //         return (
+        //             <div className='flex items-center'>
+        //                 {
+        //                     isNew ? (
+        //                         <Badge
+        //                             variant={'accent'}
+        //                             className='text-[10px] px-1 py-0'
+        //                         >
+        //                             Nuevo
+        //                         </Badge>
+        //                     ) : (
+        //                         <span>{value}</span>
+        //                     )
+        //                 }
+        //             </div>
+        //         )
+        //     },
+        // },
         {
             accessorKey: 'id_producto',
-            id: "id_producto",
+            id: "codigo_interno",
             header: "Cód Int.",
             size: 45,
             minSize: 20,
@@ -289,33 +293,41 @@ function SaleDetailsEditingTableInner({
             }
         }
     ], [removeItem, updateQuantity, updatePrice, updateCustomSubtotal]);
-    const table = useReactTable<SaleUpdateDetailUI>({
+
+    const {
+        table,
+    } = useCustomTable({
         data: products,
         columns,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
-        enableRowSelection: true,
-        initialState: {
-            sorting: [
-                {
-                    id: 'orden',
-                    desc: false,
-                },
-            ],
-            columnVisibility: {
-                "id_detalle_venta": false,
-            }
-        },
-    })
+        enableColumnOrdering: true,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            { id: 'orden', desc: false }
+        ],
+
+        hiddenColumns: ["id_detalle_venta"],
+
+        // Persistencia con key única por usuario
+        persistenceKey: `shopping-cart-table-products-edit-${user?.name}`,
+        sharedPersistenceKey: `shopping-cart-table-products-shared-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
 
     return (
         <>
             <CustomizableTable
                 table={table}
                 isLoading={false}
+                noDataMessage="No hay productos en el carrito."
+                errorMessage="Ocurrió un error al cargar los productos"
+                enableColumnReordering={true}
             />
 
             <ConfirmationModal

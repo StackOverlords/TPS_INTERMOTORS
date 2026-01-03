@@ -16,6 +16,7 @@ import useConfirmMutation from '@/hooks/useConfirmMutation';
 import ConfirmationModal from '@/components/common/confirmationModal';
 import { useDeleteOrderDetail } from '../hooks/useDeleteOrderDetail';
 import { formatCurrency } from '@/utils/formaters';
+import authSDK from '@/services/sdk-simple-auth';
 
 type OrderDetailUnion = UIOrderDetailCreate | UIOrderDetailUpdate;
 
@@ -53,6 +54,9 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
     isSaving = false,
     isEditMode = false,
 }: OrderDetailTableProps<T>, ref: React.Ref<OrderDetailTableRef>) {
+
+    const user = authSDK.getCurrentUser()
+
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
     const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -442,7 +446,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>({
             },
         ],
         hiddenColumns: ['id_detalle_pedido'],
-        persistenceKey: 'order-details-table',
+        persistenceKey: `order-details-table-${user?.name}`,
         persistColumnOrder: true,
         persistColumnVisibility: true,
     });
