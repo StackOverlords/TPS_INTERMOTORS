@@ -169,7 +169,18 @@ const CreateTransfer = () => {
             return;
         }
 
-        createTransfer(data, {
+        // Agregar la hora actual a la fecha seleccionada (sin conversión UTC)
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        const adjustedData = {
+            ...data,
+            fecha: `${data.fecha}T${hours}:${minutes}:${seconds}`
+        };
+
+        createTransfer(adjustedData, {
             onSuccess: () => {
                 showSuccessToast({
                     title: "Transferencia Exitosa",

@@ -197,7 +197,9 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                 const dateString = getValue<string>();
 
                 try {
-                    const date = new Date(dateString);
+                    // Agregar T00:00:00 si la fecha viene solo como YYYY-MM-DD para evitar conversión UTC
+                    const dateToFormat = dateString.includes('T') ? dateString : `${dateString}T00:00:00`;
+                    const date = new Date(dateToFormat);
                     const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
                     return (
@@ -205,10 +207,10 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                             <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
                                 {format(date, "dd/MM/yyyy", { locale: es })}
                             </div>
-                            <div className="text-muted-foreground flex items-center justify-center gap-1">
+                            {/* <div className="text-muted-foreground flex items-center justify-center gap-1">
                                 <Clock className="size-3" />
                                 {format(date, "HH:mm", { locale: es })}
-                            </div>
+                            </div> */}
                         </div>
                     );
                 } catch {
