@@ -62,7 +62,7 @@ const ProductListScreen = () => {
     const tableRef = useRef<HTMLTableElement>(null)
     const tableShoppingCartRef = useRef<TableShoppingCartRef>(null);
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
     const { navigateWithTab } = useTabNavigation()
     const user = authSDK.getCurrentUser()
 

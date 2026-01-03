@@ -42,6 +42,7 @@ import type { SaleUpdateForm } from "../types/saleUpdate.type";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
+// import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SCREEN_PATH = "/dashboard/create-sale"
 
@@ -52,6 +53,7 @@ const CreateSaleScreen = () => {
         selector_mode: 'window'
     }
     const navigate = useNavigate();
+    // const { navigateWithTab } = useTabNavigation();
     // const { closeCurrentTab, currentTab } = useTabNavigation();
     const user = authSDK.getCurrentUser()
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)

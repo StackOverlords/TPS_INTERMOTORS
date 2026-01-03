@@ -10,7 +10,7 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import type { useSalesFilters } from "@/modules/sales/hooks/useSalesFilters";
 import authSDK from "@/services/sdk-simple-auth";
-import { formatCurrency } from "@/utils/formaters";
+import { formatColumnNumber, formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -20,6 +20,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import type { QuotationGetAll, QuotationGetAllResponse } from "../../types/quotationGet.types";
 import { useCustomTable } from "@/hooks/useCustomTable";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 interface QuotationsListTableProps {
     data: QuotationGetAllResponse
@@ -48,18 +49,23 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     isLoading,
     handleDeleteSale
 }) => {
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
+    const { navigateWithTab } = useTabNavigation();
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 
-    const handleSeeDetails = useCallback((quotationId: number) => {
-        navigate(`/dashboard/quotations/${quotationId}`)
-    }, [navigate])
+    const handleSeeDetails = useCallback((quotation: any) => {
+        navigateWithTab(`/dashboard/quotations/${quotation.id}`,{
+            displayCode: formatColumnNumber(quotation?.nro_cotizacion,'-')
+        })
+    }, [navigateWithTab])
 
-    const handleUpdateQuotation = useCallback((quotationId: number) => {
-        navigate(`/dashboard/quotations/${quotationId}/update`)
-    }, [navigate])
+    const handleUpdateQuotation = useCallback((quotation: any) => {
+        navigateWithTab(`/dashboard/quotations/${quotation.id}/update`,{
+            displayCode: formatColumnNumber(quotation?.nro_cotizacion,'-')
+        })
+    }, [navigateWithTab])
 
     const columns = useMemo<ColumnDef<QuotationGetAll>[]>(() => [
         {
@@ -124,14 +130,14 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                 className="w-48">
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleSeeDetails(row.original.id)}
+                                    onClick={() => handleSeeDetails(row.original)}
                                 >
                                     <Eye className="size-4 mr-2" />
                                     Ver detalles
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateQuotation(row.original.id)}>
+                                    onClick={() => handleUpdateQuotation(row.original)}>
                                     <Edit className="size-4 mr-2" />
                                     Editar cotizacion
                                 </DropdownMenuItem>
@@ -385,7 +391,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     };
 
     const handleRowDoubleClick = (quotation: QuotationGetAll) => {
-        handleSeeDetails(quotation.id)
+        handleSeeDetails(quotation)
     };
 
     const hasQuotationsSelected = Object.keys(rowSelection).length;

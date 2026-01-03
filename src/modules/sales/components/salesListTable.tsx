@@ -16,10 +16,10 @@ import { es } from "date-fns/locale";
 import { Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Phone, Settings, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { useNavigate } from "react-router";
 import type { useSalesFilters } from "../hooks/useSalesFilters";
 import type { SaleGetAll, SalesGetAllResponse } from "../types/salesGetResponse";
 import { useCustomTable } from "@/hooks/useCustomTable";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 interface SalesListTableProps {
     data: SalesGetAllResponse
@@ -48,18 +48,22 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     isLoading,
     handleDeleteSale
 }) => {
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
     const tableRef = useRef<HTMLTableElement>(null)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+    const { navigateWithTab } = useTabNavigation();
+    const handleSeeDetails = useCallback((sale: any) => {
+        navigateWithTab(`/dashboard/sales/${sale.id}`,{
+            displayCode: formatColumnNumber(sale.nro_venta,'-')
+        })
+    }, [navigateWithTab]);
 
-    const handleSeeDetails = useCallback((saleId: number) => {
-        navigate(`/dashboard/sales/${saleId}`)
-    }, [navigate]);
-
-    const handleUpdateSale = useCallback((saleId: number) => {
-        navigate(`/dashboard/sales/${saleId}/update`)
-    }, [navigate]);
+    const handleUpdateSale = useCallback((sale: any) => {
+        navigateWithTab(`/dashboard/sales/${sale.id}/update`,{
+            displayCode: formatColumnNumber(sale.nro_venta,'-')
+        })
+    }, [navigateWithTab]);
 
     const columns = useMemo<ColumnDef<SaleGetAll>[]>(() => [
         {
@@ -124,14 +128,14 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                                 className="w-48">
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleSeeDetails(row.original.id)}
+                                    onClick={() => handleSeeDetails(row.original)}
                                 >
                                     <Eye className="size-4 mr-2" />
                                     Ver detalles
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateSale(row.original.id)}>
+                                    onClick={() => handleUpdateSale(row.original)}>
                                     <Edit className="size-4 mr-2" />
                                     Editar venta
                                 </DropdownMenuItem>
@@ -364,7 +368,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     };
 
     const handleRowDoubleClick = (sale: SaleGetAll) => {
-        handleSeeDetails(sale.id)
+        handleSeeDetails(sale)
     };
 
     const hasSalesSelected = Object.keys(rowSelection).length;
