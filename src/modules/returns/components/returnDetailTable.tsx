@@ -2,7 +2,7 @@
 import { Button } from '@/components/atoms/button';
 import { Trash2, X } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import { formatCell } from '@/utils/formatCell';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
@@ -15,6 +15,8 @@ import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
 import useConfirmMutation from '@/hooks/useConfirmMutation';
 import ConfirmationModal from '@/components/common/confirmationModal';
 import { useDeleteReturnDetail } from '../hooks/useDeleteReturnDetail';
+import { useCustomTable } from '@/hooks/useCustomTable';
+import authSDK from '@/services/sdk-simple-auth';
 
 type ReturnDetailUnion = UIReturnDetailCreate | UIReturnDetailUpdate;
 
@@ -46,6 +48,9 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
     isSaving = false,
     isEditMode = false,
 }: ReturnDetailTableProps<T>, ref: React.Ref<ReturnDetailTableRef>) {
+
+    const user = authSDK.getCurrentUser()
+
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
     const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -332,28 +337,25 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
         isDeleting
     ]);
 
-    const table = useReactTable<T>({
+    const { table } = useCustomTable<T>({
         data: details,
         columns,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+        enableSorting: true,
         enableColumnResizing: true,
         enableRowSelection: true,
-        initialState: {
-            sorting: [
-                {
-                    id: 'orden',
-                    desc: false,
-                },
-            ],
-            columnVisibility:{
-                "almacen_out_dev_det_id":false,
-                "almacen_out_id":false,
-                "almacen_out_det_id":false,
-            }
-        },
+        enableColumnVisibility: true,
+        enableColumnOrdering: true,
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            {
+                id: 'orden',
+                desc: false,
+            },
+        ],
+        hiddenColumns: ['almacen_out_dev_det_id', 'almacen_out_id', 'almacen_out_det_id'],
+        persistenceKey: `return-details-table-${user?.name}`,
+        persistColumnOrder: true,
+        persistColumnVisibility: true,
     });
 
     return (
@@ -361,6 +363,7 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
             <CustomizableTable
                 table={table}
                 isLoading={isLoading}
+                enableColumnReordering={true}
             />
 
             <ConfirmationModal

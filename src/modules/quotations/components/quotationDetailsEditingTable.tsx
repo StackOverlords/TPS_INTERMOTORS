@@ -1,18 +1,19 @@
 import { Button } from '@/components/atoms/button';
 import { Trash2, X } from 'lucide-react';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuantity';
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import { Input } from '@/components/atoms/input';
-import { Badge } from '@/components/atoms/badge';
 import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
 import { useDeleteQuotationDetail } from '../hooks/useDeleteQuotationDetail';
 import useConfirmMutation from '@/hooks/useConfirmMutation';
 import ConfirmationModal from '@/components/common/confirmationModal';
 import type { QuotationUpdateDetailUI } from '../hooks/useQuotationProductDetails';
 import { formatCell } from '@/utils/formatCell';
+import authSDK from '@/services/sdk-simple-auth';
+import { useCustomTable } from '@/hooks/useCustomTable';
 
 type QuotationDetailsEditingTableProps = {
     products: QuotationUpdateDetailUI[]
@@ -40,6 +41,9 @@ function QuotationDetailsEditingTableInner({
     updateDescription,
     isReadOnly = false,
 }: QuotationDetailsEditingTableProps, ref: React.Ref<QuotationDetailsEditingTableRef>) {
+
+    const user = authSDK.getCurrentUser()
+
     // refs para inputs de cantidad
     const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
     const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
@@ -124,35 +128,35 @@ function QuotationDetailsEditingTableInner({
             minSize: 20,
             enableSorting: true,
         },
-        {
-            accessorKey: "id_detalle_cotizacion",
-            id: "id_detalle_cotizacion",
-            header: "Cód.",
-            size: 40,
-            cell({ row, getValue }) {
-                const value = getValue<number>()
-                const isNew = !row.original.id_detalle_cotizacion
-                return (
-                    <div className='flex items-center'>
-                        {
-                            isNew ? (
-                                <Badge
-                                    variant={'accent'}
-                                    className='text-[10px] px-1 py-0'
-                                >
-                                    Nuevo
-                                </Badge>
-                            ) : (
-                                <span>{value}</span>
-                            )
-                        }
-                    </div>
-                )
-            },
-        },
+        // {
+        //     accessorKey: "id_detalle_cotizacion",
+        //     id: "id_detalle_cotizacion",
+        //     header: "Cód.",
+        //     size: 40,
+        //     cell({ row, getValue }) {
+        //         const value = getValue<number>()
+        //         const isNew = !row.original.id_detalle_cotizacion
+        //         return (
+        //             <div className='flex items-center'>
+        //                 {
+        //                     isNew ? (
+        //                         <Badge
+        //                             variant={'accent'}
+        //                             className='text-[10px] px-1 py-0'
+        //                         >
+        //                             Nuevo
+        //                         </Badge>
+        //                     ) : (
+        //                         <span>{value}</span>
+        //                     )
+        //                 }
+        //             </div>
+        //         )
+        //     },
+        // },
         {
             accessorKey: 'id_producto',
-            id: "id_producto",
+            id: "codigo_interno",
             header: "Cód Int.",
             size: 45,
             minSize: 20,
@@ -229,6 +233,7 @@ function QuotationDetailsEditingTableInner({
         },
         {
             accessorKey: "precio",
+            id: 'precio',
             header: "Precio Unit.",
             minSize: 110,
             cell: ({ getValue, row }) => {
@@ -314,33 +319,40 @@ function QuotationDetailsEditingTableInner({
             }
         }
     ], [removeItem, updateQuantity, updatePrice, updateCustomSubtotal, updateBrand, updateDescription]);
-    const table = useReactTable<QuotationUpdateDetailUI>({
+
+    const {
+        table,
+    } = useCustomTable({
         data: products,
         columns,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
-        enableRowSelection: true,
-        initialState: {
-            sorting: [
-                {
-                    id: 'orden',
-                    desc: false,
-                },
-            ],
-            columnVisibility: {
-                'id_detalle_cotizacion': false
-            }
-        },
-    })
+        enableColumnOrdering: true,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            { id: 'orden', desc: false }
+        ],
+        // hiddenColumns: ['id_detalle_cotizacion'],
+
+        // Persistencia con key única por usuario
+        persistenceKey: `quotation-items-edit-${user?.name}`,
+        sharedPersistenceKey: `quotation-items-shared-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
 
     return (
         <>
             <CustomizableTable
                 table={table}
                 isLoading={false}
+                noDataMessage="No hay productos en el carrito."
+                errorMessage="Ocurrió un error al cargar los productos"
+                enableColumnReordering={true}
             />
 
             <ConfirmationModal

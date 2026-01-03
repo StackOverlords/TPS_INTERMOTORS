@@ -3,7 +3,7 @@ import authSDK from '@/services/sdk-simple-auth';
 import { useBranchStore } from '@/states/branchStore';
 import { Trash2 } from 'lucide-react';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { getCoreRowModel, getFilteredRowModel, getSortedRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import { formatCell } from '@/utils/formatCell';
 import CustomizableTable from '@/components/common/CustomizableTable';
 import { useCartWithUtils } from '@/modules/shoppingCart/hooks/useCartWithUtils';
@@ -11,6 +11,7 @@ import { EditableQuantity } from '@/modules/shoppingCart/components/editableQuan
 import { EditablePrice } from '@/modules/shoppingCart/components/editablePrice';
 import type { CartItem } from '@/modules/shoppingCart/types/cart.types';
 import { Input } from '@/components/atoms/input';
+import { useCustomTable } from '@/hooks/useCustomTable';
 
 interface ProductDetailTableProps {
     isReadOnly?: boolean
@@ -89,6 +90,7 @@ function ProductDetailTableInner({
         },
         {
             accessorFn: row => row.product.id,
+            id: "codigo_interno",
             header: "Cód Int.",
             size: 45,
             minSize: 30,
@@ -166,7 +168,7 @@ function ProductDetailTableInner({
         },
         {
             accessorKey: "customPrice",
-            id: 'customPrice',
+            id: 'precio',
             header: "Precio Unit.",
             minSize: 110,
             cell: ({ getValue, row }) => {
@@ -259,29 +261,37 @@ function ProductDetailTableInner({
         updateQuantity
     ])
 
-    const table = useReactTable<CartItem>({
+    const {
+        table,
+    } = useCustomTable({
         data: dataToUse,
         columns,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        columnResizeMode: "onChange",
+
+        // Configuración de características
+        enableSorting: true,
         enableColumnResizing: true,
-        enableRowSelection: true,
-        initialState: {
-            sorting: [
-                {
-                    id: 'orden',
-                    desc: false,
-                },
-            ],
-        },
-    })
+        enableColumnOrdering: true,
+
+        // Configuración de resize
+        columnResizeMode: "onChange",
+        defaultSortBy: [
+            { id: 'orden', desc: false }
+        ],
+
+        // Persistencia con key única por usuario
+        persistenceKey: `quotation-items-create-${user?.name}`,
+        sharedPersistenceKey: `quotation-items-shared-${user?.name}`,
+        persistColumnVisibility: true,
+        persistColumnOrder: true,
+    });
 
     return (
         <CustomizableTable
             table={table}
             isLoading={false}
+            noDataMessage="No hay productos en el carrito."
+            errorMessage="Ocurrió un error al cargar los productos"
+            enableColumnReordering={true}
         />
     );
 }
