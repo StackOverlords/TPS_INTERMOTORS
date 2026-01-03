@@ -19,7 +19,7 @@ interface TabState {
   activeTabId: string | null;
 
   // Acciones
-  addTab: (path: string, title: string, icon?: any, instanceId?: string) => string;
+  addTab: (path: string, title: string, icon?: any, instanceId?: string, metadata?: Record<string, any>) => string;
   removeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   updateTab: (tabId: string, updates: Partial<Tab>) => void;
@@ -92,7 +92,7 @@ export const useTabStore = create<TabState>()(
       tabs: [],
       activeTabId: null,
 
-      addTab: (path: string, title: string, icon?: any, instanceId?: string) => {
+      addTab: (path: string, title: string, icon?: any, instanceId?: string, metadata?: Record<string, any>) => {
         const state = get();
 
         // Verificar si ya existe un tab con esta ruta E instanceId
@@ -113,7 +113,7 @@ export const useTabStore = create<TabState>()(
           title,
           icon,
           scrollPosition: 0,
-          metadata: {},
+          metadata: metadata || {},
           instanceId
         };
 

@@ -91,6 +91,9 @@ export const useTransfersFilters = (defaultSucursal: number) => {
                         newFilters.sucursal_origen = undefined;
                         newFilters.sucursal_destino = undefined;
                     }
+
+                    // Auto-aplicar inmediatamente el cambio de dirección
+                    setAppliedFilters(newFilters);
                 }
 
                 return newFilters;

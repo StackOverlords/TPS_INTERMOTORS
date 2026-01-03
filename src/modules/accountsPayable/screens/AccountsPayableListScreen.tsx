@@ -714,6 +714,37 @@ const AccountsPayableListScreen = () => {
           />
         )}
       </div>
+      {/* Totales de la página visible */}
+        {accountsPayable.length > 0 && (
+          <div className="p-3 border-t border-border flex-shrink-0 bg-muted/30">
+            <div className="flex items-center justify-center gap-6 flex-wrap text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-600">Total Vendido:</span>
+                <span className="font-bold text-blue-600">
+                  {formatCurrency(
+                    accountsPayable.reduce((sum, ap) => sum + ap.total_vendido, 0)
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-600">Total Pagado:</span>
+                <span className="font-bold text-green-600">
+                  {formatCurrency(
+                    accountsPayable.reduce((sum, ap) => sum + ap.total_pagado, 0)
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-600">Saldo Pendiente:</span>
+                <span className="font-bold text-red-600">
+                  {formatCurrency(
+                    accountsPayable.reduce((sum, ap) => sum + ap.saldo, 0)
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Modal de detalles de cuenta por cobrar */}
       <AccountPayableDetailModal

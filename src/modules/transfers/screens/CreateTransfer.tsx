@@ -27,6 +27,7 @@ import TransferDetailTable from "../components/TransferDetailTable";
 import { useTransferBranches } from "../hooks/commons/useTransferBranches";
 import { useTransferResponsibles } from "../hooks/commons/useTransferResponsibles";
 import { useCreateTransfer } from "../hooks/useCreateTransfer";
+import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchById";
 import { useTransferDetails } from "../hooks/useTransferDetails";
 import { TransferCreateSchema } from "../schemas/transferCreateSchema";
 import type { TransferCreate } from "../types/transferCreate.types";
@@ -47,6 +48,10 @@ const CreateTransfer = () => {
     const {
         data: transferBranchesData,
     } = useTransferBranches(Number(selectedBranchId) || 1);
+
+    const {
+        data: originBranchData,
+    } = useGetBranchById(Number(selectedBranchId) || 1);
 
     const {
         mutate: createTransfer,
@@ -83,7 +88,10 @@ const CreateTransfer = () => {
 
     // Watch sucursal_origen para actualizar las sucursales destino disponibles
     const sucursalOrigen = watch("sucursal_origen");
+    const sucursalDestino = watch("sucursal_destino");
 
+    // Obtener el nombre de la sucursal origen para mostrarlo visualmente
+    const sucursalOrigenNombre = originBranchData?.nombre;
     // Sincronizar detalles con el formulario
     useEffect(() => {
         const detalles = transferDetailsHook.getTransferDetails();
@@ -217,6 +225,17 @@ const CreateTransfer = () => {
         }
     }, [transferResponsiblesData, setValue, user?._id]);
 
+    // Auto-seleccionar la primera sucursal destino disponible
+    useEffect(() => {
+        // Solo auto-seleccionar si no hay una sucursal destino ya seleccionada
+        if (!sucursalDestino && transferBranchesData?.data && transferBranchesData.data.length > 0) {
+            const firstActiveBranch = transferBranchesData.data.find(branch => branch.activo === "SI");
+            if (firstActiveBranch) {
+                setValue("sucursal_destino", firstActiveBranch.id);
+            }
+        }
+    }, [transferBranchesData, setValue, sucursalDestino]);
+
     const handleAddProductItem = (product: ProductGet) => {
         transferDetailsHook.addProduct(product);
         // Enfocar el primer input de cantidad después de agregar
@@ -326,7 +345,7 @@ const CreateTransfer = () => {
                                     <Label htmlFor="sucursal_origen" className="text-xs">Sucursal Origen *</Label>
                                     <Input
                                         id="sucursal_origen"
-                                        value={`Sucursal ${sucursalOrigen}`}
+                                        value={sucursalOrigenNombre}
                                         disabled
                                         className="bg-gray-100 text-xs h-8"
                                     />

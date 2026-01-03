@@ -8,7 +8,7 @@ const usuariosProtectedRoutes: RouteType[] = [
   {
     name: "Usuarios",
     type: "protected",
-    role: ["Administrador"],
+    role: ["Administrador", "Super Admin"],
     isHeader: true,
     showSidebar: true,
     icon: Users,
@@ -20,7 +20,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: CreateUserScreen,
         isAdmin: true,
-        role: ["Administrador"],
+        role: ["Super Admin"],
         icon: UserPlus,
 
         isHeader: false,
@@ -33,13 +33,13 @@ const usuariosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UserListScreen,
         isAdmin: true,
-        role: ["Administrador"],
+        role: ["Administrador", "Super Admin"],
         icon: UserCogIcon,
 
         isHeader: false,
         showSidebar: true,
 
-        viewConfig:userListConfig
+        viewConfig: userListConfig
       },
       {
         path: "/dashboard/user/edit/:id",
@@ -47,7 +47,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: EditUserScreen,
         isAdmin: true,
-        role: ["Administrador"],
+        role: ["Super Admin"],
         icon: BoxIcon,
 
         isHeader: false,
@@ -60,7 +60,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UserDetailScreen,
         isAdmin: true,
-        role: ["Administrador"],
+        role: ["Super Admin"],
         icon: BoxIcon,
 
         isHeader: false,

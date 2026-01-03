@@ -30,6 +30,7 @@ export interface EditableFieldProps {
   confirmOnBlur?: boolean;
   editOnFocus?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
+  focusNextOnEnter?: boolean;
 }
 
 export const EditableField: React.FC<EditableFieldProps> = ({
@@ -55,6 +56,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   confirmOnBlur = true,
   editOnFocus = true,
   inputRef: externalInputRef,
+  focusNextOnEnter = false,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState('');
@@ -129,7 +131,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
     onEditCancel?.();
   };
 
-  const confirmEditing = () => {
+  const confirmEditing = (shouldFocusNext = false) => {
     if (!validateValue(tempValue)) {
       setError('Valor inválido');
       return;
@@ -140,7 +142,33 @@ export const EditableField: React.FC<EditableFieldProps> = ({
     setError('');
     onEditConfirm?.(parsedValue);
     onSubmit(parsedValue);
-    inputRef.current?.blur();
+
+    if (shouldFocusNext && focusNextOnEnter) {
+      // Navegar solo al siguiente input (ignorar botones)
+      const currentElement = inputRef.current;
+      if (currentElement) {
+        const focusableInputs = Array.from(
+          document.querySelectorAll<HTMLInputElement>(
+            'input[type="number"]:not([disabled]), input[type="text"]:not([disabled])'
+          )
+        );
+        const currentIndex = focusableInputs.indexOf(currentElement);
+        const nextInput = focusableInputs[currentIndex + 1];
+
+        if (nextInput) {
+          setTimeout(() => {
+            nextInput.focus();
+            if (nextInput instanceof HTMLInputElement) {
+              nextInput.select();
+            }
+          }, 0);
+        } else {
+          inputRef.current?.blur();
+        }
+      }
+    } else {
+      inputRef.current?.blur();
+    }
   };
 
   useEffect(() => {
@@ -155,7 +183,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (confirmOnEnter && e.key === 'Enter') {
       e.preventDefault();
-      confirmEditing();
+      confirmEditing(true);
     }
 
     if (cancelOnEscape && e.key === 'Escape') {

@@ -8,18 +8,20 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { formatCell } from "@/utils/formatCell";
-import { formatDate } from "@/utils/formaters";
+import { formatColumnNumber, formatDate } from "@/utils/formaters";
 import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2, User } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
 import SaleDetailSkeleton from "../components/saleDetail/saleDetailSkeleton";
 import SaleProductsSection from "../components/saleDetail/SaleProducts";
 import { useDeleteSale } from "../hooks/useDeleteSale";
 import { useSaleGetById } from "../hooks/useSaleGetById";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SaleDetailScreen = () => {
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
+    const { navigateWithTab } = useTabNavigation();
     const { saleCod } = useParams()
 
     const {
@@ -80,12 +82,14 @@ const SaleDetailScreen = () => {
 
 
     const handleGoBack = () => {
-        navigate('/dashboard/sales')
+        navigateWithTab('/dashboard/sales')
     }
 
-    const handleUpdateSale = () => {
-        navigate(`/dashboard/sales/${saleData?.id}/update`)
-    }
+    const handleUpdateSale = useCallback((saleData:any) => {
+        navigateWithTab(`/dashboard/sales/${saleData?.id}/update`,{
+            displayCode: formatColumnNumber(saleData?.nro,'-')
+        })
+    },[navigateWithTab])
 
     // Shortcuts
     useHotkeys('escape', handleGoBack, {
@@ -106,7 +110,7 @@ const SaleDetailScreen = () => {
                     showButtonIcon={false}
                     buttonText="Ir a lista de ventas"
                     onRetry={() => {
-                        navigate("/dashboard/sales")
+                        navigateWithTab("/dashboard/sales")
                     }}
                 />
             </div>
@@ -147,7 +151,7 @@ const SaleDetailScreen = () => {
                         {/* Action Buttons */}
                         < div className="flex items-center gap-2" >
                             <TooltipButton
-                                onClick={handleUpdateSale}
+                                onClick={() => handleUpdateSale(saleData)}
                                 tooltip="Editar venta"
                                 buttonProps={{
                                     variant: 'outline',

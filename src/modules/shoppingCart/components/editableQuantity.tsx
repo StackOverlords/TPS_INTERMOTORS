@@ -6,5 +6,6 @@ export const EditableQuantity: React.FC<Omit<EditableFieldProps, 'type'>> = (pro
         type="number"
         numberProps={{ min: 1, step: 1, ...props.numberProps }}
         formatter={(value) => value.toString()}
+        focusNextOnEnter={true}
     />
 );
