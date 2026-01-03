@@ -31,7 +31,7 @@ const CreatePurchase: React.FC = () => {
     // Show success toast
     showSuccessToast({
       title: "Compra Creada",
-      description: `Compra #${createdPurchase.id} creada exitosamente`,
+      description: `Compra creada exitosamente`,
       duration: 2000
     });
 

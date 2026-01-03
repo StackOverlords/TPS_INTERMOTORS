@@ -268,7 +268,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                     </div>
 
                     {/* Información de Contacto */}
-                    <div className="pt-2 border-t">
+                    <div className="pt-2">
                         <h3 className="text-sm font-semibold text-gray-700 mb-3">Información de Contacto</h3>
 
                         <div className="space-y-4">
@@ -344,7 +344,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                     </div>
 
                     {/* Ubicación */}
-                    <div className="pt-2 border-t">
+                    <div className="pt-2">
                         <h3 className="text-sm font-semibold text-gray-700 mb-3">Ubicación</h3>
 
                         <div className="space-y-4">

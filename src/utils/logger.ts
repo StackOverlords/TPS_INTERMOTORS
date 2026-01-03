@@ -20,7 +20,8 @@ const formatArgs = (...args: unknown[]): string => {
   return args
     .map(arg => {
       if (typeof arg === 'object') {
-        return JSON.stringify(arg, null, 2);
+        // Usar JSON compacto (sin espacios) para evitar truncamiento
+        return JSON.stringify(arg);
       }
       return String(arg);
     })
@@ -32,7 +33,7 @@ export const logger = {
    * Log de información general
    */
   info: (message: string, ...args: unknown[]) => {
-    console.log(`[INFO] ${message}`, ...args);
+    // console.log(`[INFO] ${message}`, ...args);
     const formattedArgs = args.length > 0 ? ` ${formatArgs(...args)}` : '';
     info(`${message}${formattedArgs}`);
   },
@@ -41,7 +42,7 @@ export const logger = {
    * Log de errores
    */
   error: (message: string, ...args: unknown[]) => {
-    console.error(`[ERROR] ${message}`, ...args);
+    // console.error(`[ERROR] ${message}`, ...args);
     const formattedArgs = args.length > 0 ? ` ${formatArgs(...args)}` : '';
     error(`${message}${formattedArgs}`);
   },
@@ -50,7 +51,7 @@ export const logger = {
    * Log de advertencias
    */
   warn: (message: string, ...args: unknown[]) => {
-    console.warn(`[WARN] ${message}`, ...args);
+    // console.warn(`[WARN] ${message}`, ...args);
     const formattedArgs = args.length > 0 ? ` ${formatArgs(...args)}` : '';
     warn(`${message}${formattedArgs}`);
   },
@@ -59,7 +60,7 @@ export const logger = {
    * Log de debug (solo en desarrollo)
    */
   debug: (message: string, ...args: unknown[]) => {
-    console.debug(`[DEBUG] ${message}`, ...args);
+    // console.debug(`[DEBUG] ${message}`, ...args);
     const formattedArgs = args.length > 0 ? ` ${formatArgs(...args)}` : '';
     debug(`${message}${formattedArgs}`);
   },
@@ -74,6 +75,41 @@ export const logger = {
     const formattedArgs = args.length > 0 ? ` ${formatArgs(...args)}` : '';
     trace(`${message}${formattedArgs}`);
   },
+
+  /**
+   * Crea un logger con prefijo de módulo
+   * Útil para identificar de dónde vienen los logs
+   *
+   * @example
+   * const moduleLogger = logger.withModule('AUTH_SERVICE');
+   * moduleLogger.info('User logged in', { userId: 123 });
+   * // Output: [INFO] [AUTH_SERVICE] User logged in | {"userId": 123}
+   */
+  withModule: (moduleName: string) => ({
+    info: (message: string, ...args: unknown[]) => {
+      const formattedArgs = args.length > 0 ? ` | ${formatArgs(...args)}` : '';
+      info(`[${moduleName}] ${message}${formattedArgs}`);
+    },
+    error: (message: string, ...args: unknown[]) => {
+      const formattedArgs = args.length > 0 ? ` | ${formatArgs(...args)}` : '';
+      error(`[${moduleName}] ${message}${formattedArgs}`);
+    },
+    warn: (message: string, ...args: unknown[]) => {
+      const formattedArgs = args.length > 0 ? ` | ${formatArgs(...args)}` : '';
+      warn(`[${moduleName}] ${message}${formattedArgs}`);
+    },
+    debug: (message: string, ...args: unknown[]) => {
+      const formattedArgs = args.length > 0 ? ` | ${formatArgs(...args)}` : '';
+      debug(`[${moduleName}] ${message}${formattedArgs}`);
+    },
+    trace: (message: string, ...args: unknown[]) => {
+      if (isDev) {
+        console.trace(`[TRACE] [${moduleName}] ${message}`, ...args);
+      }
+      const formattedArgs = args.length > 0 ? ` | ${formatArgs(...args)}` : '';
+      trace(`[${moduleName}] ${message}${formattedArgs}`);
+    },
+  }),
 };
 
 // Error boundary helper

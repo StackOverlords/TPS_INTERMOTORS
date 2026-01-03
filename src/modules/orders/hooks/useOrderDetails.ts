@@ -305,7 +305,7 @@ export const useOrderDetails = <T extends OrderDetailUnion = UIOrderDetailCreate
             inc_p_venta_alt: Number(detail.inc_p_venta_alt),
             precio_venta_alt: Number(detail.precio_venta_alt),
             orden: Number(detail.orden),
-            tc_compra: Number(detail.tc_compra),
+            tc_compra: detail.tc_compra !== null && detail.tc_compra !== undefined ? Number(detail.tc_compra) : null,
         })) as any;
     }, [details]);
 

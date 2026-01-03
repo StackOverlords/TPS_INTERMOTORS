@@ -19,7 +19,7 @@ const protectedRoutes: RouteType[] = [
     type: "protected",
     element: Content,
     isAdmin: false,
-    role: ["user"],
+    role: ["Administrador", "Vendedor"],
     icon: LayoutDashboardIcon,
     showSidebar: true,
   },

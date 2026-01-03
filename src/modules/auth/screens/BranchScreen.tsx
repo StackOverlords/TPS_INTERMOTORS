@@ -15,11 +15,10 @@ const BranchSelection: React.FC<BranchSelectionProps> = ({
 }) => {
   const [branchs, setBranch] = useState<any>();
   const [loading, setLoading] = useState(true);
-
   const getBranchs = async () => {
     try {
       const br = await authSDK.getCurrentUser();
-      if (!br?.sucursales.length) {
+      if (!br?.sucursales?.length) {
         onSelect("1");
         return;
       }

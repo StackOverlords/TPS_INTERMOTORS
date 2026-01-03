@@ -62,14 +62,19 @@ export const useFormEnterNavigation = (options: UseFormEnterNavigationOptions = 
 
       if (!isInput && !isTextarea && !isButton) return;
 
-      // IMPORTANTE: Para combobox, verificar PRIMERO si el dropdown está abierto
+      // IMPORTANTE: Para combobox, verificar si el dropdown está abierto
       // Si está abierto, no navegamos (dejamos que el combobox maneje el Enter)
+      // El combobox maneja su propia navegación después de seleccionar
       if (isComboboxInput) {
         const parent = target.closest('[data-headlessui-state]');
         const isExpanded = parent?.getAttribute('data-headlessui-state')?.includes('open');
 
         // Si el dropdown está abierto, no hacemos nada (Headless UI lo maneja)
         if (isExpanded) return;
+
+        // Si el dropdown está cerrado, el combobox maneja su propia navegación
+        // después de seleccionar, así que también retornamos
+        return;
       }
 
       // Si hay includeSelectors (lista blanca), verificar que el elemento esté incluido

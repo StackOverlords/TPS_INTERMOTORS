@@ -103,9 +103,10 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                     <ComboboxSelect
                         value={filters.cliente ?? "all"}
                         onChange={(value) => {
+                            const numValue = value ? Number(value) : undefined;
                             updateFilter(
                                 "cliente",
-                                value === "all" ? undefined : Number(value)
+                                (value === "all" || !numValue || isNaN(numValue)) ? undefined : numValue
                             );
                         }}
                         options={saleCustomersData?.data.map((customer) => ({
@@ -127,7 +128,7 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                         onChange={(value) => {
                             updateFilter(
                                 "tipo_pago",
-                                value === "all" ? undefined : (value as typeof filters.tipo_pago)
+                                (value === "all" || !value || value === "") ? undefined : (value as typeof filters.tipo_pago)
                             );
                         }}
                         options={paymentTypeOptions}
@@ -156,7 +157,7 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                         onChange={(value) => {
                             updateFilter(
                                 "tipo_vencimiento",
-                                value === "all" ? undefined : (value as typeof filters.tipo_vencimiento)
+                                (value === "all" || !value || value === "") ? undefined : (value as typeof filters.tipo_vencimiento)
                             );
                         }}
                         options={termTypeOptions}
@@ -185,7 +186,10 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                                 disabled={!filters.condicion_fecha_especifica}
                                 value={filters.fecha_vencimiento_regla}
                                 onChange={(value) => {
-                                    updateFilter("fecha_vencimiento_regla", value as "=" | ">=" | "<=");
+                                    updateFilter(
+                                        "fecha_vencimiento_regla",
+                                        (!value || value === "") ? undefined : (value as "=" | ">=" | "<=")
+                                    );
                                 }}
                                 options={[
                                     { id: "=", label: "Igual" },

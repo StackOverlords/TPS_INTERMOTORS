@@ -5,6 +5,8 @@ import { useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import { SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/atoms/sidebar";
 import { useEffect } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { hasRouteAccess } from "@/utils/permissions";
 
 const HeaderTagRoute = ({
   route,
@@ -18,6 +20,7 @@ const HeaderTagRoute = ({
   handleNavigation: () => void
 }) => {
   const location = useLocation();
+  const { rol: userRole } = useUserRole();
   const hasSubRoutes = route.subRoutes && route.subRoutes.length > 0;
 
   const isInSubRoute = hasSubRoutes
@@ -87,7 +90,11 @@ const HeaderTagRoute = ({
           "ml-3 mt-1 border-l border-gray-400 pl-2 mr-0 pr-0 py-0",
         )}>
           {route.subRoutes
-            ?.filter((subRoute) => subRoute.showSidebar && subRoute.path)
+            ?.filter((subRoute) =>
+              subRoute.showSidebar &&
+              subRoute.path &&
+              hasRouteAccess(subRoute, userRole)
+            )
             .map((subRoute, index) => (
               <SidebarMenuSubItem
                 key={`${subRoute.path}-${index}`}

@@ -7,7 +7,7 @@ const ExtensionsRoutes: RouteType[] = [
     type: "protected",
     //element: Content,
     isAdmin: false,
-    role: ["user"],
+    role: ["Administrador","Vendedor"],
     icon: FolderOpen,
 
     isHeader: true,

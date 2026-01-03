@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Schema para los tipos de pago
- * Formato: { "EFECTIVO": "Efectivo", "CHEQUE": "Cheque", "TRASNF": "Transferencia" }
+ * Formato: { "EFECTIVO": "Efectivo", "CHEQUE": "Cheque", "TRASNF": "Transferencia", "QR": "QR", "QR-EFECTIVO": "QR y Efectivo" }
  */
 export const PaymentTypesSchema = z.record(z.string(), z.string());
 

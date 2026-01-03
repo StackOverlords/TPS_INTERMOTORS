@@ -32,12 +32,22 @@ export function useViewConfig(viewId: string) {
       if (error?.response?.status === 404) {
         return false;
       }
+      // Si es error de CORS/Network (500 sin headers CORS), no reintentar
+      if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
+        console.warn(`[useViewConfig] Network error for ${viewId}, usando config local`, error);
+        return false;
+      }
       // Para otros errores, reintentar hasta 1 vez
       return failureCount < 1;
     },
     throwOnError: (error: any) => {
       // No lanzar error si es 404
       if (error?.response?.status === 404) {
+        return false;
+      }
+      // Si es error de CORS/Network (error 500 sin headers), no lanzar
+      // Esto permite que la app funcione solo con config local
+      if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
         return false;
       }
       return true;

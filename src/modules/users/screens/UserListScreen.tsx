@@ -28,6 +28,7 @@ import {
   Settings,
   Trash2,
   UserCog,
+  UserPlus,
   Users,
   XCircle
 } from 'lucide-react';
@@ -37,13 +38,17 @@ import { useNavigate } from 'react-router';
 import DeleteUserDialog from '../components/DeleteUserDialog';
 import { useUserFilters } from '../hooks/useUserFilters';
 import { useUsersPaginated } from '../hooks/useUsersPaginated';
+import { useDeleteUser } from '../hooks/mutations/useDeleteUser';
 import type { User } from '../types/User';
 import { useCustomTable } from '@/hooks/useCustomTable';
+import { showSuccessToast } from '@/hooks/use-toast-enhanced';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const UserListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
   const user = authSDK.getCurrentUser();
   const { filters, updateFilter, setPage, resetFilters } = useUserFilters();
+  const { handleError } = useErrorHandler();
 
   const {
     config: viewConfig,
@@ -59,6 +64,8 @@ const UserListScreen = () => {
     refetch: refetchUsers,
     isRefetching: isRefetchingUsers,
   } = useUsersPaginated(filters);
+
+  const { mutate: deleteUserMutation, isPending: isDeletingUser } = useDeleteUser();
 
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
@@ -95,15 +102,28 @@ const UserListScreen = () => {
   const handleConfirmDelete = async () => {
     if (!selectedUser) return;
     setIsDeleting(true);
-    try {
-      setShowDeleteDialog(false);
-      setSelectedUser(null);
-      refetchUsers();
-    } catch (error) {
-      console.error('Error al eliminar usuario:', error);
-    } finally {
-      setIsDeleting(false);
-    }
+
+    deleteUserMutation(selectedUser.id, {
+      onSuccess: () => {
+        showSuccessToast({
+          title: 'Usuario eliminado',
+          description: `El usuario ${selectedUser.nickname} ha sido eliminado exitosamente.`,
+          duration: 5000,
+        });
+        setShowDeleteDialog(false);
+        setSelectedUser(null);
+        refetchUsers();
+        setIsDeleting(false);
+      },
+      onError: (error: unknown) => {
+        handleError({
+          error,
+          customTitle: 'No se pudo eliminar el usuario',
+          customDescription: 'Ocurrió un error al intentar eliminar el usuario'
+        });
+        setIsDeleting(false);
+      },
+    });
   };
 
   const handleManagePermissions = useCallback((user: User) => {
@@ -363,6 +383,15 @@ const UserListScreen = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate('/dashboard/user/create')}
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Nuevo Usuario
+              </Button>
+
               {viewConfig?.features?.infiniteScroll?.enabled && (
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -587,7 +616,7 @@ const UserListScreen = () => {
           setSelectedUser(null);
         }}
         onConfirm={handleConfirmDelete}
-        isLoading={isDeleting}
+        isLoading={isDeleting || isDeletingUser}
       />
     </main>
   );

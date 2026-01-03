@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import { useOrderProvider } from "../../hooks/commons/useOrderProviders";
 import type { useOrdersFilters } from "../../hooks/useOrdersFilters";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
 
 interface OrderSelectorFiltersProps {
     filters: ReturnType<typeof useOrdersFilters>["filters"]
@@ -107,7 +108,7 @@ const OrderSelectorFilters: React.FC<OrderSelectorFiltersProps> = ({
                 </div>
                 <div className="space-y-2">
                     <Label>Proveedor</Label>
-                    <PaginatedCombobox
+                    {/* <PaginatedCombobox
                         value={filters.proveedor}
                         onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
                         optionsData={orderProvidersData?.data || []}
@@ -125,6 +126,20 @@ const OrderSelectorFilters: React.FC<OrderSelectorFiltersProps> = ({
                                 per_page: orderProvidersData?.meta?.per_page || 10,
                             }
                         }
+                    /> */}
+                    <ComboboxSelect
+                        value={filters.proveedor ? String(filters.proveedor) : ''}
+                        onChange={(value) => updateFilter("proveedor", value ? parseInt(value as string, 10) : undefined)}
+                        options={orderProvidersData?.data.map((provider) => ({
+                            id: provider.id,
+                            nombre: provider.nombre,
+                        })) || []}
+                        optionTag="nombre"
+                        placeholder="Selecciona un proveedor"
+                        isLoadingData={isOrdersProvidersLoading}
+                        onSearch={setProviderSearchTerm}
+                        enableExternalSearch={true}
+                        clearOnEmpty={true}
                     />
                 </div>
                 <div className="space-y-2">

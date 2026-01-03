@@ -1,10 +1,12 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, useSidebar } from "@/components/atoms/sidebar";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
+import { useUserRole } from "@/hooks/useUserRole";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
+import { filterRoutesByRole } from "@/utils/permissions";
 import { HelpCircle, LogOut, Package, Settings } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ButtonItem from "../components/ButtonItem";
 import HeaderTagRoute from "../components/HeaderTagRoute";
 import NavItem from "../components/NavItem";
@@ -13,6 +15,12 @@ const AppSidebar = () => {
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
   const { setOpenMobile, isMobile } = useSidebar();
   const { available } = useUpdateChecker();
+  const { rol: userRole } = useUserRole();
+
+  // Filtrar rutas basándose en el rol del usuario
+  const filteredRoutes = useMemo(() => {
+    return filterRoutesByRole(protectedRoutes, userRole);
+  }, [userRole]);
 
   const handleNavigation = () => {
     if (isMobile) {
@@ -59,7 +67,7 @@ const AppSidebar = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent className="px-1">
             <SidebarMenu>
-              {protectedRoutes.map((route: RouteType, index) => (
+              {filteredRoutes.map((route: RouteType, index) => (
                 <HeaderTagRoute
                   handleNavigation={handleNavigation}
                   toggleHeader={toggleHeader}

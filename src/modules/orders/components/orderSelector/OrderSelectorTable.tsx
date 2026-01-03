@@ -10,7 +10,7 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
-import { formatCurrency } from "@/utils/formaters";
+import { formatColumnNumber, formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
@@ -89,9 +89,9 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
                             <p className="flex gap-1">Presiona <Kbd>enter</Kbd> para seleccionar el pedido</p>
                         }
                     >
-                        <div className="space-y-1 flex flex-col">
-                            <span className="font-medium text-foreground">{getValue<string>()}</span>
-                            <span className="text-xs text-muted-foreground">ID: {row.original.id}</span>
+                        <div className="space-y-1 flex flex-col justify-center align-center">
+                            <span className="font-bold text-blue-600">{formatColumnNumber(getValue<string>(),'-')}</span>
+                            {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
                         </div>
                     </TooltipWrapper>
                 </div>

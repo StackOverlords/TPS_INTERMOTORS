@@ -84,7 +84,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             accessorKey: "orden",
             header: "N°",
             size: 30,
-            minSize: 20,
+            minSize: 30,
         },
         {
             accessorKey: "id",
@@ -100,8 +100,8 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             accessorFn: row => row.producto.descripcion,
             id: "descripcion",
             header: "Descripción",
-            size: 250,
-            minSize: 40,
+            size: 120,
+            minSize: 30,
             cell: ({ getValue }) => {
                 const descripcion = getValue<string>()
                 return (
@@ -118,34 +118,34 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             id: "codigo_oem",
             header: "Código OEM",
             size: 100,
-            minSize: 80,
+            minSize: 30,
         },
         {
             accessorFn: row => row.producto.codigo_upc,
             id: "codigo_upc",
             header: "Código UPC",
             size: 100,
-            minSize: 80,
+            minSize: 30,
         },
         {
             accessorFn: row => row.producto.categoria?.categoria,
             id: "categoria",
             header: "Categoría",
             size: 100,
-            minSize: 80,
+            minSize: 30,
         },
         {
             accessorFn: row => row.producto.marca?.marca,
             id: "marca",
             header: "Marca",
             size: 100,
-            minSize: 80,
+            minSize: 30,
         },
         {
             accessorKey: "cantidad",
             header: "Cantidad",
-            size: 90,
-            minSize: 80,
+            size: 80,
+            minSize: 30,
             cell: ({ row }) => {
                 const product = row.original.producto;
                 const cantidad = typeof row.original.cantidad === "string"
@@ -168,7 +168,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             accessorKey: "precio",
             header: "Precio U.",
             size: 80,
-            minSize: 70,
+            minSize: 30,
             cell: ({ getValue, row }) => (
                 <div className="font-medium flex items-center justify-end">
                     {formatCurrency(getValue<number>(), { currency: row.original.monenda })}
@@ -180,7 +180,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             accessorKey: "descuento",
             header: "Descuento",
             size: 80,
-            minSize: 70,
+            minSize: 30,
             cell: ({ getValue, row }) => {
                 const porcentajeDescuento = typeof row.original.porcentaje_descuento === "string"
                     ? parseFloat(row.original.porcentaje_descuento)
@@ -206,7 +206,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             id: "subtotal",
             header: "Subtotal",
             size: 80,
-            minSize: 70,
+            minSize: 30,
             cell: ({ row }) => {
                 const product = row.original
                 const subtotal = product.precio * product.cantidad
@@ -248,7 +248,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
                     {filteredSaleItems.length} {filteredSaleItems.length === 1 ? "producto" : "productos"} en total
                 </p>
 
-                <div className="flex gap-2 w-full lg:w-1/2">
+                <div className="flex gap-2 w-full lg:w-2/2">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input

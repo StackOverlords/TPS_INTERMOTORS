@@ -1,4 +1,5 @@
 import type { ViewConfiguration } from "@/config/viewConfigTypes";
+import type { UserRole } from "@/hooks/useUserRole";
 import type React from "react";
 
 export default interface RouteType {
@@ -9,7 +10,7 @@ export default interface RouteType {
     icon?: any;
     exact?: boolean;
     isAdmin?: boolean;
-    role?: ["admin" | "user" | "guest"]; // Define roles if needed
+    role?: UserRole[]; // Roles permitidos: Administrador, Vendedor, guest
 
     subRoutes?: RouteType[];
     isHeader?: boolean;
