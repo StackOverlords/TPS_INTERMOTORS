@@ -28,6 +28,21 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Extract variant from tag
+        id: extract_variant
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" == *"-t1" ]]; then
+            echo "VARIANT=t1" >> $GITHUB_OUTPUT
+            echo "VARIANT_LABEL=T1" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-t2" ]]; then
+            echo "VARIANT=t2" >> $GITHUB_OUTPUT
+            echo "VARIANT_LABEL=T2" >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: Tag must end with -t1 or -t2"
+            exit 1
+          fi
+
       - name: Create Release
         id: create-release
         uses: actions/github-script@v7
@@ -37,7 +52,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: `v${{ steps.get_version.outputs.VERSION }}`,
-              name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }}`,
+              name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }} [${{ steps.extract_variant.outputs.VARIANT_LABEL }}]`,
               body: `
 
               ## 🚀 Nueva version v${{ steps.get_version.outputs.VERSION }}
@@ -126,17 +141,39 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Extract variant from tag
+        id: extract_variant
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" == *"-t1" ]]; then
+            echo "VARIANT=t1" >> $GITHUB_OUTPUT
+            echo "VARIANT_LABEL=T1" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-t2" ]]; then
+            echo "VARIANT=t2" >> $GITHUB_OUTPUT
+            echo "VARIANT_LABEL=T2" >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: Tag must end with -t1 or -t2"
+            exit 1
+          fi
+
+      - name: Update Tauri updater endpoint
+        run: |
+          VARIANT="${{ steps.extract_variant.outputs.VARIANT }}"
+          sed -i 's|latest\.json|latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
+          echo "Updated updater endpoint to: latest-${VARIANT}.json"
+          grep -A 2 '"updater"' src-tauri/tauri.conf.json || true
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0.5.15
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
-          VITE_SOCKET_KEY: ${{ secrets.VITE_SOCKET_KEY }}
-          VITE_REVERB_HOST: ${{ secrets.VITE_REVERB_HOST }}
-          VITE_REVERB_PORT: ${{ secrets.VITE_REVERB_PORT }}
-          VITE_REVERB_APP_KEY: ${{ secrets.VITE_REVERB_APP_KEY }}
-          VITE_REVERB_SCHEME: ${{ secrets.VITE_REVERB_SCHEME }}
+          VITE_API_URL: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_API_URL_T1 || secrets.VITE_API_URL_T2 }}
+          VITE_WS_URL: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_WS_URL_T1 || secrets.VITE_WS_URL_T2 }}
+          VITE_SOCKET_KEY: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_SOCKET_KEY_T1 || secrets.VITE_SOCKET_KEY_T2 }}
+          VITE_REVERB_HOST: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_HOST_T1 || secrets.VITE_REVERB_HOST_T2 }}
+          VITE_REVERB_PORT: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_PORT_T1 || secrets.VITE_REVERB_PORT_T2 }}
+          VITE_REVERB_APP_KEY: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_APP_KEY_T1 || secrets.VITE_REVERB_APP_KEY_T2 }}
+          VITE_REVERB_SCHEME: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_SCHEME_T1 || secrets.VITE_REVERB_SCHEME_T2 }}
           VITE_APP_ENV: ${{ vars.VITE_APP_ENV || 'production' }}
           BRANCH_STORAGE_KEY: ${{ vars.BRANCH_STORAGE_KEY || 'selectedBranchId' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -161,6 +198,21 @@ jobs:
       - name: Get version from tag
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Extract variant from tag
+        id: extract_variant
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" == *"-t1" ]]; then
+            echo "VARIANT=t1" >> $GITHUB_OUTPUT
+            echo "VARIANT_LABEL=T1" >> $GITHUB_OUTPUT
+          elif [[ "$TAG" == *"-t2" ]]; then
+            echo "VARIANT=t2" >> $GITHUB_OUTPUT
+            echo "VARIANT_LABEL=T2" >> $GITHUB_OUTPUT
+          else
+            echo "ERROR: Tag must end with -t1 or -t2"
+            exit 1
+          fi
 
       - name: Download and process release assets
         id: get_assets
@@ -246,15 +298,21 @@ jobs:
               };
             }
 
-            fs.writeFileSync('latest.json', JSON.stringify(manifest, null, 2));
-            console.log('Generated latest.json:');
-            console.log(fs.readFileSync('latest.json', 'utf8'));
+            const variant = '${{ steps.extract_variant.outputs.VARIANT }}';
+            const filename = `latest-${variant}.json`;
+
+            fs.writeFileSync(filename, JSON.stringify(manifest, null, 2));
+            console.log(`Generated ${filename}:`);
+            console.log(fs.readFileSync(filename, 'utf8'));
 
       - name: Upload latest.json to release
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const variant = '${{ steps.extract_variant.outputs.VARIANT }}';
+            const filename = `latest-${variant}.json`;
+
             const release = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -265,8 +323,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: 'latest.json',
-              data: fs.readFileSync('latest.json')
+              name: filename,
+              data: fs.readFileSync(filename)
             });
 
 ## Configuracion de actualizaciones automaticas con Tauri
