@@ -159,6 +159,7 @@ jobs:
           fi
 
       - name: Update Tauri updater endpoint
+        shell: bash
         run: |
           VARIANT="${{ steps.extract_variant.outputs.VARIANT }}"
           sed -i 's|latest\.json|latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
