@@ -30,6 +30,7 @@ jobs:
 
       - name: Extract variant from tag
         id: extract_variant
+        shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           if [[ "$TAG" == *"-t1" ]]; then
@@ -143,6 +144,7 @@ jobs:
 
       - name: Extract variant from tag
         id: extract_variant
+        shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           if [[ "$TAG" == *"-t1" ]]; then
@@ -201,6 +203,7 @@ jobs:
 
       - name: Extract variant from tag
         id: extract_variant
+        shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           if [[ "$TAG" == *"-t1" ]]; then
