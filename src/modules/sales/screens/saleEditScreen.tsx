@@ -2,7 +2,7 @@ import ErrorDataComponent from "@/components/common/errorDataComponent"
 import { useLocation, useNavigate, useParams } from "react-router"
 import { useSaleGetById } from "../hooks/useSaleGetById"
 import TooltipButton from "@/components/common/TooltipButton"
-import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react"
+import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react"
 import { Kbd } from "@/components/atoms/kbd"
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -39,6 +39,8 @@ import type { ProductGet } from "@/modules/products/types/ProductGet"
 import type { SelectedItem } from "@/types/windowSelectedItems"
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes"
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
+import { PDFViewer } from "@/components/common/PDFViewer"
+import { useSalePDF } from "../hooks/useSalePDF"
 
 const SaleEditScreen = () => {
     const configuraciones = {
@@ -61,6 +63,7 @@ const SaleEditScreen = () => {
     const [hasInitialized, setHasInitialized] = useState<boolean>(false);
     const [originalDetails, setOriginalDetails] = useState<SaleUpdateDetailUI[]>([]);
     const [isUsingTempData, setIsUsingTempData] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
     const tableRef = useRef<SaleDetailsEditingTableRef>(null);
 
@@ -99,8 +102,22 @@ const SaleEditScreen = () => {
         isError: isErrorSale
     } = useSaleGetById(Number(saleId))
 
+    const {
+        data: pdfBlob,
+        isLoading: isLoadingPdf,
+        isError: isErrorPdf,
+    } = useSalePDF(Number(saleId) || 0, isDialogOpen && !!Number(saleId));
+
     const handleGoBack = useGoBack("/dashboard/sales");
     const { handleError } = useErrorHandler()
+
+    const handleOpenPrintDialog = () => {
+        setIsDialogOpen(true)
+    }
+
+    const handleClosePrintDialog = () => {
+        setIsDialogOpen(false)
+    }
 
     const formMethods = useForm<SaleUpdateForm>({
         resolver: zodResolver(SaleUpdateFormSchema),
@@ -133,7 +150,7 @@ const SaleEditScreen = () => {
         getValues,
         setError,
         clearErrors,
-        formState: { errors }
+        formState: { errors, isDirty }
     } = formMethods
 
     const loadFormData = (sale: SaleGetById) => {
@@ -524,7 +541,21 @@ const SaleEditScreen = () => {
 
                             {/* Action Buttons */}
                             < div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-
+                                <TooltipButton
+                                    onClick={handleOpenPrintDialog}
+                                    tooltip={
+                                        isDirty
+                                            ? "Los cambios no guardados no se reflejarán en la impresión"
+                                            : "Imprimir venta"
+                                    }
+                                    buttonProps={{
+                                        variant: isDirty ? 'outline' : 'default',
+                                    }}
+                                >
+                                    <Printer className="h-4 w-4" />
+                                    Imprimir
+                                    {isDirty && <span className="text-xs">(sin cambios)</span>}
+                                </TooltipButton>
                             </div >
                         </div >
                     </header >
@@ -899,6 +930,18 @@ const SaleEditScreen = () => {
                     </div>
                 </form>
             </FormProvider>
+
+            {/* Modal PDF Viewer */}
+            <PDFViewer
+                id={Number(saleId)}
+                pdfBlob={pdfBlob}
+                isLoading={isLoadingPdf}
+                isError={isErrorPdf}
+                onClose={handleClosePrintDialog}
+                isOpen={isDialogOpen}
+                pdfName="venta"
+                title={`Venta Nro. ${isUsingTempData ? tempCreatedSale?.nro : saleData?.nro}`}
+            />
         </main >
     );
 }

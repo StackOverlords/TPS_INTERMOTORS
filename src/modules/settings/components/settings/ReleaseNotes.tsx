@@ -16,6 +16,7 @@ interface ReleaseNotesProps {
   // Información de versión
   currentVersion: string;
   latestVersion?: string;
+  variant?: string | null;
 
   // Release notes
   releaseNotes: string | null;
@@ -38,6 +39,7 @@ interface ReleaseNotesProps {
 export default function ReleaseNotes({
   currentVersion,
   latestVersion,
+  variant,
   releaseNotes,
   releaseDate,
   hasUpdate,
@@ -138,7 +140,14 @@ export default function ReleaseNotes({
                 <Package className="h-3.5 w-3.5" />
                 <span>Versión actual</span>
               </div>
-              <p className="text-2xl font-semibold text-gray-800">{currentVersion}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-semibold text-gray-800">{currentVersion}</p>
+                {variant && (
+                  <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md uppercase">
+                    {variant}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Nueva versión disponible */}

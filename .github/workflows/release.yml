@@ -158,13 +158,32 @@ jobs:
             exit 1
           fi
 
-      - name: Update Tauri updater endpoint
+      - name: Get version from tag
+        id: get_version
+        shell: bash
+        run: |
+          # Extract version number without variant (e.g., v1.1.29-t1 -> 1.1.29)
+          FULL_TAG="${GITHUB_REF#refs/tags/v}"
+          VERSION="${FULL_TAG%-*}"
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update Tauri config for variant
         shell: bash
         run: |
           VARIANT="${{ steps.extract_variant.outputs.VARIANT }}"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+
+          # Update updater endpoint
           sed -i 's|latest\.json|latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
-          echo "Updated updater endpoint to: latest-${VARIANT}.json"
+
+          # Update version to include variant
+          sed -i 's|"version": ".*"|"version": "'"${VERSION}-${VARIANT}"'"|g' src-tauri/tauri.conf.json
+
+          echo "Updated configuration:"
+          echo "- Version: ${VERSION}-${VARIANT}"
+          echo "- Updater endpoint: latest-${VARIANT}.json"
           grep -A 2 '"updater"' src-tauri/tauri.conf.json || true
+          grep '"version"' src-tauri/tauri.conf.json || true
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0.5.15
