@@ -4,31 +4,40 @@ import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
+import { PDFViewer } from "@/components/common/PDFViewer";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { formatCell } from "@/utils/formatCell";
 import { formatColumnNumber, formatDate } from "@/utils/formaters";
-import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, Trash2, User } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { Building2, Calendar, CornerUpLeft, Edit, FileText, Loader2, Printer, Trash2, User } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
 import SaleDetailSkeleton from "../components/saleDetail/saleDetailSkeleton";
 import SaleProductsSection from "../components/saleDetail/SaleProducts";
 import { useDeleteSale } from "../hooks/useDeleteSale";
 import { useSaleGetById } from "../hooks/useSaleGetById";
+import { useSalePDF } from "../hooks/useSalePDF";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SaleDetailScreen = () => {
     // const navigate = useNavigate()
     const { navigateWithTab } = useTabNavigation();
     const { saleCod } = useParams()
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
 
     const {
         data: saleData,
         isLoading: isLoadingSale,
         isError: isErrorSale
     } = useSaleGetById(Number(saleCod))
+
+    const {
+        data: pdfBlob,
+        isLoading: isLoadingPdf,
+        isError: isErrorPdf,
+    } = useSalePDF(Number(saleCod), isDialogOpen && !!saleCod);
 
     const handleDeleteSuccess = (_data: unknown, saleId: number) => {
         showSuccessToast({
@@ -90,6 +99,14 @@ const SaleDetailScreen = () => {
             displayCode: formatColumnNumber(saleData?.nro,'-')
         })
     },[navigateWithTab])
+
+    const handleOpenPrintDialog = () => {
+        setIsDialogOpen(true)
+    }
+
+    const handleClosePrintDialog = () => {
+        setIsDialogOpen(false)
+    }
 
     // Shortcuts
     useHotkeys('escape', handleGoBack, {
@@ -160,6 +177,18 @@ const SaleDetailScreen = () => {
                             >
                                 <Edit className="h-4 w-4" />
                                 Editar
+                            </TooltipButton>
+
+                            <TooltipButton
+                                onClick={handleOpenPrintDialog}
+                                tooltip="Imprimir venta"
+                                buttonProps={{
+                                    variant: 'default',
+                                    size: 'sm'
+                                }}
+                            >
+                                <Printer className="h-4 w-4" />
+                                Imprimir
                             </TooltipButton>
 
                             <TooltipButton
@@ -271,6 +300,22 @@ const SaleDetailScreen = () => {
                 onConfirm={handleConfirmDeleteAlert}
                 isLoading={isDeleting}
             />
+
+            {/* Modal PDF Viewer */}
+            {
+                isDialogOpen && (
+                    <PDFViewer
+                        id={Number(saleCod)}
+                        pdfBlob={pdfBlob}
+                        isLoading={isLoadingPdf}
+                        isError={isErrorPdf}
+                        onClose={handleClosePrintDialog}
+                        isOpen={isDialogOpen}
+                        pdfName="venta"
+                        title={`Venta Nro. ${saleData?.nro}`}
+                    />
+                )
+            }
         </main >
     );
 }

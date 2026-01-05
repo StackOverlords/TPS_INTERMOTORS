@@ -9,6 +9,7 @@ export interface UpdateState {
   available: boolean;
   currentVersion: string;
   latestVersion: string;
+  variant: string | null;
   isChecking: boolean;
   isDownloading: boolean;
   isInstalling: boolean;
@@ -24,6 +25,7 @@ export const useUpdateChecker = () => {
     available: false,
     currentVersion: '',
     latestVersion: '',
+    variant: null,
     isChecking: false,
     isDownloading: false,
     isInstalling: false,
@@ -39,6 +41,12 @@ export const useUpdateChecker = () => {
     checkForUpdates();
   }, []);
 
+  // Helper function to extract variant from version string
+  const extractVariant = (version: string): string | null => {
+    const match = version.match(/-(t1|t2)$/);
+    return match ? match[1] : null;
+  };
+
   const checkForUpdates = async (silent = true) => {
     if (updateState.isChecking) return;
 
@@ -51,6 +59,7 @@ export const useUpdateChecker = () => {
     try {
       const update = await check();
       const currentVersion = update?.currentVersion || await getVersion();
+      const variant = extractVariant(currentVersion);
 
       if (update && 'available' in update && update.available) {
         // Hay actualización disponible
@@ -59,6 +68,7 @@ export const useUpdateChecker = () => {
           available: true,
           currentVersion: update.currentVersion,
           latestVersion: update.version,
+          variant,
           update,
           releaseNotes: update.body || null,
           releaseDate: update.date || null,
@@ -70,6 +80,7 @@ export const useUpdateChecker = () => {
         let currentVersionDate = null;
 
         try {
+          // Use the full version including variant for the GitHub API call
           const response = await axios.get(
             `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${currentVersion}`
           );
@@ -87,6 +98,7 @@ export const useUpdateChecker = () => {
           available: false,
           currentVersion: currentVersion,
           latestVersion: currentVersion,
+          variant,
           releaseNotes: currentVersionNotes,
           releaseDate: currentVersionDate,
           isChecking: false,

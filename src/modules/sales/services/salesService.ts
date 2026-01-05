@@ -120,4 +120,28 @@ export const salesService = {
 
         Logger.info('Sale detail deleted successfully', { id }, MODULE_NAME);
     },
+
+    /**
+    * Obtener PDF de venta
+    * @param id - ID de la venta
+    * @returns Blob del PDF
+    */
+    async getPDF(id: number): Promise<Blob> {
+        Logger.info('Fetching sale PDF', { id }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            SALE_ENDPOINTS.actions.pdf(id),
+            undefined,
+            {
+                responseType: 'blob',
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            }
+        );
+
+        Logger.info('Sale PDF fetched successfully', { id }, MODULE_NAME);
+
+        return response as Blob;
+    },
 };

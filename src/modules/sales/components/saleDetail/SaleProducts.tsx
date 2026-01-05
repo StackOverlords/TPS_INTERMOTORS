@@ -86,16 +86,16 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             size: 30,
             minSize: 30,
         },
-        {
-            accessorKey: "id",
-            header: "Cód",
-            size: 35,
-            minSize: 30,
-            enableHiding: false,
-            cell: ({ getValue }) => (
-                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
-            ),
-        },
+        // {
+        //     accessorKey: "id",
+        //     header: "Cód",
+        //     size: 35,
+        //     minSize: 30,
+        //     enableHiding: false,
+        //     cell: ({ getValue }) => (
+        //         <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+        //     ),
+        // },
         {
             accessorFn: row => row.producto.descripcion,
             id: "descripcion",

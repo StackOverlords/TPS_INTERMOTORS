@@ -8,6 +8,7 @@ export default function UpdateSettings() {
     available,
     currentVersion,
     latestVersion,
+    variant,
     isChecking,
     isDownloading,
     isInstalling,
@@ -41,6 +42,7 @@ export default function UpdateSettings() {
         <ReleaseNotes
           currentVersion={displayCurrentVersion}
           latestVersion={latestVersion}
+          variant={variant}
           releaseNotes={releaseNotes}
           releaseDate={releaseDate || undefined}
           hasUpdate={available}
