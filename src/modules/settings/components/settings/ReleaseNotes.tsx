@@ -182,7 +182,7 @@ export default function ReleaseNotes({
             {releaseNotes && (
               <div className="pt-3 border-t border-gray-200">
                 <a
-                  href={`https://github.com/StackOverlords/TPS_INTERMOTORS/releases/tag/v${currentVersion}`}
+                  href={`https://github.com/StackOverlords/TPS_INTERMOTORS/releases/tag/v${currentVersion}${variant ? `-${variant}` : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"
