@@ -36,16 +36,13 @@ export const useUpdateChecker = () => {
     releaseDate: null,
   });
 
+  // Get variant from environment variable
+  const appVariant = import.meta.env.VITE_APP_VARIANT || null;
+
   // Check on mount
   useEffect(() => {
     checkForUpdates();
   }, []);
-
-  // Helper function to extract variant from version string
-  const extractVariant = (version: string): string | null => {
-    const match = version.match(/-(t1|t2)$/);
-    return match ? match[1] : null;
-  };
 
   const checkForUpdates = async (silent = true) => {
     if (updateState.isChecking) return;
@@ -59,7 +56,6 @@ export const useUpdateChecker = () => {
     try {
       const update = await check();
       const currentVersion = update?.currentVersion || await getVersion();
-      const variant = extractVariant(currentVersion);
 
       if (update && 'available' in update && update.available) {
         // Hay actualización disponible
@@ -68,7 +64,7 @@ export const useUpdateChecker = () => {
           available: true,
           currentVersion: update.currentVersion,
           latestVersion: update.version,
-          variant,
+          variant: appVariant,
           update,
           releaseNotes: update.body || null,
           releaseDate: update.date || null,
@@ -80,9 +76,11 @@ export const useUpdateChecker = () => {
         let currentVersionDate = null;
 
         try {
-          // Use the full version including variant for the GitHub API call
+          // Build the correct tag with variant (e.g., v1.1.29-t1)
+          const tagWithVariant = appVariant ? `v${currentVersion}-${appVariant}` : `v${currentVersion}`;
+
           const response = await axios.get(
-            `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${currentVersion}`
+            `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`
           );
           if (response.status === 200) {
             const releaseData = response.data;
@@ -98,7 +96,7 @@ export const useUpdateChecker = () => {
           available: false,
           currentVersion: currentVersion,
           latestVersion: currentVersion,
-          variant,
+          variant: appVariant,
           releaseNotes: currentVersionNotes,
           releaseDate: currentVersionDate,
           isChecking: false,
