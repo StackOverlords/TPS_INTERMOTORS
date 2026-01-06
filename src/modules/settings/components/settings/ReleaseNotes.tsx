@@ -53,7 +53,7 @@ export default function ReleaseNotes({
   // onDismiss,
 }: ReleaseNotesProps) {
   const [showDetails, setShowDetails] = React.useState(true);
-
+  // alert(JSON.stringify(variant));
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
