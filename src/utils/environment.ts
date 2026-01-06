@@ -3,6 +3,7 @@ export const environment = {
   branch_selected_key: import.meta.env.BRANCH_STORAGE_KEY || 'key_branch',
   app_env: import.meta.env.VITE_APP_ENV || 'production',
   env: import.meta.env.VITE_APP_ENV || 'production',
+  variant: import.meta.env.VITE_APP_VARIANT || null,
 };
 
 /**
@@ -32,5 +33,6 @@ export const getEnvironment = () => {
     canPrint,
     environment: isTauri ? 'tauri' : 'browser',
     env: import.meta.env.VITE_APP_ENV || 'production',
+    variant: import.meta.env.VITE_APP_VARIANT || null
   };
 };
