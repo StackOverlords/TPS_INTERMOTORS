@@ -15,6 +15,7 @@ import TransferListTable from "../components/transferList/TransferListTable";
 import { useDeleteTransfer } from "../hooks/useDeleteTransfer";
 import { useSendTransfer } from "../hooks/useSendTransfer";
 import { useAcceptTransfer } from "../hooks/useAcceptTransfer";
+import { useRefuseTransfer } from "../hooks/useRefuseTransfer";
 import { useTransfersFilters } from "../hooks/useTransfersFilters";
 import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
 import type { TransferGetAll } from "../types/transferGet.types";
@@ -115,6 +116,11 @@ const TransferListScreen = () => {
     } = useAcceptTransfer()
 
     const {
+        mutate: refuseTransfer,
+        isPending: isRefusing
+    } = useRefuseTransfer()
+
+    const {
         close: handleCloseDeleteAlert,
         confirm: handleConfirmDeleteAlert,
         isOpen: showDeleteAlert,
@@ -169,6 +175,30 @@ const TransferListScreen = () => {
         open: handleOpenAcceptAlert,
         variables: transferToAccept
     } = useConfirmMutation(acceptTransfer, handleAcceptSuccess, handleAcceptError)
+
+    const handleRefuseSuccess = (_data: unknown, Id: number) => {
+        showSuccessToast({
+            title: "Transferencia rechazada",
+            description: `La Transferencia #${Id} se rechazó exitosamente`,
+            duration: 5000
+        })
+    };
+
+    const handleRefuseError = (_error: unknown, Id: number) => {
+        showErrorToast({
+            title: "Error al rechazar transferencia",
+            description: `No se pudo rechazar la Transferencia #${Id}. Por favor, intenta nuevamente`,
+            duration: 5000
+        })
+    };
+
+    const {
+        close: handleCloseRefuseAlert,
+        confirm: handleConfirmRefuseAlert,
+        isOpen: showRefuseAlert,
+        open: handleOpenRefuseAlert,
+        variables: transferToRefuse
+    } = useConfirmMutation(refuseTransfer, handleRefuseSuccess, handleRefuseError)
 
     const handleRefetchTransfers = () => {
         refetchTransfers();
@@ -296,6 +326,7 @@ const TransferListScreen = () => {
                     handleDeleteTransfer={handleOpenDeleteAlert}
                     handleSendTransfer={handleOpenSendAlert}
                     handleAcceptTransfer={handleOpenAcceptAlert}
+                    handleRefuseTransfer={handleOpenRefuseAlert}
                 />
             </div>
 
@@ -327,6 +358,16 @@ const TransferListScreen = () => {
                 onClose={handleCloseAcceptAlert}
                 onConfirm={handleConfirmAcceptAlert}
                 isLoading={isAccepting}
+            />
+
+            {/* Modal de confirmación para rechazar */}
+            <ConfirmationModal
+                isOpen={showRefuseAlert}
+                title="Rechazar Transferencia"
+                message={`¿Estás seguro de que deseas rechazar la Transferencia #${transferToRefuse}? Esta acción no se puede deshacer.`}
+                onClose={handleCloseRefuseAlert}
+                onConfirm={handleConfirmRefuseAlert}
+                isLoading={isRefusing}
             />
         </main>
     );

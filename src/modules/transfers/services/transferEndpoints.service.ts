@@ -6,4 +6,5 @@ export const TRANSFER_ENDPOINTS = {
     delete: (id: number) => `/transfers/${id}`,
     send: (id: number) => `/transfers/actions/${id}/send`,
     accept: (id: number) => `/transfers/actions/${id}/accept`,
+    refuse: (id: number) => `/transfers/actions/${id}/refuse`,
 };

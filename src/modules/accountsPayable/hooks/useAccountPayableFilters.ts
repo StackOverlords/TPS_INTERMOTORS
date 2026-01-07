@@ -26,6 +26,7 @@ export const useAccountPayableFilters = (
         nro_venta: undefined,
         cliente: undefined,
         tipo_pago: undefined,
+        estado_pago: undefined,
         fecha_inicio: undefined,
         fecha_fin: undefined,
         tipo_vencimiento: undefined,
