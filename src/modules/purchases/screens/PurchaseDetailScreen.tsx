@@ -4,16 +4,19 @@ import TooltipButton from '@/components/common/TooltipButton';
 import { CornerUpLeft, Edit } from 'lucide-react';
 import { useCallback } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import DeletePurchaseDialog from '../components/DeletePurchaseDialog';
 import PurchaseDetailSkeleton from '../components/purchaseDetail/PurchaseDetailSkeleton';
 import PurchaseOverview from '../components/purchaseDetail/PurchaseOverview';
 import PurchaseProducts from '../components/purchaseDetail/PurchaseProducts';
 import { usePurchaseById } from '../hooks/usePurchaseById';
 import { usePurchaseDelete } from '../hooks/usePurchaseDelete';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
+import { formatColumnNumber } from '@/utils/formaters';
 
 const PurchaseDetailScreen = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
+  const { navigateWithTab } = useTabNavigation();
   const { purchaseId } = useParams();
 
   const {
@@ -36,12 +39,15 @@ const PurchaseDetailScreen = () => {
   }, [refetchPurchase]);
 
   const handleGoBack = useCallback(() => {
-    navigate('/dashboard/list-purchases');
-  }, [navigate]);
+    navigateWithTab('/dashboard/list-purchases');
+  }, [navigateWithTab]);
 
-  const handleEdit = useCallback(() => {
-    navigate(`/dashboard/purchases/${purchaseId}/editar`);
-  }, [navigate, purchaseId]);
+  const handleEdit = useCallback((purchase:any) => {
+    // console.log(alert(JSON.stringify(purchase)))
+    navigateWithTab(`/dashboard/purchases/${purchase.id}/editar`,{
+      displayCode: formatColumnNumber(purchase?.nro,'-')
+    });
+  }, [navigateWithTab, purchaseId]);
 
   // const handleDelete = useCallback(() => {
   //   initiateDeletion(Number(purchaseId));
@@ -50,9 +56,9 @@ const PurchaseDetailScreen = () => {
   const handleConfirmDelete = useCallback(async () => {
     const success = await confirmDeletion();
     if (success) {
-      navigate('/dashboard/list-purchases');
+      navigateWithTab('/dashboard/list-purchases');
     }
-  }, [confirmDeletion, navigate]);
+  }, [confirmDeletion, navigateWithTab]);
 
   // Shortcuts
   useHotkeys('escape', handleGoBack, {
@@ -69,7 +75,7 @@ const PurchaseDetailScreen = () => {
           showButtonIcon={false}
           buttonText="Ir a lista de compras"
           onRetry={() => {
-            navigate('/dashboard/list-purchases');
+            navigateWithTab('/dashboard/list-purchases');
           }}
         />
       </div>
@@ -122,7 +128,7 @@ const PurchaseDetailScreen = () => {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
                   <TooltipButton
-                    onClick={handleEdit}
+                    onClick={()=>handleEdit(purchase)}
                     tooltip="Editar compra"
                     buttonProps={{
                       variant: 'outline',

@@ -57,10 +57,11 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
     }, [termTypesData]);
 
     return (
-        <div ref={containerRef}>
-            <div className="flex flex-wrap items-end gap-2">
+        <div ref={containerRef} className="space-y-2">
+            {/* Primera fila: Filtros principales */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                 {/* Nro. Venta */}
-                <div className="space-y-0.5 w-[110px]" data-filter="nro_venta">
+                <div className="space-y-0.5" data-filter="nro_venta">
                     <Label className="text-xs">Nro. Venta</Label>
                     <div className="relative">
                         <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
@@ -138,19 +139,72 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                     />
                 </div>
 
+                {/* Estado de Pago */}
+                <div className="space-y-0.5" data-filter="estado_pago">
+                    <Label className="text-xs">Estado Pago</Label>
+                    <ComboboxSelect
+                        value={filters.estado_pago ?? ""}
+                        onChange={(value) => {
+                            updateFilter(
+                                "estado_pago",
+                                (!value || value === "") ? undefined : (value as typeof filters.estado_pago)
+                            );
+                        }}
+                        options={[
+                            { id: "DEUDA", label: "Con Deuda" },
+                            { id: "PAGADO", label: "Pagado" },
+                        ]}
+                        optionTag="label"
+                        enableAllOption={false}
+                        clearOnEmpty={true}
+                        placeholder="Sin filtro"
+                    />
+                </div>
+
+                {/* Fecha Inicio */}
+                <div className="space-y-0.5">
+                    <Label className="text-xs">Fecha Inicio</Label>
+                    <Input
+                        type="date"
+                        value={filters.fecha_inicio ?? ""}
+                        onChange={(e) =>
+                            updateFilter("fecha_inicio", e.target.value || undefined)
+                        }
+                        className="h-7 text-xs"
+                    />
+                </div>
+
+                {/* Fecha Fin */}
+                <div className="space-y-0.5">
+                    <Label className="text-xs">Fecha Fin</Label>
+                    <Input
+                        type="date"
+                        value={filters.fecha_fin ?? ""}
+                        onChange={(e) =>
+                            updateFilter("fecha_fin", e.target.value || undefined)
+                        }
+                        className="h-7 text-xs"
+                    />
+                </div>
+            </div>
+
+            {/* Segunda fila: Filtros condicionales y botón buscar */}
+            <div className="flex flex-wrap items-end gap-2">
                 {/* Tipo de Vencimiento */}
                 <div className="space-y-0.5" data-filter="tipo_vencimiento">
-                    <Switch
-                        id="condicion-vencimiento"
-                        checked={filters.condicion_vencimiento ?? false}
-                        onCheckedChange={(checked) => {
-                            updateFilter("condicion_vencimiento", checked);
-                        }}
+                    <div className="flex items-center gap-1">
+                        <Switch
+                            id="condicion-vencimiento"
+                            checked={filters.condicion_vencimiento ?? false}
+                            onCheckedChange={(checked) => {
+                                updateFilter("condicion_vencimiento", checked);
+                            }}
                             className="scale-[0.65]"
                         />
                         <Label htmlFor="condicion-vencimiento" className="text-[10px]">
                             Vencimiento
                         </Label>
+                    </div>
                     <ComboboxSelect
                         disabled={!filters.condicion_vencimiento}
                         value={filters.tipo_vencimiento ?? "all"}
@@ -169,6 +223,7 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
 
                 {/* Fecha Especifica */}
                 <div className="space-y-0.5" data-filter="fecha_especifica">
+                    <div className="flex items-center gap-1">
                         <Switch
                             id="condicion-fecha-especifica"
                             checked={filters.condicion_fecha_especifica ?? false}
@@ -180,8 +235,9 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                         <Label htmlFor="condicion-fecha-especifica" className="text-[10px]">
                             Fecha Esp.
                         </Label>
+                    </div>
                     <div className="flex gap-1">
-                        <div className="flex-shrink-0">
+                        <div className="w-32">
                             <ComboboxSelect
                                 disabled={!filters.condicion_fecha_especifica}
                                 value={filters.fecha_vencimiento_regla}
@@ -208,40 +264,14 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                             onChange={(e) =>
                                 updateFilter("fecha_vencimiento", e.target.value || undefined)
                             }
-                            className="h-7 text-xs flex-1 min-w-0"
+                            className="h-7 text-xs w-36"
                         />
                     </div>
                 </div>
 
-                {/* Fecha Inicio */}
-                <div className="space-y-0.5">
-                    <Label className="text-xs">Fecha Inicio</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_inicio ?? ""}
-                        onChange={(e) =>
-                            updateFilter("fecha_inicio", e.target.value || undefined)
-                        }
-                        className="h-7 text-xs"
-                    />
-                </div>
-
-                {/* Fecha Fin */}
-                <div className="space-y-0.5 ">
-                    <Label className="text-xs">Fecha Fin</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_fin ?? ""}
-                        onChange={(e) =>
-                            updateFilter("fecha_fin", e.target.value || undefined)
-                        }
-                        className="h-7 text-xs"
-                    />
-                </div>
-
                 {/* Botón Buscar (solo en modo manual) */}
                 {searchMode === "manual" && (
-                    <div className="flex items-end pb-0.5">
+                    <div className="flex items-end">
                         <Button onClick={handleManualSearch} className="h-7 text-xs px-3">
                             <Search className="size-3 mr-1" />
                             Buscar

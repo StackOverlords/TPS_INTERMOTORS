@@ -148,13 +148,13 @@ function SaleDetailsEditingTableInner({
         //         )
         //     },
         // },
-        {
-            accessorKey: 'id_producto',
-            id: "codigo_interno",
-            header: "Cód Int.",
-            size: 45,
-            minSize: 20,
-        },
+        // {
+        //     accessorKey: 'id_producto',
+        //     id: "codigo_interno",
+        //     header: "Cód Int.",
+        //     size: 45,
+        //     minSize: 20,
+        // },
         {
             accessorFn: row => row.producto.codigo_oem,
             id: "codigo_oem",

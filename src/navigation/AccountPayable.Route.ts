@@ -8,7 +8,7 @@ const accountsPayable: RouteType[] = [
     type: "protected",
     //element: Content,
     isAdmin: false,
-    role: ["Administrador","Vendedor"],
+    role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
     icon: FolderOpen,
 
     isHeader: true,
@@ -20,7 +20,7 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsPayableListScreen,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: TableCellsMerge,
 
         isHeader: false,

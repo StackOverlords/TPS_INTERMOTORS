@@ -2,12 +2,14 @@ import { useUpdateChecker } from '@/hooks/useUpdateChecker';
 import { getVersion } from '@tauri-apps/api/app';
 import { useEffect, useState } from 'react';
 import ReleaseNotes from './ReleaseNotes';
+import { environment } from '@/utils/environment';
 
 export default function UpdateSettings() {
   const {
     available,
     currentVersion,
     latestVersion,
+    variant,
     isChecking,
     isDownloading,
     isInstalling,
@@ -41,6 +43,7 @@ export default function UpdateSettings() {
         <ReleaseNotes
           currentVersion={displayCurrentVersion}
           latestVersion={latestVersion}
+          variant={environment.variant}
           releaseNotes={releaseNotes}
           releaseDate={releaseDate || undefined}
           hasUpdate={available}

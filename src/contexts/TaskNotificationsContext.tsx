@@ -1,5 +1,6 @@
 import TaskNotifications from '@/components/common/TaskNotifications';
 import { useTaskNotifications } from '@/hooks/useTaskNotifications';
+import authSDK from '@/services/sdk-simple-auth';
 import type { ReactNode } from 'react';
 import { createContext, useContext } from 'react';
 
@@ -47,7 +48,6 @@ export const TaskNotificationsProvider = ({ children }: TaskNotificationsProvide
     failTask,
     addAndStartTask,
   };
-
   return (
     <TaskNotificationsContext.Provider value={value}>
       {children}

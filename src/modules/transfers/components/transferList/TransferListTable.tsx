@@ -6,6 +6,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import ShortcutKey from "@/components/common/ShortcutKey";
+import TooltipButton from "@/components/common/TooltipButton";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
@@ -14,10 +15,11 @@ import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Check, Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Send, Settings, Trash2 } from "lucide-react";
+import { Check, Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Send, Settings, Trash2, X } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
+import { useBranchStore } from "@/states/branchStore";
 import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
 import type { TransferGetAll, TransfersGetAllResponse } from "../../types/transferGet.types";
 import TransferStatusBadge from "./TransferStatusBadge";
@@ -35,6 +37,7 @@ interface TransferListTableProps {
     handleDeleteTransfer: (id: number) => void
     handleSendTransfer: (id: number) => void
     handleAcceptTransfer: (id: number) => void
+    handleRefuseTransfer: (id: number) => void
 }
 
 const TransferListTable: React.FC<TransferListTableProps> = ({
@@ -49,10 +52,12 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
     isLoading,
     handleDeleteTransfer,
     handleSendTransfer,
-    handleAcceptTransfer
+    handleAcceptTransfer,
+    handleRefuseTransfer
 }) => {
     const navigate = useNavigate()
     const user = authSDK.getCurrentUser()
+    const { selectedBranchId } = useBranchStore()
     const tableRef = useRef<HTMLTableElement>(null)
     const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 
@@ -85,6 +90,12 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         // 2. "<= TRANSFERIDO" (sin RECEPCIONADO) - Formato alternativo
         return (normalizedEstado.includes('POR RECEPCIONAR') ||
                 (normalizedEstado.includes('<=') && normalizedEstado.includes('TRANSFERIDO') && !normalizedEstado.includes('RECEPCIONADO')));
+    }
+
+    // Función helper para determinar si se puede rechazar una transferencia
+    const canRefuseTransfer = (estado: string): boolean => {
+        // Se puede rechazar solo si se puede recibir (mismo estado)
+        return canReceiveTransfer(estado);
     }
 
     const columns = useMemo<ColumnDef<TransferGetAll>[]>(() => [
@@ -197,7 +208,9 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                 const dateString = getValue<string>();
 
                 try {
-                    const date = new Date(dateString);
+                    // Agregar T00:00:00 si la fecha viene solo como YYYY-MM-DD para evitar conversión UTC
+                    const dateToFormat = dateString.includes('T') ? dateString : `${dateString}T00:00:00`;
+                    const date = new Date(dateToFormat);
                     const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
                     return (
@@ -205,10 +218,10 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                             <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
                                 {format(date, "dd/MM/yyyy", { locale: es })}
                             </div>
-                            <div className="text-muted-foreground flex items-center justify-center gap-1">
+                            {/* <div className="text-muted-foreground flex items-center justify-center gap-1">
                                 <Clock className="size-3" />
                                 {format(date, "HH:mm", { locale: es })}
-                            </div>
+                            </div> */}
                         </div>
                     );
                 } catch {
@@ -268,44 +281,87 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
             enableHiding: false,
             cell: ({ row }) => {
                 const estado = row.original.estado;
-                const canSend = canSendTransfer(estado);
-                const canReceive = canReceiveTransfer(estado);
+                const transfer = row.original;
+
+                // Verificar si el usuario está en la sucursal origen o destino
+                const isOriginBranch = transfer.origen.id === Number(selectedBranchId);
+                const isDestinationBranch = transfer.destino.id === Number(selectedBranchId);
+
+                // Solo mostrar botón ENVIAR si estoy en la sucursal ORIGEN
+                const canSend = isOriginBranch && canSendTransfer(estado);
+
+                // Solo mostrar botones RECIBIR/RECHAZAR si estoy en la sucursal DESTINO
+                const canReceive = isDestinationBranch && canReceiveTransfer(estado);
+                const canRefuse = isDestinationBranch && canRefuseTransfer(estado);
 
                 // Si no hay acciones disponibles, no mostrar nada
-                if (!canSend && !canReceive) {
+                if (!canSend && !canReceive && !canRefuse) {
                     return null;
                 }
 
                 return (
-                    <div className="flex items-center gap-2 justify-center">
+                    <div className="flex items-center gap-1 justify-center">
                         {canSend && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSendTransfer(row.original.id);
+                            <TooltipButton
+                                buttonProps={{
+                                    variant: "outline",
+                                    size: "sm",
+                                    className: "h-7 w-7 p-0",
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        handleSendTransfer(row.original.id);
+                                    }
                                 }}
-                                title="Enviar transferencia"
+                                tooltipContentProps={{
+                                    side: "bottom",
+                                    sideOffset: 5,
+                                }}
+                                tooltip="Enviar transferencia"
                             >
-                                <Send className="size-3 mr-1" />
-                                Enviar
-                            </Button>
+                                <Send className="size-3" />
+                            </TooltipButton>
                         )}
                         {canReceive && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAcceptTransfer(row.original.id);
+                            <TooltipButton
+                                buttonProps={{
+                                    variant: "outline",
+                                    size: "sm",
+                                    className: "h-7 w-7 p-0",
+                                    // title: "Recibir transferencia",
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        handleAcceptTransfer(row.original.id);
+                                    }
                                 }}
-                                className="h-7 px-2"
-                                title="Recibir transferencia"
+                                tooltipContentProps={{
+                                    side: "bottom",
+                                    sideOffset: 5,
+                                }}
+                                tooltip="Recibir transferencia"
                             >
-                                <Check className="size-3 mr-1" />
-                                Recibir
-                            </Button>
+                                <Check className="size-3" />
+                            </TooltipButton>
+                        )}
+                        {canRefuse && (
+                            <TooltipButton
+                                buttonProps={{
+                                    variant: "outline",
+                                    size: "sm",
+                                    className: "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
+                                    // title: "Rechazar transferencia",
+                                    onClick: (e) => {
+                                        e.stopPropagation();
+                                        handleRefuseTransfer(row.original.id);
+                                    }
+                                }}
+                                tooltipContentProps={{
+                                    side: "bottom",
+                                    sideOffset: 5,
+                                }}
+                                tooltip="Rechazar transferencia"
+                            >
+                                <X className="size-3" />
+                            </TooltipButton>
                         )}
                     </div>
                 );
@@ -350,7 +406,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                 );
             },
         },
-    ], [handleSeeDetails, handleUpdateTransfer, handleDeleteTransfer, handleSendTransfer, handleAcceptTransfer]);
+    ], [handleSeeDetails, handleUpdateTransfer, handleDeleteTransfer, handleSendTransfer, handleAcceptTransfer, handleRefuseTransfer, selectedBranchId]);
 
     const {
         table,

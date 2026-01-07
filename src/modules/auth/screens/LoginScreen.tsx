@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/atoms/button";
 import { Label } from "@/components/atoms/label";
 import { Input } from "@/components/atoms/input";
-import { AlertCircle, Eye, EyeOff, GalleryVerticalEnd, Loader2, Lock, User } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/atoms/alert";
 import { useLogin } from "../hooks/useLogin";
@@ -19,6 +19,7 @@ import { LoginSchema } from "../schemas/login.schema";
 import type { Login } from "../types/login.types";
 import { useForm } from "react-hook-form";
 import { useBranchStore } from "@/states/branchStore";
+import logoImage from "@/assets/images/logo_light.webp";
 
 const LoginScreen = ({
   className,
@@ -70,11 +71,12 @@ const LoginScreen = ({
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-3 md:p-10 w-full">
       <div className="flex w-full max-w-md flex-col gap-6">
-        <header className="flex items-center gap-2 self-center font-medium">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GalleryVerticalEnd className="size-4" />
-          </div>
-          <h1 className="font-bold">INTERMOTORS</h1>
+        <header className="flex items-center justify-center self-center">
+          <img
+            src={logoImage}
+            alt="Intermotors Logo"
+            className="h-16 w-auto object-contain"
+          />
         </header>
 
         <div className={cn("flex flex-col", className)} {...props}>

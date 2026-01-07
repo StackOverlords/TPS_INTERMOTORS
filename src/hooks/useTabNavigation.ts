@@ -42,9 +42,9 @@ export const useTabNavigation = () => {
 
   // Función para encontrar el nombre e icono de una ruta
   // Soporta rutas dinámicas y extrae parámetros para mostrar en el título
-  const findRouteInfo = useCallback((path: string): { name: string; icon?: any } => {
-    // Verificar cache primero
-    if (routeInfoCache.current.has(path)) {
+  const findRouteInfo = useCallback((path: string, displayCode?: string): { name: string; icon?: any } => {
+    // Verificar cache primero (solo si no hay displayCode custom)
+    if (!displayCode && routeInfoCache.current.has(path)) {
       return routeInfoCache.current.get(path)!;
     }
 
@@ -53,7 +53,7 @@ export const useTabNavigation = () => {
       // Intentar match exacto
       if (route.path === path) {
         const info = { name: route.name, icon: route.icon };
-        routeInfoCache.current.set(path, info);
+        if (!displayCode) routeInfoCache.current.set(path, info);
         return info;
       }
 
@@ -65,38 +65,56 @@ export const useTabNavigation = () => {
           const params = match.params;
           const paramValues = Object.values(params).filter(Boolean);
 
+          // Usar displayCode si existe, sino usar parámetro extraído
+          const displayValue = displayCode || paramValues[0];
+
           // Crear un nombre descriptivo con el parámetro
-          const displayName = paramValues.length > 0
-            ? `${route.name}: ${paramValues[0]}`
+          const displayName = displayValue
+            ? `${route.name}: ${displayValue}`
             : route.name;
 
           const info = { name: displayName, icon: route.icon };
-          routeInfoCache.current.set(path, info);
+          if (!displayCode) routeInfoCache.current.set(path, info);
           return info;
         }
       }
     }
 
     const fallback = { name: 'Sin título', icon: undefined };
-    routeInfoCache.current.set(path, fallback);
+    if (!displayCode) routeInfoCache.current.set(path, fallback);
     return fallback;
   }, [flatRoutes]);
 
 
   //Navegar a una ruta y crear/activar un tab
 
-  const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean; instanceId?: string }) => {
-    const routeInfo = findRouteInfo(path);
+  const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean; instanceId?: string; displayCode?: string }) => {
     const state = useTabStore.getState();
     const instanceId = options?.instanceId;
     const existingTab = state.findTabByPath(path, instanceId);
 
+    // Preparar metadata con displayCode si se provee
+    const metadata = options?.displayCode
+      ? { displayCode: options.displayCode }
+      : undefined;
+
     if (options?.newTab || !existingTab) {
-      // Crear nuevo tab con instanceId opcional
-      const tabId = state.addTab(path, routeInfo.name, routeInfo.icon, instanceId);
+      // Generar título usando displayCode si está disponible
+      const routeInfo = findRouteInfo(path);
+      const title = options?.displayCode
+        ? routeInfo.name.replace(/: .+$/, `: ${options.displayCode}`)
+        : routeInfo.name;
+
+      const tabId = state.addTab(path, title, routeInfo.icon, instanceId, metadata);
       state.setActiveTab(tabId);
     } else {
-      // Activar tab existente
+      // Tab existe - actualizar metadata si se provee displayCode
+      if (metadata) {
+        state.updateTab(existingTab.id, {
+          metadata: { ...existingTab.metadata, ...metadata },
+          title: existingTab.title.replace(/: .+$/, `: ${options.displayCode}`)
+        });
+      }
       state.setActiveTab(existingTab.id);
     }
 
@@ -234,8 +252,10 @@ export const useTabNavigation = () => {
       const tabId = state.addTab(currentPath, routeInfo.name, routeInfo.icon, undefined);
       state.setActiveTab(tabId);
     } else {
-      // Verificar si el tab necesita actualización de título
-      const routeInfo = findRouteInfo(currentPath);
+      // Respetar displayCode existente en metadata
+      const displayCode = existingTab.metadata?.displayCode;
+      const routeInfo = findRouteInfo(currentPath, displayCode);
+
       const needsUpdate =
         existingTab.title !== routeInfo.name ||
         existingTab.icon !== routeInfo.icon ||

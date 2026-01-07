@@ -54,6 +54,7 @@ import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tab
 import { useUpdateProductImage } from "../hooks/mutations/useUpdateProductImage"
 import { base64ToFile } from "@/utils/base64Utils"
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys"
+import { useTabNavigation } from "@/hooks/useTabNavigation"
 
 const SCREEN_PATH = "/dashboard/productos"
 
@@ -61,7 +62,8 @@ const ProductListScreen = () => {
     const tableRef = useRef<HTMLTableElement>(null)
     const tableShoppingCartRef = useRef<TableShoppingCartRef>(null);
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
+    const { navigateWithTab } = useTabNavigation()
     const user = authSDK.getCurrentUser()
 
     const {
@@ -239,24 +241,28 @@ const ProductListScreen = () => {
     }
 
     const handleProductDetail = useCallback(
-        (productId: number) => {
+        (product: ProductGet) => {
             const openIn = getBehaviorValue<string>('openDetailsIn') ?? 'same-page';
 
             if (openIn === 'new-tab') {
-                window.open(`/dashboard/productos/${productId}`, '_blank');
+                window.open(`/dashboard/productos/${product.id}`, '_blank');
             } else if (openIn === 'modal') {
-                setSelectedProductId(productId);
+                setSelectedProductId(product.id);
                 setModalOpen(true);
             } else {
-                navigate(`/dashboard/productos/${productId}`);
+                navigateWithTab(`/dashboard/productos/${product.id}`, {
+                    displayCode: String(product.codigo_interno)
+                });
             }
         },
-        [navigate, getBehaviorValue]
+        [navigateWithTab, getBehaviorValue]
     );
 
-    const handleUpdateProduct = useCallback((productId: number) => {
-        navigate(`/dashboard/productos/${productId}/update`)
-    }, [navigate])
+    const handleUpdateProduct = useCallback((product: ProductGet) => {
+        navigateWithTab(`/dashboard/productos/${product.id}/update`, {
+            displayCode: String(product.codigo_interno)
+        });
+    }, [navigateWithTab])
 
     const handleAddItemCart = useCallback(
         (product: ProductGet) => {
@@ -384,7 +390,7 @@ const ProductListScreen = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-48">
                                 {isFeatureEnabled('viewDetails') && (
-                                    <DropdownMenuItem onClick={() => handleProductDetail(row.original.id)}>
+                                    <DropdownMenuItem onClick={() => handleProductDetail(row.original)}>
                                         <Eye className="mr-2 h-4 w-4" />
                                         Ver detalles
                                     </DropdownMenuItem>
@@ -396,7 +402,7 @@ const ProductListScreen = () => {
                                     </DropdownMenuItem>
                                 )}
                                 {isFeatureEnabled('editButton') && (
-                                    <DropdownMenuItem onClick={() => handleUpdateProduct(row.original.id)}>
+                                    <DropdownMenuItem onClick={() => handleUpdateProduct(row.original)}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         Editar producto
                                     </DropdownMenuItem>
@@ -700,7 +706,7 @@ const ProductListScreen = () => {
         },
         onSecondaryAction: (product) => {
             if (isFeatureEnabled('addToCart')) {
-                handleProductDetail(product.id);
+                handleProductDetail(product);
             }
         },
         onDeleteAction: (product) => {

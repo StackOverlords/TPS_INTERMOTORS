@@ -16,6 +16,7 @@ interface ReleaseNotesProps {
   // Información de versión
   currentVersion: string;
   latestVersion?: string;
+  variant?: string | null;
 
   // Release notes
   releaseNotes: string | null;
@@ -38,6 +39,7 @@ interface ReleaseNotesProps {
 export default function ReleaseNotes({
   currentVersion,
   latestVersion,
+  variant,
   releaseNotes,
   releaseDate,
   hasUpdate,
@@ -51,7 +53,7 @@ export default function ReleaseNotes({
   // onDismiss,
 }: ReleaseNotesProps) {
   const [showDetails, setShowDetails] = React.useState(true);
-
+  // alert(JSON.stringify(variant));
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -138,7 +140,14 @@ export default function ReleaseNotes({
                 <Package className="h-3.5 w-3.5" />
                 <span>Versión actual</span>
               </div>
-              <p className="text-2xl font-semibold text-gray-800">{currentVersion}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-semibold text-gray-800">{currentVersion}</p>
+                {variant && (
+                  <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md uppercase">
+                    {variant}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Nueva versión disponible */}
@@ -173,7 +182,7 @@ export default function ReleaseNotes({
             {releaseNotes && (
               <div className="pt-3 border-t border-gray-200">
                 <a
-                  href={`https://github.com/StackOverlords/TPS_INTERMOTORS/releases/tag/v${currentVersion}`}
+                  href={`https://github.com/StackOverlords/TPS_INTERMOTORS/releases/tag/v${currentVersion}${variant ? `-${variant}` : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"

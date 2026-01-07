@@ -1,7 +1,7 @@
 import authSDK from '@/services/sdk-simple-auth';
 import { useEffect, useState } from 'react';
 
-export type UserRole = 'Administrador' | 'Vendedor' | 'guest';
+export type UserRole = 'Super Admin' | 'Administrador' | 'Vendedor' | 'guest' | 'Invitado';
 
 interface UserRoleData {
   rol: UserRole;

@@ -8,7 +8,7 @@ const categoryProtectedRoutes: RouteType[] = [
     type: "protected",
     //element: Content,
     isAdmin: false,
-    role: ["Administrador","Vendedor"],
+    role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
     icon: FolderOpen,
 
     isHeader: true,
@@ -20,7 +20,7 @@ const categoryProtectedRoutes: RouteType[] = [
         type: "protected",
         element: TableCreateCategory,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: TableCellsMerge,
 
         isHeader: false,

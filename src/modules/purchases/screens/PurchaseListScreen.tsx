@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { useNavigate } from 'react-router';
+// import { useNavigate } from 'react-router';
 import DeletePurchaseDialog from '../components/DeletePurchaseDialog';
 import PurchaseFilters from '../components/purchaseList/PurchaseFilters';
 import { usePurchaseDelete } from '../hooks/usePurchaseDelete';
@@ -45,17 +45,19 @@ import { usePurchasesPaginated } from '../hooks/usePurchasesPaginated';
 import type { PurchaseGet } from '../types/PurchaseGet';
 import { useKeyboardNavigation } from '@/hooks/keyBindings/useKeyboardNavigation';
 import { useCommands } from '@/keybindings';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
+import { formatColumnNumber } from '@/utils/formaters';
 
 const PurchaseListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null)
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>('manual');
-
+  const { navigateWithTab } = useTabNavigation();
   const {
     filters,
     debouncedFilters,
@@ -110,9 +112,11 @@ const PurchaseListScreen = () => {
     setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
   };
 
-  const handlePurchaseDetail = (purchaseId: number) => {
-    navigate(`/dashboard/purchases/${purchaseId}`);
-  };
+  const handlePurchaseDetail = useCallback((purchase:any)=>{
+    navigateWithTab(`/dashboard/purchases/${purchase?.id}`,{
+      displayCode: formatColumnNumber(purchase?.nro_compra,'-')
+    })
+  },[navigateWithTab])
 
   const {
     showDeleteDialog,
@@ -133,9 +137,11 @@ const PurchaseListScreen = () => {
     }
   };
 
-  const handleEditPurchase = (purchaseId: number) => {
-    navigate(`/dashboard/purchases/${purchaseId}/editar`);
-  };
+  const handleEditPurchase = useCallback((purchase:any)=>{
+    navigateWithTab(`/dashboard/purchases/${purchase.id}/editar`, {
+      displayCode: formatColumnNumber(purchase?.nro_compra,'-')
+    })
+  },[navigateWithTab])
 
   const formatDate = (dateString: string) => {
     try {
@@ -228,7 +234,7 @@ const PurchaseListScreen = () => {
                 >
                   <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
-                    onClick={() => handlePurchaseDetail(row.original.id)}
+                    onClick={() => handlePurchaseDetail(row.original)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
                     Ver detalles
@@ -242,7 +248,7 @@ const PurchaseListScreen = () => {
                   </DropdownMenuItem> */}
                   <DropdownMenuItem
                     onKeyDown={e => e.stopPropagation()}
-                    onClick={() => handleEditPurchase(row.original.id)}
+                    onClick={() => handleEditPurchase(row.original)}
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     Editar compra
@@ -473,7 +479,7 @@ const PurchaseListScreen = () => {
   };
 
   const handleRowDoubleClick = (purchase: PurchaseGet) => {
-    handlePurchaseDetail(purchase.id);
+    handlePurchaseDetail(purchase);
   };
 
   const hasSelectedPurchases = Object.keys(rowSelection).length;

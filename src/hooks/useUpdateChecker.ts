@@ -1,3 +1,4 @@
+import { environment } from '@/utils/environment';
 import { getVersion } from '@tauri-apps/api/app';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { check, Update } from '@tauri-apps/plugin-updater';
@@ -9,6 +10,7 @@ export interface UpdateState {
   available: boolean;
   currentVersion: string;
   latestVersion: string;
+  variant: string | null;
   isChecking: boolean;
   isDownloading: boolean;
   isInstalling: boolean;
@@ -24,6 +26,7 @@ export const useUpdateChecker = () => {
     available: false,
     currentVersion: '',
     latestVersion: '',
+    variant: null,
     isChecking: false,
     isDownloading: false,
     isInstalling: false,
@@ -34,11 +37,13 @@ export const useUpdateChecker = () => {
     releaseDate: null,
   });
 
+  // Get variant from environment variable
+  // const appVariant = import.meta.env.VITE_APP_VARIANT || null;
   // Check on mount
   useEffect(() => {
     checkForUpdates();
   }, []);
-
+  
   const checkForUpdates = async (silent = true) => {
     if (updateState.isChecking) return;
 
@@ -51,7 +56,7 @@ export const useUpdateChecker = () => {
     try {
       const update = await check();
       const currentVersion = update?.currentVersion || await getVersion();
-
+      // alert(JSON.stringify({update, currentVersion, appVariant}));
       if (update && 'available' in update && update.available) {
         // Hay actualización disponible
         setUpdateState(prev => ({
@@ -59,6 +64,7 @@ export const useUpdateChecker = () => {
           available: true,
           currentVersion: update.currentVersion,
           latestVersion: update.version,
+          variant: environment.variant,
           update,
           releaseNotes: update.body || null,
           releaseDate: update.date || null,
@@ -70,8 +76,11 @@ export const useUpdateChecker = () => {
         let currentVersionDate = null;
 
         try {
+          // Build the correct tag with variant (e.g., v1.1.29-t1)
+          const tagWithVariant = environment.variant ? `v${currentVersion}-${environment.variant}` : `v${currentVersion}`;
+          // console.log(`https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`)
           const response = await axios.get(
-            `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/v${currentVersion}`
+            `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`
           );
           if (response.status === 200) {
             const releaseData = response.data;
@@ -87,6 +96,7 @@ export const useUpdateChecker = () => {
           available: false,
           currentVersion: currentVersion,
           latestVersion: currentVersion,
+          variant: environment.variant,
           releaseNotes: currentVersionNotes,
           releaseDate: currentVersionDate,
           isChecking: false,

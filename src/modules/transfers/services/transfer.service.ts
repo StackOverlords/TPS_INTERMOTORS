@@ -110,6 +110,21 @@ export const transferService = {
     },
 
     /**
+     * Rechazar una transferencia
+     * @param id - ID de la transferencia
+     */
+    async refuse(id: number): Promise<unknown> {
+        Logger.info('Refusing Transfer', { id }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            TRANSFER_ENDPOINTS.refuse(id)
+        );
+
+        Logger.info('Transfer refused successfully', { id }, MODULE_NAME);
+        return response;
+    },
+
+    /**
      * Actualizar una transferencia por ID
      * @param id - ID de la transferencia
      * @param data - Datos para actualizar la transferencia

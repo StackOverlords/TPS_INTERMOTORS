@@ -11,7 +11,7 @@ const purchasesProtectedRoutes: RouteType[] = [
     name: "Compras",
     type: "protected",
     isAdmin: false,
-    role: ["Administrador","Vendedor"],
+    role: ["Administrador","Vendedor","Super Admin","Invitado"],
     icon: ShoppingCart,
     isHeader: true,
     showSidebar: true,
@@ -22,7 +22,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         type: "protected",
         element: CreatePurchase,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: ShoppingBag,
 
         isHeader: false,
@@ -34,7 +34,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         type: "protected",
         element: PurchaseListScreen,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: Package,
 
         isHeader: false,
@@ -46,7 +46,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         type: "protected",
         element: PurchaseDetailScreen,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: Package,
 
         showInCommandPalette: false,
@@ -59,7 +59,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         type: "protected",
         element: EditPurchase,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: Package,
 
         isHeader: false,
@@ -71,7 +71,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UpdatePrices,
         isAdmin: true,
-        role: ["Administrador","Vendedor"],
+        role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: PencilLine,
 
         isHeader: false,

@@ -12,11 +12,13 @@ import ProductSearchPanel from '../components/ProductSearchPanel';
 import PurchaseDetailsTable from '../components/PurchaseDetailsTable';
 import { usePurchaseForm } from '../hooks/usePurchaseForm';
 import { showSuccessToast } from '@/hooks/use-toast-enhanced';
+import { useTabNavigation } from '@/hooks/useTabNavigation';
 
 type CreationMode = 'manual' | 'order-import';
 
 const CreatePurchase: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
+  const { navigateWithTab } = useTabNavigation();
   const branchId = useBranchStore(state => state.selectedBranchId);
   const {
     formData,
@@ -34,9 +36,11 @@ const CreatePurchase: React.FC = () => {
       description: `Compra creada exitosamente`,
       duration: 2000
     });
-
+    // alert(JSON.stringify(createdPurchase))
     // Navigate to edit route - los datos se cargarán del servidor
-    navigate(`/dashboard/purchases/${createdPurchase.id}/editar`);
+    navigateWithTab(`/dashboard/purchases/${createdPurchase.id}/editar`,{
+      displayCode: createdPurchase?.nro
+    });
 
     // Clear local state after navigation
     setTimeout(() => {

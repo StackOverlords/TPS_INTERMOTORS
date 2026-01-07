@@ -4,6 +4,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
+import { useTabStore } from "@/states/tabStore";
 import { filterRoutesByRole } from "@/utils/permissions";
 import { HelpCircle, LogOut, Package, Settings } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -16,6 +17,7 @@ const AppSidebar = () => {
   const { setOpenMobile, isMobile } = useSidebar();
   const { available } = useUpdateChecker();
   const { rol: userRole } = useUserRole();
+  const closeAllTabs = useTabStore(state => state.closeAllTabs);
 
   // Filtrar rutas basándose en el rol del usuario
   const filteredRoutes = useMemo(() => {
@@ -30,6 +32,8 @@ const AppSidebar = () => {
 
   const handleLogout = async () => {
     try {
+      // Limpiar todas las tabs antes del logout
+      closeAllTabs();
       // localStorage.removeItem("lastPath"); ///POR SI QUEREMOS BORRAR HISTORIAL DE ULTIMA RUTA
       await authSDK.logout();
     } catch (error) {

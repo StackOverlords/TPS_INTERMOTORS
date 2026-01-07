@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 import type { TransfersFilters } from "../types/transferFilters.types";
 
-// Helper para limpiar filtros opcionales
+// Helper para limpiar filtros opcionales y agregar horas a las fechas
 const cleanFilters = (filters: TransfersFilters): TransfersFilters => ({
     ...filters,
     codigo_interno: filters.codigo_interno || undefined,
@@ -10,6 +10,10 @@ const cleanFilters = (filters: TransfersFilters): TransfersFilters => ({
     keywords: filters.keywords || undefined,
     sucursal_origen: filters.sucursal_origen || undefined,
     sucursal_destino: filters.sucursal_destino || undefined,
+    // Agregar hora al inicio del día para fecha_inicio
+    fecha_inicio: filters.fecha_inicio ? `${filters.fecha_inicio}T00:00:00` : undefined,
+    // Agregar hora al final del día para fecha_fin
+    fecha_fin: filters.fecha_fin ? `${filters.fecha_fin}T23:59:59` : undefined,
 });
 
 export const useTransfersFilters = (defaultSucursal: number) => {
@@ -59,11 +63,19 @@ export const useTransfersFilters = (defaultSucursal: number) => {
             ...prev,
             sucursal: defaultSucursal,
             pagina: 1,
+            // Resetear dirección a entrantes cuando cambia la sucursal
+            direccion: 'entrantes',
+            sucursal_destino: defaultSucursal, // Nosotros somos el destino
+            sucursal_origen: undefined,
         }));
         setAppliedFilters((prev) => ({
             ...prev,
             sucursal: defaultSucursal,
             pagina: 1,
+            // Resetear dirección a entrantes cuando cambia la sucursal
+            direccion: 'entrantes',
+            sucursal_destino: defaultSucursal, // Nosotros somos el destino
+            sucursal_origen: undefined,
         }));
     }, [defaultSucursal]);
 
@@ -91,6 +103,9 @@ export const useTransfersFilters = (defaultSucursal: number) => {
                         newFilters.sucursal_origen = undefined;
                         newFilters.sucursal_destino = undefined;
                     }
+
+                    // Auto-aplicar inmediatamente el cambio de dirección
+                    setAppliedFilters(newFilters);
                 }
 
                 return newFilters;
