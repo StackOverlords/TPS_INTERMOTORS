@@ -3,6 +3,7 @@ import { useCloseSecondaryWindowsOnExit } from "@/hooks/useCloseSecondaryWindows
 import BranchSelection from "@/modules/auth/screens/BranchScreen";
 import NotFound from "@/modules/shared/screens/NotFound";
 import authSDK from "@/services/sdk-simple-auth";
+import { useTabStore } from "@/states/tabStore";
 import { environment } from "@/utils/environment";
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
@@ -16,6 +17,8 @@ const Navigation = () => {
   // Auto-cerrar ventanas secundarias cuando se cierra la app
   useCloseSecondaryWindowsOnExit();
   // console.log(authSDK.getState().user?.sucursales)
+  const closeAllTabs = useTabStore(state => state.closeAllTabs);
+
   // Estado de autenticación
   const [authState, setAuthState] = useState<{
     user: AuthUser | null;
@@ -33,6 +36,8 @@ const Navigation = () => {
     const unsubscribe = authSDK.onAuthStateChanged((possible: AuthState) => {
       setIsLoading(true);
       if (!possible.user) {
+        // Limpiar todas las tabs cuando el usuario cierra sesión o la sesión expira
+        closeAllTabs();
         setAuthState({ user: null, selectedBranch: null });
       } else {
         setAuthState(() => ({
@@ -44,7 +49,7 @@ const Navigation = () => {
       setIsInitialized(true);
     });
     return () => unsubscribe();
-  }, []);
+  }, [closeAllTabs]);
 
   const handleBranchSelect = (branchId: string) => {
     localStorage.setItem(environment.branch_selected_key, branchId);

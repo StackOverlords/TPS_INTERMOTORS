@@ -28,14 +28,23 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
     }, [products]);
 
     const columns = useMemo<ColumnDef<TransferDetailGetById>[]>(() => [
+        // {
+        //     accessorKey: "id",
+        //     header: "#ID",
+        //     size: 50,
+        //     minSize: 30,
+        //     enableHiding: false,
+        //     cell: ({ getValue }) => (
+        //         <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+        //     ),
+        // },
         {
-            accessorKey: "id",
-            header: "#ID",
+            header: "Nro.",
             size: 50,
             minSize: 30,
             enableHiding: false,
-            cell: ({ getValue }) => (
-                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+            cell: ({ row }) => (
+                <span className="text-center text-xs text-gray-600">{row.index + 1}</span>
             ),
         },
         {
@@ -48,13 +57,31 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
                 return (
                     <div className="space-y-1">
                         <p className="font-medium text-sm">{producto.descripcion}</p>
-                        <div className="flex gap-2 text-xs text-muted-foreground">
+                        {/* <div className="flex gap-2 text-xs text-muted-foreground">
                             {producto.codigo_oem && <span>OEM: {producto.codigo_oem}</span>}
                             {producto.codigo_upc && <span>UPC: {producto.codigo_upc}</span>}
-                        </div>
+                        </div> */}
                     </div>
                 );
             },
+        },
+        {
+            header: "Cod. OEM",
+            accessorKey: "producto.codigo_oem",
+            size: 120,
+            minSize: 100,
+            cell: ({ getValue }) => {
+                const codigoOem = getValue<string | null>();
+                return (
+                    <span className={cn(
+                        "text-xs",
+                        !codigoOem && "text-muted-foreground italic"
+                    )}>
+                        {formatCell(codigoOem)}
+                    </span>
+                )
+            },
+            sortingFn: "alphanumeric",
         },
         {
             accessorKey: "cantidad",

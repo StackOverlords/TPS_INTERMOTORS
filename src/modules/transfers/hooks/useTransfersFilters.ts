@@ -63,11 +63,19 @@ export const useTransfersFilters = (defaultSucursal: number) => {
             ...prev,
             sucursal: defaultSucursal,
             pagina: 1,
+            // Resetear dirección a entrantes cuando cambia la sucursal
+            direccion: 'entrantes',
+            sucursal_destino: defaultSucursal, // Nosotros somos el destino
+            sucursal_origen: undefined,
         }));
         setAppliedFilters((prev) => ({
             ...prev,
             sucursal: defaultSucursal,
             pagina: 1,
+            // Resetear dirección a entrantes cuando cambia la sucursal
+            direccion: 'entrantes',
+            sucursal_destino: defaultSucursal, // Nosotros somos el destino
+            sucursal_origen: undefined,
         }));
     }, [defaultSucursal]);
 

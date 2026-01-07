@@ -8,7 +8,27 @@ const ResponsableSchema = z.object({
     apellido_paterno: z.string().nullable(),
     apellido_materno: z.string().nullable(),
     dni: z.number().nullable(),
+    dni_comp: z.string().nullable().optional(),
+    dni_tipo: z.string().nullable().optional(),
     celular: z.string().nullable(),
+    telefono: z.string().nullable().optional(),
+    direccion: z.string().nullable().optional(),
+    sexo: z.string().nullable().optional(),
+});
+
+// Schema para sucursal (origen/destino)
+const SucursalSchema = z.object({
+    id: z.number(),
+    nombre: z.string(),
+    sigla: z.string(),
+    nombre_comercial: z.string(),
+    activo: z.string(),
+    informacion_contacto: z.object({
+        direccion: z.string().nullable(),
+        telefono: z.string().nullable(),
+        celular: z.string().nullable(),
+        fax: z.string().nullable(),
+    }).nullable().optional(),
 });
 
 // Schema para transferencia en lista
@@ -22,6 +42,8 @@ export const TransferGetAllSchema = z.object({
     comentarios: z.string().nullable(),
     estado: z.string(),
     fecha_recepcion: z.string().nullable(),
+    origen: SucursalSchema,
+    destino: SucursalSchema,
 });
 
 // Schema para respuesta paginada

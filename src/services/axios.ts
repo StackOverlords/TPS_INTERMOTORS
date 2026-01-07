@@ -1,4 +1,5 @@
 import authSDK from "@/services/sdk-simple-auth";
+import { useTabStore } from "@/states/tabStore";
 import { cleanFilters } from "@/utils/cleanFilters";
 import { environment } from "@/utils/environment";
 import {
@@ -139,6 +140,8 @@ apiClient.interceptors.response.use(
           url: formattedError.fullUrl,
         }));
 
+        // Limpiar todas las tabs
+        useTabStore.getState().closeAllTabs();
         await authSDK.clearLocalSession();
       }
     }

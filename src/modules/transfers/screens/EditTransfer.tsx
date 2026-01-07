@@ -29,6 +29,7 @@ import TransferDetailTable from "../components/TransferDetailTable";
 import TransferDetailSkeleton from "../components/transferDetail/TransferDetailSkeleton";
 import { useTransferBranches } from "../hooks/commons/useTransferBranches";
 import { useTransferResponsibles } from "../hooks/commons/useTransferResponsibles";
+import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchById";
 import { useTransferById } from "../hooks/useTransferById";
 import { useTransferDetails } from "../hooks/useTransferDetails";
 import { useTransferUpdate } from "../hooks/useTransferUpdate";
@@ -59,7 +60,11 @@ const EditTransfer = () => {
 
     const {
         data: transferBranchesData,
-    } = useTransferBranches(Number(selectedBranchId) || 1);
+    } = useTransferBranches(transferData?.sucursal_origen_id || Number(selectedBranchId) || 1);
+
+    const {
+        data: originBranchData,
+    } = useGetBranchById(transferData?.sucursal_origen_id || Number(selectedBranchId) || 1);
 
     const {
         mutateAsync: updateTransfer,
@@ -95,10 +100,14 @@ const EditTransfer = () => {
 
     // Watch sucursal_origen para actualizar las sucursales destino disponibles
     const sucursalOrigen = watch("sucursal_origen");
+    const sucursalDestino = watch("sucursal_destino");
+
+    // Obtener el nombre de la sucursal origen para mostrarlo visualmente
+    const sucursalOrigenNombre = originBranchData?.nombre;
 
     // Cargar datos de la transferencia en el formulario
     useEffect(() => {
-        if (transferData && transferData.detalles) {
+        if (transferData && transferData.detalles && transferDetailsHook.details.length === 0) {
             // Cargar campos del formulario
             setValue("fecha", transferData.fecha?.split('T')[0] || format(new Date(), "yyyy-MM-dd"));
             setValue("nro_comprobante", transferData.nro_comprobante || "");
@@ -107,42 +116,35 @@ const EditTransfer = () => {
             setValue("sucursal_destino", transferData.sucursal_destino_id);
             setValue("responsable", transferData.responsable?.id || Number(user?._id));
 
-            // Cargar detalles existentes
-            transferDetailsHook.clearDetails();
-
             // Transformar detalles del API al formato del hook
-            transferData.detalles.forEach((detalle) => {
-                if (detalle.producto) {
-                    // Crear el objeto product compatible con ProductGet
-                    const productData: any = {
+            const transformedDetails = transferData.detalles
+                .filter(detalle => detalle.producto)
+                .map((detalle) => ({
+                    producto_id: detalle.producto.id,
+                    cantidad_entrada_salida: Number(detalle.cantidad),
+                    costo_entrada: parseFloat(detalle.costo_entrada),
+                    precio_salida: parseFloat(detalle.precio_salida),
+                    precio_entrada_venta: parseFloat(detalle.precio_entrada_venta),
+                    precio_entrada_venta_alt: parseFloat(detalle.precio_entrada_venta_alt),
+                    incremento_p_entrada_venta: 0,
+                    incremento_p_entrada_venta_alt: 0,
+                    product: {
                         id: detalle.producto.id,
                         descripcion: detalle.producto.descripcion,
                         codigo_oem: detalle.producto.codigo_oem,
                         codigo_upc: detalle.producto.codigo_upc,
+                        costo: parseFloat(detalle.costo_entrada),
                         precio_venta: parseFloat(detalle.precio_entrada_venta),
                         precio_venta_alt: parseFloat(detalle.precio_entrada_venta_alt),
-                    };
+                    },
+                    purchase_id: 0,
+                    id_detalle_transferencia: detalle.id, // Guardar el id del detalle para el update
+                }));
 
-                    // Agregar el producto al hook
-                    transferDetailsHook.addProduct(productData);
-
-                    // Actualizar los valores específicos de este detalle
-                    transferDetailsHook.updateCantidad(detalle.producto.id, undefined, Number(detalle.cantidad));
-                    transferDetailsHook.updateCostoEntrada(detalle.producto.id, undefined, parseFloat(detalle.costo_entrada));
-                    transferDetailsHook.updatePrecioSalida(detalle.producto.id, undefined, parseFloat(detalle.precio_salida));
-                    transferDetailsHook.updatePrecioEntradaVenta(detalle.producto.id, undefined, parseFloat(detalle.precio_entrada_venta));
-                    transferDetailsHook.updatePrecioEntradaVentaAlt(detalle.producto.id, undefined, parseFloat(detalle.precio_entrada_venta_alt));
-
-                    // Guardar el id del detalle para enviarlo en el update
-                    const details = transferDetailsHook.details;
-                    const lastDetail = details[details.length - 1];
-                    if (lastDetail) {
-                        (lastDetail as any).id_detalle_transferencia = detalle.id;
-                    }
-                }
-            });
+            // Cargar todos los detalles de una vez
+            transferDetailsHook.setTransferDetails(transformedDetails as any);
         }
-    }, [transferData]);
+    }, [transferData, transferDetailsHook.details.length]);
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -273,6 +275,17 @@ const EditTransfer = () => {
         }
     }, [transferResponsiblesData, setValue, user?._id]);
 
+    // Auto-seleccionar la primera sucursal destino disponible
+    useEffect(() => {
+        // Solo auto-seleccionar si no hay una sucursal destino ya seleccionada
+        if (!sucursalDestino && transferBranchesData?.data && transferBranchesData.data.length > 0) {
+            const firstActiveBranch = transferBranchesData.data.find(branch => branch.activo === "SI");
+            if (firstActiveBranch) {
+                setValue("sucursal_destino", firstActiveBranch.id);
+            }
+        }
+    }, [transferBranchesData, setValue, sucursalDestino]);
+
     const handleAddProductItem = (product: ProductGet) => {
         transferDetailsHook.addProduct(product);
         setTimeout(() => {
@@ -402,7 +415,7 @@ const EditTransfer = () => {
                                     <Label htmlFor="sucursal_origen" className="text-xs">Sucursal Origen *</Label>
                                     <Input
                                         id="sucursal_origen"
-                                        value={`Sucursal ${sucursalOrigen}`}
+                                        value={sucursalOrigenNombre}
                                         disabled
                                         className="bg-gray-100 text-xs h-8"
                                     />
