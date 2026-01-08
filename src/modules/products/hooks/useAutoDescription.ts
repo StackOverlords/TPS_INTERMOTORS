@@ -7,7 +7,7 @@ interface UseAutoDescriptionProps {
     motorNumber?: string | null;
     measurement?: string | null;
     model?: string | null;
-    altDescription?: string;
+    altDescription?: string | null;
 }
 
 export const useAutoDescription = ({
