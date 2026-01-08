@@ -6,7 +6,8 @@ export const ProductUpdateSchema = z.object({
         .min(1, "El campo Categoría es requerido").nonnegative(),
     id_subcategoria: z
         .number()
-        .min(1, "El campo Subcategoría es requerido").nonnegative(),
+        .nullable()
+        .optional(),
     descripcion: z.string().nonempty(),
     descripcion_alt: z.string(),
     codigo_oem: z.string().nullable(),

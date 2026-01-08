@@ -36,7 +36,7 @@ const FormCreateProduct: React.FC = () => {
     defaultValues: {
       descripcion: '',
       id_categoria: 0,
-      id_subcategoria: 0,
+      id_subcategoria: null,
       descripcion_alt: '',
       codigo_oem: '',
       codigo_upc: '',
@@ -98,7 +98,7 @@ const FormCreateProduct: React.FC = () => {
 
   useEffect(() => {
     if (id_categoria && id_categoria !== 0) {
-      setValue('id_subcategoria', 0);
+      setValue('id_subcategoria', null);
     }
   }, [id_categoria, setValue]);
 
@@ -601,12 +601,17 @@ const FormCreateProduct: React.FC = () => {
           {/* Descripción alt. */}
           <div className="flex flex-col sm:col-span-2">
             <div>
-              <Label>Descripción alt. *</Label>
+              <Label>Descripción alt. (Opcional)</Label>
               <Controller
                 name="descripcion_alt"
                 control={control}
                 render={({ field }) => (
-                  <Input {...field} placeholder="Descripción alt." />
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    placeholder="Descripción alt."
+                  />
                 )}
               />
               <div className="mt-1">

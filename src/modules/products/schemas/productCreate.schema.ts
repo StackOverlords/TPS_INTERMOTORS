@@ -6,12 +6,10 @@ export const ProductCreateSchema = z.object({
         .min(1, "El campo Categoría es requerido").nonnegative(),
     id_subcategoria: z
         .number()
-        .nonnegative()
-        .default(0)
-        .optional()
-        .refine((val) => val! >= 0, "Subcategoría inválida"),
+        .nullable()
+        .optional(),
     descripcion: z.string().nonempty(),
-    descripcion_alt: z.string().nonempty(),
+    descripcion_alt: z.string().nullable(),
     codigo_oem: z.string().nullable(),
     codigo_upc: z.string().nonempty(),
     modelo: z.string().nullable(),
