@@ -72,6 +72,7 @@ import { PDFViewer } from "@/components/common/PDFViewer";
 import { useSalePDF } from "../hooks/useSalePDF";
 import { useTabStore } from "@/states/tabStore";
 import { formatDateForUpdate } from "@/utils/dateFormatters";
+import { Badge } from "@/components/atoms/badge";
 
 const SaleEditScreen = () => {
   const configuraciones = {
@@ -80,6 +81,7 @@ const SaleEditScreen = () => {
     selector_mode: "window",
   };
 
+  // funciones de tab
   const tabs = useTabStore((s) => s.tabs);
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
@@ -251,6 +253,7 @@ const SaleEditScreen = () => {
     ) {
       loadFormData(saleData);
       if (currentTab?.createdTempData) {
+        // limpiar datos temporales del tab
         updateTab(currentTab.id, {
           createdTempData: {
             ...currentTab.createdTempData,
@@ -516,6 +519,7 @@ const SaleEditScreen = () => {
     }
   };
 
+  //   nueva funcion secundaria
   const handleSecondaryAction = () => {
     if (fromCreate && originalPath && currentTab) {
       updateTab(currentTab.id, {
@@ -681,6 +685,14 @@ const SaleEditScreen = () => {
                   Imprimir
                   {isDirty && <span className="text-xs">(sin cambios)</span>}
                 </TooltipButton>
+                <Badge
+                      className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
+                      variant={"success"}
+                    >
+                      {tempCreatedSale?.nro ??
+                        saleData?.nro ??
+                        "NUEVA"}
+                    </Badge>
               </div>
             </div>
           </header>
