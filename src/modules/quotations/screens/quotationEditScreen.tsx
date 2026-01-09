@@ -79,6 +79,7 @@ const QuotationEditScreen = () => {
     selector_mode: "window",
   };
 
+  //   obtener funciones de tabstore
   const tabs = useTabStore((s) => s.tabs);
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
@@ -518,6 +519,7 @@ const QuotationEditScreen = () => {
     setIsDialogOpen(false);
   };
 
+  //   nueva funcion secundaria
   const handleSecondaryAction = () => {
     if (fromCreate && originalPath && currentTab) {
       updateTab(currentTab.id, {
