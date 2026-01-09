@@ -1,16 +1,16 @@
-import { TABS_CONFIG } from '@/config/tabsConfig';
-import NotFound from '@/modules/shared/screens/NotFound';
-import protectedRoutes from '@/navigation/Protected.Route';
-import type RouteType from '@/navigation/RouteType';
-import { useTabStore } from '@/states/tabStore';
-import React, { useMemo, useRef } from 'react';
-import { matchPath } from 'react-router';
-import TabContent from './TabContent';
+import { TABS_CONFIG } from "@/config/tabsConfig";
+import NotFound from "@/modules/shared/screens/NotFound";
+import protectedRoutes from "@/navigation/Protected.Route";
+import type RouteType from "@/navigation/RouteType";
+import { useTabStore } from "@/states/tabStore";
+import React, { useMemo, useRef } from "react";
+import { matchPath } from "react-router";
+import TabContent from "./TabContent";
 
 const TabContainer: React.FC = () => {
   // ✅ Optimizado: Solo suscribirse a lo que realmente necesitamos
-  const tabs = useTabStore(state => state.tabs);
-  const activeTabId = useTabStore(state => state.activeTabId);
+  const tabs = useTabStore((state) => state.tabs);
+  const activeTabId = useTabStore((state) => state.activeTabId);
 
   // 🎯 Keep-Alive: Trackear qué tabs han sido visitadas
   const mountedTabsRef = useRef<Set<string>>(new Set());
@@ -19,7 +19,7 @@ const TabContainer: React.FC = () => {
   const flatRoutes = useMemo(() => {
     const flatten = (routes: RouteType[]): RouteType[] => {
       const result: RouteType[] = [];
-      routes.forEach(route => {
+      routes.forEach((route) => {
         if (route.path) {
           result.push(route);
         }
@@ -44,17 +44,14 @@ const TabContainer: React.FC = () => {
         return routeCacheRef.current.get(path) || undefined;
       }
 
-      const route = flatRoutes.find(route => {
+      const route = flatRoutes.find((route) => {
         if (!route.path) return false;
 
         // Intentar match exacto primero (más rápido para rutas estáticas)
         if (route.path === path) return true;
 
         // Intentar match con parámetros dinámicos usando matchPath de React Router
-        const match = matchPath(
-          { path: route.path, end: true },
-          path
-        );
+        const match = matchPath({ path: route.path, end: true }, path);
 
         return match !== null;
       });
@@ -75,8 +72,8 @@ const TabContainer: React.FC = () => {
   }
 
   // Limpiar tabs que ya no existen en el store
-  const existingTabIds = new Set(tabs.map(t => t.id));
-  mountedTabsRef.current.forEach(tabId => {
+  const existingTabIds = new Set(tabs.map((t) => t.id));
+  mountedTabsRef.current.forEach((tabId) => {
     if (!existingTabIds.has(tabId)) {
       mountedTabsRef.current.delete(tabId);
     }
@@ -85,16 +82,23 @@ const TabContainer: React.FC = () => {
   // Si excedemos el límite, remover las tabs más antiguas (LRU - Least Recently Used)
   if (mountedTabsRef.current.size > MAX_MOUNTED_TABS) {
     const mountedArray = Array.from(mountedTabsRef.current);
-    const toRemove = mountedArray.slice(0, mountedArray.length - MAX_MOUNTED_TABS);
-    toRemove.forEach(tabId => mountedTabsRef.current.delete(tabId));
+    const toRemove = mountedArray.slice(
+      0,
+      mountedArray.length - MAX_MOUNTED_TABS
+    );
+    toRemove.forEach((tabId) => mountedTabsRef.current.delete(tabId));
   }
 
   // Obtener componentes de todas las tabs que deben estar montadas
   const tabComponents = useMemo(() => {
-    const components: Array<{ tabId: string; Component: React.ComponentType }> = [];
+    const components: Array<{
+      tabId: string;
+      Component: React.ComponentType;
+      routePath: string;
+    }> = [];
 
-    mountedTabsRef.current.forEach(tabId => {
-      const tab = tabs.find(t => t.id === tabId);
+    mountedTabsRef.current.forEach((tabId) => {
+      const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return;
 
       const route = findMatchingRoute(tab.path);
@@ -102,6 +106,7 @@ const TabContainer: React.FC = () => {
       components.push({
         tabId: tab.id,
         Component: route?.element || NotFound,
+        routePath: tab.path,
       });
     });
 
@@ -111,11 +116,12 @@ const TabContainer: React.FC = () => {
   return (
     <div className="h-full relative">
       {/* 🎯 KEEP-ALIVE: Renderizar todas las tabs montadas, pero solo mostrar la activa */}
-      {tabComponents.map(({ tabId, Component }) => (
+      {tabComponents.map(({ tabId, Component, routePath }) => (
         <TabContent
           key={tabId}
           tabId={tabId}
           isActive={tabId === activeTabId}
+          routePath={routePath}
         >
           <Component />
         </TabContent>
@@ -126,7 +132,9 @@ const TabContainer: React.FC = () => {
         <div className="flex items-center justify-center h-full">
           <div className="text-center text-gray-500">
             <p className="text-lg font-medium">No hay pestañas abiertas</p>
-            <p className="text-sm mt-2">Navega a cualquier sección para comenzar</p>
+            <p className="text-sm mt-2">
+              Navega a cualquier sección para comenzar
+            </p>
           </div>
         </div>
       )}

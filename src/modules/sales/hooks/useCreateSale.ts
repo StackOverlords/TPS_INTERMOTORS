@@ -3,13 +3,20 @@ import type { Sale } from "../types/sale";
 import { salesService } from "../services/salesService";
 
 export const useCreateSale = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: (data: Sale) => salesService.create(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["sales"] });
-            queryClient.invalidateQueries({ queryKey: ["products"] });
-        }
-    });
+  return useMutation({
+    mutationFn: (data: Sale) => salesService.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-sales-stats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["product-stock"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["product-provider-orders"],
+      });
+    },
+  });
 };

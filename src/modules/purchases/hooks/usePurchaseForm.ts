@@ -3,6 +3,7 @@ import { PRODUCTS_QUERY_KEYS } from "@/lib/queryKeys";
 import { queryClient } from "@/lib/reactQueryConfig";
 import { apiConstructor } from "@/modules/products/services/api";
 import { useCallback, useState } from "react";
+import { PRUCHASE_QUERY_KEYS } from "../constants/purchasesQueryKeys";
 
 // Helper para obtener fecha actual en formato YYYY-MM-DD (hora local)
 const getTodayDateString = (): string => {
@@ -109,6 +110,19 @@ export function usePurchaseForm(initialBranch: number, onSuccessCallback?: (crea
       queryClient.invalidateQueries({
         queryKey: ['product-stock']
       }) 
+      queryClient.invalidateQueries({
+        queryKey: ['product-provider-orders']
+      }) 
+      queryClient.invalidateQueries({
+        queryKey: ['product-sales-stats']
+      }) 
+      queryClient.invalidateQueries({
+        queryKey: ['products']
+      }) 
+      queryClient.invalidateQueries({
+        queryKey: PRUCHASE_QUERY_KEYS.lists()
+      }) 
+      
       reset();
       if (onSuccessCallback) {
         onSuccessCallback(createdPurchase);
