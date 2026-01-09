@@ -72,6 +72,7 @@ import { PDFViewer } from "@/components/common/PDFViewer";
 import { useSalePDF } from "../hooks/useSalePDF";
 import { useTabStore } from "@/states/tabStore";
 import { formatDateForUpdate } from "@/utils/dateFormatters";
+import { Badge } from "@/components/atoms/badge";
 
 const SaleEditScreen = () => {
   const configuraciones = {
@@ -684,6 +685,14 @@ const SaleEditScreen = () => {
                   Imprimir
                   {isDirty && <span className="text-xs">(sin cambios)</span>}
                 </TooltipButton>
+                <Badge
+                      className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
+                      variant={"success"}
+                    >
+                      {tempCreatedSale?.nro ??
+                        saleData?.nro ??
+                        "NUEVA"}
+                    </Badge>
               </div>
             </div>
           </header>

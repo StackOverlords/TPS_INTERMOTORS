@@ -32,3 +32,5 @@ cambios.md
 DEBUG_PANEL_GUIDE
 *.md
 src/utils/__test_logFormatter.ts
+
+*createSaleScreenUnificado.tsx
