@@ -1,7 +1,7 @@
 import type { PurchaseFilters } from "../types/purchaseFilters";
 
 export const PRUCHASE_QUERY_KEYS = {
-    all: ["returns"] as const,
+    all: ["purchases"] as const,
     lists: () => [...PRUCHASE_QUERY_KEYS.all, "list"] as const,
     list: (filters?: PurchaseFilters) =>
         [...PRUCHASE_QUERY_KEYS.lists(), { filters }] as const,

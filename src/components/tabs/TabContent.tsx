@@ -1,14 +1,20 @@
 // import { useTabStore } from '@/states/tabStore';
-import { TabActiveProvider } from '@/contexts/TabActiveContext';
-import React, { useRef, type ReactNode } from 'react';
+import { TabActiveProvider } from "@/contexts/TabActiveContext";
+import React, { useRef, type ReactNode } from "react";
 
 interface TabContentProps {
   children: ReactNode;
   tabId: string;
   isActive: boolean; // Recibir isActive como prop para evitar suscripción a activeTabId
+  routePath?: string;
 }
 
-const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId: _tabId, isActive }) => {
+const TabContentComponent: React.FC<TabContentProps> = ({
+  children,
+  tabId: _tabId,
+  isActive,
+  routePath,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 🎯 KEEP-ALIVE: Ahora el componente permanece montado, solo se oculta/muestra
@@ -36,13 +42,14 @@ const TabContentComponent: React.FC<TabContentProps> = ({ children, tabId: _tabI
   return (
     <TabActiveProvider isActive={isActive}>
       <div
+        key={routePath}
         ref={containerRef}
         className="h-full overflow-auto transition-opacity duration-150"
         style={{
-          display: isActive ? 'block' : 'none',
+          display: isActive ? "block" : "none",
           opacity: isActive ? 1 : 0,
         }}
-        {...(!isActive && { inert: '' as any })}
+        {...(!isActive && { inert: "" as any })}
       >
         {children}
       </div>
@@ -58,10 +65,12 @@ const TabContent = React.memo(TabContentComponent, (prev, next) => {
   // Si cambió el estado activo, re-renderizar
   if (prev.isActive !== next.isActive) return false;
 
+  if (prev.routePath !== next.routePath) return false;
+
   // Si nada cambió, NO re-renderizar
   return true;
 });
 
-TabContent.displayName = 'TabContent';
+TabContent.displayName = "TabContent";
 
 export default TabContent;

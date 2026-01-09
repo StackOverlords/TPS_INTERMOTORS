@@ -33,14 +33,23 @@ export const usePurchaseUpdate = () => {
       );
 
       queryClient.invalidateQueries({
-        queryKey: PRODUCTS_QUERY_KEYS.all
-      })
+        queryKey: PRODUCTS_QUERY_KEYS.all,
+      });
       queryClient.invalidateQueries({
-        queryKey: PRODUCTS_QUERY_KEYS.details()
-      })
+        queryKey: PRODUCTS_QUERY_KEYS.details(),
+      });
       queryClient.invalidateQueries({
-        queryKey: PRODUCTS_QUERY_KEYS.stock({})
-      })
+        queryKey: PRODUCTS_QUERY_KEYS.stock({}),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["product-stock"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["product-provider-orders"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["product-sales-stats"],
+      });
     },
   });
 };
