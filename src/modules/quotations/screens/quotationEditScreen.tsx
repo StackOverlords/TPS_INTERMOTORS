@@ -82,12 +82,14 @@ const QuotationEditScreen = () => {
   const tabs = useTabStore((s) => s.tabs);
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
+  const removeTab = useTabStore((s) => s.removeTab);
 
   const currentTab = tabs.find((t) => t.id === activeTabId);
 
   const tempCreatedQuotation = currentTab?.createdTempData
     ?.createdEntity as QuotationGetById;
   const fromCreate = currentTab?.createdTempData?.fromCreate;
+  const originalPath = currentTab?.createdTempData?.originalPath;
 
   const { updateQuotationId } = useParams();
   const effectiveQuotationId = useMemo(() => {
@@ -239,7 +241,10 @@ const QuotationEditScreen = () => {
       loadFormData(quotationData);
       if (currentTab?.createdTempData) {
         updateTab(currentTab.id, {
-          createdTempData: undefined, // Limpiar datos temporales
+          createdTempData: {
+            ...currentTab.createdTempData,
+            createdEntity: undefined,
+          },
         });
       }
     }
@@ -513,6 +518,24 @@ const QuotationEditScreen = () => {
     setIsDialogOpen(false);
   };
 
+  const handleSecondaryAction = () => {
+    if (fromCreate && originalPath && currentTab) {
+      updateTab(currentTab.id, {
+        path: originalPath,
+        title: "Registrar cotización",
+        createdTempData: undefined,
+      });
+
+      navigate(originalPath, { replace: true });
+    } else {
+      if (currentTab) {
+        removeTab(currentTab.id);
+      }
+
+      // navigate('/dashboard/sales');
+    }
+  };
+
   const selectedItems = useMemo<SelectedItem[]>(() => {
     return detalles.map((detail) => ({
       productId: detail.id_producto || 0,
@@ -643,7 +666,7 @@ const QuotationEditScreen = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end w-full sm:w-auto gap-2">
-                {updateQuotationId && (
+                {effectiveQuotationId && (
                   <>
                     <TooltipButton
                       onClick={handleOpenPrintDialog}
@@ -667,7 +690,9 @@ const QuotationEditScreen = () => {
                       className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
                       variant={"success"}
                     >
-                      {updateQuotationId}
+                      {tempCreatedQuotation?.nro ??
+                        quotationData?.nro ??
+                        effectiveQuotationId}
                     </Badge>
                   </>
                 )}
@@ -1125,9 +1150,10 @@ const QuotationEditScreen = () => {
                     subtotal={quotationDetailsHook.calculateTotalBeforeDiscount()}
                     total={quotationDetailsHook.calculateTotal()}
                     isPending={isSaving}
-                    callback={() => {
-                      navigate("/dashboard/create-quotation");
-                    }}
+                    callback={handleSecondaryAction}
+                    secondaryButtonText={
+                      fromCreate ? "Nueva Cotización" : "Cancelar"
+                    }
                     aplyGlobalDiscount={
                       quotationDetailsHook.applyGlobalDiscount
                     }
