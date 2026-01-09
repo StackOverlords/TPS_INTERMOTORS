@@ -83,12 +83,14 @@ const SaleEditScreen = () => {
   const tabs = useTabStore((s) => s.tabs);
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
+  const removeTab = useTabStore((s) => s.removeTab);
 
   const currentTab = tabs.find((t) => t.id === activeTabId);
 
   const tempCreatedSale = currentTab?.createdTempData
     ?.createdEntity as SaleGetById;
   const fromCreate = currentTab?.createdTempData?.fromCreate;
+  const originalPath = currentTab?.createdTempData?.originalPath;
 
   const { saleId: saleIdParam } = useParams();
   const effectiveSaleId = useMemo(() => {
@@ -250,7 +252,10 @@ const SaleEditScreen = () => {
       loadFormData(saleData);
       if (currentTab?.createdTempData) {
         updateTab(currentTab.id, {
-          createdTempData: undefined, // Limpiar datos temporales
+          createdTempData: {
+            ...currentTab.createdTempData,
+            createdEntity: undefined,
+          },
         });
       }
     }
@@ -508,6 +513,24 @@ const SaleEditScreen = () => {
 
     if (errors.detalles) {
       validateBeforeSubmit();
+    }
+  };
+
+  const handleSecondaryAction = () => {
+    if (fromCreate && originalPath && currentTab) {
+      updateTab(currentTab.id, {
+        path: originalPath,
+        title: "Registrar venta",
+        createdTempData: undefined,
+      });
+
+      navigate(originalPath, { replace: true });
+    } else {
+      if (currentTab) {
+        removeTab(currentTab.id);
+      }
+
+      // navigate('/dashboard/sales');
     }
   };
 
@@ -1095,9 +1118,10 @@ const SaleEditScreen = () => {
                     subtotal={calculateTotalBeforeDiscount()}
                     total={calculateTotal()}
                     isPending={isSaving}
-                    callback={() => {
-                      navigate("/dashboard/create-sale");
-                    }}
+                    callback={handleSecondaryAction}
+                    secondaryButtonText={
+                      fromCreate ? "Nueva Venta" : "Cancelar"
+                    }
                     aplyGlobalDiscount={applyGlobalDiscount}
                     hasProducts={detalles.length > 0}
                   />

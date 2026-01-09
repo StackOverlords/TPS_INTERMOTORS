@@ -451,6 +451,7 @@ const CreateSaleScreen = () => {
               createdEntity: createdSale,
               fromCreate: true,
               mode: mode,
+              originalPath: currentTab.path,
             },
             metadata: {
               ...currentTab.metadata,

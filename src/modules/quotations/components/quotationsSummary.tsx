@@ -27,6 +27,7 @@ interface QuotationSummaryProps {
   subtotal: number;
   total: number;
   hasProducts?: boolean;
+  secondaryButtonText?: string;
 }
 
 const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
@@ -43,6 +44,7 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
   subtotal,
   total,
   hasProducts = false,
+  secondaryButtonText,
 }) => {
   const { control } = useFormContext();
 
@@ -58,9 +60,9 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
   const submitButtonPendingText = isEditMode
     ? "Actualizando Cotización..."
     : "Procesando Cotización...";
-  const secondaryButtonText = isEditMode
-    ? "Nueva Cotización"
-    : "Nueva Cotización";
+  const finalSecondaryButtonText =
+    secondaryButtonText ||
+    (isEditMode ? "Nueva Cotización" : "Nueva Cotización");
   const tooltipText = isEditMode
     ? "Actualizar Cotización"
     : "Registrar Cotización";
@@ -185,7 +187,7 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
               className="w-full py-3 font-medium"
               onClick={handleSecondaryAction}
             >
-              {secondaryButtonText}
+              {finalSecondaryButtonText}
             </Button>
 
             {/* Botón de submit */}

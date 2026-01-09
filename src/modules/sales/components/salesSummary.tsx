@@ -24,6 +24,7 @@ interface SalesSummaryProps {
   subtotal: number;
   total: number;
   hasProducts?: boolean;
+  secondaryButtonText?: string;
 }
 const SalesSummary: React.FC<SalesSummaryProps> = ({
   isReadOnly = false,
@@ -39,6 +40,7 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
   subtotal,
   total,
   hasProducts = false,
+  secondaryButtonText,
 }) => {
   const handleSecondaryAction = () => {
     clearCart?.();
@@ -50,7 +52,8 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
   const submitButtonPendingText = isEditMode
     ? "Actualizando Venta..."
     : "Procesando Venta...";
-  const secondaryButtonText = isEditMode ? "Nueva Venta" : "Nueva Venta";
+  const finalSecondaryButtonText =
+    secondaryButtonText || (isEditMode ? "Nueva Venta" : "Nueva Venta");
   const tooltipText = isEditMode ? "Actualizar Venta" : "Registrar Venta";
 
   return (
@@ -135,7 +138,7 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
               className="w-full py-3 font-medium"
               onClick={handleSecondaryAction}
             >
-              {secondaryButtonText}
+              {finalSecondaryButtonText}
             </Button>
 
             {/* Botón de submit */}

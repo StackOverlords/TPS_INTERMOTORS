@@ -385,7 +385,7 @@ const QuotationCreateScreen = () => {
         onSuccess: (createdQuotation) => {
           showSuccessToast({
             title: "Cotización Creada",
-            description: `Cotización #${createdQuotation.id} creada exitosamente`,
+            description: `Cotización #${createdQuotation.nro} creada exitosamente`,
           });
 
           const currentTab = tabs.find((t) => t.id === activeTabId);
@@ -398,6 +398,7 @@ const QuotationCreateScreen = () => {
                 createdEntity: createdQuotation,
                 fromCreate: true,
                 mode: mode,
+                originalPath: currentTab.path,
               },
               metadata: {
                 ...currentTab.metadata,

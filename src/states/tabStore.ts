@@ -13,10 +13,10 @@ export interface Tab {
   // ID de instancia para permitir múltiples tabs con la misma ruta
   instanceId?: string;
   createdTempData?: {
-    formData?: any;
     createdEntity?: any;
     fromCreate?: boolean;
     mode?: string;
+    originalPath?: string;
   };
 }
 
