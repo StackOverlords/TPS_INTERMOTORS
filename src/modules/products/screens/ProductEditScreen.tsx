@@ -77,7 +77,7 @@ const ProductEditScreen = () => {
         defaultValues: {
             descripcion: "",
             id_categoria: 0,
-            id_subcategoria: 0,
+            id_subcategoria: null,
             descripcion_alt: "",
             codigo_oem: "",
             codigo_upc: "",
@@ -117,7 +117,7 @@ const ProductEditScreen = () => {
                 id_marca: productData.id_marca,
                 id_marca_vehiculo: productData.id_marca_vehiculo,
                 id_procedencia: productData.id_procedencia,
-                id_subcategoria: productData.id_subcategora || 0,
+                id_subcategoria: productData.id_subcategora || null,
                 id_unidad: productData.id_unidad_medida,
                 medida: productData.medida,
                 modelo: productData.modelo,
@@ -172,7 +172,7 @@ const ProductEditScreen = () => {
         if (isFirstLoad.current || (id_categoria === productData?.id_categoria && id_subcategoria === productData.id_subcategora)) return;
 
         if (prevCategoriaRef.current !== id_categoria && id_categoria !== 0) {
-            setValue("id_subcategoria", 0);
+            setValue("id_subcategoria", null);
         }
 
         prevCategoriaRef.current = id_categoria;
