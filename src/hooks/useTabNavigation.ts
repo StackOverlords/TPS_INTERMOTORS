@@ -88,7 +88,7 @@ export const useTabNavigation = () => {
 
   //Navegar a una ruta y crear/activar un tab
 
-  const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean; instanceId?: string; displayCode?: string }) => {
+  const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean; instanceId?: string; displayCode?: string; replace?: boolean }) => {
     const state = useTabStore.getState();
     const instanceId = options?.instanceId;
     const existingTab = state.findTabByPath(path, instanceId);
@@ -112,13 +112,13 @@ export const useTabNavigation = () => {
       if (metadata) {
         state.updateTab(existingTab.id, {
           metadata: { ...existingTab.metadata, ...metadata },
-          title: existingTab.title.replace(/: .+$/, `: ${options.displayCode}`)
+          title: existingTab.title.replace(/: .+$/, `: ${options?.displayCode}`)
         });
       }
       state.setActiveTab(existingTab.id);
     }
 
-    navigate(path);
+    navigate(path, { replace: options?.replace });
   }, [navigate, findRouteInfo]);
 
   

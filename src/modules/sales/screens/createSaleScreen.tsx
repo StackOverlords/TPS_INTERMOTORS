@@ -64,6 +64,7 @@ import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SCREEN_PATH = "/dashboard/create-sale";
@@ -75,6 +76,8 @@ const CreateSaleScreen = () => {
     selector_mode: "window",
   };
   const navigate = useNavigate();
+  const { navigateWithTab } = useTabNavigation();
+
   const tabs = useTabStore((state) => state.tabs);
   const activeTabId = useTabStore((state) => state.activeTabId);
   const updateTab = useTabStore((state) => state.updateTab);
@@ -451,6 +454,7 @@ const CreateSaleScreen = () => {
               createdEntity: createdSale,
               fromCreate: true,
               mode: mode,
+              originalPath: currentTab.path,
             },
             metadata: {
               ...currentTab.metadata,
@@ -459,8 +463,9 @@ const CreateSaleScreen = () => {
             },
           });
 
-          navigate(`/dashboard/sales/${createdSale.id}/update`, {
-            replace: true,
+          navigateWithTab(`/dashboard/sales/${createdSale.id}/update`, {
+            displayCode: createdSale?.nro ? createdSale.nro.toString() : createdSale.id.toString(),
+            replace:true
           });
         }
       },
