@@ -75,6 +75,7 @@ const CreateSaleScreen = () => {
     selector_mode: "window",
   };
   const navigate = useNavigate();
+  // funciones de tab
   const tabs = useTabStore((state) => state.tabs);
   const activeTabId = useTabStore((state) => state.activeTabId);
   const updateTab = useTabStore((state) => state.updateTab);
@@ -441,6 +442,7 @@ const CreateSaleScreen = () => {
           duration: 2000,
         });
 
+        // editar tab con la venta creada
         const currentTab = tabs.find((t) => t.id === activeTabId);
 
         if (currentTab) {

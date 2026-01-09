@@ -80,6 +80,7 @@ const SaleEditScreen = () => {
     selector_mode: "window",
   };
 
+  // funciones de tab
   const tabs = useTabStore((s) => s.tabs);
   const activeTabId = useTabStore((s) => s.activeTabId);
   const updateTab = useTabStore((s) => s.updateTab);
@@ -251,6 +252,7 @@ const SaleEditScreen = () => {
     ) {
       loadFormData(saleData);
       if (currentTab?.createdTempData) {
+        // limpiar datos temporales del tab
         updateTab(currentTab.id, {
           createdTempData: {
             ...currentTab.createdTempData,
@@ -516,6 +518,7 @@ const SaleEditScreen = () => {
     }
   };
 
+  //   nueva funcion secundaria
   const handleSecondaryAction = () => {
     if (fromCreate && originalPath && currentTab) {
       updateTab(currentTab.id, {

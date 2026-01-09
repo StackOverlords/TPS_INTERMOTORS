@@ -388,6 +388,7 @@ const QuotationCreateScreen = () => {
             description: `Cotización #${createdQuotation.nro} creada exitosamente`,
           });
 
+          //   editar tab con la cotización creada
           const currentTab = tabs.find((t) => t.id === activeTabId);
 
           if (currentTab) {
