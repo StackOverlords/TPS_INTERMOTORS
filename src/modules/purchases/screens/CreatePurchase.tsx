@@ -72,6 +72,11 @@ const CreatePurchase: React.FC = () => {
   // Función para agregar producto desde el panel de búsqueda
   const handleProductSelect = useCallback(
     (product: any) => {
+      console.log('========== PRODUCTO SELECCIONADO ==========');
+      console.log('Producto completo:', product);
+      console.log('Campos disponibles:', Object.keys(product));
+      console.log('==========================================');
+
       const existingDetail = formData.detalles.find(
         (d: any) => d.id_producto === product.id.toString()
       );
@@ -80,8 +85,8 @@ const CreatePurchase: React.FC = () => {
         return; // Ya existe, no hacer nada
       }
 
-      const costo = parseFloat(product.precio_venta) || 0;
-      const inc_p_venta = 30; // 30% por defecto
+      const costo = parseFloat(product.costo_referencia) || 0;
+      const inc_p_venta = 0; // 0% por defecto
       const inc_p_venta_alt = 15; // 15% por defecto
 
       const precio_venta = costo * (1 + inc_p_venta / 100);
@@ -133,8 +138,8 @@ const CreatePurchase: React.FC = () => {
         // Parsear todos los valores numéricos correctamente
         const cantidad = parseInt(detalle.cantidad) || 1;
         const costo = parseFloat(detalle.costo || '0') || 0;
-        const inc_p_venta = 30; // Puedes ajustar esto según necesites
-        const inc_p_venta_alt = 15;
+        const inc_p_venta = 0; // 0% por defecto
+        const inc_p_venta_alt = 15; // 15% por defecto
 
         // Calcular precios
         const precio_venta = costo * (1 + inc_p_venta / 100);

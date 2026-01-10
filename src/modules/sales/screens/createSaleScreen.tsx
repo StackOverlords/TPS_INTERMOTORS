@@ -462,9 +462,11 @@ const CreateSaleScreen = () => {
             },
           });
 
-          navigate(`/dashboard/sales/${createdSale.id}/update`, {
-            replace: true,
-          });
+          // navigateWithTab(`/dashboard/sales/${createdSale.id}/update`, {
+          //   displayCode: createdSale?.nro ? createdSale.nro.toString() : createdSale.id.toString(),
+          //   replace:true
+          // });
+          navigate(`/dashboard/sales/${createdSale.id}/update`, { replace: true });
         }
       },
       onError: (error: unknown) => {

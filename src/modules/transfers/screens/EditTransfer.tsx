@@ -43,6 +43,7 @@ const EditTransfer = () => {
     const user = authSDK.getCurrentUser();
     const { selectedBranchId } = useBranchStore();
     const tableRef = useRef<TransferDetailTableRef>(null);
+    const hasLoadedInitialData = useRef(false);
 
     // Cargar datos de la transferencia existente
     const {
@@ -98,16 +99,15 @@ const EditTransfer = () => {
         formState: { errors }
     } = methods;
 
-    // Watch sucursal_origen para actualizar las sucursales destino disponibles
-    const sucursalOrigen = watch("sucursal_origen");
-    const sucursalDestino = watch("sucursal_destino");
-
     // Obtener el nombre de la sucursal origen para mostrarlo visualmente
     const sucursalOrigenNombre = originBranchData?.nombre;
 
     // Cargar datos de la transferencia en el formulario
     useEffect(() => {
-        if (transferData && transferData.detalles && transferDetailsHook.details.length === 0) {
+        if (transferData && transferData.detalles && !hasLoadedInitialData.current) {
+            // Marcar que ya se cargaron los datos iniciales
+            hasLoadedInitialData.current = true;
+
             // Cargar campos del formulario
             setValue("fecha", transferData.fecha?.split('T')[0] || format(new Date(), "yyyy-MM-dd"));
             setValue("nro_comprobante", transferData.nro_comprobante || "");
@@ -144,7 +144,7 @@ const EditTransfer = () => {
             // Cargar todos los detalles de una vez
             transferDetailsHook.setTransferDetails(transformedDetails as any);
         }
-    }, [transferData, transferDetailsHook.details.length]);
+    }, [transferData]);
 
     // Sincronizar detalles con el formulario
     useEffect(() => {
@@ -204,8 +204,22 @@ const EditTransfer = () => {
         }
 
         try {
+            // Filtrar duplicados manteniendo solo el último de cada producto_id
+            // Esto es una medida de seguridad adicional
+            const uniqueDetails = transferDetailsHook.details.reduce((acc: any[], detalle: any) => {
+                const existingIndex = acc.findIndex(d => d.producto_id === detalle.producto_id);
+                if (existingIndex !== -1) {
+                    // Si existe, reemplazar con el más reciente (el último)
+                    acc[existingIndex] = detalle;
+                } else {
+                    // Si no existe, agregarlo
+                    acc.push(detalle);
+                }
+                return acc;
+            }, []);
+
             // Transformar detalles para enviar al backend
-            const transformedDetalles = transferDetailsHook.details.map((detalle: any) => {
+            const transformedDetalles = uniqueDetails.map((detalle: any) => {
                 return {
                     id_detalle_transferencia: detalle.id_detalle_transferencia || null,
                     producto_id: detalle.producto_id,
@@ -267,24 +281,6 @@ const EditTransfer = () => {
     const handleGoBack = () => {
         navigate(`/dashboard/transfers/${transferId}`);
     };
-
-    useEffect(() => {
-        if (!user?._id && transferResponsiblesData && transferResponsiblesData.data.length > 0) {
-            const firstResponsible = transferResponsiblesData.data[0];
-            setValue("responsable", firstResponsible.id);
-        }
-    }, [transferResponsiblesData, setValue, user?._id]);
-
-    // Auto-seleccionar la primera sucursal destino disponible
-    useEffect(() => {
-        // Solo auto-seleccionar si no hay una sucursal destino ya seleccionada
-        if (!sucursalDestino && transferBranchesData?.data && transferBranchesData.data.length > 0) {
-            const firstActiveBranch = transferBranchesData.data.find(branch => branch.activo === "SI");
-            if (firstActiveBranch) {
-                setValue("sucursal_destino", firstActiveBranch.id);
-            }
-        }
-    }, [transferBranchesData, setValue, sucursalDestino]);
 
     const handleAddProductItem = (product: ProductGet) => {
         transferDetailsHook.addProduct(product);

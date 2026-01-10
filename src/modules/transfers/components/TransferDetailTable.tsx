@@ -410,12 +410,11 @@ function TransferDetailTableInner({
 
   const columns = useMemo<ColumnDef<UITransferDetailCreate>[]>(() => [
     {
-      accessorKey: "producto_id",
-      header: "ID",
+      header: "Nro",
       size: 70,
       minSize: 60,
-      cell: ({ getValue }) => (
-        <span className="text-xs text-gray-600">{getValue<number>()}</span>
+      cell: ({ row }) => (
+        <span className="text-xs text-gray-600">{row.index + 1}</span>
       )
     },
     {
@@ -458,12 +457,15 @@ function TransferDetailTableInner({
       size: 120,
       minSize: 100,
       cell: ({ row }) => (
-        <EditableCell
-          rowIndex={row.index}
-          fieldName="costo_entrada"
-          value={row.original.costo_entrada}
-          format="currency"
-        />
+        // <EditableCell
+        //   rowIndex={row.index}
+        //   fieldName="costo_entrada"
+        //   value={row.original.costo_entrada}
+        //   format="currency"
+        // />
+        <div className="text-sm font-medium text-gray-900 text-center">
+            {formatCurrency(row.original.costo_entrada)}
+          </div>
       ),
     },
     {
@@ -473,12 +475,15 @@ function TransferDetailTableInner({
       size: 120,
       minSize: 100,
       cell: ({ row }) => (
-        <EditableCell
-          rowIndex={row.index}
-          fieldName="precio_salida"
-          value={Number(row.original.precio_salida)}
-          format="currency"
-        />
+        <div className="text-sm font-medium text-gray-900 text-center">
+            {formatCurrency(row.original.precio_salida)}
+          </div>
+        // <EditableCell
+        //   rowIndex={row.index}
+        //   fieldName="precio_salida"
+        //   value={Number(row.original.precio_salida)}
+        //   format="currency"
+        // />
       ),
     },
     {
@@ -488,12 +493,15 @@ function TransferDetailTableInner({
       size: 120,
       minSize: 100,
       cell: ({ row }) => (
-        <EditableCell
-          rowIndex={row.index}
-          fieldName="precio_entrada_venta"
-          value={row.original.precio_entrada_venta}
-          format="currency"
-        />
+        <div className="text-sm font-medium text-gray-900 text-center">
+            {formatCurrency(row.original.precio_entrada_venta)}
+          </div>
+        // <EditableCell
+        //   rowIndex={row.index}
+        //   fieldName="precio_entrada_venta"
+        //   value={row.original.precio_entrada_venta}
+        //   format="currency"
+        // />
       ),
     },
     {
@@ -503,12 +511,15 @@ function TransferDetailTableInner({
       size: 130,
       minSize: 110,
       cell: ({ row }) => (
-        <EditableCell
-          rowIndex={row.index}
-          fieldName="precio_entrada_venta_alt"
-          value={row.original.precio_entrada_venta_alt}
-          format="currency"
-        />
+        <div className="text-sm font-medium text-gray-900 text-center">
+            {formatCurrency(row.original.precio_entrada_venta_alt)}
+          </div>
+        // <EditableCell
+        //   rowIndex={row.index}
+        //   fieldName="precio_entrada_venta_alt"
+        //   value={row.original.precio_entrada_venta_alt}
+        //   format="currency"
+        // />
       ),
     },
     {
@@ -518,12 +529,15 @@ function TransferDetailTableInner({
       size: 100,
       minSize: 80,
       cell: ({ row }) => (
-        <EditableCell
-          rowIndex={row.index}
-          fieldName="incremento_p_entrada_venta"
-          value={row.original.incremento_p_entrada_venta}
-          format="percentage"
-        />
+        <div className="text-sm font-medium text-gray-900 text-center">
+            {formatCurrency(row.original.incremento_p_entrada_venta)}
+          </div>
+        // <EditableCell
+        //   rowIndex={row.index}
+        //   fieldName="incremento_p_entrada_venta"
+        //   value={row.original.incremento_p_entrada_venta}
+        //   format="percentage"
+        // />
       ),
     },
     {
@@ -533,12 +547,15 @@ function TransferDetailTableInner({
       size: 100,
       minSize: 80,
       cell: ({ row }) => (
-        <EditableCell
-          rowIndex={row.index}
-          fieldName="incremento_p_entrada_venta_alt"
-          value={row.original.incremento_p_entrada_venta_alt}
-          format="percentage"
-        />
+        <div className="text-sm font-medium text-gray-900 text-center">
+            {formatCurrency(row.original.incremento_p_entrada_venta_alt)}
+          </div>
+        // <EditableCell
+        //   rowIndex={row.index}
+        //   fieldName="incremento_p_entrada_venta_alt"
+        //   value={row.original.incremento_p_entrada_venta_alt}
+        //   format="percentage"
+        // />
       ),
     },
     {

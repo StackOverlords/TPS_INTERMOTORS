@@ -26,4 +26,9 @@ export const ProductGetSchema = z.object({
     imagen: z.string().nullable(),
     imagen_name: z.string().nullable(),
     imagen_ext: z.string().nullable(),
+    costo_mas_alto: z.preprocess((v) => Number(v), z.number()),
+    costo_mas_reciente: z.preprocess((v) => Number(v), z.number()),
+    costo_promedio: z.preprocess((v) => Number(v), z.number()),
+    costo_mas_antiguo: z.preprocess((v) => Number(v), z.number()),
+    costo_referencia: z.preprocess((v) => Number(v), z.number()),
 })

@@ -24,7 +24,7 @@ export const useTransferDetails = () => {
             const newDetail: UITransferDetailCreate = {
                 producto_id: product.id,
                 cantidad_entrada_salida: 1,
-                costo_entrada: 0, // Se puede ajustar manualmente
+                costo_entrada: product.costo_mas_antiguo || 0, // Usar costo más antiguo del producto
                 precio_salida: product.precio_venta,
                 precio_entrada_venta: product.precio_venta,
                 precio_entrada_venta_alt: product.precio_venta_alt,
@@ -35,7 +35,7 @@ export const useTransferDetails = () => {
                     descripcion: product.descripcion,
                     codigo_oem: product.codigo_oem,
                     codigo_upc: product.codigo_upc,
-                    costo: 0,
+                    costo: product.costo_mas_antiguo || 0,
                     precio_venta: product.precio_venta,
                     precio_venta_alt: product.precio_venta_alt,
                 },
