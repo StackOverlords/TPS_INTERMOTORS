@@ -1,577 +1,678 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { type UseFormReturn } from 'react-hook-form';
-import type { SaleUpdateDetailUI, SaleUpdateForm } from '../types/saleUpdate.type';
-import type { ProductGet } from '@/modules/products/types/ProductGet';
-import { showErrorToast, showSuccessToast } from '@/hooks/use-toast-enhanced';
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { type UseFormReturn } from "react-hook-form";
+import type {
+  SaleUpdateDetailUI,
+  SaleUpdateForm,
+} from "../types/saleUpdate.type";
+import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import {
+  multiplyPrecise,
+  dividePrecise,
+  calculateAmountFromPercent,
+  calculatePercent,
+  subtractPrecise,
+  isGreaterThanZero,
+  addPrecise,
+} from "@/utils/decimalUtils";
 
-export type DiscountType = 'percentage' | 'amount';
+export type DiscountType = "percentage" | "amount";
 
 interface UseSaleProductDetailsProps {
-    formMethods: UseFormReturn<SaleUpdateForm>;
-    originalDetails?: SaleUpdateDetailUI[]; // Detalles originales de la venta al cargar
+  formMethods: UseFormReturn<SaleUpdateForm>;
+  originalDetails?: SaleUpdateDetailUI[];
 }
 
 interface UseSaleProductDetailsReturn {
-    // Estados
-    discountType: DiscountType;
-    globalDiscount: number;
-
-    // Funciones principales
-    addProduct: (product: ProductGet | ProductGet[]) => void;
-    removeProduct: (productId: number) => void;
-    updateQuantity: (productId: number, quantity: number) => void;
-    updatePrice: (productId: number, price: number) => void;
-    applyGlobalDiscount: (discount: number, type: DiscountType) => void;
-    clearGlobalDiscount: () => void;
-    updateCustomSubtotal: (productId: number, customSubtotal: number) => void;
-    addMultipleItemsWithQuantity: (products: Array<ProductGet & { quantity?: number }>) => void;
-
-    // Funciones de cálculo
-    calculateSubtotal: (detail: SaleUpdateDetailUI) => number;
-    calculateTotal: () => number;
-    calculateTotalDiscount: () => number;
-    getDiscountPercentage: () => number
-    calculateTotalBeforeDiscount: () => number
-
-    // Setters
-    setDiscountType: (type: DiscountType) => void;
-    setGlobalDiscount: (discount: number) => void;
+  discountType: DiscountType;
+  globalDiscount: number;
+  addProduct: (product: ProductGet | ProductGet[]) => void;
+  removeProduct: (productId: number) => void;
+  updateQuantity: (productId: number, quantity: number) => void;
+  updatePrice: (productId: number, price: number) => void;
+  applyGlobalDiscount: (discount: number, type: DiscountType) => void;
+  clearGlobalDiscount: () => void;
+  updateCustomSubtotal: (productId: number, customSubtotal: number) => void;
+  addMultipleItemsWithQuantity: (
+    products: Array<ProductGet & { quantity?: number }>
+  ) => void;
+  calculateSubtotal: (detail: SaleUpdateDetailUI) => number;
+  calculateTotal: () => number;
+  calculateTotalDiscount: () => number;
+  getDiscountPercentage: () => number;
+  calculateTotalBeforeDiscount: () => number;
+  setDiscountType: (type: DiscountType) => void;
+  setGlobalDiscount: (discount: number) => void;
 }
 
-const useSaleProductDetailsWithForm = ({ formMethods, originalDetails = [] }: UseSaleProductDetailsProps): UseSaleProductDetailsReturn => {
-    const { setValue, getValues, watch } = formMethods;
-    const [discountType, setDiscountType] = useState<DiscountType>('percentage');
-    const [globalDiscount, setGlobalDiscount] = useState<number>(0);
-    const [hasDiscount, setHasDiscount] = useState<boolean>(false)
+const useSaleProductDetailsWithForm = ({
+  formMethods,
+  originalDetails = [],
+}: UseSaleProductDetailsProps): UseSaleProductDetailsReturn => {
+  const { setValue, getValues, watch } = formMethods;
+  const [discountType, setDiscountType] = useState<DiscountType>("percentage");
+  const [globalDiscount, setGlobalDiscount] = useState<number>(0);
+  const [hasDiscount, setHasDiscount] = useState<boolean>(false);
 
-    const watchedDetalles = watch("detalles");
-    const products = useMemo(() => watchedDetalles || [], [watchedDetalles]);
+  const watchedDetalles = watch("detalles");
+  const products = useMemo(() => watchedDetalles || [], [watchedDetalles]);
 
-    // Mapa de cantidades originales por producto
-    const originalQuantitiesMap = useMemo(() => {
-        const map = new Map<number, number>();
-        originalDetails.forEach(detail => {
-            if (detail.producto?.id) {
-                map.set(detail.producto.id, detail.cantidad);
-            }
-        });
-        return map;
-    }, [originalDetails]);
+  // Mapa de cantidades originales por producto
+  const originalQuantitiesMap = useMemo(() => {
+    const map = new Map<number, number>();
+    originalDetails.forEach((detail) => {
+      if (detail.producto?.id) {
+        map.set(detail.producto.id, detail.cantidad);
+      }
+    });
+    return map;
+  }, [originalDetails]);
 
-    useEffect(() => {
-        if (products.length <= 0) return
+  useEffect(() => {
+    if (products.length <= 0) return;
+    const existingDiscount = products.find((p) =>
+      isGreaterThanZero(p.descuento)
+    );
+    if (existingDiscount) {
+      setHasDiscount(true);
+    }
+  }, [products]);
 
-        const existingDiscount = products.find((p) => p.descuento > 0)
-        if (existingDiscount) {
-            setHasDiscount(true)
-        }
-    }, [products])
+  const calculateItemDiscount = useCallback(
+    (precio: number, cantidad: number, porcentajeDescuento: number): number => {
+      const subtotal = multiplyPrecise(precio, cantidad);
+      return calculateAmountFromPercent(porcentajeDescuento, subtotal);
+    },
+    []
+  );
 
-    // Función auxiliar para calcular stock disponible considerando unidades ya vendidas ORIGINALMENTE
-    const getAvailableStock = useCallback((productId: number, currentStock: number | undefined): number => {
-        if (currentStock === undefined) return Infinity;
-        // Obtener la cantidad ORIGINAL de la venta (no la actual del carrito)
-        const originalQuantity = originalQuantitiesMap.get(productId) ?? 0;
-        // El stock disponible es el actual + las unidades que originalmente estaban en esta venta
-        return currentStock + originalQuantity;
-    }, [originalQuantitiesMap]);
+  // Función auxiliar para calcular stock disponible
+  const getAvailableStock = useCallback(
+    (productId: number, currentStock: number | undefined): number => {
+      if (currentStock === undefined) return Infinity;
+      const originalQuantity = originalQuantitiesMap.get(productId) ?? 0;
+      return currentStock + originalQuantity;
+    },
+    [originalQuantitiesMap]
+  );
 
-    // Agregar múltiples productos con cantidades específicas
-    const addMultipleItemsWithQuantity = useCallback((
-        productsToAdd: Array<ProductGet & { quantity?: number }>
-    ) => {
-        const currentProducts = getValues("detalles") || [];
-        const updated = [...currentProducts];
-        let addedCount = 0;
-        let skippedCount = 0;
-        const skippedProducts: string[] = [];
+  // ==================== AGREGAR MÚLTIPLES PRODUCTOS ====================
+  const addMultipleItemsWithQuantity = useCallback(
+    (productsToAdd: Array<ProductGet & { quantity?: number }>) => {
+      const currentProducts = getValues("detalles") || [];
+      const updated = [...currentProducts];
+      let addedCount = 0;
+      let skippedCount = 0;
+      const skippedProducts: string[] = [];
 
-        // Buscar si ya existe algún producto con descuento
-        const productWithDiscount = currentProducts.find(p => p.descuento > 0 && p.porcentaje_descuento > 0);
-        const existingDiscountPercentage = productWithDiscount?.porcentaje_descuento ?? 0;
+      const productWithDiscount = currentProducts.find(
+        (p) =>
+          isGreaterThanZero(p.descuento) &&
+          isGreaterThanZero(p.porcentaje_descuento)
+      );
+      const existingDiscountPercentage =
+        productWithDiscount?.porcentaje_descuento ?? 0;
 
-        productsToAdd.forEach((product) => {
-            const requestedQuantity = product.quantity ?? 1;
-            const existingIndex = updated.findIndex(d => d.producto?.id === product.id);
-            const currentQuantityInSale = existingIndex !== -1 ? updated[existingIndex].cantidad : 0;
-            const availableStock = getAvailableStock(product.id, product.stock_actual);
+      productsToAdd.forEach((product) => {
+        const requestedQuantity = product.quantity ?? 1;
+        const existingIndex = updated.findIndex(
+          (d) => d.producto?.id === product.id
+        );
+        const currentQuantityInSale =
+          existingIndex !== -1 ? updated[existingIndex].cantidad : 0;
+        const availableStock = getAvailableStock(
+          product.id,
+          product.stock_actual
+        );
 
-            if (existingIndex !== -1) {
-                // Ya existe, aumentar cantidad
-                const item = updated[existingIndex];
-                const newQuantity = currentQuantityInSale + requestedQuantity;
+        if (existingIndex !== -1) {
+          const item = updated[existingIndex];
+          const newQuantity = currentQuantityInSale + requestedQuantity;
 
-                if (newQuantity > availableStock) {
-                    skippedCount++;
-                    skippedProducts.push(`${product.descripcion} (solicitado: ${requestedQuantity}, disponible: ${availableStock - currentQuantityInSale})`);
-                    return;
-                }
-
-                const newDiscount = (newQuantity * item.precio) * (item.porcentaje_descuento / 100);
-
-                updated[existingIndex] = {
-                    ...updated[existingIndex],
-                    cantidad: newQuantity,
-                    descuento: newDiscount
-                };
-                addedCount++;
-            } else {
-                // Nuevo producto
-                if (requestedQuantity > availableStock) {
-                    skippedCount++;
-                    skippedProducts.push(`${product.descripcion} (solicitado: ${requestedQuantity}, disponible: ${availableStock})`);
-                    return;
-                }
-
-                let porcentaje_descuento = 0;
-                let descuento = 0;
-
-                if (hasDiscount && existingDiscountPercentage > 0) {
-                    porcentaje_descuento = existingDiscountPercentage;
-                    const subtotal = requestedQuantity * product.precio_venta;
-                    descuento = subtotal * (existingDiscountPercentage / 100);
-                }
-
-                const newDetail: SaleUpdateDetailUI = {
-                    id_producto: product.id,
-                    cantidad: requestedQuantity,
-                    descuento: descuento,
-                    porcentaje_descuento: porcentaje_descuento,
-                    id_detalle_venta: null,
-                    precio: product.precio_venta,
-                    orden: currentProducts.length + 1,
-                    producto: {
-                        id: product.id,
-                        categoria: product.categoria ?? null,
-                        codigo_oem: product.codigo_oem ?? null,
-                        codigo_upc: product.codigo_upc ?? null,
-                        descripcion: product.descripcion,
-                        marca: product.marca ?? "",
-                        precio_venta: product.precio_venta,
-                        stock_actual: product.stock_actual
-                    }
-                };
-
-                updated.push(newDetail);
-                addedCount++;
-            }
-        });
-
-        setValue("detalles", updated);
-
-        // Mostrar notificaciones
-        if (addedCount > 0) {
-            showSuccessToast({
-                title: "Productos agregados",
-                description: `${addedCount} producto(s) agregados correctamente`,
-                duration: 2000
-            });
-        }
-        if (skippedCount > 0) {
-            showErrorToast({
-                title: "Stock insuficiente",
-                description: skippedProducts.length > 0
-                    ? skippedProducts.join(', ')
-                    : `${skippedCount} producto(s) no agregados por stock insuficiente`,
-                duration: 2000
-            });
-        }
-    }, [setValue, getValues, hasDiscount, getAvailableStock]);
-
-    // Agregar producto(s) 
-    const addProduct = useCallback((input: ProductGet | ProductGet[]) => {
-        const productsToAdd = Array.isArray(input) ? input : [input];
-        const currentProducts = getValues("detalles") || [];
-        const updated = [...currentProducts];
-        let addedCount = 0;
-        let skippedCount = 0;
-
-        // Buscar si ya existe algún producto con descuento
-        const productWithDiscount = currentProducts.find(p => p.descuento > 0 && p.porcentaje_descuento > 0);
-        const existingDiscountPercentage = productWithDiscount?.porcentaje_descuento ?? 0;
-
-        productsToAdd.forEach((product) => {
-            const existingIndex = updated.findIndex(d => d.producto?.id === product.id);
-            const currentQuantityInSale = existingIndex !== -1 ? updated[existingIndex].cantidad : 0;
-            const availableStock = getAvailableStock(product.id, product.stock_actual);
-
-            if (existingIndex !== -1) {
-                // Ya existe, aumentar cantidad en 1
-                const item = updated[existingIndex];
-                const newQuantity = currentQuantityInSale + 1;
-
-                if (newQuantity > availableStock) {
-                    skippedCount++;
-                    return;
-                }
-
-                const newDiscount = (newQuantity * item.precio) * (item.porcentaje_descuento / 100);
-
-                updated[existingIndex] = {
-                    ...updated[existingIndex],
-                    cantidad: newQuantity,
-                    descuento: newDiscount
-                };
-                addedCount++;
-            } else {
-                if (availableStock < 1) {
-                    skippedCount++;
-                    return;
-                }
-
-                let porcentaje_descuento = 0;
-                let descuento = 0;
-
-                if (hasDiscount && existingDiscountPercentage > 0) {
-                    porcentaje_descuento = existingDiscountPercentage;
-                    const subtotal = 1 * product.precio_venta;
-                    descuento = subtotal * (existingDiscountPercentage / 100);
-                }
-
-                const newDetail: SaleUpdateDetailUI = {
-                    id_producto: product.id,
-                    cantidad: 1,
-                    descuento: descuento,
-                    porcentaje_descuento: porcentaje_descuento,
-                    id_detalle_venta: null,
-                    precio: product.precio_venta,
-                    orden: currentProducts.length + 1,
-                    producto: {
-                        id: product.id,
-                        categoria: product.categoria ?? null,
-                        codigo_oem: product.codigo_oem ?? null,
-                        codigo_upc: product.codigo_upc ?? null,
-                        descripcion: product.descripcion,
-                        marca: product.marca ?? "",
-                        precio_venta: product.precio_venta,
-                        stock_actual: product.stock_actual
-                    }
-                };
-
-                updated.push(newDetail);
-                addedCount++;
-            }
-        });
-
-        setValue("detalles", updated);
-        showToastSummary(input, addedCount, skippedCount, productsToAdd);
-    }, [setValue, getValues, hasDiscount, getAvailableStock]);
-
-    // Quitar producto
-    const removeProduct = useCallback((productId: number) => {
-        const currentProducts = getValues("detalles") || [];
-
-        if (currentProducts.length <= 1) {
-            showErrorToast({
-                title: "No se puede eliminar",
-                description: "Debe haber al menos un producto en la venta",
-                duration: 2000
-            });
+          if (newQuantity > availableStock) {
+            skippedCount++;
+            skippedProducts.push(
+              `${product.descripcion} (solicitado: ${requestedQuantity}, disponible: ${availableStock - currentQuantityInSale})`
+            );
             return;
-        }
+          }
 
-        const updated = currentProducts.filter(detail => detail.producto?.id !== productId);
-        setValue("detalles", updated);
-    }, [setValue, getValues]);
+          const newDiscount = calculateItemDiscount(
+            item.precio,
+            newQuantity,
+            item.porcentaje_descuento
+          );
 
-    // Actualizar cantidad 
-    const updateQuantity = useCallback((productId: number, quantity: number) => {
-        if (quantity < 1) {
-            showErrorToast({
-                title: "Cantidad inválida",
-                description: "La cantidad debe ser mayor a 0",
-                duration: 2000
-            });
-            return;
-        }
-
-        const currentProducts = getValues("detalles") || [];
-        const productDetail = currentProducts.find(d => d.producto?.id === productId);
-
-        if (productDetail?.producto) {
-            const availableStock = getAvailableStock(productId, productDetail.producto.stock_actual);
-
-            if (quantity > availableStock) {
-                showErrorToast({
-                    title: "Stock insuficiente",
-                    description: `Solo hay ${availableStock} unidades disponibles`,
-                    duration: 2000
-                });
-                return;
-            }
-        }
-
-        const updated = currentProducts.map(detail => {
-            if (detail.producto?.id === productId) {
-                let newDiscount = detail.descuento;
-                if (detail.porcentaje_descuento > 0) {
-                    const subtotal = quantity * detail.precio;
-                    newDiscount = subtotal * (detail.porcentaje_descuento / 100);
-                }
-
-                return {
-                    ...detail,
-                    cantidad: quantity,
-                    descuento: newDiscount
-                };
-            }
-            return detail;
-        });
-
-        setValue("detalles", updated);
-    }, [setValue, getValues, getAvailableStock]);
-
-    // Actualizar subtotal personalizado
-    const updateCustomSubtotal = useCallback((productId: number, customSubtotal: number) => {
-        if (customSubtotal < 1) {
-            showErrorToast({
-                title: "Monto inválido",
-                description: "El monto debe ser mayor a 0",
-                duration: 2000
-            });
-            return;
-        }
-
-        const currentProducts = getValues("detalles") || [];
-        const updated = currentProducts.map(detail => {
-            if (detail.producto?.id === productId) {
-                const newPrice = customSubtotal / detail.cantidad;
-                let newDiscount = 0;
-                if (detail.porcentaje_descuento > 0) {
-                    newDiscount = customSubtotal * (detail.porcentaje_descuento / 100);
-                }
-
-                return {
-                    ...detail,
-                    precio: newPrice,
-                    descuento: newDiscount
-                };
-            }
-            return detail;
-        });
-
-        setValue("detalles", updated);
-    }, [setValue, getValues]);
-
-    // Actualizar precio
-    const updatePrice = useCallback((productId: number, price: number) => {
-        if (price < 0) {
-            showErrorToast({
-                title: "Precio inválido",
-                description: "El precio no puede ser negativo",
-                duration: 2000
-            });
-            return;
-        }
-
-        const currentProducts = getValues("detalles") || [];
-        const updated = currentProducts.map(detail => {
-            if (detail.producto?.id === productId) {
-                let newDiscount = detail.descuento;
-                if (detail.porcentaje_descuento > 0) {
-                    const subtotal = detail.cantidad * price;
-                    newDiscount = subtotal * (detail.porcentaje_descuento / 100);
-                }
-
-                return {
-                    ...detail,
-                    precio: price,
-                    descuento: newDiscount
-                };
-            }
-            return detail;
-        });
-
-        setValue("detalles", updated);
-    }, [setValue, getValues]);
-
-    // Aplicar descuento global
-    const applyGlobalDiscount = useCallback((discount: number, type: DiscountType) => {
-        if (discount < 0) {
-            showErrorToast({
-                title: "Descuento inválido",
-                description: "El descuento no puede ser negativo",
-                duration: 2000
-            });
-            return;
-        }
-
-        const currentProducts = getValues("detalles") || [];
-
-        if (currentProducts.length === 0) {
-            showErrorToast({
-                title: "Sin productos",
-                description: "No hay productos para aplicar descuento",
-                duration: 2000
-            });
-            return;
-        }
-
-        let updated: SaleUpdateDetailUI[];
-
-        if (type === 'percentage') {
-            if (discount > 100) {
-                showErrorToast({
-                    title: "Descuento inválido",
-                    description: "El descuento porcentual no puede ser mayor a 100%",
-                    duration: 2000
-                });
-                return;
-            }
-
-            updated = currentProducts.map(detail => {
-                const subtotal = detail.cantidad * detail.precio;
-                const discountAmount = subtotal * (discount / 100);
-
-                return {
-                    ...detail,
-                    porcentaje_descuento: discount,
-                    descuento: discountAmount
-                };
-            });
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            cantidad: newQuantity,
+            descuento: newDiscount,
+          };
+          addedCount++;
         } else {
-            const totalWithoutDiscount = currentProducts.reduce((acc, detail) => {
-                return acc + (detail.cantidad * detail.precio);
-            }, 0);
+          if (requestedQuantity > availableStock) {
+            skippedCount++;
+            skippedProducts.push(
+              `${product.descripcion} (solicitado: ${requestedQuantity}, disponible: ${availableStock})`
+            );
+            return;
+          }
 
-            if (discount > totalWithoutDiscount) {
-                showErrorToast({
-                    title: "Descuento inválido",
-                    description: "El descuento no puede ser mayor al total de la venta",
-                    duration: 2000
-                });
-                return;
-            }
+          let porcentaje_descuento = 0;
+          let descuento = 0;
 
-            const discountPercentage = (discount / totalWithoutDiscount) * 100;
+          if (hasDiscount && isGreaterThanZero(existingDiscountPercentage)) {
+            porcentaje_descuento = existingDiscountPercentage;
+            descuento = calculateItemDiscount(
+              product.precio_venta,
+              requestedQuantity,
+              existingDiscountPercentage
+            );
+          }
 
-            updated = currentProducts.map(detail => {
-                const subtotal = detail.cantidad * detail.precio;
-                const discountAmount = subtotal * (discountPercentage / 100);
+          const newDetail: SaleUpdateDetailUI = {
+            id_producto: product.id,
+            cantidad: requestedQuantity,
+            descuento: descuento,
+            porcentaje_descuento: porcentaje_descuento,
+            id_detalle_venta: null,
+            precio: product.precio_venta,
+            orden: currentProducts.length + 1,
+            producto: {
+              id: product.id,
+              categoria: product.categoria ?? null,
+              codigo_oem: product.codigo_oem ?? null,
+              codigo_upc: product.codigo_upc ?? null,
+              descripcion: product.descripcion,
+              marca: product.marca ?? "",
+              precio_venta: product.precio_venta,
+              stock_actual: product.stock_actual,
+            },
+          };
 
-                return {
-                    ...detail,
-                    porcentaje_descuento: discountPercentage,
-                    descuento: discountAmount
-                };
-            });
+          updated.push(newDetail);
+          addedCount++;
         }
+      });
 
-        setValue("detalles", updated);
-        setDiscountType(type);
-        setGlobalDiscount(discount);
-    }, [setValue, getValues]);
+      setValue("detalles", updated);
 
-    // Limpiar descuento global
-    const clearGlobalDiscount = useCallback(() => {
-        const currentProducts = getValues("detalles") || [];
+      if (addedCount > 0) {
+        showSuccessToast({
+          title: "Productos agregados",
+          description: `${addedCount} producto(s) agregados correctamente`,
+          duration: 2000,
+        });
+      }
+      if (skippedCount > 0) {
+        showErrorToast({
+          title: "Stock insuficiente",
+          description:
+            skippedProducts.length > 0
+              ? skippedProducts.join(", ")
+              : `${skippedCount} producto(s) no agregados por stock insuficiente`,
+          duration: 2000,
+        });
+      }
+    },
+    [setValue, getValues, hasDiscount, getAvailableStock, calculateItemDiscount]
+  );
 
-        const updated = currentProducts.map(detail => ({
+  // ==================== AGREGAR PRODUCTO(S) ====================
+  const addProduct = useCallback(
+    (input: ProductGet | ProductGet[]) => {
+      const productsToAdd = Array.isArray(input) ? input : [input];
+      const currentProducts = getValues("detalles") || [];
+      const updated = [...currentProducts];
+      let addedCount = 0;
+      let skippedCount = 0;
+
+      const productWithDiscount = currentProducts.find(
+        (p) =>
+          isGreaterThanZero(p.descuento) &&
+          isGreaterThanZero(p.porcentaje_descuento)
+      );
+      const existingDiscountPercentage =
+        productWithDiscount?.porcentaje_descuento ?? 0;
+
+      productsToAdd.forEach((product) => {
+        const existingIndex = updated.findIndex(
+          (d) => d.producto?.id === product.id
+        );
+        const currentQuantityInSale =
+          existingIndex !== -1 ? updated[existingIndex].cantidad : 0;
+        const availableStock = getAvailableStock(
+          product.id,
+          product.stock_actual
+        );
+
+        if (existingIndex !== -1) {
+          const item = updated[existingIndex];
+          const newQuantity = currentQuantityInSale + 1;
+
+          if (newQuantity > availableStock) {
+            skippedCount++;
+            return;
+          }
+
+          const newDiscount = calculateItemDiscount(
+            item.precio,
+            newQuantity,
+            item.porcentaje_descuento
+          );
+
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            cantidad: newQuantity,
+            descuento: newDiscount,
+          };
+          addedCount++;
+        } else {
+          if (availableStock < 1) {
+            skippedCount++;
+            return;
+          }
+
+          let porcentaje_descuento = 0;
+          let descuento = 0;
+
+          if (hasDiscount && isGreaterThanZero(existingDiscountPercentage)) {
+            porcentaje_descuento = existingDiscountPercentage;
+            descuento = calculateItemDiscount(
+              product.precio_venta,
+              1,
+              existingDiscountPercentage
+            );
+          }
+
+          const newDetail: SaleUpdateDetailUI = {
+            id_producto: product.id,
+            cantidad: 1,
+            descuento: descuento,
+            porcentaje_descuento: porcentaje_descuento,
+            id_detalle_venta: null,
+            precio: product.precio_venta,
+            orden: currentProducts.length + 1,
+            producto: {
+              id: product.id,
+              categoria: product.categoria ?? null,
+              codigo_oem: product.codigo_oem ?? null,
+              codigo_upc: product.codigo_upc ?? null,
+              descripcion: product.descripcion,
+              marca: product.marca ?? "",
+              precio_venta: product.precio_venta,
+              stock_actual: product.stock_actual,
+            },
+          };
+
+          updated.push(newDetail);
+          addedCount++;
+        }
+      });
+
+      setValue("detalles", updated);
+      showToastSummary(input, addedCount, skippedCount, productsToAdd);
+    },
+    [setValue, getValues, hasDiscount, getAvailableStock, calculateItemDiscount]
+  );
+
+  // ==================== QUITAR PRODUCTO ====================
+  const removeProduct = useCallback(
+    (productId: number) => {
+      const currentProducts = getValues("detalles") || [];
+
+      if (currentProducts.length <= 1) {
+        showErrorToast({
+          title: "No se puede eliminar",
+          description: "Debe haber al menos un producto en la venta",
+          duration: 2000,
+        });
+        return;
+      }
+
+      const updated = currentProducts.filter(
+        (detail) => detail.producto?.id !== productId
+      );
+      setValue("detalles", updated);
+    },
+    [setValue, getValues]
+  );
+
+  // ==================== ACTUALIZAR CANTIDAD ====================
+  const updateQuantity = useCallback(
+    (productId: number, quantity: number) => {
+      if (quantity < 1) {
+        showErrorToast({
+          title: "Cantidad inválida",
+          description: "La cantidad debe ser mayor a 0",
+          duration: 2000,
+        });
+        return;
+      }
+
+      const currentProducts = getValues("detalles") || [];
+      const productDetail = currentProducts.find(
+        (d) => d.producto?.id === productId
+      );
+
+      if (productDetail?.producto) {
+        const availableStock = getAvailableStock(
+          productId,
+          productDetail.producto.stock_actual
+        );
+
+        if (quantity > availableStock) {
+          showErrorToast({
+            title: "Stock insuficiente",
+            description: `Solo hay ${availableStock} unidades disponibles`,
+            duration: 2000,
+          });
+          return;
+        }
+      }
+
+      const updated = currentProducts.map((detail) => {
+        if (detail.producto?.id === productId) {
+          let newDiscount = detail.descuento;
+          if (isGreaterThanZero(detail.porcentaje_descuento)) {
+            newDiscount = calculateItemDiscount(
+              detail.precio,
+              quantity,
+              detail.porcentaje_descuento
+            );
+          }
+
+          return {
             ...detail,
-            porcentaje_descuento: 0,
-            descuento: 0
-        }));
-
-        setValue("detalles", updated);
-        setGlobalDiscount(0);
-    }, [setValue, getValues]);
-
-    // Calcular subtotal de un producto
-    const calculateSubtotal = useCallback((detail: SaleUpdateDetailUI): number => {
-        const subtotal = detail.cantidad * detail.precio;
-        return subtotal - detail.descuento;
-    }, []);
-
-    // Calcular total de la venta
-    const calculateTotal = useCallback((): number => {
-        return products.reduce((acc, detail) => {
-            return acc + calculateSubtotal(detail);
-        }, 0);
-    }, [products, calculateSubtotal]);
-
-    // Calcular total de descuentos
-    const calculateTotalDiscount = useCallback((): number => {
-        return products.reduce((acc, detail) => {
-            return acc + detail.descuento;
-        }, 0);
-    }, [products]);
-
-    const getDiscountPercentage = useCallback((): number => {
-        return products.find((p) => p.porcentaje_descuento > 0)?.porcentaje_descuento ?? 0;
-    }, [products]);
-
-    const calculateTotalBeforeDiscount = useCallback((): number => {
-        return products.reduce((total, detail) => {
-            return total + (detail.cantidad * detail.precio);
-        }, 0);
-    }, [products]);
-
-    // Función auxiliar para mostrar toast de resumen
-    const showToastSummary = (
-        input: ProductGet | ProductGet[],
-        addedCount: number,
-        skippedCount: number,
-        products: ProductGet[]
-    ) => {
-        if (Array.isArray(input)) {
-            if (addedCount > 0) {
-                showSuccessToast({
-                    title: "Productos agregados",
-                    description: `${addedCount} producto(s) agregados correctamente`,
-                    duration: 2000
-                });
-            }
-            if (skippedCount > 0) {
-                showErrorToast({
-                    title: "Stock insuficiente",
-                    description: `${skippedCount} producto(s) no agregados por stock insuficiente`,
-                    duration: 2000
-                });
-            }
-        } else {
-            if (addedCount > 0) {
-                showSuccessToast({
-                    title: "Producto agregado",
-                    description: `${products[0].descripcion} agregado correctamente`,
-                    duration: 2000
-                });
-            }
-            if (skippedCount > 0) {
-                showErrorToast({
-                    title: "Stock insuficiente",
-                    description: `No hay stock disponible para ${products[0].descripcion}`,
-                    duration: 2000
-                });
-            }
+            cantidad: quantity,
+            descuento: newDiscount,
+          };
         }
-    };
+        return detail;
+      });
 
-    return {
-        // Estados
-        discountType,
-        globalDiscount,
+      setValue("detalles", updated);
+    },
+    [setValue, getValues, getAvailableStock, calculateItemDiscount]
+  );
 
-        // Funciones principales
-        addProduct,
-        removeProduct,
-        updateQuantity,
-        updatePrice,
-        applyGlobalDiscount,
-        clearGlobalDiscount,
-        updateCustomSubtotal,
-        addMultipleItemsWithQuantity,
+  // ==================== ACTUALIZAR SUBTOTAL PERSONALIZADO ====================
+  const updateCustomSubtotal = useCallback(
+    (productId: number, customSubtotal: number) => {
+      if (!isGreaterThanZero(customSubtotal)) {
+        showErrorToast({
+          title: "Monto inválido",
+          description: "El monto debe ser mayor a 0",
+          duration: 2000,
+        });
+        return;
+      }
 
-        // Funciones de cálculo
-        calculateSubtotal,
-        calculateTotal,
-        calculateTotalDiscount,
-        getDiscountPercentage,
-        calculateTotalBeforeDiscount,
+      const currentProducts = getValues("detalles") || [];
+      const updated = currentProducts.map((detail) => {
+        if (detail.producto?.id === productId) {
+          const newPrice = dividePrecise(customSubtotal, detail.cantidad);
+          let newDiscount = 0;
 
-        // Setters
-        setDiscountType,
-        setGlobalDiscount,
-    };
+          if (isGreaterThanZero(detail.porcentaje_descuento)) {
+            newDiscount = calculateAmountFromPercent(
+              detail.porcentaje_descuento,
+              customSubtotal
+            );
+          }
+
+          return {
+            ...detail,
+            precio: newPrice,
+            descuento: newDiscount,
+          };
+        }
+        return detail;
+      });
+
+      setValue("detalles", updated);
+    },
+    [setValue, getValues]
+  );
+
+  // ==================== ACTUALIZAR PRECIO ====================
+  const updatePrice = useCallback(
+    (productId: number, price: number) => {
+      if (price < 0) {
+        showErrorToast({
+          title: "Precio inválido",
+          description: "El precio no puede ser negativo",
+          duration: 2000,
+        });
+        return;
+      }
+
+      const currentProducts = getValues("detalles") || [];
+      const updated = currentProducts.map((detail) => {
+        if (detail.producto?.id === productId) {
+          let newDiscount = detail.descuento;
+          if (isGreaterThanZero(detail.porcentaje_descuento)) {
+            newDiscount = calculateItemDiscount(
+              price,
+              detail.cantidad,
+              detail.porcentaje_descuento
+            );
+          }
+
+          return {
+            ...detail,
+            precio: price,
+            descuento: newDiscount,
+          };
+        }
+        return detail;
+      });
+
+      setValue("detalles", updated);
+    },
+    [setValue, getValues, calculateItemDiscount]
+  );
+
+  // ==================== APLICAR DESCUENTO GLOBAL ====================
+  const applyGlobalDiscount = useCallback(
+    (discount: number, type: DiscountType) => {
+      if (discount < 0) {
+        showErrorToast({
+          title: "Descuento inválido",
+          description: "El descuento no puede ser negativo",
+          duration: 2000,
+        });
+        return;
+      }
+
+      const currentProducts = getValues("detalles") || [];
+
+      if (currentProducts.length === 0) {
+        showErrorToast({
+          title: "Sin productos",
+          description: "No hay productos para aplicar descuento",
+          duration: 2000,
+        });
+        return;
+      }
+
+      let updated: SaleUpdateDetailUI[];
+
+      if (type === "percentage") {
+        if (discount > 100) {
+          showErrorToast({
+            title: "Descuento inválido",
+            description: "El descuento porcentual no puede ser mayor a 100%",
+            duration: 2000,
+          });
+          return;
+        }
+
+        updated = currentProducts.map((detail) => {
+          const discountAmount = calculateItemDiscount(
+            detail.precio,
+            detail.cantidad,
+            discount
+          );
+
+          return {
+            ...detail,
+            porcentaje_descuento: discount,
+            descuento: discountAmount,
+          };
+        });
+      } else {
+        const totalWithoutDiscount = currentProducts.reduce((acc, detail) => {
+          return addPrecise(
+            acc,
+            multiplyPrecise(detail.cantidad, detail.precio)
+          );
+        }, 0);
+
+        if (discount > totalWithoutDiscount) {
+          showErrorToast({
+            title: "Descuento inválido",
+            description: "El descuento no puede ser mayor al total de la venta",
+            duration: 2000,
+          });
+          return;
+        }
+
+        const discountPercentage = calculatePercent(
+          discount,
+          totalWithoutDiscount
+        );
+
+        updated = currentProducts.map((detail) => {
+          const discountAmount = calculateItemDiscount(
+            detail.precio,
+            detail.cantidad,
+            discountPercentage
+          );
+
+          return {
+            ...detail,
+            porcentaje_descuento: discountPercentage,
+            descuento: discountAmount,
+          };
+        });
+      }
+
+      setValue("detalles", updated);
+      setDiscountType(type);
+      setGlobalDiscount(discount);
+    },
+    [setValue, getValues, calculateItemDiscount]
+  );
+
+  // ==================== LIMPIAR DESCUENTO GLOBAL ====================
+  const clearGlobalDiscount = useCallback(() => {
+    const currentProducts = getValues("detalles") || [];
+
+    const updated = currentProducts.map((detail) => ({
+      ...detail,
+      porcentaje_descuento: 0,
+      descuento: 0,
+    }));
+
+    setValue("detalles", updated);
+    setGlobalDiscount(0);
+  }, [setValue, getValues]);
+
+  // ==================== CÁLCULOS ====================
+
+  const calculateSubtotal = useCallback(
+    (detail: SaleUpdateDetailUI): number => {
+      const subtotal = multiplyPrecise(detail.cantidad, detail.precio);
+      return subtractPrecise(subtotal, detail.descuento);
+    },
+    []
+  );
+
+  const calculateTotal = useCallback((): number => {
+    return products.reduce((acc, detail) => {
+      return addPrecise(acc, calculateSubtotal(detail));
+    }, 0);
+  }, [products, calculateSubtotal]);
+
+  const calculateTotalDiscount = useCallback((): number => {
+    return products.reduce((acc, detail) => {
+      return addPrecise(acc, detail.descuento);
+    }, 0);
+  }, [products]);
+
+  const getDiscountPercentage = useCallback((): number => {
+    return (
+      products.find((p) => isGreaterThanZero(p.porcentaje_descuento))
+        ?.porcentaje_descuento ?? 0
+    );
+  }, [products]);
+
+  const calculateTotalBeforeDiscount = useCallback((): number => {
+    return products.reduce((total, detail) => {
+      return addPrecise(total, multiplyPrecise(detail.cantidad, detail.precio));
+    }, 0);
+  }, [products]);
+
+  // Función auxiliar para mostrar toast de resumen
+  const showToastSummary = (
+    input: ProductGet | ProductGet[],
+    addedCount: number,
+    skippedCount: number,
+    products: ProductGet[]
+  ) => {
+    if (Array.isArray(input)) {
+      if (addedCount > 0) {
+        showSuccessToast({
+          title: "Productos agregados",
+          description: `${addedCount} producto(s) agregados correctamente`,
+          duration: 2000,
+        });
+      }
+      if (skippedCount > 0) {
+        showErrorToast({
+          title: "Stock insuficiente",
+          description: `${skippedCount} producto(s) no agregados por stock insuficiente`,
+          duration: 2000,
+        });
+      }
+    } else {
+      if (addedCount > 0) {
+        showSuccessToast({
+          title: "Producto agregado",
+          description: `${products[0].descripcion} agregado correctamente`,
+          duration: 2000,
+        });
+      }
+      if (skippedCount > 0) {
+        showErrorToast({
+          title: "Stock insuficiente",
+          description: `No hay stock disponible para ${products[0].descripcion}`,
+          duration: 2000,
+        });
+      }
+    }
+  };
+
+  return {
+    discountType,
+    globalDiscount,
+    addProduct,
+    removeProduct,
+    updateQuantity,
+    updatePrice,
+    applyGlobalDiscount,
+    clearGlobalDiscount,
+    updateCustomSubtotal,
+    addMultipleItemsWithQuantity,
+    calculateSubtotal,
+    calculateTotal,
+    calculateTotalDiscount,
+    getDiscountPercentage,
+    calculateTotalBeforeDiscount,
+    setDiscountType,
+    setGlobalDiscount,
+  };
 };
 
 export default useSaleProductDetailsWithForm;

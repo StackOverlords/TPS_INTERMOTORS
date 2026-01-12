@@ -3,6 +3,12 @@ import type { ReturnDetailCreate, UIReturnDetailCreate } from "../types/returnCr
 import type { ReturnDetailUpdate, UIReturnDetailUpdate } from "../types/returnUpdate.types";
 import type { SaleItemGetById } from "@/modules/sales/types/salesGetResponse";
 import { showErrorToast, showWarningToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { 
+    multiplyPrecise, 
+    sumPrecise, 
+    roundTo5Decimals,
+    validateNumber,
+} from "@/utils/decimalUtils";
 
 type ReturnDetailUnion = UIReturnDetailCreate | UIReturnDetailUpdate;
 
@@ -76,10 +82,12 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 );
             }
 
+            const precio = roundTo5Decimals(detail.precio - detail.descuento);
+
             const newDetail: any = {
                 almacen_out_det_id: detail.id,
                 cantidad: 1,
-                precio: detail.precio - detail.descuento,
+                precio: precio,
                 comentario: "",
                 orden: prev.length + 1,
                 almacen_out_id: saleId,
@@ -133,6 +141,9 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     return;
                 }
 
+                // Validar y redondear precio
+                const validatedPrecio = roundTo5Decimals(validateNumber(change.precio));
+
                 // Actualizar existente o agregar nuevo
                 if (existingIndex >= 0) {
                     // Solo actualizar si es un cambio real
@@ -140,7 +151,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                         newDetails[existingIndex] = {
                             ...newDetails[existingIndex],
                             cantidad: change.cantidad,
-                            precio: change.precio,
+                            precio: validatedPrecio,
                             comentario: change.comentario || newDetails[existingIndex].comentario,
                             maxQuantity: change.maxQuantity,
                         };
@@ -151,7 +162,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     const newDetail: any = {
                         almacen_out_det_id: change.almacen_out_det_id,
                         cantidad: change.cantidad,
-                        precio: change.precio,
+                        precio: validatedPrecio,
                         comentario: change.comentario || '',
                         orden: newDetails.length + 1,
                         almacen_out_id: change.sale_id,
@@ -219,13 +230,16 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
             items.forEach(item => {
                 const existingIndex = newDetails.findIndex(d => d.almacen_out_det_id === item.almacen_out_det_id);
 
+                // Validar y redondear precio
+                const validatedPrecio = roundTo5Decimals(validateNumber(item.precio));
+
                 if (existingIndex >= 0) {
                     // ACTUALIZAR (solo si la cantidad es diferente)
                     if (newDetails[existingIndex].cantidad !== item.cantidad) {
                         newDetails[existingIndex] = {
                             ...newDetails[existingIndex],
                             cantidad: item.cantidad,
-                            precio: item.precio,
+                            precio: validatedPrecio,
                             comentario: item.comentario || newDetails[existingIndex].comentario,
                             maxQuantity: item.maxQuantity,
                         };
@@ -235,7 +249,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     const newDetail: any = {
                         almacen_out_det_id: item.almacen_out_det_id,
                         cantidad: item.cantidad,
-                        precio: item.precio,
+                        precio: validatedPrecio,
                         comentario: item.comentario || '',
                         orden: newDetails.length + 1,
                         almacen_out_id: item.sale_id,
@@ -281,7 +295,10 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
      * Modificar cantidad con validación de máximo
      */
     const updateCantidad = useCallback((id_detalle: number, cantidad: number) => {
-        if (cantidad <= 0) {
+        // Validar cantidad con validateNumber
+        const validCantidad = Math.round(validateNumber(cantidad));
+
+        if (validCantidad <= 0) {
             showErrorToast({
                 title: 'Cantidad inválida',
                 description: 'La cantidad debe ser mayor a 0',
@@ -295,7 +312,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                 if (d.almacen_out_det_id !== id_detalle) return d;
 
                 // Validar contra maxQuantity
-                if (cantidad > d.maxQuantity) {
+                if (validCantidad > d.maxQuantity) {
                     showErrorToast({
                         title: 'Cantidad excedida',
                         description: `La cantidad máxima disponible es ${d.maxQuantity}`,
@@ -304,7 +321,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
                     return d; // Mantener valor anterior
                 }
 
-                return { ...d, cantidad };
+                return { ...d, cantidad: validCantidad };
             });
         });
     }, []);
@@ -313,7 +330,10 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
      * Modificar precio
      */
     const updatePrecio = useCallback((id_detalle: number, precio: number) => {
-        if (precio < 0) {
+        // Validar y redondear precio
+        const validPrecio = roundTo5Decimals(validateNumber(precio));
+
+        if (validPrecio < 0) {
             showErrorToast({
                 title: 'Precio inválido',
                 description: 'El precio no puede ser negativo',
@@ -325,7 +345,7 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
         setDetails((prev) =>
             prev.map((d) => {
                 if (d.almacen_out_det_id !== id_detalle) return d;
-                return { ...d, precio };
+                return { ...d, precio: validPrecio };
             })
         );
     }, []);
@@ -343,12 +363,18 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
     }, []);
 
     /**
-     * Obtiene el total de la devolución
+     * Obtiene el total de la devolución CON PRECISIÓN DECIMAL
      */
     const getTotal = useCallback((): number => {
-        return details.reduce((sum, detail) => {
-            return sum + detail.cantidad * detail.precio;
-        }, 0);
+        if (!details || details.length === 0) return 0;
+
+        // Calcular subtotales de cada detalle con precisión
+        const subtotals = details.map((detail) => {
+            return multiplyPrecise(detail.cantidad, detail.precio);
+        });
+
+        // Sumar todos los subtotales con precisión
+        return sumPrecise(subtotals);
     }, [details]);
 
     /**
@@ -369,8 +395,15 @@ export const useReturnDetails = <T extends ReturnDetailUnion = UIReturnDetailCre
      * Establecer detalles completos (útil para edición)
      */
     const setReturnDetails = useCallback((newDetails: T[]) => {
+        // Validar y redondear precios al establecer detalles
+        const validatedDetails = newDetails.map(detail => ({
+            ...detail,
+            precio: roundTo5Decimals(validateNumber(detail.precio)),
+            cantidad: Math.round(validateNumber(detail.cantidad))
+        }));
+
         // Asegurar que tengan orden correcto al establecer
-        setDetails(reorderDetails(newDetails));
+        setDetails(reorderDetails(validatedDetails));
     }, [reorderDetails]);
 
     /**

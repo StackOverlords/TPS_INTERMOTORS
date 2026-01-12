@@ -73,6 +73,7 @@ import { useSalePDF } from "../hooks/useSalePDF";
 import { useTabStore } from "@/states/tabStore";
 import { formatDateForUpdate } from "@/utils/dateFormatters";
 import { Badge } from "@/components/atoms/badge";
+import { roundTo5Decimals } from "@/utils/decimalUtils";
 
 const SaleEditScreen = () => {
   const configuraciones = {
@@ -193,11 +194,11 @@ const SaleEditScreen = () => {
       sale.detalles ?? []
     ).map((d, index) => ({
       cantidad: d.cantidad,
-      descuento: d.descuento,
+      descuento: roundTo5Decimals(d.descuento),
       id_detalle_venta: d.id,
       id_producto: d.producto.id,
-      porcentaje_descuento: d.porcentaje_descuento,
-      precio: d.precio,
+      porcentaje_descuento: roundTo5Decimals(d.porcentaje_descuento),
+      precio: roundTo5Decimals(d.precio),
       orden: d.orden ?? index + 1,
       producto: {
         id: d.producto.id,
@@ -206,10 +207,11 @@ const SaleEditScreen = () => {
         codigo_upc: d.producto.codigo_upc ?? null,
         descripcion: d.producto.descripcion,
         marca: d.producto.marca?.marca ?? "",
-        precio_venta: d.producto.precio_venta,
+        precio_venta: roundTo5Decimals(d.producto.precio_venta),
         stock_actual: d.producto.stock_actual ?? 0,
       },
     }));
+
     // Guardar los detalles originales
     setOriginalDetails(detallesTransformados);
 
@@ -231,6 +233,7 @@ const SaleEditScreen = () => {
       forma_venta: sale.forma_venta,
       forma_pago: sale.forma_pago ?? salePaymentTypesData?.[0]?.code ?? "",
     };
+
     reset(resetData);
     setHasInitialized(true);
     setIsUsingTempData(false);
@@ -418,7 +421,7 @@ const SaleEditScreen = () => {
     addMultipleItemsWithQuantity,
   } = useSaleProductDetailsWithForm({
     formMethods,
-    originalDetails,
+    originalDetails: originalDetails || [],
   });
 
   // Función para agregar un solo producto
@@ -686,13 +689,11 @@ const SaleEditScreen = () => {
                   {isDirty && <span className="text-xs">(sin cambios)</span>}
                 </TooltipButton>
                 <Badge
-                      className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
-                      variant={"success"}
-                    >
-                      {tempCreatedSale?.nro ??
-                        saleData?.nro ??
-                        "NUEVA"}
-                    </Badge>
+                  className="h-8 rounded-sm font-bold text-xl border border-emerald-500"
+                  variant={"success"}
+                >
+                  {tempCreatedSale?.nro ?? saleData?.nro ?? "NUEVA"}
+                </Badge>
               </div>
             </div>
           </header>
