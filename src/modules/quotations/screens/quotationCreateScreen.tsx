@@ -64,6 +64,7 @@ import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
+import { convertCartToQuotationDetails } from "@/modules/shoppingCart/utils/cartCalculations";
 
 const SCREEN_PATH = "/dashboard/create-quotation";
 
@@ -169,19 +170,7 @@ const QuotationCreateScreen = () => {
   });
 
   const detalles = useMemo((): QuotationDetail[] => {
-    return items.map((item, index) => ({
-      id_producto: item.product.id,
-      cantidad: item.quantity,
-      precio: item.customPrice,
-      descuento:
-        (item.customPrice ?? 0) *
-        item.quantity *
-        ((discountPercent ?? 0) / 100),
-      porcentaje_descuento: discountPercent ?? 0,
-      descripcion: item.customDescription,
-      nueva_marca: item.customBrand,
-      orden: index + 1,
-    }));
+    return convertCartToQuotationDetails(items, discountPercent ?? 0);
   }, [items, discountPercent]);
 
   useEffect(() => {

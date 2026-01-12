@@ -64,6 +64,7 @@ import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
+import { convertCartToSaleDetails } from "@/modules/shoppingCart/utils/cartCalculations";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SCREEN_PATH = "/dashboard/create-sale";
@@ -237,17 +238,7 @@ const CreateSaleScreen = () => {
   const { tipo_venta, plazo_pago } = formValues;
 
   const detalles = useMemo((): SaleDetail[] => {
-    return items.map((item, index) => ({
-      id_producto: item.product.id,
-      cantidad: item.quantity,
-      precio: item.customPrice,
-      descuento:
-        (item.customPrice ?? 0) *
-        item.quantity *
-        ((discountPercent ?? 0) / 100),
-      porcentaje_descuento: discountPercent ?? 0,
-      orden: index + 1,
-    }));
+    return convertCartToSaleDetails(items, discountPercent ?? 0);
   }, [items, discountPercent]);
 
   useEffect(() => {
@@ -466,7 +457,9 @@ const CreateSaleScreen = () => {
           //   displayCode: createdSale?.nro ? createdSale.nro.toString() : createdSale.id.toString(),
           //   replace:true
           // });
-          navigate(`/dashboard/sales/${createdSale.id}/update`, { replace: true });
+          navigate(`/dashboard/sales/${createdSale.id}/update`, {
+            replace: true,
+          });
         }
       },
       onError: (error: unknown) => {

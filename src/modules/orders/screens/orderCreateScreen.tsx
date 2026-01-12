@@ -69,6 +69,11 @@ import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
+import {
+  dividePrecise,
+  multiplyPrecise,
+  roundTo5Decimals,
+} from "@/utils/decimalUtils";
 
 const OrderCreateScreen = () => {
   const configuraciones = {
@@ -232,10 +237,6 @@ const OrderCreateScreen = () => {
     localStorage.setItem("order_exchange_rate", exchangeRate.toString());
   }, [exchangeRate]);
 
-  // Función auxiliar para redondear a 2 decimales
-  const roundToTwo = (num: number): number =>
-    Math.round((num + Number.EPSILON) * 100) / 100;
-
   // Función para convertir entre monedas
   const handleConvertCurrency = () => {
     if (orderDetailsHook.details.length === 0) return;
@@ -244,14 +245,13 @@ const OrderCreateScreen = () => {
       let newCosto: number;
 
       if (isUSD) {
-        // Convertir de USD a BOB
-        newCosto = roundToTwo(detail.costo * exchangeRate);
+        newCosto = roundTo5Decimals(
+          multiplyPrecise(detail.costo, exchangeRate)
+        );
       } else {
-        // Convertir de BOB a USD
-        newCosto = roundToTwo(detail.costo / exchangeRate);
+        newCosto = roundTo5Decimals(dividePrecise(detail.costo, exchangeRate));
       }
 
-      // Actualizar el costo del detalle
       return { ...detail, costo: newCosto };
     });
 
