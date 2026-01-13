@@ -1,20 +1,20 @@
-import { Button } from '@/components/atoms/button';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import { AlertCircle, Search, X } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { useProviders } from '../../hooks/useProviders';
-import type { usePurchaseFilters } from '../../hooks/usePurchaseFilters';
-import { format } from 'date-fns';
-import PopoverDatePicker from '@/components/common/PopoverDatePicker';
-import { ComboboxSelect } from '@/components/common/SelectCombobox';
-import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
+import { Button } from "@/components/atoms/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import { AlertCircle, Search } from "lucide-react";
+import { useRef, useState } from "react";
+import { useProviders } from "../../hooks/useProviders";
+import type { usePurchaseFilters } from "../../hooks/usePurchaseFilters";
+import { format } from "date-fns";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface PurchaseFiltersProps {
-  filters: ReturnType<typeof usePurchaseFilters>['filters'];
-  updateFilter: ReturnType<typeof usePurchaseFilters>['updateFilter'];
-  searchMode: 'realtime' | 'manual'
-  handleManualSearch: () => void
+  filters: ReturnType<typeof usePurchaseFilters>["filters"];
+  updateFilter: ReturnType<typeof usePurchaseFilters>["updateFilter"];
+  searchMode: "realtime" | "manual";
+  handleManualSearch: () => void;
 }
 
 const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
@@ -23,28 +23,31 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
   handleManualSearch,
   searchMode,
 }) => {
-
   const [dateError, setDateError] = useState<string | null>(null);
   const filterContainerRef = useRef<HTMLDivElement>(null);
   useFormEnterNavigation({
     submitOnLastField: false,
     containerRef: filterContainerRef,
-    excludeSelectors: ['.no-enter-nav', '.columns-button','[name="btn-chvron-right"]'],
+    excludeSelectors: [
+      ".no-enter-nav",
+      ".columns-button",
+      '[name="btn-chvron-right"]',
+    ],
     enabled: true,
-  })
+  });
 
   const {
     data: orderProvidersData,
-    isLoading: isOrdersProvidersLoading
+    // isLoading: isOrdersProvidersLoading
   } = useProviders(); // Cargar todos los proveedores
 
   // Función auxiliar para formatear fecha de manera segura
   const formatDateSafe = (date: Date): string => {
     try {
-      return format(date, 'yyyy-MM-dd');
+      return format(date, "yyyy-MM-dd");
     } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
+      console.error("Error formatting date:", error);
+      return "";
     }
   };
 
@@ -54,35 +57,38 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
     if (date) {
       // Validar que la fecha inicio no sea posterior a fecha fin
       if (filters.fecha_fin && date > filters.fecha_fin) {
-        setDateError('La fecha de inicio no puede ser posterior a la fecha de fin');
+        setDateError(
+          "La fecha de inicio no puede ser posterior a la fecha de fin"
+        );
         return;
       }
     }
 
-    updateFilter('fecha_inicio', date ? formatDateSafe(date) : undefined);
+    updateFilter("fecha_inicio", date ? formatDateSafe(date) : undefined);
   };
 
   const handleFechaFinChange = (date: Date | undefined) => {
     setDateError(null); // Limpiar errores anteriores
 
     if (date) {
-
       // Validar que la fecha fin no sea anterior a fecha inicio
       if (filters.fecha_inicio && date < filters.fecha_inicio) {
-        setDateError('La fecha de fin no puede ser anterior a la fecha de inicio');
+        setDateError(
+          "La fecha de fin no puede ser anterior a la fecha de inicio"
+        );
         return;
       }
 
       // Validar que la fecha no sea futura (opcional, según tu caso de uso)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (date > today) {
-        setDateError('No se pueden seleccionar fechas futuras');
-        return;
-      }
+      // const today = new Date();
+      // today.setHours(0, 0, 0, 0);
+      // if (date > today) {
+      //   setDateError('No se pueden seleccionar fechas futuras');
+      //   return;
+      // }
     }
 
-    updateFilter('fecha_fin', date ? formatDateSafe(date) : undefined);
+    updateFilter("fecha_fin", date ? formatDateSafe(date) : undefined);
   };
 
   // // Función para limpiar ambas fechas
@@ -94,7 +100,10 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 
   return (
     <section className="space-y-2">
-      <div ref={filterContainerRef} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div
+        ref={filterContainerRef}
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2"
+      >
         <div className="space-y-2">
           <Label>Nro. de Compra</Label>
           <div className="relative">
@@ -102,8 +111,13 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             <Input
               type="number"
               placeholder="COMP-1070..."
-              value={filters.codigo_interno ?? ''}
-              onChange={(e) => updateFilter("codigo_interno", e.target.value ? parseInt(e.target.value, 10) : undefined)}
+              value={filters.codigo_interno ?? ""}
+              onChange={(e) =>
+                updateFilter(
+                  "codigo_interno",
+                  e.target.value ? parseInt(e.target.value, 10) : undefined
+                )
+              }
               className="pl-10 font-mono text-xs"
             />
           </div>
@@ -112,13 +126,19 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
           <Label>Proveedor</Label>
           <ComboboxSelect
             value={filters.proveedor}
-            onChange={(value) => updateFilter("proveedor", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
+            onChange={(value) =>
+              updateFilter(
+                "proveedor",
+                value && typeof value === "string"
+                  ? parseInt(value, 10)
+                  : undefined
+              )
+            }
             options={orderProvidersData || []}
             optionTag="nombre"
-            placeholder='Seleccione un proveedor'
+            placeholder="Seleccione un proveedor"
             clearOnEmpty={true}
-          >
-          </ComboboxSelect>
+          ></ComboboxSelect>
         </div>
         <div className="space-y-2">
           <Label>Código OEM</Label>
@@ -127,14 +147,16 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
             <Input
               placeholder="11122-10040-D..."
               value={filters.codigo_oem_producto}
-              onChange={(e) => updateFilter("codigo_oem_producto", e.target.value)}
+              onChange={(e) =>
+                updateFilter("codigo_oem_producto", e.target.value)
+              }
               className="pl-10 font-mono text-xs"
             />
           </div>
         </div>
         {/* Fecha Inicio */}
         <div className="space-y-2 w-full">
-          <Label>Fecha Inicio</Label>
+          <Label>Desde</Label>
           <div className="flex gap-2">
             <PopoverDatePicker
               value={filters.fecha_inicio}
@@ -142,12 +164,15 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
               hasError={dateError}
               disabled={(date) => {
                 // Deshabilitar fechas futuras
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                // const today = new Date();
+                // today.setHours(0, 0, 0, 0);
 
-                const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
+                const fechaFin = filters.fecha_fin
+                  ? new Date(filters.fecha_fin)
+                  : undefined;
                 if (fechaFin && date > fechaFin) return true;
-                return date > today;
+                // return date > today;
+                return false;
               }}
             />
           </div>
@@ -155,7 +180,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 
         {/* Fecha Fin */}
         <div className="space-y-2 w-full">
-          <Label>Fecha Fin</Label>
+          <Label>Hasta</Label>
           <div className="flex gap-2">
             <PopoverDatePicker
               value={filters.fecha_fin}
@@ -163,11 +188,13 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
               hasError={dateError}
               disabled={(date) => {
                 // Deshabilitar fechas futuras
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                if (date > today) return true;
+                // const today = new Date();
+                // today.setHours(0, 0, 0, 0);
+                // if (date > today) return true;
 
-                const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
+                const fechaInicio = filters.fecha_inicio
+                  ? new Date(filters.fecha_inicio)
+                  : undefined;
                 // Deshabilitar fechas anteriores a la fecha de inicio
                 if (fechaInicio && date < fechaInicio) return true;
 
@@ -178,12 +205,9 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         </div>
 
         {/* Botón de búsqueda - Visible solo en modo manual */}
-        {searchMode === 'manual' && (
+        {searchMode === "manual" && (
           <div className="space-y-2 w-full flex flex-col justify-end">
-            <Button
-              onClick={handleManualSearch}
-              className="w-full"
-            >
+            <Button onClick={handleManualSearch} className="w-full">
               <Search className="size-4 mr-2" />
               Buscar
             </Button>
@@ -213,7 +237,6 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
           <span>{dateError}</span>
         </div>
       )}
-
     </section>
   );
 };

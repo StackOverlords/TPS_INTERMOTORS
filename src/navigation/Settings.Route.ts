@@ -87,7 +87,7 @@ const settingsProtectedRoutes: RouteType[] = [
       },
       {
         path: "/dashboard/settings/categories",
-        name: "Categorías",
+        name: "Divisiónes",
         type: "protected",
         element: CategoriesScreen,
         isAdmin: true,

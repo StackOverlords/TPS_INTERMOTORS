@@ -14,11 +14,11 @@ import { useRef } from "react";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 interface ProductFiltersProps {
-  filters: ReturnType<typeof useProductFilters>["filters"]
-  updateFilter: ReturnType<typeof useProductFilters>["updateFilter"]
-  showSubcategories: boolean
-  searchMode: 'realtime' | 'manual'
-  handleManualSearch: () => void
+  filters: ReturnType<typeof useProductFilters>["filters"];
+  updateFilter: ReturnType<typeof useProductFilters>["updateFilter"];
+  showSubcategories: boolean;
+  searchMode: "realtime" | "manual";
+  handleManualSearch: () => void;
 }
 
 const ProductFilters: React.FC<ProductFiltersProps> = ({
@@ -29,34 +29,38 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   handleManualSearch,
 }) => {
   // ✅ NUEVO: Hook de configuración
-  const { isFeatureEnabled } = useViewConfig('products-list');
+  const { isFeatureEnabled } = useViewConfig("products-list");
 
   const { data: categoriesData } = useCategoriesWithSubcategories();
-  const { data: brandsData } = useCommonBrands()
-  const {
-    data: subcategoriesData
-  } = useCommonSubcategories({
+  const { data: brandsData } = useCommonBrands();
+  const { data: subcategoriesData } = useCommonSubcategories({
     categoria: filters.categoria,
-    enabled: !!filters.categoria
-  })
-  
+    enabled: !!filters.categoria,
+  });
+
   // const { containerRef } = useFilterNavigation();
   const containerRef = useRef<HTMLDivElement>(null);
   useFormEnterNavigation({
     containerRef: containerRef,
-    excludeSelectors: ['.no-enter-nav','.columns-button','[name="btn-chvron-right"]'],
-    enabled:true
-  })
+    excludeSelectors: [
+      ".no-enter-nav",
+      ".columns-button",
+      '[name="btn-chvron-right"]',
+    ],
+    enabled: true,
+  });
   return (
     <div ref={containerRef}>
-      <div className={cn(
-        "grid grid-cols-2 gap-2",
-        searchMode === 'manual' ? 'md:grid-cols-6' : 'md:grid-cols-5'
-      )}>
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-2",
+          searchMode === "manual" ? "md:grid-cols-6" : "md:grid-cols-5"
+        )}
+      >
         {/* Filtro de Categoría */}
-        {isFeatureEnabled('categoryFilter') && (
+        {isFeatureEnabled("categoryFilter") && (
           <div data-filter="categoria">
-            <Label>Categorias</Label>
+            <Label>División</Label>
             <ComboboxSelect
               value={filters.categoria}
               onChange={(value) => {
@@ -75,7 +79,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         )}
 
         {/* Filtro de Descripción */}
-        {isFeatureEnabled('searchBar') && (
+        {isFeatureEnabled("searchBar") && (
           <div className="space-y-2" data-filter="descripcion">
             <Label>Descripción</Label>
             <div className="relative">
@@ -91,7 +95,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         )}
 
         {/* Código OEM */}
-        {isFeatureEnabled('searchBar') && (
+        {isFeatureEnabled("searchBar") && (
           <div className="space-y-2" data-filter="codigo_oem">
             <Label>Código OEM</Label>
             <div className="relative">
@@ -107,7 +111,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         )}
 
         {/* Código UPC */}
-        {isFeatureEnabled('searchBar') && (
+        {isFeatureEnabled("searchBar") && (
           <div className="space-y-2" data-filter="codigo_upc">
             <Label>Código UPC</Label>
             <div className="relative">
@@ -123,7 +127,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         )}
 
         {/* Filtro de Marca */}
-        {isFeatureEnabled('brandFilter') && (
+        {isFeatureEnabled("brandFilter") && (
           <div className="space-y-2" data-filter="marca">
             <Label>Marca</Label>
             <ComboboxSelect
@@ -143,12 +147,9 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         )}
 
         {/* Botón de Búsqueda Manual */}
-        {searchMode === 'manual' && (
+        {searchMode === "manual" && (
           <div className="flex items-end justify-end">
-            <Button
-              onClick={handleManualSearch}
-              className="w-full"
-            >
+            <Button onClick={handleManualSearch} className="w-full">
               <Search className="size-4" />
               Buscar
             </Button>
@@ -156,16 +157,21 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         )}
 
         {/* Filtros Avanzados */}
-        {showSubcategories && isFeatureEnabled('advancedFilters') && (
+        {showSubcategories && isFeatureEnabled("advancedFilters") && (
           <>
             {/* Subcategorías */}
             <div>
               <Label>Subcategorias</Label>
               <ComboboxSelect
                 disabled={filters.categoria === undefined}
-                value={filters.subcategoria !== undefined ? String(filters.subcategoria) : "all"}
+                value={
+                  filters.subcategoria !== undefined
+                    ? String(filters.subcategoria)
+                    : "all"
+                }
                 onChange={(value) => {
-                  const parsedValue = value === "all" ? undefined : Number(value);
+                  const parsedValue =
+                    value === "all" ? undefined : Number(value);
                   updateFilter("subcategoria", parsedValue);
                 }}
                 options={subcategoriesData || []}
@@ -206,6 +212,6 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
       </div>
     </div>
   );
-}
+};
 
 export default ProductFilters;

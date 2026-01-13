@@ -1,4 +1,4 @@
-import { Alert, AlertDescription } from '@/components/atoms/alert';
+import { Alert, AlertDescription } from "@/components/atoms/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,55 +8,79 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/atoms/alert-dialog';
-import { Badge } from '@/components/atoms/badge';
-import { Button } from '@/components/atoms/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/atoms/card';
-import TooltipButton from '@/components/common/TooltipButton';
-import { useGetAllBranches } from '@/modules/settings/hooks/branch/useGetAllBranches';
-import { useGetAllCategories } from '@/modules/settings/hooks/category/useGetAllCategories';
-import { AlertCircle, Loader2, RefreshCw, RotateCcw, Save } from 'lucide-react';
-import { useState } from 'react';
-import FormUpdatePrices from '../components/FormUpdatePrices';
-import { useUpdatePrices } from '../hooks/useUpdatePrices';
-import { UpdatePricesSchema, type UpdatePricesFormData } from '../schemas/updatePrices.schema';
+} from "@/components/atoms/alert-dialog";
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/atoms/card";
+import TooltipButton from "@/components/common/TooltipButton";
+import { useGetAllBranches } from "@/modules/settings/hooks/branch/useGetAllBranches";
+import { useGetAllCategories } from "@/modules/settings/hooks/category/useGetAllCategories";
+import {
+  AlertCircle,
+  HelpCircle,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  Save,
+} from "lucide-react";
+import { useState } from "react";
+import FormUpdatePrices from "../components/FormUpdatePrices";
+import { useUpdatePrices } from "../hooks/useUpdatePrices";
+import {
+  UpdatePricesSchema,
+  type UpdatePricesFormData,
+} from "../schemas/updatePrices.schema";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import ShortcutKey from "@/components/common/ShortcutKey";
 
 const UpdatePrices = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [lastSuccess, setLastSuccess] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<UpdatePricesFormData>({
     aplicar_todas: true,
-    tipo_ajuste: 'incremento',
+    tipo_ajuste: "incremento",
     porcentaje: 0,
     fecha: null,
     categoria: 0,
     sucursal: null,
   });
-  
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Obtener datos para los selectores
-  const { data: categoriesData = [], isLoading: loadingCategories } = useGetAllCategories({
-    pagina: 1,
-    pagina_registros: 1000,
-  });
-  
-  const { data: branchesData = [], isLoading: loadingBranches } = useGetAllBranches({
-    pagina: 1,
-    pagina_registros: 1000,
-  });
+  const { data: categoriesData = [], isLoading: loadingCategories } =
+    useGetAllCategories({
+      pagina: 1,
+      pagina_registros: 1000,
+    });
 
-  const categories = Array.isArray(categoriesData) ? categoriesData : categoriesData?.data || [];
-  const branches = Array.isArray(branchesData) ? branchesData : branchesData?.data || [];
+  const { data: branchesData = [], isLoading: loadingBranches } =
+    useGetAllBranches({
+      pagina: 1,
+      pagina_registros: 1000,
+    });
+
+  const categories = Array.isArray(categoriesData)
+    ? categoriesData
+    : categoriesData?.data || [];
+  const branches = Array.isArray(branchesData)
+    ? branchesData
+    : branchesData?.data || [];
 
   const updatePricesMutation = useUpdatePrices();
 
   const handleChange = (field: keyof UpdatePricesFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Limpiar error del campo al cambiar
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -68,7 +92,7 @@ const UpdatePrices = () => {
     const result = UpdatePricesSchema.safeParse(formData);
     if (!result.success) {
       const newErrors: Record<string, string> = {};
-      result.error.errors.forEach(err => {
+      result.error.errors.forEach((err) => {
         if (err.path[0]) {
           newErrors[err.path[0].toString()] = err.message;
         }
@@ -89,7 +113,7 @@ const UpdatePrices = () => {
   const handleReset = () => {
     setFormData({
       aplicar_todas: true,
-      tipo_ajuste: 'incremento',
+      tipo_ajuste: "incremento",
       porcentaje: 0,
       fecha: "",
       categoria: 0,
@@ -104,7 +128,7 @@ const UpdatePrices = () => {
     updatePricesMutation.mutate(formData, {
       onSuccess: (response) => {
         setShowConfirmDialog(false);
-        setLastSuccess(response.message || 'Precios actualizados exitosamente');
+        setLastSuccess(response.message || "Precios actualizados exitosamente");
         handleReset();
         setTimeout(() => setLastSuccess(null), 5000);
       },
@@ -138,16 +162,45 @@ const UpdatePrices = () => {
         )} */}
 
         {/* Error Alert */}
-        
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5" />
-              Actualizar Precios
+            <CardTitle className="flex items-center gap-2 justify-between">
+              <h1 className="flex gap-2 items-center">
+                <RefreshCw className="h-5 w-5" />
+                Actualizar Precios
+              </h1>
+              <TooltipWrapper
+                tooltipContentProps={{
+                  align: "end",
+                  className: "max-w-xs",
+                }}
+                tooltip={
+                  <div className="flex flex-col space-y-3">
+                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Atajos de teclado
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="space-y-1 text-gray-600 text-xs">
+                        <p>
+                          <ShortcutKey combo={"Alt + S"} /> Actualizar precios
+                        </p>
+                        <p>
+                          <ShortcutKey combo={"Ctrl + R"} /> Limpiar formulario
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                }
+              >
+                <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                  <HelpCircle className="w-4 h-4" />
+                </span>
+              </TooltipWrapper>
             </CardTitle>
             <CardDescription>
-              Actualiza los precios de productos por categoría con un porcentaje de incremento o decremento
+              Actualiza los precios de productos por división con un porcentaje
+              de incremento o decremento
             </CardDescription>
           </CardHeader>
 
@@ -170,7 +223,6 @@ const UpdatePrices = () => {
                 buttonProps={{
                   onClick: handleReset,
                   disabled: updatePricesMutation.isPending,
-                  className: 'bg-gray-500 hover:bg-gray-600 text-white',
                 }}
                 tooltip="Limpiar formulario"
               >
@@ -195,7 +247,10 @@ const UpdatePrices = () => {
         </Card>
 
         {/* Confirmation Dialog */}
-        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialog
+          open={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
@@ -204,13 +259,18 @@ const UpdatePrices = () => {
               </AlertDialogTitle>
               <AlertDialogDescription asChild className="space-y-3 pt-2">
                 <div className="text-sm text-muted-foreground">
-                  <p>Estás a punto de actualizar los precios con los siguientes parámetros:</p>
-                  
+                  <p>
+                    Estás a punto de actualizar los precios con los siguientes
+                    parámetros:
+                  </p>
+
                   <div className="space-y-2 bg-muted p-3 rounded-md text-sm text-foreground">
                     <div className="flex justify-between">
-                      <span className="font-medium">Categoría:</span>
+                      <span className="font-medium">División:</span>
                       <Badge variant="secondary">
-                        {formData.categoria ? getCategoryName(formData.categoria) : 'N/A'}
+                        {formData.categoria
+                          ? getCategoryName(formData.categoria)
+                          : "N/A"}
                       </Badge>
                     </div>
 
@@ -218,33 +278,47 @@ const UpdatePrices = () => {
                       <span className="font-medium">Aplicar a:</span>
                       <Badge variant="secondary">
                         {formData.aplicar_todas
-                          ? 'Todas las sucursales'
-                          : formData.sucursal ? getBranchName(formData.sucursal) : 'N/A'}
+                          ? "Todas las sucursales"
+                          : formData.sucursal
+                            ? getBranchName(formData.sucursal)
+                            : "N/A"}
                       </Badge>
                     </div>
 
                     <div className="flex justify-between">
                       <span className="font-medium">Tipo de Ajuste:</span>
-                      <Badge variant={formData.tipo_ajuste === 'incremento' ? 'default' : 'destructive'}>
-                        {formData.tipo_ajuste === 'incremento' ? 'Incrementar' : 'Decrementar'}
+                      <Badge
+                        variant={
+                          formData.tipo_ajuste === "incremento"
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        {formData.tipo_ajuste === "incremento"
+                          ? "Incrementar"
+                          : "Decrementar"}
                       </Badge>
                     </div>
 
                     <div className="flex justify-between">
                       <span className="font-medium">Porcentaje:</span>
                       <Badge variant="outline" className="font-mono">
-                        {formData.tipo_ajuste === 'incremento' ? '+' : '-'}{formData.porcentaje}%
+                        {formData.tipo_ajuste === "incremento" ? "+" : "-"}
+                        {formData.porcentaje}%
                       </Badge>
                     </div>
 
                     <div className="flex justify-between">
                       <span className="font-medium">Fecha:</span>
-                      <span className="text-muted-foreground">{formData.fecha || 'No especificada'}</span>
+                      <span className="text-muted-foreground">
+                        {formData.fecha || "No especificada"}
+                      </span>
                     </div>
                   </div>
 
                   <p className="text-amber-600 font-medium">
-                    ⚠️ Esta acción modificará los precios de los productos. ¿Deseas continuar?
+                    ⚠️ Esta acción modificará los precios de los productos.
+                    ¿Deseas continuar?
                   </p>
                 </div>
               </AlertDialogDescription>
@@ -270,7 +344,8 @@ const UpdatePrices = () => {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {updatePricesMutation.error?.message || 'Error al actualizar precios'}
+              {updatePricesMutation.error?.message ||
+                "Error al actualizar precios"}
             </AlertDescription>
           </Alert>
         )}

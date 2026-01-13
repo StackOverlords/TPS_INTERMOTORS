@@ -13,6 +13,7 @@ import PurchaseDetailSkeleton from "../components/purchaseDetail/PurchaseDetailS
 import PurchaseDetailsTable from "../components/PurchaseDetailsTable";
 import { usePurchaseById } from "../hooks/usePurchaseById";
 import { usePurchaseEdit } from "../hooks/usePurchaseEdit";
+import { Card, CardContent } from "@/components/atoms/card";
 
 const EditPurchase: React.FC = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const EditPurchase: React.FC = () => {
 
   // Estado para el tipo de cambio (tc_compra)
   const [exchangeRate, setExchangeRate] = useState(() => {
-    const saved = localStorage.getItem('purchase_exchange_rate');
+    const saved = localStorage.getItem("purchase_exchange_rate");
     return saved ? parseFloat(saved) : 6.96;
   });
 
@@ -29,7 +30,6 @@ const EditPurchase: React.FC = () => {
     data: purchase,
     isLoading: isLoadingPurchase,
     isError: isErrorPurchase,
-    // refetch: refetchPurchase,
   } = usePurchaseById(Number(purchaseId) || 0);
 
   const {
@@ -41,8 +41,6 @@ const EditPurchase: React.FC = () => {
     handleSubmit,
   } = usePurchaseEdit(purchase);
 
-  console.log("🔍 EditPurchase - formData:", formData);
-
   const handleGoBack = () => {
     navigate(`/dashboard/purchases/${purchaseId}`);
   };
@@ -50,7 +48,6 @@ const EditPurchase: React.FC = () => {
   const handleSave = async () => {
     const success = await handleSubmit(Number(purchaseId));
     if (success) {
-      // Cerrar la tab actual después de guardar exitosamente
       closeCurrentTab();
     }
   };
@@ -63,15 +60,14 @@ const EditPurchase: React.FC = () => {
       );
 
       if (existingDetail) {
-        return; // Ya existe, no hacer nada
+        return;
       }
 
       const costo = parseFloat(product.precio_venta) || 0;
-      const inc_p_venta = 30; // 30% por defecto
-      const inc_p_venta_alt = 15; // 15% por defecto
+      const inc_p_venta = 30;
+      const inc_p_venta_alt = 15;
 
       const precio_venta = costo * (1 + inc_p_venta / 100);
-      // precio_venta_alt se calcula en cadena sobre precio_venta, no sobre costo
       const precio_venta_alt = precio_venta * (1 + inc_p_venta_alt / 100);
       const subtotal = costo * 1;
 
@@ -85,17 +81,17 @@ const EditPurchase: React.FC = () => {
         precio_venta_alt: Number(precio_venta_alt.toFixed(2)),
         producto: product,
         subtotal: Number(subtotal.toFixed(2)),
-        tc_compra: exchangeRate, // Agregar tipo de cambio actual
+        tc_compra: exchangeRate,
       };
 
-      handleChange('detalles', [...formData.detalles, newDetail]);
+      handleChange("detalles", [...formData.detalles, newDetail]);
     },
     [formData.detalles, handleChange, exchangeRate]
   );
 
   // Hook para manejar la ventana secundaria de productos
   const productWindow = useProductSelectorWindow({
-    context: 'purchase',
+    context: "purchase",
     instanceId: `edit-${purchaseId}`,
     onProductSelect: handleProductSelect,
     onlyWithStock: false,
@@ -109,12 +105,7 @@ const EditPurchase: React.FC = () => {
     productWindow.open();
   };
 
-  // // Shortcuts
-  // useHotkeys('escape', handleGoBack, {
-  //   scopes: ["esc-key"],
-  //   enabled: true
-  // });
-  useCommand('actions.closeModal', handleGoBack)
+  useCommand("actions.closeModal", handleGoBack);
 
   if (isLoadingPurchase) {
     return <PurchaseDetailSkeleton />;
@@ -130,22 +121,26 @@ const EditPurchase: React.FC = () => {
           onRetry={() => navigate("/dashboard/list-purchases")}
         />
       </div>
-    )
+    );
   }
+
   return (
-    <div className="max-h-auto">
-      <div className="bg-gray-50 rounded-lg h-full w-full flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <main className="h-full p-2 gap-2 flex flex-col">
+      <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-3">
             <TooltipButton
               tooltipContentProps={{
-                align: 'start'
+                align: "start",
               }}
               onClick={handleGoBack}
-              tooltip={<p>Presiona <Kbd>esc</Kbd> para volver al detalle</p>}
+              tooltip={
+                <p>
+                  Presiona <Kbd>esc</Kbd> para volver al detalle
+                </p>
+              }
               buttonProps={{
-                variant: 'default',
+                variant: "default",
               }}
             >
               <CornerUpLeft />
@@ -156,66 +151,83 @@ const EditPurchase: React.FC = () => {
               </h1>
               {purchase && (
                 <p className="text-sm text-gray-600">
-                  {purchase.proveedor.proveedor} - {purchase.cantidad_detalles} {purchase.cantidad_detalles === 1 ? 'producto' : 'productos'}
+                  {purchase.proveedor.proveedor} - {purchase.cantidad_detalles}{" "}
+                  {purchase.cantidad_detalles === 1 ? "producto" : "productos"}
                 </p>
               )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleGoBack}
-              variant="outline"
-              disabled={isSaving}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-gray-900 hover:bg-gray-800 text-white"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Guardar Cambios
-                </>
-              )}
-            </Button>
-          </div>
+          <div className="flex items-center gap-2"></div>
         </div>
+      </header>
 
-        {/* Formulario superior */}
-        <div className="px-4 pt-4">
-          <FormCreatePurchase
-            formData={formData}
-            errors={errors}
-            isLoading={isSaving}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            onSubmit={handleSave}
-          />
-        </div>
-
-        {/* Tabla de detalles */}
-        <div className="flex-1 px-4 py-4 flex flex-col gap-4">
-          <div className="flex-shrink-0 bg-white rounded-lg p-4 border border-gray-200 flex flex-col flex-1">
-            <PurchaseDetailsTable
-              detalles={formData.detalles}
-              setDetalles={(detalles) => handleChange("detalles", detalles)}
-              toggleSelectorMode={toggleSelectorMode}
-              onExchangeRateChange={setExchangeRate}
+      <div className="gap-2 flex-1 min-h-screen md:min-h-0">
+        <div className="h-full flex flex-col gap-2">
+          {/* Formulario superior */}
+          <div className="flex-shrink-0">
+            <FormCreatePurchase
+              formData={formData}
+              errors={errors}
+              isLoading={isSaving}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              onSubmit={handleSave}
             />
+          </div>
+
+          {/* Tabla de detalles */}
+          <div className="flex-1 min-h-0">
+            <div className="h-full min-h-screen md:min-h-auto flex flex-col gap-2">
+              <div className="flex-1 min-h-0">
+                <div className="h-full flex flex-col">
+                  <PurchaseDetailsTable
+                    detalles={formData.detalles}
+                    setDetalles={(detalles) =>
+                      handleChange("detalles", detalles)
+                    }
+                    toggleSelectorMode={toggleSelectorMode}
+                    onExchangeRateChange={setExchangeRate}
+                  />
+                </div>
+              </div>
+
+              <Card className="border border-border shadow-none md:flex-shrink-0">
+                <CardContent className="p-2 sm:p-3">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      onClick={handleGoBack}
+                      variant="outline"
+                      disabled={isSaving}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="bg-gray-900 hover:bg-gray-800 text-white"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Guardar Cambios
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

@@ -8,26 +8,26 @@ import {
   Tag,
   Truck,
   Users,
-} from 'lucide-react';
-import { useNavigate } from 'react-router';
-import ConfigCard from '../configCard';
+} from "lucide-react";
+import { useNavigate } from "react-router";
+import ConfigCard from "../configCard";
 
 const configSections = [
   {
-    key: 'sucursales',
-    href: '/dashboard/settings/branches',
-    title: 'Sucursales',
-    description: 'Gestiona las sucursales de la aplicación',
+    key: "sucursales",
+    href: "/dashboard/settings/branches",
+    title: "Sucursales",
+    description: "Gestiona las sucursales de la aplicación",
     icon: GitBranchIcon,
-    iconClassName: 'bg-indigo-100 text-indigo-600',
+    iconClassName: "bg-indigo-100 text-indigo-600",
   },
   {
-    key: 'categorias',
-    href: '/dashboard/settings/categories',
-    title: 'Categorías',
-    description: 'Categorías principales',
+    key: "categorias",
+    href: "/dashboard/settings/categories",
+    title: "Divisiónes",
+    description: "Divisiónes principales",
     icon: FolderOpen,
-    iconClassName: 'bg-purple-100 text-purple-600',
+    iconClassName: "bg-purple-100 text-purple-600",
   },
   // {
   //   key: 'subcategorias',
@@ -38,52 +38,52 @@ const configSections = [
   //   iconClassName: 'bg-orange-100 text-orange-600',
   // },
   {
-    key: 'procedencias',
-    href: '/dashboard/settings/origins',
-    title: 'Procedencias',
-    description: 'Origen de los productos',
+    key: "procedencias",
+    href: "/dashboard/settings/origins",
+    title: "Procedencias",
+    description: "Origen de los productos",
     icon: MapPin,
-    iconClassName: 'bg-blue-100 text-blue-600',
+    iconClassName: "bg-blue-100 text-blue-600",
   },
   {
-    key: 'marcas',
-    href: '/dashboard/settings/brands',
-    title: 'Marcas',
-    description: 'Marcas de productos',
+    key: "marcas",
+    href: "/dashboard/settings/brands",
+    title: "Marcas",
+    description: "Marcas de productos",
     icon: Tag,
-    iconClassName: 'bg-emerald-100 text-emerald-600',
+    iconClassName: "bg-emerald-100 text-emerald-600",
   },
   {
-    key: 'marcasVehiculo',
-    href: '/dashboard/settings/vehicle-brands',
-    title: 'Marcas de Vehículo',
-    description: 'Marcas de vehículos',
+    key: "marcasVehiculo",
+    href: "/dashboard/settings/vehicle-brands",
+    title: "Marcas de Vehículo",
+    description: "Marcas de vehículos",
     icon: Car,
-    iconClassName: 'bg-red-100 text-red-600',
+    iconClassName: "bg-red-100 text-red-600",
   },
   {
-    key: 'medidas',
-    href: '/dashboard/settings/measurements',
-    title: 'Medidas',
-    description: 'Medidas de productos',
+    key: "medidas",
+    href: "/dashboard/settings/measurements",
+    title: "Medidas",
+    description: "Medidas de productos",
     icon: Ruler,
-    iconClassName: 'bg-yellow-100 text-yellow-600',
+    iconClassName: "bg-yellow-100 text-yellow-600",
   },
   {
-    key: 'proveedores',
-    href: '/dashboard/settings/providers',
-    title: 'Proveedores',
-    description: 'Proveedores de productos',
+    key: "proveedores",
+    href: "/dashboard/settings/providers",
+    title: "Proveedores",
+    description: "Proveedores de productos",
     icon: Truck,
-    iconClassName: 'bg-yellow-100 text-yellow-600',
+    iconClassName: "bg-yellow-100 text-yellow-600",
   },
   {
-    key: 'clientes',
-    href: '/dashboard/settings/customers',
-    title: 'Clientes',
-    description: 'Gestiona los clientes',
+    key: "clientes",
+    href: "/dashboard/settings/customers",
+    title: "Clientes",
+    description: "Gestiona los clientes",
     icon: Users,
-    iconClassName: 'bg-cyan-100 text-cyan-600',
+    iconClassName: "bg-cyan-100 text-cyan-600",
   },
 ];
 
@@ -103,7 +103,7 @@ const MasterDataSettings = () => {
   };
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
-      {configSections.map(section => {
+      {configSections.map((section) => {
         return (
           <ConfigCard
             key={section.key}

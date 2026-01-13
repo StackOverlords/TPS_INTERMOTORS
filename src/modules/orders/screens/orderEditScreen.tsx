@@ -1049,6 +1049,7 @@ const OrderEditScreen = () => {
                                       }
                                       isSaving={isSaving}
                                       isEditMode={true}
+                                      isUSD={isUSD}
                                     />
                                   </div>
                                 </div>
@@ -1058,7 +1059,11 @@ const OrderEditScreen = () => {
                                   </span>
                                   <span className="font-bold text-emerald-600">
                                     {formatCurrency(
-                                      orderDetailsHook.getTotalCosto()
+                                      orderDetailsHook.getTotalCosto(),
+                                      {
+                                        currency: isUSD ? "USD" : "BOB",
+                                        locale: isUSD ? "en-US" : "es-BO",
+                                      }
                                     )}
                                   </span>
                                 </div>

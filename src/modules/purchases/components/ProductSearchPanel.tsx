@@ -1,25 +1,25 @@
-import { Badge } from '@/components/atoms/badge';
-import { Button } from '@/components/atoms/button';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import CustomizableTable from '@/components/common/CustomizableTable';
-import Pagination from '@/components/common/pagination';
-import { ComboboxSelect } from '@/components/common/SelectCombobox';
-import { productsService } from '@/modules/products/services/productService';
-import type { ProductGet } from '@/modules/products/types/ProductGet';
-import { useCategoriesWithSubcategories } from '@/modules/shared/hooks/useCategories';
-import { useCommonBrands } from '@/modules/shared/hooks/useCommonBrands';
-import { formatCurrency } from '@/utils/formaters';
-import { useQuery } from '@tanstack/react-query';
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import Pagination from "@/components/common/pagination";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { productsService } from "@/modules/products/services/productService";
+import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
+import { useCommonBrands } from "@/modules/shared/hooks/useCommonBrands";
+import { formatCurrency } from "@/utils/formaters";
+import { useQuery } from "@tanstack/react-query";
 import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type SortingState,
-} from '@tanstack/react-table';
-import { Loader2, Plus, RotateCcw, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+} from "@tanstack/react-table";
+import { Loader2, Plus, RotateCcw, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface ProductSearchPanelProps {
   selectedProducts: any[];
@@ -35,10 +35,10 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
 
   // Filtros locales
   const [localFilters, setLocalFilters] = useState({
-    descripcion: '',
-    codigo_oem: '',
+    descripcion: "",
+    codigo_oem: "",
     categoria: undefined as number | undefined,
-    marca: '' as string | undefined,
+    marca: "" as string | undefined,
   });
 
   // Filtros aplicados (los que se envían al API)
@@ -55,15 +55,21 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['products', page, pageSize, appliedFilters],
+    queryKey: ["products", page, pageSize, appliedFilters],
     queryFn: () => {
       const filters = {
         pagina: page,
         pagina_registros: pageSize,
         sucursal: 1,
-        ...(appliedFilters.descripcion && { descripcion: appliedFilters.descripcion }),
-        ...(appliedFilters.codigo_oem && { codigo_oem: appliedFilters.codigo_oem }),
-        ...(appliedFilters.categoria && { categoria: appliedFilters.categoria }),
+        ...(appliedFilters.descripcion && {
+          descripcion: appliedFilters.descripcion,
+        }),
+        ...(appliedFilters.codigo_oem && {
+          codigo_oem: appliedFilters.codigo_oem,
+        }),
+        ...(appliedFilters.categoria && {
+          categoria: appliedFilters.categoria,
+        }),
         ...(appliedFilters.marca && { marca: appliedFilters.marca }),
       };
 
@@ -85,7 +91,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   const isProductSelected = useCallback(
     (productId: number) => {
       return selectedProducts.some(
-        p => p.id_producto === productId.toString() || p.producto?.id === productId
+        (p) =>
+          p.id_producto === productId.toString() || p.producto?.id === productId
       );
     },
     [selectedProducts]
@@ -99,8 +106,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   // Limpiar filtros
   const handleClearFilters = () => {
     const emptyFilters = {
-      descripcion: '',
-      codigo_oem: '',
+      descripcion: "",
+      codigo_oem: "",
       categoria: undefined,
       marca: undefined,
     };
@@ -111,16 +118,16 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   // Actualizar filtro local
   const updateLocalFilter = <K extends keyof typeof localFilters>(
     key: K,
-    value: typeof localFilters[K]
+    value: (typeof localFilters)[K]
   ) => {
-    setLocalFilters(prev => ({ ...prev, [key]: value }));
+    setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
       {
-        accessorKey: 'descripcion',
-        header: 'Producto',
+        accessorKey: "descripcion",
+        header: "Producto",
         size: 150,
         cell: ({ getValue }) => (
           <div className="font-bold text-xs text-gray-900 truncate ">
@@ -129,8 +136,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         ),
       },
       {
-        accessorKey: 'codigo_oem',
-        header: 'OEM',
+        accessorKey: "codigo_oem",
+        header: "OEM",
         size: 100,
         cell: ({ getValue }) => (
           <div className="text-xs text-gray-600 font-mono">
@@ -139,8 +146,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         ),
       },
       {
-        accessorKey: 'marca',
-        header: 'Marca',
+        accessorKey: "marca",
+        header: "Marca",
         size: 100,
         cell: ({ getValue }) => (
           <Badge variant="secondary" className="text-xs">
@@ -149,8 +156,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         ),
       },
       {
-        accessorKey: 'categoria',
-        header: 'Categoría',
+        accessorKey: "categoria",
+        header: "División",
         size: 110,
         cell: ({ getValue }) => (
           <Badge variant="outline" className="text-xs">
@@ -159,8 +166,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         ),
       },
       {
-        accessorKey: 'precio_venta',
-        header: 'Precio',
+        accessorKey: "precio_venta",
+        header: "Precio",
         size: 80,
         cell: ({ getValue }) => (
           <div className="text-xs font-semibold text-green-600 text-right">
@@ -169,8 +176,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         ),
       },
       {
-        accessorKey: 'stock_actual',
-        header: 'Stock',
+        accessorKey: "stock_actual",
+        header: "Stock",
         size: 70,
         cell: ({ row, getValue }) => {
           const stock = parseInt(getValue() as string, 10);
@@ -178,7 +185,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
             <div className="text-xs text-center">
               <span
                 className={
-                  stock > 0 ? 'text-gray-900 font-medium' : 'text-red-600'
+                  stock > 0 ? "text-gray-900 font-medium" : "text-red-600"
                 }
               >
                 {stock}
@@ -191,25 +198,25 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         },
       },
       {
-        id: 'actions',
-        header: '',
+        id: "actions",
+        header: "",
         size: 90,
         cell: ({ row }) => {
           const isSelected = isProductSelected(row.original.id);
           return (
             <Button
               size="sm"
-              variant={isSelected ? 'outline' : 'default'}
+              variant={isSelected ? "outline" : "default"}
               disabled={isSelected}
               onClick={() => onProductSelect(row.original)}
               className={
                 isSelected
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed h-7 text-xs'
-                  : 'bg-gray-900 hover:bg-gray-800 h-7 text-xs'
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed h-7 text-xs"
+                  : "bg-gray-900 hover:bg-gray-800 h-7 text-xs"
               }
             >
               {isSelected ? (
-                '✓ Agregado'
+                "✓ Agregado"
               ) : (
                 <>
                   <Plus className="w-3 h-3 mr-1" />
@@ -285,8 +292,10 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
               <Input
                 placeholder="Buscar..."
                 value={localFilters.descripcion}
-                onChange={e => updateLocalFilter('descripcion', e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                onChange={(e) =>
+                  updateLocalFilter("descripcion", e.target.value)
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-8 h-8 text-xs"
               />
             </div>
@@ -300,23 +309,25 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
               <Input
                 placeholder="OEM..."
                 value={localFilters.codigo_oem}
-                onChange={e => updateLocalFilter('codigo_oem', e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                onChange={(e) =>
+                  updateLocalFilter("codigo_oem", e.target.value)
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-8 h-8 text-xs font-mono"
               />
             </div>
           </div>
 
-          {/* Categoría */}
+          {/* División */}
           <div className="space-y-1">
-            <Label className="text-xs">Categoría</Label>
+            <Label className="text-xs">División</Label>
             <ComboboxSelect
               value={localFilters.categoria}
               onChange={(value: string | number) => {
-                const parsed = value === 'all' ? undefined : Number(value);
-                updateLocalFilter('categoria', parsed);
+                const parsed = value === "all" ? undefined : Number(value);
+                updateLocalFilter("categoria", parsed);
               }}
-              options={(categoriesData || []).map(cat => ({
+              options={(categoriesData || []).map((cat) => ({
                 id: String(cat.id),
                 categoria: cat.categoria,
               }))}
@@ -331,12 +342,15 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
           <div className="space-y-1">
             <Label className="text-xs">Marca</Label>
             <ComboboxSelect
-              value={localFilters.marca || 'all'}
+              value={localFilters.marca || "all"}
               onChange={(value: string | number) => {
                 const strValue = String(value);
-                updateLocalFilter('marca', strValue === 'all' ? undefined : strValue);
+                updateLocalFilter(
+                  "marca",
+                  strValue === "all" ? undefined : strValue
+                );
               }}
-              options={(brandsData || []).map(brand => ({
+              options={(brandsData || []).map((brand) => ({
                 id: brand.id,
                 marca: brand.marca,
               }))}
@@ -364,10 +378,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
             <p className="text-xs mt-1">Intenta nuevamente</p>
           </div>
         ) : products.length > 0 ? (
-          <CustomizableTable
-            table={table}
-            isLoading={false}
-          />
+          <CustomizableTable table={table} isLoading={false} />
         ) : (
           <div className="text-center py-8 text-gray-500 text-sm">
             No se encontraron productos
