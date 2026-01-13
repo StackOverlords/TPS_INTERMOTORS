@@ -564,7 +564,7 @@ const ProductListScreen = () => {
       },
       {
         accessorKey: "categoria",
-        header: "Categoría",
+        header: "División",
         size: 150,
         minSize: 30,
         cell: ({ row, getValue }) => (
@@ -975,7 +975,7 @@ const ProductListScreen = () => {
                         <p>
                           <ShortcutKey combo={filter1Keys} />
                           {COMMANDS["tableAndFilters.filter1"].description}:
-                          Categoria
+                          División
                         </p>
                         <p>
                           <ShortcutKey combo={filter2Keys} />

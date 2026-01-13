@@ -2,8 +2,12 @@ import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
-import { useBranchStore } from "@/states/branchStore";
-import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Search } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Search,
+} from "lucide-react";
 import { useState } from "react";
 import { useTransferResponsibles } from "../../hooks/commons/useTransferResponsibles";
 import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
@@ -11,193 +15,228 @@ import { format } from "date-fns";
 import { Button } from "@/components/atoms/button";
 
 interface TransferFiltersProps {
-    filters: ReturnType<typeof useTransfersFilters>["filters"]
-    updateFilter: ReturnType<typeof useTransfersFilters>["updateFilter"]
-    searchMode: 'realtime' | 'manual'
-    handleManualSearch: () => void
+  filters: ReturnType<typeof useTransfersFilters>["filters"];
+  updateFilter: ReturnType<typeof useTransfersFilters>["updateFilter"];
+  searchMode: "realtime" | "manual";
+  handleManualSearch: () => void;
 }
 
 const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
-    filters,
-    updateFilter,
-    // searchMode,
-    // handleManualSearch,
+  filters,
+  updateFilter,
+  // searchMode,
+  // handleManualSearch,
 }) => {
-    const [dateError, setDateError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
-    const {
-        data: transferResponsiblesData,
-        isLoading: isTransferResponsiblesLoading
-    } = useTransferResponsibles();
+  const {
+    data: transferResponsiblesData,
+    isLoading: isTransferResponsiblesLoading,
+  } = useTransferResponsibles();
 
-    // Función auxiliar para formatear fecha de manera segura
-    const formatDateSafe = (date: Date): string => {
-        try {
-            return format(date, 'yyyy-MM-dd');
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return '';
-        }
-    };
+  // Función auxiliar para formatear fecha de manera segura
+  const formatDateSafe = (date: Date): string => {
+    try {
+      return format(date, "yyyy-MM-dd");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
+  };
 
-    const handleFechaInicioChange = (date: Date | undefined) => {
-        setDateError(null); // Limpiar errores anteriores
+  const handleFechaInicioChange = (date: Date | undefined) => {
+    setDateError(null); // Limpiar errores anteriores
 
-        if (date) {
-            // Validar que la fecha inicio no sea posterior a fecha fin
-            if (filters.fecha_fin && date > filters.fecha_fin) {
-                setDateError('La fecha de inicio no puede ser posterior a la fecha de fin');
-                return;
+    if (date) {
+      // Validar que la fecha inicio no sea posterior a fecha fin
+      if (filters.fecha_fin && date > filters.fecha_fin) {
+        setDateError(
+          "La fecha de inicio no puede ser posterior a la fecha de fin"
+        );
+        return;
+      }
+    }
+
+    updateFilter("fecha_inicio", date ? formatDateSafe(date) : undefined);
+  };
+
+  const handleFechaFinChange = (date: Date | undefined) => {
+    setDateError(null); // Limpiar errores anteriores
+
+    if (date) {
+      // Validar que la fecha fin no sea anterior a fecha inicio
+      if (filters.fecha_inicio && date < filters.fecha_inicio) {
+        setDateError(
+          "La fecha de fin no puede ser anterior a la fecha de inicio"
+        );
+        return;
+      }
+
+      // Validar que la fecha no sea futura (opcional, según tu caso de uso)
+      // const today = new Date();
+      // today.setHours(0, 0, 0, 0);
+      // if (date > today) {
+      //     setDateError('No se pueden seleccionar fechas futuras');
+      //     return;
+      // }
+    }
+
+    updateFilter("fecha_fin", date ? formatDateSafe(date) : undefined);
+  };
+
+  // // Función para limpiar ambas fechas
+  // const clearAllDateFilters = () => {
+  //     setDateError(null);
+  //     updateFilter('fecha_inicio', undefined);
+  //     updateFilter('fecha_fin', undefined);
+  // };
+
+  return (
+    <section className="space-y-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="space-y-2">
+          <Label>Nro. de transferencia</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="number"
+              placeholder="Ej: 2054"
+              value={filters.codigo_interno ?? ""}
+              onChange={(e) =>
+                updateFilter(
+                  "codigo_interno",
+                  e.target.value ? parseInt(e.target.value, 10) : undefined
+                )
+              }
+              className="pl-10 font-mono text-xs"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Responsable</Label>
+          <ComboboxSelect
+            value={filters.responsable}
+            onChange={(value) =>
+              updateFilter(
+                "responsable",
+                value && typeof value === "string"
+                  ? parseInt(value, 10)
+                  : undefined
+              )
             }
-        }
+            options={transferResponsiblesData?.data || []}
+            optionTag={"nombre"}
+            isLoadingData={isTransferResponsiblesLoading}
+            enableAllOption={false}
+            clearOnEmpty={true}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Código OEM</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="11122-10040-D..."
+              value={filters.codigo_oem_producto}
+              onChange={(e) =>
+                updateFilter("codigo_oem_producto", e.target.value)
+              }
+              className="pl-10 font-mono text-xs"
+            />
+          </div>
+        </div>
+        <div className="space-y-2 w-full">
+          <Label>Desde</Label>
+          <div className="flex gap-2">
+            <PopoverDatePicker
+              value={filters.fecha_inicio}
+              onChange={(date) => handleFechaInicioChange(date)}
+              hasError={dateError}
+              disabled={(date) => {
+                // Deshabilitar fechas futuras
+                // const today = new Date();
+                // today.setHours(0, 0, 0, 0);
 
-        updateFilter('fecha_inicio', date ? formatDateSafe(date) : undefined);
-    };
+                const fechaFin = filters.fecha_fin
+                  ? new Date(filters.fecha_fin)
+                  : undefined;
+                if (fechaFin && date > fechaFin) return true;
+                return false;
+              }}
+            />
+          </div>
+        </div>
 
-    const handleFechaFinChange = (date: Date | undefined) => {
-        setDateError(null); // Limpiar errores anteriores
+        {/* Fecha Fin */}
+        <div className="space-y-2 w-full">
+          <Label>Hasta</Label>
+          <div className="flex gap-2">
+            <PopoverDatePicker
+              value={filters.fecha_fin}
+              onChange={(date) => handleFechaFinChange(date)}
+              hasError={dateError}
+              disabled={(date) => {
+                // Deshabilitar fechas futuras
+                // const today = new Date();
+                // today.setHours(0, 0, 0, 0);
+                // if (date > today) return true;
 
-        if (date) {
+                const fechaInicio = filters.fecha_inicio
+                  ? new Date(filters.fecha_inicio)
+                  : undefined;
+                // Deshabilitar fechas anteriores a la fecha de inicio
+                if (fechaInicio && date < fechaInicio) return true;
 
-            // Validar que la fecha fin no sea anterior a fecha inicio
-            if (filters.fecha_inicio && date < filters.fecha_inicio) {
-                setDateError('La fecha de fin no puede ser anterior a la fecha de inicio');
-                return;
-            }
+                return false;
+              }}
+            />
+          </div>
+        </div>
 
-            // Validar que la fecha no sea futura (opcional, según tu caso de uso)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            if (date > today) {
-                setDateError('No se pueden seleccionar fechas futuras');
-                return;
-            }
-        }
+        {/* Botones de dirección al final */}
+        <div className="space-y-2 col-span-2 md:col-span-1">
+          <Label className="invisible">Filtros</Label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={
+                filters.direccion === "entrantes" ? "default" : "outline"
+              }
+              onClick={() =>
+                updateFilter(
+                  "direccion",
+                  filters.direccion === "entrantes" ? undefined : "entrantes"
+                )
+              }
+              className="gap-2 flex-1"
+            >
+              <ArrowDownToLine className="h-4 w-4" />
+              Entrantes
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={
+                filters.direccion === "salientes" ? "default" : "outline"
+              }
+              onClick={() =>
+                updateFilter(
+                  "direccion",
+                  filters.direccion === "salientes" ? undefined : "salientes"
+                )
+              }
+              className="gap-2 flex-1"
+            >
+              <ArrowUpFromLine className="h-4 w-4" />
+              Salientes
+            </Button>
+          </div>
+        </div>
+      </div>
 
-        updateFilter('fecha_fin', date ? formatDateSafe(date) : undefined);
-    };
-
-    // // Función para limpiar ambas fechas
-    // const clearAllDateFilters = () => {
-    //     setDateError(null);
-    //     updateFilter('fecha_inicio', undefined);
-    //     updateFilter('fecha_fin', undefined);
-    // };
-
-    return (
-        <section className="space-y-2">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                <div className="space-y-2">
-                    <Label>Nro. de transferencia</Label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            type="number"
-                            placeholder="Ej: 2054"
-                            value={filters.codigo_interno ?? ''}
-                            onChange={(e) => updateFilter('codigo_interno', e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                            className="pl-10 font-mono text-xs"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label>Responsable</Label>
-                    <ComboboxSelect
-                        value={filters.responsable}
-                        onChange={(value) => updateFilter("responsable", value && typeof value === "string" ? parseInt(value, 10) : undefined)}
-                        options={transferResponsiblesData?.data || []}
-                        optionTag={"nombre"}
-                        isLoadingData={isTransferResponsiblesLoading}
-                        enableAllOption={false}
-                        clearOnEmpty={true}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>Código OEM</Label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            placeholder="11122-10040-D..."
-                            value={filters.codigo_oem_producto}
-                            onChange={(e) => updateFilter("codigo_oem_producto", e.target.value)}
-                            className="pl-10 font-mono text-xs"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2 w-full">
-                    <Label>Fecha Inicio</Label>
-                    <div className="flex gap-2">
-                        <PopoverDatePicker
-                            value={filters.fecha_inicio}
-                            onChange={(date) => handleFechaInicioChange(date)}
-                            hasError={dateError}
-                            disabled={(date) => {
-                                // Deshabilitar fechas futuras
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-
-                                const fechaFin = filters.fecha_fin ? new Date(filters.fecha_fin) : undefined;
-                                if (fechaFin && date > fechaFin) return true;
-                                return date > today;
-                            }}
-                        />
-                    </div>
-                </div>
-
-                {/* Fecha Fin */}
-                <div className="space-y-2 w-full">
-                    <Label>Fecha Fin</Label>
-                    <div className="flex gap-2">
-                        <PopoverDatePicker
-                            value={filters.fecha_fin}
-                            onChange={(date) => handleFechaFinChange(date)}
-                            hasError={dateError}
-                            disabled={(date) => {
-                                // Deshabilitar fechas futuras
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                if (date > today) return true;
-
-                                const fechaInicio = filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined;
-                                // Deshabilitar fechas anteriores a la fecha de inicio
-                                if (fechaInicio && date < fechaInicio) return true;
-
-                                return false;
-                            }}
-                        />
-                    </div>
-                </div>
-
-                {/* Botones de dirección al final */}
-                <div className="space-y-2 col-span-2 md:col-span-1">
-                    <Label className="invisible">Filtros</Label>
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={filters.direccion === 'entrantes' ? 'default' : 'outline'}
-                            onClick={() => updateFilter('direccion', filters.direccion === 'entrantes' ? undefined : 'entrantes')}
-                            className="gap-2 flex-1"
-                        >
-                            <ArrowDownToLine className="h-4 w-4" />
-                            Entrantes
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={filters.direccion === 'salientes' ? 'default' : 'outline'}
-                            onClick={() => updateFilter('direccion', filters.direccion === 'salientes' ? undefined : 'salientes')}
-                            className="gap-2 flex-1"
-                        >
-                            <ArrowUpFromLine className="h-4 w-4" />
-                            Salientes
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Botones de acción adicionales */}
-            {/* <div className="flex gap-2 items-end justify-end flex-wrap">
+      {/* Botones de acción adicionales */}
+      {/* <div className="flex gap-2 items-end justify-end flex-wrap">
                 {searchMode === 'manual' && (
                     <Button
                         onClick={handleManualSearch}
@@ -255,16 +294,15 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
                 </Button>
             </div> */}
 
-            {/* Mostrar error de validación */}
-            {dateError && (
-                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{dateError}</span>
-                </div>
-            )}
-
-        </section>
-    );
-}
+      {/* Mostrar error de validación */}
+      {dateError && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>{dateError}</span>
+        </div>
+      )}
+    </section>
+  );
+};
 
 export default TransferFiltersComponent;

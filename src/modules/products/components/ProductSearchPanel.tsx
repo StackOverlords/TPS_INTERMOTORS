@@ -1,34 +1,34 @@
-import { Badge } from '@/components/atoms/badge';
-import { Button } from '@/components/atoms/button';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import CustomizableTable from '@/components/common/CustomizableTable';
-import Pagination from '@/components/common/pagination';
-import { ComboboxSelect } from '@/components/common/SelectCombobox';
-import type { ProductGet } from '@/modules/products/types/ProductGet';
-import { useCategoriesWithSubcategories } from '@/modules/shared/hooks/useCategories';
-import { useCommonBrands } from '@/modules/shared/hooks/useCommonBrands';
-import { formatCurrency } from '@/utils/formaters';
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import Pagination from "@/components/common/pagination";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
+import { useCommonBrands } from "@/modules/shared/hooks/useCommonBrands";
+import { formatCurrency } from "@/utils/formaters";
 import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type SortingState,
-} from '@tanstack/react-table';
-import { Check, Plus, RotateCcw, Search, Zap } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
-import { useProductFilters } from '@/modules/products/hooks/useProductFilters';
-import { useBranchStore } from '@/states/branchStore';
-import { useProductsPaginated } from '../hooks/queries/useProductsPaginated';
-import type { CartItem } from '@/modules/shoppingCart/types/cart.types';
+} from "@tanstack/react-table";
+import { Check, Plus, RotateCcw, Search, Zap } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { useProductFilters } from "@/modules/products/hooks/useProductFilters";
+import { useBranchStore } from "@/states/branchStore";
+import { useProductsPaginated } from "../hooks/queries/useProductsPaginated";
+import type { CartItem } from "@/modules/shoppingCart/types/cart.types";
 
 type BaseWithId = { id_producto: number };
 
 interface ProductSearchPanelProps<T extends BaseWithId | CartItem> {
   selectedProducts: T[];
   onProductSelect: (product: ProductGet) => void;
-  defaultSearchMode?: 'realtime' | 'manual';
+  defaultSearchMode?: "realtime" | "manual";
   onlySelectWithStock?: boolean;
   allowExceedStock?: boolean;
 }
@@ -36,12 +36,14 @@ interface ProductSearchPanelProps<T extends BaseWithId | CartItem> {
 function ProductSearchPanel<T extends BaseWithId | CartItem>({
   selectedProducts,
   onProductSelect,
-  defaultSearchMode = 'manual',
+  defaultSearchMode = "manual",
   onlySelectWithStock = false,
   allowExceedStock = false,
 }: ProductSearchPanelProps<T>) {
   // Estado para el modo de búsqueda
-  const [searchMode, setSearchMode] = useState<'realtime' | 'manual'>(defaultSearchMode);
+  const [searchMode, setSearchMode] = useState<"realtime" | "manual">(
+    defaultSearchMode
+  );
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const { selectedBranchId } = useBranchStore();
@@ -55,7 +57,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
     setPage,
     resetFilters,
     applyFilters,
-    setPageSize
+    setPageSize,
   } = useProductFilters(Number(selectedBranchId));
 
   // Obtener datos de filtros
@@ -63,7 +65,8 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
   const { data: brandsData } = useCommonBrands();
 
   // Determinar qué filtros usar según el modo
-  const activeFilters = searchMode === 'realtime' ? debouncedFilters : appliedFilters;
+  const activeFilters =
+    searchMode === "realtime" ? debouncedFilters : appliedFilters;
 
   const {
     data: productsResponse,
@@ -79,8 +82,10 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
   // Verificar si un producto ya está seleccionado
   const isProductSelected = useCallback(
     (productId: number) => {
-      const item = selectedProducts.find(
-        p => ('id_producto' in p ? p.id_producto === productId : p.product.id === productId)
+      const item = selectedProducts.find((p) =>
+        "id_producto" in p
+          ? p.id_producto === productId
+          : p.product.id === productId
       );
 
       return {
@@ -93,7 +98,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
 
   // Manejar búsqueda manual
   const handleManualSearch = () => {
-    if (searchMode === 'manual') {
+    if (searchMode === "manual") {
       applyFilters();
     }
   };
@@ -105,21 +110,21 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
 
   // Toggle del modo de búsqueda
   const toggleSearchMode = () => {
-    setSearchMode(prev => prev === 'realtime' ? 'manual' : 'realtime');
+    setSearchMode((prev) => (prev === "realtime" ? "manual" : "realtime"));
   };
 
   const getStockColor = (stock: number, stock_min: number) => {
-    const stockMin: number = stock_min || 10
-    if (stock <= stockMin) return "danger"
-    if (stock <= (stockMin + 10)) return "warning"
-    return "success"
-  }
+    const stockMin: number = stock_min || 10;
+    if (stock <= stockMin) return "danger";
+    if (stock <= stockMin + 10) return "warning";
+    return "success";
+  };
 
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
       {
-        accessorKey: 'descripcion',
-        header: 'Producto',
+        accessorKey: "descripcion",
+        header: "Producto",
         size: 150,
         cell: ({ getValue }) => (
           <div className="font-bold text-xs text-primary truncate">
@@ -128,8 +133,8 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         ),
       },
       {
-        accessorKey: 'codigo_oem',
-        header: 'OEM',
+        accessorKey: "codigo_oem",
+        header: "OEM",
         size: 100,
         cell: ({ getValue }) => (
           <div className="text-xs text-gray-600 font-mono">
@@ -138,8 +143,8 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         ),
       },
       {
-        accessorKey: 'marca',
-        header: 'Marca',
+        accessorKey: "marca",
+        header: "Marca",
         size: 100,
         cell: ({ getValue }) => (
           <Badge variant="secondary" className="text-xs">
@@ -148,8 +153,8 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         ),
       },
       {
-        accessorKey: 'categoria',
-        header: 'Categoría',
+        accessorKey: "categoria",
+        header: "División",
         size: 110,
         cell: ({ getValue }) => (
           <Badge variant="outline" className="text-xs">
@@ -158,8 +163,8 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         ),
       },
       {
-        accessorKey: 'precio_venta',
-        header: 'Precio',
+        accessorKey: "precio_venta",
+        header: "Precio",
         size: 80,
         cell: ({ getValue }) => (
           <div className="text-xs font-semibold text-green-600 text-right">
@@ -173,9 +178,10 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
         size: 80,
         minSize: 60,
         cell: ({ row, getValue }) => {
-          const stock = typeof getValue() === "string"
-            ? parseFloat(getValue() as string)
-            : getValue<number>();
+          const stock =
+            typeof getValue() === "string"
+              ? parseFloat(getValue() as string)
+              : getValue<number>();
           const stockDisplay = isFinite(stock) ? stock.toFixed(0) : "0";
           const stockMin = row.original.stock_minimo || 1;
           return (
@@ -184,29 +190,28 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
               className={`flex flex-col justify-center rounded`}
             >
               <span className="font-bold">{stockDisplay}</span>
-              <span className="text-[10px] uppercase">{row.original.unidad_medida}</span>
+              <span className="text-[10px] uppercase">
+                {row.original.unidad_medida}
+              </span>
             </Badge>
           );
         },
       },
       {
-        id: 'actions',
-        header: 'Acciones',
+        id: "actions",
+        header: "Acciones",
         size: 90,
         cell: ({ row }) => {
-          const product = row.original
+          const product = row.original;
 
-          const {
-            isSelected,
-            item
-          } = isProductSelected(row.original.id);
+          const { isSelected, item } = isProductSelected(row.original.id);
 
-          const quantity = item && "quantity" in item ? item.quantity : null
+          const quantity = item && "quantity" in item ? item.quantity : null;
 
           // Lógica de deshabilitado del botón
           let isDisabled = false;
-          let buttonText = '';
-          let buttonVariant: 'default' | 'outline' = 'default';
+          let buttonText = "";
+          let buttonVariant: "default" | "outline" = "default";
           let showExtraIndicator = false;
 
           // Si onlySelectWithStock está activo
@@ -232,35 +237,40 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
 
           // Determinar el texto y variante del botón
           if (isSelected) {
-            buttonVariant = 'outline';
+            buttonVariant = "outline";
             if (quantity != null) {
               if (quantity > product.stock_actual && allowExceedStock) {
                 // Mostrar cantidad que excede el stock
                 const extraQuantity = quantity - product.stock_actual;
                 buttonText = `${quantity} (${extraQuantity} extra)`;
                 showExtraIndicator = true;
-              } else if (quantity >= product.stock_actual && !allowExceedStock) {
-                buttonText = 'Agregado';
+              } else if (
+                quantity >= product.stock_actual &&
+                !allowExceedStock
+              ) {
+                buttonText = "Agregado";
               } else {
                 buttonText = `${quantity} Agregados`;
               }
             } else {
-              buttonText = 'Agregado';
+              buttonText = "Agregado";
             }
           } else {
-            buttonText = 'Agregar';
+            buttonText = "Agregar";
           }
 
           return (
             <Button
-              type='button'
+              type="button"
               size="sm"
               variant={buttonVariant}
               disabled={isDisabled}
               onClick={() => onProductSelect(product)}
               className={`h-7 text-xs cursor-pointer`}
             >
-              {isDisabled && (quantity != null && quantity >= product.stock_actual) ? (
+              {isDisabled &&
+              quantity != null &&
+              quantity >= product.stock_actual ? (
                 <>
                   <Check className="size-3" />
                   Agregado
@@ -305,7 +315,7 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
   };
 
   const handleShowRowsChange = (rows: number) => {
-    setPageSize(rows)
+    setPageSize(rows);
   };
 
   return (
@@ -321,18 +331,24 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
           <div className="flex gap-1">
             {/* Toggle de modo de búsqueda */}
             <Button
-              type='button'
+              type="button"
               size="sm"
               variant="ghost"
               onClick={toggleSearchMode}
               className="text-xs h-7"
-              title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
+              title={
+                searchMode === "realtime"
+                  ? "Cambiar a búsqueda manual"
+                  : "Cambiar a búsqueda en tiempo real"
+              }
             >
-              <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
-              {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
+              <Zap
+                className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
+              />
+              {searchMode === "realtime" ? "Tiempo real" : "Manual"}
             </Button>
             <Button
-              type='button'
+              type="button"
               size="sm"
               variant="outline"
               onClick={handleClearFilters}
@@ -342,9 +358,9 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
               Limpiar
             </Button>
             {/* Botón de búsqueda solo visible en modo manual */}
-            {searchMode === 'manual' && (
+            {searchMode === "manual" && (
               <Button
-                type='button'
+                type="button"
                 size="sm"
                 onClick={handleManualSearch}
                 className="h-7 text-xs"
@@ -365,9 +381,13 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
               <Input
                 placeholder="Buscar..."
-                value={filters.descripcion || ''}
-                onChange={e => updateFilter('descripcion', e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchMode === 'manual' && handleManualSearch()}
+                value={filters.descripcion || ""}
+                onChange={(e) => updateFilter("descripcion", e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" &&
+                  searchMode === "manual" &&
+                  handleManualSearch()
+                }
                 className="pl-8 h-8 text-xs"
               />
             </div>
@@ -380,24 +400,28 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
               <Input
                 placeholder="OEM..."
-                value={filters.codigo_oem || ''}
-                onChange={e => updateFilter('codigo_oem', e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchMode === 'manual' && handleManualSearch()}
+                value={filters.codigo_oem || ""}
+                onChange={(e) => updateFilter("codigo_oem", e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" &&
+                  searchMode === "manual" &&
+                  handleManualSearch()
+                }
                 className="pl-8 h-8 text-xs font-mono"
               />
             </div>
           </div>
 
-          {/* Categoría */}
+          {/* División */}
           <div className="space-y-1">
-            <Label>Categoría</Label>
+            <Label>División</Label>
             <ComboboxSelect
               value={filters.categoria}
               onChange={(value: string | number) => {
-                const parsed = value === 'all' ? undefined : Number(value);
-                updateFilter('categoria', parsed);
+                const parsed = value === "all" ? undefined : Number(value);
+                updateFilter("categoria", parsed);
               }}
-              options={(categoriesData || []).map(cat => ({
+              options={(categoriesData || []).map((cat) => ({
                 id: String(cat.id),
                 categoria: cat.categoria,
               }))}
@@ -412,12 +436,15 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
           <div className="space-y-1">
             <Label>Marca</Label>
             <ComboboxSelect
-              value={filters.marca || 'all'}
+              value={filters.marca || "all"}
               onChange={(value: string | number) => {
                 const strValue = String(value);
-                updateFilter('marca', strValue === 'all' ? undefined : strValue);
+                updateFilter(
+                  "marca",
+                  strValue === "all" ? undefined : strValue
+                );
               }}
-              options={(brandsData || []).map(brand => ({
+              options={(brandsData || []).map((brand) => ({
                 id: brand.id,
                 marca: brand.marca,
               }))}
@@ -457,6 +484,6 @@ function ProductSearchPanel<T extends BaseWithId | CartItem>({
       )}
     </div>
   );
-};
+}
 
 export default ProductSearchPanel;

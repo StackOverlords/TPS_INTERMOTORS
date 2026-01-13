@@ -51,9 +51,8 @@ type ProductRow = {
 const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
   purchase,
   isLoading,
-  isError
+  isError,
 }) => {
-
   // Helpers
   const formatCurrency = (value: string | number) => {
     const num = typeof value === "string" ? parseFloat(value) : value;
@@ -67,7 +66,8 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
     return purchase.detalles.map((d, i) => {
       const cantidad = parseFloat(d.cantidad);
       const costo = parseFloat(d.costo);
-      const subtotal = (isFinite(cantidad) ? cantidad : 0) * (isFinite(costo) ? costo : 0);
+      const subtotal =
+        (isFinite(cantidad) ? cantidad : 0) * (isFinite(costo) ? costo : 0);
 
       return {
         id: d.id,
@@ -96,13 +96,16 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 250);
+    const id = setTimeout(
+      () => setDebouncedSearch(search.trim().toLowerCase()),
+      250
+    );
     return () => clearTimeout(id);
   }, [search]);
 
   const filteredRows = useMemo(() => {
     if (!debouncedSearch) return rows;
-    return rows.filter(r => {
+    return rows.filter((r) => {
       const haystack = [
         r.descripcion || "",
         r.descripcion_alt || "",
@@ -114,8 +117,10 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         r.marca_vehiculo || "",
         r.motor || "",
         r.medida || "",
-        r.tc_compra?.toString() || ""
-      ].join(" ").toLowerCase();
+        r.tc_compra?.toString() || "",
+      ]
+        .join(" ")
+        .toLowerCase();
       return haystack.includes(debouncedSearch);
     });
   }, [rows, debouncedSearch]);
@@ -132,191 +137,208 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
   );
 
   // Columnas
-  const columns = useMemo<ColumnDef<ProductRow>[]>(() => [
-    // {
-    //   accessorKey: "index",
-    //   header: "#",
-    //   size: 40,
-    //   minSize: 30,
-    //   enableHiding: false,
-    //   cell: ({ getValue }) => (
-    //     <div className="text-center text-xs text-gray-600">{getValue<number>()}</div>
-    //   ),
-    // },
-    {
-      accessorKey: "codigo_interno",
-      header: "Cód. interno",
-      size: 70,
-      minSize: 30,
-      cell: ({ getValue }) => (
-        <div className="space-y-0.5">
-          <div title="Código interno" className="font-mono text-xs text-gray-900 truncate">
-            {formatCell(getValue<string>())}
-          </div>
-          {/* {row.original.codigo_oem && (
+  const columns = useMemo<ColumnDef<ProductRow>[]>(
+    () => [
+      // {
+      //   accessorKey: "index",
+      //   header: "#",
+      //   size: 40,
+      //   minSize: 30,
+      //   enableHiding: false,
+      //   cell: ({ getValue }) => (
+      //     <div className="text-center text-xs text-gray-600">{getValue<number>()}</div>
+      //   ),
+      // },
+      {
+        accessorKey: "codigo_interno",
+        header: "Cód. interno",
+        size: 70,
+        minSize: 30,
+        cell: ({ getValue }) => (
+          <div className="space-y-0.5">
+            <div
+              title="Código interno"
+              className="font-mono text-xs text-gray-900 truncate"
+            >
+              {formatCell(getValue<string>())}
+            </div>
+            {/* {row.original.codigo_oem && (
             <div title="Código OEM" className="font-mono text-[12px] text-gray-500 truncate">
               OEM: {row.original.codigo_oem}
             </div>
           )} */}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "descripcion",
-      header: "Descripción",
-      size: 300,
-      minSize: 30,
-      cell: ({ row }) => (
-        <div className="space-y-0.5">
-          <div title="Descripción" className="text-sm font-medium text-gray-900 leading-tight truncate">
-            {row.original.descripcion}
           </div>
-          {/* {row.original.descripcion_alt && (
+        ),
+      },
+      {
+        accessorKey: "descripcion",
+        header: "Descripción",
+        size: 300,
+        minSize: 30,
+        cell: ({ row }) => (
+          <div className="space-y-0.5">
+            <div
+              title="Descripción"
+              className="text-sm font-medium text-gray-900 leading-tight truncate"
+            >
+              {row.original.descripcion}
+            </div>
+            {/* {row.original.descripcion_alt && (
             <div className="text-xs text-gray-500 truncate">
               Alt: {row.original.descripcion_alt}
             </div>
           )} */}
-          <div className="flex flex-wrap gap-1 mt-1">
-            {/* {row.original.categoria && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {/* {row.original.categoria && (
               <Badge variant="outline" title="Categoria" className="text-[10px] border border-gray-300">Cat: {row.original.categoria}</Badge>
             )} */}
-            {/* {row.original.marca && (
+              {/* {row.original.marca && (
               <Badge variant="outline" title="Marca" className="text-[10px] border border-gray-300">Marca: {row.original.marca}</Badge>
             )} */}
-            {/* {row.original.procedencia && (
+              {/* {row.original.procedencia && (
               <Badge variant="outline" title="Procedencia" className="text-[10px] border border-gray-300">Procedencia: {row.original.procedencia}</Badge>
             )} */}
-            {/* {row.original.marca_vehiculo && (
+              {/* {row.original.marca_vehiculo && (
               <Badge variant="secondary" title="Marca Vehículo" className="text-[10px]">Marca Vehículo: {row.original.marca_vehiculo}</Badge>
             )} */}
+            </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "marca",
-      header: "Marca",
-      size: 90,
-      minSize: 30,
-      cell: ({ row }) => (
-        <div className="text-left">
-          <div className="text-sm font-medium">{row.original.marca}</div>
-         
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
-      accessorKey: "motor",
-      header: "Motor",
-      size: 140,
-      minSize: 30,
-      cell: ({ row }) => (
-        <div className="space-y-0.5">
-          {row.original.motor && (
-            <div className="text-xs text-gray-700 truncate">Motor: {row.original.motor}</div>
-          )}
-          
-        </div>
-      ),
-    },
-    {
-      accessorKey: "medida",
-      header: "Medida",
-      size: 140,
-      minSize: 30,
-      cell: ({ row }) => (
-        <div className="space-y-0.5">
-          {row.original.medida && (
-            <div className="text-xs text-gray-500 truncate">Medida: {row.original.medida}</div>
-          )}
-          {(!row.original.motor && !row.original.medida) && (
-            <div className="text-xs text-gray-400">N/A</div>
-          )}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "cantidad",
-      header: "Cantidad",
-      size: 90,
-      minSize: 80,
-      cell: ({ row }) => (
-        <div className="text-left">
-          <div className="text-sm font-medium">{row.original.cantidad.toFixed(0)}</div>
-          {row.original.unidad && (
-            <div className="text-[10px] text-gray-500">{row.original.unidad}</div>
-          )}
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
-      accessorKey: "procedencia",
-      header: "Procedencia",
-      size: 90,
-      minSize: 30,
-      cell: ({ row }) => (
-        <div className="text-left">
-          <div className="text-sm font-medium">{row.original.procedencia}</div>
-         
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
-      accessorKey: "categoria",
-      header: "Categoría",
-      size: 90,
-      minSize: 30,
-      cell: ({ row }) => (
-        <div className="text-left">
-          <div className="text-sm font-medium">{row.original.categoria}</div>
-         
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
-      accessorKey: "costo",
-      header: "Costo U.",
-      size: 80,
-      minSize: 30,
-      cell: ({ getValue }) => (
-        <div className="text-left font-medium">
-          {formatCurrency(getValue<number>())}
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
-      accessorKey: "tc_compra",
-      header: "TC Compra",
-      size: 70,
-      minSize: 30,
-      cell: ({ getValue }) => (
-        <div className="text-left font-medium">
-          ${Number(getValue<number>()).toFixed(2)}
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
-      accessorKey: "subtotal",
-      header: "Subtotal",
-      size: 80,
-      minSize: 30,
-      cell: ({ getValue, row }) => (
-        <div className="text-center font-semibold text-emerald-600">
-          {formatCurrency(getValue<number>())}
-          {row.original.moneda && (
-            <span className="ml-1 text-[10px] text-gray-500">{row.original.moneda}</span>
-          )}
-        </div>
-      ),
-      sortingFn: "alphanumeric",
-    },
-  ], []);
+        ),
+      },
+      {
+        accessorKey: "marca",
+        header: "Marca",
+        size: 90,
+        minSize: 30,
+        cell: ({ row }) => (
+          <div className="text-left">
+            <div className="text-sm font-medium">{row.original.marca}</div>
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "motor",
+        header: "Motor",
+        size: 140,
+        minSize: 30,
+        cell: ({ row }) => (
+          <div className="space-y-0.5">
+            {row.original.motor && (
+              <div className="text-xs text-gray-700 truncate">
+                Motor: {row.original.motor}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "medida",
+        header: "Medida",
+        size: 140,
+        minSize: 30,
+        cell: ({ row }) => (
+          <div className="space-y-0.5">
+            {row.original.medida && (
+              <div className="text-xs text-gray-500 truncate">
+                Medida: {row.original.medida}
+              </div>
+            )}
+            {!row.original.motor && !row.original.medida && (
+              <div className="text-xs text-gray-400">N/A</div>
+            )}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "cantidad",
+        header: "Cantidad",
+        size: 90,
+        minSize: 80,
+        cell: ({ row }) => (
+          <div className="text-left">
+            <div className="text-sm font-medium">
+              {row.original.cantidad.toFixed(0)}
+            </div>
+            {row.original.unidad && (
+              <div className="text-[10px] text-gray-500">
+                {row.original.unidad}
+              </div>
+            )}
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "procedencia",
+        header: "Procedencia",
+        size: 90,
+        minSize: 30,
+        cell: ({ row }) => (
+          <div className="text-left">
+            <div className="text-sm font-medium">
+              {row.original.procedencia}
+            </div>
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "categoria",
+        header: "División",
+        size: 90,
+        minSize: 30,
+        cell: ({ row }) => (
+          <div className="text-left">
+            <div className="text-sm font-medium">{row.original.categoria}</div>
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "costo",
+        header: "Costo U.",
+        size: 80,
+        minSize: 30,
+        cell: ({ getValue }) => (
+          <div className="text-left font-medium">
+            {formatCurrency(getValue<number>())}
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "tc_compra",
+        header: "TC Compra",
+        size: 70,
+        minSize: 30,
+        cell: ({ getValue }) => (
+          <div className="text-left font-medium">
+            ${Number(getValue<number>()).toFixed(2)}
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "subtotal",
+        header: "Subtotal",
+        size: 80,
+        minSize: 30,
+        cell: ({ getValue, row }) => (
+          <div className="text-center font-semibold text-emerald-600">
+            {formatCurrency(getValue<number>())}
+            {row.original.moneda && (
+              <span className="ml-1 text-[10px] text-gray-500">
+                {row.original.moneda}
+              </span>
+            )}
+          </div>
+        ),
+        sortingFn: "alphanumeric",
+      },
+    ],
+    []
+  );
 
   // Tabla
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -363,14 +385,16 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
               Productos de la compra
             </h3>
             <p className="text-xs text-gray-600 mt-1">
-              {purchase.cantidad_detalles} {purchase.cantidad_detalles === 1 ? "producto" : "productos"} en total
+              {purchase.cantidad_detalles}{" "}
+              {purchase.cantidad_detalles === 1 ? "producto" : "productos"} en
+              total
             </p>
           </div>
           <div className="w-full sm:w-80">
             <Input
-              placeholder="Buscar producto (descr, código, marca, categoría...)"
+              placeholder="Buscar producto (descr, código, marca, división...)"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="h-8 text-sm"
             />
           </div>
@@ -389,20 +413,24 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
           renderBottomRow={() => (
             <TableRow className="bg-gray-50 font-semibold sticky bottom-0">
               {table.getVisibleFlatColumns().map((column) => {
-                if (column.id === 'cantidad') {
+                if (column.id === "cantidad") {
                   return (
                     <TableCell key={column.id} className="text-left">
-                      <div className="text-xs text-muted-foreground mb-0.5">Total Cantidad</div>
+                      <div className="text-xs text-muted-foreground mb-0.5">
+                        Total Cantidad
+                      </div>
                       <div className="text-sm font-bold text-blue-600">
                         {totalCantidad.toFixed(0)}
                       </div>
                     </TableCell>
                   );
                 }
-                if (column.id === 'subtotal') {
+                if (column.id === "subtotal") {
                   return (
                     <TableCell key={column.id} className="text-center">
-                      <div className="text-xs text-muted-foreground mb-0.5">Total</div>
+                      <div className="text-xs text-muted-foreground mb-0.5">
+                        Total
+                      </div>
                       <div className="text-sm font-bold text-emerald-600">
                         {formatCurrency(totalImporte)}
                       </div>

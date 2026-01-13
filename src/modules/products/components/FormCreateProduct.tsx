@@ -1,26 +1,26 @@
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import { ComboboxSelect } from '@/components/common/SelectCombobox';
-import ShortcutKey from '@/components/common/ShortcutKey';
-import TooltipButton from '@/components/common/TooltipButton';
-import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-import { showSuccessToast } from '@/hooks/use-toast-enhanced';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { useCategoriesWithSubcategories } from '@/modules/shared/hooks/useCategories';
-import { useCommonBrands } from '@/modules/shared/hooks/useCommonBrands';
-import { useCommonMeasurements } from '@/modules/shared/hooks/useCommonMeasurements';
-import { useCommonOrigins } from '@/modules/shared/hooks/useCommonOrigins';
-import { useCommonVehicleBrands } from '@/modules/shared/hooks/useCommonVehicleBrands';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { HelpCircle, Loader2, Package, Save, Wand2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { useCreateProduct } from '../hooks/mutations/useCreateProduct';
-import { useAutoDescription } from '../hooks/useAutoDescription';
-import { ProductCreateSchema } from '../schemas/productCreate.schema';
-import type { ProductCreate } from '../types/ProductCreate.types';
-import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import TooltipButton from "@/components/common/TooltipButton";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
+import { useCommonBrands } from "@/modules/shared/hooks/useCommonBrands";
+import { useCommonMeasurements } from "@/modules/shared/hooks/useCommonMeasurements";
+import { useCommonOrigins } from "@/modules/shared/hooks/useCommonOrigins";
+import { useCommonVehicleBrands } from "@/modules/shared/hooks/useCommonVehicleBrands";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { HelpCircle, Loader2, Package, Save, Wand2 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useCreateProduct } from "../hooks/mutations/useCreateProduct";
+import { useAutoDescription } from "../hooks/useAutoDescription";
+import { ProductCreateSchema } from "../schemas/productCreate.schema";
+import type { ProductCreate } from "../types/ProductCreate.types";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 
 const FormCreateProduct: React.FC = () => {
   const {
@@ -34,15 +34,15 @@ const FormCreateProduct: React.FC = () => {
   } = useForm<ProductCreate>({
     resolver: zodResolver(ProductCreateSchema),
     defaultValues: {
-      descripcion: '',
+      descripcion: "",
       id_categoria: 0,
       id_subcategoria: null,
-      descripcion_alt: '',
-      codigo_oem: '',
-      codigo_upc: '',
-      modelo: '',
-      medida: '',
-      nro_motor: '',
+      descripcion_alt: "",
+      codigo_oem: "",
+      codigo_upc: "",
+      modelo: "",
+      medida: "",
+      nro_motor: "",
       costo_referencia: 0,
       stock_minimo: 0,
       precio_venta: 0,
@@ -52,7 +52,7 @@ const FormCreateProduct: React.FC = () => {
       id_marca_vehiculo: 0,
       id_unidad: 0,
     },
-    mode: 'onChange',
+    mode: "onChange",
   });
 
   const watchedValues = watch();
@@ -78,9 +78,9 @@ const FormCreateProduct: React.FC = () => {
 
   const { handleError } = useErrorHandler();
 
-  const selectedCategory = categorys?.find(cat => cat.id === id_categoria);
+  const selectedCategory = categorys?.find((cat) => cat.id === id_categoria);
   const selectedVehicleBrand = vehicleBrands?.find(
-    brand => brand.id === id_marca_vehiculo
+    (brand) => brand.id === id_marca_vehiculo
   );
 
   const autoDescription = useAutoDescription({
@@ -93,12 +93,12 @@ const FormCreateProduct: React.FC = () => {
   });
 
   useEffect(() => {
-    setValue('descripcion', autoDescription);
+    setValue("descripcion", autoDescription);
   }, [autoDescription, setValue]);
 
   useEffect(() => {
     if (id_categoria && id_categoria !== 0) {
-      setValue('id_subcategoria', null);
+      setValue("id_subcategoria", null);
     }
   }, [id_categoria, setValue]);
 
@@ -106,16 +106,16 @@ const FormCreateProduct: React.FC = () => {
 
   const onSubmitCreate = (data: ProductCreate) => {
     handleCreateProduct(data, {
-      onSuccess: res => {
+      onSuccess: (res) => {
         showSuccessToast({
-          title: 'Producto agregado',
+          title: "Producto agregado",
           description: `Producto agregado con exitosamente. ID: #${res.id}`,
           duration: 5000,
         });
         // setTimeout(handleGoBack, 200);
       },
       onError: (error: unknown) => {
-        handleError({ error, customTitle: 'No se pudo agregar el producto' });
+        handleError({ error, customTitle: "No se pudo agregar el producto" });
       },
     });
     reset();
@@ -135,14 +135,14 @@ const FormCreateProduct: React.FC = () => {
   // };
 
   const getInputClassName = (fieldName: keyof ProductCreate): string => {
-    const baseClass = '';
+    const baseClass = "";
     return errors[fieldName]
       ? `${baseClass} border-red-500 focus:border-red-500 focus:ring-red-500`
       : baseClass;
   };
 
   const getSelectClassName = (fieldName: keyof ProductCreate): string => {
-    const baseClass = '';
+    const baseClass = "";
     return errors[fieldName]
       ? `${baseClass} border-red-500 focus:border-red-500`
       : baseClass;
@@ -173,7 +173,7 @@ const FormCreateProduct: React.FC = () => {
   };
 
   // Shortcuts
-  useHotkeys('alt+s', e => {
+  useHotkeys("alt+s", (e) => {
     e.preventDefault();
     const submitButton = document.querySelector(
       'button[type="submit"]'
@@ -184,12 +184,12 @@ const FormCreateProduct: React.FC = () => {
   });
 
   // Navigation shortcuts
-  useHotkeys('ctrl+tab', e => {
+  useHotkeys("ctrl+tab", (e) => {
     e.preventDefault();
     // focusNextField();
   });
 
-  useHotkeys('ctrl+shift+tab', e => {
+  useHotkeys("ctrl+shift+tab", (e) => {
     e.preventDefault();
     focusPrevField();
   });
@@ -209,9 +209,9 @@ const FormCreateProduct: React.FC = () => {
     containerRef: refForm,
     submitOnLastField: false,
     excludeSelectors: [
-      '.editable-cell-input',
+      ".editable-cell-input",
       '[data-table-cell="true"]',
-      '[name="btn-chvron-right"]'
+      '[name="btn-chvron-right"]',
     ],
   });
   return (
@@ -230,8 +230,8 @@ const FormCreateProduct: React.FC = () => {
           </h2>
           <TooltipWrapper
             tooltipContentProps={{
-              align: 'end',
-              className: 'max-w-xs',
+              align: "end",
+              className: "max-w-xs",
             }}
             tooltip={
               <div className="flex flex-col space-y-3">
@@ -245,20 +245,21 @@ const FormCreateProduct: React.FC = () => {
                   </h4>
                   <div className="space-y-1 text-gray-600 text-xs">
                     <p>
-                      {' '}
-                      <ShortcutKey combo={'Tab'} /> Siguiente campo{' '}
+                      {" "}
+                      <ShortcutKey combo={"Tab"} /> Siguiente campo{" "}
                     </p>
                     <p>
-                      {' '}
-                      <ShortcutKey combo={'Shift + Tab'} /> Campo anterior{' '}
+                      {" "}
+                      <ShortcutKey combo={"Shift + Tab"} /> Campo anterior{" "}
                     </p>
                     <p>
-                      {' '}
-                      <ShortcutKey combo={'Alt + Shift'} /> Guardar producto{' '}
+                      {" "}
+                      <ShortcutKey combo={"Alt + Shift"} /> Guardar
+                      producto{" "}
                     </p>
                     <p>
-                      {' '}
-                      <ShortcutKey combo={'Ctrl + Tab'} /> Avanzar rápido{' '}
+                      {" "}
+                      <ShortcutKey combo={"Ctrl + Tab"} /> Avanzar rápido{" "}
                     </p>
                   </div>
                 </div>
@@ -271,24 +272,24 @@ const FormCreateProduct: React.FC = () => {
           </TooltipWrapper>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {/* 1. Categoría */}
+          {/* 1. División */}
           <div>
-            <Label>Categoría *</Label>
+            <Label>División *</Label>
             <Controller
               name="id_categoria"
               control={control}
               render={({ field }) => (
                 <ComboboxSelect
                   value={field.value}
-                  onChange={value => field.onChange(Number(value))}
-                  options={(categorys || []).map(category => ({
+                  onChange={(value) => field.onChange(Number(value))}
+                  options={(categorys || []).map((category) => ({
                     id: category.id,
                     categoria: category.categoria,
                   }))}
                   optionTag="categoria"
-                  placeholder="Seleccionar categoría"
-                  searchPlaceholder="Buscar categorías..."
-                  className={getSelectClassName('id_categoria')}
+                  placeholder="Seleccionar División"
+                  searchPlaceholder="Buscar División..."
+                  className={getSelectClassName("id_categoria")}
                   clearOnEmpty={true}
                 />
               )}
@@ -310,12 +311,12 @@ const FormCreateProduct: React.FC = () => {
               render={({ field }) => (
                 <ComboboxSelect
                   value={field.value}
-                  onChange={value => field.onChange(Number(value))}
+                  onChange={(value) => field.onChange(Number(value))}
                   options={brands || []}
                   optionTag="marca"
                   placeholder="Seleccionar marca"
                   searchPlaceholder="Buscar marcas..."
-                  className={getSelectClassName('id_marca')}
+                  className={getSelectClassName("id_marca")}
                   clearOnEmpty={true}
                 />
               )}
@@ -332,7 +333,7 @@ const FormCreateProduct: React.FC = () => {
           {/* 3. Código OEM */}
           <div>
             <Label>Código OEM (Opcional)</Label>
-            <Input {...register('codigo_oem')} placeholder="Código OEM" />
+            <Input {...register("codigo_oem")} placeholder="Código OEM" />
             <div className="mt-1">
               {errors.codigo_oem && (
                 <p className="text-xs text-red-500 truncate">
@@ -361,8 +362,6 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-
-
           {/* 5. Procedencia */}
           <div>
             <Label>Procedencia *</Label>
@@ -372,12 +371,12 @@ const FormCreateProduct: React.FC = () => {
               render={({ field }) => (
                 <ComboboxSelect
                   value={field.value}
-                  onChange={value => field.onChange(Number(value))}
+                  onChange={(value) => field.onChange(Number(value))}
                   options={procedencia || []}
                   optionTag="procedencia"
                   placeholder="Seleccionar procedencia"
                   searchPlaceholder="Buscar procedencia..."
-                  className={getSelectClassName('id_procedencia')}
+                  className={getSelectClassName("id_procedencia")}
                   clearOnEmpty={true}
                 />
               )}
@@ -400,12 +399,12 @@ const FormCreateProduct: React.FC = () => {
               render={({ field }) => (
                 <ComboboxSelect
                   value={field.value}
-                  onChange={value => field.onChange(Number(value))}
+                  onChange={(value) => field.onChange(Number(value))}
                   options={unidades || []}
                   optionTag="unidad_medida"
                   placeholder="Seleccionar unidad"
                   searchPlaceholder="Buscar unidad..."
-                  className={getSelectClassName('id_unidad')}
+                  className={getSelectClassName("id_unidad")}
                   clearOnEmpty={true}
                 />
               )}
@@ -431,9 +430,11 @@ const FormCreateProduct: React.FC = () => {
                   autoSelectOnFocus={true}
                   min={0}
                   {...field}
-                  onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    field.onChange(parseInt(e.target.value) || 0)
+                  }
                   placeholder="0"
-                  className={getInputClassName('stock_minimo')}
+                  className={getInputClassName("stock_minimo")}
                 />
               )}
             />
@@ -457,11 +458,11 @@ const FormCreateProduct: React.FC = () => {
                   autoSelectOnFocus={true}
                   step="0.01"
                   {...field}
-                  onChange={e =>
+                  onChange={(e) =>
                     field.onChange(parseFloat(e.target.value) || 0)
                   }
                   placeholder="0.00"
-                  className={getInputClassName('costo_referencia')}
+                  className={getInputClassName("costo_referencia")}
                 />
               )}
             />
@@ -486,11 +487,11 @@ const FormCreateProduct: React.FC = () => {
                   step="0.01"
                   min={0}
                   {...field}
-                  onChange={e =>
+                  onChange={(e) =>
                     field.onChange(parseFloat(e.target.value) || 0)
                   }
                   placeholder="0.00"
-                  className={getInputClassName('precio_venta')}
+                  className={getInputClassName("precio_venta")}
                 />
               )}
             />
@@ -503,8 +504,6 @@ const FormCreateProduct: React.FC = () => {
             </div>
           </div>
 
-
-
           {/* 9. Precio alt */}
           <div>
             <Label>P. Venta. Alt *</Label>
@@ -516,11 +515,11 @@ const FormCreateProduct: React.FC = () => {
                   type="number"
                   autoSelectOnFocus={true}
                   {...field}
-                  onChange={e =>
+                  onChange={(e) =>
                     field.onChange(parseFloat(e.target.value) || 0)
                   }
                   placeholder="0"
-                  className={getInputClassName('precio_venta_alt')}
+                  className={getInputClassName("precio_venta_alt")}
                 />
               )}
             />
@@ -540,12 +539,12 @@ const FormCreateProduct: React.FC = () => {
               render={({ field }) => (
                 <ComboboxSelect
                   value={field.value}
-                  onChange={value => field.onChange(Number(value))}
+                  onChange={(value) => field.onChange(Number(value))}
                   options={vehicleBrands || []}
                   optionTag="marca_vehiculo"
                   placeholder="Seleccionar marca vehículo"
                   searchPlaceholder="Buscar marcas..."
-                  className={getSelectClassName('id_marca_vehiculo')}
+                  className={getSelectClassName("id_marca_vehiculo")}
                   clearOnEmpty={true}
                 />
               )}
@@ -562,9 +561,9 @@ const FormCreateProduct: React.FC = () => {
           <div>
             <Label>Medida (Opcional)</Label>
             <Input
-              {...register('medida')}
+              {...register("medida")}
               placeholder="Medida"
-              className={getInputClassName('medida')}
+              className={getInputClassName("medida")}
             />
             <div className="mt-1">
               {errors.medida && (
@@ -578,9 +577,9 @@ const FormCreateProduct: React.FC = () => {
           <div>
             <Label>Nro. Motor (Opcional)</Label>
             <Input
-              {...register('nro_motor')}
+              {...register("nro_motor")}
               placeholder="Nro. Motor"
-              className={getInputClassName('nro_motor')}
+              className={getInputClassName("nro_motor")}
             />
             <div className="mt-1">
               {errors.nro_motor && (
@@ -589,10 +588,10 @@ const FormCreateProduct: React.FC = () => {
                 </p>
               )}
             </div>
-          </div> 
+          </div>
         </div>
       </div>
-              {/* Campos adicionales para la generación de descripción */}
+      {/* Campos adicionales para la generación de descripción */}
       <div className="p-3 bg-white border border-gray-200 rounded-lg">
         {/* <h3 className="mb-3 text-sm font-semibold text-gray-900">
           Información Complementaria
@@ -608,7 +607,7 @@ const FormCreateProduct: React.FC = () => {
                 render={({ field }) => (
                   <Input
                     {...field}
-                    value={field.value ?? ''}
+                    value={field.value ?? ""}
                     onChange={(e) => field.onChange(e.target.value || null)}
                     placeholder="Descripción alt."
                   />
@@ -626,7 +625,7 @@ const FormCreateProduct: React.FC = () => {
           {/* Modelo */}
           <div>
             <Label>Modelo (Opcional)</Label>
-            <Input {...register('modelo')} placeholder="Ej: 2020-2024" />
+            <Input {...register("modelo")} placeholder="Ej: 2020-2024" />
             <div className="mt-1">
               {errors.modelo && (
                 <p className="text-xs text-red-500 truncate">
@@ -645,19 +644,19 @@ const FormCreateProduct: React.FC = () => {
           Descripción Auto-generada
         </h3>
         <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
-          {autoDescription || 'Completa los campos para generar la descripción'}
+          {autoDescription || "Completa los campos para generar la descripción"}
         </div>
-      </div> 
+      </div>
       {/* Botones de acción */}
       <div className="p-3 bg-white border border-gray-200 rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-xs text-gray-500">* Campos requeridos</span>
           <TooltipButton
             buttonProps={{
-              type: 'submit',
+              type: "submit",
               disabled: isPending || isSubmitting,
-              variant: 'default',
-              className: 'w-full sm:w-auto',
+              variant: "default",
+              className: "w-full sm:w-auto",
             }}
             tooltip={
               <span className="flex items-center gap-1">

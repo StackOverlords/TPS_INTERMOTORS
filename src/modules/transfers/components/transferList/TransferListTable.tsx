@@ -1,7 +1,12 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Checkbox } from "@/components/atoms/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
@@ -15,650 +20,744 @@ import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Check, Clock, Edit, Eye, HelpCircle, Loader2, MoreVertical, Send, Settings, Trash2, X } from "lucide-react";
+import {
+  Check,
+  Edit,
+  Eye,
+  HelpCircle,
+  Loader2,
+  MoreVertical,
+  Send,
+  Settings,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useNavigate } from "react-router";
 import { useBranchStore } from "@/states/branchStore";
 import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
-import type { TransferGetAll, TransfersGetAllResponse } from "../../types/transferGet.types";
+import type {
+  TransferGetAll,
+  TransfersGetAllResponse,
+} from "../../types/transferGet.types";
 import TransferStatusBadge from "./TransferStatusBadge";
 
 interface TransferListTableProps {
-    data: TransfersGetAllResponse
-    transfers: TransferGetAll[]
-    filters: ReturnType<typeof useTransfersFilters>["filters"]
-    setPage: (page: number) => void
-    setPageSize: (rows: number) => void
-    isInfiniteScroll: boolean
-    isLoading: boolean
-    isFetching: boolean,
-    isError: boolean,
-    handleDeleteTransfer: (id: number) => void
-    handleSendTransfer: (id: number) => void
-    handleAcceptTransfer: (id: number) => void
-    handleRefuseTransfer: (id: number) => void
+  data: TransfersGetAllResponse;
+  transfers: TransferGetAll[];
+  filters: ReturnType<typeof useTransfersFilters>["filters"];
+  setPage: (page: number) => void;
+  setPageSize: (rows: number) => void;
+  isInfiniteScroll: boolean;
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+  handleDeleteTransfer: (id: number) => void;
+  handleSendTransfer: (id: number) => void;
+  handleAcceptTransfer: (id: number) => void;
+  handleRefuseTransfer: (id: number) => void;
 }
 
 const TransferListTable: React.FC<TransferListTableProps> = ({
-    data,
-    transfers,
-    filters,
-    setPage,
-    setPageSize,
-    isInfiniteScroll,
-    isError,
-    isFetching,
-    isLoading,
-    handleDeleteTransfer,
-    handleSendTransfer,
-    handleAcceptTransfer,
-    handleRefuseTransfer
+  data,
+  transfers,
+  filters,
+  setPage,
+  setPageSize,
+  isInfiniteScroll,
+  isError,
+  isFetching,
+  isLoading,
+  handleDeleteTransfer,
+  handleSendTransfer,
+  handleAcceptTransfer,
+  handleRefuseTransfer,
 }) => {
-    const navigate = useNavigate()
-    const user = authSDK.getCurrentUser()
-    const { selectedBranchId } = useBranchStore()
-    const tableRef = useRef<HTMLTableElement>(null)
-    const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+  const navigate = useNavigate();
+  const user = authSDK.getCurrentUser();
+  const { selectedBranchId } = useBranchStore();
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [isDraggingColumn, setIsDraggingColumn] = useState(false);
 
-    const handleSeeDetails = useCallback((id: number) => {
-        navigate(`/dashboard/transfers/${id}`)
-    }, [navigate])
+  const handleSeeDetails = useCallback(
+    (id: number) => {
+      navigate(`/dashboard/transfers/${id}`);
+    },
+    [navigate]
+  );
 
-    const handleUpdateTransfer = useCallback((id: number) => {
-        navigate(`/dashboard/transfers/${id}/update`)
-    }, [navigate])
+  const handleUpdateTransfer = useCallback(
+    (id: number) => {
+      navigate(`/dashboard/transfers/${id}/update`);
+    },
+    [navigate]
+  );
 
-    // Función helper para determinar si se puede enviar una transferencia
-    const canSendTransfer = (estado: string): boolean => {
-        const normalizedEstado = estado.trim().toUpperCase();
+  // Función helper para determinar si se puede enviar una transferencia
+  const canSendTransfer = (estado: string): boolean => {
+    const normalizedEstado = estado.trim().toUpperCase();
 
-        // Detectar diferentes formatos de estado pendiente de envío:
-        // 1. "POR TRANSFERIR <=> ..." - Cuando está en origen y no se ha enviado
-        // 2. "=> PENDIENTE" - Formato alternativo
-        // 3. "PENDIENTE =>" - Formato alternativo
-        return (normalizedEstado.includes('POR TRANSFERIR') ||
-                (normalizedEstado.includes('=>') && normalizedEstado.includes('PENDIENTE')));
-    }
+    // Detectar diferentes formatos de estado pendiente de envío:
+    // 1. "POR TRANSFERIR <=> ..." - Cuando está en origen y no se ha enviado
+    // 2. "=> PENDIENTE" - Formato alternativo
+    // 3. "PENDIENTE =>" - Formato alternativo
+    return (
+      normalizedEstado.includes("POR TRANSFERIR") ||
+      (normalizedEstado.includes("=>") &&
+        normalizedEstado.includes("PENDIENTE"))
+    );
+  };
 
-    // Función helper para determinar si se puede recibir una transferencia
-    const canReceiveTransfer = (estado: string): boolean => {
-        const normalizedEstado = estado.trim().toUpperCase();
+  // Función helper para determinar si se puede recibir una transferencia
+  const canReceiveTransfer = (estado: string): boolean => {
+    const normalizedEstado = estado.trim().toUpperCase();
 
-        // Detectar diferentes formatos de estado pendiente de recepción:
-        // 1. "... <=> POR RECEPCIONAR" - Cuando está en tránsito esperando recepción
-        // 2. "<= TRANSFERIDO" (sin RECEPCIONADO) - Formato alternativo
-        return (normalizedEstado.includes('POR RECEPCIONAR') ||
-                (normalizedEstado.includes('<=') && normalizedEstado.includes('TRANSFERIDO') && !normalizedEstado.includes('RECEPCIONADO')));
-    }
+    // Detectar diferentes formatos de estado pendiente de recepción:
+    // 1. "... <=> POR RECEPCIONAR" - Cuando está en tránsito esperando recepción
+    // 2. "<= TRANSFERIDO" (sin RECEPCIONADO) - Formato alternativo
+    return (
+      normalizedEstado.includes("POR RECEPCIONAR") ||
+      (normalizedEstado.includes("<=") &&
+        normalizedEstado.includes("TRANSFERIDO") &&
+        !normalizedEstado.includes("RECEPCIONADO"))
+    );
+  };
 
-    // Función helper para determinar si se puede rechazar una transferencia
-    const canRefuseTransfer = (estado: string): boolean => {
-        // Se puede rechazar solo si se puede recibir (mismo estado)
-        return canReceiveTransfer(estado);
-    }
+  // Función helper para determinar si se puede rechazar una transferencia
+  const canRefuseTransfer = (estado: string): boolean => {
+    // Se puede rechazar solo si se puede recibir (mismo estado)
+    return canReceiveTransfer(estado);
+  };
 
-    const columns = useMemo<ColumnDef<TransferGetAll>[]>(() => [
-        {
-            id: "Select",
-            header: ({ table }) => (
-                <Checkbox
-                    className="border border-gray-400"
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                    aria-label="Seleccionar todo"
-                />
-            ),
-            cell: ({ row }) => (
-                <div className="px-1">
-                    <Checkbox
-                        className="border border-gray-400"
-                        checked={row.getIsSelected()}
-                        onCheckedChange={(value) => row.toggleSelected(!!value)}
-                        aria-label="Seleccionar fila"
-                    />
+  const columns = useMemo<ColumnDef<TransferGetAll>[]>(
+    () => [
+      {
+        id: "Select",
+        header: ({ table }) => (
+          <Checkbox
+            className="border border-gray-400"
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Seleccionar todo"
+          />
+        ),
+        cell: ({ row }) => (
+          <div className="px-1">
+            <Checkbox
+              className="border border-gray-400"
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Seleccionar fila"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        enableHiding: true,
+        size: 40,
+        minSize: 40,
+      },
+      {
+        accessorKey: "nro_transferencia",
+        header: "Nro. Transferencia",
+        size: 120,
+        minSize: 100,
+        enableHiding: false,
+        cell: ({ row, getValue }) => (
+          <div className="flex items-center gap-1.5">
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="size-6 px-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onKeyDown={(e) => {
+                      if (["ArrowUp", "ArrowDown"].includes(e.key)) {
+                        e.stopPropagation();
+                      }
+                    }}
+                  >
+                    <MoreVertical className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  onCloseAutoFocus={(e) => {
+                    e.preventDefault();
+                  }}
+                  align="start"
+                  className="w-56"
+                >
+                  <DropdownMenuItem
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onClick={() => handleSeeDetails(row.original.id)}
+                  >
+                    <Eye className="size-4 mr-2" />
+                    Ver detalles
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onClick={() => handleUpdateTransfer(row.original.id)}
+                  >
+                    <Edit className="size-4 mr-2" />
+                    Editar transferencia
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onClick={() => handleDeleteTransfer(row.original.id)}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <Trash2 className="size-4 mr-2" />
+                    Eliminar transferencia
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <TooltipWrapper
+              tooltipContentProps={{
+                align: "start",
+              }}
+              tooltip={
+                <p className="flex gap-1">
+                  Presiona <Kbd>enter</Kbd> para ver los detalles
+                </p>
+              }
+            >
+              <div className="space-y-1 flex flex-col">
+                <span className="font-medium text-foreground">
+                  {getValue<string>()}
+                </span>
+                {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
+              </div>
+            </TooltipWrapper>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "fecha",
+        header: "Fecha",
+        size: 100,
+        minSize: 90,
+        cell: ({ getValue }) => {
+          const dateString = getValue<string>();
+
+          try {
+            // Agregar T00:00:00 si la fecha viene solo como YYYY-MM-DD para evitar conversión UTC
+            const dateToFormat = dateString.includes("T")
+              ? dateString
+              : `${dateString}T00:00:00`;
+            const date = new Date(dateToFormat);
+            const isToday =
+              format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+            return (
+              <div className="text-center text-xs">
+                <div
+                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                >
+                  {format(date, "dd/MM/yyyy", { locale: es })}
                 </div>
-            ),
-            enableSorting: false,
-            enableHiding: true,
-            size: 40,
-            minSize: 40,
-        },
-        {
-            accessorKey: "nro_transferencia",
-            header: "Nro. Transferencia",
-            size: 120,
-            minSize: 100,
-            enableHiding: false,
-            cell: ({ row, getValue }) => (
-                <div className="flex items-center gap-1.5">
-                    <div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="size-6 px-0"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
-                                            e.stopPropagation();
-                                        }
-                                    }}
-                                >
-                                    <MoreVertical className="size-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                onCloseAutoFocus={(e) => {
-                                    e.preventDefault();
-                                }}
-                                align="start"
-                                className="w-56">
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleSeeDetails(row.original.id)}
-                                >
-                                    <Eye className="size-4 mr-2" />
-                                    Ver detalles
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateTransfer(row.original.id)}>
-                                    <Edit className="size-4 mr-2" />
-                                    Editar transferencia
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={e => e.stopPropagation()}
-                                    onClick={() => handleDeleteTransfer(row.original.id)}
-                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                                >
-                                    <Trash2 className="size-4 mr-2" />
-                                    Eliminar transferencia
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                    <TooltipWrapper
-                        tooltipContentProps={{
-                            align: 'start'
-                        }}
-                        tooltip={
-                            <p className="flex gap-1">Presiona <Kbd>enter</Kbd> para ver los detalles</p>
-                        }
-                    >
-                        <div className="space-y-1 flex flex-col">
-                            <span className="font-medium text-foreground">{getValue<string>()}</span>
-                            {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
-                        </div>
-                    </TooltipWrapper>
-                </div>
-            ),
-        },
-        {
-            accessorKey: "fecha",
-            header: "Fecha",
-            size: 100,
-            minSize: 90,
-            cell: ({ getValue }) => {
-                const dateString = getValue<string>();
-
-                try {
-                    // Agregar T00:00:00 si la fecha viene solo como YYYY-MM-DD para evitar conversión UTC
-                    const dateToFormat = dateString.includes('T') ? dateString : `${dateString}T00:00:00`;
-                    const date = new Date(dateToFormat);
-                    const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
-
-                    return (
-                        <div className="text-center text-xs">
-                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
-                                {format(date, "dd/MM/yyyy", { locale: es })}
-                            </div>
-                            {/* <div className="text-muted-foreground flex items-center justify-center gap-1">
+                {/* <div className="text-muted-foreground flex items-center justify-center gap-1">
                                 <Clock className="size-3" />
                                 {format(date, "HH:mm", { locale: es })}
                             </div> */}
-                        </div>
-                    );
-                } catch {
-                    return <span className="text-xs text-muted-foreground">{dateString}</span>;
-                }
-            },
+              </div>
+            );
+          } catch {
+            return (
+              <span className="text-xs text-muted-foreground">
+                {dateString}
+              </span>
+            );
+          }
         },
-        {
-            accessorKey: "responsable",
-            header: "Responsable",
-            size: 180,
-            minSize: 150,
-            cell: ({ row }) => {
-                const resp = row.original.responsable;
-                const nombreCompleto = resp
-                    ? [resp.nombre, resp.apellido_paterno, resp.apellido_materno].filter(Boolean).join(' ')
-                    : 'Sin responsable';
-                return (
-                    <div className="space-y-1 flex flex-col">
-                        <span className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}>{nombreCompleto}</span>
-                        {
-                            resp &&
-                            <span className="text-xs text-muted-foreground">DNI: {resp.dni}</span>
-                        }
-                    </div>
-                );
-            },
+      },
+      {
+        accessorKey: "responsable",
+        header: "Responsable",
+        size: 180,
+        minSize: 150,
+        cell: ({ row }) => {
+          const resp = row.original.responsable;
+          const nombreCompleto = resp
+            ? [resp.nombre, resp.apellido_paterno, resp.apellido_materno]
+                .filter(Boolean)
+                .join(" ")
+            : "Sin responsable";
+          return (
+            <div className="space-y-1 flex flex-col">
+              <span
+                className={`${!resp ? "italic text-muted-foreground" : "font-medium text-foreground"}`}
+              >
+                {nombreCompleto}
+              </span>
+            </div>
+          );
         },
-        {
-            accessorKey: "total",
-            header: "Total",
-            size: 120,
-            minSize: 100,
-            cell: ({ getValue }) => {
-                return (
-                    <div className="flex flex-col space-y-0.5 items-end">
-                        <span className=" font-medium text-green-600">{formatCurrency(getValue<number>())}</span>
-                    </div>
-                )
-            }
+      },
+      {
+        accessorKey: "total",
+        header: "Total",
+        size: 120,
+        minSize: 100,
+        cell: ({ getValue }) => {
+          return (
+            <div className="flex flex-col space-y-0.5 items-end">
+              <span className=" font-medium text-green-600">
+                {formatCurrency(getValue<number>())}
+              </span>
+            </div>
+          );
         },
-        {
-            accessorKey: "estado",
-            header: "Estado",
-            size: 200,
-            minSize: 150,
-            cell: ({ getValue }) => {
-                const estado = getValue<string>();
-                return <TransferStatusBadge estado={estado} />;
-            },
+      },
+      {
+        accessorKey: "estado",
+        header: "Estado",
+        size: 200,
+        minSize: 150,
+        cell: ({ getValue }) => {
+          const estado = getValue<string>();
+          return <TransferStatusBadge estado={estado} />;
         },
-        {
-            id: "transfer_actions",
-            header: "Acciones",
-            size: 120,
-            minSize: 100,
-            enableHiding: false,
-            cell: ({ row }) => {
-                const estado = row.original.estado;
-                const transfer = row.original;
+      },
+      {
+        id: "transfer_actions",
+        header: "Acciones",
+        size: 120,
+        minSize: 100,
+        enableHiding: false,
+        cell: ({ row }) => {
+          const estado = row.original.estado;
+          const transfer = row.original;
 
-                // Verificar si el usuario está en la sucursal origen o destino
-                const isOriginBranch = transfer.origen.id === Number(selectedBranchId);
-                const isDestinationBranch = transfer.destino.id === Number(selectedBranchId);
+          // Verificar si el usuario está en la sucursal origen o destino
+          const isOriginBranch =
+            transfer.origen.id === Number(selectedBranchId);
+          const isDestinationBranch =
+            transfer.destino.id === Number(selectedBranchId);
 
-                // Solo mostrar botón ENVIAR si estoy en la sucursal ORIGEN
-                const canSend = isOriginBranch && canSendTransfer(estado);
+          // Solo mostrar botón ENVIAR si estoy en la sucursal ORIGEN
+          const canSend = isOriginBranch && canSendTransfer(estado);
 
-                // Solo mostrar botones RECIBIR/RECHAZAR si estoy en la sucursal DESTINO
-                const canReceive = isDestinationBranch && canReceiveTransfer(estado);
-                const canRefuse = isDestinationBranch && canRefuseTransfer(estado);
+          // Solo mostrar botones RECIBIR/RECHAZAR si estoy en la sucursal DESTINO
+          const canReceive = isDestinationBranch && canReceiveTransfer(estado);
+          const canRefuse = isDestinationBranch && canRefuseTransfer(estado);
 
-                // Si no hay acciones disponibles, no mostrar nada
-                if (!canSend && !canReceive && !canRefuse) {
-                    return null;
-                }
+          // Si no hay acciones disponibles, no mostrar nada
+          if (!canSend && !canReceive && !canRefuse) {
+            return null;
+          }
 
-                return (
-                    <div className="flex items-center gap-1 justify-center">
-                        {canSend && (
-                            <TooltipButton
-                                buttonProps={{
-                                    variant: "outline",
-                                    size: "sm",
-                                    className: "h-7 w-7 p-0",
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        handleSendTransfer(row.original.id);
-                                    }
-                                }}
-                                tooltipContentProps={{
-                                    side: "bottom",
-                                    sideOffset: 5,
-                                }}
-                                tooltip="Enviar transferencia"
-                            >
-                                <Send className="size-3" />
-                            </TooltipButton>
-                        )}
-                        {canReceive && (
-                            <TooltipButton
-                                buttonProps={{
-                                    variant: "outline",
-                                    size: "sm",
-                                    className: "h-7 w-7 p-0",
-                                    // title: "Recibir transferencia",
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        handleAcceptTransfer(row.original.id);
-                                    }
-                                }}
-                                tooltipContentProps={{
-                                    side: "bottom",
-                                    sideOffset: 5,
-                                }}
-                                tooltip="Recibir transferencia"
-                            >
-                                <Check className="size-3" />
-                            </TooltipButton>
-                        )}
-                        {canRefuse && (
-                            <TooltipButton
-                                buttonProps={{
-                                    variant: "outline",
-                                    size: "sm",
-                                    className: "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
-                                    // title: "Rechazar transferencia",
-                                    onClick: (e) => {
-                                        e.stopPropagation();
-                                        handleRefuseTransfer(row.original.id);
-                                    }
-                                }}
-                                tooltipContentProps={{
-                                    side: "bottom",
-                                    sideOffset: 5,
-                                }}
-                                tooltip="Rechazar transferencia"
-                            >
-                                <X className="size-3" />
-                            </TooltipButton>
-                        )}
-                    </div>
-                );
-            },
+          return (
+            <div className="flex items-center gap-1 justify-center">
+              {canSend && (
+                <TooltipButton
+                  buttonProps={{
+                    variant: "outline",
+                    size: "sm",
+                    className: "h-7 w-7 p-0",
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      handleSendTransfer(row.original.id);
+                    },
+                  }}
+                  tooltipContentProps={{
+                    side: "bottom",
+                    sideOffset: 5,
+                  }}
+                  tooltip="Enviar transferencia"
+                >
+                  <Send className="size-3" />
+                </TooltipButton>
+              )}
+              {canReceive && (
+                <TooltipButton
+                  buttonProps={{
+                    variant: "outline",
+                    size: "sm",
+                    className: "h-7 w-7 p-0",
+                    // title: "Recibir transferencia",
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      handleAcceptTransfer(row.original.id);
+                    },
+                  }}
+                  tooltipContentProps={{
+                    side: "bottom",
+                    sideOffset: 5,
+                  }}
+                  tooltip="Recibir transferencia"
+                >
+                  <Check className="size-3" />
+                </TooltipButton>
+              )}
+              {canRefuse && (
+                <TooltipButton
+                  buttonProps={{
+                    variant: "outline",
+                    size: "sm",
+                    className:
+                      "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
+                    // title: "Rechazar transferencia",
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      handleRefuseTransfer(row.original.id);
+                    },
+                  }}
+                  tooltipContentProps={{
+                    side: "bottom",
+                    sideOffset: 5,
+                  }}
+                  tooltip="Rechazar transferencia"
+                >
+                  <X className="size-3" />
+                </TooltipButton>
+              )}
+            </div>
+          );
         },
-        {
-            accessorKey: "comprobante",
-            header: "Comprobante",
-            size: 140,
-            minSize: 120,
-            cell: ({ getValue }) => {
-                const comprobante = getValue<string | null>();
+      },
+      {
+        accessorKey: "comprobante",
+        header: "Comprobante",
+        size: 140,
+        minSize: 120,
+        cell: ({ getValue }) => {
+          const comprobante = getValue<string | null>();
 
-                if (!comprobante || comprobante.trim() === "") {
-                    return (
-                        <div className="text-center">
-                            <span className="text-muted-foreground italic text-xs">
-                                Sin comprobante
-                            </span>
-                        </div>
-                    );
-                }
+          if (!comprobante || comprobante.trim() === "") {
+            return (
+              <div className="text-center">
+                <span className="text-muted-foreground italic text-xs">
+                  Sin comprobante
+                </span>
+              </div>
+            );
+          }
 
-                return (
-                    <div className="flex flex-col space-y-0.5 text-xs text-foreground items-center">
-                        <Badge variant={'secondary'} className="flex justify-center w-full rounded py-0.5">{comprobante}</Badge>
-                    </div>
-                );
-            },
+          return (
+            <div className="flex flex-col space-y-0.5 text-xs text-foreground items-center">
+              <Badge
+                variant={"secondary"}
+                className="flex justify-center w-full rounded py-0.5"
+              >
+                {comprobante}
+              </Badge>
+            </div>
+          );
         },
-        {
-            accessorKey: "comentarios",
-            header: "Comentarios",
-            size: 200,
-            minSize: 150,
-            cell: ({ getValue }) => {
-                const comentarios = getValue<string | null>();
-                return (
-                    <div className={`text-xs text-muted-foreground truncate ${!comentarios ? "italic" : ""}`}>
-                        {comentarios || "Sin comentarios"}
-                    </div>
-                );
-            },
+      },
+      {
+        accessorKey: "comentarios",
+        header: "Comentarios",
+        size: 200,
+        minSize: 150,
+        cell: ({ getValue }) => {
+          const comentarios = getValue<string | null>();
+          return (
+            <div
+              className={`text-xs text-muted-foreground truncate ${!comentarios ? "italic" : ""}`}
+            >
+              {comentarios || "Sin comentarios"}
+            </div>
+          );
         },
-    ], [handleSeeDetails, handleUpdateTransfer, handleDeleteTransfer, handleSendTransfer, handleAcceptTransfer, handleRefuseTransfer, selectedBranchId]);
+      },
+    ],
+    [
+      handleSeeDetails,
+      handleUpdateTransfer,
+      handleDeleteTransfer,
+      handleSendTransfer,
+      handleAcceptTransfer,
+      handleRefuseTransfer,
+      selectedBranchId,
+    ]
+  );
 
-    const {
-        table,
-        rowSelection,
-    } = useCustomTable({
-        data: transfers,
-        columns,
+  const { table, rowSelection } = useCustomTable({
+    data: transfers,
+    columns,
 
-        // Configuración de características
-        enableSorting: false,
-        enableColumnResizing: true,
-        enableRowSelection: true,
-        enableColumnVisibility: true,
-        enableColumnOrdering: true,
-        enablePagination: false,
+    // Configuración de características
+    enableSorting: false,
+    enableColumnResizing: true,
+    enableRowSelection: true,
+    enableColumnVisibility: true,
+    enableColumnOrdering: true,
+    enablePagination: false,
 
-        // Columnas ocultas por defecto
-        hiddenColumns: ['Select'],
+    // Columnas ocultas por defecto
+    hiddenColumns: ["Select"],
 
-        // Configuración de resize
-        columnResizeMode: "onChange",
+    // Configuración de resize
+    columnResizeMode: "onChange",
 
-        // Persistencia con key única por usuario
-        persistenceKey: `transfers-table-${user?.name}`,
-        persistColumnVisibility: true,
-        persistColumnOrder: true,
+    // Persistencia con key única por usuario
+    persistenceKey: `transfers-table-${user?.name}`,
+    persistColumnVisibility: true,
+    persistColumnOrder: true,
+  });
+
+  const { selectedIndex, setSelectedIndex, isFocused, hotkeys } =
+    useKeyboardNavigation<TransferGetAll, HTMLTableElement>({
+      items: transfers,
+      containerRef: tableRef,
+      isDragging: isDraggingColumn,
+      onPrimaryAction: (transfer) => {
+        handleSeeDetails(transfer.id);
+      },
+      getItemId: (transfer) => transfer.id,
     });
+  const handleRowClick = (index: number) => {
+    setSelectedIndex(index);
+  };
 
-    const {
-        selectedIndex,
-        setSelectedIndex,
-        isFocused,
-        hotkeys
-    } = useKeyboardNavigation<TransferGetAll, HTMLTableElement>({
-        items: transfers,
-        containerRef: tableRef,
-        isDragging: isDraggingColumn,
-        onPrimaryAction: (transfer) => {
-            handleSeeDetails(transfer.id)
-        },
-        getItemId: (transfer) => transfer.id
-    });
-    const handleRowClick = (index: number) => {
-        setSelectedIndex(index);
-    };
+  const handleRowDoubleClick = (transfer: TransferGetAll) => {
+    handleSeeDetails(transfer.id);
+  };
 
-    const handleRowDoubleClick = (transfer: TransferGetAll) => {
-        handleSeeDetails(transfer.id)
-    };
+  const hasTransfersSelected = Object.keys(rowSelection).length;
 
-    const hasTransfersSelected = Object.keys(rowSelection).length;
+  const onPageChange = (page: number) => {
+    setPage(page);
+  };
 
-    const onPageChange = (page: number) => {
-        setPage(page);
-    };
+  const onShowRowsChange = (rows: number) => {
+    setPageSize(rows);
+  };
 
-    const onShowRowsChange = (rows: number) => {
-        setPageSize(rows);
-    };
+  const handleDragStart = useCallback(() => {
+    setIsDraggingColumn(true);
+  }, []);
 
-    const handleDragStart = useCallback(() => {
-        setIsDraggingColumn(true);
-    }, []);
+  const handleDragEnd = useCallback(() => {
+    setIsDraggingColumn(false);
+  }, []);
 
-    const handleDragEnd = useCallback(() => {
-        setIsDraggingColumn(false);
-    }, []);
+  return (
+    <section className="flex flex-col h-full">
+      {/* Results Info */}
+      <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+        {transfers.length > 0 ? (
+          isInfiniteScroll ? (
+            `Mostrando ${transfers.length} de ${data?.meta?.total} transferencias`
+          ) : (
+            (() => {
+              const pagina = filters.pagina ?? 1;
+              const porPagina = filters.pagina_registros ?? 1;
 
-    return (
-        <section className="flex flex-col h-full">
-            {/* Results Info */}
-            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
-                {
-                    transfers.length > 0 ? (
-                        isInfiniteScroll ? (
-                            `Mostrando ${transfers.length} de ${data?.meta?.total} transferencias`
-                        ) : (
-                            (() => {
-                                const pagina = filters.pagina ?? 1;
-                                const porPagina = filters.pagina_registros ?? 1;
+              const inicio = (pagina - 1) * porPagina + 1;
+              const fin = pagina * porPagina;
 
-                                const inicio = (pagina - 1) * porPagina + 1;
-                                const fin = pagina * porPagina;
+              return `Mostrando ${inicio} - ${fin} de ${data?.meta?.total} transferencias`;
+            })()
+          )
+        ) : (
+          <span>Cargando...</span>
+        )}
 
-                                return `Mostrando ${inicio} - ${fin} de ${data?.meta?.total} transferencias`;
-                            })()
-                        )
-                    ) : (
-                        <span>Cargando...</span>
-                    )
-                }
-
-                <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                                <Settings className="w-4 h-4" />
-                                Columnas
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
-                            {table
-                                .getAllColumns()
-                                .filter((column) => column.getCanHide())
-                                .map((column) => (
-                                    <DropdownMenuItem
-                                        key={column.id}
-                                        className="flex items-center space-x-2 cursor-pointer"
-                                        onSelect={(e) => e.preventDefault()}
-                                        onClick={() => column.toggleVisibility(!column.getIsVisible())}
-                                    >
-                                        <Checkbox
-                                            className="border border-gray-400"
-                                            checked={column.getIsVisible()}
-                                            onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                                        />
-                                        <span className="flex-1">
-                                            {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
-                                        </span>
-                                    </DropdownMenuItem>
-                                ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    {
-                        table && hasTransfersSelected > 0 && (
-                            <Button size={'sm'} className="relative">
-                                Proximamente...
-                                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-                                    {hasTransfersSelected}
-                                </Badge>
-                            </Button>
-                        )
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4" />
+                Columnas
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+            >
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuItem
+                    key={column.id}
+                    className="flex items-center space-x-2 cursor-pointer"
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={() =>
+                      column.toggleVisibility(!column.getIsVisible())
                     }
-                    <TooltipWrapper
-                        tooltipContentProps={{
-                            align: 'end',
-                            className: 'max-w-xs'
-                        }}
-                        tooltip={
-                            <div className="flex flex-col space-y-3">
-                                {/* Título del tooltip */}
-                                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                                    Atajos de teclado
-                                </div>
-
-                                {/* Sección de navegación básica */}
-                                <div className="space-y-1.5">
-                                    <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación</h4>
-                                    <div className="space-y-1 text-gray-600 text-xs">
-                                        <p> <ShortcutKey combo={hotkeys.activate ?? ''} /> Activar tabla </p>
-                                        <p> <ShortcutKey combo={hotkeys.deactivate ?? ''} /> Salir de tabla </p>
-                                        <p> <ShortcutKey combo={hotkeys.moveUp ?? ''} /> / <ShortcutKey combo={hotkeys.moveDown ?? ''} /> Navegar filas </p>
-                                        <p> <ShortcutKey combo={hotkeys.navigate ?? ''} /> Cambiar columna</p>
-                                    </div>
-                                </div>
-
-                                {/* Sección de acciones */}
-                                <div className="space-y-1.5">
-                                    <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
-                                    <div className="space-y-1 text-gray-600 text-xs">
-                                        <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de transferencia </p>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    >
-                        <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
-                            <HelpCircle />
-                        </span>
-                    </TooltipWrapper>
+                  >
+                    <Checkbox
+                      className="border border-gray-400"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    />
+                    <span className="flex-1">
+                      {typeof column.columnDef.header === "string"
+                        ? column.columnDef.header
+                        : column.id}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {table && hasTransfersSelected > 0 && (
+            <Button size={"sm"} className="relative">
+              Proximamente...
+              <Badge
+                variant="destructive"
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+              >
+                {hasTransfersSelected}
+              </Badge>
+            </Button>
+          )}
+          <TooltipWrapper
+            tooltipContentProps={{
+              align: "end",
+              className: "max-w-xs",
+            }}
+            tooltip={
+              <div className="flex flex-col space-y-3">
+                {/* Título del tooltip */}
+                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                  Atajos de teclado
                 </div>
-            </div>
 
-            {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
-            <div className="flex-1 min-h-0">
-                {isInfiniteScroll ? (
-                    <div
-                        id="transfers-list-scroll-container"
-                        className="h-full overflow-auto relative">
-                        <InfiniteScroll
-                            dataLength={transfers.length}
-                            next={() => setPage((filters.pagina || 1) + 1)}
-                            hasMore={transfers.length < ((data?.meta?.total ?? 0))}
-                            loader={
-                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                                    <Loader2 className="size-4 animate-spin" />
-                                    Cargando más transferencias...
-                                </div>
-                            }
-                            scrollableTarget="transfers-list-scroll-container"
-                        >
-                            <CustomizableTable
-                                table={table}
-                                isError={isError}
-                                errorMessage="Ocurrió un error al cargar las transferencias"
-                                isLoading={isLoading}
-                                rows={filters.pagina_registros}
-                                noDataMessage="No se encontraron transferencias"
-                                selectedRowIndex={selectedIndex}
-                                onRowClick={handleRowClick}
-                                onRowDoubleClick={handleRowDoubleClick}
-                                tableRef={tableRef}
-                                focused={isFocused}
-                                keyboardNavigationEnabled={true}
-                                enableColumnReordering={true}
-                                enableSorting={false}
-                                onDragEnd={handleDragEnd}
-                                onDragStart={handleDragStart}
-                            />
-                        </InfiniteScroll>
-                    </div>
-                ) : (
-                    <div className="h-full overflow-auto">
-                        <CustomizableTable
-                            table={table}
-                            isError={isError}
-                            isFetching={isFetching}
-                            isLoading={isLoading}
-                            errorMessage="Ocurrió un error al cargar las transferencias"
-                            noDataMessage="No se encontraron transferencias"
-                            rows={filters.pagina_registros}
-                            selectedRowIndex={selectedIndex}
-                            onRowClick={handleRowClick}
-                            onRowDoubleClick={handleRowDoubleClick}
-                            tableRef={tableRef}
-                            focused={isFocused}
-                            keyboardNavigationEnabled={true}
-                            enableColumnReordering={true}
-                            enableSorting={false}
-                            onDragEnd={handleDragEnd}
-                            onDragStart={handleDragStart}
-                        />
-                    </div>
-                )}
-            </div>
+                {/* Sección de navegación básica */}
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                    Navegación
+                  </h4>
+                  <div className="space-y-1 text-gray-600 text-xs">
+                    <p>
+                      {" "}
+                      <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar
+                      tabla{" "}
+                    </p>
+                    <p>
+                      {" "}
+                      <ShortcutKey combo={hotkeys.deactivate ?? ""} /> Salir de
+                      tabla{" "}
+                    </p>
+                    <p>
+                      {" "}
+                      <ShortcutKey combo={hotkeys.moveUp ?? ""} /> /{" "}
+                      <ShortcutKey combo={hotkeys.moveDown ?? ""} /> Navegar
+                      filas{" "}
+                    </p>
+                    <p>
+                      {" "}
+                      <ShortcutKey combo={hotkeys.navigate ?? ""} /> Cambiar
+                      columna
+                    </p>
+                  </div>
+                </div>
 
-            {/* Pagination - FIJO en la parte inferior */}
-            {
-                !isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
-                    <div className="flex-shrink-0 border-t border-border bg-card">
-                        <Pagination
-                            currentPage={filters.pagina || 1}
-                            onPageChange={onPageChange}
-                            totalData={data?.meta?.total ?? 1}
-                            onShowRowsChange={onShowRowsChange}
-                            showRows={filters.pagina_registros}
-                        />
-                    </div>
-                )
+                {/* Sección de acciones */}
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-medium text-blue-600 tracking-wide">
+                    Acciones
+                  </h4>
+                  <div className="space-y-1 text-gray-600 text-xs">
+                    <p>
+                      {" "}
+                      <ShortcutKey combo={hotkeys.primaryAction ?? ""} />{" "}
+                      Detalle de transferencia{" "}
+                    </p>
+                  </div>
+                </div>
+              </div>
             }
-        </section>
-    );
-}
+          >
+            <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+              <HelpCircle />
+            </span>
+          </TooltipWrapper>
+        </div>
+      </div>
+
+      {/* CONTENEDOR CON SCROLL - Solo esta parte tiene scroll */}
+      <div className="flex-1 min-h-0">
+        {isInfiniteScroll ? (
+          <div
+            id="transfers-list-scroll-container"
+            className="h-full overflow-auto relative"
+          >
+            <InfiniteScroll
+              dataLength={transfers.length}
+              next={() => setPage((filters.pagina || 1) + 1)}
+              hasMore={transfers.length < (data?.meta?.total ?? 0)}
+              loader={
+                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                  <Loader2 className="size-4 animate-spin" />
+                  Cargando más transferencias...
+                </div>
+              }
+              scrollableTarget="transfers-list-scroll-container"
+            >
+              <CustomizableTable
+                table={table}
+                isError={isError}
+                errorMessage="Ocurrió un error al cargar las transferencias"
+                isLoading={isLoading}
+                rows={filters.pagina_registros}
+                noDataMessage="No se encontraron transferencias"
+                selectedRowIndex={selectedIndex}
+                onRowClick={handleRowClick}
+                onRowDoubleClick={handleRowDoubleClick}
+                tableRef={tableRef}
+                focused={isFocused}
+                keyboardNavigationEnabled={true}
+                enableColumnReordering={true}
+                enableSorting={false}
+                onDragEnd={handleDragEnd}
+                onDragStart={handleDragStart}
+              />
+            </InfiniteScroll>
+          </div>
+        ) : (
+          <div className="h-full overflow-auto">
+            <CustomizableTable
+              table={table}
+              isError={isError}
+              isFetching={isFetching}
+              isLoading={isLoading}
+              errorMessage="Ocurrió un error al cargar las transferencias"
+              noDataMessage="No se encontraron transferencias"
+              rows={filters.pagina_registros}
+              selectedRowIndex={selectedIndex}
+              onRowClick={handleRowClick}
+              onRowDoubleClick={handleRowDoubleClick}
+              tableRef={tableRef}
+              focused={isFocused}
+              keyboardNavigationEnabled={true}
+              enableColumnReordering={true}
+              enableSorting={false}
+              onDragEnd={handleDragEnd}
+              onDragStart={handleDragStart}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Pagination - FIJO en la parte inferior */}
+      {!isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
+        <div className="flex-shrink-0 border-t border-border bg-card">
+          <Pagination
+            currentPage={filters.pagina || 1}
+            onPageChange={onPageChange}
+            totalData={data?.meta?.total ?? 1}
+            onShowRowsChange={onShowRowsChange}
+            showRows={filters.pagina_registros}
+          />
+        </div>
+      )}
+    </section>
+  );
+};
 
 export default TransferListTable;

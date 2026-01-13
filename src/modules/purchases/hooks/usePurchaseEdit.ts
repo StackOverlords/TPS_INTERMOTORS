@@ -15,34 +15,34 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
     tipo_compra: "",
     forma_compra: "",
     comentario: "",
-    usuario: 1, // ID por defecto
-    sucursal: 1, // ID por defecto
+    usuario: 1,
+    sucursal: 1,
     detalles: [],
-    id_responsable: null, // Cambiado a null para consistencia
-    id_pedido: null, // ID del pedido asociado (opcional)
+    id_responsable: null,
+    id_pedido: null,
   });
 
   // Poblar formulario con datos existentes
   useEffect(() => {
     if (initialData) {
-      const formattedFecha = initialData.fecha ? initialData.fecha.split('T')[0] : "";
+      // Manejar ambos formatos de fecha: "2026-01-03T00:00:00" o "2026-01-03 00:00:00"
+      const formattedFecha = initialData.fecha 
+        ? initialData.fecha.split('T')[0].split(' ')[0] 
+        : "";
+      
       setFormData({
         fecha: formattedFecha,
-        // Corregir mapeo: usar 'comprobante' no 'nro'
         nro_comprobante: (initialData as any).comprobante || "",
-        // Usar 'comprobante2' del API
         nro_comprobante2: (initialData as any).comprobante2 || "",
         id_proveedor: initialData.proveedor?.id || null,
         tipo_compra: initialData.tipo_compra || "",
         forma_compra: initialData.forma_compra || "",
-        // Usar 'comentarios' del API
         comentario: (initialData as any).comentarios || "",
-        // El detalle de compra no incluye usuario ni sucursal, mantener por defecto
-        usuario: 1, // Valor por defecto si no existe
-        sucursal: 1, // Valor por defecto si no existe
+        usuario: 1,
+        sucursal: 1,
         detalles: initialData.detalles || [],
-        id_responsable: initialData.responsable?.id || null, // Cambiar a null si no existe
-        id_pedido: (initialData as any).id_pedido || null, // ID del pedido asociado (opcional)
+        id_responsable: initialData.responsable?.id || null,
+        id_pedido: (initialData as any).id_pedido || null,
       });
     }
   }, [initialData]);
@@ -57,7 +57,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
       }
     }
     if (field === "fecha" && !value) return "La fecha es requerida.";
-    // nro_comprobante NO es requerido (igual que en crear)
     return "";
   }, []);
 
@@ -96,20 +95,15 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
     }
 
     try {
-      // Transformar los datos para el servidor
       const dataToSend = {
         ...formData,
-        // Asegurar que los campos requeridos tengan valores
         usuario: formData.usuario || 1,
         sucursal: formData.sucursal || 1,
-        id_responsable: formData.id_responsable || 1, // Fallback a 1 si es null
-        // Transformar detalles para el servidor - usar estructura original
-        detalles: formData.detalles.map((detalle, index) => {
-          // Detectar si es un detalle existente por la presencia de id o id_detalle_compra
+        id_responsable: formData.id_responsable || 1,
+        detalles: formData.detalles.map((detalle) => {
           const isExistingDetail = detalle.id || detalle.id_detalle_compra;
 
           if (isExistingDetail) {
-            // Detalle existente - incluir id_detalle_compra y producto completo
             const transformedDetalle = {
               id_detalle_compra: detalle.id || detalle.id_detalle_compra,
               id_producto: detalle.id_producto || detalle.producto?.id?.toString() || '',
@@ -122,10 +116,9 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               precio_venta_alt: Number(detalle.precio_venta_alt),
               moneda: detalle.moneda || 'BOB ',
               fecha_mod_precio: detalle.fecha_mod_precio || new Date().toISOString(),
-              tc_compra: Number(detalle.tc_compra || 6.96) // ✅ Agregar tipo de cambio
+              tc_compra: Number(detalle.tc_compra || 6.96)
             };
 
-            // Validar que los campos numéricos no sean NaN
             if (isNaN(transformedDetalle.inc_p_venta)) transformedDetalle.inc_p_venta = 0;
             if (isNaN(transformedDetalle.inc_p_venta_alt)) transformedDetalle.inc_p_venta_alt = 0;
             if (isNaN(transformedDetalle.cantidad)) transformedDetalle.cantidad = 1;
@@ -136,7 +129,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
 
             return transformedDetalle;
           } else {
-            // Detalle nuevo - usar el ID de referencia del primer detalle existente
             const cantidad = typeof detalle.cantidad === 'string' ? parseFloat(detalle.cantidad) : detalle.cantidad;
             const costo = typeof detalle.costo === 'string' ? parseFloat(detalle.costo) : detalle.costo;
             const incPVenta = Number(detalle.inc_p_venta || detalle.inc_precio_venta || 0);
@@ -145,7 +137,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             const precioVentaAlt = typeof detalle.precio_venta_alt === 'string' ? parseFloat(detalle.precio_venta_alt) : detalle.precio_venta_alt;
 
             const transformedDetalle = {
-              // Usar null para productos nuevos (según indicación del desarrollador backend)
               id_detalle_compra: null,
               id_producto: detalle.producto?.id || parseInt(detalle.id_producto || '0'),
               cantidad: Number(cantidad),
@@ -155,11 +146,9 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               inc_p_venta_alt: incPVentaAlt,
               precio_venta_alt: Number(precioVentaAlt),
               moneda: detalle.moneda || 'BOB ',
-              tc_compra: Number(detalle.tc_compra || 6.96) // ✅ Agregar tipo de cambio
+              tc_compra: Number(detalle.tc_compra || 6.96)
             };
-            // Usar null para productos nuevos
 
-            // Validar que los campos numéricos no sean NaN
             if (isNaN(transformedDetalle.inc_p_venta)) transformedDetalle.inc_p_venta = 0;
             if (isNaN(transformedDetalle.inc_p_venta_alt)) transformedDetalle.inc_p_venta_alt = 0;
             if (isNaN(transformedDetalle.cantidad)) transformedDetalle.cantidad = 1;
@@ -173,7 +162,6 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
         })
       };
 
-      // Usar la mutación de React Query que invalida el caché automáticamente
       await updateMutation.mutateAsync({ id: purchaseId, data: dataToSend });
 
       toast({

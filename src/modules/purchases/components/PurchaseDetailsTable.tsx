@@ -1,20 +1,33 @@
-import { Button } from '@/components/atoms/button';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import { Switch } from '@/components/atoms/switch';
-import CustomizableTable from '@/components/common/CustomizableTable';
-import TooltipButton from '@/components/common/TooltipButton';
-import { showSuccessToast } from '@/hooks/use-toast-enhanced';
+import { Button } from "@/components/atoms/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/atoms/card";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import { Switch } from "@/components/atoms/switch";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import TooltipButton from "@/components/common/TooltipButton";
+import { showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { formatCurrency } from "@/utils/formaters";
 import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-} from '@tanstack/react-table';
-import { ArrowRightLeft, Edit3, Maximize2, Trash2 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
+} from "@tanstack/react-table";
+import {
+  ArrowRightLeft,
+  Edit3,
+  Maximize2,
+  Package,
+  Trash2,
+} from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 
 interface PurchaseDetail {
   id?: number;
@@ -116,12 +129,12 @@ type NormalizedPurchaseDetail = PurchaseDetail & {
 
 type EditableNumericKey = keyof Pick<
   NormalizedPurchaseDetail,
-  | 'cantidad'
-  | 'costo'
-  | 'inc_p_venta'
-  | 'precio_venta'
-  | 'inc_p_venta_alt'
-  | 'precio_venta_alt'
+  | "cantidad"
+  | "costo"
+  | "inc_p_venta"
+  | "precio_venta"
+  | "inc_p_venta_alt"
+  | "precio_venta_alt"
 >;
 
 const PurchaseDetailsTable: React.FC<Props> = ({
@@ -133,8 +146,10 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   canImportOrder = true,
   onExchangeRateChange,
 }) => {
-  const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
-  const [tempValue, setTempValue] = useState('');
+  const [editing, setEditing] = useState<{ row: number; col: string } | null>(
+    null
+  );
+  const [tempValue, setTempValue] = useState("");
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -144,40 +159,42 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   // Estados para conversión de moneda
   const [isUSD, setIsUSD] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(() => {
-    const saved = localStorage.getItem('purchase_exchange_rate');
+    const saved = localStorage.getItem("purchase_exchange_rate");
     return saved ? parseFloat(saved) : 6.96;
   });
 
   const roundToTwo = (num: number): number =>
     Math.round((num + Number.EPSILON) * 100) / 100;
 
-  const normalizeDetail = (detail: PurchaseDetail): NormalizedPurchaseDetail => {
+  const normalizeDetail = (
+    detail: PurchaseDetail
+  ): NormalizedPurchaseDetail => {
     return {
       ...detail,
       id_detalle_compra: detail.id || 0,
       id_producto: detail.id_producto || detail.producto.id.toString(),
       cantidad:
-        typeof detail.cantidad === 'string'
+        typeof detail.cantidad === "string"
           ? parseFloat(detail.cantidad)
           : detail.cantidad,
       costo:
-        typeof detail.costo === 'string'
+        typeof detail.costo === "string"
           ? parseFloat(detail.costo)
           : detail.costo,
       inc_p_venta: (detail.inc_p_venta ??
-        (typeof detail.inc_precio_venta === 'string'
+        (typeof detail.inc_precio_venta === "string"
           ? parseFloat(detail.inc_precio_venta)
           : detail.inc_precio_venta)) as number,
       precio_venta:
-        typeof detail.precio_venta === 'string'
+        typeof detail.precio_venta === "string"
           ? parseFloat(detail.precio_venta)
           : (detail.precio_venta as number),
       inc_p_venta_alt: (detail.inc_p_venta_alt ??
-        (typeof detail.inc_precio_venta_alt === 'string'
+        (typeof detail.inc_precio_venta_alt === "string"
           ? parseFloat(detail.inc_precio_venta_alt)
           : detail.inc_precio_venta_alt)) as number,
       precio_venta_alt:
-        typeof detail.precio_venta_alt === 'string'
+        typeof detail.precio_venta_alt === "string"
           ? parseFloat(detail.precio_venta_alt)
           : (detail.precio_venta_alt as number),
       subtotal: 0,
@@ -187,9 +204,11 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
   const normalizedDetalles: NormalizedPurchaseDetail[] = useMemo(
     () =>
-      detalles.map(detail => {
+      detalles.map((detail) => {
         const normalized = normalizeDetail(detail);
-        normalized.subtotal = roundToTwo(normalized.cantidad * normalized.costo);
+        normalized.subtotal = roundToTwo(
+          normalized.cantidad * normalized.costo
+        );
         return normalized;
       }),
     [detalles]
@@ -202,17 +221,17 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   ) => {
     const updatedDetail: NormalizedPurchaseDetail = { ...detail };
     const toNum = (v: unknown): number =>
-      typeof v === 'number' ? v : parseFloat(String(v ?? 0)) || 0;
+      typeof v === "number" ? v : parseFloat(String(v ?? 0)) || 0;
     const inc = toNum(updatedDetail.inc_p_venta);
     const incAlt = toNum(updatedDetail.inc_p_venta_alt);
 
-    if (fieldName === 'costo') {
+    if (fieldName === "costo") {
       updatedDetail.costo = roundToTwo(newValue);
       updatedDetail.precio_venta = roundToTwo(newValue * (1 + inc / 100));
       updatedDetail.precio_venta_alt = roundToTwo(
         toNum(updatedDetail.precio_venta) * (1 + incAlt / 100)
       );
-    } else if (fieldName === 'inc_p_venta') {
+    } else if (fieldName === "inc_p_venta") {
       updatedDetail.inc_p_venta = roundToTwo(newValue);
       updatedDetail.precio_venta = roundToTwo(
         toNum(updatedDetail.costo) * (1 + newValue / 100)
@@ -221,12 +240,12 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         toNum(updatedDetail.precio_venta) *
           (1 + toNum(updatedDetail.inc_p_venta_alt) / 100)
       );
-    } else if (fieldName === 'inc_p_venta_alt') {
+    } else if (fieldName === "inc_p_venta_alt") {
       updatedDetail.inc_p_venta_alt = roundToTwo(newValue);
       updatedDetail.precio_venta_alt = roundToTwo(
         toNum(updatedDetail.precio_venta) * (1 + newValue / 100)
       );
-    } else if (fieldName === 'precio_venta') {
+    } else if (fieldName === "precio_venta") {
       updatedDetail.precio_venta = roundToTwo(newValue);
       const costoNow = toNum(updatedDetail.costo);
       updatedDetail.inc_p_venta =
@@ -234,12 +253,12 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       updatedDetail.precio_venta_alt = roundToTwo(
         newValue * (1 + toNum(updatedDetail.inc_p_venta_alt) / 100)
       );
-    } else if (fieldName === 'precio_venta_alt') {
+    } else if (fieldName === "precio_venta_alt") {
       updatedDetail.precio_venta_alt = roundToTwo(newValue);
       const pv = toNum(updatedDetail.precio_venta);
       updatedDetail.inc_p_venta_alt =
         pv > 0 ? roundToTwo(((newValue - pv) / pv) * 100) : 0;
-    } else if (fieldName === 'cantidad') {
+    } else if (fieldName === "cantidad") {
       updatedDetail.cantidad = Math.round(newValue);
     }
 
@@ -252,7 +271,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
   // Guardar tipo de cambio en localStorage y notificar al padre
   useEffect(() => {
-    localStorage.setItem('purchase_exchange_rate', exchangeRate.toString());
+    localStorage.setItem("purchase_exchange_rate", exchangeRate.toString());
     if (onExchangeRateChange) {
       onExchangeRateChange(exchangeRate);
     }
@@ -262,7 +281,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   const handleConvertCurrency = () => {
     if (detalles.length === 0) return;
 
-    const updatedDetalles = detalles.map(detalle => {
+    const updatedDetalles = detalles.map((detalle) => {
       const normalized = normalizeDetail(detalle);
       let newCosto: number;
 
@@ -275,7 +294,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       }
 
       // Recalcular precios con el nuevo costo
-      const updated = calculatePrecise(normalized, 'costo', newCosto);
+      const updated = calculatePrecise(normalized, "costo", newCosto);
       // Mantener el tc_compra actualizado
       return { ...detalle, ...updated, tc_compra: exchangeRate };
     });
@@ -284,19 +303,19 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     setIsUSD(!isUSD); // Cambiar al estado opuesto
 
     showSuccessToast({
-      title: 'Conversión completada',
-      description: `${detalles.length} producto(s) convertido(s) ${isUSD ? 'de USD a BOB' : 'de BOB a USD'} con tipo de cambio ${exchangeRate}`,
+      title: "Conversión completada",
+      description: `${detalles.length} producto(s) convertido(s) ${isUSD ? "de USD a BOB" : "de BOB a USD"} con tipo de cambio ${exchangeRate}`,
       duration: 3000,
     });
   };
 
   const editableColumns: EditableNumericKey[] = [
-    'cantidad',
-    'costo',
-    'inc_p_venta',
-    'precio_venta',
-    'inc_p_venta_alt',
-    'precio_venta_alt',
+    "cantidad",
+    "costo",
+    "inc_p_venta",
+    "precio_venta",
+    "inc_p_venta_alt",
+    "precio_venta_alt",
   ];
 
   const saveEdit = () => {
@@ -305,7 +324,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     const numValue = parseFloat(tempValue);
     if (isNaN(numValue) || numValue < 0) {
       setEditing(null);
-      setTempValue('');
+      setTempValue("");
       return;
     }
 
@@ -315,13 +334,15 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     // Verificar que el detalle existe
     if (!detalles[editingRow]) {
       setEditing(null);
-      setTempValue('');
+      setTempValue("");
       return;
     }
 
     // Normalizar el detalle actual
     const currentDetail = normalizeDetail(detalles[editingRow]);
-    currentDetail.subtotal = roundToTwo(currentDetail.cantidad * currentDetail.costo);
+    currentDetail.subtotal = roundToTwo(
+      currentDetail.cantidad * currentDetail.costo
+    );
 
     // Calcular los valores actualizados
     const updatedDetail = calculatePrecise(currentDetail, fieldName, numValue);
@@ -337,7 +358,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     setDetalles(newDetalles);
 
     setEditing(null);
-    setTempValue('');
+    setTempValue("");
   };
 
   const startEdit = (rowIndex: number, fieldName: EditableNumericKey) => {
@@ -353,9 +374,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       const currentValue = detail[fieldName] as number;
 
       let formattedValue: string;
-      if (fieldName === 'cantidad') {
+      if (fieldName === "cantidad") {
         formattedValue = Math.round(currentValue).toString();
-      } else if (fieldName.includes('inc_p_venta')) {
+      } else if (fieldName.includes("inc_p_venta")) {
         formattedValue = roundToTwo(currentValue).toFixed(1);
       } else {
         formattedValue = roundToTwo(currentValue).toFixed(2);
@@ -401,15 +422,15 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       saveTimeoutRef.current = null;
     }
     setEditing(null);
-    setTempValue('');
+    setTempValue("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
 
     switch (e.key) {
-      case 'Enter':
-      case 'Tab':
+      case "Enter":
+      case "Tab":
         e.preventDefault();
 
         // Cancelar cualquier guardado pendiente del blur
@@ -426,8 +447,10 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         if (!currentEditing) return;
 
         // Navegar a la siguiente celda
-        const currentColIndex = editableColumns.indexOf(currentEditing.col as EditableNumericKey);
-        const isShiftTab = e.shiftKey && e.key === 'Tab';
+        const currentColIndex = editableColumns.indexOf(
+          currentEditing.col as EditableNumericKey
+        );
+        const isShiftTab = e.shiftKey && e.key === "Tab";
 
         let nextRow = currentEditing.row;
         let nextColIndex = currentColIndex;
@@ -457,7 +480,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
           }, 100);
         }
         break;
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
         cancelEdit();
         break;
@@ -469,12 +492,14 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   };
 
   const remove = (id: string) => {
-    const updatedDetalles = normalizedDetalles.filter(d => d.id_producto !== id);
+    const updatedDetalles = normalizedDetalles.filter(
+      (d) => d.id_producto !== id
+    );
     setDetalles(updatedDetalles);
   };
 
   useHotkeys(
-    'escape',
+    "escape",
     () => {
       if (editing) {
         cancelEdit();
@@ -486,8 +511,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   );
 
   useHotkeys(
-    'delete, backspace',
-    e => {
+    "delete, backspace",
+    (e) => {
       if (!editing && selectedRow !== null) {
         e.preventDefault();
         const detail = normalizedDetalles[selectedRow];
@@ -525,13 +550,13 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       // y que React haya procesado el nuevo estado
       setTimeout(() => {
         // Enfocar en la celda de cantidad del último producto agregado
-        startEdit(currentLength - 1, 'cantidad');
+        startEdit(currentLength - 1, "cantidad");
       }, 150);
     }
 
     // Actualizar la referencia
     prevDetallesLengthRef.current = currentLength;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detalles.length]);
 
   // Limpiar timeout al desmontar
@@ -545,14 +570,14 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
   const formatValue = (
     value: number,
-    format: 'currency' | 'percentage' | 'number'
+    format: "currency" | "percentage" | "number"
   ) => {
     const roundedValue = roundToTwo(value);
 
     switch (format) {
-      case 'currency':
+      case "currency":
         return `${roundedValue.toFixed(2)}`;
-      case 'percentage':
+      case "percentage":
         return `${roundedValue.toFixed(1)}%`;
       default:
         return Number.isInteger(roundedValue)
@@ -575,8 +600,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     rowIndex: number;
     fieldName: EditableNumericKey;
     value: number;
-    format?: 'currency' | 'percentage' | 'number';
-  }> = ({ rowIndex, fieldName, value, format = 'number' }) => {
+    format?: "currency" | "percentage" | "number";
+  }> = ({ rowIndex, fieldName, value, format = "number" }) => {
     const isActive = editing?.row === rowIndex && editing?.col === fieldName;
 
     const handleClick = () => {
@@ -607,7 +632,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         className="w-full h-8 flex items-center justify-between px-3 cursor-pointer hover:bg-gray-50 transition-colors border border-gray-200 rounded-lg group"
         onClick={handleClick}
       >
-        <span className="text-sm flex-1 text-center">{formatValue(value, format)}</span>
+        <span className="text-sm flex-1 text-center">
+          {formatValue(value, format)}
+        </span>
         <Edit3 className="text-gray-300 group-hover:text-gray-500 h-3 w-3 flex-shrink-0 transition-colors ml-1" />
       </div>
     );
@@ -616,9 +643,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   const columns = useMemo<ColumnDef<NormalizedPurchaseDetail>[]>(
     () => [
       {
-        accessorFn: row => row.producto.descripcion,
-        id: 'descripcion',
-        header: 'Producto',
+        accessorFn: (row) => row.producto.descripcion,
+        id: "descripcion",
+        header: "Producto",
         size: 300,
         minSize: 30,
         enableHiding: false,
@@ -631,9 +658,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey:"codigo_oem",
-        id: 'codigo_oem',
-        header: 'Cód. OEM',
+        accessorKey: "codigo_oem",
+        id: "codigo_oem",
+        header: "Cód. OEM",
         size: 120,
         minSize: 100,
         cell: ({ row }) => (
@@ -643,9 +670,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'cantidad',
-        id: 'cantidad',
-        header: 'Cantidad',
+        accessorKey: "cantidad",
+        id: "cantidad",
+        header: "Cantidad",
         minSize: 110,
         cell: ({ row }) => (
           <EditableCell
@@ -657,9 +684,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'costo',
-        id: 'costo',
-        header: 'Costo',
+        accessorKey: "costo",
+        id: "costo",
+        header: "Costo",
         minSize: 110,
         cell: ({ row }) => (
           <EditableCell
@@ -671,9 +698,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'inc_p_venta',
-        id: 'inc_p_venta',
-        header: '% Inc',
+        accessorKey: "inc_p_venta",
+        id: "inc_p_venta",
+        header: "% Inc",
         minSize: 110,
         cell: ({ row }) => (
           <EditableCell
@@ -685,9 +712,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'precio_venta',
-        id: 'precio_venta',
-        header: 'P. Venta',
+        accessorKey: "precio_venta",
+        id: "precio_venta",
+        header: "P. Venta",
         minSize: 110,
         cell: ({ row }) => (
           <EditableCell
@@ -699,9 +726,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'inc_p_venta_alt',
-        id: 'inc_p_venta_alt',
-        header: '% Alt',
+        accessorKey: "inc_p_venta_alt",
+        id: "inc_p_venta_alt",
+        header: "% Alt",
         minSize: 110,
         cell: ({ row }) => (
           <EditableCell
@@ -713,9 +740,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'precio_venta_alt',
-        id: 'precio_venta_alt',
-        header: 'P. Venta Alt',
+        accessorKey: "precio_venta_alt",
+        id: "precio_venta_alt",
+        header: "P. Venta Alt",
         minSize: 110,
         cell: ({ row }) => (
           <EditableCell
@@ -727,25 +754,30 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
       {
-        accessorKey: 'subtotal',
-        id: 'subtotal',
-        header: 'Subtotal',
+        accessorKey: "subtotal",
+        id: "subtotal",
+        header: "Subtotal",
         minSize: 110,
         cell: ({ getValue }) => {
-          const subtotal = typeof getValue() === "string"
-            ? parseFloat(getValue() as string)
-            : getValue<number>();
+          const subtotal =
+            typeof getValue() === "string"
+              ? parseFloat(getValue() as string)
+              : getValue<number>();
           const subtotalRounded = isFinite(subtotal) ? roundToTwo(subtotal) : 0;
           return (
             <div className="text-sm font-medium text-gray-900 text-center">
-              ${subtotalRounded.toFixed(2)}
+              {formatCurrency(subtotalRounded, {
+                currency: isUSD ? "USD" : "BOB",
+                locale: isUSD ? "en-US" : "es-BO",
+              })}
+              {/* {subtotalRounded.toFixed(2)} */}
             </div>
           );
         },
       },
       {
-        id: 'action',
-        header: 'Acciones',
+        id: "action",
+        header: "Acciones",
         size: 60,
         minSize: 40,
         cell: ({ row }) => (
@@ -763,7 +795,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         ),
       },
     ],
-    [normalizedDetalles, editing, tempValue]
+    [normalizedDetalles, editing, tempValue, isUSD]
   );
 
   const table = useReactTable<NormalizedPurchaseDetail>({
@@ -772,7 +804,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    columnResizeMode: 'onChange',
+    columnResizeMode: "onChange",
     enableColumnResizing: true,
     enableRowSelection: true,
   });
@@ -790,24 +822,24 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   );
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-2 border-b border-gray-200 flex-shrink-0 bg-white">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          {/* Título */}
-          <span className="text-sm font-semibold text-gray-900">
-            Detalle de Compra
-          </span>
-
+    <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="flex justify-between items-center gap-3 flex-wrap">
+          <h2 className="text-primary text-base">Detalle de Compra</h2>
           {/* Controles de conversión de moneda - Centro */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Switch de moneda */}
             <div className="flex items-center gap-2">
-              <Label htmlFor="currency-switch" className="text-xs font-medium text-gray-700">
+              <Label
+                htmlFor="currency-switch"
+                className="text-xs font-medium text-gray-700"
+              >
                 Moneda:
               </Label>
               <div className="flex items-center gap-2 bg-gray-50 rounded-md px-2 py-1 border border-gray-300">
-                <span className={`text-xs font-medium ${!isUSD ? 'text-green-600' : 'text-gray-400'}`}>
+                <span
+                  className={`text-xs font-medium ${!isUSD ? "text-green-600" : "text-gray-400"}`}
+                >
                   BOB
                 </span>
                 <Switch
@@ -815,7 +847,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
                   checked={isUSD}
                   onCheckedChange={setIsUSD}
                 />
-                <span className={`text-xs font-medium ${isUSD ? 'text-blue-600' : 'text-gray-400'}`}>
+                <span
+                  className={`text-xs font-medium ${isUSD ? "text-blue-600" : "text-gray-400"}`}
+                >
                   USD
                 </span>
               </div>
@@ -823,7 +857,10 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
             {/* Input de tipo de cambio */}
             <div className="flex items-center gap-2">
-              <Label htmlFor="exchange-rate" className="text-xs font-medium text-gray-700 whitespace-nowrap">
+              <Label
+                htmlFor="exchange-rate"
+                className="text-xs font-medium text-gray-700 whitespace-nowrap"
+              >
                 T.C:
               </Label>
               <Input
@@ -832,7 +869,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
                 step="0.01"
                 min="0"
                 value={exchangeRate}
-                onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  setExchangeRate(parseFloat(e.target.value) || 0)
+                }
                 onFocus={(e) => e.target.select()}
                 className="w-20 h-8 text-sm text-center"
                 placeholder="6.96"
@@ -845,8 +884,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
                 detalles.length === 0
                   ? "Agrega productos para convertir"
                   : isUSD
-                  ? `Convertir ${detalles.length} producto(s) de USD a BOB`
-                  : `Convertir ${detalles.length} producto(s) de BOB a USD`
+                    ? `Convertir ${detalles.length} producto(s) de USD a BOB`
+                    : `Convertir ${detalles.length} producto(s) de BOB a USD`
               }
               buttonProps={{
                 onClick: handleConvertCurrency,
@@ -858,7 +897,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
               }}
             >
               <ArrowRightLeft className="h-4 w-4" />
-              {isUSD ? 'USD → BOB' : 'BOB → USD'}
+              {isUSD ? "USD → BOB" : "BOB → USD"}
             </TooltipButton>
           </div>
 
@@ -867,16 +906,16 @@ const PurchaseDetailsTable: React.FC<Props> = ({
             <TooltipButton
               tooltip={
                 !canImportOrder
-                  ? 'No puedes importar un pedido si ya hay productos agregados manualmente'
-                  : 'Importar productos desde un pedido existente'
+                  ? "No puedes importar un pedido si ya hay productos agregados manualmente"
+                  : "Importar productos desde un pedido existente"
               }
               buttonProps={{
-                type: 'button',
-                variant: 'outline',
-                size: 'sm',
+                type: "button",
+                variant: "outline",
+                size: "sm",
                 onClick: toggleOrderSelector,
                 disabled: !canImportOrder,
-                className: 'gap-2',
+                className: "gap-2",
               }}
             >
               <Maximize2 className="h-4 w-4" />
@@ -886,58 +925,96 @@ const PurchaseDetailsTable: React.FC<Props> = ({
             <TooltipButton
               tooltip={
                 !canAddProducts
-                  ? 'No puedes agregar productos manualmente mientras estás importando un pedido'
-                  : 'Agregar productos desde el selector'
+                  ? "No puedes agregar productos manualmente mientras estás importando un pedido"
+                  : "Agregar productos desde el selector"
               }
               buttonProps={{
-                type: 'button',
-                variant: 'outline',
-                size: 'sm',
+                type: "button",
+                variant: "outline",
+                size: "sm",
                 onClick: toggleSelectorMode,
                 disabled: !canAddProducts,
-                className: 'gap-2',
+                className: "gap-2",
               }}
             >
               <Maximize2 className="h-4 w-4" />
               Agregar producto
             </TooltipButton>
           </div>
-        </div>
-      </div>
+        </CardTitle>
+      </CardHeader>
 
-      {/* Tabla */}
-      <div className="flex-1 overflow-hidden">
-        <CustomizableTable table={table} isLoading={false} />
-      </div>
+      <CardContent className="flex-1 min-h-0">
+        <div className="h-full flex flex-col">
+          {detalles.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p>No hay productos agregados</p>
+              <p className="text-sm">
+                Haz clic en "Seleccionar Productos" para agregar
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Tabla */}
+              <div className="flex-1 min-h-0">
+                <div className="h-full">
+                  <CustomizableTable table={table} isLoading={false} />
+                </div>
+              </div>
 
-      {/* Footer con totales */}
-      {normalizedDetalles.length > 0 && (
-        <div className="bg-gray-50 border-t border-gray-200 p-4 flex-shrink-0">
-          <div className="grid grid-cols-4 gap-4 text-sm">
-            <div className="flex gap-2 justify-end">
-              <span className="font-semibold">Total Costo:</span>
-              <span className="font-medium">${totalCosto.toFixed(2)}</span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <span className="font-semibold">Total P. Venta:</span>
-              <span className="font-medium text-green-600">
-                ${totalGeneral.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <span className="font-semibold">Total P. Alt:</span>
-              <span className="font-medium text-blue-600">
-                ${totalMenor.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <span className="font-semibold">Subtotal:</span>
-              <span className="font-medium">${totalCosto.toFixed(2)}</span>
-            </div>
-          </div>
+              {/* Footer con totales */}
+              {normalizedDetalles.length > 0 && (
+                <div className="bg-gray-50 border-t border-gray-200 p-4 flex-shrink-0">
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div className="flex gap-2 justify-end">
+                      <span className="font-semibold">Total Costo:</span>
+                      <span className="font-medium">
+                        {formatCurrency(totalCosto, {
+                          currency: isUSD ? "USD" : "BOB",
+                          locale: isUSD ? "en-US" : "es-BO",
+                        })}
+                        {/* ${totalCosto.toFixed(2)} */}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <span className="font-semibold">Total P. Venta:</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(totalGeneral, {
+                          currency: isUSD ? "USD" : "BOB",
+                          locale: isUSD ? "en-US" : "es-BO",
+                        })}
+                        {/* ${totalGeneral.toFixed(2)} */}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <span className="font-semibold">Total P. Alt:</span>
+                      <span className="font-medium text-blue-600">
+                        {formatCurrency(totalMenor, {
+                          currency: isUSD ? "USD" : "BOB",
+                          locale: isUSD ? "en-US" : "es-BO",
+                        })}
+                        {/* ${totalMenor.toFixed(2)} */}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <span className="font-semibold">Subtotal:</span>
+                      <span className="font-medium">
+                        {formatCurrency(totalCosto, {
+                          currency: isUSD ? "USD" : "BOB",
+                          locale: isUSD ? "en-US" : "es-BO",
+                        })}
+                        {/* ${totalCosto.toFixed(2)} */}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
