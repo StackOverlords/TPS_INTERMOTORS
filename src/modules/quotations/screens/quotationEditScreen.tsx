@@ -226,20 +226,24 @@ const QuotationEditScreen = () => {
     reset(resetData);
     quotationDetailsHook.initializeDetails(detallesTransformados);
     setHasInitialized(true);
-    setIsUsingTempData(false);
   };
 
   useEffect(() => {
     // Si viene de crear venta, cargar datos temporales primero
-    if (fromCreate && !hasInitialized) {
+    if (
+      fromCreate &&
+      !hasInitialized &&
+      tempCreatedQuotation &&
+      !isUsingTempData
+    ) {
       loadFormData(tempCreatedQuotation);
-      setHasInitialized(true);
       setIsUsingTempData(true);
     }
 
     // Cuando lleguen los datos reales del backend, reemplazar
     if (quotationData && quotationTypesData && quotationModalitiesData) {
       loadFormData(quotationData);
+      setIsUsingTempData(false);
       if (currentTab?.createdTempData) {
         updateTab(currentTab.id, {
           createdTempData: {
@@ -257,6 +261,8 @@ const QuotationEditScreen = () => {
     fromCreate,
     hasInitialized,
     reset,
+    tempCreatedQuotation,
+    isUsingTempData,
   ]);
 
   // Sincronizar detalles con el formulario

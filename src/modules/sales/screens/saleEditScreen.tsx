@@ -236,14 +236,12 @@ const SaleEditScreen = () => {
 
     reset(resetData);
     setHasInitialized(true);
-    setIsUsingTempData(false);
   };
 
   useEffect(() => {
     // Si viene de crear venta, cargar datos temporales primero
-    if (fromCreate && !hasInitialized) {
+    if (fromCreate && !hasInitialized && !isUsingTempData && tempCreatedSale) {
       loadFormData(tempCreatedSale);
-      setHasInitialized(true);
       setIsUsingTempData(true);
     }
 
@@ -255,6 +253,7 @@ const SaleEditScreen = () => {
       salePaymentTypesData
     ) {
       loadFormData(saleData);
+      setIsUsingTempData(false);
       if (currentTab?.createdTempData) {
         // limpiar datos temporales del tab
         updateTab(currentTab.id, {
@@ -273,6 +272,8 @@ const SaleEditScreen = () => {
     hasInitialized,
     salePaymentTypesData,
     reset,
+    isUsingTempData,
+    tempCreatedSale,
   ]);
 
   const validateBeforeSubmit = (): boolean => {

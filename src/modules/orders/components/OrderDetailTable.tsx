@@ -8,7 +8,6 @@ import { useCustomTable } from "@/hooks/useCustomTable";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import type { UIOrderDetailCreate } from "../types/orderCreate.types";
-// import { EditablePercentage } from '@/modules/shoppingCart/components/EditablePercentage';
 import type { UIOrderDetailUpdate } from "../types/orderUpdate.types";
 import { Badge } from "@/components/atoms/badge";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
@@ -17,6 +16,7 @@ import ConfirmationModal from "@/components/common/confirmationModal";
 import { useDeleteOrderDetail } from "../hooks/useDeleteOrderDetail";
 import { formatCurrency } from "@/utils/formaters";
 import authSDK from "@/services/sdk-simple-auth";
+import { TableRow, TableCell } from "@/components/atoms/table";
 
 type OrderDetailUnion = UIOrderDetailCreate | UIOrderDetailUpdate;
 
@@ -32,8 +32,9 @@ interface OrderDetailTableProps<T extends OrderDetailUnion> {
   isLoading?: boolean;
   isReadOnly?: boolean;
   isSaving?: boolean;
-  isEditMode?: boolean; // Nueva prop para saber si estamos en modo edición
+  isEditMode?: boolean;
   isUSD?: boolean;
+  totalAmount?: number;
 }
 
 export interface OrderDetailTableRef {
@@ -56,12 +57,12 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
     isSaving = false,
     isEditMode = false,
     isUSD = false,
+    totalAmount,
   }: OrderDetailTableProps<T>,
   ref: React.Ref<OrderDetailTableRef>
 ) {
   const user = authSDK.getCurrentUser();
 
-  // refs para inputs de cantidad
   const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
   const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
@@ -103,27 +104,22 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
   );
 
   const handleRemoveItem = (item: T) => {
-    // Si no estamos en modo edición, siempre eliminamos del estado local
     if (!isEditMode) {
       onRemoveProduct(item.id_producto);
       return;
     }
 
-    // Si estamos en modo edición, verificamos si el item existe en BD
     const isNew = !("id_detalle_pedido" in item) || !item.id_detalle_pedido;
 
     if (isNew) {
-      // Item nuevo, solo eliminamos del estado local
       onRemoveProduct(item.id_producto);
     } else {
-      // Item existente en BD, mostramos confirmación y eliminamos de BD
       handleOpenDeleteAlert(
         (item as UIOrderDetailUpdate).id_detalle_pedido ?? undefined
       );
     }
   };
 
-  // Exponer métodos para enfocar inputs
   useImperativeHandle(
     ref,
     () => ({
@@ -141,7 +137,6 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
             input.select();
           }, 50);
         } else {
-          // Fallback: si no encuentra el input específico, enfoca el primero
           if (firstQuantityInputRef.current) {
             firstQuantityInputRef.current.focus();
             firstQuantityInputRef.current.select();
@@ -151,6 +146,11 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
     }),
     []
   );
+
+  // Calcular totales
+  const totalCantidad = useMemo(() => {
+    return details.reduce((sum, detail) => sum + detail.cantidad, 0);
+  }, [details]);
 
   const columns = useMemo<ColumnDef<T>[]>(() => {
     const baseColumns: ColumnDef<T>[] = [];
@@ -164,7 +164,6 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
       enableSorting: true,
     });
 
-    // Columna de código/badge solo en modo edición
     if (isEditMode) {
       baseColumns.push({
         accessorKey: "id_detalle_pedido",
@@ -191,7 +190,6 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
       });
     }
 
-    // Resto de columnas
     baseColumns.push(
       {
         accessorKey: "id_producto",
@@ -298,84 +296,6 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
           );
         },
       },
-      // {
-      //     accessorKey: "inc_p_venta",
-      //     id: 'inc_p_venta',
-      //     header: "Inc. %",
-      //     size: 110,
-      //     minSize: 80,
-      //     cell: ({ getValue, row }) => {
-      //         const inc = getValue<number>();
-      //         return (
-      //             <EditablePercentage
-      //                 value={inc}
-      //                 onSubmit={(value) => onUpdateIncPVenta(row.original.id_producto, value as number)}
-      //                 className="w-full"
-      //                 buttonClassName="w-full"
-      //                 disabled={isReadOnly || isSaving}
-      //             />
-      //         )
-      //     },
-      // },
-      // {
-      //     accessorKey: "precio_venta",
-      //     id: 'precio_venta',
-      //     header: "P. Venta",
-      //     size: 110,
-      //     minSize: 80,
-      //     cell: ({ getValue, row }) => {
-      //         const precio = getValue<number>();
-      //         return (
-      //             <EditablePrice
-      //                 value={precio}
-      //                 onSubmit={(value) => onUpdatePrecioVenta(row.original.id_producto, value as number)}
-      //                 className="w-full"
-      //                 buttonClassName="w-full"
-      //                 numberProps={{ min: 0, step: 0.01 }}
-      //                 disabled={isReadOnly || isSaving}
-      //             />
-      //         )
-      //     },
-      // },
-      // {
-      //     accessorKey: "inc_p_venta_alt",
-      //     id: 'inc_p_venta_alt',
-      //     header: "Inc. Alt %",
-      //     size: 110,
-      //     minSize: 80,
-      //     cell: ({ getValue, row }) => {
-      //         const inc = getValue<number>();
-      //         return (
-      //             <EditablePercentage
-      //                 value={inc}
-      //                 onSubmit={(value) => onUpdateIncPVentaAlt(row.original.id_producto, value as number)}
-      //                 className="w-full"
-      //                 buttonClassName="w-full"
-      //                 disabled={isReadOnly || isSaving}
-      //             />
-      //         )
-      //     },
-      // },
-      // {
-      //     accessorKey: "precio_venta_alt",
-      //     id: 'precio_venta_alt',
-      //     header: "P. Venta Alt",
-      //     size: 110,
-      //     minSize: 80,
-      //     cell: ({ getValue, row }) => {
-      //         const precio = getValue<number>();
-      //         return (
-      //             <EditablePrice
-      //                 value={precio}
-      //                 onSubmit={(value) => onUpdatePrecioVentaAlt(row.original.id_producto, value as number)}
-      //                 className="w-full"
-      //                 buttonClassName="w-full"
-      //                 numberProps={{ min: 0, step: 0.01 }}
-      //                 disabled={isReadOnly || isSaving}
-      //             />
-      //         )
-      //     },
-      // },
       {
         id: "subtotal",
         header: "Subtotal",
@@ -465,12 +385,72 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
     persistColumnVisibility: true,
   });
 
+  // Renderizar fila de totales
+  const renderTotalsRow = () => {
+    const visibleColumns = table.getVisibleLeafColumns();
+
+    return (
+      <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
+        {visibleColumns.map((column) => {
+          const columnId = column.id;
+
+          // Columna de cantidad - mostrar total
+          if (columnId === "cantidad") {
+            return (
+              <TableCell
+                key={columnId}
+                className="p-1 text-center"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-sm text-muted-foreground">
+                  Total Cantidad
+                </div>
+                <div className="text-base font-bold text-blue-600">
+                  {totalCantidad}
+                </div>
+              </TableCell>
+            );
+          }
+
+          // Columna de subtotal - mostrar total
+          if (columnId === "subtotal") {
+            return (
+              <TableCell
+                key={columnId}
+                className="p-1 text-end"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-sm text-muted-foreground">Total</div>
+                <div className="text-base font-bold text-emerald-600">
+                  {formatCurrency(totalAmount, {
+                    currency: isUSD ? "USD" : "BOB",
+                    locale: isUSD ? "en-US" : "es-BO",
+                  })}
+                </div>
+              </TableCell>
+            );
+          }
+
+          // Resto de columnas vacías
+          return (
+            <TableCell
+              key={columnId}
+              className="p-1"
+              style={{ width: column.getSize() }}
+            />
+          );
+        })}
+      </TableRow>
+    );
+  };
+
   return (
     <>
       <CustomizableTable
         table={table}
         isLoading={isLoading}
         enableColumnReordering={true}
+        renderTableFooter={renderTotalsRow}
       />
 
       <ConfirmationModal
@@ -485,7 +465,6 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
   );
 }
 
-// Exportar con forwardRef tipado correctamente
 const OrderDetailTable = forwardRef(
   OrderDetailTableInner
 ) as React.ForwardRefExoticComponent<
