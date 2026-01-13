@@ -795,14 +795,18 @@ const ReturnEditScreen = () => {
                         <div className="flex gap-2">
                           <TooltipButton
                             onClick={handleSecondaryAction}
-                            tooltip="Cancelar Edicion"
+                            tooltip={
+                              fromCreate
+                                ? "Formulario para registrar devolución"
+                                : "Cancelar Edicion"
+                            }
                             buttonProps={{
                               variant: "outline",
                               size: "sm",
                               type: "button",
                             }}
                           >
-                            {fromCreate ? "Nueva Cotización" : "Cancelar"}
+                            {fromCreate ? "Nueva Devolución" : "Cancelar"}
                           </TooltipButton>
 
                           <TooltipButton

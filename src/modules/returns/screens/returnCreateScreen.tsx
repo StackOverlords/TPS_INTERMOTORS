@@ -227,7 +227,7 @@ const ReturnCreateScreen = () => {
         if (currentTab) {
           updateTab(currentTab.id, {
             path: `/dashboard/returns/${createdReturn.id}/update`,
-            title: `Editar cotización: ${createdReturn.id}`,
+            title: `Editar devolución: ${createdReturn.id}`,
             createdTempData: {
               createdEntity: createdReturn,
               fromCreate: true,
