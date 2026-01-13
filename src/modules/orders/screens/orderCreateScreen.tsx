@@ -29,7 +29,6 @@ import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
-// import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
@@ -37,7 +36,6 @@ import { cn } from "@/lib/utils";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
-import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Controller,
@@ -970,53 +968,30 @@ const OrderCreateScreen = () => {
                                 </p>
                               </div>
                             ) : (
-                              <div className="flex flex-col h-full">
-                                <div className="flex-1 min-h-0">
-                                  <div className="h-full overflow-auto">
-                                    <OrderDetailTable
-                                      ref={tableRef}
-                                      details={orderDetailsHook.details}
-                                      onUpdateCantidad={
-                                        orderDetailsHook.updateCantidad
-                                      }
-                                      onUpdateCosto={
-                                        orderDetailsHook.updateCosto
-                                      }
-                                      onUpdatePrecioVenta={
-                                        orderDetailsHook.updatePrecioVenta
-                                      }
-                                      onUpdateIncPVenta={
-                                        orderDetailsHook.updateIncPVenta
-                                      }
-                                      onUpdatePrecioVentaAlt={
-                                        orderDetailsHook.updatePrecioVentaAlt
-                                      }
-                                      onUpdateIncPVentaAlt={
-                                        orderDetailsHook.updateIncPVentaAlt
-                                      }
-                                      onRemoveProduct={
-                                        orderDetailsHook.removeProduct
-                                      }
-                                      isSaving={isSaving}
-                                      isUSD={isUSD}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex justify-end flex-shrink-0 items-center px-2 pt-2 border-t border-border gap-3">
-                                  <span className="font-medium text-primary">
-                                    Total:
-                                  </span>
-                                  <span className="font-bold text-emerald-600">
-                                    {formatCurrency(
-                                      orderDetailsHook.getTotalCosto(),
-                                      {
-                                        currency: isUSD ? "USD" : "BOB",
-                                        locale: isUSD ? "en-US" : "es-BO",
-                                      }
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
+                              <OrderDetailTable
+                                ref={tableRef}
+                                details={orderDetailsHook.details}
+                                onUpdateCantidad={
+                                  orderDetailsHook.updateCantidad
+                                }
+                                onUpdateCosto={orderDetailsHook.updateCosto}
+                                onUpdatePrecioVenta={
+                                  orderDetailsHook.updatePrecioVenta
+                                }
+                                onUpdateIncPVenta={
+                                  orderDetailsHook.updateIncPVenta
+                                }
+                                onUpdatePrecioVentaAlt={
+                                  orderDetailsHook.updatePrecioVentaAlt
+                                }
+                                onUpdateIncPVentaAlt={
+                                  orderDetailsHook.updateIncPVentaAlt
+                                }
+                                onRemoveProduct={orderDetailsHook.removeProduct}
+                                isSaving={isSaving}
+                                isUSD={isUSD}
+                                totalAmount={orderDetailsHook.getTotalCosto()}
+                              />
                             )}
                           </div>
                         </CardContent>

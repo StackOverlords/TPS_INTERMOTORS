@@ -1,23 +1,23 @@
-import { Badge } from '@/components/atoms/badge';
-import { Button } from '@/components/atoms/button';
-import { SidebarTrigger } from '@/components/atoms/sidebar';
-import NotificationsPanel from '@/components/common/NotificationsPanel';
-import ShortcutKey from '@/components/common/ShortcutKey';
-import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-import { useTaskNotificationsContext } from '@/contexts/TaskNotificationsContext';
-import { COMMANDS, useCommand, useKeybindingKeys } from '@/keybindings';
-import { useCartWithUtils } from '@/modules/shoppingCart/hooks/useCartWithUtils';
-import protectedRoutes from '@/navigation/Protected.Route';
-import type RouteType from '@/navigation/RouteType';
-import authSDK from '@/services/sdk-simple-auth';
-import { useBranchStore } from '@/states/branchStore';
-import { Bell, HelpCircle, ShoppingCart } from 'lucide-react';
-import { useCallback, useState } from 'react';
-import { Link, matchPath, useLocation } from 'react-router';
-import SelectBranch from '../components/SelectBranch';
-import { ZoomControls } from '../components/ZoomControls';
-import CommandPalette from './CommandPalette/CommandPalette';
-import SearchButton from './CommandPalette/SearchButton';
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import { SidebarTrigger } from "@/components/atoms/sidebar";
+import NotificationsPanel from "@/components/common/NotificationsPanel";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { useTaskNotificationsContext } from "@/contexts/TaskNotificationsContext";
+import { COMMANDS, useCommand, useKeybindingKeys } from "@/keybindings";
+import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
+import protectedRoutes from "@/navigation/Protected.Route";
+import type RouteType from "@/navigation/RouteType";
+import authSDK from "@/services/sdk-simple-auth";
+import { useBranchStore } from "@/states/branchStore";
+import { Bell, HelpCircle, ShoppingCart } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Link, matchPath, useLocation } from "react-router";
+import SelectBranch from "../components/SelectBranch";
+import { ZoomControls } from "../components/ZoomControls";
+import CommandPalette from "./CommandPalette/CommandPalette";
+import SearchButton from "./CommandPalette/SearchButton";
 
 interface TopNavProps {
   onOpenCartChange: () => void;
@@ -26,7 +26,7 @@ interface TopNavProps {
 const flattenRoutes = (routes: RouteType[]): RouteType[] => {
   const flattened: RouteType[] = [];
 
-  routes.forEach(route => {
+  routes.forEach((route) => {
     if (route.path) {
       flattened.push(route);
     }
@@ -61,7 +61,7 @@ const findParentRoute = (
   for (const route of routes) {
     if (
       route.subRoutes?.some(
-        sr => sr.path && matchPath({ path: sr.path, end: true }, pathname)
+        (sr) => sr.path && matchPath({ path: sr.path, end: true }, pathname)
       )
     ) {
       return route;
@@ -81,62 +81,60 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
   const [open, setOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const routes = protectedRoutes.filter(route => route.type === 'protected');
+  const routes = protectedRoutes.filter((route) => route.type === "protected");
   const currentRoute = matchRoute(routes, location.pathname);
   const parentRoute = findParentRoute(routes, location.pathname);
-  const { getCartCount: cartLength } = useCartWithUtils(
-    user?.name || '',
-    selectedBranchId ?? ''
-  );
+  const cart = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
 
   // Context de notificaciones
   const { tasks, removeTask, clearTasks } = useTaskNotificationsContext();
-  const inProgressCount = tasks.filter(t => t.status === 'in-progress' || t.status === 'pending').length;
+  const inProgressCount = tasks.filter(
+    (t) => t.status === "in-progress" || t.status === "pending"
+  ).length;
 
   // ✨ Obtener teclas actuales del store (reactivas)
-  const commandPaletteKeys = useKeybindingKeys('actions.commandPalette');
-  const changeBranchKeys = useKeybindingKeys('actions.changeBranch');
-  const openCartKeys = useKeybindingKeys('actions.openCart');
-  const openNotificationsKeys = useKeybindingKeys('actions.openNotifications');
+  const commandPaletteKeys = useKeybindingKeys("actions.commandPalette");
+  const changeBranchKeys = useKeybindingKeys("actions.changeBranch");
+  const openCartKeys = useKeybindingKeys("actions.openCart");
+  const openNotificationsKeys = useKeybindingKeys("actions.openNotifications");
 
   // Handlers
   const handleToggleCommandPalette = useCallback(() => {
-    setOpen(prev => !prev);
+    setOpen((prev) => !prev);
   }, []);
   const handleCloseCommandPalette = useCallback(() => {
     setOpen(false);
   }, []);
   const handleChangeBranch = useCallback(() => {
-    const toggleEvent = new CustomEvent('toggleBranchSelector');
+    const toggleEvent = new CustomEvent("toggleBranchSelector");
     document.dispatchEvent(toggleEvent);
   }, []);
   const handleOpenNotifications = useCallback(() => {
-    setNotificationsOpen(prev => !prev);
+    setNotificationsOpen((prev) => !prev);
   }, []);
 
   // Registrar comandos
-  useCommand('actions.commandPalette', handleToggleCommandPalette, {
+  useCommand("actions.commandPalette", handleToggleCommandPalette, {
     enableOnFormTags: true,
   });
-  useCommand('actions.closeModal', handleCloseCommandPalette, {
+  useCommand("actions.closeModal", handleCloseCommandPalette, {
     enableOnFormTags: true,
     enabled: open,
   });
-  useCommand('actions.openCart', onOpenCartChange, {
+  useCommand("actions.openCart", onOpenCartChange, {
     enableOnFormTags: true,
   });
-  useCommand('actions.openNotifications', handleOpenNotifications, {
+  useCommand("actions.openNotifications", handleOpenNotifications, {
     enableOnFormTags: true,
   });
-  useCommand('actions.changeBranch', handleChangeBranch, {
+  useCommand("actions.changeBranch", handleChangeBranch, {
     enableOnFormTags: true,
   });
 
-  
   const renderBreadcrumb = () => {
-    if (location.pathname === '/dashboard') {
+    if (location.pathname === "/dashboard") {
       return (
-        <Link className="hidden sm:flex" to={'/dashboard'}>
+        <Link className="hidden sm:flex" to={"/dashboard"}>
           Dashboard/
         </Link>
       );
@@ -147,7 +145,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     breadcrumbItems.push(
       <Link
         key="dashboard"
-        to={'/dashboard'}
+        to={"/dashboard"}
         className="text-gray-500 hover:text-gray-700"
       >
         Dashboard/
@@ -167,7 +165,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
         to={location.pathname}
         className="text-gray-800 hover:text-gray-900"
       >
-        {currentRoute?.name || 'Ruta Desconocida'}
+        {currentRoute?.name || "Ruta Desconocida"}
       </Link>
     );
 
@@ -192,16 +190,16 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
         <Button
           variant="outline"
           className="relative size-8 cursor-pointer"
-          size={'sm'}
+          size={"sm"}
           onClick={onOpenCartChange}
         >
           <ShoppingCart className="h-4 w-4" />
-          {cartLength() > 0 && (
+          {cart.items.length > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {cartLength()}
+              {cart.items.length}
             </Badge>
           )}
         </Button>
@@ -213,7 +211,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           onOpenChange={setNotificationsOpen}
           trigger={
             <Button
-              variant={'outline'}
+              variant={"outline"}
               type="button"
               className="relative flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
             >
@@ -234,8 +232,8 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
 
         <TooltipWrapper
           tooltipContentProps={{
-            align: 'end',
-            className: 'max-w-xs',
+            align: "end",
+            className: "max-w-xs",
           }}
           tooltip={
             <div className="flex flex-col space-y-3">
@@ -249,24 +247,24 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
                 </h4>
                 <div className="space-y-1 text-gray-600 text-xs">
                   <p>
-                    {' '}
+                    {" "}
                     <ShortcutKey combo={commandPaletteKeys} />
-                    {COMMANDS['actions.commandPalette'].description}
+                    {COMMANDS["actions.commandPalette"].description}
                   </p>
                   <p>
-                    {' '}
-                    <ShortcutKey combo={changeBranchKeys} />{' '}
-                    {COMMANDS['actions.changeBranch'].description}{' '}
+                    {" "}
+                    <ShortcutKey combo={changeBranchKeys} />{" "}
+                    {COMMANDS["actions.changeBranch"].description}{" "}
                   </p>
                   <p>
-                    {' '}
-                    <ShortcutKey combo={openCartKeys} />{' '}
-                    {COMMANDS['actions.openCart'].description}
+                    {" "}
+                    <ShortcutKey combo={openCartKeys} />{" "}
+                    {COMMANDS["actions.openCart"].description}
                   </p>
                   <p>
-                    {' '}
-                    <ShortcutKey combo={openNotificationsKeys} />{' '}
-                    {COMMANDS['actions.openNotifications'].description}
+                    {" "}
+                    <ShortcutKey combo={openNotificationsKeys} />{" "}
+                    {COMMANDS["actions.openNotifications"].description}
                   </p>
                 </div>
               </div>
@@ -286,11 +284,11 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
         >
           <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
             <span className="text-gray-600 font-semibold">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
             </span>
           </div>
           <span className="text-sm font-medium text-gray-700">
-            {user?.name || 'Usuario'}
+            {user?.name || "Usuario"}
           </span>
         </div>
       </div>

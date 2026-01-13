@@ -24,7 +24,6 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useGoBack } from "@/hooks/useGoBack";
 import { cn } from "@/lib/utils";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
-import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowRightLeft,
@@ -41,7 +40,7 @@ import {
   useForm,
   type FieldErrors,
 } from "react-hook-form";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type { OrderDetailTableRef } from "../components/OrderDetailTable";
 import OrderDetailTable from "../components/OrderDetailTable";
 import OrderEditSkeleton from "../components/orderEditSkeleton";
@@ -68,7 +67,7 @@ import { Button } from "@/components/atoms/button";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { OrderGetById } from "../types/orderGet.types";
-import { getTodayDate } from "@/utils/dateFormatters";
+import { formatDateForUpdate, getTodayDate } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import {
   dividePrecise,
@@ -76,6 +75,7 @@ import {
   roundTo5Decimals,
 } from "@/utils/decimalUtils";
 import { Switch } from "@/components/atoms/switch";
+import { useTabStore } from "@/states/tabStore";
 
 const OrderEditScreen = () => {
   const configuraciones = {
@@ -84,15 +84,28 @@ const OrderEditScreen = () => {
     selector_mode: "window",
   };
 
-  const location = useLocation();
-  const { tempCreatedOrder, fromCreate } =
-    (location.state as {
-      tempCreatedOrder?: OrderGetById;
-      fromCreate?: boolean;
-    }) || {};
+  //   obtener funciones de tabstore
+  const tabs = useTabStore((s) => s.tabs);
+  const activeTabId = useTabStore((s) => s.activeTabId);
+  const updateTab = useTabStore((s) => s.updateTab);
+  const removeTab = useTabStore((s) => s.removeTab);
+
+  const currentTab = tabs.find((t) => t.id === activeTabId);
+
+  const tempCreatedOrder = currentTab?.createdTempData
+    ?.createdEntity as OrderGetById;
+  const fromCreate = currentTab?.createdTempData?.fromCreate;
+  const originalPath = currentTab?.createdTempData?.originalPath;
+
+  const { orderId } = useParams();
+  const effectiveOrderId = useMemo(() => {
+    if (fromCreate && tempCreatedOrder?.id) {
+      return tempCreatedOrder.id;
+    }
+    return orderId ? Number(orderId) : null;
+  }, [fromCreate, tempCreatedOrder?.id, orderId]);
   const [isUsingTempData, setIsUsingTempData] = useState(false);
   const navigate = useNavigate();
-  const { orderId } = useParams();
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
   const tableRef = useRef<OrderDetailTableRef>(null);
 
@@ -133,7 +146,7 @@ const OrderEditScreen = () => {
     data: orderData,
     isLoading: isLoadingOrder,
     isError: isErrorOrder,
-  } = useGetOrderById(Number(orderId));
+  } = useGetOrderById(effectiveOrderId ?? 0);
 
   const handleGoBack = useGoBack("/dashboard/orders");
   const { handleError } = useErrorHandler();
@@ -236,18 +249,23 @@ const OrderEditScreen = () => {
 
   useEffect(() => {
     // Si viene de crear venta, cargar datos temporales primero
-    if (fromCreate && tempCreatedOrder && !hasInitialized) {
+    if (fromCreate && tempCreatedOrder && !hasInitialized && !isUsingTempData) {
       loadFormData(tempCreatedOrder);
       setIsUsingTempData(true);
-
-      // Limpiar el estado de navegación para evitar recargas
-      window.history.replaceState({}, document.title);
     }
 
     // Cuando lleguen los datos reales del backend, reemplazar
     if (orderData && orderTypesData && orderModalitiesData) {
       loadFormData(orderData);
       setIsUsingTempData(false);
+      if (currentTab?.createdTempData) {
+        updateTab(currentTab.id, {
+          createdTempData: {
+            ...currentTab.createdTempData,
+            createdEntity: undefined,
+          },
+        });
+      }
     }
   }, [
     orderData,
@@ -257,6 +275,7 @@ const OrderEditScreen = () => {
     fromCreate,
     tempCreatedOrder,
     hasInitialized,
+    isUsingTempData,
   ]);
 
   // Guardar tipo de cambio en localStorage
@@ -424,8 +443,16 @@ const OrderEditScreen = () => {
       transformedData.fecha_llegada = undefined;
     }
 
+    const fechaOriginal = orderData?.fecha || tempCreatedOrder?.fecha || "";
+    const fechaFormateada = formatDateForUpdate(
+      transformedData.fecha,
+      fechaOriginal
+    );
+
+    transformedData.fecha = fechaFormateada;
+
     updateOrder(
-      { id: Number(orderId), data: transformedData },
+      { id: effectiveOrderId ?? 0, data: transformedData },
       {
         onSuccess: () => {
           showSuccessToast({
@@ -466,6 +493,25 @@ const OrderEditScreen = () => {
 
     if (errors.detalles) {
       validateBeforeSubmit();
+    }
+  };
+
+  //   nueva funcion secundaria
+  const handleSecondaryAction = () => {
+    if (fromCreate && originalPath && currentTab) {
+      updateTab(currentTab.id, {
+        path: originalPath,
+        title: "Registrar Pedido",
+        createdTempData: undefined,
+      });
+
+      navigate(originalPath, { replace: true });
+    } else {
+      if (currentTab) {
+        removeTab(currentTab.id);
+      }
+
+      // navigate('/dashboard/sales');
     }
   };
 
@@ -1020,54 +1066,31 @@ const OrderEditScreen = () => {
                                 </p>
                               </div>
                             ) : (
-                              <div className="flex flex-col h-full">
-                                <div className="flex-1 min-h-0">
-                                  <div className="h-full overflow-auto">
-                                    <OrderDetailTable
-                                      ref={tableRef}
-                                      details={orderDetailsHook.details}
-                                      onUpdateCantidad={
-                                        orderDetailsHook.updateCantidad
-                                      }
-                                      onUpdateCosto={
-                                        orderDetailsHook.updateCosto
-                                      }
-                                      onUpdatePrecioVenta={
-                                        orderDetailsHook.updatePrecioVenta
-                                      }
-                                      onUpdateIncPVenta={
-                                        orderDetailsHook.updateIncPVenta
-                                      }
-                                      onUpdatePrecioVentaAlt={
-                                        orderDetailsHook.updatePrecioVentaAlt
-                                      }
-                                      onUpdateIncPVentaAlt={
-                                        orderDetailsHook.updateIncPVentaAlt
-                                      }
-                                      onRemoveProduct={
-                                        orderDetailsHook.removeProduct
-                                      }
-                                      isSaving={isSaving}
-                                      isEditMode={true}
-                                      isUSD={isUSD}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex justify-end flex-shrink-0 items-center px-2 pt-2 border-t border-border gap-3">
-                                  <span className="font-medium text-primary">
-                                    Total:
-                                  </span>
-                                  <span className="font-bold text-emerald-600">
-                                    {formatCurrency(
-                                      orderDetailsHook.getTotalCosto(),
-                                      {
-                                        currency: isUSD ? "USD" : "BOB",
-                                        locale: isUSD ? "en-US" : "es-BO",
-                                      }
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
+                              <OrderDetailTable
+                                ref={tableRef}
+                                details={orderDetailsHook.details}
+                                onUpdateCantidad={
+                                  orderDetailsHook.updateCantidad
+                                }
+                                onUpdateCosto={orderDetailsHook.updateCosto}
+                                onUpdatePrecioVenta={
+                                  orderDetailsHook.updatePrecioVenta
+                                }
+                                onUpdateIncPVenta={
+                                  orderDetailsHook.updateIncPVenta
+                                }
+                                onUpdatePrecioVentaAlt={
+                                  orderDetailsHook.updatePrecioVentaAlt
+                                }
+                                onUpdateIncPVentaAlt={
+                                  orderDetailsHook.updateIncPVentaAlt
+                                }
+                                onRemoveProduct={orderDetailsHook.removeProduct}
+                                isSaving={isSaving}
+                                isEditMode={true}
+                                isUSD={isUSD}
+                                totalAmount={orderDetailsHook.getTotalCosto()}
+                              />
                             )}
                           </div>
                         </CardContent>
@@ -1084,7 +1107,7 @@ const OrderEditScreen = () => {
                         </span>
                         <div className="flex gap-2">
                           <TooltipButton
-                            onClick={handleGoBack}
+                            onClick={handleSecondaryAction}
                             tooltip="Cancelar Edicion"
                             buttonProps={{
                               variant: "outline",
@@ -1092,7 +1115,7 @@ const OrderEditScreen = () => {
                               type: "button",
                             }}
                           >
-                            Cancelar
+                            {fromCreate ? "Nueva Cotización" : "Cancelar"}
                           </TooltipButton>
 
                           <TooltipButton
