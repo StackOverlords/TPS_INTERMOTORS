@@ -344,7 +344,7 @@ const OrderCreateScreen = () => {
       onSuccess: (createdOrder) => {
         showSuccessToast({
           title: "Pedido Exitoso",
-          description: `Pedido realizado con éxito`,
+          description: `Pedido #${createdOrder.nro} realizado con éxito`,
         });
 
         const currentTab = tabs.find((t) => t.id === activeTabId);
