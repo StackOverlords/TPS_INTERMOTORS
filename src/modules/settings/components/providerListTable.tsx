@@ -76,7 +76,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
         },
         {
             permission: "pro-edit",
-            roles: ["Super Admin", "Administrador"]
+            roles: ["Super Admin", "Administrador", "Vendedor"]
         }
     );
 

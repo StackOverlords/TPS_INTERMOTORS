@@ -218,7 +218,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                   </ProtectedAction>
                   <ProtectedAction
                     permission="tra-edit"
-                    roles={["Super Admin", "Administrador"]}
+                    roles={["Super Admin", "Administrador","Vendedor"]}
                     fallback={null}
                   >
                     <DropdownMenuItem
@@ -406,7 +406,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               {canReceive && (
                 <ProtectedAction
                   permission="tra-receive"
-                  roles={["Super Admin", "Administrador"]}
+                  roles={["Super Admin", "Administrador","Vendedor"]}
                   fallback={null}
                 >
                   <TooltipButton
@@ -433,7 +433,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               {canRefuse && (
                 <ProtectedAction
                   permission="tra-receive"
-                  roles={["Super Admin", "Administrador"]}
+                  roles={["Super Admin", "Administrador","Vendedor"]}
                   fallback={null}
                 >
                   <TooltipButton

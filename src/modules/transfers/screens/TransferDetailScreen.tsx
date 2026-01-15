@@ -140,7 +140,7 @@ const TransferDetailScreen = () => {
                         < div className="flex items-center gap-2" >
                             <ProtectedAction
                                 permission="tra-edit"
-                                roles={["Super Admin", "Administrador"]}
+                                roles={["Super Admin", "Administrador","Vendedor"]}
                                 fallback={null}
                             >
                                 <TooltipButton
@@ -159,7 +159,7 @@ const TransferDetailScreen = () => {
 
                             <ProtectedAction
                                 permission="tra-delete"
-                                roles={["Super Admin", "Administrador"]}
+                                roles={["Super Admin", "Administrador","Vendedor"]}
                                 fallback={null}
                             >
                                 <TooltipButton

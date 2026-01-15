@@ -174,7 +174,7 @@ const SaleDetailScreen = () => {
                             < div className="flex items-center gap-2" >
                                 <ProtectedAction
                                     permission="ven-edit"
-                                    roles={["Super Admin", "Administrador"]}
+                                    roles={["Super Admin", "Administrador","Vendedor"]}
                                     fallback={null}
                                 >
                                     <TooltipButton
@@ -210,7 +210,7 @@ const SaleDetailScreen = () => {
 
                                 <ProtectedAction
                                     permission="ven-delete"
-                                    roles={["Super Admin", "Administrador"]}
+                                    roles={["Super Admin", "Administrador","Vendedor"]}
                                     fallback={null}
                                 >
                                     <TooltipButton

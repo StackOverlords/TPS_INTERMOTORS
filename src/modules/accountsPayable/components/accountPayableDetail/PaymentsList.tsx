@@ -133,7 +133,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                     <div className="flex justify-center">
                         <ProtectedAction
                             permission="cuc-create_pago"
-                            roles={["Super Admin", "Administrador"]}
+                            roles={["Super Admin", "Administrador","Vendedor"]}
                             fallback={null}
                         >
                             <Button
@@ -196,7 +196,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                     )}
                     <ProtectedAction
                         permission="cuc-create_pago"
-                        roles={["Super Admin", "Administrador"]}
+                        roles={["Super Admin", "Administrador", "Vendedor"]}
                         fallback={null}
                     >
                         <Button

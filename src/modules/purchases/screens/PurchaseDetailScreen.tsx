@@ -130,7 +130,7 @@ const PurchaseDetailScreen = () => {
                 <div className="flex items-center gap-2">
                   <ProtectedAction
                     permission="com-edit"
-                    roles={["Super Admin", "Administrador"]}
+                    roles={["Super Admin", "Administrador","Vendedor"]}
                     fallback={null}
                   >
                     <TooltipButton

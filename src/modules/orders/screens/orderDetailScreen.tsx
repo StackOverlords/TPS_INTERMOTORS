@@ -155,7 +155,7 @@ const OrderDetailScreen = () => {
             <div className="flex items-center gap-2">
               <ProtectedAction
                 permission="ped-edit"
-                roles={["Super Admin", "Administrador"]}
+                roles={["Super Admin", "Administrador","Vendedor"]}
                 fallback={null}
               >
                 <TooltipButton
@@ -173,7 +173,7 @@ const OrderDetailScreen = () => {
 
               <ProtectedAction
                 permission="ped-delete"
-                roles={["Super Admin", "Administrador"]}
+                roles={["Super Admin", "Administrador","Vendedor"]}
                 fallback={null}
               >
                 <TooltipButton
