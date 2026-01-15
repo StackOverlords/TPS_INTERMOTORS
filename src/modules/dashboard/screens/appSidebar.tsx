@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import ButtonItem from "../components/ButtonItem";
 import HeaderTagRoute from "../components/HeaderTagRoute";
 import NavItem from "../components/NavItem";
+import logoImage from "@/assets/images/logo_light.webp";
 
 const AppSidebar = () => {
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
@@ -54,13 +55,18 @@ const AppSidebar = () => {
       <SidebarHeader className="border-b border-gray-200 h-16 flex justify-center px-4">
         <div className="flex items-center gap-2">
           {/* logo de la empresa */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-            <Package className="h-4 w-4" />
-          </div>
+          {/* <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"> */}
+            {/* <Package className="h-4 w-4" /> */}
+          {/* </div> */}
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">INTERMOTORS</span>
-            <span className="text-xs text-muted-foreground">Sistema de Gestión</span>
-          </div>
+          <img
+            src={logoImage}
+            alt="Intermotors Logo"
+            className="h-10 w-auto object-contain"
+          />
+            {/* <span className="text-sm font-semibold">INTERMOTORS</span>
+            <span className="text-xs text-muted-foreground">Sistema de Gestión</span> */}
+          </div> 
         </div>
       </SidebarHeader>
 

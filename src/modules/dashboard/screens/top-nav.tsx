@@ -11,13 +11,14 @@ import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
-import { Bell, HelpCircle, ShoppingCart } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, HelpCircle, MessageSquare, ShoppingCart } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Link, matchPath, useLocation } from "react-router";
 import SelectBranch from "../components/SelectBranch";
 import { ZoomControls } from "../components/ZoomControls";
 import CommandPalette from "./CommandPalette/CommandPalette";
 import SearchButton from "./CommandPalette/SearchButton";
+import ProfilePanel from "@/components/common/ProfilePanel";
 
 interface TopNavProps {
   onOpenCartChange: () => void;
@@ -81,10 +82,15 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
   const [open, setOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  // Profile
+  const [openProfile, setOpenProfile] = useState(false);
+
+
   const routes = protectedRoutes.filter((route) => route.type === "protected");
   const currentRoute = matchRoute(routes, location.pathname);
   const parentRoute = findParentRoute(routes, location.pathname);
   const cart = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
+
 
   // Context de notificaciones
   const { tasks, removeTask, clearTasks } = useTaskNotificationsContext();
@@ -92,7 +98,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     (t) => t.status === "in-progress" || t.status === "pending"
   ).length;
 
-  // ✨ Obtener teclas actuales del store (reactivas)
+  // Obtener teclas actuales del store (reactivas)
   const commandPaletteKeys = useKeybindingKeys("actions.commandPalette");
   const changeBranchKeys = useKeybindingKeys("actions.changeBranch");
   const openCartKeys = useKeybindingKeys("actions.openCart");
@@ -187,6 +193,14 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
         <div className="flex items-center gap-4 w-full">
           <SelectBranch></SelectBranch>
         </div>
+        <div className="flex items-center gap-4 w-full">
+          <Button
+            variant="outline"
+            className="relative size-8"
+          >
+            <MessageSquare></MessageSquare>
+          </Button>
+        </div>
         <Button
           variant="outline"
           className="relative size-8 cursor-pointer"
@@ -227,7 +241,6 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             </Button>
           }
         />
-
         <ZoomControls />
 
         <TooltipWrapper
@@ -275,22 +288,27 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             <HelpCircle className="w-4 h-4" />
           </span>
         </TooltipWrapper>
-        <div
-          className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer"
-          onClick={() => {
-            // Aquí podrías abrir un modal con la información del usuario o un menú desplegable
-            // console.log('Clic en el nombre de usuario');
-          }}
-        >
-          <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-            <span className="text-gray-600 font-semibold">
-              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-            </span>
-          </div>
-          <span className="text-sm font-medium text-gray-700">
-            {user?.name || "Usuario"}
-          </span>
-        </div>
+        <ProfilePanel
+          isOpen={openProfile}
+          onOpenChange={setOpenProfile}
+          trigger={
+            <div className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer">
+              <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-gray-600 font-semibold">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-gray-700">
+                {user?.name || "Usuario"}
+              </span>
+              {
+                openProfile ? (
+                  <ChevronRight className="w-4 h-4"></ChevronRight>
+                ) : (<ChevronDown className="w-4 h-4"></ChevronDown>)
+              }
+            </div>
+          }
+        />
       </div>
     </nav>
   );
