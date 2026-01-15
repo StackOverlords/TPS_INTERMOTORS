@@ -163,7 +163,7 @@ const QuotationDetailScreen = () => {
                         <div className="flex items-center gap-2">
                             <ProtectedAction
                                 permission="cot-edit"
-                                roles={["Super Admin", "Administrador"]}
+                                roles={["Super Admin", "Administrador","Vendedor"]}
                                 fallback={null}
                             >
                                 <TooltipButton
@@ -199,7 +199,7 @@ const QuotationDetailScreen = () => {
 
                             <ProtectedAction
                                 permission="cot-delete"
-                                roles={["Super Admin", "Administrador"]}
+                                roles={["Super Admin", "Administrador","Vendedor"]}
                                 fallback={null}
                             >
                                 <TooltipButton

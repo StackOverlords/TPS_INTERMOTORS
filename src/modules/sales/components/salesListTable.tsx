@@ -163,7 +163,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                   </DropdownMenuItem>
                   <ProtectedAction
                     permission="ven-edit"
-                    roles={["Super Admin", "Administrador"]}
+                    roles={["Super Admin", "Administrador","Vendedor"]}
                     fallback={null}
                   >
                     <DropdownMenuItem
@@ -176,7 +176,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                   </ProtectedAction>
                   <ProtectedAction
                     permission="ven-delete"
-                    roles={["Super Admin", "Administrador"]}
+                    roles={["Super Admin", "Administrador","Vendedor"]}
                     fallback={null}
                   >
                     <DropdownMenuItem

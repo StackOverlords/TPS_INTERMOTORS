@@ -218,7 +218,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
                     <div className="flex items-center gap-2">
                         <ProtectedAction
                             permission="cli-edit"
-                            roles={["Super Admin", "Administrador"]}
+                            roles={["Super Admin", "Administrador","Vendedor"]}
                             fallback={null}
                         >
                             <Button
@@ -232,7 +232,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
 
                         <ProtectedAction
                             permission="cli-delete"
-                            roles={["Super Admin", "Administrador"]}
+                            roles={["Super Admin", "Administrador","Vendedor"]}
                             fallback={null}
                         >
                             <Button

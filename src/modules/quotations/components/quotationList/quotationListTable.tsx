@@ -138,7 +138,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                 </DropdownMenuItem>
                                 <ProtectedAction
                                     permission="cot-edit"
-                                    roles={["Super Admin", "Administrador"]}
+                                    roles={["Super Admin", "Administrador","Vendedor"]}
                                     fallback={null}
                                 >
                                     <DropdownMenuItem
@@ -150,7 +150,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                 </ProtectedAction>
                                 <ProtectedAction
                                     permission="cot-delete"
-                                    roles={["Super Admin", "Administrador"]}
+                                    roles={["Super Admin", "Administrador","Vendedor"]}
                                     fallback={null}
                                 >
                                     <DropdownMenuItem

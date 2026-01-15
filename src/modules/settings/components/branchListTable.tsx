@@ -79,7 +79,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         },
         {
             permission: 'sis-adm_sucursales',
-            roles: ['Super Admin', 'Administrador']
+            roles: ['Super Admin', 'Administrador',"Vendedor"]
         }
     );
 
@@ -218,7 +218,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                     <div className="flex items-center gap-2">
                         <ProtectedAction
                             permission="sis-adm_sucursales"
-                            roles={["Super Admin", "Administrador"]}
+                            roles={["Super Admin", "Administrador","Vendedor"]}
                             fallback={null}
                         >
                             <Button
@@ -231,7 +231,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
 
                         <ProtectedAction
                             permission="sis-adm_sucursales"
-                            roles={["Super Admin", "Administrador"]}
+                            roles={["Super Admin", "Administrador","Vendedor"]}
                             fallback={null}
                         >
                             <Button
