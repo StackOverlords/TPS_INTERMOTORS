@@ -20,6 +20,7 @@ import {
   Loader2,
   Plus,
   Save,
+  ShieldAlert,
   ShoppingCart,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -72,6 +73,7 @@ import {
   multiplyPrecise,
   roundTo5Decimals,
 } from "@/utils/decimalUtils";
+// import { ProtectedAction } from "@/components/common/ProtectedAction";
 
 const OrderCreateScreen = () => {
   const configuraciones = {
@@ -505,6 +507,10 @@ const OrderCreateScreen = () => {
 
   return (
     <main className="p-2 h-full">
+      {/* <ProtectedAction
+        permission="ped-module"
+        roles={["Super Admin", "Administrador", "Vendedor"]}
+      > */}
       <FormProvider {...methods}>
         <form
           onSubmit={handleSubmit(onSubmit, onError)}
@@ -552,7 +558,7 @@ const OrderCreateScreen = () => {
                 "h-full gap-2",
                 configuraciones.formulario === "top" && "flex flex-col",
                 configuraciones.formulario === "left" &&
-                  "flex flex-col md:grid md:grid-cols-3"
+                "flex flex-col md:grid md:grid-cols-3"
               )}
             >
               {/* Formulario de información de cotización*/}
@@ -568,9 +574,9 @@ const OrderCreateScreen = () => {
                   className={cn(
                     "shadow-none",
                     configuraciones.formulario === "top" &&
-                      "h-full flex-shrink-0 md:col-span-2",
+                    "h-full flex-shrink-0 md:col-span-2",
                     configuraciones.formulario === "left" &&
-                      "h-auto md:col-auto"
+                    "h-auto md:col-auto"
                   )}
                 >
                   <CardContent className="p-2 sm:p-3">
@@ -578,7 +584,7 @@ const OrderCreateScreen = () => {
                       className={cn(
                         "grid gap-2",
                         configuraciones.formulario === "top" &&
-                          "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+                        "grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
                         configuraciones.formulario === "left" && "grid-cols-2"
                       )}
                     >
@@ -823,8 +829,8 @@ const OrderCreateScreen = () => {
                   "flex-1 min-h-0",
                   configuraciones.formulario === "top" && "",
                   configuraciones.formulario === "top" &&
-                    configuraciones.inputs &&
-                    "",
+                  configuraciones.inputs &&
+                  "",
                   configuraciones.formulario === "left" && "col-span-2"
                 )}
               >
@@ -832,7 +838,7 @@ const OrderCreateScreen = () => {
                   className={cn(
                     "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
                     configuraciones.selector_mode === "embebed" &&
-                      "md:min-h-screen"
+                    "md:min-h-screen"
                   )}
                 >
                   <ResizablePanelGroup
@@ -1016,7 +1022,26 @@ const OrderCreateScreen = () => {
                           >
                             Nuevo Pedido
                           </Button>
-
+                          {/* <ProtectedAction
+                              permission="ped-create"
+                              roles={["Super Admin", "Administrador", "Vendedor"]}
+                              fallback={
+                                <TooltipButton
+                                  buttonProps={{
+                                    variant: "destructive",
+                                    className: "w-full",
+                                    disabled: true
+                                  }}
+                                  tooltip={
+                                    <span className="flex items-center gap-1">
+                                      Registrar Pedido <ShortcutKey combo="alt+s" />
+                                    </span>
+                                  }
+                                >
+                                  <ShieldAlert></ShieldAlert>No tienes permisos
+                                </TooltipButton>
+                              }
+                            > */}
                           <TooltipButton
                             buttonProps={{
                               type: "submit",
@@ -1044,6 +1069,8 @@ const OrderCreateScreen = () => {
                               </>
                             )}
                           </TooltipButton>
+                          {/* </ProtectedAction> */}
+
                         </div>
                       </footer>
                     </CardContent>
@@ -1055,6 +1082,7 @@ const OrderCreateScreen = () => {
           </div>
         </form>
       </FormProvider>
+      {/* </ProtectedAction> */}
     </main>
   );
 };

@@ -6,7 +6,7 @@ import { ComboboxSelect } from '@/components/common/SelectCombobox';
 import { showSuccessToast } from '@/hooks/use-toast-enhanced';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Plus, Save } from 'lucide-react';
+import { Loader2, Plus, Save, ShieldAlert } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useGetCitiesProviders } from '../hooks/commonLocation/useGetCities';
@@ -17,6 +17,7 @@ import { useGetProviderById } from '../hooks/provider/useGetProviderById';
 import { useUpdateProvider } from '../hooks/provider/useUpdateProvider';
 import { CreateProviderSchema, UpdateProviderSchema } from '../schemas/provider.schema';
 import type { CreateProvider, UpdateProvider } from '../types/provider.types';
+import { ProtectedAction } from '@/components/common/ProtectedAction';
 
 interface ProviderFormDialogProps {
     isOpen: boolean;
@@ -155,7 +156,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                     }
                 });
             })
-            : createForm.handleSubmit((data:any) => {
+            : createForm.handleSubmit((data: any) => {
                 handleCreateProvider(data, {
                     onSuccess: () => {
                         showSuccessToast({
@@ -184,9 +185,19 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleDialogToggle}>
-            <DialogTrigger asChild>
-                {triggerButton || defaultTrigger}
-            </DialogTrigger>
+            <ProtectedAction
+                permission='pro-create'
+                roles={["Super Admin", "Administrador", "Vendedor"]}
+                fallback={
+                <Button disabled variant={"destructive"} className="flex items-center gap-2">
+                    <ShieldAlert className="size-4" />
+                    Sin permiso para crear
+                </Button>}
+            >
+                <DialogTrigger asChild>
+                    {triggerButton || defaultTrigger}
+                </DialogTrigger>
+            </ProtectedAction>
             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

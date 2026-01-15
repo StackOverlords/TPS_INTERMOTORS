@@ -10,6 +10,7 @@ import {
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+// import { ProtectedAction } from "@/components/common/ProtectedAction";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -176,22 +177,34 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     <Eye className="size-4 mr-2" />
                     Ver detalles
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={(e) => e.stopPropagation()}
-                    disabled={row.original.situacion_actual === "Disponible"}
-                    onClick={() => handleUpdateOrder(row.original.id)}
-                  >
-                    <Edit className="size-4 mr-2" />
-                    Editar pedido
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={(e) => e.stopPropagation()}
-                    onClick={() => handleDeleteSale(row.original.id)}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                  >
-                    <Trash2 className="size-4 mr-2" />
-                    Eliminar pedido
-                  </DropdownMenuItem>
+                  {/* <ProtectedAction
+                    permission="ped-edit"
+                    roles={["Super Admin", "Administrador"]}
+                    fallback={null}
+                  > */}
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      disabled={row.original.situacion_actual === "Disponible"}
+                      onClick={() => handleUpdateOrder(row.original.id)}
+                    >
+                      <Edit className="size-4 mr-2" />
+                      Editar pedido
+                    </DropdownMenuItem>
+                  {/* </ProtectedAction> */}
+                  {/* <ProtectedAction
+                    permission="ped-delete"
+                    roles={["Super Admin", "Administrador"]}
+                    fallback={null}
+                  > */}
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onClick={() => handleDeleteSale(row.original.id)}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 className="size-4 mr-2" />
+                      Eliminar pedido
+                    </DropdownMenuItem>
+                  {/* </ProtectedAction> */}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

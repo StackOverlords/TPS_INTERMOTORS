@@ -17,7 +17,7 @@ import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { ArrowLeftRight, CornerUpLeft, Loader2, Maximize2, Save } from "lucide-react";
+import { ArrowLeftRight, CornerUpLeft, Loader2, Maximize2, Save, ShieldAlert } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -31,6 +31,7 @@ import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchBy
 import { useTransferDetails } from "../hooks/useTransferDetails";
 import { TransferCreateSchema } from "../schemas/transferCreateSchema";
 import type { TransferCreate } from "../types/transferCreate.types";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 
 const CreateTransfer = () => {
     const navigate = useNavigate();
@@ -268,7 +269,7 @@ const CreateTransfer = () => {
         e.preventDefault();
         handleSubmit(onSubmit, onError)();
     });
-    
+
     // Window Purchase Selector
     const purchaseWindow = useProductSelectorWindow({
         context: 'transfer',
@@ -280,143 +281,148 @@ const CreateTransfer = () => {
     });
 
     const toggleSelectorMode = () => {
-      if(purchaseWindow.isOpen){
-        purchaseWindow.close();
-      }
-      purchaseWindow.open();
+        if (purchaseWindow.isOpen) {
+            purchaseWindow.close();
+        }
+        purchaseWindow.open();
     }
     return (
         <main className="h-full flex flex-col">
-            <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2 p-2">
-                    {/* Header */}
-                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3 flex-shrink-0">
-                        <div className="flex flex-wrap gap-2 items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <TooltipButton
-                                    tooltipContentProps={{
-                                        align: 'start'
-                                    }}
-                                    onClick={handleGoBack}
-                                    tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver a la lista de transferencias</p>}
-                                    buttonProps={{
-                                        variant: 'default',
-                                        type: 'button',
-                                    }}
-                                >
-                                    <CornerUpLeft />
-                                </TooltipButton>
-                                <div>
-                                    <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
-                                        Nueva Transferencia
-                                    </h1>
-                                    <p className="text-sm text-gray-500">Registra una nueva transferencia entre sucursales</p>
+            <ProtectedAction
+                permission="tra-module"
+                roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
+                showLoader={true}
+            >
+                <FormProvider {...methods}>
+                    <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2 p-2">
+                        {/* Header */}
+                        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3 flex-shrink-0">
+                            <div className="flex flex-wrap gap-2 items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <TooltipButton
+                                        tooltipContentProps={{
+                                            align: 'start'
+                                        }}
+                                        onClick={handleGoBack}
+                                        tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver a la lista de transferencias</p>}
+                                        buttonProps={{
+                                            variant: 'default',
+                                            type: 'button',
+                                        }}
+                                    >
+                                        <CornerUpLeft />
+                                    </TooltipButton>
+                                    <div>
+                                        <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                            Nueva Transferencia
+                                        </h1>
+                                        <p className="text-sm text-gray-500">Registra una nueva transferencia entre sucursales</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </header>
+                        </header>
 
-                    {/* 1. Datos de la transferencia */}
-                    <Card className="shadow-none flex-shrink-0">
+                        {/* 1. Datos de la transferencia */}
+                        <Card className="shadow-none flex-shrink-0">
                             <CardContent className="py-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                                <div className="w-full">
-                                    <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
-                                    <Input
-                                        id="fecha"  
-                                        type="date"
-                                        {...register("fecha")}
-                                        className="w-full text-xs h-8"
-                                        autoFocus
-                                    />
-                                    {errors.fecha && <p className="text-red-500 text-xs mt-0.5">{errors.fecha.message}</p>}
-                                </div>
-                                <div className="w-full">
-                                    <Label htmlFor="responsable" className="text-xs">Responsable *</Label>
-                                    <Controller
-                                        name="responsable"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <ComboboxSelect
-                                                value={field.value}
-                                                onChange={(value) => {
-                                                    field.onChange(Number(value));
-                                                }}
-                                                options={transferResponsiblesData?.data || []}
-                                                optionTag={"nombre"}
-                                                clearOnEmpty={true}
-                                                placeholder="Selecciona responsable"
-                                            />
-                                        )}
-                                    />
-                                    {errors.responsable && <p className="text-red-500 text-xs mt-0.5">El campo es requerido</p>}
-                                </div>
+                                    <div className="w-full">
+                                        <Label htmlFor="fecha" className="text-xs">Fecha *</Label>
+                                        <Input
+                                            id="fecha"
+                                            type="date"
+                                            {...register("fecha")}
+                                            className="w-full text-xs h-8"
+                                            autoFocus
+                                        />
+                                        {errors.fecha && <p className="text-red-500 text-xs mt-0.5">{errors.fecha.message}</p>}
+                                    </div>
+                                    <div className="w-full">
+                                        <Label htmlFor="responsable" className="text-xs">Responsable *</Label>
+                                        <Controller
+                                            name="responsable"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <ComboboxSelect
+                                                    value={field.value}
+                                                    onChange={(value) => {
+                                                        field.onChange(Number(value));
+                                                    }}
+                                                    options={transferResponsiblesData?.data || []}
+                                                    optionTag={"nombre"}
+                                                    clearOnEmpty={true}
+                                                    placeholder="Selecciona responsable"
+                                                />
+                                            )}
+                                        />
+                                        {errors.responsable && <p className="text-red-500 text-xs mt-0.5">El campo es requerido</p>}
+                                    </div>
 
-                                <div className="w-full">
-                                    <Label htmlFor="sucursal_origen" className="text-xs">Sucursal Origen *</Label>
-                                    <Input
-                                        id="sucursal_origen"
-                                        value={sucursalOrigenNombre}
-                                        disabled
-                                        className="bg-gray-100 text-xs h-8"
-                                    />
-                                </div>
+                                    <div className="w-full">
+                                        <Label htmlFor="sucursal_origen" className="text-xs">Sucursal Origen *</Label>
+                                        <Input
+                                            id="sucursal_origen"
+                                            value={sucursalOrigenNombre}
+                                            disabled
+                                            className="bg-gray-100 text-xs h-8"
+                                        />
+                                    </div>
 
-                                <div className="w-full">
-                                    <Label htmlFor="sucursal_destino" className="text-xs">Sucursal Destino *</Label>
-                                    <Controller
-                                        name="sucursal_destino"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <ComboboxSelect
-                                                value={field.value}
-                                                onChange={(value) => {
-                                                    field.onChange(Number(value));
-                                                }}
-                                                options={
-                                                    transferBranchesData?.data
-                                                        ?.filter(branch => branch.activo === "SI")
-                                                        .map(branch => ({
-                                                            id: branch.id,
-                                                            nombre: branch.nombre,
-                                                            sigla: branch.sigla
-                                                        })) || []
-                                                }
-                                                optionTag={"nombre"}
-                                                placeholder="Selecciona destino"
-                                                clearOnEmpty={true}
-                                            />
-                                        )}
-                                    />
-                                    {errors.sucursal_destino && <p className="text-red-500 text-xs mt-0.5">{errors.sucursal_destino.message}</p>}
-                                </div>
+                                    <div className="w-full">
+                                        <Label htmlFor="sucursal_destino" className="text-xs">Sucursal Destino *</Label>
+                                        <Controller
+                                            name="sucursal_destino"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <ComboboxSelect
+                                                    value={field.value}
+                                                    onChange={(value) => {
+                                                        field.onChange(Number(value));
+                                                    }}
+                                                    options={
+                                                        transferBranchesData?.data
+                                                            ?.filter(branch => branch.activo === "SI")
+                                                            .map(branch => ({
+                                                                id: branch.id,
+                                                                nombre: branch.nombre,
+                                                                sigla: branch.sigla
+                                                            })) || []
+                                                    }
+                                                    optionTag={"nombre"}
+                                                    placeholder="Selecciona destino"
+                                                    clearOnEmpty={true}
+                                                />
+                                            )}
+                                        />
+                                        {errors.sucursal_destino && <p className="text-red-500 text-xs mt-0.5">{errors.sucursal_destino.message}</p>}
+                                    </div>
 
-                                <div className="w-full">
-                                    <Label htmlFor="nroComprobante" className="text-xs">N° Comprobante</Label>
-                                    <Input
-                                        id="nroComprobante"
-                                        {...register("nro_comprobante")}
-                                        placeholder="N° Comprobante"
-                                        className="w-full text-xs h-8"
-                                    />
-                                </div>
+                                    <div className="w-full">
+                                        <Label htmlFor="nroComprobante" className="text-xs">N° Comprobante</Label>
+                                        <Input
+                                            id="nroComprobante"
+                                            {...register("nro_comprobante")}
+                                            placeholder="N° Comprobante"
+                                            className="w-full text-xs h-8"
+                                        />
+                                    </div>
 
-                                <div className="w-full">
-                                    <Label htmlFor="comentarios" className="text-xs">Comentarios</Label>
-                                    <Textarea
-                                        id="comentarios"
-                                        {...register("comentarios")}
-                                        placeholder="Comentarios adicionales"
-                                        rows={1}
-                                        className="w-full text-xs min-h-8"
-                                    />
+                                    <div className="w-full">
+                                        <Label htmlFor="comentarios" className="text-xs">Comentarios</Label>
+                                        <Textarea
+                                            id="comentarios"
+                                            {...register("comentarios")}
+                                            placeholder="Comentarios adicionales"
+                                            rows={1}
+                                            className="w-full text-xs min-h-8"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    {/* Purchases */}
-                    {/* <div className="flex-1 overflow-auto flex flex-col">
+                        {/* Purchases */}
+                        {/* <div className="flex-1 overflow-auto flex flex-col">
                         <div className="flex-shrink-0">
                             <ResizableBox
                                 direction="vertical"
@@ -431,102 +437,120 @@ const CreateTransfer = () => {
                         </div>
                     </div> */}
 
-                    <Card className="shadow-none flex-1 min-h-0 flex flex-col">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <ArrowLeftRight className="size-4" />
-                                Detalle de Transferencia
-                            </CardTitle>
-                            <Button
-                                type="button"
-                                variant={"default"}
-                                size="sm"
-                                onClick={toggleSelectorMode}
-                                className="gap-2"
-                            >
-                                <Maximize2 className="h-4 w-4" />
-                                Agregar producto
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="flex-1 min-h-0 flex flex-col">
-                            {transferDetailsHook.details.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                    <p>No hay productos agregados</p>
-                                    <p className="text-sm">Haz clic en "Agregar" para añadir productos desde una compra</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="flex-1 min-h-0 overflow-auto">
-                                        <TransferDetailTable
-                                            ref={tableRef}
-                                            details={transferDetailsHook.details}
-                                            onUpdateCantidad={transferDetailsHook.updateCantidad}
-                                            onUpdateCostoEntrada={transferDetailsHook.updateCostoEntrada}
-                                            onUpdatePrecioSalida={transferDetailsHook.updatePrecioSalida}
-                                            onUpdatePrecioEntradaVenta={transferDetailsHook.updatePrecioEntradaVenta}
-                                            onUpdatePrecioEntradaVentaAlt={transferDetailsHook.updatePrecioEntradaVentaAlt}
-                                            onUpdateIncrementoPrecioEntradaVenta={transferDetailsHook.updateIncrementoPrecioEntradaVenta}
-                                            onUpdateIncrementoPrecioEntradaVentaAlt={transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt}
-                                            onRemoveProduct={transferDetailsHook.removeProduct}
-                                        />
+                        <Card className="shadow-none flex-1 min-h-0 flex flex-col">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <ArrowLeftRight className="size-4" />
+                                    Detalle de Transferencia
+                                </CardTitle>
+                                <Button
+                                    type="button"
+                                    variant={"default"}
+                                    size="sm"
+                                    onClick={toggleSelectorMode}
+                                    className="gap-2"
+                                >
+                                    <Maximize2 className="h-4 w-4" />
+                                    Agregar producto
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="flex-1 min-h-0 flex flex-col">
+                                {transferDetailsHook.details.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                        <p>No hay productos agregados</p>
+                                        <p className="text-sm">Haz clic en "Agregar" para añadir productos desde una compra</p>
                                     </div>
-                                    <Separator className="h-[0.5px] flex-shrink-0" />
-                                    <div className="flex justify-between items-center px-2 pt-2 flex-shrink-0">
-                                        <span className="font-medium text-gray-500">Total (Costo Entrada):</span>
-                                        <span className="font-bold text-emerald-600">{formatCurrency(transferDetailsHook.getTotal())}</span>
+                                ) : (
+                                    <>
+                                        <div className="flex-1 min-h-0 overflow-auto">
+                                            <TransferDetailTable
+                                                ref={tableRef}
+                                                details={transferDetailsHook.details}
+                                                onUpdateCantidad={transferDetailsHook.updateCantidad}
+                                                onUpdateCostoEntrada={transferDetailsHook.updateCostoEntrada}
+                                                onUpdatePrecioSalida={transferDetailsHook.updatePrecioSalida}
+                                                onUpdatePrecioEntradaVenta={transferDetailsHook.updatePrecioEntradaVenta}
+                                                onUpdatePrecioEntradaVentaAlt={transferDetailsHook.updatePrecioEntradaVentaAlt}
+                                                onUpdateIncrementoPrecioEntradaVenta={transferDetailsHook.updateIncrementoPrecioEntradaVenta}
+                                                onUpdateIncrementoPrecioEntradaVentaAlt={transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt}
+                                                onRemoveProduct={transferDetailsHook.removeProduct}
+                                            />
+                                        </div>
+                                        <Separator className="h-[0.5px] flex-shrink-0" />
+                                        <div className="flex justify-between items-center px-2 pt-2 flex-shrink-0">
+                                            <span className="font-medium text-gray-500">Total (Costo Entrada):</span>
+                                            <span className="font-bold text-emerald-600">{formatCurrency(transferDetailsHook.getTotal())}</span>
+                                        </div>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Footer fijo */}
+                        <Card className="border border-gray-200 shadow-none pt-3 flex-shrink-0">
+                            <CardContent className="space-y-2">
+                                <footer className="flex gap-2 items-center justify-between">
+                                    <span className="text-xs text-gray-500">* Campos requeridos</span>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            type="button"
+                                            size={'sm'}
+                                            variant="outline"
+                                            className="w-full py-3 font-medium"
+                                            onClick={handleNewTransfer}
+                                        >
+                                            Nueva Transferencia
+                                        </Button>
+                                        <ProtectedAction
+                                            permission="tra-create"
+                                            roles={["Super Admin", "Administrador", "Vendedor"]}
+                                            fallback={
+                                                <TooltipButton
+                                                    buttonProps={{
+                                                    variant: 'destructive',
+                                                    className: "w-full",
+                                                    disabled:true
+                                                }}
+                                                tooltip={
+                                                    <span className="flex items-center gap-1">Registrar Transferencia <ShortcutKey combo="alt+s" /></span>
+                                                }>
+                                                    <ShieldAlert></ShieldAlert>No tienes permisos
+                                                </TooltipButton>
+                                            }
+                                        >
+                                            <TooltipButton
+                                                buttonProps={{
+                                                    type: 'submit',
+                                                    disabled: isSaving,
+                                                    variant: 'default',
+                                                    className: "w-full"
+                                                }}
+                                                tooltip={
+                                                    <span className="flex items-center gap-1">Registrar Transferencia <ShortcutKey combo="alt+s" /></span>
+                                                }
+                                            >
+                                                {isSaving ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                                        Procesando Transferencia...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save className="mr-2 size-4" />
+                                                        Registrar Transferencia
+                                                    </>
+                                                )}
+                                            </TooltipButton>
+                                        </ProtectedAction>
                                     </div>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Footer fijo */}
-                    <Card className="border border-gray-200 shadow-none pt-3 flex-shrink-0">
-                        <CardContent className="space-y-2">
-                            <footer className="flex gap-2 items-center justify-between">
-                                <span className="text-xs text-gray-500">* Campos requeridos</span>
-                                <div className="flex gap-2">
-                                    <Button
-                                        type="button"
-                                        size={'sm'}
-                                        variant="outline"
-                                        className="w-full py-3 font-medium"
-                                        onClick={handleNewTransfer}
-                                    >
-                                        Nueva Transferencia
-                                    </Button>
-
-                                    <TooltipButton
-                                        buttonProps={{
-                                            type: 'submit',
-                                            disabled: isSaving,
-                                            variant: 'default',
-                                            className: "w-full"
-                                        }}
-                                        tooltip={
-                                            <span className="flex items-center gap-1">Registrar Transferencia <ShortcutKey combo="alt+s" /></span>
-                                        }
-                                    >
-                                        {isSaving ? (
-                                            <>
-                                                <Loader2 className="mr-2 size-4 animate-spin" />
-                                                Procesando Transferencia...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="mr-2 size-4" />
-                                                Registrar Transferencia
-                                            </>
-                                        )}
-                                    </TooltipButton>
-                                </div>
-                            </footer>
-                        </CardContent>
-                    </Card>
-                </form>
-            </FormProvider>
-        </main>
+                                </footer>
+                            </CardContent>
+                        </Card>
+                    </form>
+                </FormProvider>
+            </ProtectedAction>
+        </main >
     );
 };
 

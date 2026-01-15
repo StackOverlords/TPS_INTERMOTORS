@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/atoms/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, Settings, Trash2, Users } from "lucide-react";
@@ -14,6 +15,7 @@ import type { Customer } from "../types/customer.types";
 import CustomerFormDialog from "./customerFormDialog";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useProtectedAction } from "@/hooks/useProtectedAction";
 
 interface CustomerListTableProps {
     customers: Customer[]
@@ -61,11 +63,29 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
         setEditingId(null);
         setIsDialogOpen(true);
     }, []);
-
+    
+    // Protected
+    
     const handleEditCustomer = useCallback((id: number) => {
+        // alert("Editar cliente ID: " + id);
         setEditingId(id);
         setIsDialogOpen(true);
     }, []);
+
+    // const protectedCreate = useProtectedAction(handleAddCustomer, {
+    //     permission: "cli-create",
+    //     roles: ["Super Admin", "Administrador", "Vendedor"]
+    // });
+    
+    // Versión protegida para Enter / doble click en filas
+    const protectedEditCustomer = useProtectedAction((customer: Customer) => {
+            handleEditCustomer(customer.id);
+        },
+        {
+            permission: "cli-edit",
+            roles: ["Super Admin", "Administrador", "Vendedor"]
+        }
+    );
 
     const handleDialogToggle = useCallback((open: boolean) => {
         setIsDialogOpen(open);
@@ -196,21 +216,33 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
                 const id = row.original.id
                 return (
                     <div className="flex items-center gap-2">
-                        <Button
-                            className="w-8 cursor-pointer"
-                            variant={"outline"}
-                            onClick={() => handleEditCustomer(id)}
+                        <ProtectedAction
+                            permission="cli-edit"
+                            roles={["Super Admin", "Administrador"]}
+                            fallback={null}
                         >
-                            <Edit className="size-4" />
-                        </Button>
+                            <Button
+                                className="w-8 cursor-pointer"
+                                variant={"outline"}
+                                onClick={() => handleEditCustomer(id)}
+                            >
+                                <Edit className="size-4" />
+                            </Button>
+                        </ProtectedAction>
 
-                        <Button
-                            className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                            variant={"outline"}
-                            onClick={() => handleOpenDeleteAlert(id)}
+                        <ProtectedAction
+                            permission="cli-delete"
+                            roles={["Super Admin", "Administrador"]}
+                            fallback={null}
                         >
-                            <Trash2 className="size-4" />
-                        </Button>
+                            <Button
+                                className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                                variant={"outline"}
+                                onClick={() => handleOpenDeleteAlert(id)}
+                            >
+                                <Trash2 className="size-4" />
+                            </Button>
+                        </ProtectedAction>
                     </div>
                 )
             },
@@ -249,9 +281,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
         items: customers,
         containerRef: tableRef,
         isDragging: isDraggingColumn,
-        onPrimaryAction: (customer) => {
-            handleEditCustomer(customer.id)
-        },
+        onPrimaryAction: protectedEditCustomer,
         getItemId: (customer) => customer.id
     });
     const handleRowClick = (index: number) => {

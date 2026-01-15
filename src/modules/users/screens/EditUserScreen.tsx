@@ -1,9 +1,11 @@
 import { Button } from "@/components/atoms/button";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { useGoBack } from "@/hooks/useGoBack";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
+import { useEffect } from "react";
+import { usePermissionCheck } from "@/hooks/usePermissionCheck";
 import FormUser from "../components/FormUser";
 import { useUserByIdForEdit } from "../hooks/useUserByIdForEdit";
 
@@ -11,6 +13,19 @@ const EditUserScreen = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const handleGoBack = useGoBack("/dashboard/user");
+
+  // Validar permisos para editar usuarios
+  const { isAuthorized, isLoading: isLoadingPermissions } = usePermissionCheck({
+    permission: 'usu-editar',
+    roles: ['Super Admin'],
+  });
+
+  // Redirigir si no está autorizado
+  useEffect(() => {
+    if (!isLoadingPermissions && !isAuthorized) {
+      navigate('/dashboard/user');
+    }
+  }, [isAuthorized, isLoadingPermissions, navigate]);
 
   const {
     data: user,
@@ -27,6 +42,23 @@ const EditUserScreen = () => {
     scopes: ["esc-key"],
     enabled: true
   });
+
+  // Mostrar loader mientras verifica permisos
+  if (isLoadingPermissions) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
+          <p className="text-sm text-gray-500">Verificando permisos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no está autorizado, no renderizar nada (se redirigirá)
+  if (!isAuthorized) {
+    return null;
+  }
 
   if (isLoading) {
     return (

@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/atoms/scroll-area';
 import { Separator } from '@/components/atoms/separator';
 import { Skeleton } from '@/components/atoms/skeleton';
 import { useToast } from '@/components/atoms/use-toast';
+import { ProtectedAction } from '@/components/common/ProtectedAction';
 import { useRouteViewConfigWithSync } from '@/hooks/useRouteViewConfig';
 import {
   ArrowLeft,
@@ -357,23 +358,33 @@ const UserDetailScreen = () => {
               <UserCog className="h-4 w-4" />
               Gestionar Permisos
             </Button> */}
-            <Button
-              variant="destructive"
-              size={'sm'}
-              disabled={true}
-              // className="flex items-center gap-1"
+            <ProtectedAction
+              permission="usu-editar"
+              roles={["Super Admin"]}
             >
-              <UserMinus2 className="h-4 w-4" />
-              Eliminar usuario
-            </Button>
-            <Button
-              variant="default"
-              size={'sm'}
-              onClick={() => navigate(`/dashboard/user/edit/${user.id}`)}
+              <Button
+                variant="destructive"
+                size={'sm'}
+                disabled={true}
+                // className="flex items-center gap-1"
+              >
+                <UserMinus2 className="h-4 w-4" />
+                Eliminar usuario
+              </Button>
+            </ProtectedAction>
+            <ProtectedAction
+              permission="usu-editar"
+              roles={["Super Admin"]}
             >
-              <Edit className="h-4 w-4" />
-              Editar Usuario
-            </Button>
+              <Button
+                variant="default"
+                size={'sm'}
+                onClick={() => navigate(`/dashboard/user/edit/${user.id}`)}
+              >
+                <Edit className="h-4 w-4" />
+                Editar Usuario
+              </Button>
+            </ProtectedAction>
           </div>
         </div>
       </div>
@@ -543,25 +554,28 @@ const UserDetailScreen = () => {
                     </CardTitle>
                   </div>
                   <div className="flex items-center gap-2">
-                    {
-                      viewConfig?.features?.saveButton?.enabled && (
-                        <Button
-                        onClick={handleSavePermissions}
-                        disabled={
-                          isSaving ||
-                          isLoadingPermissions ||
-                          isLoadingUserPermissions
-                        }
+                    {viewConfig?.features?.saveButton?.enabled && (
+                      <ProtectedAction
+                        permission="usu-editar"
+                        roles={["Super Admin"]}
                       >
-                        {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-                      </Button>
-                      )
-                    }
+                        <Button
+                          onClick={handleSavePermissions}
+                          disabled={
+                            isSaving ||
+                            isLoadingPermissions ||
+                            isLoadingUserPermissions
+                          }
+                        >
+                          {isSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                        </Button>
+                      </ProtectedAction>
+                    )}
                   </div>
                 </div>
                 <CardDescription>

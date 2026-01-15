@@ -4,6 +4,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
@@ -133,41 +134,53 @@ const ReturnDetailScreen = () => {
 
                         {/* Action Buttons */}
                         < div className="flex items-center gap-2" >
-                            <TooltipButton
-                                onClick={handleUpdateReturn}
-                                tooltip="Editar Devolución"
-                                buttonProps={{
-                                    variant: 'outline',
-                                    size: 'sm'
-                                }}
+                            <ProtectedAction
+                                permission="dev-edit"
+                                roles={["Super Admin", "Administrador","Vendedor"]}
+                                fallback={null}
                             >
-                                <Edit className="h-4 w-4" />
-                                Editar
-                            </TooltipButton>
+                                <TooltipButton
+                                    onClick={handleUpdateReturn}
+                                    tooltip="Editar Devolución"
+                                    buttonProps={{
+                                        variant: 'outline',
+                                        size: 'sm'
+                                    }}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Editar
+                                </TooltipButton>
+                            </ProtectedAction>
 
-                            <TooltipButton
-                                onClick={() => handleOpenDeleteAlert(returnData?.id)}
-                                tooltip="Eliminar Devolución"
-                                buttonProps={{
-                                    variant: 'destructive',
-                                    size: 'sm',
-                                    disabled: isDeleting
-                                }}
+                            <ProtectedAction
+                                permission="dev-delete"
+                                roles={["Super Admin", "Administrador", "Vendedor"]}
+                                fallback={null}
                             >
-                                {
-                                    !isDeleting ? (
-                                        <>
-                                            <Trash2 className="h-4 w-4" />
-                                            Eliminar
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Eliminando...
-                                        </>
-                                    )
-                                }
-                            </TooltipButton>
+                                <TooltipButton
+                                    onClick={() => handleOpenDeleteAlert(returnData?.id)}
+                                    tooltip="Eliminar Devolución"
+                                    buttonProps={{
+                                        variant: 'destructive',
+                                        size: 'sm',
+                                        disabled: isDeleting
+                                    }}
+                                >
+                                    {
+                                        !isDeleting ? (
+                                            <>
+                                                <Trash2 className="h-4 w-4" />
+                                                Eliminar
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Eliminando...
+                                            </>
+                                        )
+                                    }
+                                </TooltipButton>
+                            </ProtectedAction>
                         </div >
                     </div >
                 </header >

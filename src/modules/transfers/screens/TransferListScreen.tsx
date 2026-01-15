@@ -20,6 +20,7 @@ import { useTransfersFilters } from "../hooks/useTransfersFilters";
 import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
 import type { TransferGetAll } from "../types/transferGet.types";
 import { useCommands } from "@/keybindings";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 
 const TransferListScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -215,9 +216,9 @@ const TransferListScreen = () => {
     refetchTransfers();
   };
 
-  const toggleShowFilters = () => {
-    setShowFilters(!showFilters);
-  };
+  // const toggleShowFilters = () => {
+  //   setShowFilters(!showFilters);
+  // };
 
   useCommands(
     {
@@ -231,162 +232,168 @@ const TransferListScreen = () => {
 
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
-      <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
-        <h1 className="text-lg font-bold text-primary">Transferencias</h1>
-        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
-          <div className="flex items-center gap-2 md:gap-4 grow">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar por palabras clave..."
-                value={filters.keywords}
-                onChange={(e) => updateFilter("keywords", e.target.value)}
-                className="pl-10 w-full"
-              />
+      <ProtectedAction
+        permission="tra-module"
+        roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
+        showLoader={true}
+      >
+        <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+          <h1 className="text-lg font-bold text-primary">Transferencias</h1>
+          <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-4 grow">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar por palabras clave..."
+                  value={filters.keywords}
+                  onChange={(e) => updateFilter("keywords", e.target.value)}
+                  className="pl-10 w-full"
+                />
+              </div>
+
+              {/* Botón de búsqueda manual al lado del input */}
+              {searchMode === "manual" && (
+                <Button
+                  onClick={handleManualSearch}
+                  size="sm"
+                  className="shrink-0"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Buscar
+                </Button>
+              )}
             </div>
 
-            {/* Botón de búsqueda manual al lado del input */}
-            {searchMode === "manual" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Toggle de modo de búsqueda */}
               <Button
-                onClick={handleManualSearch}
+                type="button"
                 size="sm"
-                className="shrink-0"
+                variant="ghost"
+                onClick={toggleSearchMode}
+                className="text-xs h-7"
+                title={
+                  searchMode === "realtime"
+                    ? "Cambiar a búsqueda manual"
+                    : "Cambiar a búsqueda en tiempo real"
+                }
               >
-                <Search className="h-4 w-4 mr-2" />
-                Buscar
+                <Zap
+                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
+                />
+                {searchMode === "realtime" ? "Tiempo real" : "Manual"}
               </Button>
-            )}
-          </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="infinite-scroll"
+                  checked={isInfiniteScroll}
+                  onCheckedChange={(checked) => {
+                    setIsInfiniteScroll(checked);
+                    setPage(1);
+                  }}
+                />
+                <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
+              </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Toggle de modo de búsqueda */}
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={toggleSearchMode}
-              className="text-xs h-7"
-              title={
-                searchMode === "realtime"
-                  ? "Cambiar a búsqueda manual"
-                  : "Cambiar a búsqueda en tiempo real"
-              }
-            >
-              <Zap
-                className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
-              />
-              {searchMode === "realtime" ? "Tiempo real" : "Manual"}
-            </Button>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="infinite-scroll"
-                checked={isInfiniteScroll}
-                onCheckedChange={(checked) => {
-                  setIsInfiniteScroll(checked);
-                  setPage(1);
+              <TooltipButton
+                onClick={handleRefetchTransfers}
+                buttonProps={{
+                  className: "w-8",
+                  disabled: isRefetchingTransfers || isFetching,
                 }}
-              />
-              <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
-            </div>
+                tooltip={"Recargar transferencias"}
+              >
+                <RefreshCcw
+                  className={`size-4 ${isRefetchingTransfers || isFetching ? "animate-spin" : ""}`}
+                />
+              </TooltipButton>
 
-            <TooltipButton
-              onClick={handleRefetchTransfers}
-              buttonProps={{
-                className: "w-8",
-                disabled: isRefetchingTransfers || isFetching,
-              }}
-              tooltip={"Recargar transferencias"}
-            >
-              <RefreshCcw
-                className={`size-4 ${isRefetchingTransfers || isFetching ? "animate-spin" : ""}`}
-              />
-            </TooltipButton>
+              <Button onClick={handleResetFilters}>
+                <PackageSearch className="h-4 w-4" />
+                Nueva búsqueda
+              </Button>
 
-            <Button onClick={handleResetFilters}>
-              <PackageSearch className="h-4 w-4" />
-              Nueva búsqueda
-            </Button>
-
-            {/* <Button size={'sm'} onClick={toggleShowFilters}>
+              {/* <Button size={'sm'} onClick={toggleShowFilters}>
                             {
                                 showFilters ?
                                     "Ocultar filtros" :
                                     "Mostrar filtros"
                             }
                         </Button> */}
-          </div>
-        </section>
-        {/* Búsquedas individuales */}
-        {showFilters && (
-          <>
-            <Separator />
-            <TransferFiltersComponent
-              filters={filters}
-              updateFilter={updateFilter}
-              handleManualSearch={handleManualSearch}
-              searchMode={searchMode}
-            />
-          </>
-        )}
-      </header>
+            </div>
+          </section>
+          {/* Búsquedas individuales */}
+          {showFilters && (
+            <>
+              <Separator />
+              <TransferFiltersComponent
+                filters={filters}
+                updateFilter={updateFilter}
+                handleManualSearch={handleManualSearch}
+                searchMode={searchMode}
+              />
+            </>
+          )}
+        </header>
 
-      <div className="bg-card rounded-lg border border-border flex-1 overflow-auto">
-        <TransferListTable
-          data={transfersData || { data: [], meta: null, links: null }}
-          filters={filters}
-          isError={isError}
-          isFetching={isFetching}
-          isInfiniteScroll={isInfiniteScroll}
-          isLoading={isLoading}
-          transfers={transfers}
-          setPage={setPage}
-          setPageSize={setPageSize}
-          handleDeleteTransfer={handleOpenDeleteAlert}
-          handleSendTransfer={handleOpenSendAlert}
-          handleAcceptTransfer={handleOpenAcceptAlert}
-          handleRefuseTransfer={handleOpenRefuseAlert}
+        <div className="bg-card rounded-lg border border-border flex-1 overflow-auto">
+          <TransferListTable
+            data={transfersData || { data: [], meta: null, links: null }}
+            filters={filters}
+            isError={isError}
+            isFetching={isFetching}
+            isInfiniteScroll={isInfiniteScroll}
+            isLoading={isLoading}
+            transfers={transfers}
+            setPage={setPage}
+            setPageSize={setPageSize}
+            handleDeleteTransfer={handleOpenDeleteAlert}
+            handleSendTransfer={handleOpenSendAlert}
+            handleAcceptTransfer={handleOpenAcceptAlert}
+            handleRefuseTransfer={handleOpenRefuseAlert}
+          />
+        </div>
+
+        {/* Modal de confirmación para eliminar */}
+        <ConfirmationModal
+          isOpen={showDeleteAlert}
+          title="Eliminar Transferencia"
+          message={`¿Estás seguro de que deseas eliminar la Transferencia #${transferToDelete}?`}
+          onClose={handleCloseDeleteAlert}
+          onConfirm={handleConfirmDeleteAlert}
+          isLoading={isDeleting}
         />
-      </div>
 
-      {/* Modal de confirmación para eliminar */}
-      <ConfirmationModal
-        isOpen={showDeleteAlert}
-        title="Eliminar Transferencia"
-        message={`¿Estás seguro de que deseas eliminar la Transferencia #${transferToDelete}?`}
-        onClose={handleCloseDeleteAlert}
-        onConfirm={handleConfirmDeleteAlert}
-        isLoading={isDeleting}
-      />
+        {/* Modal de confirmación para enviar */}
+        <ConfirmationModal
+          isOpen={showSendAlert}
+          title="Enviar Transferencia"
+          message={`¿Estás seguro de que deseas enviar la Transferencia #${transferToSend}?`}
+          onClose={handleCloseSendAlert}
+          onConfirm={handleConfirmSendAlert}
+          isLoading={isSending}
+        />
 
-      {/* Modal de confirmación para enviar */}
-      <ConfirmationModal
-        isOpen={showSendAlert}
-        title="Enviar Transferencia"
-        message={`¿Estás seguro de que deseas enviar la Transferencia #${transferToSend}?`}
-        onClose={handleCloseSendAlert}
-        onConfirm={handleConfirmSendAlert}
-        isLoading={isSending}
-      />
+        {/* Modal de confirmación para recibir */}
+        <ConfirmationModal
+          isOpen={showAcceptAlert}
+          title="Recibir Transferencia"
+          message={`¿Estás seguro de que deseas recibir la Transferencia #${transferToAccept}?`}
+          onClose={handleCloseAcceptAlert}
+          onConfirm={handleConfirmAcceptAlert}
+          isLoading={isAccepting}
+        />
 
-      {/* Modal de confirmación para recibir */}
-      <ConfirmationModal
-        isOpen={showAcceptAlert}
-        title="Recibir Transferencia"
-        message={`¿Estás seguro de que deseas recibir la Transferencia #${transferToAccept}?`}
-        onClose={handleCloseAcceptAlert}
-        onConfirm={handleConfirmAcceptAlert}
-        isLoading={isAccepting}
-      />
-
-      {/* Modal de confirmación para rechazar */}
-      <ConfirmationModal
-        isOpen={showRefuseAlert}
-        title="Rechazar Transferencia"
-        message={`¿Estás seguro de que deseas rechazar la Transferencia #${transferToRefuse}? Esta acción no se puede deshacer.`}
-        onClose={handleCloseRefuseAlert}
-        onConfirm={handleConfirmRefuseAlert}
-        isLoading={isRefusing}
-      />
+        {/* Modal de confirmación para rechazar */}
+        <ConfirmationModal
+          isOpen={showRefuseAlert}
+          title="Rechazar Transferencia"
+          message={`¿Estás seguro de que deseas rechazar la Transferencia #${transferToRefuse}? Esta acción no se puede deshacer.`}
+          onClose={handleCloseRefuseAlert}
+          onConfirm={handleConfirmRefuseAlert}
+          isLoading={isRefusing}
+        />
+      </ProtectedAction>
     </main>
   );
 };

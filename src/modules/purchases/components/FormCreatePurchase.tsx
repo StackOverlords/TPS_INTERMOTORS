@@ -11,6 +11,7 @@ import { usePurchaseCommons } from "../hooks/usePurchaseCommons";
 import { type FormData } from "../hooks/usePurchaseForm";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { useProtectedAction } from "@/hooks/useProtectedAction";
 
 interface Props {
   formData: FormData;
@@ -30,7 +31,7 @@ const FormCreatePurchase: React.FC<Props> = ({
   onBlur,
   onSubmit,
   onReset,
-  onCancel,
+  // onCancel,
 }) => {
   const { data: proveedores = [], isLoading: isLoadingProviders } =
     useProviders();
@@ -74,9 +75,13 @@ const FormCreatePurchase: React.FC<Props> = ({
     }
   };
 
+  const protectedSaveAction = useProtectedAction(onSubmit, {
+    permission: "com-create",
+    roles: ["Super Admin", "Administrador", "Vendedor"]
+  })
   // ✨ Nuevo sistema de keybindings
   useCommands({
-    "forms.save": onSubmit,
+    "forms.save": protectedSaveAction,
     "forms.reset": onReset || undefined,
   });
 

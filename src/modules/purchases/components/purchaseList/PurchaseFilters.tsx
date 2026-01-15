@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 
 interface PurchaseFiltersProps {
   filters: ReturnType<typeof usePurchaseFilters>["filters"];
@@ -100,123 +101,129 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
 
   return (
     <section className="space-y-2">
-      <div
-        ref={filterContainerRef}
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2"
+      <ProtectedAction
+        permission="com-list"
+        roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
+        showLoader={true}
+        fallback={null}
       >
-        <div className="space-y-2">
-          <Label>Nro. de Compra</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="number"
-              placeholder="COMP-1070..."
-              value={filters.codigo_interno ?? ""}
-              onChange={(e) =>
+        <div
+          ref={filterContainerRef}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2"
+        >
+          <div className="space-y-2">
+            <Label>Nro. de Compra</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="number"
+                placeholder="COMP-1070..."
+                value={filters.codigo_interno ?? ""}
+                onChange={(e) =>
+                  updateFilter(
+                    "codigo_interno",
+                    e.target.value ? parseInt(e.target.value, 10) : undefined
+                  )
+                }
+                className="pl-10 font-mono text-xs"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Proveedor</Label>
+            <ComboboxSelect
+              value={filters.proveedor}
+              onChange={(value) =>
                 updateFilter(
-                  "codigo_interno",
-                  e.target.value ? parseInt(e.target.value, 10) : undefined
+                  "proveedor",
+                  value && typeof value === "string"
+                    ? parseInt(value, 10)
+                    : undefined
                 )
               }
-              className="pl-10 font-mono text-xs"
-            />
+              options={orderProvidersData || []}
+              optionTag="nombre"
+              placeholder="Seleccione un proveedor"
+              clearOnEmpty={true}
+            ></ComboboxSelect>
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label>Proveedor</Label>
-          <ComboboxSelect
-            value={filters.proveedor}
-            onChange={(value) =>
-              updateFilter(
-                "proveedor",
-                value && typeof value === "string"
-                  ? parseInt(value, 10)
-                  : undefined
-              )
-            }
-            options={orderProvidersData || []}
-            optionTag="nombre"
-            placeholder="Seleccione un proveedor"
-            clearOnEmpty={true}
-          ></ComboboxSelect>
-        </div>
-        <div className="space-y-2">
-          <Label>Código OEM</Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="11122-10040-D..."
-              value={filters.codigo_oem_producto}
-              onChange={(e) =>
-                updateFilter("codigo_oem_producto", e.target.value)
-              }
-              className="pl-10 font-mono text-xs"
-            />
+          <div className="space-y-2">
+            <Label>Código OEM</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="11122-10040-D..."
+                value={filters.codigo_oem_producto}
+                onChange={(e) =>
+                  updateFilter("codigo_oem_producto", e.target.value)
+                }
+                className="pl-10 font-mono text-xs"
+              />
+            </div>
           </div>
-        </div>
-        {/* Fecha Inicio */}
-        <div className="space-y-2 w-full">
-          <Label>Desde</Label>
-          <div className="flex gap-2">
-            <PopoverDatePicker
-              value={filters.fecha_inicio}
-              onChange={(date) => handleFechaInicioChange(date)}
-              hasError={dateError}
-              disabled={(date) => {
-                // Deshabilitar fechas futuras
-                // const today = new Date();
-                // today.setHours(0, 0, 0, 0);
+          {/* Fecha Inicio */}
+          <div className="space-y-2 w-full">
+            <Label>Desde</Label>
+            <div className="flex gap-2">
+              <PopoverDatePicker
+                value={filters.fecha_inicio}
+                onChange={(date) => handleFechaInicioChange(date)}
+                hasError={dateError}
+                disabled={(date) => {
+                  // Deshabilitar fechas futuras
+                  // const today = new Date();
+                  // today.setHours(0, 0, 0, 0);
 
-                const fechaFin = filters.fecha_fin
-                  ? new Date(filters.fecha_fin)
-                  : undefined;
-                if (fechaFin && date > fechaFin) return true;
-                // return date > today;
-                return false;
-              }}
-            />
+                  const fechaFin = filters.fecha_fin
+                    ? new Date(filters.fecha_fin)
+                    : undefined;
+                  if (fechaFin && date > fechaFin) return true;
+                  // return date > today;
+                  return false;
+                }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Fecha Fin */}
-        <div className="space-y-2 w-full">
-          <Label>Hasta</Label>
-          <div className="flex gap-2">
-            <PopoverDatePicker
-              value={filters.fecha_fin}
-              onChange={(date) => handleFechaFinChange(date)}
-              hasError={dateError}
-              disabled={(date) => {
-                // Deshabilitar fechas futuras
-                // const today = new Date();
-                // today.setHours(0, 0, 0, 0);
-                // if (date > today) return true;
+          {/* Fecha Fin */}
+          <div className="space-y-2 w-full">
+            <Label>Hasta</Label>
+            <div className="flex gap-2">
+              <PopoverDatePicker
+                value={filters.fecha_fin}
+                onChange={(date) => handleFechaFinChange(date)}
+                hasError={dateError}
+                disabled={(date) => {
+                  // Deshabilitar fechas futuras
+                  // const today = new Date();
+                  // today.setHours(0, 0, 0, 0);
+                  // if (date > today) return true;
 
-                const fechaInicio = filters.fecha_inicio
-                  ? new Date(filters.fecha_inicio)
-                  : undefined;
-                // Deshabilitar fechas anteriores a la fecha de inicio
-                if (fechaInicio && date < fechaInicio) return true;
+                  const fechaInicio = filters.fecha_inicio
+                    ? new Date(filters.fecha_inicio)
+                    : undefined;
+                  // Deshabilitar fechas anteriores a la fecha de inicio
+                  if (fechaInicio && date < fechaInicio) return true;
 
-                return false;
-              }}
-            />
+                  return false;
+                }}
+              />
+            </div>
           </div>
+
+          {/* Botón de búsqueda - Visible solo en modo manual */}
+          {searchMode === "manual" && (
+            <div className="space-y-2 w-full flex flex-col justify-end">
+              <Button onClick={handleManualSearch} className="w-full">
+                <Search className="size-4 mr-2" />
+                Buscar
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* Botón de búsqueda - Visible solo en modo manual */}
-        {searchMode === "manual" && (
-          <div className="space-y-2 w-full flex flex-col justify-end">
-            <Button onClick={handleManualSearch} className="w-full">
-              <Search className="size-4 mr-2" />
-              Buscar
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Botones de acción adicionales */}
-      {/* <div className="flex gap-2 items-end justify-end flex-wrap">
+        {/* Botones de acción adicionales */}
+        {/* <div className="flex gap-2 items-end justify-end flex-wrap">
         {(filters.fecha_inicio || filters.fecha_fin) && (
           <Button
             variant="outline"
@@ -230,13 +237,14 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
         )}
       </div> */}
 
-      {/* Mostrar error de validación */}
-      {dateError && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <span>{dateError}</span>
-        </div>
-      )}
+        {/* Mostrar error de validación */}
+        {dateError && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span>{dateError}</span>
+          </div>
+        )}
+      </ProtectedAction>
     </section>
   );
 };

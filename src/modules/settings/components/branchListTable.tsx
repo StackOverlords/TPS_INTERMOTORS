@@ -5,8 +5,10 @@ import { Checkbox } from "@/components/atoms/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
+import { useProtectedAction } from "@/hooks/useProtectedAction";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, GitBranchIcon, Settings, Users } from "lucide-react";
@@ -69,6 +71,17 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         setEditingId(id);
         setIsDialogOpen(true);
     }, []);
+
+    // Versión protegida para doble click / Enter / atajos de teclado
+    const protectedEditBranch = useProtectedAction(
+        (branch: Branch) => {
+            handleEditBranch(branch.id);
+        },
+        {
+            permission: 'sis-adm_sucursales',
+            roles: ['Super Admin', 'Administrador']
+        }
+    );
 
     const handleDialogToggle = useCallback((open: boolean) => {
         setIsDialogOpen(open);
@@ -203,19 +216,31 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                 const nombre = row.original.nombre
                 return (
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant={"outline"}
-                            onClick={() => handleEditBranch(id)}
+                        <ProtectedAction
+                            permission="sis-adm_sucursales"
+                            roles={["Super Admin", "Administrador"]}
+                            fallback={null}
                         >
-                            <Edit className="size-4" />
-                        </Button>
+                            <Button
+                                variant={"outline"}
+                                onClick={() => handleEditBranch(id)}
+                            >
+                                <Edit className="size-4" />
+                            </Button>
+                        </ProtectedAction>
 
-                        <Button
-                            variant={"outline"}
-                            onClick={() => handleOpenUsersModal(id, nombre)}
+                        <ProtectedAction
+                            permission="sis-adm_sucursales"
+                            roles={["Super Admin", "Administrador"]}
+                            fallback={null}
                         >
-                            <Users className="size-4" />
-                        </Button>
+                            <Button
+                                variant={"outline"}
+                                onClick={() => handleOpenUsersModal(id, nombre)}
+                            >
+                                <Users className="size-4" />
+                            </Button>
+                        </ProtectedAction>
 
                         {/* <Button
                             className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
@@ -262,9 +287,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
         items: branches,
         containerRef: tableRef,
         isDragging: isDraggingColumn,
-        onPrimaryAction: (branch) => {
-            handleEditBranch(branch.id)
-        },
+        onPrimaryAction: protectedEditBranch, // Protegido con permisos
         getItemId: (branch) => branch.id
     });
     const handleRowClick = (index: number) => {
