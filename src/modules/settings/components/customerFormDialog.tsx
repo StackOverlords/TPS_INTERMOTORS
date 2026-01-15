@@ -17,6 +17,7 @@ import { useGetCustomerById } from '../hooks/customer/useGetCustomerById';
 import { useUpdateCustomer } from '../hooks/customer/useUpdateCustomer';
 import { CreateCustomerSchema, UpdateCustomerSchema } from '../schemas/customer.schema';
 import type { CreateCustomer, UpdateCustomer } from '../types/customer.types';
+import { ProtectedAction } from '@/components/common/ProtectedAction';
 
 interface CustomerFormDialogProps {
     isOpen: boolean;
@@ -180,18 +181,25 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
         submitHandler();
     }, [isEditing, editingId, updateForm, createForm, handleUpdateCustomer, handleCreateCustomer, handleDialogToggle, handleError]);
 
-    const defaultTrigger = (
-        <Button className="flex items-center gap-2">
-            <Plus className="size-4" />
-            Agregar Cliente
-        </Button>
-    );
-
     return (
         <Dialog open={isOpen} onOpenChange={handleDialogToggle}>
-            <DialogTrigger asChild>
-                {triggerButton || defaultTrigger}
-            </DialogTrigger>
+            <ProtectedAction
+                permission="cli-create"
+                roles={["Super Admin", "Administrador", "Vendedor"]}
+                fallback={
+                    <Button disabled className="flex items-center gap-2">
+                        <Plus className="size-4" />
+                        Agregar Cliente
+                    </Button>
+                }
+            >
+                <DialogTrigger asChild>
+                    {triggerButton || <Button className="flex items-center gap-2">
+                        <Plus className="size-4" />
+                        Agregar Cliente
+                    </Button>}
+                </DialogTrigger>
+            </ProtectedAction>
             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
@@ -461,6 +469,19 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                         >
                             Cancelar
                         </Button>
+                        <ProtectedAction
+                            permission={isEditing ? "cli-edit" : "cli-create"}
+                            roles={["Super Admin", "Administrador", "Vendedor"]}
+                            fallback={
+                                <Button
+                                    type="submit"
+                                    className="bg-black hover:bg-gray-800"
+                                    disabled={true}
+                                >
+                                    {isEditing ? "Actualizar" : "Crear"}
+                                </Button>
+                            }
+                        >
                         <Button
                             type="submit"
                             className="bg-black hover:bg-gray-800"
@@ -478,6 +499,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                 </>
                             )}
                         </Button>
+                        </ProtectedAction>
                     </div>
                 </form>
             </DialogContent>

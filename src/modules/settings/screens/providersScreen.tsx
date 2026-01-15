@@ -10,13 +10,14 @@ import { showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useGoBack } from "@/hooks/useGoBack";
-import { CornerUpLeft, Filter, RefreshCcw, Search } from "lucide-react";
+import { CornerUpLeft, Filter, RefreshCcw, Search, ShieldAlert } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useProviderFilters } from "../hooks/provider/useProviderFilters";
 import { useDeleteProvider } from "../hooks/provider/useDeleteProvider";
 import { useGetAllProviders } from "../hooks/provider/useGetAllProviders";
 import ProviderListTable from "../components/providerListTable";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 
 const ProvidersScreen = () => {
     // Estado local para los filtros (búsqueda manual)
@@ -134,156 +135,172 @@ const ProvidersScreen = () => {
 
     return (
         <main className="w-full max-w-7xl mx-auto h-full p-2 gap-2 flex flex-col">
-            <div className="space-y-2 flex-shrink-0">
-                <header className="bg-card rounded-lg p-2 border border-border">
-                    <div className="flex flex-wrap gap-2 items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <TooltipButton
-                                tooltipContentProps={{
-                                    align: 'start'
-                                }}
-                                onClick={handleGoBack}
-                                tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver atrás</p>}
-                                buttonProps={{
-                                    variant: 'default',
-                                    type: 'button',
-                                    className: 'size-9'
-                                }}
-                            >
-                                <CornerUpLeft />
-                            </TooltipButton>
-                            <div>
-                                <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
-                                    Proveedores
-                                </h1>
-                                <p className="text-sm text-gray-500">Gestiona los proveedores de la aplicación</p>
-                            </div>
-                        </div >
-                    </div >
-                </header >
-
-                <Card className="shadow-none">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                            <Filter className="size-5 text-gray-700" />
-                            Filtros
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <section className="space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                                <div>
-                                    <Label htmlFor="proveedor">Proveedor</Label>
-                                    <Input
-                                        id="proveedor"
-                                        placeholder="Buscar proveedor..."
-                                        value={localProveedor}
-                                        onChange={handleLocalProveedorChange}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSearch();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="nit">NIT</Label>
-                                    <Input
-                                        id="nit"
-                                        placeholder="Buscar por NIT..."
-                                        value={localNit}
-                                        onChange={handleLocalNitChange}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSearch();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="codigo_interno">Código Interno</Label>
-                                    <Input
-                                        id="codigo_interno"
-                                        type="number"
-                                        placeholder="Código..."
-                                        value={localCodigoInterno}
-                                        onChange={handleLocalCodigoInternoChange}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleSearch();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="activo">Estado</Label>
-                                    <Select
-                                        value={localActivo}
-                                        onValueChange={handleLocalActivoChange}
-                                    >
-                                        <SelectTrigger id="activo">
-                                            <SelectValue placeholder="Todos" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos</SelectItem>
-                                            <SelectItem value="1">Activos</SelectItem>
-                                            <SelectItem value="0">Inactivos</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-2 justify-end w-full">
-                                <Button onClick={handleSearch}>
-                                    <Search className="size-4" />
-                                    Buscar
-                                </Button>
-
+            <ProtectedAction
+                permission="pro-module"
+                roles={["Super Admin", "Administrador", "Vendedor"]}
+                showLoader={true}
+            >
+                <div className="space-y-2 flex-shrink-0">
+                    <header className="bg-card rounded-lg p-2 border border-border">
+                        <div className="flex flex-wrap gap-2 items-center justify-between">
+                            <div className="flex items-center gap-3">
                                 <TooltipButton
-                                    onClick={handleRefetchProvidersData}
-                                    buttonProps={{
-                                        className: 'w-8',
-                                        disabled: isRefreshing,
+                                    tooltipContentProps={{
+                                        align: 'start'
                                     }}
-                                    tooltip={"Recargar datos"}
+                                    onClick={handleGoBack}
+                                    tooltip={<p className="flex items-center gap-1">Presiona <Kbd>esc</Kbd> para volver atrás</p>}
+                                    buttonProps={{
+                                        variant: 'default',
+                                        type: 'button',
+                                        className: 'size-9'
+                                    }}
                                 >
-                                    <RefreshCcw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                    <CornerUpLeft />
                                 </TooltipButton>
+                                <div>
+                                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
+                                        Proveedores
+                                    </h1>
+                                    <p className="text-sm text-gray-500">Gestiona los proveedores de la aplicación</p>
+                                </div>
+                            </div >
+                        </div >
+                    </header >
 
-                                <Button onClick={handleResetFilters}>
-                                    <Filter className="size-4" />
-                                    Limpiar Filtros
-                                </Button>
-                            </div>
-                        </section>
-                    </CardContent>
-                </Card>
-            </div>
+                    <Card className="shadow-none">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
+                                <Filter className="size-5 text-gray-700" />
+                                Filtros
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <section className="space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <div>
+                                        <Label htmlFor="proveedor">Proveedor</Label>
+                                        <Input
+                                            id="proveedor"
+                                            placeholder="Buscar proveedor..."
+                                            value={localProveedor}
+                                            onChange={handleLocalProveedorChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleSearch();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="nit">NIT</Label>
+                                        <Input
+                                            id="nit"
+                                            placeholder="Buscar por NIT..."
+                                            value={localNit}
+                                            onChange={handleLocalNitChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleSearch();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="codigo_interno">Código Interno</Label>
+                                        <Input
+                                            id="codigo_interno"
+                                            type="number"
+                                            placeholder="Código..."
+                                            value={localCodigoInterno}
+                                            onChange={handleLocalCodigoInternoChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleSearch();
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="activo">Estado</Label>
+                                        <Select
+                                            value={localActivo}
+                                            onValueChange={handleLocalActivoChange}
+                                        >
+                                            <SelectTrigger id="activo">
+                                                <SelectValue placeholder="Todos" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Todos</SelectItem>
+                                                <SelectItem value="1">Activos</SelectItem>
+                                                <SelectItem value="0">Inactivos</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
 
-            {/* Tabla de Proveedores */}
-            <div className="flex-1 min-h-screen md:min-h-0 overflow-hidden">
-                <ProviderListTable
-                    providers={providersData?.data || []}
-                    handleOpenDeleteAlert={handleOpenDeleteAlert}
-                    isLoadingProvidersData={isLoadingProvidersData}
-                    isErrorProvidersData={isErrorProvidersData}
-                    isFetchingProvidersData={isFetchingProvidersData}
-                    rows={filters.pagina_registros}
-                    page={filters.pagina}
-                    totalRecords={totalRecords}
-                    handleRowsChange={handleRowsChange}
-                    onPageChange={setPage}
+                                <div className="flex gap-2 justify-end w-full">
+                                    <ProtectedAction
+                                        permission="pro-list"
+                                        roles={["Super Admin", "Administrador", "Vendedor"]}
+                                        fallback={
+                                        <Button disabled variant={"destructive"} onClick={handleSearch}>
+                                            <ShieldAlert className="size-4" />
+                                            No tienes permisos para buscar.
+                                        </Button>}
+                                    >
+                                    <Button onClick={handleSearch}>
+                                        <Search className="size-4" />
+                                        Buscar
+                                    </Button>
+                                    </ProtectedAction>
+
+                                    <TooltipButton
+                                        onClick={handleRefetchProvidersData}
+                                        buttonProps={{
+                                            className: 'w-8',
+                                            disabled: isRefreshing,
+                                        }}
+                                        tooltip={"Recargar datos"}
+                                    >
+                                        <RefreshCcw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                    </TooltipButton>
+
+                                    <Button onClick={handleResetFilters}>
+                                        <Filter className="size-4" />
+                                        Limpiar Filtros
+                                    </Button>
+                                </div>
+                            </section>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Tabla de Proveedores */}
+                <div className="flex-1 min-h-screen md:min-h-0 overflow-hidden">
+                    <ProviderListTable
+                        providers={providersData?.data || []}
+                        handleOpenDeleteAlert={handleOpenDeleteAlert}
+                        isLoadingProvidersData={isLoadingProvidersData}
+                        isErrorProvidersData={isErrorProvidersData}
+                        isFetchingProvidersData={isFetchingProvidersData}
+                        rows={filters.pagina_registros}
+                        page={filters.pagina}
+                        totalRecords={totalRecords}
+                        handleRowsChange={handleRowsChange}
+                        onPageChange={setPage}
+                        />
+                </div>
+
+                <ConfirmationModal
+                    isOpen={showDeleteAlert}
+                    title="Eliminar proveedor"
+                    message={`¿Estás seguro de que deseas eliminar el proveedor #${itemToDelete}?`}
+                    onClose={handleCloseDeleteAlert}
+                    onConfirm={handleConfirmDeleteAlert}
+                    isLoading={isDeleting}
                 />
-            </div>
-
-            <ConfirmationModal
-                isOpen={showDeleteAlert}
-                title="Eliminar proveedor"
-                message={`¿Estás seguro de que deseas eliminar el proveedor #${itemToDelete}?`}
-                onClose={handleCloseDeleteAlert}
-                onConfirm={handleConfirmDeleteAlert}
-                isLoading={isDeleting}
-            />
+            </ProtectedAction>
         </main>
     );
 }

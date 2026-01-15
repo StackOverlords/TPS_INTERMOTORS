@@ -241,10 +241,10 @@ const AccountsPayableListScreen = () => {
           return (
             <div
               className={`text-center text-sm font-medium ${dias < 0
-                  ? "text-red-600"
-                  : dias <= 15
-                    ? "text-yellow-600"
-                    : "text-green-600"
+                ? "text-red-600"
+                : dias <= 15
+                  ? "text-yellow-600"
+                  : "text-green-600"
                 }`}
             >
               {dias < 0
@@ -482,239 +482,239 @@ const AccountsPayableListScreen = () => {
   useCommands({
     'searchFilters.focusSearch': handleManualSearch,
     // 'forms.reset': handleResetFilters
-  },{
-    enableOnFormTags:true
+  }, {
+    enableOnFormTags: true
   })
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
-      {/* Header */}
-      <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
-        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
-          <div className="flex items-center gap-2 md:gap-4 grow">
-            <h1 className="text-lg font-bold text-primary">Cuentas por Cobrar</h1>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Toggle de modo de búsqueda */}
-            <Button
-              variant="ghost"
-              onClick={toggleSearchMode}
-              className="text-xs h-7"
-              title={
-                searchMode === "realtime"
-                  ? "Cambiar a búsqueda manual"
-                  : "Cambiar a búsqueda en tiempo real"
-              }
-            >
-              <Zap
-                className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"
-                  }`}
-              />
-              {searchMode === "realtime" ? "Tiempo real" : "Manual"}
-            </Button>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="infinite-scroll"
-                checked={isInfiniteScroll}
-                onCheckedChange={(checked) => {
-                  setIsInfiniteScroll(checked);
-                  setPage(1);
-                }}
-              />
-              <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
+        {/* Header */}
+        <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+          <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-4 grow">
+              <h1 className="text-lg font-bold text-primary">Cuentas por Cobrar</h1>
             </div>
 
-            <TooltipButton
-              onClick={handleRefetchAccountsPayable}
-              buttonProps={{
-                className: "w-8",
-                disabled: isRefetchingAccountsPayable || isFetching,
-              }}
-              tooltip={"Recargar cuentas por cobrar"}
-            >
-              <RefreshCcw
-                className={`size-4 ${isRefetchingAccountsPayable || isFetching ? "animate-spin" : ""
-                  }`}
-              />
-            </TooltipButton>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Toggle de modo de búsqueda */}
+              <Button
+                variant="ghost"
+                onClick={toggleSearchMode}
+                className="text-xs h-7"
+                title={
+                  searchMode === "realtime"
+                    ? "Cambiar a búsqueda manual"
+                    : "Cambiar a búsqueda en tiempo real"
+                }
+              >
+                <Zap
+                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"
+                    }`}
+                />
+                {searchMode === "realtime" ? "Tiempo real" : "Manual"}
+              </Button>
 
-            <TooltipWrapper
-              tooltipContentProps={{
-                align: "end",
-                className: "max-w-xs",
-              }}
-              tooltip={
-                <div className="flex flex-col space-y-3">
-                  <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    Atajos de teclado
-                  </div>
-                  <div className="space-y-1.5">
-                    <h4 className="text-xs font-medium text-gray-700 tracking-wide">
-                      Navegación filtros
-                    </h4>
-                    <div className="space-y-1 text-gray-600 text-xs">
-                      <p>
-                        <ShortcutKey combo={filter1Keys} />
-                        {COMMANDS["tableAndFilters.filter1"].description}: Nro. Venta
-                      </p>
-                      <p>
-                        <ShortcutKey combo={filter2Keys} />
-                        {COMMANDS["tableAndFilters.filter2"].description}: ID Cliente
-                      </p>
-                      <p>
-                        <ShortcutKey combo={filter3Keys} />
-                        {COMMANDS["tableAndFilters.filter3"].description}: Tipo Vencimiento
-                      </p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="infinite-scroll"
+                  checked={isInfiniteScroll}
+                  onCheckedChange={(checked) => {
+                    setIsInfiniteScroll(checked);
+                    setPage(1);
+                  }}
+                />
+                <Label htmlFor="infinite-scroll">Scroll Infinito</Label>
+              </div>
+
+              <TooltipButton
+                onClick={handleRefetchAccountsPayable}
+                buttonProps={{
+                  className: "w-8",
+                  disabled: isRefetchingAccountsPayable || isFetching,
+                }}
+                tooltip={"Recargar cuentas por cobrar"}
+              >
+                <RefreshCcw
+                  className={`size-4 ${isRefetchingAccountsPayable || isFetching ? "animate-spin" : ""
+                    }`}
+                />
+              </TooltipButton>
+
+              <TooltipWrapper
+                tooltipContentProps={{
+                  align: "end",
+                  className: "max-w-xs",
+                }}
+                tooltip={
+                  <div className="flex flex-col space-y-3">
+                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Atajos de teclado
                     </div>
-                  </div>
-                </div>
-              }
-            >
-              <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
-                <HelpCircle />
-              </span>
-            </TooltipWrapper>
-          </div>
-        </section>
-
-        {/* Filtros */}
-        <AccountPayableFilters
-          filters={filters}
-          updateFilter={updateFilter}
-          handleManualSearch={handleManualSearch}
-          searchMode={searchMode}
-        />
-      </header>
-
-      {/* Tabla */}
-      <div className="bg-background rounded-lg border border-border flex-1 min-h-0 flex flex-col">
-        {/* Results Info */}
-        <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
-          {accountsPayable.length > 0 ? (
-            isInfiniteScroll ? (
-              `Mostrando ${accountsPayable.length} de ${accountsPayableData?.meta.total} cuentas por cobrar`
-            ) : (
-              (() => {
-                const pagina = filters.pagina ?? 1;
-                const porPagina = filters.pagina_registros ?? 1;
-                const inicio = (pagina - 1) * porPagina + 1;
-                const fin = pagina * porPagina;
-                return `Mostrando ${inicio} - ${fin} de ${accountsPayableData?.meta.total} cuentas por cobrar`;
-              })()
-            )
-          ) : (
-            <span>Cargando...</span>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <ColumnVisibilityDropdown table={table} />
-            <TooltipWrapper
-              tooltipContentProps={{
-                align: "end",
-                className: "max-w-xs",
-              }}
-              tooltip={
-                <div className="flex flex-col space-y-3">
-                  <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                    Atajos de teclado
-                  </div>
-                  <div className="space-y-1.5">
-                    <h4 className="text-xs font-medium text-gray-700 tracking-wide">
-                      Navegación
-                    </h4>
-                    <div className="space-y-1 text-gray-600 text-xs">
-                      <p>
-                        <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar tabla
-                      </p>
-                      <p>
-                        <ShortcutKey combo={hotkeys.deactivate ?? ""} /> Salir de tabla
-                      </p>
-                      <p>
-                        <ShortcutKey combo={hotkeys.moveUp ?? ""} /> /{" "}
-                        <ShortcutKey combo={hotkeys.moveDown ?? ""} /> Navegar filas
-                      </p>
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                        Navegación filtros
+                      </h4>
+                      <div className="space-y-1 text-gray-600 text-xs">
+                        <p>
+                          <ShortcutKey combo={filter1Keys} />
+                          {COMMANDS["tableAndFilters.filter1"].description}: Nro. Venta
+                        </p>
+                        <p>
+                          <ShortcutKey combo={filter2Keys} />
+                          {COMMANDS["tableAndFilters.filter2"].description}: ID Cliente
+                        </p>
+                        <p>
+                          <ShortcutKey combo={filter3Keys} />
+                          {COMMANDS["tableAndFilters.filter3"].description}: Tipo Vencimiento
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              }
-            >
-              <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
-                <HelpCircle />
-              </span>
-            </TooltipWrapper>
-          </div>
-        </div>
-
-        {/* CONTENEDOR CON SCROLL */}
-        <div className="flex-1 min-h-0">
-          {isInfiniteScroll ? (
-            <div className="h-full overflow-auto relative" id="accounts-payable-scroll-container">
-              <InfiniteScroll
-                dataLength={accountsPayable.length}
-                next={() => setPage((filters.pagina || 1) + 1)}
-                hasMore={accountsPayable.length < (accountsPayableData?.meta.total || 0)}
-                loader={
-                  <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                    <Loader2 className="size-4 animate-spin" />
-                    Cargando más cuentas por cobrar...
                   </div>
                 }
-                scrollableTarget="accounts-payable-scroll-container"
               >
-                <CustomizableTable
-                  table={table}
-                  isError={isError}
-                  errorMessage="Ocurrió un error al cargar las cuentas por cobrar"
-                  isLoading={isLoading}
-                  rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron cuentas por cobrar"
-                  selectedRowIndex={selectedIndex}
-                  onRowClick={handleRowClick}
-                  tableRef={tableRef}
-                  focused={isFocused}
-                  keyboardNavigationEnabled={true}
-                  enableColumnReordering={true}
-                  enableSorting={false}
-                  onDragEnd={handleDragEnd}
-                  onDragStart={handleDragStart}
-                />
-              </InfiniteScroll>
+                <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                  <HelpCircle />
+                </span>
+              </TooltipWrapper>
             </div>
-          ) : (
-            <CustomizableTable
-              table={table}
-              isError={isError}
-              isFetching={isFetching}
-              isLoading={isLoading}
-              errorMessage="Ocurrió un error al cargar las cuentas por cobrar"
-              rows={filters.pagina_registros}
-              noDataMessage="No se encontraron cuentas por cobrar"
-              selectedRowIndex={selectedIndex}
-              onRowClick={handleRowClick}
-              tableRef={tableRef}
-              focused={isFocused}
-              keyboardNavigationEnabled={true}
-              enableColumnReordering={true}
-              enableSorting={false}
-              onDragEnd={handleDragEnd}
-              onDragStart={handleDragStart}
+          </section>
+
+          {/* Filtros */}
+          <AccountPayableFilters
+            filters={filters}
+            updateFilter={updateFilter}
+            handleManualSearch={handleManualSearch}
+            searchMode={searchMode}
+          />
+        </header>
+
+        {/* Tabla */}
+        <div className="bg-background rounded-lg border border-border flex-1 min-h-0 flex flex-col">
+          {/* Results Info */}
+          <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+            {accountsPayable.length > 0 ? (
+              isInfiniteScroll ? (
+                `Mostrando ${accountsPayable.length} de ${accountsPayableData?.meta.total} cuentas por cobrar`
+              ) : (
+                (() => {
+                  const pagina = filters.pagina ?? 1;
+                  const porPagina = filters.pagina_registros ?? 1;
+                  const inicio = (pagina - 1) * porPagina + 1;
+                  const fin = pagina * porPagina;
+                  return `Mostrando ${inicio} - ${fin} de ${accountsPayableData?.meta.total} cuentas por cobrar`;
+                })()
+              )
+            ) : (
+              <span>Cargando...</span>
+            )}
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <ColumnVisibilityDropdown table={table} />
+              <TooltipWrapper
+                tooltipContentProps={{
+                  align: "end",
+                  className: "max-w-xs",
+                }}
+                tooltip={
+                  <div className="flex flex-col space-y-3">
+                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Atajos de teclado
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                        Navegación
+                      </h4>
+                      <div className="space-y-1 text-gray-600 text-xs">
+                        <p>
+                          <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar tabla
+                        </p>
+                        <p>
+                          <ShortcutKey combo={hotkeys.deactivate ?? ""} /> Salir de tabla
+                        </p>
+                        <p>
+                          <ShortcutKey combo={hotkeys.moveUp ?? ""} /> /{" "}
+                          <ShortcutKey combo={hotkeys.moveDown ?? ""} /> Navegar filas
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                }
+              >
+                <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                  <HelpCircle />
+                </span>
+              </TooltipWrapper>
+            </div>
+          </div>
+
+          {/* CONTENEDOR CON SCROLL */}
+          <div className="flex-1 min-h-0">
+            {isInfiniteScroll ? (
+              <div className="h-full overflow-auto relative" id="accounts-payable-scroll-container">
+                <InfiniteScroll
+                  dataLength={accountsPayable.length}
+                  next={() => setPage((filters.pagina || 1) + 1)}
+                  hasMore={accountsPayable.length < (accountsPayableData?.meta.total || 0)}
+                  loader={
+                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                      <Loader2 className="size-4 animate-spin" />
+                      Cargando más cuentas por cobrar...
+                    </div>
+                  }
+                  scrollableTarget="accounts-payable-scroll-container"
+                >
+                  <CustomizableTable
+                    table={table}
+                    isError={isError}
+                    errorMessage="Ocurrió un error al cargar las cuentas por cobrar"
+                    isLoading={isLoading}
+                    rows={filters.pagina_registros}
+                    noDataMessage="No se encontraron cuentas por cobrar"
+                    selectedRowIndex={selectedIndex}
+                    onRowClick={handleRowClick}
+                    tableRef={tableRef}
+                    focused={isFocused}
+                    keyboardNavigationEnabled={true}
+                    enableColumnReordering={true}
+                    enableSorting={false}
+                    onDragEnd={handleDragEnd}
+                    onDragStart={handleDragStart}
+                  />
+                </InfiniteScroll>
+              </div>
+            ) : (
+              <CustomizableTable
+                table={table}
+                isError={isError}
+                isFetching={isFetching}
+                isLoading={isLoading}
+                errorMessage="Ocurrió un error al cargar las cuentas por cobrar"
+                rows={filters.pagina_registros}
+                noDataMessage="No se encontraron cuentas por cobrar"
+                selectedRowIndex={selectedIndex}
+                onRowClick={handleRowClick}
+                tableRef={tableRef}
+                focused={isFocused}
+                keyboardNavigationEnabled={true}
+                enableColumnReordering={true}
+                enableSorting={false}
+                onDragEnd={handleDragEnd}
+                onDragStart={handleDragStart}
+              />
+            )}
+          </div>
+
+          {/* Pagination */}
+          {!isInfiniteScroll && (accountsPayableData?.data?.length ?? 0) > 0 && (
+            <Pagination
+              currentPage={filters.pagina || 1}
+              onPageChange={onPageChange}
+              totalData={accountsPayableData?.meta.total || 1}
+              onShowRowsChange={onShowRowsChange}
+              showRows={filters.pagina_registros}
             />
           )}
         </div>
-
-        {/* Pagination */}
-        {!isInfiniteScroll && (accountsPayableData?.data?.length ?? 0) > 0 && (
-          <Pagination
-            currentPage={filters.pagina || 1}
-            onPageChange={onPageChange}
-            totalData={accountsPayableData?.meta.total || 1}
-            onShowRowsChange={onShowRowsChange}
-            showRows={filters.pagina_registros}
-          />
-        )}
-      </div>
-      {/* Totales de la página visible */}
+        {/* Totales de la página visible */}
         {accountsPayable.length > 0 && (
           <div className="p-3 border-t border-border flex-shrink-0 bg-muted/30">
             <div className="flex items-center justify-center gap-6 flex-wrap text-sm">
@@ -746,13 +746,13 @@ const AccountsPayableListScreen = () => {
           </div>
         )}
 
-      {/* Modal de detalles de cuenta por cobrar */}
-      <AccountPayableDetailModal
-        accountPayable={accountsPayable.find(ap => ap.id === selectedAccountPayableId) || null}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        onPaymentChange={refetchAccountsPayable}
-      />
+        {/* Modal de detalles de cuenta por cobrar */}
+        <AccountPayableDetailModal
+          accountPayable={accountsPayable.find(ap => ap.id === selectedAccountPayableId) || null}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          onPaymentChange={refetchAccountsPayable}
+        />
     </main>
   );
 };

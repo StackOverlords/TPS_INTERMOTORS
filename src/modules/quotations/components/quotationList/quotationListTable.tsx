@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -135,20 +136,32 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                                     <Eye className="size-4 mr-2" />
                                     Ver detalles
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateQuotation(row.original)}>
-                                    <Edit className="size-4 mr-2" />
-                                    Editar cotizacion
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={e => e.stopPropagation()}
-                                    onClick={() => handleDeleteSale(row.original.id)}
-                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                <ProtectedAction
+                                    permission="cot-edit"
+                                    roles={["Super Admin", "Administrador"]}
+                                    fallback={null}
                                 >
-                                    <Trash2 className="size-4 mr-2" />
-                                    Eliminar cotizacion
-                                </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                        onClick={() => handleUpdateQuotation(row.original)}>
+                                        <Edit className="size-4 mr-2" />
+                                        Editar cotizacion
+                                    </DropdownMenuItem>
+                                </ProtectedAction>
+                                <ProtectedAction
+                                    permission="cot-delete"
+                                    roles={["Super Admin", "Administrador"]}
+                                    fallback={null}
+                                >
+                                    <DropdownMenuItem
+                                        onKeyDown={e => e.stopPropagation()}
+                                        onClick={() => handleDeleteSale(row.original.id)}
+                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    >
+                                        <Trash2 className="size-4 mr-2" />
+                                        Eliminar cotizacion
+                                    </DropdownMenuItem>
+                                </ProtectedAction>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

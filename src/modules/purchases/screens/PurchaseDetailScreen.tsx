@@ -1,6 +1,7 @@
 import { Kbd } from '@/components/atoms/kbd';
 import ErrorDataComponent from '@/components/common/errorDataComponent';
 import TooltipButton from '@/components/common/TooltipButton';
+import { ProtectedAction } from '@/components/common/ProtectedAction';
 import { CornerUpLeft, Edit } from 'lucide-react';
 import { useCallback } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -127,17 +128,23 @@ const PurchaseDetailScreen = () => {
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
-                  <TooltipButton
-                    onClick={()=>handleEdit(purchase)}
-                    tooltip="Editar compra"
-                    buttonProps={{
-                      variant: 'outline',
-                      size: 'sm',
-                    }}
+                  <ProtectedAction
+                    permission="com-edit"
+                    roles={["Super Admin", "Administrador"]}
+                    fallback={null}
                   >
-                    <Edit className="h-4 w-4" />
-                    Editar
-                  </TooltipButton>
+                    <TooltipButton
+                      onClick={()=>handleEdit(purchase)}
+                      tooltip="Editar compra"
+                      buttonProps={{
+                        variant: 'outline',
+                        size: 'sm',
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                      Editar
+                    </TooltipButton>
+                  </ProtectedAction>
 
                   {/* <TooltipButton
                     onClick={handleDelete}

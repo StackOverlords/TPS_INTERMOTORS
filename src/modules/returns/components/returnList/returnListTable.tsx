@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -133,20 +134,32 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                                     <Eye className="size-4 mr-2" />
                                     Ver detalles
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleUpdateOrder(row.original.id)}>
-                                    <Edit className="size-4 mr-2" />
-                                    Editar devolución
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onKeyDown={e => e.stopPropagation()}
-                                    onClick={() => handleDeleteSale(row.original.id)}
-                                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                <ProtectedAction
+                                    permission="dev-edit"
+                                    roles={["Super Admin", "Administrador", "Vendedor"]}
+                                    fallback={null}
                                 >
-                                    <Trash2 className="size-4 mr-2" />
-                                    Eliminar devolución
-                                </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                        onClick={() => handleUpdateOrder(row.original.id)}>
+                                        <Edit className="size-4 mr-2" />
+                                        Editar devolución
+                                    </DropdownMenuItem>
+                                </ProtectedAction>
+                                <ProtectedAction
+                                    permission="dev-delete"
+                                    roles={["Super Admin", "Administrador","Vendedor"]}
+                                    fallback={null}
+                                >
+                                    <DropdownMenuItem
+                                        onKeyDown={e => e.stopPropagation()}
+                                        onClick={() => handleDeleteSale(row.original.id)}
+                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    >
+                                        <Trash2 className="size-4 mr-2" />
+                                        Eliminar devolución
+                                    </DropdownMenuItem>
+                                </ProtectedAction>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

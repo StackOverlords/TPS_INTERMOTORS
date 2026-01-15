@@ -10,6 +10,7 @@ import {
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -160,21 +161,33 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     <Eye className="size-4 mr-2" />
                     Ver detalles
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={(e) => e.stopPropagation()}
-                    onClick={() => handleUpdateSale(row.original)}
+                  <ProtectedAction
+                    permission="ven-edit"
+                    roles={["Super Admin", "Administrador"]}
+                    fallback={null}
                   >
-                    <Edit className="size-4 mr-2" />
-                    Editar venta
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={(e) => e.stopPropagation()}
-                    onClick={() => handleDeleteSale(row.original.id)}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onClick={() => handleUpdateSale(row.original)}
+                    >
+                      <Edit className="size-4 mr-2" />
+                      Editar venta
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                  <ProtectedAction
+                    permission="ven-delete"
+                    roles={["Super Admin", "Administrador"]}
+                    fallback={null}
                   >
-                    <Trash2 className="size-4 mr-2" />
-                    Eliminar venta
-                  </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onClick={() => handleDeleteSale(row.original.id)}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 className="size-4 mr-2" />
+                      Eliminar venta
+                    </DropdownMenuItem>
+                  </ProtectedAction>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

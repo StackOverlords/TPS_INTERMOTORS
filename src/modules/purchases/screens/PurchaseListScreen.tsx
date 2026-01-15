@@ -31,6 +31,7 @@ import {
   RefreshCcw,
   Search,
   Settings,
+  Trash2,
   // Trash2,
   Zap,
 } from 'lucide-react';
@@ -47,6 +48,7 @@ import { useKeyboardNavigation } from '@/hooks/keyBindings/useKeyboardNavigation
 import { useCommands } from '@/keybindings';
 import { useTabNavigation } from '@/hooks/useTabNavigation';
 import { formatColumnNumber } from '@/utils/formaters';
+import { ProtectedAction } from '@/components/common/ProtectedAction';
 
 const PurchaseListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
@@ -121,14 +123,14 @@ const PurchaseListScreen = () => {
   const {
     showDeleteDialog,
     isDeleting,
-    // initiateDeletion,
+    initiateDeletion,
     cancelDeletion,
     confirmDeletion,
   } = usePurchaseDelete();
 
-  // const handleDeletePurchase = (purchaseId: number) => {
-  //   initiateDeletion(purchaseId);
-  // };
+  const handleDeletePurchase = (purchaseId: number) => {
+    initiateDeletion(purchaseId);
+  };
 
   const handleConfirmDelete = async () => {
     const success = await confirmDeletion();
@@ -246,21 +248,33 @@ const PurchaseListScreen = () => {
                     <FileText className="mr-2 h-4 w-4" />
                     Ver comprobantes
                   </DropdownMenuItem> */}
-                  <DropdownMenuItem
-                    onKeyDown={e => e.stopPropagation()}
-                    onClick={() => handleEditPurchase(row.original)}
+                  <ProtectedAction
+                    permission="com-edit"
+                    roles={["Super Admin", "Administrador", "Vendedor"]}
+                    fallback={null}
                   >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar compra
-                  </DropdownMenuItem>
-                  {/* <DropdownMenuItem
-                    onKeyDown={e => e.stopPropagation()}
-                    onClick={() => handleDeletePurchase(row.original.id)}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    <DropdownMenuItem
+                      onKeyDown={e => e.stopPropagation()}
+                      onClick={() => handleEditPurchase(row.original)}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar compra
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                  <ProtectedAction
+                    permission="com-delete"
+                    roles={["Super Admin", "Administrador", "Vendedor"]}
+                    fallback={null}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar compra
-                  </DropdownMenuItem> */}
+                    <DropdownMenuItem
+                      onKeyDown={e => e.stopPropagation()}
+                      onClick={() => handleDeletePurchase(row.original.id)}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar compra
+                    </DropdownMenuItem>
+                  </ProtectedAction>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -515,6 +529,13 @@ const PurchaseListScreen = () => {
 
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission="com-module"
+        roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
+        showLoader={true}
+        showUnauthorizedMessage={true}
+      >
+
       {/* Header */}
       <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
         <h1 className="text-lg font-bold text-primary">Compras</h1>
@@ -770,6 +791,8 @@ const PurchaseListScreen = () => {
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
       />
+      </ProtectedAction>
+
     </main>
   );
 };

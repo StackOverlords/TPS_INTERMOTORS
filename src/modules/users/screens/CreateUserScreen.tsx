@@ -1,9 +1,27 @@
 import { useGoBack } from "@/hooks/useGoBack";
 import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { usePermissionCheck } from "@/hooks/usePermissionCheck";
 import FormUser from "../components/FormUser";
 
 const CreateUserScreen = () => {
   const handleGoBack = useGoBack("/dashboard/user");
+  const navigate = useNavigate();
+
+  // Validar permisos para crear usuarios
+  const { isAuthorized, isLoading } = usePermissionCheck({
+    permission: 'usu-create',
+    roles: ['Super Admin'],
+  });
+
+  // Redirigir si no está autorizado
+  useEffect(() => {
+    if (!isLoading && !isAuthorized) {
+      navigate('/dashboard/user');
+    }
+  }, [isAuthorized, isLoading, navigate]);
 
   // Shortcut para volver atrás
   useHotkeys('escape', (e) => {
@@ -13,6 +31,23 @@ const CreateUserScreen = () => {
     scopes: ["esc-key"],
     enabled: true
   });
+
+  // Mostrar loader mientras verifica permisos
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
+          <p className="text-sm text-gray-500">Verificando permisos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no está autorizado, no renderizar nada (se redirigirá)
+  if (!isAuthorized) {
+    return null;
+  }
 
   return (
     <div className="flex justify-center items-center">

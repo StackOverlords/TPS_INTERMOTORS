@@ -10,6 +10,7 @@ import {
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
@@ -202,21 +203,46 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                     <Eye className="size-4 mr-2" />
                     Ver detalles
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={(e) => e.stopPropagation()}
-                    onClick={() => handleUpdateTransfer(row.original.id)}
+                  <ProtectedAction
+                    permission="tra-edit"
+                    roles={["Super Admin","Administrador","Vendedor"]}
+                    fallback={null}
                   >
-                    <Edit className="size-4 mr-2" />
-                    Editar transferencia
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onKeyDown={(e) => e.stopPropagation()}
-                    onClick={() => handleDeleteTransfer(row.original.id)}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onClick={() => handleUpdateTransfer(row.original.id)}
+                    >
+                      <Edit className="size-4 mr-2" />
+                      Editar transferencia
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                  <ProtectedAction
+                    permission="tra-edit"
+                    roles={["Super Admin", "Administrador"]}
+                    fallback={null}
                   >
-                    <Trash2 className="size-4 mr-2" />
-                    Eliminar transferencia
-                  </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onClick={() => handleUpdateTransfer(row.original.id)}
+                    >
+                      <Edit className="size-4 mr-2" />
+                      Editar transferencia
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                  <ProtectedAction
+                    permission="tra-delete"
+                    roles={["Super Admin", "Administrador", "Vendedor"]}
+                    fallback={null}
+                  >
+                    <DropdownMenuItem
+                      onKeyDown={(e) => e.stopPropagation()}
+                      onClick={() => handleDeleteTransfer(row.original.id)}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 className="size-4 mr-2" />
+                      Eliminar transferencia
+                    </DropdownMenuItem>
+                  </ProtectedAction>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -378,47 +404,59 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                 </TooltipButton>
               )}
               {canReceive && (
-                <TooltipButton
-                  buttonProps={{
-                    variant: "outline",
-                    size: "sm",
-                    className: "h-7 w-7 p-0",
-                    // title: "Recibir transferencia",
-                    onClick: (e) => {
-                      e.stopPropagation();
-                      handleAcceptTransfer(row.original.id);
-                    },
-                  }}
-                  tooltipContentProps={{
-                    side: "bottom",
-                    sideOffset: 5,
-                  }}
-                  tooltip="Recibir transferencia"
+                <ProtectedAction
+                  permission="tra-receive"
+                  roles={["Super Admin", "Administrador"]}
+                  fallback={null}
                 >
-                  <Check className="size-3" />
-                </TooltipButton>
+                  <TooltipButton
+                    buttonProps={{
+                      variant: "outline",
+                      size: "sm",
+                      className: "h-7 w-7 p-0",
+                      // title: "Recibir transferencia",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        handleAcceptTransfer(row.original.id);
+                      },
+                    }}
+                    tooltipContentProps={{
+                      side: "bottom",
+                      sideOffset: 5,
+                    }}
+                    tooltip="Recibir transferencia"
+                  >
+                    <Check className="size-3" />
+                  </TooltipButton>
+                </ProtectedAction>
               )}
               {canRefuse && (
-                <TooltipButton
-                  buttonProps={{
-                    variant: "outline",
-                    size: "sm",
-                    className:
-                      "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
-                    // title: "Rechazar transferencia",
-                    onClick: (e) => {
-                      e.stopPropagation();
-                      handleRefuseTransfer(row.original.id);
-                    },
-                  }}
-                  tooltipContentProps={{
-                    side: "bottom",
-                    sideOffset: 5,
-                  }}
-                  tooltip="Rechazar transferencia"
+                <ProtectedAction
+                  permission="tra-receive"
+                  roles={["Super Admin", "Administrador"]}
+                  fallback={null}
                 >
-                  <X className="size-3" />
-                </TooltipButton>
+                  <TooltipButton
+                    buttonProps={{
+                      variant: "outline",
+                      size: "sm",
+                      className:
+                        "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
+                      // title: "Rechazar transferencia",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        handleRefuseTransfer(row.original.id);
+                      },
+                    }}
+                    tooltipContentProps={{
+                      side: "bottom",
+                      sideOffset: 5,
+                    }}
+                    tooltip="Rechazar transferencia"
+                  >
+                    <X className="size-3" />
+                  </TooltipButton>
+                </ProtectedAction>
               )}
             </div>
           );

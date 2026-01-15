@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/atoms/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/atoms/dropdown-menu";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, Settings, Trash2, Truck } from "lucide-react";
@@ -14,6 +15,7 @@ import type { Provider } from "../types/provider.types";
 import ProviderFormDialog from "./providerFormDialog";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useProtectedAction } from "@/hooks/useProtectedAction";
 
 interface ProviderListTableProps {
     providers: Provider[]
@@ -66,6 +68,17 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
         setEditingId(id);
         setIsDialogOpen(true);
     }, []);
+
+    // Protected action for keyboard navigation (Enter / double-click)
+    const protectedEditProvider = useProtectedAction(
+        (provider: Provider) => {
+            handleEditProvider(provider.id);
+        },
+        {
+            permission: "pro-edit",
+            roles: ["Super Admin", "Administrador"]
+        }
+    );
 
     const handleDialogToggle = useCallback((open: boolean) => {
         setIsDialogOpen(open);
@@ -185,21 +198,33 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
                 const id = row.original.id
                 return (
                     <div className="flex items-center gap-2">
-                        <Button
-                            className="w-8 cursor-pointer"
-                            variant={"outline"}
-                            onClick={() => handleEditProvider(id)}
+                        <ProtectedAction
+                            permission="pro-edit"
+                            roles={["Super Admin", "Administrador","Vendedor"]}
+                            fallback={null}
                         >
-                            <Edit className="size-4" />
-                        </Button>
+                            <Button
+                                className="w-8 cursor-pointer"
+                                variant={"outline"}
+                                onClick={() => handleEditProvider(id)}
+                            >
+                                <Edit className="size-4" />
+                            </Button>
+                        </ProtectedAction>
 
-                        <Button
-                            className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
-                            variant={"outline"}
-                            onClick={() => handleOpenDeleteAlert(id)}
+                        <ProtectedAction
+                            permission="pro-delete"
+                            roles={["Super Admin", "Administrador","Vendedor"]}
+                            fallback={null}
                         >
-                            <Trash2 className="size-4" />
-                        </Button>
+                            <Button
+                                className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                                variant={"outline"}
+                                onClick={() => handleOpenDeleteAlert(id)}
+                            >
+                                <Trash2 className="size-4" />
+                            </Button>
+                        </ProtectedAction>
                     </div>
                 )
             },
@@ -238,9 +263,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
         items: providers,
         containerRef: tableRef,
         isDragging: isDraggingColumn,
-        onPrimaryAction: (provider) => {
-            handleEditProvider(provider.id)
-        },
+        onPrimaryAction: protectedEditProvider,
         getItemId: (provider) => provider.id
     });
     const handleRowClick = (index: number) => {
@@ -310,24 +333,32 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             <CardContent className="h-full flex flex-col overflow-hidden">
                 <div className="flex-1 min-h-0">
                     <div className="h-full overflow-auto">
-                        <CustomizableTable
-                            table={table}
-                            isLoading={isLoadingProvidersData}
-                            isError={isErrorProvidersData}
-                            isFetching={isFetchingProvidersData}
-                            rows={rows}
-                            errorMessage="Ocurrió un error al cargar los proveedores."
-                            noDataMessage="No se encontraron proveedores."
-                            selectedRowIndex={selectedIndex}
-                            onRowClick={handleRowClick}
-                            tableRef={tableRef}
-                            focused={isFocused}
-                            keyboardNavigationEnabled={true}
-                            enableColumnReordering={true}
-                            enableSorting={false}
-                            onDragEnd={handleDragEnd}
-                            onDragStart={handleDragStart}
-                        />
+
+                        <ProtectedAction
+                            permission="pro-list"
+                            roles={["Super Admin", "Administrador", "Vendedor"]}
+                            showUnauthorizedMessage={true}
+                        >
+                            <CustomizableTable
+                                table={table}
+                                isLoading={isLoadingProvidersData}
+                                isError={isErrorProvidersData}
+                                isFetching={isFetchingProvidersData}
+                                rows={rows}
+                                errorMessage="Ocurrió un error al cargar los proveedores."
+                                noDataMessage="No se encontraron proveedores."
+                                selectedRowIndex={selectedIndex}
+                                onRowClick={handleRowClick}
+                                tableRef={tableRef}
+                                focused={isFocused}
+                                keyboardNavigationEnabled={true}
+                                enableColumnReordering={true}
+                                enableSorting={false}
+                                onDragEnd={handleDragEnd}
+                                onDragStart={handleDragStart}
+                            />
+                        </ProtectedAction>
+
                     </div>
                 </div>
 

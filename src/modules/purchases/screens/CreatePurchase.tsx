@@ -7,7 +7,7 @@ import {
 } from "@/hooks/useSecondaryWindow";
 import { useGetOrderById } from "@/modules/orders/hooks/useGetOrderById";
 import { useBranchStore } from "@/states/branchStore";
-import { AlertCircle, CornerUpLeft, RotateCcw, Save, X } from "lucide-react";
+import { AlertCircle, CornerUpLeft, RotateCcw, Save, ShieldAlert, X } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import FormCreatePurchase from "../components/FormCreatePurchase";
@@ -18,6 +18,7 @@ import { showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 import { Kbd } from "@/components/atoms/kbd";
 import { Card, CardContent } from "@/components/atoms/card";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 
 type CreationMode = "manual" | "order-import";
 
@@ -34,7 +35,7 @@ const CreatePurchase: React.FC = () => {
     handleSubmit,
     reset,
   } = usePurchaseForm(Number(branchId), (createdPurchase) => {
-    console.log("Created purchase received:", createdPurchase);
+    // console.log("Created purchase received:", createdPurchase);
     // Show success toast
     showSuccessToast({
       title: "Compra Creada",
@@ -216,12 +217,12 @@ const CreatePurchase: React.FC = () => {
   }, [reset]);
 
   // Toggle entre modo embedded y window
-  const toggleSelectorMode = () => {
-    if (productWindow.isOpen) {
-      productWindow.close();
-    }
-    productWindow.open();
-  };
+  // const toggleSelectorMode = () => {
+  //   if (productWindow.isOpen) {
+  //     productWindow.close();
+  //   }
+  //   productWindow.open();
+  // };
 
   const canAddProducts = creationMode === "manual";
   const canImportOrder =
@@ -233,6 +234,10 @@ const CreatePurchase: React.FC = () => {
 
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission="com-module"
+        roles={["Super Admin", "Administrador", "Vendedor"]}
+      >
       <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
         <div className="flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -359,21 +364,42 @@ const CreatePurchase: React.FC = () => {
                         Limpiar
                       </TooltipButton>
 
-                      <TooltipButton
-                        buttonProps={{
-                          onClick: handleSubmit,
-                          disabled: isLoading,
-                          variant: "default",
-                        }}
-                        tooltip={
-                          <span className="flex items-center gap-1">
-                            Crear compra <ShortcutKey combo="alt+s" />
-                          </span>
+                      <ProtectedAction
+                        permission="com-create"
+                        roles={["Super Admin", "Administrador", "Vendedor"]}
+                        fallback={
+                          <TooltipButton
+                            buttonProps={{
+                              disabled: true,
+                              variant: "destructive",
+                            }}
+                            tooltip={
+                              <span className="flex items-center gap-1">
+                              No tienes permiso para crear compras <ShortcutKey combo="alt+s" />
+                            </span>
+                            }
+                          >
+                            <ShieldAlert className="mr-2" />
+                            Crear Compra
+                          </TooltipButton>
                         }
                       >
-                        <Save className="mr-2" />
-                        {isLoading ? "Guardando..." : "Crear Compra"}
-                      </TooltipButton>
+                        <TooltipButton
+                          buttonProps={{
+                            onClick: handleSubmit,
+                            disabled: isLoading,
+                            variant: "default",
+                          }}
+                          tooltip={
+                            <span className="flex items-center gap-1">
+                              Crear compra <ShortcutKey combo="alt+s" />
+                            </span>
+                          }
+                        >
+                          <Save className="mr-2" />
+                          {isLoading ? "Guardando..." : "Crear Compra"}
+                        </TooltipButton>
+                      </ProtectedAction>
                     </div>
                   </div>
                 </CardContent>
@@ -382,6 +408,7 @@ const CreatePurchase: React.FC = () => {
           </div>
         </div>
       </div>
+      </ProtectedAction>
     </main>
   );
 };

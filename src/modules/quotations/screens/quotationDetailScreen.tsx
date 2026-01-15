@@ -4,6 +4,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
@@ -160,53 +161,71 @@ const QuotationDetailScreen = () => {
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-2">
-                            <TooltipButton
-                                onClick={handleUpdateQuotation}
-                                tooltip="Editar cotizacion"
-                                buttonProps={{
-                                    variant: 'outline',
-                                    size: 'sm'
-                                }}
+                            <ProtectedAction
+                                permission="cot-edit"
+                                roles={["Super Admin", "Administrador"]}
+                                fallback={null}
                             >
-                                <Edit className="h-4 w-4" />
-                                Editar
-                            </TooltipButton>
+                                <TooltipButton
+                                    onClick={handleUpdateQuotation}
+                                    tooltip="Editar cotizacion"
+                                    buttonProps={{
+                                        variant: 'outline',
+                                        size: 'sm'
+                                    }}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Editar
+                                </TooltipButton>
+                            </ProtectedAction>
 
-                            <TooltipButton
-                                onClick={handleOpenPrintDialog}
-                                tooltip="Imprimir cotizacion"
-                                buttonProps={{
-                                    variant: 'default',
-                                    size: 'sm'
-                                }}
+                            <ProtectedAction
+                                permission="cot-view_print"
+                                roles={["Super Admin", "Administrador", "Vendedor"]}
+                                fallback={null}
                             >
-                                <Printer className="h-4 w-4" />
-                                Imprimir
-                            </TooltipButton>
+                                <TooltipButton
+                                    onClick={handleOpenPrintDialog}
+                                    tooltip="Imprimir cotizacion"
+                                    buttonProps={{
+                                        variant: 'default',
+                                        size: 'sm'
+                                    }}
+                                >
+                                    <Printer className="h-4 w-4" />
+                                    Imprimir
+                                </TooltipButton>
+                            </ProtectedAction>
 
-                            <TooltipButton
-                                onClick={() => handleOpenDeleteAlert(quotationData?.id)}
-                                tooltip="Eliminar cotizacion"
-                                buttonProps={{
-                                    variant: 'destructive',
-                                    size: 'sm',
-                                    disabled: isDeleting
-                                }}
+                            <ProtectedAction
+                                permission="cot-delete"
+                                roles={["Super Admin", "Administrador"]}
+                                fallback={null}
                             >
-                                {
-                                    !isDeleting ? (
-                                        <>
-                                            <Trash2 className="h-4 w-4" />
-                                            Eliminar
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Eliminando...
-                                        </>
-                                    )
-                                }
-                            </TooltipButton>
+                                <TooltipButton
+                                    onClick={() => handleOpenDeleteAlert(quotationData?.id)}
+                                    tooltip="Eliminar cotizacion"
+                                    buttonProps={{
+                                        variant: 'destructive',
+                                        size: 'sm',
+                                        disabled: isDeleting
+                                    }}
+                                >
+                                    {
+                                        !isDeleting ? (
+                                            <>
+                                                <Trash2 className="h-4 w-4" />
+                                                Eliminar
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Eliminando...
+                                            </>
+                                        )
+                                    }
+                                </TooltipButton>
+                            </ProtectedAction>
                         </div>
                     </div>
                 </header>

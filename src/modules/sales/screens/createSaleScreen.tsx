@@ -65,6 +65,7 @@ import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { convertCartToSaleDetails } from "@/modules/shoppingCart/utils/cartCalculations";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SCREEN_PATH = "/dashboard/create-sale";
@@ -601,243 +602,286 @@ const CreateSaleScreen = () => {
 
   return (
     <main className="p-2 h-full">
-      <FormProvider {...methods}>
-        <form
-          onSubmit={handleSubmit(onSubmit, onError)}
-          className="h-full flex flex-col gap-2"
-        >
-          {/* Header */}
-          <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
-            <div className="flex flex-wrap gap-2 items-center justify-between">
-              <div className="flex items-center gap-3">
-                <TooltipButton
-                  tooltipContentProps={{
-                    align: "start",
-                  }}
-                  onClick={handleGoBack}
-                  tooltip={
-                    <p className="flex items-center gap-1">
-                      Presiona <Kbd>esc</Kbd> para volver a la lista de
-                      productos
-                    </p>
-                  }
-                  buttonProps={{
-                    variant: "default",
-                    type: "button",
-                  }}
-                >
-                  <CornerUpLeft />
-                </TooltipButton>
-                <div>
-                  <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
-                    Nueva Venta
-                  </h1>
-                  <p className="text-sm text-gray-500">
-                    Registra una nueva venta en el sistema
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end w-full sm:w-auto gap-2">
-                <Label className="text-sm text-muted-foreground">Modo:</Label>
-                <div className="flex gap-1 border border-border rounded-lg p-1">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={mode === "sale-strict" ? "default" : "ghost"}
-                    onClick={() => handleManualModeChange("sale-strict")}
-                    className="h-7 text-xs"
-                  >
-                    Estricta
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={mode === "sale-permissive" ? "default" : "ghost"}
-                    onClick={() => handleManualModeChange("sale-permissive")}
-                    className="h-7 text-xs"
-                  >
-                    Permisiva
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div
-            ref={containerRef}
-            className="gap-2 flex-1 min-h-screen md:min-h-0"
+      <ProtectedAction
+        permission="ven-module"
+        roles={["Super Admin", "Administrador", "Vendedor"]}
+      >
+        <FormProvider {...methods}>
+          <form
+            onSubmit={handleSubmit(onSubmit, onError)}
+            className="h-full flex flex-col gap-2"
           >
+            {/* Header */}
+            <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <TooltipButton
+                    tooltipContentProps={{
+                      align: "start",
+                    }}
+                    onClick={handleGoBack}
+                    tooltip={
+                      <p className="flex items-center gap-1">
+                        Presiona <Kbd>esc</Kbd> para volver a la lista de
+                        productos
+                      </p>
+                    }
+                    buttonProps={{
+                      variant: "default",
+                      type: "button",
+                    }}
+                  >
+                    <CornerUpLeft />
+                  </TooltipButton>
+                  <div>
+                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
+                      Nueva Venta
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      Registra una nueva venta en el sistema
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end w-full sm:w-auto gap-2">
+                  <Label className="text-sm text-muted-foreground">Modo:</Label>
+                  <div className="flex gap-1 border border-border rounded-lg p-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={mode === "sale-strict" ? "default" : "ghost"}
+                      onClick={() => handleManualModeChange("sale-strict")}
+                      className="h-7 text-xs"
+                    >
+                      Estricta
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={mode === "sale-permissive" ? "default" : "ghost"}
+                      onClick={() => handleManualModeChange("sale-permissive")}
+                      className="h-7 text-xs"
+                    >
+                      Permisiva
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </header>
+
             <div
-              className={cn(
-                "h-full gap-2",
-                configuraciones.formulario === "top" && "flex flex-col",
-                configuraciones.formulario === "left" &&
-                  "flex flex-col md:grid md:grid-cols-3"
-              )}
+              ref={containerRef}
+              className="gap-2 flex-1 min-h-screen md:min-h-0"
             >
-              {/* Formulario de información de venta*/}
               <div
                 className={cn(
-                  "gap-2 flex-shrink-0",
-                  configuraciones.formulario === "top" && "grid",
-                  configuraciones.formulario === "left" && "flex flex-col"
+                  "h-full gap-2",
+                  configuraciones.formulario === "top" && "flex flex-col",
+                  configuraciones.formulario === "left" &&
+                  "flex flex-col md:grid md:grid-cols-3"
                 )}
               >
-                {/* 1. Datos de la venta */}
-                <Card
+                {/* Formulario de información de venta*/}
+                <div
                   className={cn(
-                    "shadow-none",
-                    configuraciones.formulario === "top" &&
-                      "h-full flex-shrink-0",
-                    configuraciones.formulario === "left" && "h-auto md:h-full"
+                    "gap-2 flex-shrink-0",
+                    configuraciones.formulario === "top" && "grid",
+                    configuraciones.formulario === "left" && "flex flex-col"
                   )}
                 >
-                  <CardContent className="p-2 sm:p-3">
-                    <div
-                      className={cn(
-                        "grid gap-2",
-                        configuraciones.formulario === "top" &&
+                  {/* 1. Datos de la venta */}
+                  <Card
+                    className={cn(
+                      "shadow-none",
+                      configuraciones.formulario === "top" &&
+                      "h-full flex-shrink-0",
+                      configuraciones.formulario === "left" && "h-auto md:h-full"
+                    )}
+                  >
+                    <CardContent className="p-2 sm:p-3">
+                      <div
+                        className={cn(
+                          "grid gap-2",
+                          configuraciones.formulario === "top" &&
                           "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
-                        configuraciones.formulario === "left" && "grid-cols-2"
-                      )}
-                    >
-                      <div>
-                        <Label htmlFor="fechaVenta">Fecha *</Label>
-                        <Input
-                          id="fechaVenta"
-                          type="date"
-                          {...register("fecha")}
-                          className="w-full"
-                          autoFocus
-                        />
-                        {errors.fecha && (
-                          <p className="text-red-500 text-xs">
-                            {errors.fecha.message}
-                          </p>
+                          configuraciones.formulario === "left" && "grid-cols-2"
                         )}
-                      </div>
-                      <div>
-                        <Label htmlFor="id_responsable">Responsable *</Label>
-                        <Controller
-                          name="id_responsable"
-                          control={control}
-                          render={({ field }) => (
-                            <ComboboxSelect
-                              value={field.value}
-                              onChange={(value) => {
-                                field.onChange(Number(value));
-                              }}
-                              options={saleResponsiblesData || []}
-                              optionTag={"nombre"}
-                              clearOnEmpty={true}
-                            />
-                          )}
-                        />
-                        {errors.id_responsable && (
-                          <p className="text-red-500 text-xs">
-                            El campo es requerido
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="cliente">Cliente *</Label>
-                        <Controller
-                          name="id_cliente"
-                          control={control}
-                          render={({ field }) => (
-                            // <PaginatedCombobox
-                            //     value={field.value}
-                            //     onChange={(value) => field.onChange(Number(value))}
-                            //     optionsData={saleCustomersData?.data || []}
-                            //     displayField="nombre"
-                            //     isLoading={isSaleCustomersLoading}
-                            //     updatePage={(page) => { console.log("Update page:", page) }}
-                            //     updateSearch={setCustomerSearchTerm}
-                            //     placeholder="Buscar cliente por nombre"
-                            //     metaData={
-                            //         {
-                            //             current_page: saleCustomersData?.meta.current_page || 1,
-                            //             last_page: saleCustomersData?.meta.last_page || 1,
-                            //             total: saleCustomersData?.meta.total || 0,
-                            //             per_page: saleCustomersData?.meta.per_page || 10,
-                            //         }
-                            //     }
-                            // />
-                            <ComboboxSelect
-                              value={field.value}
-                              onChange={(value) => {
-                                field.onChange(Number(value));
-                              }}
-                              options={saleCustomersData?.data || []}
-                              optionTag={"nombre"}
-                              clearOnEmpty={true}
-                              placeholder="Buscar cliente por nombre"
-                            />
-                          )}
-                        />
-                        {errors.id_cliente && (
-                          <p className="text-red-500 text-xs">
-                            El campo es requerido
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="altClie">Cliente Alt.</Label>
-                        <Input
-                          id="altClie"
-                          {...register("cliente_nombre")}
-                          placeholder="Cliente alternativo"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cliente_nit">Nit Cliente</Label>
-                        <Input
-                          id="cliente_nit"
-                          {...register("cliente_nit")}
-                          placeholder="Nit del Cliente"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="nroComprobante">N° Comprobante</Label>
-                        <Input
-                          id="nroComprobante"
-                          {...register("nro_comprobante")}
-                          placeholder="Número de comprobante"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="nroComprobanteSecundario">
-                          N° Comprobante Sec.
-                        </Label>
-                        <Input
-                          id="nroComprobanteSecundario"
-                          {...register("nro_comprobante2")}
-                          placeholder="Número secundario"
-                        />
-                      </div>
-                      {configuraciones.inputs && (
+                      >
                         <div>
-                          <Label htmlFor="forma">Forma de venta *</Label>
+                          <Label htmlFor="fechaVenta">Fecha *</Label>
+                          <Input
+                            id="fechaVenta"
+                            type="date"
+                            {...register("fecha")}
+                            className="w-full"
+                            autoFocus
+                          />
+                          {errors.fecha && (
+                            <p className="text-red-500 text-xs">
+                              {errors.fecha.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="id_responsable">Responsable *</Label>
                           <Controller
-                            name="forma_venta"
+                            name="id_responsable"
+                            control={control}
+                            render={({ field }) => (
+                              <ComboboxSelect
+                                value={field.value}
+                                onChange={(value) => {
+                                  field.onChange(Number(value));
+                                }}
+                                options={saleResponsiblesData || []}
+                                optionTag={"nombre"}
+                                clearOnEmpty={true}
+                              />
+                            )}
+                          />
+                          {errors.id_responsable && (
+                            <p className="text-red-500 text-xs">
+                              El campo es requerido
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="cliente">Cliente *</Label>
+                          <Controller
+                            name="id_cliente"
+                            control={control}
+                            render={({ field }) => (
+                              // <PaginatedCombobox
+                              //     value={field.value}
+                              //     onChange={(value) => field.onChange(Number(value))}
+                              //     optionsData={saleCustomersData?.data || []}
+                              //     displayField="nombre"
+                              //     isLoading={isSaleCustomersLoading}
+                              //     updatePage={(page) => { console.log("Update page:", page) }}
+                              //     updateSearch={setCustomerSearchTerm}
+                              //     placeholder="Buscar cliente por nombre"
+                              //     metaData={
+                              //         {
+                              //             current_page: saleCustomersData?.meta.current_page || 1,
+                              //             last_page: saleCustomersData?.meta.last_page || 1,
+                              //             total: saleCustomersData?.meta.total || 0,
+                              //             per_page: saleCustomersData?.meta.per_page || 10,
+                              //         }
+                              //     }
+                              // />
+                              <ComboboxSelect
+                                value={field.value}
+                                onChange={(value) => {
+                                  field.onChange(Number(value));
+                                }}
+                                options={saleCustomersData?.data || []}
+                                optionTag={"nombre"}
+                                clearOnEmpty={true}
+                                placeholder="Buscar cliente por nombre"
+                              />
+                            )}
+                          />
+                          {errors.id_cliente && (
+                            <p className="text-red-500 text-xs">
+                              El campo es requerido
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="altClie">Cliente Alt.</Label>
+                          <Input
+                            id="altClie"
+                            {...register("cliente_nombre")}
+                            placeholder="Cliente alternativo"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cliente_nit">Nit Cliente</Label>
+                          <Input
+                            id="cliente_nit"
+                            {...register("cliente_nit")}
+                            placeholder="Nit del Cliente"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="nroComprobante">N° Comprobante</Label>
+                          <Input
+                            id="nroComprobante"
+                            {...register("nro_comprobante")}
+                            placeholder="Número de comprobante"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="nroComprobanteSecundario">
+                            N° Comprobante Sec.
+                          </Label>
+                          <Input
+                            id="nroComprobanteSecundario"
+                            {...register("nro_comprobante2")}
+                            placeholder="Número secundario"
+                          />
+                        </div>
+                        {configuraciones.inputs && (
+                          <div>
+                            <Label htmlFor="forma">Forma de venta *</Label>
+                            <Controller
+                              name="forma_venta"
+                              control={control}
+                              render={({ field }) => (
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={
+                                    field.value ||
+                                    saleModalitiesData?.[0]?.code ||
+                                    ""
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona una forma" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {saleModalitiesData &&
+                                      saleModalitiesData.map((modality) => (
+                                        <SelectItem
+                                          key={modality.code}
+                                          value={modality.code}
+                                        >
+                                          {modality.label}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            {errors.forma_venta && (
+                              <p className="text-red-500 text-xs">
+                                {errors.forma_venta.message}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <div>
+                          <Label htmlFor="forma_pago">Forma de pago *</Label>
+                          <Controller
+                            name="forma_pago"
                             control={control}
                             render={({ field }) => (
                               <Select
                                 onValueChange={field.onChange}
                                 value={
                                   field.value ||
-                                  saleModalitiesData?.[0]?.code ||
+                                  salePaymentTypesData?.[0]?.code ||
                                   ""
                                 }
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Selecciona una forma" />
+                                  <SelectValue placeholder="Selecciona una forma de pago" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {saleModalitiesData &&
-                                    saleModalitiesData.map((modality) => (
+                                  {salePaymentTypesData &&
+                                    salePaymentTypesData.map((modality) => (
                                       <SelectItem
                                         key={modality.code}
                                         value={modality.code}
@@ -849,249 +893,211 @@ const CreateSaleScreen = () => {
                               </Select>
                             )}
                           />
-                          {errors.forma_venta && (
+                          {errors.forma_pago && (
                             <p className="text-red-500 text-xs">
-                              {errors.forma_venta.message}
+                              {errors.forma_pago.message}
                             </p>
                           )}
                         </div>
-                      )}
 
-                      <div>
-                        <Label htmlFor="forma_pago">Forma de pago *</Label>
-                        <Controller
-                          name="forma_pago"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              onValueChange={field.onChange}
-                              value={
-                                field.value ||
-                                salePaymentTypesData?.[0]?.code ||
-                                ""
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecciona una forma de pago" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {salePaymentTypesData &&
-                                  salePaymentTypesData.map((modality) => (
-                                    <SelectItem
-                                      key={modality.code}
-                                      value={modality.code}
-                                    >
-                                      {modality.label}
-                                    </SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {errors.forma_pago && (
-                          <p className="text-red-500 text-xs">
-                            {errors.forma_pago.message}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="tipo_venta">Tipo de Venta *</Label>
-                        <Controller
-                          name="tipo_venta"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              onValueChange={field.onChange}
-                              value={
-                                field.value || saleTypesData?.[0]?.code || ""
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecciona un tipo" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {saleTypesData &&
-                                  saleTypesData.map((type) => (
-                                    <SelectItem
-                                      key={type.code}
-                                      value={type.code}
-                                    >
-                                      {type.label}
-                                    </SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                        {errors.tipo_venta && (
-                          <p className="text-red-500 text-xs">
-                            El campo es requerido
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="fechaPlazo">
-                          Fecha Plazo
-                          <span className="text-xs ml-1 text-gray-500">
-                            (Crédito)
-                          </span>
-                        </Label>
-                        <Input
-                          id="fechaPlazo"
-                          type="date"
-                          {...register("plazo_pago")}
-                          disabled={formValues.tipo_venta !== "VC"}
-                        />
-                        {errors.plazo_pago && (
-                          <p className="text-red-500 text-xs">
-                            {errors.plazo_pago.message}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="vehiculo">Vehículo/Motor</Label>
-                        <Input
-                          id="vehiculo"
-                          {...register("vehiculo")}
-                          placeholder="Modelo del vehículo"
-                        />
-                      </div>
-                      {configuraciones.inputs && (
                         <div>
-                          <Label htmlFor="motor">Motor</Label>
+                          <Label htmlFor="tipo_venta">Tipo de Venta *</Label>
+                          <Controller
+                            name="tipo_venta"
+                            control={control}
+                            render={({ field }) => (
+                              <Select
+                                onValueChange={field.onChange}
+                                value={
+                                  field.value || saleTypesData?.[0]?.code || ""
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecciona un tipo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {saleTypesData &&
+                                    saleTypesData.map((type) => (
+                                      <SelectItem
+                                        key={type.code}
+                                        value={type.code}
+                                      >
+                                        {type.label}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                          {errors.tipo_venta && (
+                            <p className="text-red-500 text-xs">
+                              El campo es requerido
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="fechaPlazo">
+                            Fecha Plazo
+                            <span className="text-xs ml-1 text-gray-500">
+                              (Crédito)
+                            </span>
+                          </Label>
                           <Input
-                            id="motor"
-                            {...register("nro_motor")}
-                            placeholder="Tipo de motor"
+                            id="fechaPlazo"
+                            type="date"
+                            {...register("plazo_pago")}
+                            disabled={formValues.tipo_venta !== "VC"}
+                          />
+                          {errors.plazo_pago && (
+                            <p className="text-red-500 text-xs">
+                              {errors.plazo_pago.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="vehiculo">Vehículo/Motor</Label>
+                          <Input
+                            id="vehiculo"
+                            {...register("vehiculo")}
+                            placeholder="Modelo del vehículo"
                           />
                         </div>
-                      )}
-                      <div
-                        className={cn(
-                          configuraciones.formulario === "top" && "",
-                          configuraciones.formulario === "left" &&
-                            "md:col-span-2"
+                        {configuraciones.inputs && (
+                          <div>
+                            <Label htmlFor="motor">Motor</Label>
+                            <Input
+                              id="motor"
+                              {...register("nro_motor")}
+                              placeholder="Tipo de motor"
+                            />
+                          </div>
                         )}
-                      >
-                        <Label htmlFor="comentarios">Comentarios</Label>
-                        <Textarea
-                          id="comentarios"
-                          {...register("comentario")}
-                          placeholder="Comentarios adicionales sobre la venta"
-                          rows={configuraciones.formulario === "top" ? 1 : 2}
-                        />
+                        <div
+                          className={cn(
+                            configuraciones.formulario === "top" && "",
+                            configuraciones.formulario === "left" &&
+                            "md:col-span-2"
+                          )}
+                        >
+                          <Label htmlFor="comentarios">Comentarios</Label>
+                          <Textarea
+                            id="comentarios"
+                            {...register("comentario")}
+                            placeholder="Comentarios adicionales sobre la venta"
+                            rows={configuraciones.formulario === "top" ? 1 : 2}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              <div
-                className={cn(
-                  "flex-1 min-h-0",
-                  configuraciones.formulario === "top" && "",
-                  configuraciones.formulario === "top" &&
-                    configuraciones.inputs &&
-                    "",
-                  configuraciones.formulario === "left" && "col-span-2"
-                )}
-              >
                 <div
                   className={cn(
-                    "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
-                    configuraciones.selector_mode === "embebed" &&
-                      "md:min-h-screen"
+                    "flex-1 min-h-0",
+                    configuraciones.formulario === "top" && "",
+                    configuraciones.formulario === "top" &&
+                    configuraciones.inputs &&
+                    "",
+                    configuraciones.formulario === "left" && "col-span-2"
                   )}
                 >
-                  <ResizablePanelGroup
-                    className={cn("flex-1 min-h-0")}
-                    direction={"vertical"}
-                  >
-                    {configuraciones.selector_mode === "embebed" && (
-                      <>
-                        <ResizablePanel defaultSize={50}>
-                          <ProductSearchPanel
-                            selectedProducts={items}
-                            onProductSelect={handleAddProductItem}
-                            onlySelectWithStock={true}
-                          />
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                      </>
+                  <div
+                    className={cn(
+                      "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
+                      configuraciones.selector_mode === "embebed" &&
+                      "md:min-h-screen"
                     )}
-                    <ResizablePanel
-                      defaultSize={50}
-                      className="h-full flex flex-col"
+                  >
+                    <ResizablePanelGroup
+                      className={cn("flex-1 min-h-0")}
+                      direction={"vertical"}
                     >
-                      {/* 2. Productos */}
-                      <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
-                        <CardHeader className="flex-shrink-0">
-                          <CardTitle className="flex justify-between">
-                            <h2 className="text-primary text-base">
-                              Detalle de Productos
-                            </h2>
-                            {configuraciones.selector_mode === "window" && (
-                              <Button
-                                type="button"
-                                onClick={toggleWindowSelector}
-                                disabled={isSaving}
-                              >
-                                <Plus className="size-4" />
-                                <span className="hidden sm:block">
-                                  Seleccionar Productos
-                                </span>
-                              </Button>
-                            )}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex-1 min-h-0">
-                          <div className="h-full overflow-auto">
-                            {items.length === 0 ? (
-                              <div className="text-center py-8 text-gray-500">
-                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                <p>No hay productos agregados</p>
-                                <p className="text-sm">
-                                  Haz clic en "Seleccionar Productos" para
-                                  agregar
-                                </p>
-                              </div>
-                            ) : (
-                              <TableShoppingCart ref={tableRef} />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </ResizablePanel>
-                  </ResizablePanelGroup>
+                      {configuraciones.selector_mode === "embebed" && (
+                        <>
+                          <ResizablePanel defaultSize={50}>
+                            <ProductSearchPanel
+                              selectedProducts={items}
+                              onProductSelect={handleAddProductItem}
+                              onlySelectWithStock={true}
+                            />
+                          </ResizablePanel>
+                          <ResizableHandle withHandle />
+                        </>
+                      )}
+                      <ResizablePanel
+                        defaultSize={50}
+                        className="h-full flex flex-col"
+                      >
+                        {/* 2. Productos */}
+                        <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                          <CardHeader className="flex-shrink-0">
+                            <CardTitle className="flex justify-between">
+                              <h2 className="text-primary text-base">
+                                Detalle de Productos
+                              </h2>
+                              {configuraciones.selector_mode === "window" && (
+                                <Button
+                                  type="button"
+                                  onClick={toggleWindowSelector}
+                                  disabled={isSaving}
+                                >
+                                  <Plus className="size-4" />
+                                  <span className="hidden sm:block">
+                                    Seleccionar Productos
+                                  </span>
+                                </Button>
+                              )}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="flex-1 min-h-0">
+                            <div className="h-full overflow-auto">
+                              {items.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                  <p>No hay productos agregados</p>
+                                  <p className="text-sm">
+                                    Haz clic en "Seleccionar Productos" para
+                                    agregar
+                                  </p>
+                                </div>
+                              ) : (
+                                <TableShoppingCart ref={tableRef} />
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
 
-                  {/* Resumen de venta  */}
-                  <SalesSummary
-                    clearCart={clearCart}
-                    discountAmount={discountAmount}
-                    discountPercent={discountPercent}
-                    subtotal={subtotal}
-                    total={total}
-                    isPending={isSaving}
-                    callback={handleNewSale}
-                    setDiscountAmount={setDiscountAmount}
-                    setDiscountPercent={setDiscountPercent}
-                    hasProducts={items.length > 0}
-                  />
+                    {/* Resumen de venta  */}
+                    <SalesSummary
+                      clearCart={clearCart}
+                      discountAmount={discountAmount}
+                      discountPercent={discountPercent}
+                      subtotal={subtotal}
+                      total={total}
+                      isPending={isSaving}
+                      callback={handleNewSale}
+                      setDiscountAmount={setDiscountAmount}
+                      setDiscountPercent={setDiscountPercent}
+                      hasProducts={items.length > 0}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
-      </FormProvider>
+          </form>
+        </FormProvider>
 
-      {/* Modales de Conversión */}
-      <CartModeConversionModal
-        open={showModeConversionModal}
-        onClose={handleCloseModal}
-        targetMode={targetModeForModal}
-        shouldGoBackOnClose={true}
-      />
+        {/* Modales de Conversión */}
+        <CartModeConversionModal
+          open={showModeConversionModal}
+          onClose={handleCloseModal}
+          targetMode={targetModeForModal}
+          shouldGoBackOnClose={true}
+        />
+      </ProtectedAction>
     </main>
   );
 };

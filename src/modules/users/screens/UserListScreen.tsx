@@ -18,6 +18,8 @@ import { useViewConfig } from '@/hooks/useViewConfig'; // ← CAMBIO PRINCIPAL
 import authSDK from '@/services/sdk-simple-auth';
 import { formatCell } from '@/utils/formatCell';
 import { type ColumnDef } from '@tanstack/react-table';
+import { ProtectedAction } from '@/components/common/ProtectedAction';
+import { useProtectedAction } from '@/hooks/useProtectedAction';
 import {
   CheckCircle,
   Eye,
@@ -99,7 +101,8 @@ const UserListScreen = () => {
     setShowDeleteDialog(true);
   }, []);
 
-  const handleConfirmDelete = async () => {
+  // Función de eliminación sin protección (para usar con useProtectedAction)
+  const handleConfirmDeleteUnprotected = async () => {
     if (!selectedUser) return;
     setIsDeleting(true);
 
@@ -125,6 +128,15 @@ const UserListScreen = () => {
       },
     });
   };
+
+  // Proteger la función de eliminación con validación de permisos
+  const handleConfirmDelete = useProtectedAction(
+    handleConfirmDeleteUnprotected,
+    {
+      permission: 'usu-set_estado',
+      roles: ['Super Admin'],
+    }
+  );
 
   const handleManagePermissions = useCallback((user: User) => {
     navigate(`/dashboard/user/${user.nickname}#permisos`);
@@ -199,17 +211,32 @@ const UserListScreen = () => {
                     <Eye className="mr-2 h-4 w-4" />
                     Ver detalles
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleManagePermissions(row.original)}>
-                    <UserCog className="mr-2 h-4 w-4" />
-                    Gestionar permisos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleDeleteUser(row.original)}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+
+                  <ProtectedAction
+                    permission="usu-editar"
+                    roles={["Super Admin"]}
+                    fallback={null}
+                  // bypassForSuperAdmin={true}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar usuario
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleManagePermissions(row.original)}>
+                      <UserCog className="mr-2 h-4 w-4" />
+                      Gestionar permisos
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+
+                  <ProtectedAction
+                    permission="usu-set_estado"
+                    roles={["Super Admin"]}
+                    fallback={null}
+                  >
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteUser(row.original)}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar usuario
+                    </DropdownMenuItem>
+                  </ProtectedAction>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -371,253 +398,265 @@ const UserListScreen = () => {
 
   return (
     <main className="h-full flex flex-col overflow-hidden p-2">
-      <div className="bg-white rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="p-2 border-b border-gray-200">
-          <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
-            <div className="flex items-center gap-2 md:gap-4 grow">
-              <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Gestión de Usuarios
-              </h1>
-            </div>
+      <ProtectedAction
+        permission="usu-module"
+        roles={["Super Admin"]}
+        showUnauthorizedMessage={true}
+      >
+        <div className="bg-white rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="p-2 border-b border-gray-200">
+            <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
+              <div className="flex items-center gap-2 md:gap-4 grow">
+                <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Gestión de Usuarios
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <ProtectedAction
+                  permission="usu-create"
+                  roles={["Super Admin"]}
+                  showUnauthorizedMessage={false}
+                >
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => navigate('/dashboard/user/create')}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Nuevo Usuario
+                  </Button>
+                </ProtectedAction>
+
+                {viewConfig?.features?.infiniteScroll?.enabled && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="infinite-scroll"
+                      checked={isInfiniteScroll}
+                      onCheckedChange={handleInfiniteScrollChange}
+                    />
+                    <Label htmlFor="infinite-scroll">
+                      {viewConfig?.features?.infiniteScroll?.label || 'Scroll Infinito'}
+                    </Label>
+                  </div>
+                )}
+
+                {viewConfig?.features?.refreshButton?.enabled && (
+                  <TooltipButton
+                    onClick={handleRefetchUsers}
+                    buttonProps={{
+                      className: 'w-8',
+                      disabled: isRefetchingUsers || isFetching,
+                    }}
+                    tooltip={viewConfig?.features?.refreshButton?.description || "Recargar usuarios"}
+                  >
+                    <RefreshCcw
+                      className={`size-4 ${isRefetchingUsers || isFetching ? 'animate-spin' : ''}`}
+                    />
+                  </TooltipButton>
+                )}
+
+                {viewConfig?.features?.resetTableButton?.enabled && (
+                  <TooltipButton
+                    onClick={handleResetTableConfig}
+                    buttonProps={{
+                      variant: 'outline',
+                      size: 'sm',
+                    }}
+                    tooltip={viewConfig?.features?.resetTableButton?.description || "Resetear tabla"}
+                  >
+                    <Settings className="h-4 w-4" />
+                    {viewConfig?.features?.resetTableButton?.label || 'Resetear Tabla'}
+                  </TooltipButton>
+                )}
+
+                {viewConfig?.features?.filters?.enabled && (
+                  <Button variant="outline" size="sm" onClick={resetFilters}>
+                    Limpiar Filtros
+                  </Button>
+                )}
+              </div>
+            </section>
+
+            {/* Search Bar */}
+            {viewConfig?.features?.searchBar?.enabled && (
+              <section className="mt-2">
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar usuarios por nickname o nombre..."
+                    value={searchKeywords}
+                    onChange={e => setSearchKeywords(e.target.value)}
+                    className="pl-10 w-full"
+                  />
+                </div>
+              </section>
+            )}
+          </header>
+
+          {/* Results Info */}
+          <div className="flex-shrink-0 p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
+            {users.length > 0 ? (
+              isInfiniteScroll ? (
+                `Mostrando ${users.length} de ${userData?.meta.total} usuarios`
+              ) : (
+                (() => {
+                  const pagina = filters.pagina ?? 1;
+                  const porPagina = filters.pagina_registros ?? 1;
+                  const inicio = (pagina - 1) * porPagina + 1;
+                  const fin = pagina * porPagina;
+                  return `Mostrando ${inicio} - ${fin} de ${userData?.meta.total} usuarios`;
+                })()
+              )
+            ) : (
+              <span>Cargando...</span>
+            )}
 
             <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => navigate('/dashboard/user/create')}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Nuevo Usuario
-              </Button>
-
-              {viewConfig?.features?.infiniteScroll?.enabled && (
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="infinite-scroll"
-                    checked={isInfiniteScroll}
-                    onCheckedChange={handleInfiniteScrollChange}
+              {viewConfig?.features?.pagination?.enabled && (
+                <div className="flex items-center">
+                  <RowsPerPageSelect
+                    value={filters.pagina_registros ?? viewConfig?.behaviors?.defaultRowsPerPage ?? 10}
+                    onChange={onShowRowsChange}
                   />
-                  <Label htmlFor="infinite-scroll">
-                    {viewConfig?.features?.infiniteScroll?.label || 'Scroll Infinito'}
-                  </Label>
                 </div>
               )}
-
-              {viewConfig?.features?.refreshButton?.enabled && (
-                <TooltipButton
-                  onClick={handleRefetchUsers}
-                  buttonProps={{
-                    className: 'w-8',
-                    disabled: isRefetchingUsers || isFetching,
-                  }}
-                  tooltip={viewConfig?.features?.refreshButton?.description || "Recargar usuarios"}
-                >
-                  <RefreshCcw
-                    className={`size-4 ${isRefetchingUsers || isFetching ? 'animate-spin' : ''}`}
-                  />
-                </TooltipButton>
+              {viewConfig?.features?.columnSelector?.enabled && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Settings className="w-4 h-4" />
+                      {viewConfig?.features?.columnSelector?.label || 'Columnas'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+                  >
+                    {table
+                      .getAllColumns()
+                      .filter(column => column.getCanHide())
+                      .map(column => (
+                        <DropdownMenuItem
+                          key={column.id}
+                          className="flex items-center space-x-2 cursor-pointer"
+                          onSelect={e => e.preventDefault()}
+                          onClick={() =>
+                            column.toggleVisibility(!column.getIsVisible())
+                          }
+                        >
+                          <Checkbox
+                            className="border border-gray-400"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={value =>
+                              column.toggleVisibility(!!value)
+                            }
+                          />
+                          <span className="flex-1">
+                            {typeof column.columnDef.header === 'string'
+                              ? column.columnDef.header
+                              : column.id}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
-
-              {viewConfig?.features?.resetTableButton?.enabled && (
-                <TooltipButton
-                  onClick={handleResetTableConfig}
-                  buttonProps={{
-                    variant: 'outline',
-                    size: 'sm',
-                  }}
-                  tooltip={viewConfig?.features?.resetTableButton?.description || "Resetear tabla"}
-                >
-                  <Settings className="h-4 w-4" />
-                  {viewConfig?.features?.resetTableButton?.label || 'Resetear Tabla'}
-                </TooltipButton>
-              )}
-
-              {viewConfig?.features?.filters?.enabled && (
-                <Button variant="outline" size="sm" onClick={resetFilters}>
-                  Limpiar Filtros
+              {viewConfig?.features?.multiSelect?.enabled && table && hasSelectedUsers > 0 && (
+                <Button size={'sm'} className="relative">
+                  Acciones
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+                  >
+                    {hasSelectedUsers}
+                  </Badge>
                 </Button>
               )}
             </div>
-          </section>
+          </div>
 
-          {/* Search Bar */}
-          {viewConfig?.features?.searchBar?.enabled && (
-            <section className="mt-2">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar usuarios por nickname o nombre..."
-                  value={searchKeywords}
-                  onChange={e => setSearchKeywords(e.target.value)}
-                  className="pl-10 w-full"
-                />
+          <div className="flex-1 overflow-hidden">
+            {isInfiniteScroll ? (
+              <div className="h-full overflow-auto">
+                <InfiniteScroll
+                  dataLength={users.length}
+                  next={() => setPage((filters.pagina || 1) + 1)}
+                  hasMore={users.length < (userData?.meta.total || 0)}
+                  loader={
+                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                      <Loader2 className="size-4 animate-spin" />
+                      Cargando más usuarios...
+                    </div>
+                  }
+                  scrollableTarget="main-scroll-container"
+                >
+                  <CustomizableTable
+                    table={table}
+                    isError={isError}
+                    errorMessage="Ocurrió un error al cargar los usuarios"
+                    isLoading={isLoading}
+                    rows={filters.pagina_registros}
+                    noDataMessage="No se encontraron usuarios"
+                    selectedRowIndex={selectedIndex}
+                    onRowClick={handleRowClick}
+                    onRowDoubleClick={handleRowDoubleClick}
+                    tableRef={tableRef}
+                    focused={isFocused}
+                    keyboardNavigationEnabled={true}
+                    enableColumnReordering={true}
+                    enableSorting={true}
+                  />
+                </InfiniteScroll>
               </div>
-            </section>
-          )}
-        </header>
-
-        {/* Results Info */}
-        <div className="flex-shrink-0 p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
-          {users.length > 0 ? (
-            isInfiniteScroll ? (
-              `Mostrando ${users.length} de ${userData?.meta.total} usuarios`
             ) : (
-              (() => {
-                const pagina = filters.pagina ?? 1;
-                const porPagina = filters.pagina_registros ?? 1;
-                const inicio = (pagina - 1) * porPagina + 1;
-                const fin = pagina * porPagina;
-                return `Mostrando ${inicio} - ${fin} de ${userData?.meta.total} usuarios`;
-              })()
-            )
-          ) : (
-            <span>Cargando...</span>
-          )}
+              <div className="overflow-auto h-full">
+                <div onClick={handleTableClick} className="overflow-x-hidden">
+                  <CustomizableTable
+                    table={table}
+                    isError={isError}
+                    isFetching={isFetching}
+                    isLoading={isLoading}
+                    errorMessage="Ocurrió un error al cargar los usuarios"
+                    rows={filters.pagina_registros}
+                    noDataMessage="No se encontraron usuarios"
+                    selectedRowIndex={selectedIndex}
+                    onRowClick={handleRowClick}
+                    onRowDoubleClick={handleRowDoubleClick}
+                    tableRef={tableRef}
+                    focused={isFocused}
+                    keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
+                    enableColumnReordering={true}
+                    enableSorting={true}
+                  />
+                </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {viewConfig?.features?.pagination?.enabled && (
-              <div className="flex items-center">
-                <RowsPerPageSelect
-                  value={filters.pagina_registros ?? viewConfig?.behaviors?.defaultRowsPerPage ?? 10}
-                  onChange={onShowRowsChange}
-                />
+                {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
+                  <Pagination
+                    currentPage={filters.pagina || 1}
+                    onPageChange={onPageChange}
+                    totalData={userData?.meta.total || 1}
+                    onShowRowsChange={onShowRowsChange}
+                    showRows={filters.pagina_registros}
+                  />
+                )}
               </div>
-            )}
-            {viewConfig?.features?.columnSelector?.enabled && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings className="w-4 h-4" />
-                    {viewConfig?.features?.columnSelector?.label || 'Columnas'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56 max-h-96 overflow-y-auto border border-gray-200"
-                >
-                  {table
-                    .getAllColumns()
-                    .filter(column => column.getCanHide())
-                    .map(column => (
-                      <DropdownMenuItem
-                        key={column.id}
-                        className="flex items-center space-x-2 cursor-pointer"
-                        onSelect={e => e.preventDefault()}
-                        onClick={() =>
-                          column.toggleVisibility(!column.getIsVisible())
-                        }
-                      >
-                        <Checkbox
-                          className="border border-gray-400"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={value =>
-                            column.toggleVisibility(!!value)
-                          }
-                        />
-                        <span className="flex-1">
-                          {typeof column.columnDef.header === 'string'
-                            ? column.columnDef.header
-                            : column.id}
-                        </span>
-                      </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            {viewConfig?.features?.multiSelect?.enabled && table && hasSelectedUsers > 0 && (
-              <Button size={'sm'} className="relative">
-                Acciones
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-                >
-                  {hasSelectedUsers}
-                </Badge>
-              </Button>
             )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          {isInfiniteScroll ? (
-            <div className="h-full overflow-auto">
-              <InfiniteScroll
-                dataLength={users.length}
-                next={() => setPage((filters.pagina || 1) + 1)}
-                hasMore={users.length < (userData?.meta.total || 0)}
-                loader={
-                  <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
-                    <Loader2 className="size-4 animate-spin" />
-                    Cargando más usuarios...
-                  </div>
-                }
-                scrollableTarget="main-scroll-container"
-              >
-                <CustomizableTable
-                  table={table}
-                  isError={isError}
-                  errorMessage="Ocurrió un error al cargar los usuarios"
-                  isLoading={isLoading}
-                  rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron usuarios"
-                  selectedRowIndex={selectedIndex}
-                  onRowClick={handleRowClick}
-                  onRowDoubleClick={handleRowDoubleClick}
-                  tableRef={tableRef}
-                  focused={isFocused}
-                  keyboardNavigationEnabled={true}
-                  enableColumnReordering={true}
-                  enableSorting={true}
-                />
-              </InfiniteScroll>
-            </div>
-          ) : (
-            <div className="overflow-auto h-full">
-              <div onClick={handleTableClick} className="overflow-x-hidden">
-                <CustomizableTable
-                  table={table}
-                  isError={isError}
-                  isFetching={isFetching}
-                  isLoading={isLoading}
-                  errorMessage="Ocurrió un error al cargar los usuarios"
-                  rows={filters.pagina_registros}
-                  noDataMessage="No se encontraron usuarios"
-                  selectedRowIndex={selectedIndex}
-                  onRowClick={handleRowClick}
-                  onRowDoubleClick={handleRowDoubleClick}
-                  tableRef={tableRef}
-                  focused={isFocused}
-                  keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
-                  enableColumnReordering={true}
-                  enableSorting={true}
-                />
-              </div>
-
-              {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
-                <Pagination
-                  currentPage={filters.pagina || 1}
-                  onPageChange={onPageChange}
-                  totalData={userData?.meta.total || 1}
-                  onShowRowsChange={onShowRowsChange}
-                  showRows={filters.pagina_registros}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <DeleteUserDialog
-        open={showDeleteDialog}
-        onClose={() => {
-          setShowDeleteDialog(false);
-          setSelectedUser(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        isLoading={isDeleting || isDeletingUser}
-      />
+        <DeleteUserDialog
+          open={showDeleteDialog}
+          onClose={() => {
+            setShowDeleteDialog(false);
+            setSelectedUser(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          isLoading={isDeleting || isDeletingUser}
+        />
+      </ProtectedAction>
     </main>
   );
 };

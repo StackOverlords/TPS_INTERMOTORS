@@ -1,6 +1,7 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import CustomizableTable from "@/components/common/CustomizableTable";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { formatCurrency } from "@/utils/formaters";
@@ -130,15 +131,21 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 minSize: 30,
                 cell: ({ row }) => (
                     <div className="flex justify-center">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePayment(row.original)}
-                            disabled={isDeleting}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        <ProtectedAction
+                            permission="cuc-create_pago"
+                            roles={["Super Admin", "Administrador"]}
+                            fallback={null}
                         >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeletePayment(row.original)}
+                                disabled={isDeleting}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </ProtectedAction>
                     </div>
                 ),
             },
@@ -187,14 +194,20 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                             Saldo pendiente: {formatCurrency(saldoPendiente)}
                         </Badge>
                     )}
-                    <Button
-                        onClick={() => setShowCreateForm(!showCreateForm)}
-                        size="sm"
-                        disabled={saldoPendiente <= 0}
+                    <ProtectedAction
+                        permission="cuc-create_pago"
+                        roles={["Super Admin", "Administrador"]}
+                        fallback={null}
                     >
-                        <Plus className="h-4 w-4 mr-1" />
-                        {showCreateForm ? "Cancelar" : "Nuevo Pago"}
-                    </Button>
+                        <Button
+                            onClick={() => setShowCreateForm(!showCreateForm)}
+                            size="sm"
+                            disabled={saldoPendiente <= 0}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {showCreateForm ? "Cancelar" : "Nuevo Pago"}
+                        </Button>
+                    </ProtectedAction>
                 </div>
             </div>
 

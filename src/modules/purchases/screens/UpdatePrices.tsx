@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/atoms/card";
 import TooltipButton from "@/components/common/TooltipButton";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { useGetAllBranches } from "@/modules/settings/hooks/branch/useGetAllBranches";
 import { useGetAllCategories } from "@/modules/settings/hooks/category/useGetAllCategories";
 import {
@@ -150,6 +151,11 @@ const UpdatePrices = () => {
 
   return (
     <main className="h-full p-4 overflow-auto bg-gray-50">
+      <ProtectedAction
+        permission="com-update_prices"
+        roles={["Super Admin", "Administrador", "Vendedor"]}
+        showUnauthorizedMessage={true}
+      >
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Success Alert */}
         {/* {lastSuccess && (
@@ -350,6 +356,7 @@ const UpdatePrices = () => {
           </Alert>
         )}
       </div>
+      </ProtectedAction>
     </main>
   );
 };
