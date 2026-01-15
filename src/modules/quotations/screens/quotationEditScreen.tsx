@@ -324,19 +324,6 @@ const QuotationEditScreen = () => {
       isValid = false;
     }
 
-    if (formData.tipo_cotizacion === "VC" && !formData.plazo_pago) {
-      setError("plazo_pago", {
-        type: "manual",
-        message:
-          "Debes especificar la fecha de plazo para cotización a crédito",
-      });
-      showErrorToast({
-        title: "Plazo requerido",
-        description: "Las ventas a crédito requieren una fecha de plazo",
-      });
-      isValid = false;
-    }
-
     // Agregar validación adicional
     if (
       formData.tipo_cotizacion === "VC" &&
