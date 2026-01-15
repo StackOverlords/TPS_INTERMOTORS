@@ -34,6 +34,8 @@ import { Kbd } from "@/components/atoms/kbd";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useProductByIdWithStock } from "../hooks/queries/useProductByIdWithStock";
 import type { ProductGet } from "../types/ProductGet";
+import type { ProductStock } from "../types/productStock";
+import UpdatePurchaseDetailPricesFormModal from "@/modules/purchases/components/UpdatePurchaseDetailPricesFormModal";
 
 const ProductDetailScreen = () => {
   const navigate = useNavigate();
@@ -43,6 +45,15 @@ const ProductDetailScreen = () => {
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState<number>(
     Number(selectedBranchId)
   );
+
+  // Estado para el modal de actualización de precios
+  const [updatePriceModalOpen, setUpdatePriceModalOpen] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<ProductStock | null>(
+    null
+  );
+  const [selectedBranchType, setSelectedBranchType] = useState<
+    "current" | "other"
+  >("current");
 
   const { addItemToCart } = useCartWithUtils(
     user?.name || "",
@@ -90,6 +101,7 @@ const ProductDetailScreen = () => {
     isError: isErrorStockLocalData,
     isFetching: isFetchingStockLocalData,
     isLoading: isLoadingStockLocalData,
+    refetch: refetchStockLocal,
   } = useProductStock({
     producto: Number(productId),
     sucursal: sucursalSeleccionada,
@@ -100,6 +112,7 @@ const ProductDetailScreen = () => {
     data: productStockSucursalesData,
     isError: isErrorStockSucursalesData,
     isLoading: isLoadingStockSucursalesData,
+    refetch: refetchStockSucursales,
   } = useProductStock({
     producto: Number(productId),
     sucursal: sucursalSeleccionada,
@@ -175,6 +188,28 @@ const ProductDetailScreen = () => {
 
   const handleGoBack = () => {
     navigate("/dashboard/productos");
+  };
+
+  // Manejadores para abrir el modal de actualización de precios
+  const handleEditPriceCurrentBranch = (detail: ProductStock) => {
+    setSelectedDetail(detail);
+    setSelectedBranchType("current");
+    setUpdatePriceModalOpen(true);
+  };
+
+  const handleEditPriceOtherBranches = (detail: ProductStock) => {
+    setSelectedDetail(detail);
+    setSelectedBranchType("other");
+    setUpdatePriceModalOpen(true);
+  };
+
+  const handleCloseUpdatePriceModal = (open: boolean) => {
+    setUpdatePriceModalOpen(open);
+    if (!open) {
+      // Refrescar los datos cuando se cierra el modal
+      refetchStockLocal();
+      refetchStockSucursales();
+    }
   };
 
   // Shortcuts
@@ -311,6 +346,7 @@ const ProductDetailScreen = () => {
             isError={isErrorStockLocalData}
             isFetching={isFetchingStockLocalData}
             isLoading={isLoadingStockLocalData}
+            onEditPrice={handleEditPriceCurrentBranch}
           />
 
           {/* Inventory Tab */}
@@ -319,6 +355,7 @@ const ProductDetailScreen = () => {
               productStockData={productStockSucursalesData ?? []}
               isErrorData={isErrorStockSucursalesData}
               isLoadingData={isLoadingStockSucursalesData}
+              onEditPrice={handleEditPriceOtherBranches}
             />
           </TabsContent>
 
@@ -351,6 +388,16 @@ const ProductDetailScreen = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de Actualización de Precios */}
+      <UpdatePurchaseDetailPricesFormModal
+        open={updatePriceModalOpen}
+        onOpenChange={handleCloseUpdatePriceModal}
+        detail={selectedDetail}
+        branchType={selectedBranchType}
+        currentBranchDetails={productStockLocalData ?? []}
+        otherBranchesDetails={productStockSucursalesData ?? []}
+      />
     </div>
   );
 };

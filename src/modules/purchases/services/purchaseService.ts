@@ -10,22 +10,21 @@ import type { PurchaseFilters } from "../types/purchaseFilters";
 import type { PurchaseListResponse } from "../types/purchaseListResponse";
 import type { UpdatePricesResponse } from "../types/UpdatePricesResponse";
 import { PURCHASE_ENDPOINTS } from "./endpoints";
+import type { UpdatePurchaseDetailPricesFormData } from "../types/UpdatePurchaseDetailPrices.types";
+import { updatePurchaseDetailPricesSchema } from "../schemas/updatePurchaseDetailPrices.schema";
 
-const MODULE_NAME = 'PURCHASE_SERVICE';
+const MODULE_NAME = "PURCHASE_SERVICE";
 
 export const purchaseService = {
   /**
    * Crear una nueva compra
    * @param data - Datos de la compra a crear
-  */
+   */
   // async create(data: PurchaseCreate): Promise<unknown> { -- falta definir PurchaseCreate
   async create(data: any): Promise<unknown> {
-    Logger.info('Creating purchase', { data }, MODULE_NAME);
+    Logger.info("Creating purchase", { data }, MODULE_NAME);
 
-    const response = await ApiService.post(
-      PURCHASE_ENDPOINTS.create,
-      data,
-    );
+    const response = await ApiService.post(PURCHASE_ENDPOINTS.create, data);
 
     Logger.info(
       "Purchase created successfully",
@@ -33,14 +32,16 @@ export const purchaseService = {
       // response.data.id && { id: response.data.id },
       MODULE_NAME
     );
-    return response
+    return response;
   },
 
   /**
    * Obtener todas las compras con filtros opcionales
    */
-  async getAll(filters: Partial<PurchaseFilters>): Promise<PurchaseListResponse> {
-    Logger.info('Fetching purchases', { filters }, MODULE_NAME);
+  async getAll(
+    filters: Partial<PurchaseFilters>
+  ): Promise<PurchaseListResponse> {
+    Logger.info("Fetching purchases", { filters }, MODULE_NAME);
 
     const response = await ApiService.get(
       PURCHASE_ENDPOINTS.all,
@@ -48,9 +49,13 @@ export const purchaseService = {
       { params: filters }
     );
 
-    Logger.info('Purchases fetched successfully', {
-      count: response.data.length,
-    }, MODULE_NAME);
+    Logger.info(
+      "Purchases fetched successfully",
+      {
+        count: response.data.length,
+      },
+      MODULE_NAME
+    );
 
     return response;
   },
@@ -60,7 +65,7 @@ export const purchaseService = {
    * @param id - ID de la compra
    */
   async getById(id: number): Promise<PurchaseDetail> {
-    Logger.info('Fetching purchase detail', { id }, MODULE_NAME);
+    Logger.info("Fetching purchase detail", { id }, MODULE_NAME);
 
     const response = await ApiService.get(
       PURCHASE_ENDPOINTS.byId(id),
@@ -69,7 +74,7 @@ export const purchaseService = {
       { unwrapData: true }
     );
 
-    Logger.info('Purchase detail fetched successfully', { id }, MODULE_NAME);
+    Logger.info("Purchase detail fetched successfully", { id }, MODULE_NAME);
 
     return response as PurchaseDetail;
   },
@@ -81,7 +86,7 @@ export const purchaseService = {
    */
   // async update(id: number, data: QuotationUpdate): Promise<PurchaseDetail> { -- falta definir QuotationUpdate
   async update(id: number, data: any): Promise<PurchaseDetail> {
-    Logger.info('Updating purchase', { id, data }, MODULE_NAME);
+    Logger.info("Updating purchase", { id, data }, MODULE_NAME);
 
     const response = await ApiService.put(
       PURCHASE_ENDPOINTS.update(id),
@@ -91,9 +96,13 @@ export const purchaseService = {
       { unwrapData: true }
     );
 
-    Logger.info('Purchase updated successfully', {
-      id
-    }, MODULE_NAME);
+    Logger.info(
+      "Purchase updated successfully",
+      {
+        id,
+      },
+      MODULE_NAME
+    );
     return response as PurchaseDetail;
   },
 
@@ -102,11 +111,11 @@ export const purchaseService = {
    * @param id - ID de la compra
    */
   async delete(id: number): Promise<void> {
-    Logger.info('Deleting purchase', { id }, MODULE_NAME);
+    Logger.info("Deleting purchase", { id }, MODULE_NAME);
 
     await ApiService.delete(PURCHASE_ENDPOINTS.delete(id));
 
-    Logger.info('Purchase deleted successfully', { id }, MODULE_NAME);
+    Logger.info("Purchase deleted successfully", { id }, MODULE_NAME);
   },
 
   // /**
@@ -125,8 +134,10 @@ export const purchaseService = {
    * Actualizar precios de productos por categoría
    * @param data - Datos para la actualización de precios (formato del formulario)
    */
-  async updatePrices(data: UpdatePricesFormData): Promise<UpdatePricesResponse> {
-    Logger.info('Updating prices', { data }, MODULE_NAME);
+  async updatePrices(
+    data: UpdatePricesFormData
+  ): Promise<UpdatePricesResponse> {
+    Logger.info("Updating prices", { data }, MODULE_NAME);
 
     // Transformar datos del formulario al formato del API
     const apiData = transformToApiFormat(data);
@@ -147,4 +158,29 @@ export const purchaseService = {
     return response as UpdatePricesResponse;
   },
 
+  /**
+   * Actualizar precios de venta del stock restante por detalle de compra
+   */
+  async updatePurchaseDetailPrices(
+    params: UpdatePurchaseDetailPricesFormData
+  ): Promise<void> {
+    Logger.info("Updating purchase detail prices", { params }, MODULE_NAME);
+
+    const transformedParams =
+      updatePurchaseDetailPricesSchema.safeParse(params);
+
+    await ApiService.post(
+      PURCHASE_ENDPOINTS.updateDetailPrices,
+      undefined,
+      undefined,
+      { params: transformedParams.data },
+      { unwrapData: false }
+    );
+
+    Logger.info(
+      "Purchase detail prices updated successfully",
+      undefined,
+      MODULE_NAME
+    );
+  },
 };
