@@ -96,7 +96,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
 
                         <div className="flex flex-wrap gap-1 mt-1">
                             {product.categoria && (
-                                <Badge variant="accent" title="Categoria" className="text-[10px] border-gray-300">{product.categoria.categoria}</Badge>
+                                <Badge variant="accent" title="División" className="text-[10px] border-gray-300">{product.categoria.categoria}</Badge>
                             )}
                             {product.marca && (
                                 <Badge variant="outline" title="Marca" className="text-[10px] border-gray-300">{product.marca.marca}</Badge>
