@@ -187,6 +187,20 @@ export const parseDateFromBackend = (dateTimeString: string): string => {
 };
 
 /**
+ * Convierte una fecha del backend (con hora) a formato de formulario (solo fecha)
+ *
+ * @param dateTimeString - Fecha con hora del backend (ej: "2025-12-28 11:19:54.511" o "2025-12-28T11:19:54.511Z")
+ * @returns Fecha en formato "yyyy-MM-dd" para inputs de tipo date
+ *
+ */
+export const parseDateForUi = (dateTimeString: string): string => {
+  if (!dateTimeString) return "";
+const tz =  getUserTimezone();
+  const date = toZonedTime(new Date(dateTimeString), tz);
+  return format(date, "dd/MM/yyyy");
+};
+
+/**
  * Obtiene la fecha actual en formato de formulario (yyyy-MM-dd)
  * Útil para inicializar campos de fecha en formularios
  *

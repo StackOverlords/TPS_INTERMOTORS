@@ -336,6 +336,7 @@ export const ProductDetailModal = ({
 
       {/* Modal de Actualización de Precios */}
       <UpdatePurchaseDetailPricesFormModal
+        key={selectedDetail?.id}
         open={updatePriceModalOpen}
         onOpenChange={handleCloseUpdatePriceModal}
         detail={selectedDetail}
