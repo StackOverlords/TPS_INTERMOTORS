@@ -8,7 +8,6 @@ import {
 } from "@/components/atoms/card";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { type ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { Building2, Edit } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
@@ -18,6 +17,7 @@ import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
+import { parseDateForUi } from "@/utils/dateFormatters";
 
 interface ProductInventoryProps {
   productStockData: ProductStock[];
@@ -59,12 +59,9 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
 
         if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
 
-        const fecha = new Date(rawFecha);
-        const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
         return (
           <div className="flex flex-col gap-1">
-            <span className="font-medium">{fechaFormatted}</span>
+            <span className="font-medium">{parseDateForUi(rawFecha)}</span>
           </div>
         );
       },

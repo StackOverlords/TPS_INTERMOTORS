@@ -2,7 +2,6 @@ import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { type ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
 import {
@@ -18,6 +17,7 @@ import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
+import { parseDateForUi } from "@/utils/dateFormatters";
 
 interface ProductTableOverviewProps {
   productStockData: ProductStock[];
@@ -66,12 +66,9 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
 
         if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
 
-        const fecha = new Date(rawFecha);
-        const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
         return (
           <div className="flex flex-col gap-1">
-            <span className="font-medium">{fechaFormatted}</span>
+            <span className="font-medium">{parseDateForUi(rawFecha)}</span>
           </div>
         );
       },
@@ -183,10 +180,9 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
 
         if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
 
-        const fecha = new Date(rawFecha);
-        const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
-        return <span className="text-gray-400">{fechaFormatted}</span>;
+        return (
+          <span className="text-gray-400">{parseDateForUi(rawFecha)}</span>
+        );
       },
     },
     ...(updatePricesMode
