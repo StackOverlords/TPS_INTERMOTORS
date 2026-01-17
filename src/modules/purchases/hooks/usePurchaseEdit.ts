@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { PurchaseDetail } from "../types/PurchaseDetail";
 import type { FormData } from "./usePurchaseForm";
 import { usePurchaseUpdate } from "./usePurchaseUpdate";
+import { roundTo5Decimals } from "@/utils/decimalUtils";
 
 export function usePurchaseEdit(initialData?: PurchaseDetail) {
   const updateMutation = usePurchaseUpdate();
@@ -26,10 +27,21 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
   useEffect(() => {
     if (initialData) {
       // Manejar ambos formatos de fecha: "2026-01-03T00:00:00" o "2026-01-03 00:00:00"
-      const formattedFecha = initialData.fecha 
-        ? initialData.fecha.split('T')[0].split(' ')[0] 
+      const formattedFecha = initialData.fecha
+        ? initialData.fecha.split('T')[0].split(' ')[0]
         : "";
-      
+
+      // Normalizar detalles con 5 decimales de precisión
+      const normalizedDetalles = (initialData.detalles || []).map((detalle: any) => ({
+        ...detalle,
+        costo: roundTo5Decimals(parseFloat(detalle.costo) || 0),
+        inc_precio_venta: roundTo5Decimals(parseFloat(detalle.inc_precio_venta) || 0),
+        precio_venta: roundTo5Decimals(parseFloat(detalle.precio_venta) || 0),
+        inc_precio_venta_alt: roundTo5Decimals(parseFloat(detalle.inc_precio_venta_alt) || 0),
+        precio_venta_alt: roundTo5Decimals(parseFloat(detalle.precio_venta_alt) || 0),
+        tc_compra: roundTo5Decimals(parseFloat(detalle.tc_compra) || 6.96),
+      }));
+
       setFormData({
         fecha: formattedFecha,
         nro_comprobante: (initialData as any).comprobante || "",
@@ -40,7 +52,7 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
         comentario: (initialData as any).comentarios || "",
         usuario: 1,
         sucursal: 1,
-        detalles: initialData.detalles || [],
+        detalles: normalizedDetalles,
         id_responsable: initialData.responsable?.id || null,
         id_pedido: (initialData as any).id_pedido || null,
       });
@@ -109,23 +121,17 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
               id_producto: detalle.id_producto || detalle.producto?.id?.toString() || '',
               producto: detalle.producto,
               cantidad: parseInt(String(detalle.cantidad), 10),
-              costo: Number(detalle.costo),
-              inc_p_venta: Number(detalle.inc_precio_venta || detalle.inc_p_venta || 0),
-              precio_venta: Number(detalle.precio_venta),
-              inc_p_venta_alt: Number(detalle.inc_precio_venta_alt || detalle.inc_p_venta_alt || 0),
-              precio_venta_alt: Number(detalle.precio_venta_alt),
+              costo: roundTo5Decimals(Number(detalle.costo) || 0),
+              inc_p_venta: roundTo5Decimals(Number(detalle.inc_precio_venta || detalle.inc_p_venta || 0)),
+              precio_venta: roundTo5Decimals(Number(detalle.precio_venta) || 0),
+              inc_p_venta_alt: roundTo5Decimals(Number(detalle.inc_precio_venta_alt || detalle.inc_p_venta_alt || 0)),
+              precio_venta_alt: roundTo5Decimals(Number(detalle.precio_venta_alt) || 0),
               moneda: detalle.moneda || 'BOB ',
               fecha_mod_precio: detalle.fecha_mod_precio || new Date().toISOString(),
-              tc_compra: Number(detalle.tc_compra || 6.96)
+              tc_compra: roundTo5Decimals(Number(detalle.tc_compra || 6.96))
             };
 
-            if (isNaN(transformedDetalle.inc_p_venta)) transformedDetalle.inc_p_venta = 0;
-            if (isNaN(transformedDetalle.inc_p_venta_alt)) transformedDetalle.inc_p_venta_alt = 0;
             if (isNaN(transformedDetalle.cantidad)) transformedDetalle.cantidad = 1;
-            if (isNaN(transformedDetalle.costo)) transformedDetalle.costo = 0;
-            if (isNaN(transformedDetalle.precio_venta)) transformedDetalle.precio_venta = 0;
-            if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
-            if (isNaN(transformedDetalle.tc_compra)) transformedDetalle.tc_compra = 6.96;
 
             return transformedDetalle;
           } else {
@@ -139,23 +145,15 @@ export function usePurchaseEdit(initialData?: PurchaseDetail) {
             const transformedDetalle = {
               id_detalle_compra: null,
               id_producto: detalle.producto?.id || parseInt(detalle.id_producto || '0'),
-              cantidad: Number(cantidad),
-              costo: Number(costo),
-              inc_p_venta: incPVenta,
-              precio_venta: Number(precioVenta),
-              inc_p_venta_alt: incPVentaAlt,
-              precio_venta_alt: Number(precioVentaAlt),
+              cantidad: isNaN(Number(cantidad)) ? 1 : Number(cantidad),
+              costo: roundTo5Decimals(isNaN(Number(costo)) ? 0 : Number(costo)),
+              inc_p_venta: roundTo5Decimals(isNaN(incPVenta) ? 0 : incPVenta),
+              precio_venta: roundTo5Decimals(isNaN(Number(precioVenta)) ? 0 : Number(precioVenta)),
+              inc_p_venta_alt: roundTo5Decimals(isNaN(incPVentaAlt) ? 0 : incPVentaAlt),
+              precio_venta_alt: roundTo5Decimals(isNaN(Number(precioVentaAlt)) ? 0 : Number(precioVentaAlt)),
               moneda: detalle.moneda || 'BOB ',
-              tc_compra: Number(detalle.tc_compra || 6.96)
+              tc_compra: roundTo5Decimals(isNaN(Number(detalle.tc_compra)) ? 6.96 : Number(detalle.tc_compra))
             };
-
-            if (isNaN(transformedDetalle.inc_p_venta)) transformedDetalle.inc_p_venta = 0;
-            if (isNaN(transformedDetalle.inc_p_venta_alt)) transformedDetalle.inc_p_venta_alt = 0;
-            if (isNaN(transformedDetalle.cantidad)) transformedDetalle.cantidad = 1;
-            if (isNaN(transformedDetalle.costo)) transformedDetalle.costo = 0;
-            if (isNaN(transformedDetalle.precio_venta)) transformedDetalle.precio_venta = 0;
-            if (isNaN(transformedDetalle.precio_venta_alt)) transformedDetalle.precio_venta_alt = 0;
-            if (isNaN(transformedDetalle.tc_compra)) transformedDetalle.tc_compra = 6.96;
 
             return transformedDetalle;
           }

@@ -6,6 +6,12 @@ import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 import { useCommand } from "@/keybindings";
 import { CornerUpLeft, Loader2, Save } from "lucide-react";
+import {
+  roundTo5Decimals,
+  multiplyPrecise,
+  addPrecise,
+  dividePrecise,
+} from "@/utils/decimalUtils";
 import React, { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import FormCreatePurchase from "../components/FormCreatePurchase";
@@ -63,25 +69,28 @@ const EditPurchase: React.FC = () => {
         return;
       }
 
-      const costo = parseFloat(product.precio_venta) || 0;
+      const costo = roundTo5Decimals(parseFloat(product.precio_venta) || 0);
       const inc_p_venta = 30;
       const inc_p_venta_alt = 15;
 
-      const precio_venta = costo * (1 + inc_p_venta / 100);
-      const precio_venta_alt = precio_venta * (1 + inc_p_venta_alt / 100);
-      const subtotal = costo * 1;
+      // Calcular precios con precisión
+      const multiplier = addPrecise(1, dividePrecise(inc_p_venta, 100));
+      const precio_venta = multiplyPrecise(costo, multiplier);
+      const multiplierAlt = addPrecise(1, dividePrecise(inc_p_venta_alt, 100));
+      const precio_venta_alt = multiplyPrecise(precio_venta, multiplierAlt);
+      const subtotal = multiplyPrecise(costo, 1);
 
       const newDetail = {
         id_producto: product.id.toString(),
         cantidad: 1,
-        costo: Number(costo.toFixed(2)),
-        inc_p_venta: Number(inc_p_venta.toFixed(2)),
-        precio_venta: Number(precio_venta.toFixed(2)),
-        inc_p_venta_alt: Number(inc_p_venta_alt.toFixed(2)),
-        precio_venta_alt: Number(precio_venta_alt.toFixed(2)),
+        costo: costo,
+        inc_p_venta: roundTo5Decimals(inc_p_venta),
+        precio_venta: precio_venta,
+        inc_p_venta_alt: roundTo5Decimals(inc_p_venta_alt),
+        precio_venta_alt: precio_venta_alt,
         producto: product,
-        subtotal: Number(subtotal.toFixed(2)),
-        tc_compra: exchangeRate,
+        subtotal: subtotal,
+        tc_compra: roundTo5Decimals(exchangeRate),
       };
 
       handleChange("detalles", [...formData.detalles, newDetail]);
