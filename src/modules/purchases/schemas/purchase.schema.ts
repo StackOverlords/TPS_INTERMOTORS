@@ -1,6 +1,21 @@
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema"
 import { z } from "zod"
 
+// Schema para envío de detalles de compra al backend (con precisión de 5 decimales)
+export const PurchaseDetailSendSchema = z.object({
+  id_detalle_compra: z.number().nullable(),
+  id_producto: z.union([z.string(), z.number()]),
+  cantidad: z.number().int().positive(),
+  costo: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))),
+  inc_p_venta: z.number().transform((val) => parseFloat(val.toFixed(5))),
+  precio_venta: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))),
+  inc_p_venta_alt: z.number().transform((val) => parseFloat(val.toFixed(5))),
+  precio_venta_alt: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))),
+  moneda: z.string().optional(),
+  tc_compra: z.number().transform((val) => parseFloat(val.toFixed(5))),
+  fecha_mod_precio: z.string().optional(),
+})
+
 export const CategoriaSchema = z.object({
   id: z.number(),
   categoria: z.string(),
@@ -134,3 +149,4 @@ export type ProductoDetalle = z.infer<typeof ProductoDetalleSchema>
 export type ProveedorDetalle = z.infer<typeof ProveedorDetalleSchema>
 export type ResponsableDetalle = z.infer<typeof ResponsableDetalleSchema>
 export type CategoriaDetalle = z.infer<typeof CategoriaSchema>
+export type PurchaseDetailSend = z.infer<typeof PurchaseDetailSendSchema>
