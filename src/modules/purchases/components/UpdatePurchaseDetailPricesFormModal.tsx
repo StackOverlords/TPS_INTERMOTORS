@@ -151,6 +151,16 @@ const UpdatePurchaseDetailPricesFormModal = ({
       };
 
       const handleKeyDown = (e: KeyboardEvent) => {
+        // Ignorar si el foco está en un input, textarea o elemento editable
+        const target = e.target as HTMLElement;
+        if (
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+
         if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
           e.preventDefault();
           const currentDelta = parseFloat(
@@ -430,8 +440,9 @@ const UpdatePurchaseDetailPricesFormModal = ({
               </div>
             </div>
 
+            {/* Ajuste % - OCULTO por solicitud del cliente
             <div className="space-y-2">
-              <Label>Ajuste de Incremento %</Label>
+              <Label className="text-xs">Ajuste %</Label>
               <div className="relative">
                 <EditableField
                   value={formData.displaySalePriceIncrement}
@@ -451,7 +462,37 @@ const UpdatePurchaseDetailPricesFormModal = ({
                   numberProps={{ step: 0.1 }}
                   showEditIcon={false}
                   focusNextOnEnter={true}
-                  inputClassName="pr-8 font-semibold"
+                  inputClassName="pr-6 font-semibold text-sm"
+                  autoSelect={true}
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none z-10">
+                  %
+                </span>
+              </div>
+            </div>
+            */}
+
+            <div className="space-y-2">
+              <Label>Total s/Costo</Label>
+              <div className="relative">
+                <EditableField
+                  value={getFinalSalePriceIncrement()}
+                  onSubmit={(val) => {
+                    const newTotal = typeof val === "number" ? val : parseFloat(val.toString()) || 0;
+                    // Calcular el delta: nuevo total - base = delta
+                    const delta = newTotal - formData.baseSalePriceIncrement;
+                    handleSalePriceIncrementChange(delta);
+                  }}
+                  type="number"
+                  formatter={(val) =>
+                    typeof val === "number"
+                      ? val.toFixed(1)
+                      : parseFloat(val.toString()).toFixed(1)
+                  }
+                  numberProps={{ step: 0.1 }}
+                  showEditIcon={false}
+                  focusNextOnEnter={true}
+                  inputClassName="pr-6 font-semibold"
                   autoSelect={true}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none z-10">
