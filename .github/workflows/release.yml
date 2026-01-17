@@ -132,7 +132,9 @@ jobs:
             libssl-dev \
             libwebp-dev \
             wget \
-            file
+            file \
+            rpm \
+            rpm2cpio
 
           # Instalar linuxdeploy
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
@@ -238,12 +240,16 @@ jobs:
             const msiSigAsset = assets.find(a => a.name.endsWith('.msi.sig'));
             const appImageAsset = assets.find(a => a.name.endsWith('.AppImage') && !a.name.endsWith('.sig'));
             const appImageSigAsset = assets.find(a => a.name.endsWith('.AppImage.sig'));
+            const rpmAsset = assets.find(a => a.name.endsWith('.rpm') && !a.name.endsWith('.sig'));
+            const rpmSigAsset = assets.find(a => a.name.endsWith('.rpm.sig'));
 
             let result = {
               msiUrl: msiAsset?.browser_download_url || null,
               msiSig: null,
               appImageUrl: appImageAsset?.browser_download_url || null,
-              appImageSig: null
+              appImageSig: null,
+              rpmUrl: rpmAsset?.browser_download_url || null,
+              rpmSig: null
             };
 
             // Download signature contents if they exist
@@ -263,6 +269,11 @@ jobs:
               } catch (e) {
                 console.log('No AppImage signature found');
               }
+            }
+
+            if (rpmSigAsset) {
+              const rpmSigResponse = await fetch(rpmSigAsset.browser_download_url);
+              result.rpmSig = await rpmSigResponse.text();
             }
 
             return result;
@@ -301,6 +312,13 @@ jobs:
               manifest.platforms["linux-x86_64"] = {
                 url: assets.appImageUrl,
                 signature: assets.appImageSig
+              };
+            }
+
+            if (assets.rpmUrl && assets.rpmSig) {
+              manifest.platforms["linux-rpm-x86_64"] = {
+                url: assets.rpmUrl,
+                signature: assets.rpmSig
               };
             }
 

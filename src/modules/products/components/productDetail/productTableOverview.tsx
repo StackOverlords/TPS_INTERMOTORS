@@ -2,7 +2,6 @@ import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { type ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
 import {
@@ -13,11 +12,10 @@ import {
 } from "@/components/atoms/card";
 import { Edit, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
-import { Label } from "@/components/atoms/label";
-import { Switch } from "@/components/atoms/switch";
+import { parseDateForUi } from "@/utils/dateFormatters";
 
 interface ProductTableOverviewProps {
   productStockData: ProductStock[];
@@ -41,7 +39,6 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
   onEditPrice,
 }) => {
   const user = authSDK.getCurrentUser();
-  const [updatePricesMode, setUpdatePricesMode] = useState(false);
 
   // 🔥 Filtrar datos por stock si filterByStock = true
   const filteredData = useMemo(() => {
@@ -66,12 +63,9 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
 
         if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
 
-        const fecha = new Date(rawFecha);
-        const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
         return (
           <div className="flex flex-col gap-1">
-            <span className="font-medium">{fechaFormatted}</span>
+            <span className="font-medium">{parseDateForUi(rawFecha)}</span>
           </div>
         );
       },
@@ -183,35 +177,30 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
 
         if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
 
-        const fecha = new Date(rawFecha);
-        const fechaFormatted = format(fecha, "dd-MM-yyyy");
-
-        return <span className="text-gray-400">{fechaFormatted}</span>;
+        return (
+          <span className="text-gray-400">{parseDateForUi(rawFecha)}</span>
+        );
       },
     },
-    ...(updatePricesMode
-      ? [
-          {
-            id: "actions",
-            header: "Acciones",
-            size: 80,
-            minSize: 80,
-            enableHiding: false,
-            cell: ({ row }: { row: any }) => (
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => onEditPrice?.(row.original)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-            ),
-          } as ColumnDef<ProductStock>,
-        ]
-      : []),
+    {
+      id: "actions",
+      header: "Acciones",
+      size: 80,
+      minSize: 80,
+      enableHiding: false,
+      cell: ({ row }: { row: any }) => (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onEditPrice?.(row.original)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   const { table } = useCustomTable({
@@ -250,22 +239,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
               </Badge>
             )}
           </span>
-          <div className="flex gap-2 items-center">
-            <Badge variant="secondary">Stock Total: {stockTotal}</Badge>
-            <div className="flex items-center gap-2 h-8 px-2 rounded-sm border-border border">
-              <Switch
-                id="update-prices"
-                checked={updatePricesMode}
-                onCheckedChange={setUpdatePricesMode}
-              />
-              <Label
-                className="font-bold cursor-pointer"
-                htmlFor="update-prices"
-              >
-                Act. Precio
-              </Label>
-            </div>
-          </div>
+          <Badge variant="secondary">Stock Total: {stockTotal}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">

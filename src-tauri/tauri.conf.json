@@ -1,77 +1,85 @@
 {
-	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-	"productName": "Intermotors",
-	"version": "1.1.41",
-	"identifier": "com.intermotors.tps",
-	"build": {
-		"frontendDist": "../dist",
-		"devUrl": "http://localhost:5173",
-		"beforeDevCommand": "npm run dev",
-		"beforeBuildCommand": "npm run build"
-	},
-	"app": {
-		"windows": [
-			{
-				"title": "Intermotors",
-				"width": 1920,
-				"height": 1080,
-				"resizable": true,
-				"fullscreen": false,
-				"decorations": true
-			}
-		],
-		"security": {
-			"csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://* https://*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://* https://*; frame-src 'self' blob:; media-src 'self' blob: data:;",
-			"capabilities": ["default"]
-		},
-		"withGlobalTauri": true
-	},
-	"bundle": {
-		"active": true,
-		"targets": ["appimage", "msi", "nsis"],
-		"createUpdaterArtifacts": true,
-		"icon": [
-			"icons/32x32.png",
-			"icons/128x128.png",
-			"icons/128x128@2x.png",
-			"icons/icon.icns",
-			"icons/icon.ico"
-		],
-		"resources": [],
-		"linux": {
-			"appimage": {
-				"bundleMediaFramework": false
-			}
-		},
-		"windows": {
-			"webviewInstallMode": {
-				"type": "downloadBootstrapper"
-			},
-			"nsis": {
-				"installerIcon": "icons/icon.ico",
-				"installMode": "currentUser"
-			}
-		}
-	},
-	"plugins": {
-		"updater": {
-			"endpoints": [
-				"https://github.com/StackOverlords/TPS_INTERMOTORS/releases/latest/download/latest-t1.json"
-			],
-			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4N0RCRUYzNzRBODAzQ0YKUldUUEE2aDA4NzU5T1B5K0JYQ1Brcy9hZVRhQzltNXRkWjIwTWl1Y3BJWE1HSXphSndWMWNpcU4K"
-		},
-		"sql": {
-			"preload": ["sqlite:app.db"],
-			"scope": {
-				"allowed": ["sqlite:app.db"]
-			}
-		},
-		"dialog": null,
-		"fs": {
-			"requireLiteralLeadingDot": false
-		},
-		"shell": null,
-		"store": null,
-		"http": null
-	}
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Intermotors",
+  "version": "1.1.43",
+  "identifier": "com.intermotors.tps",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Intermotors",
+        "width": 1920,
+        "height": 1080,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://* https://*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://* https://*; frame-src 'self' blob:; media-src 'self' blob: data:;",
+      "capabilities": ["default"]
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage", "msi", "nsis", "rpm"],
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "libappindicator-gtk3",
+          "librsvg2",
+          "openssl"
+        ]
+      }
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/StackOverlords/TPS_INTERMOTORS/releases/latest/download/latest-t1.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4N0RCRUYzNzRBODAzQ0YKUldUUEE2aDA4NzU5T1B5K0JYQ1Brcy9hZVRhQzltNXRkWjIwTWl1Y3BJWE1HSXphSndWMWNpcU4K"
+    },
+    "sql": {
+      "preload": ["sqlite:app.db"],
+      "scope": {
+        "allowed": ["sqlite:app.db"]
+      }
+    },
+    "dialog": null,
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "shell": null,
+    "store": null,
+    "http": null
+  }
 }

@@ -7,15 +7,16 @@ import {
   DialogTitle,
 } from "@/components/atoms/dialog";
 import { Label } from "@/components/atoms/label";
-import { Slider } from "@/components/atoms/slider";
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, Info, Loader2, X } from "lucide-react";
 import { useUpdatePriceForm } from "../hooks/useUpdatePriceForm";
 import { useUpdatePurchaseDetailPrices } from "../hooks/useUpdatePurchaseDetailPrices";
 import { format } from "date-fns";
 import type { ProductStock } from "@/modules/products/types/productStock";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect, useState, useLayoutEffect } from "react";
 import { EditableField } from "@/components/common/EditableField";
+import { Badge } from "@/components/atoms/badge";
+import { Separator } from "@/components/atoms/separator";
 
 interface UpdatePurchaseDetailPricesFormModalProps {
   open: boolean;
@@ -42,11 +43,33 @@ const UpdatePurchaseDetailPricesFormModal = ({
     handleAlternativeSalePriceChange,
     handleAlternativeSalePriceIncrementChange,
     handleAssignmentChange,
+    getFinalSalePriceIncrement,
   } = useUpdatePriceForm(detail);
 
   const { mutate: updatePrices, isPending } = useUpdatePurchaseDetailPrices();
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startDeltaRef = useRef(0);
+  const [isSliderActive, setIsSliderActive] = useState(false);
 
-  // Obtener todos los detalles únicos (sin duplicados por ID)
+  // Guardar la función en una ref para mantener referencia estable
+  const handleIncrementSliderRef = useRef(handleIncrementSlider);
+
+  // Actualizar la ref cuando cambie la función
+  useEffect(() => {
+    handleIncrementSliderRef.current = handleIncrementSlider;
+  }, [handleIncrementSlider]);
+
+  // Resetear el estado cuando se cierra el modal
+  useEffect(() => {
+    if (!open) {
+      setIsSliderActive(false);
+      isDraggingRef.current = false;
+    }
+  }, [open]);
+
+  // Obtener todos los detalles únicos
   const allUniqueDetails = useMemo(() => {
     const allIds = new Set<number>();
     const uniqueDetails: ProductStock[] = [];
@@ -61,23 +84,122 @@ const UpdatePurchaseDetailPricesFormModal = ({
     return uniqueDetails;
   }, [currentBranchDetails, otherBranchesDetails]);
 
+  // Custom slider handler - VERSIÓN COMPLETAMENTE CORREGIDA
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    let rafId: number;
+
+    const setup = () => {
+      const slider = sliderRef.current;
+      if (!slider) {
+        // Espera al próximo frame si aún no existe
+        rafId = requestAnimationFrame(setup);
+        return;
+      }
+
+      // 🔹 AQUÍ el DOM YA EXISTE
+
+      // Función para aplicar snap al 0 (si está cerca, lo pone en 0)
+      const applySnapToZero = (value: number): number => {
+        const snapThreshold = 3; // Si está entre -3 y +3, snap a 0
+        if (Math.abs(value) <= snapThreshold) return 0;
+        return value;
+      };
+
+      const handleMouseDown = (e: MouseEvent) => {
+        isDraggingRef.current = true;
+        startXRef.current = e.clientX;
+        const currentValue = parseFloat(
+          slider.getAttribute("data-slider-value") || "0"
+        );
+        startDeltaRef.current = currentValue;
+        setIsSliderActive(true);
+        e.preventDefault();
+      };
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDraggingRef.current) return;
+        const deltaX = e.clientX - startXRef.current;
+        // Shift = precisión (±1%), Normal = (±5%)
+        const isPrecisionMode = e.shiftKey;
+        const stepSize = isPrecisionMode ? 1 : 5;
+        const pixelsPerStep = isPrecisionMode ? 8 : 15;
+        const steps = Math.round(deltaX / pixelsPerStep);
+        const newValue = startDeltaRef.current + steps * stepSize;
+        // Solo aplicar snap si NO está en modo precisión
+        handleIncrementSliderRef.current([isPrecisionMode ? newValue : applySnapToZero(newValue)]);
+      };
+
+      const handleMouseUp = () => {
+        isDraggingRef.current = false;
+        setIsSliderActive(false);
+      };
+
+      const handleWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        const currentDelta = parseFloat(
+          slider.getAttribute("data-slider-value") || "0"
+        );
+        const direction = e.deltaY < 0 ? 1 : -1;
+        // Shift = precisión (±1%), Normal = (±5%)
+        const isPrecisionMode = e.shiftKey;
+        const stepSize = isPrecisionMode ? 1 : 5;
+        const newValue = currentDelta + direction * stepSize;
+        // Solo aplicar snap si NO está en modo precisión
+        handleIncrementSliderRef.current([isPrecisionMode ? newValue : applySnapToZero(newValue)]);
+      };
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          e.preventDefault();
+          const currentDelta = parseFloat(
+            slider.getAttribute("data-slider-value") || "0"
+          );
+          const direction = e.key === "ArrowRight" ? 1 : -1;
+          // Shift = precisión (±1%), Normal = (±5%)
+          const isPrecisionMode = e.shiftKey;
+          const stepSize = isPrecisionMode ? 1 : 5;
+          const newValue = currentDelta + direction * stepSize;
+          // Solo aplicar snap si NO está en modo precisión
+          handleIncrementSliderRef.current([isPrecisionMode ? newValue : applySnapToZero(newValue)]);
+        }
+      };
+
+      slider.addEventListener("mousedown", handleMouseDown);
+      slider.addEventListener("wheel", handleWheel, { passive: false });
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        slider.removeEventListener("mousedown", handleMouseDown);
+        slider.removeEventListener("wheel", handleWheel);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    };
+
+    setup();
+
+    return () => cancelAnimationFrame(rafId);
+  }, [open]);
+
   // Calcular qué detalles se van a actualizar
   const getDetailsToUpdate = (): number[] => {
     if (!detail) return [];
 
     if (formData.assignToAllBranches) {
-      // Todos los detalles únicos de ambas tablas
       return allUniqueDetails.map((d) => d.id);
     }
 
     if (formData.assignToAllBalances) {
-      // Solo detalles según el tipo de sucursal
       return branchType === "current"
         ? currentBranchDetails.map((d) => d.id)
         : otherBranchesDetails.map((d) => d.id);
     }
 
-    // Solo el detalle seleccionado
     return [detail.id];
   };
 
@@ -85,12 +207,13 @@ const UpdatePurchaseDetailPricesFormModal = ({
     if (!detail) return;
 
     const detailsIds = getDetailsToUpdate();
+    const finalIncrement = getFinalSalePriceIncrement();
 
     updatePrices(
       {
         precio_venta: formData.salePrice,
         precio_venta_alt: formData.alternativeSalePrice,
-        incremento_p_venta: formData.salePriceIncrement,
+        incremento_p_venta: finalIncrement,
         incremento_p_venta_alt: formData.alternativeSalePriceIncrement,
         detalles: detailsIds,
       },
@@ -115,24 +238,40 @@ const UpdatePurchaseDetailPricesFormModal = ({
 
   if (!detail) return null;
 
+  const hasAssignmentSelected =
+    formData.assignToAllBalances || formData.assignToAllBranches;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-2xl">
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-2xl"
+        aria-describedby="update-prices-description"
+      >
+        <p id="update-prices-description" className="sr-only">
+          Formulario para actualizar precios y aplicar incrementos.
+        </p>
         <DialogHeader>
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1">
               <DialogTitle className="text-lg">Actualizar Precios</DialogTitle>
-              <div className="flex flex-col gap-2 mt-2">
-                <p className="text-xs text-muted-foreground">
-                  Última modificación:{" "}
-                  {detail.fecha_actualizacion
-                    ? format(
-                        new Date(detail.fecha_actualizacion),
-                        "dd/MM/yyyy HH:mm"
-                      )
-                    : "Sin modificaciones previas"}
-                </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="text-xs">
+                  Nro. Adquisición: {detail.nro_adquisicion}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  Sucursal: {detail.sucursal}
+                </Badge>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Última modificación:{" "}
+                {detail.fecha_actualizacion
+                  ? format(
+                      new Date(detail.fecha_actualizacion),
+                      "dd/MM/yyyy HH:mm"
+                    )
+                  : "Sin modificaciones previas"}
+              </p>
             </div>
             <Button
               variant="ghost"
@@ -171,22 +310,90 @@ const UpdatePurchaseDetailPricesFormModal = ({
           </div>
 
           {/* Incremento Slider */}
-          <div className="space-y-3 bg-muted/20 p-4 rounded-lg border border-border">
-            <Label>Incremento de Precio</Label>
-            <Slider
-              value={[formData.incrementSlider]}
-              onValueChange={handleIncrementSlider}
-              min={-50}
-              max={200}
-              step={0.1}
-              className="w-full"
-            />
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">-50%</span>
-              <span className="text-base font-semibold text-foreground">
+              <Label>Ajuste de Incremento (Delta)</Label>
+              <span
+                className={`text-base font-semibold tabular-nums transition-all ${
+                  isSliderActive ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {formData.incrementSlider >= 0 ? "+" : ""}
                 {formData.incrementSlider.toFixed(2)}%
               </span>
-              <span className="text-xs text-muted-foreground">+200%</span>
+            </div>
+            <div
+              ref={sliderRef}
+              data-slider-value={formData.incrementSlider}
+              className={`relative h-10 bg-muted/50 rounded-md border cursor-ew-resize select-none transition-all ${
+                isSliderActive
+                  ? "border-foreground/30"
+                  : "border-border hover:border-foreground/20"
+              }`}
+            >
+              {/* Track de fondo */}
+              <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 h-1 bg-border rounded-full" />
+
+              {/* Marcas visuales en valores clave usando la misma escala asintótica */}
+              {/* ±100: (1 - 1/2) * 44 = 22% */}
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-muted-foreground/30 rounded-full" style={{ left: "calc(50% - 22%)" }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-muted-foreground/30 rounded-full" style={{ left: "calc(50% + 22%)" }} />
+              {/* ±50: (1 - 1/1.5) * 44 ≈ 14.67% */}
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-2 bg-muted-foreground/20 rounded-full" style={{ left: "calc(50% - 14.67%)" }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-2 bg-muted-foreground/20 rounded-full" style={{ left: "calc(50% + 14.67%)" }} />
+
+              {/* Marcador central (cero) - más prominente */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-5 bg-muted-foreground/50 rounded-full" />
+
+              {/* Fill desde el centro hasta el thumb - escala no lineal */}
+              {formData.incrementSlider !== 0 && (() => {
+                const value = formData.incrementSlider;
+                // Función asintótica: posición = (1 - 1/(1 + |valor|/100)) * 44
+                // Nunca llega al 44%, permite valores infinitos
+                const visualPos = (1 - 1 / (1 + Math.abs(value) / 100)) * 44;
+                return (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 h-1 bg-foreground/60 rounded-full transition-all duration-100"
+                    style={{
+                      left: value > 0 ? "50%" : `calc(50% - ${visualPos}%)`,
+                      width: `${visualPos}%`,
+                    }}
+                  />
+                );
+              })()}
+
+              {/* Thumb que se mueve - escala no lineal */}
+              {(() => {
+                const value = formData.incrementSlider;
+                // Misma función asintótica con signo
+                const sign = value >= 0 ? 1 : -1;
+                const visualPos = sign * (1 - 1 / (1 + Math.abs(value) / 100)) * 44;
+                return (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 z-20 transition-all duration-100"
+                    style={{
+                      left: `calc(50% + ${visualPos}%)`,
+                    }}
+                  >
+                    <div
+                      className={`relative -translate-x-1/2 w-4 h-7 rounded-md border shadow-sm transition-all flex items-center justify-center ${
+                        isSliderActive
+                          ? "bg-foreground border-foreground scale-105"
+                          : "bg-background border-foreground/30 hover:border-foreground/50"
+                      }`}
+                    >
+                      {/* Líneas de grip */}
+                      <div className="flex gap-px">
+                        <div className={`w-px h-3 rounded-full ${isSliderActive ? "bg-background/50" : "bg-foreground/30"}`} />
+                        <div className={`w-px h-3 rounded-full ${isSliderActive ? "bg-background/50" : "bg-foreground/30"}`} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="flex justify-center text-[11px] text-muted-foreground">
+              <span>Arrastra, scroll o flechas ← → (±5%) · Shift para precisión (±1%)</span>
             </div>
           </div>
 
@@ -224,10 +431,10 @@ const UpdatePurchaseDetailPricesFormModal = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Incremento sobre costo %</Label>
+              <Label>Ajuste de Incremento %</Label>
               <div className="relative">
                 <EditableField
-                  value={formData.salePriceIncrement}
+                  value={formData.displaySalePriceIncrement}
                   onSubmit={(val) =>
                     handleSalePriceIncrementChange(
                       typeof val === "number"
@@ -325,7 +532,6 @@ const UpdatePurchaseDetailPricesFormModal = ({
 
             {branchType === "current" ? (
               <>
-                {/* Asignar a todos los saldos de sucursal actual */}
                 <div
                   className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() =>
@@ -355,7 +561,6 @@ const UpdatePurchaseDetailPricesFormModal = ({
                   </div>
                 </div>
 
-                {/* Asignar a todas las sucursales */}
                 <div
                   className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() =>
@@ -387,7 +592,6 @@ const UpdatePurchaseDetailPricesFormModal = ({
               </>
             ) : (
               <>
-                {/* Asignar a todas las demás sucursales */}
                 <div
                   className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() =>
@@ -417,7 +621,6 @@ const UpdatePurchaseDetailPricesFormModal = ({
                   </div>
                 </div>
 
-                {/* Asignar a todas las sucursales */}
                 <div
                   className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 cursor-pointer transition-colors"
                   onClick={() =>
@@ -450,8 +653,19 @@ const UpdatePurchaseDetailPricesFormModal = ({
             )}
           </div>
 
-          {/* Info Alert */}
-          {(formData.assignToAllBalances || formData.assignToAllBranches) && (
+          <Separator />
+          {/* Info inicial */}
+          {!hasAssignmentSelected && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-3 rounded-lg flex gap-2">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                Los cambios solo se aplicarán al detalle seleccionado.
+              </p>
+            </div>
+          )}
+
+          {/* Info Alert cuando hay selección */}
+          {hasAssignmentSelected && (
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-3 rounded-lg flex gap-2">
               <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700 dark:text-blue-300">
@@ -476,11 +690,8 @@ const UpdatePurchaseDetailPricesFormModal = ({
           >
             Cancelar
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isPending}
-            className="bg-black hover:bg-black/90"
-          >
+          <Button onClick={handleSave} disabled={isPending}>
+            {isPending && <Loader2 className="size-4 animate-spin" />}
             {isPending ? "Guardando..." : "Guardar Cambios"}
           </Button>
         </div>
