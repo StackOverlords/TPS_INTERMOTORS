@@ -164,10 +164,12 @@ jobs:
         shell: bash
         run: |
           VARIANT="${{ steps.extract_variant.outputs.VARIANT }}"
-          # Replace any existing latest.json or latest-t1.json or latest-t2.json with the correct variant
-          sed -i 's|latest-t[12]\.json\|latest\.json|latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
+          # Replace latest-t1.json or latest-t2.json with the correct variant
+          sed -i 's|latest-t[12]\.json|latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
+          # Also replace latest.json if it exists (fallback case)
+          sed -i 's|/latest\.json|/latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
           echo "Updated updater endpoint to: latest-${VARIANT}.json"
-          grep -A 2 '"updater"' src-tauri/tauri.conf.json || true
+          grep -A 5 '"updater"' src-tauri/tauri.conf.json || true
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0.5.15
