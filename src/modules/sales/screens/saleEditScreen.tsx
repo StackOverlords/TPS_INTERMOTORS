@@ -137,6 +137,7 @@ const SaleEditScreen = () => {
     data: saleData,
     isLoading: isLoadingSale,
     isError: isErrorSale,
+    refetch: refetchSale,
   } = useSaleGetById(effectiveSaleId ?? 0);
 
   const {
@@ -201,6 +202,7 @@ const SaleEditScreen = () => {
       porcentaje_descuento: roundTo5Decimals(d.porcentaje_descuento),
       precio: roundTo5Decimals(d.precio),
       orden: d.orden ?? index + 1,
+      cantidad_dev: d.cantidad_dev ?? 0,
       producto: {
         id: d.producto.id,
         categoria: d.producto.categoria?.categoria ?? null,
@@ -486,6 +488,7 @@ const SaleEditScreen = () => {
             title: "Venta Modificada",
             description: `Venta modificada con éxito`,
           });
+          refetchSale();
           loadFormData(updatedData);
         },
         onError: (error: unknown) => {
@@ -710,7 +713,7 @@ const SaleEditScreen = () => {
                   "h-full gap-2",
                   configuraciones.formulario === "top" && "flex flex-col",
                   configuraciones.formulario === "left" &&
-                  "flex flex-col md:grid md:grid-cols-3"
+                    "flex flex-col md:grid md:grid-cols-3"
                 )}
               >
                 {/* Formulario de información de venta*/}
@@ -726,8 +729,9 @@ const SaleEditScreen = () => {
                     className={cn(
                       "shadow-none",
                       configuraciones.formulario === "top" &&
-                      "h-full flex-shrink-0",
-                      configuraciones.formulario === "left" && "h-auto md:h-full"
+                        "h-full flex-shrink-0",
+                      configuraciones.formulario === "left" &&
+                        "h-auto md:h-full"
                     )}
                   >
                     <CardContent className="p-2 sm:p-3">
@@ -735,7 +739,7 @@ const SaleEditScreen = () => {
                         className={cn(
                           "grid gap-2",
                           configuraciones.formulario === "top" &&
-                          "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
+                            "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
                           configuraciones.formulario === "left" && "grid-cols-2"
                         )}
                       >
@@ -862,7 +866,9 @@ const SaleEditScreen = () => {
                         </div>
                         {configuraciones.inputs && (
                           <div>
-                            <Label htmlFor="forma_venta">Forma de venta *</Label>
+                            <Label htmlFor="forma_venta">
+                              Forma de venta *
+                            </Label>
                             <Controller
                               name="forma_venta"
                               control={control}
@@ -1025,7 +1031,7 @@ const SaleEditScreen = () => {
                           className={cn(
                             configuraciones.formulario === "top" && "",
                             configuraciones.formulario === "left" &&
-                            "md:col-span-2"
+                              "md:col-span-2"
                           )}
                         >
                           <Label htmlFor="comentarios">Comentarios</Label>
@@ -1047,8 +1053,8 @@ const SaleEditScreen = () => {
                     "flex-1 min-h-0",
                     configuraciones.formulario === "top" && "",
                     configuraciones.formulario === "top" &&
-                    configuraciones.inputs &&
-                    "",
+                      configuraciones.inputs &&
+                      "",
                     configuraciones.formulario === "left" && "col-span-2"
                   )}
                 >
@@ -1056,7 +1062,7 @@ const SaleEditScreen = () => {
                     className={cn(
                       "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
                       configuraciones.selector_mode === "embebed" &&
-                      "md:min-h-screen"
+                        "md:min-h-screen"
                     )}
                   >
                     <ResizablePanelGroup

@@ -1,5 +1,5 @@
 import { Button } from "@/components/atoms/button";
-import { Trash2, X } from "lucide-react";
+import { Trash2, X, Ban } from "lucide-react";
 import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { formatCell } from "@/utils/formatCell";
@@ -13,6 +13,9 @@ import ConfirmationModal from "@/components/common/confirmationModal";
 import { useDeleteSaleDetail } from "../../hooks/useDeleteSaleDetail";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
+import { Badge } from "@/components/atoms/badge";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { cn } from "@/lib/utils";
 
 type SaleDetailsEditingTableProps = {
   products: SaleUpdateDetailUI[];
@@ -41,11 +44,9 @@ function SaleDetailsEditingTableInner(
 ) {
   const user = authSDK.getCurrentUser();
 
-  // refs para inputs de cantidad
   const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
   const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-  // Exponer métodos para enfocar inputs
   useImperativeHandle(
     ref,
     () => ({
@@ -63,7 +64,6 @@ function SaleDetailsEditingTableInner(
             input.select();
           }, 50);
         } else {
-          // Fallback: si no encuentra el input específico, enfoca el primero
           if (firstQuantityInputRef.current) {
             firstQuantityInputRef.current.focus();
             firstQuantityInputRef.current.select();
@@ -76,11 +76,9 @@ function SaleDetailsEditingTableInner(
 
   const handleDeleteSuccess = (_data: unknown, detailId: number) => {
     const deletedItem = products.find((p) => p.id_detalle_venta === detailId);
-
     if (deletedItem) {
       removeItem(deletedItem.id_producto);
     }
-
     showSuccessToast({
       title: "Detalle de venta eliminado",
       description: `El detalle de venta #${detailId} se eliminó exitosamente`,
@@ -117,7 +115,6 @@ function SaleDetailsEditingTableInner(
       removeItem(item.id_producto);
       return;
     }
-
     handleOpenDeleteAlert(item.id_detalle_venta ?? undefined);
   };
 
@@ -130,9 +127,17 @@ function SaleDetailsEditingTableInner(
         size: 30,
         minSize: 20,
         enableSorting: true,
-        cell: ({ getValue }) => (
-          <div className="text-center">{getValue<number>()}</div>
-        ),
+        cell: ({ getValue, row }) => {
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === row.original.cantidad;
+          return (
+            <div
+              className={`text-center ${isFullyReturned ? "text-gray-400 italic" : ""}`}
+            >
+              {getValue<number>()}
+            </div>
+          );
+        },
       },
       // {
       //     accessorKey: "id_detalle_venta",
@@ -165,12 +170,29 @@ function SaleDetailsEditingTableInner(
         header: "Cód Int.",
         size: 45,
         minSize: 20,
+        cell: ({ getValue, row }) => {
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === row.original.cantidad;
+          return (
+            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+              {getValue<number>()}
+            </div>
+          );
+        },
       },
       {
         accessorFn: (row) => row.producto.codigo_oem,
         id: "codigo_oem",
         header: "Cód. OEM",
-        cell: ({ getValue }) => <div>{formatCell(getValue<string>())}</div>,
+        cell: ({ getValue, row }) => {
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === row.original.cantidad;
+          return (
+            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+              {formatCell(getValue<string>())}
+            </div>
+          );
+        },
       },
       {
         accessorFn: (row) => row.producto.descripcion,
@@ -179,45 +201,98 @@ function SaleDetailsEditingTableInner(
         size: 300,
         minSize: 250,
         enableHiding: false,
-        cell: ({ getValue }) => (
-          <div className="flex items-center">
-            <h3 className="font-medium text-gray-700 truncate">
-              {getValue<string>()}
-            </h3>
-          </div>
-        ),
+        cell: ({ getValue, row }) => {
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === row.original.cantidad;
+
+          return (
+            <div
+              className={`flex items-center gap-2 ${isFullyReturned ? "text-gray-400 italic" : "text-gray-700"}`}
+            >
+              <h3 className="font-medium truncate">{getValue<string>()}</h3>
+              {isFullyReturned && (
+                <Badge
+                  variant="info"
+                  className="text-xs px-1.5 py-0.5 whitespace-nowrap flex items-center gap-1"
+                >
+                  Devuelto
+                </Badge>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "cantidad",
         id: "cantidad",
         header: "Cantidad",
-        minSize: 110,
+        minSize: 140,
         cell: ({ getValue, row }) => {
           const cantidad = getValue<number>();
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const cantidadReal = cantidad - cantidadDev;
           const productId = row.original.id_producto;
           const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
+
+          const hasReturns = cantidadDev > 0;
+          const isFullyReturned = cantidadDev === cantidad;
+
           return (
-            <EditableQuantity
-              value={cantidad}
-              className="w-full"
-              buttonClassName="w-full"
-              onSubmit={(value) => updateQuantity(productId, value as number)}
-              validate={(val) => {
-                const num = parseInt(val);
-                return !isNaN(num) && num > 0;
-              }}
-              inputRef={(el) => {
-                if (refToAssign) {
-                  refToAssign.current = el;
-                }
-                if (el) {
-                  quantityInputRefs.current.set(productId, el);
-                } else {
-                  quantityInputRefs.current.delete(productId);
-                }
-              }}
-              disabled={isReadOnly}
-            />
+            <div
+              className={`flex items-center gap-2 w-full ${isFullyReturned ? "text-gray-400 italic" : ""}`}
+            >
+              <EditableQuantity
+                value={cantidadReal}
+                className={cn("w-full", hasReturns && "text-gray-400 italic")}
+                buttonClassName="w-full"
+                onSubmit={(value) => updateQuantity(productId, value as number)}
+                validate={(val) => {
+                  const num = parseInt(val);
+                  return !isNaN(num) && num > 0;
+                }}
+                inputRef={(el) => {
+                  if (refToAssign) {
+                    refToAssign.current = el;
+                  }
+                  if (el) {
+                    quantityInputRefs.current.set(productId, el);
+                  } else {
+                    quantityInputRefs.current.delete(productId);
+                  }
+                }}
+                disabled={isReadOnly || hasReturns}
+              />
+
+              {hasReturns && (
+                <TooltipWrapper
+                  side="bottom"
+                  tooltip={
+                    <div className="flex flex-col gap-1">
+                      <p className="font-semibold text-xs">
+                        {isFullyReturned
+                          ? "Totalmente devuelto"
+                          : "Devolución parcial"}
+                      </p>
+                      <p className="text-xs">
+                        Original: <span className="font-bold">{cantidad}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isFullyReturned
+                          ? "Este producto fue devuelto completamente"
+                          : "Cantidad bloqueada por devolución"}
+                      </p>
+                    </div>
+                  }
+                >
+                  <Badge
+                    variant="secondary"
+                    className="text-xs px-1.5 py-0.5 whitespace-nowrap flex items-center gap-1"
+                  >
+                    Dev: {cantidadDev}
+                  </Badge>
+                </TooltipWrapper>
+              )}
+            </div>
           );
         },
       },
@@ -229,15 +304,20 @@ function SaleDetailsEditingTableInner(
         cell: ({ getValue, row }) => {
           const basePrice = getValue<number>();
           const product = row.original.producto;
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === row.original.cantidad;
+
           return (
-            <EditablePrice
-              value={basePrice}
-              onSubmit={(value) => updatePrice(product.id, value as number)}
-              className="w-full"
-              buttonClassName="w-full"
-              numberProps={{ min: 0, step: 0.01 }}
-              disabled={isReadOnly}
-            />
+            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+              <EditablePrice
+                value={basePrice}
+                onSubmit={(value) => updatePrice(product.id, value as number)}
+                className="w-full"
+                buttonClassName="w-full"
+                numberProps={{ min: 0, step: 0.01 }}
+                disabled={isReadOnly || isFullyReturned}
+              />
+            </div>
           );
         },
       },
@@ -248,18 +328,24 @@ function SaleDetailsEditingTableInner(
         cell: ({ row }) => {
           const product = row.original.producto;
           const item = row.original;
-          const subtotal = item.cantidad * item.precio;
+          const cantidadDev = item.cantidad_dev ?? 0;
+          const cantidadReal = item.cantidad - cantidadDev;
+          const subtotal = cantidadReal * item.precio;
+          const isFullyReturned = cantidadDev === item.cantidad;
+
           return (
-            <EditablePrice
-              value={subtotal}
-              onSubmit={(value) =>
-                updateCustomSubtotal(product.id, value as number)
-              }
-              className="w-full"
-              inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
-              numberProps={{ min: 0, step: 0.01 }}
-              disabled={isReadOnly}
-            />
+            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+              <EditablePrice
+                value={subtotal}
+                onSubmit={(value) =>
+                  updateCustomSubtotal(product.id, value as number)
+                }
+                className="w-full"
+                inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
+                numberProps={{ min: 0, step: 0.01 }}
+                disabled={isReadOnly || isFullyReturned}
+              />
+            </div>
           );
         },
       },
@@ -267,9 +353,15 @@ function SaleDetailsEditingTableInner(
         accessorFn: (row) => row.producto.marca,
         id: "marca",
         header: "Marca",
-        cell: ({ getValue }) => {
+        cell: ({ getValue, row }) => {
           const marca = getValue<string>();
-          return <span>{marca}</span>;
+          const cantidadDev = row.original.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === row.original.cantidad;
+          return (
+            <span className={isFullyReturned ? "text-gray-400 italic" : ""}>
+              {marca}
+            </span>
+          );
         },
       },
       {
@@ -280,6 +372,25 @@ function SaleDetailsEditingTableInner(
         cell: ({ row }) => {
           const item = row.original;
           const isNew = !row.original.id_detalle_venta;
+          const cantidadDev = item.cantidad_dev ?? 0;
+          const isFullyReturned = cantidadDev === item.cantidad;
+
+          if (isFullyReturned && !isNew) {
+            return (
+              <div className="flex items-center justify-center text-gray-400 italic">
+                <Button
+                  disabled={true}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="size-7"
+                >
+                  <Ban className="size-3" />
+                </Button>
+              </div>
+            );
+          }
+
           return (
             <div className="flex items-center justify-center">
               <Button
@@ -303,25 +414,18 @@ function SaleDetailsEditingTableInner(
         },
       },
     ],
-    [removeItem, updateQuantity, updatePrice, updateCustomSubtotal]
+    [removeItem, updateQuantity, updatePrice, updateCustomSubtotal, isReadOnly]
   );
 
   const { table } = useCustomTable({
     data: products,
     columns,
-
-    // Configuración de características
     enableSorting: true,
     enableColumnResizing: true,
     enableColumnOrdering: true,
-
-    // Configuración de resize
     columnResizeMode: "onChange",
     defaultSortBy: [{ id: "orden", desc: false }],
-
     hiddenColumns: ["id_detalle_venta"],
-
-    // Persistencia con key única por usuario
     persistenceKey: `shopping-cart-table-products-edit-${user?.name}`,
     sharedPersistenceKey: `shopping-cart-table-products-shared-${user?.name}`,
     persistColumnVisibility: true,
@@ -350,7 +454,6 @@ function SaleDetailsEditingTableInner(
   );
 }
 
-// Exportar con forwardRef tipado correctamente
 const SaleDetailsEditingTable = forwardRef(
   SaleDetailsEditingTableInner
 ) as React.ForwardRefExoticComponent<
