@@ -7,13 +7,23 @@ export const UpdatePricesResponseSchema = z.union([
     updated_count: z.number().optional(),
     affected_products: z.number().optional(),
   }),
-  z.string().transform((val) => {
-    // Si la API devuelve un string vacío (o cualquier string), asumimos éxito
-    return {
-      success: true,
-      message: val || 'Precios actualizados correctamente',
-      updated_count: 0,
-      affected_products: 0,
-    };
-  }),
+  z.string().transform((val) => ({
+    success: true,
+    message: val || 'Precios actualizados correctamente',
+    updated_count: 0,
+    affected_products: 0,
+  })),
+  // Manejar respuestas vacías/null del backend
+  z.null().transform(() => ({
+    success: true,
+    message: 'Precios actualizados correctamente',
+    updated_count: 0,
+    affected_products: 0,
+  })),
+  z.undefined().transform(() => ({
+    success: true,
+    message: 'Precios actualizados correctamente',
+    updated_count: 0,
+    affected_products: 0,
+  })),
 ]);
