@@ -62,6 +62,18 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
         typeof product.cantidad === "string"
           ? parseFloat(product.cantidad)
           : product.cantidad;
+      const cantidadReal = cantidad - product.cantidad_dev;
+      return total + (isFinite(cantidadReal) ? cantidadReal : 0);
+    }, 0);
+  }, [filteredSaleItems]);
+
+  // Calcular total de devoluciones
+  const totalDevoluciones = useMemo(() => {
+    return filteredSaleItems.reduce((total, product) => {
+      const cantidad =
+        typeof product.cantidad_dev === "string"
+          ? parseFloat(product.cantidad_dev)
+          : product.cantidad_dev;
       return total + (isFinite(cantidad) ? cantidad : 0);
     }, 0);
   }, [filteredSaleItems]);
@@ -76,7 +88,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
       const precio = product.precio;
       const descuentoPercent = product.porcentaje_descuento ?? 0;
 
-      const subtotal = precio * cantidad;
+      const subtotal = precio * (cantidad - product.cantidad_dev);
       const totalConDescuento = subtotal * (1 - descuentoPercent / 100);
 
       return total + totalConDescuento;
@@ -162,6 +174,35 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             typeof row.original.cantidad === "string"
               ? parseFloat(row.original.cantidad)
               : row.original.cantidad;
+          const cantidadReal = cantidad - row.original.cantidad_dev;
+          const cantidadDisplay = isFinite(cantidadReal)
+            ? cantidadReal.toFixed(0)
+            : "0";
+
+          return (
+            <div className="text-center">
+              <div className="text-sm font-medium">{cantidadDisplay}</div>
+              {product.unidad_medida && (
+                <div className="text-[10px] text-gray-500">
+                  {product.unidad_medida.unidad_medida}
+                </div>
+              )}
+            </div>
+          );
+        },
+        sortingFn: "alphanumeric",
+      },
+      {
+        accessorKey: "cantidad_dev",
+        header: "Devoluciones",
+        size: 80,
+        minSize: 30,
+        cell: ({ row }) => {
+          const product = row.original.producto;
+          const cantidad =
+            typeof row.original.cantidad_dev === "string"
+              ? parseFloat(row.original.cantidad_dev)
+              : row.original.cantidad_dev;
           const cantidadDisplay = isFinite(cantidad)
             ? cantidad.toFixed(0)
             : "0";
@@ -229,7 +270,8 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
         minSize: 30,
         cell: ({ row }) => {
           const product = row.original;
-          const subtotal = product.precio * product.cantidad;
+          const subtotal =
+            product.precio * (product.cantidad - product.cantidad_dev);
           const descuento =
             product.porcentaje_descuento != null
               ? 1 - product.porcentaje_descuento / 100
@@ -319,6 +361,18 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
                       </div>
                       <div className="text-sm font-bold text-blue-600">
                         {totalCantidad.toFixed(0)}
+                      </div>
+                    </TableCell>
+                  );
+                }
+                if (column.id === "cantidad_dev") {
+                  return (
+                    <TableCell key={column.id} className="text-center p-1">
+                      <div className="text-xs text-muted-foreground mb-0.5">
+                        Total Dev.
+                      </div>
+                      <div className="text-sm font-bold text-blue-600">
+                        {totalDevoluciones.toFixed(0)}
                       </div>
                     </TableCell>
                   );

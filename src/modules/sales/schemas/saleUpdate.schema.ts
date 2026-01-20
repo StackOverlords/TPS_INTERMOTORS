@@ -28,6 +28,7 @@ export const SaleUpdateSchema = SaleSchema
 // Para la UI (venta completa)
 export const SaleUpdateDetailUISchema = SaleUpdateDetailSchema.extend({
     producto: SaleProductDetailSchema,
+    cantidad_dev: z.number().nonnegative(),
 });
 
 export const SaleUpdateFormSchema = SaleUpdateSchema

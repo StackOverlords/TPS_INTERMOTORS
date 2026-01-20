@@ -2,7 +2,7 @@ import z from "zod";
 import { SaleCustomerGetSchema } from "./saleCustomer.schema";
 import { SaleResponsibleSchema } from "./saleResponsibles.schema";
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema";
-import { toNumberOrZero } from "@/modules/shared/schemas/numberSchemas";
+import { toNumberOrZero, toNumberOrZeroStrict } from "@/modules/shared/schemas/numberSchemas";
 
 export const SaleItemSchema = z.object({
     id: z.number().int(),
@@ -31,6 +31,7 @@ export const SaleItemSchema = z.object({
         z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5)))
     ),
     orden: z.number().nullable(),
+    cantidad_dev:toNumberOrZeroStrict,
 })
 
 export const SaleGetByIdSchema = z.object({
