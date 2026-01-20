@@ -99,6 +99,14 @@ const UpdatePurchaseDetailPricesFormModal = ({
       }
 
       // 🔹 AQUÍ el DOM YA EXISTE
+
+      // Función para aplicar snap al 0 (si está cerca, lo pone en 0)
+      const applySnapToZero = (value: number): number => {
+        const snapThreshold = 3; // Si está entre -3 y +3, snap a 0
+        if (Math.abs(value) <= snapThreshold) return 0;
+        return value;
+      };
+
       const handleMouseDown = (e: MouseEvent) => {
         isDraggingRef.current = true;
         startXRef.current = e.clientX;
@@ -113,8 +121,14 @@ const UpdatePurchaseDetailPricesFormModal = ({
       const handleMouseMove = (e: MouseEvent) => {
         if (!isDraggingRef.current) return;
         const deltaX = e.clientX - startXRef.current;
-        const steps = Math.round(deltaX / 50);
-        handleIncrementSliderRef.current([startDeltaRef.current + steps * 10]);
+        // Shift = precisión (±1%), Normal = (±5%)
+        const isPrecisionMode = e.shiftKey;
+        const stepSize = isPrecisionMode ? 1 : 5;
+        const pixelsPerStep = isPrecisionMode ? 8 : 15;
+        const steps = Math.round(deltaX / pixelsPerStep);
+        const newValue = startDeltaRef.current + steps * stepSize;
+        // Solo aplicar snap si NO está en modo precisión
+        handleIncrementSliderRef.current([isPrecisionMode ? newValue : applySnapToZero(newValue)]);
       };
 
       const handleMouseUp = () => {
@@ -128,19 +142,52 @@ const UpdatePurchaseDetailPricesFormModal = ({
           slider.getAttribute("data-slider-value") || "0"
         );
         const direction = e.deltaY < 0 ? 1 : -1;
-        handleIncrementSliderRef.current([currentDelta + direction * 10]);
+        // Shift = precisión (±1%), Normal = (±5%)
+        const isPrecisionMode = e.shiftKey;
+        const stepSize = isPrecisionMode ? 1 : 5;
+        const newValue = currentDelta + direction * stepSize;
+        // Solo aplicar snap si NO está en modo precisión
+        handleIncrementSliderRef.current([isPrecisionMode ? newValue : applySnapToZero(newValue)]);
+      };
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Ignorar si el foco está en un input, textarea o elemento editable
+        const target = e.target as HTMLElement;
+        if (
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          e.preventDefault();
+          const currentDelta = parseFloat(
+            slider.getAttribute("data-slider-value") || "0"
+          );
+          const direction = e.key === "ArrowRight" ? 1 : -1;
+          // Shift = precisión (±1%), Normal = (±5%)
+          const isPrecisionMode = e.shiftKey;
+          const stepSize = isPrecisionMode ? 1 : 5;
+          const newValue = currentDelta + direction * stepSize;
+          // Solo aplicar snap si NO está en modo precisión
+          handleIncrementSliderRef.current([isPrecisionMode ? newValue : applySnapToZero(newValue)]);
+        }
       };
 
       slider.addEventListener("mousedown", handleMouseDown);
       slider.addEventListener("wheel", handleWheel, { passive: false });
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("keydown", handleKeyDown);
 
       return () => {
         slider.removeEventListener("mousedown", handleMouseDown);
         slider.removeEventListener("wheel", handleWheel);
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("keydown", handleKeyDown);
       };
     };
 
@@ -277,8 +324,8 @@ const UpdatePurchaseDetailPricesFormModal = ({
             <div className="flex items-center justify-between">
               <Label>Ajuste de Incremento (Delta)</Label>
               <span
-                className={`text-base font-semibold transition-colors ${
-                  isSliderActive ? "text-primary" : "text-foreground"
+                className={`text-base font-semibold tabular-nums transition-all ${
+                  isSliderActive ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
                 {formData.incrementSlider >= 0 ? "+" : ""}
@@ -288,55 +335,75 @@ const UpdatePurchaseDetailPricesFormModal = ({
             <div
               ref={sliderRef}
               data-slider-value={formData.incrementSlider}
-              className={`relative h-12 bg-background rounded-md border cursor-ew-resize flex items-center justify-center overflow-hidden transition-all ${
+              className={`relative h-10 bg-muted/50 rounded-md border cursor-ew-resize select-none transition-all ${
                 isSliderActive
-                  ? "border-primary ring-2 ring-primary/20"
-                  : "border-border"
+                  ? "border-foreground/30"
+                  : "border-border hover:border-foreground/20"
               }`}
             >
-              {/* Línea horizontal */}
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0.5 bg-border" />
+              {/* Track de fondo */}
+              <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 h-1 bg-border rounded-full" />
 
-              {/* Indicador de dirección cuando está activo */}
-              {formData.incrementSlider !== 0 && (
-                <div
-                  className={`absolute top-1/2 -translate-y-1/2 h-1 transition-all ${
-                    formData.incrementSlider > 0
-                      ? "bg-green-500/30"
-                      : "bg-red-500/30"
-                  }`}
-                  style={{
-                    left: "50%",
-                    width: `${Math.abs(formData.incrementSlider) * 2}px`,
-                    ...(formData.incrementSlider > 0
-                      ? { transform: "translateY(-50%)" }
-                      : {
-                          right: "50%",
-                          left: "auto",
-                          transform: "translateY(-50%)",
-                        }),
-                  }}
-                />
-              )}
+              {/* Marcas visuales en valores clave usando la misma escala asintótica */}
+              {/* ±100: (1 - 1/2) * 44 = 22% */}
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-muted-foreground/30 rounded-full" style={{ left: "calc(50% - 22%)" }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-muted-foreground/30 rounded-full" style={{ left: "calc(50% + 22%)" }} />
+              {/* ±50: (1 - 1/1.5) * 44 ≈ 14.67% */}
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-2 bg-muted-foreground/20 rounded-full" style={{ left: "calc(50% - 14.67%)" }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-px h-2 bg-muted-foreground/20 rounded-full" style={{ left: "calc(50% + 14.67%)" }} />
 
-              {/* Marcas de gradación */}
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4">
-                <div className="w-0.5 h-3 bg-muted-foreground/30 -translate-y-1/2" />
-                <div className="w-0.5 h-3 bg-muted-foreground/30 -translate-y-1/2" />
-                <div className="w-0.5 h-3 bg-muted-foreground/30 -translate-y-1/2" />
-              </div>
+              {/* Marcador central (cero) - más prominente */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-5 bg-muted-foreground/50 rounded-full" />
 
-              {/* Handler central */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <div
-                  className={`h-10 w-1.5 rounded-full shadow-md transition-all ${
-                    isSliderActive ? "bg-primary scale-110" : "bg-primary/80"
-                  }`}
-                />
-              </div>
+              {/* Fill desde el centro hasta el thumb - escala no lineal */}
+              {formData.incrementSlider !== 0 && (() => {
+                const value = formData.incrementSlider;
+                // Función asintótica: posición = (1 - 1/(1 + |valor|/100)) * 44
+                // Nunca llega al 44%, permite valores infinitos
+                const visualPos = (1 - 1 / (1 + Math.abs(value) / 100)) * 44;
+                return (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 h-1 bg-foreground/60 rounded-full transition-all duration-100"
+                    style={{
+                      left: value > 0 ? "50%" : `calc(50% - ${visualPos}%)`,
+                      width: `${visualPos}%`,
+                    }}
+                  />
+                );
+              })()}
+
+              {/* Thumb que se mueve - escala no lineal */}
+              {(() => {
+                const value = formData.incrementSlider;
+                // Misma función asintótica con signo
+                const sign = value >= 0 ? 1 : -1;
+                const visualPos = sign * (1 - 1 / (1 + Math.abs(value) / 100)) * 44;
+                return (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 z-20 transition-all duration-100"
+                    style={{
+                      left: `calc(50% + ${visualPos}%)`,
+                    }}
+                  >
+                    <div
+                      className={`relative -translate-x-1/2 w-4 h-7 rounded-md border shadow-sm transition-all flex items-center justify-center ${
+                        isSliderActive
+                          ? "bg-foreground border-foreground scale-105"
+                          : "bg-background border-foreground/30 hover:border-foreground/50"
+                      }`}
+                    >
+                      {/* Líneas de grip */}
+                      <div className="flex gap-px">
+                        <div className={`w-px h-3 rounded-full ${isSliderActive ? "bg-background/50" : "bg-foreground/30"}`} />
+                        <div className={`w-px h-3 rounded-full ${isSliderActive ? "bg-background/50" : "bg-foreground/30"}`} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
-            <div className="flex justify-center text-xs text-muted-foreground">
-              <span>Arrastra o usa scroll para ajustar ±10%</span>
+            <div className="flex justify-center text-[11px] text-muted-foreground">
+              <span>Arrastra, scroll o flechas ← → (±5%) · Shift para precisión (±1%)</span>
             </div>
           </div>
 
@@ -373,8 +440,9 @@ const UpdatePurchaseDetailPricesFormModal = ({
               </div>
             </div>
 
+            {/* Ajuste % - OCULTO por solicitud del cliente
             <div className="space-y-2">
-              <Label>Ajuste de Incremento %</Label>
+              <Label className="text-xs">Ajuste %</Label>
               <div className="relative">
                 <EditableField
                   value={formData.displaySalePriceIncrement}
@@ -394,7 +462,37 @@ const UpdatePurchaseDetailPricesFormModal = ({
                   numberProps={{ step: 0.1 }}
                   showEditIcon={false}
                   focusNextOnEnter={true}
-                  inputClassName="pr-8 font-semibold"
+                  inputClassName="pr-6 font-semibold text-sm"
+                  autoSelect={true}
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs pointer-events-none z-10">
+                  %
+                </span>
+              </div>
+            </div>
+            */}
+
+            <div className="space-y-2">
+              <Label>Total s/Costo</Label>
+              <div className="relative">
+                <EditableField
+                  value={getFinalSalePriceIncrement()}
+                  onSubmit={(val) => {
+                    const newTotal = typeof val === "number" ? val : parseFloat(val.toString()) || 0;
+                    // Calcular el delta: nuevo total - base = delta
+                    const delta = newTotal - formData.baseSalePriceIncrement;
+                    handleSalePriceIncrementChange(delta);
+                  }}
+                  type="number"
+                  formatter={(val) =>
+                    typeof val === "number"
+                      ? val.toFixed(1)
+                      : parseFloat(val.toString()).toFixed(1)
+                  }
+                  numberProps={{ step: 0.1 }}
+                  showEditIcon={false}
+                  focusNextOnEnter={true}
+                  inputClassName="pr-6 font-semibold"
                   autoSelect={true}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none z-10">

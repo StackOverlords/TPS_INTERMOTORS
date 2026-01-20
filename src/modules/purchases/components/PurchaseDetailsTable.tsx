@@ -13,6 +13,14 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { formatCurrency } from "@/utils/formaters";
 import {
+  roundTo2Decimals,
+  roundTo5Decimals,
+  multiplyPrecise,
+  dividePrecise,
+  addPrecise,
+  subtractPrecise,
+} from "@/utils/decimalUtils";
+import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
@@ -163,8 +171,8 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     return saved ? parseFloat(saved) : 6.96;
   });
 
-  const roundToTwo = (num: number): number =>
-    Math.round((num + Number.EPSILON) * 100) / 100;
+  // Usar roundTo2Decimals de decimalUtils para mostrar en UI
+  // y roundTo5Decimals para cálculos internos
 
   const normalizeDetail = (
     detail: PurchaseDetail
@@ -206,8 +214,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     () =>
       detalles.map((detail) => {
         const normalized = normalizeDetail(detail);
-        normalized.subtotal = roundToTwo(
-          normalized.cantidad * normalized.costo
+        normalized.subtotal = multiplyPrecise(
+          normalized.cantidad,
+          normalized.costo
         );
         return normalized;
       }),
@@ -226,44 +235,56 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     const incAlt = toNum(updatedDetail.inc_p_venta_alt);
 
     if (fieldName === "costo") {
-      updatedDetail.costo = roundToTwo(newValue);
-      updatedDetail.precio_venta = roundToTwo(newValue * (1 + inc / 100));
-      updatedDetail.precio_venta_alt = roundToTwo(
-        toNum(updatedDetail.precio_venta) * (1 + incAlt / 100)
-      );
+      updatedDetail.costo = roundTo5Decimals(newValue);
+      // precio_venta = costo * (1 + inc/100)
+      const multiplier = addPrecise(1, dividePrecise(inc, 100));
+      updatedDetail.precio_venta = multiplyPrecise(newValue, multiplier);
+      // precio_venta_alt = precio_venta * (1 + incAlt/100)
+      const multiplierAlt = addPrecise(1, dividePrecise(incAlt, 100));
+      updatedDetail.precio_venta_alt = multiplyPrecise(updatedDetail.precio_venta, multiplierAlt);
     } else if (fieldName === "inc_p_venta") {
-      updatedDetail.inc_p_venta = roundToTwo(newValue);
-      updatedDetail.precio_venta = roundToTwo(
-        toNum(updatedDetail.costo) * (1 + newValue / 100)
-      );
-      updatedDetail.precio_venta_alt = roundToTwo(
-        toNum(updatedDetail.precio_venta) *
-          (1 + toNum(updatedDetail.inc_p_venta_alt) / 100)
-      );
+      updatedDetail.inc_p_venta = roundTo5Decimals(newValue);
+      // precio_venta = costo * (1 + newValue/100)
+      const multiplier = addPrecise(1, dividePrecise(newValue, 100));
+      updatedDetail.precio_venta = multiplyPrecise(toNum(updatedDetail.costo), multiplier);
+      // precio_venta_alt = precio_venta * (1 + incAlt/100)
+      const multiplierAlt = addPrecise(1, dividePrecise(toNum(updatedDetail.inc_p_venta_alt), 100));
+      updatedDetail.precio_venta_alt = multiplyPrecise(updatedDetail.precio_venta, multiplierAlt);
     } else if (fieldName === "inc_p_venta_alt") {
-      updatedDetail.inc_p_venta_alt = roundToTwo(newValue);
-      updatedDetail.precio_venta_alt = roundToTwo(
-        toNum(updatedDetail.precio_venta) * (1 + newValue / 100)
-      );
+      updatedDetail.inc_p_venta_alt = roundTo5Decimals(newValue);
+      // precio_venta_alt = precio_venta * (1 + newValue/100)
+      const multiplier = addPrecise(1, dividePrecise(newValue, 100));
+      updatedDetail.precio_venta_alt = multiplyPrecise(toNum(updatedDetail.precio_venta), multiplier);
     } else if (fieldName === "precio_venta") {
-      updatedDetail.precio_venta = roundToTwo(newValue);
+      updatedDetail.precio_venta = roundTo5Decimals(newValue);
       const costoNow = toNum(updatedDetail.costo);
-      updatedDetail.inc_p_venta =
-        costoNow > 0 ? roundToTwo(((newValue - costoNow) / costoNow) * 100) : 0;
-      updatedDetail.precio_venta_alt = roundToTwo(
-        newValue * (1 + toNum(updatedDetail.inc_p_venta_alt) / 100)
-      );
+      // inc_p_venta = ((precio_venta - costo) / costo) * 100
+      if (costoNow > 0) {
+        const diff = subtractPrecise(newValue, costoNow);
+        updatedDetail.inc_p_venta = multiplyPrecise(dividePrecise(diff, costoNow), 100);
+      } else {
+        updatedDetail.inc_p_venta = 0;
+      }
+      // precio_venta_alt = precio_venta * (1 + incAlt/100)
+      const multiplierAlt = addPrecise(1, dividePrecise(toNum(updatedDetail.inc_p_venta_alt), 100));
+      updatedDetail.precio_venta_alt = multiplyPrecise(newValue, multiplierAlt);
     } else if (fieldName === "precio_venta_alt") {
-      updatedDetail.precio_venta_alt = roundToTwo(newValue);
+      updatedDetail.precio_venta_alt = roundTo5Decimals(newValue);
       const pv = toNum(updatedDetail.precio_venta);
-      updatedDetail.inc_p_venta_alt =
-        pv > 0 ? roundToTwo(((newValue - pv) / pv) * 100) : 0;
+      // inc_p_venta_alt = ((precio_venta_alt - precio_venta) / precio_venta) * 100
+      if (pv > 0) {
+        const diff = subtractPrecise(newValue, pv);
+        updatedDetail.inc_p_venta_alt = multiplyPrecise(dividePrecise(diff, pv), 100);
+      } else {
+        updatedDetail.inc_p_venta_alt = 0;
+      }
     } else if (fieldName === "cantidad") {
       updatedDetail.cantidad = Math.round(newValue);
     }
 
-    updatedDetail.subtotal = roundToTwo(
-      toNum(updatedDetail.costo) * Math.round(toNum(updatedDetail.cantidad))
+    updatedDetail.subtotal = multiplyPrecise(
+      toNum(updatedDetail.costo),
+      Math.round(toNum(updatedDetail.cantidad))
     );
 
     return updatedDetail;
@@ -287,10 +308,10 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
       if (isUSD) {
         // Convertir de USD a BOB
-        newCosto = roundToTwo(normalized.costo * exchangeRate);
+        newCosto = multiplyPrecise(normalized.costo, exchangeRate);
       } else {
         // Convertir de BOB a USD
-        newCosto = roundToTwo(normalized.costo / exchangeRate);
+        newCosto = dividePrecise(normalized.costo, exchangeRate);
       }
 
       // Recalcular precios con el nuevo costo
@@ -340,8 +361,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
 
     // Normalizar el detalle actual
     const currentDetail = normalizeDetail(detalles[editingRow]);
-    currentDetail.subtotal = roundToTwo(
-      currentDetail.cantidad * currentDetail.costo
+    currentDetail.subtotal = multiplyPrecise(
+      currentDetail.cantidad,
+      currentDetail.costo
     );
 
     // Calcular los valores actualizados
@@ -377,9 +399,9 @@ const PurchaseDetailsTable: React.FC<Props> = ({
       if (fieldName === "cantidad") {
         formattedValue = Math.round(currentValue).toString();
       } else if (fieldName.includes("inc_p_venta")) {
-        formattedValue = roundToTwo(currentValue).toFixed(1);
+        formattedValue = roundTo2Decimals(currentValue).toFixed(1);
       } else {
-        formattedValue = roundToTwo(currentValue).toFixed(2);
+        formattedValue = roundTo2Decimals(currentValue).toFixed(2);
       }
 
       return formattedValue;
@@ -572,7 +594,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     value: number,
     format: "currency" | "percentage" | "number"
   ) => {
-    const roundedValue = roundToTwo(value);
+    const roundedValue = roundTo2Decimals(value);
 
     switch (format) {
       case "currency":
@@ -763,7 +785,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
             typeof getValue() === "string"
               ? parseFloat(getValue() as string)
               : getValue<number>();
-          const subtotalRounded = isFinite(subtotal) ? roundToTwo(subtotal) : 0;
+          const subtotalRounded = isFinite(subtotal) ? roundTo2Decimals(subtotal) : 0;
           return (
             <div className="text-sm font-medium text-gray-900 text-center">
               {formatCurrency(subtotalRounded, {
@@ -786,7 +808,19 @@ const PurchaseDetailsTable: React.FC<Props> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => remove(row.original.id_producto!)}
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevenir que el input pierda focus antes de eliminar
+                // Cancelar cualquier saveEdit pendiente
+                if (saveTimeoutRef.current) {
+                  clearTimeout(saveTimeoutRef.current);
+                  saveTimeoutRef.current = null;
+                }
+                // Limpiar estado de edición
+                setEditing(null);
+                setTempValue("");
+                // Eliminar el detalle
+                remove(row.original.id_producto!);
+              }}
               className="text-red-500 hover:text-red-500 size-7"
             >
               <Trash2 className="size-3" />
@@ -809,16 +843,19 @@ const PurchaseDetailsTable: React.FC<Props> = ({
     enableRowSelection: true,
   });
 
-  const totalCosto = roundToTwo(
-    normalizedDetalles.reduce((s, d) => s + d.cantidad * d.costo, 0)
+  const totalCosto = normalizedDetalles.reduce(
+    (s, d) => addPrecise(s, multiplyPrecise(d.cantidad, d.costo)),
+    0
   );
 
-  const totalGeneral = roundToTwo(
-    normalizedDetalles.reduce((s, d) => s + d.precio_venta * d.cantidad, 0)
+  const totalGeneral = normalizedDetalles.reduce(
+    (s, d) => addPrecise(s, multiplyPrecise(d.precio_venta, d.cantidad)),
+    0
   );
 
-  const totalMenor = roundToTwo(
-    normalizedDetalles.reduce((s, d) => s + d.precio_venta_alt * d.cantidad, 0)
+  const totalMenor = normalizedDetalles.reduce(
+    (s, d) => addPrecise(s, multiplyPrecise(d.precio_venta_alt, d.cantidad)),
+    0
   );
 
   return (
