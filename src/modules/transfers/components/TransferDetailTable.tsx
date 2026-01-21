@@ -522,56 +522,56 @@ function TransferDetailTableInner({
         // />
       ),
     },
-    {
-      accessorKey: "incremento_p_entrada_venta",
-      id: 'incremento_venta',
-      header: "% Inc",
-      size: 100,
-      minSize: 80,
-      cell: ({ row }) => (
-        <div className="text-sm font-medium text-gray-900 text-center">
-            {formatCurrency(row.original.incremento_p_entrada_venta)}
-          </div>
-        // <EditableCell
-        //   rowIndex={row.index}
-        //   fieldName="incremento_p_entrada_venta"
-        //   value={row.original.incremento_p_entrada_venta}
-        //   format="percentage"
-        // />
-      ),
-    },
-    {
-      accessorKey: "incremento_p_entrada_venta_alt",
-      id: 'incremento_venta_alt',
-      header: "% Alt",
-      size: 100,
-      minSize: 80,
-      cell: ({ row }) => (
-        <div className="text-sm font-medium text-gray-900 text-center">
-            {formatCurrency(row.original.incremento_p_entrada_venta_alt)}
-          </div>
-        // <EditableCell
-        //   rowIndex={row.index}
-        //   fieldName="incremento_p_entrada_venta_alt"
-        //   value={row.original.incremento_p_entrada_venta_alt}
-        //   format="percentage"
-        // />
-      ),
-    },
-    {
-      id: "subtotal",
-      header: "Subtotal",
-      size: 120,
-      minSize: 100,
-      cell: ({ row }) => {
-        const subtotal = row.original.cantidad_entrada_salida * row.original.costo_entrada;
-        return (
-          <div className="text-sm font-medium text-gray-900 text-center">
-            {formatCurrency(subtotal)}
-          </div>
-        )
-      }
-    },
+    // {
+    //   accessorKey: "incremento_p_entrada_venta",
+    //   id: 'incremento_venta',
+    //   header: "% Inc",
+    //   size: 100,
+    //   minSize: 80,
+    //   cell: ({ row }) => (
+    //     <div className="text-sm font-medium text-gray-900 text-center">
+    //         {formatCurrency(row.original.incremento_p_entrada_venta)}
+    //       </div>
+    //     // <EditableCell
+    //     //   rowIndex={row.index}
+    //     //   fieldName="incremento_p_entrada_venta"
+    //     //   value={row.original.incremento_p_entrada_venta}
+    //     //   format="percentage"
+    //     // />
+    //   ),
+    // },
+    // {
+    //   accessorKey: "incremento_p_entrada_venta_alt",
+    //   id: 'incremento_venta_alt',
+    //   header: "% Alt",
+    //   size: 100,
+    //   minSize: 80,
+    //   cell: ({ row }) => (
+    //     <div className="text-sm font-medium text-gray-900 text-center">
+    //         {formatCurrency(row.original.incremento_p_entrada_venta_alt)}
+    //       </div>
+    //     // <EditableCell
+    //     //   rowIndex={row.index}
+    //     //   fieldName="incremento_p_entrada_venta_alt"
+    //     //   value={row.original.incremento_p_entrada_venta_alt}
+    //     //   format="percentage"
+    //     // />
+    //   ),
+    // },
+    // {
+    //   id: "subtotal",
+    //   header: "Subtotal",
+    //   size: 120,
+    //   minSize: 100,
+    //   cell: ({ row }) => {
+    //     const subtotal = row.original.cantidad_entrada_salida * row.original.costo_entrada;
+    //     return (
+    //       <div className="text-sm font-medium text-gray-900 text-center">
+    //         {formatCurrency(subtotal)}
+    //       </div>
+    //     )
+    //   }
+    // },
     {
       id: "action",
       header: "Acción",
