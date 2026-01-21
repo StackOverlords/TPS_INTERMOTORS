@@ -216,7 +216,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                       Editar transferencia
                     </DropdownMenuItem>
                   </ProtectedAction>
-                  <ProtectedAction
+                  {/* <ProtectedAction
                     permission="tra-edit"
                     roles={["Super Admin", "Administrador","Vendedor"]}
                     fallback={null}
@@ -228,7 +228,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                       <Edit className="size-4 mr-2" />
                       Editar transferencia
                     </DropdownMenuItem>
-                  </ProtectedAction>
+                  </ProtectedAction> */}
                   <ProtectedAction
                     permission="tra-delete"
                     roles={["Super Admin", "Administrador", "Vendedor"]}

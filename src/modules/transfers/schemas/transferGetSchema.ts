@@ -115,7 +115,7 @@ const ProductoDetalleSchema = z.object({
     id_unidad_medida: z.number(),
     unidad_medida: UnidadMedidaSchema,
     costo_referencia: z.string(),
-    stock_minimo: z.string(),
+    stock_minimo: z.string().nullable(),
     precio_venta: z.string(),
     precio_venta_alt: z.string(),
     id_marca_vehiculo: z.number(),
