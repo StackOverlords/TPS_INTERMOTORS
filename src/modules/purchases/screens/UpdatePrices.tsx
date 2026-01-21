@@ -1,4 +1,5 @@
 import { Alert, AlertDescription } from "@/components/atoms/alert";
+import { CheckCircle2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -158,16 +159,25 @@ const UpdatePrices = () => {
       >
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Success Alert */}
-        {/* {lastSuccess && (
+        {lastSuccess && (
           <Alert className="border-green-200 bg-green-50">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               {lastSuccess}
             </AlertDescription>
           </Alert>
-        )} */}
+        )}
 
         {/* Error Alert */}
+        {updatePricesMutation.isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {updatePricesMutation.error?.message ||
+                "Error al actualizar precios"}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card>
           <CardHeader>
@@ -346,15 +356,6 @@ const UpdatePrices = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-        {updatePricesMutation.isError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {updatePricesMutation.error?.message ||
-                "Error al actualizar precios"}
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
       </ProtectedAction>
     </main>
