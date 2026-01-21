@@ -176,9 +176,6 @@ function SaleReturnList<T extends BaseWithId>({
                   <span className="font-medium text-foreground">
                     {getValue<string>()}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    ID: {id}
-                  </span>
                 </div>
               </TooltipWrapper>
               {isSelected && (
