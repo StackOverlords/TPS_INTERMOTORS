@@ -269,16 +269,14 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
   const columns = useMemo<ColumnDef<SaleItemGetById>[]>(
     () => [
       {
-        accessorFn: (row) => row.producto.id,
-        id: "product_id",
+        accessorFn: (row) => row.producto.codigo_interno,
+        id: "cod_interno",
         header: "Cód. Int.",
         size: 50,
         minSize: 30,
         enableHiding: false,
         cell: ({ getValue }) => (
-          <span className="text-center text-xs text-gray-600">
-            {getValue<number>()}
-          </span>
+          <span className="text-center text-xs">{getValue<number>()}</span>
         ),
       },
       {
@@ -287,41 +285,24 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
         header: "Descripción",
         size: 250,
         minSize: 200,
-        cell: ({ getValue, row }) => {
-          const product = row.original.producto;
+        cell: ({ getValue }) => {
           const descripcion = getValue<string>();
           return (
             <div className="space-y-0.5">
               <h3
                 title="Descripción"
-                className="text-xs font-medium text-primary leading-tight truncate"
+                className="text-xs font-medium text-primary truncate"
               >
                 {descripcion}
               </h3>
-
-              <div className="flex flex-wrap gap-1 mt-1">
-                {product.categoria && (
-                  <Badge
-                    variant="accent"
-                    title="División"
-                    className="text-[10px] border-gray-300"
-                  >
-                    {product.categoria.categoria}
-                  </Badge>
-                )}
-                {product.marca && (
-                  <Badge
-                    variant="outline"
-                    title="Marca"
-                    className="text-[10px] border-gray-300"
-                  >
-                    {product.marca.marca}
-                  </Badge>
-                )}
-              </div>
             </div>
           );
         },
+      },
+      {
+        accessorFn: (row) => row.producto.codigo_oem,
+        id: "cod_oem",
+        header: "Cód. OEM",
       },
       {
         accessorKey: "cantidad",
@@ -577,7 +558,7 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-5xl max-h-[80vh] flex flex-col overflow-hidden p-3">
+      <DialogContent className="max-w-6xl max-h-[80vh] flex flex-col overflow-hidden p-3">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             Seleccionar Productos • Venta {saleData?.nro}
