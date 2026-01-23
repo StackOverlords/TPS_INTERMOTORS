@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Intermotors",
-  "version": "1.1.49",
+  "version": "1.1.50",
   "identifier": "com.intermotors.tps",
   "build": {
     "frontendDist": "../dist",
@@ -66,7 +66,7 @@
       "endpoints": [
         "https://github.com/StackOverlords/TPS_INTERMOTORS/releases/latest/download/latest-t1.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4N0RCRUYzNzRBODAzQ0YKUldUUEE2aDA4NzU5T1B5K0JYQ1Brcy9hZVRhQzltNXRkWjIwTWl1Y3BJWE1HSXphSndWMWNpcU4K"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lb}nQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4N0RCRUYzNzRBODAzQ0YKUldUUEE2aDA4NzU5T1B5K0JYQ1Brcy9hZVRhQzltNXRkWjIwTWl1Y3BJWE1HSXphSndWMWNpcU4K"
     },
     "sql": {
       "preload": ["sqlite:app.db"],
