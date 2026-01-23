@@ -5,6 +5,7 @@ import { ProductProviderOrderListSchema } from "../schemas/productProviderOrders
 import { ProductListResponseSchema } from "../schemas/productResponse.schema";
 import { ProductStockListSchema } from "../schemas/productStock.schema";
 import { ProductSalesSchema } from "../schemas/productTwoYaersSales.schema";
+import { StockMinimoReportResponseSchema } from "../schemas/stockMinimoReport.schema";
 import type { ProductCreate } from "../types/ProductCreate.types";
 import type { ProductDetail } from "../types/productDetail";
 import type { ProvOrdersParams, SalesParams, StockParams } from "../types/productDetailParams";
@@ -14,6 +15,7 @@ import type { ProductProviderOrder } from "../types/ProductProviderOrder";
 import type { ProductSalesStats } from "../types/ProductSalesStats";
 import type { ProductStock } from "../types/productStock";
 import type { ProductUpdate } from "../types/ProductUpdate.types";
+import type { StockMinimoFilters, StockMinimoReportResponse } from "../types/StockMinimoReport.types";
 import { PRODUCT_ENDPOINTS } from "./endpoints";
 import { ProductGetByIdWithStockSchema } from "../schemas/ProductGetByIdWithStock.schema";
 import type { ProductGetByIdWithStock } from "../types/ProductGetByIdWithStock.type";
@@ -198,5 +200,43 @@ export const productsService = {
 
 		Logger.info("Product image updated successfully", { id }, MODULE_NAME);
 		return response as { success: boolean };
+	},
+
+	/**
+	 * Obtener reporte de stock mínimo
+	 * @param filters - Filtros para el reporte
+	 */
+	async getStockMinimoReport(filters: StockMinimoFilters): Promise<StockMinimoReportResponse> {
+		Logger.info("Fetching stock minimo report", { filters }, MODULE_NAME);
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.reports.stockMinimo,
+			filters,
+			StockMinimoReportResponseSchema,
+			{ timeout: 120000 } // 2 minutos para reportes pesados
+		);
+		Logger.info("Stock minimo report fetched successfully", { count: response.data.length }, MODULE_NAME);
+		return response as StockMinimoReportResponse;
+	},
+
+	/**
+	 * Descargar reporte de stock mínimo en Excel
+	 * @param filters - Filtros para el reporte
+	 */
+	async downloadStockMinimoReport(filters: StockMinimoFilters): Promise<Blob> {
+		Logger.info("Downloading stock minimo report", { filters }, MODULE_NAME);
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.reports.stockMinimo,
+			{ ...filters, downloadable: true },
+			undefined,
+			{
+				timeout: 180000, // 3 minutos para descarga de Excel
+				responseType: 'blob',
+				headers: {
+					'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+				}
+			}
+		);
+		Logger.info("Stock minimo report downloaded successfully", {}, MODULE_NAME);
+		return response as Blob;
 	},
 };
