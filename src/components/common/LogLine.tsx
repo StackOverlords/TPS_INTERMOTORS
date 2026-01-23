@@ -59,7 +59,7 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
   // Renderizar texto plano normal
   if (parsed.type === 'plain') {
     return (
-      <div className={`${getLogLevelColor(parsed.content)} ${className} group relative hover:bg-zinc-900/50 py-0.5 px-1 rounded transition-colors`}>
+      <div className={`${getLogLevelColor(parsed.content)} ${className} group relative hover:bg-zinc-900/50 py-0.5 px-1 rounded transition-colors break-words whitespace-pre-wrap word-break-break-word`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
         {parsed.content}
         <Button
           variant="ghost"
@@ -76,7 +76,7 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
   // Renderizar stack trace / error
   if (parsed.type === 'error') {
     return (
-      <div className={`text-rose-400/80 ${className} group relative hover:bg-rose-950/20 py-0.5 px-1 rounded transition-colors font-mono text-xs`}>
+      <div className={`text-rose-400/80 ${className} group relative hover:bg-rose-950/20 py-0.5 px-1 rounded transition-colors font-mono text-xs break-words`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
         {parsed.content}
         <Button
           variant="ghost"
@@ -100,57 +100,47 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
     const sqlEntry = entries.find(([key]) => sqlKeys.includes(key.toLowerCase()));
 
     return (
-      <div className={`${className} group relative`}>
-        <div className="flex items-start gap-2 py-1">
+      <div className={`${className} group relative overflow-hidden`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+        <div className="flex flex-col gap-1 py-1">
           {/* Prefix (timestamps y tags) */}
           {parsed.prefix && (
-            <span className={`${getLogLevelColor(parsed.prefix)} flex-shrink-0 font-mono text-xs`}>
-              {parsed.prefix}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`${getLogLevelColor(parsed.prefix)} font-mono text-xs break-words`}>
+                {parsed.prefix}
+              </span>
+              {/* Toggle collapse/expand */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-5 w-5 p-0 text-zinc-500 hover:text-zinc-300 flex-shrink-0"
+              >
+                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              </Button>
+            </div>
           )}
 
-          {/* Toggle collapse/expand */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-5 w-5 p-0 text-zinc-500 hover:text-zinc-300 flex-shrink-0"
-          >
-            {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          </Button>
-
           {/* Contenido estructurado */}
-          <div className="flex-1 min-w-0">
+          <div className="w-full overflow-hidden">
             {isExpanded ? (
-              <div className="relative bg-[#0f0f0f] rounded-md p-2 space-y-1">
+              <div className="relative bg-[#0f0f0f] rounded-md p-2 space-y-1 overflow-hidden">
                 {entries.map(([key, value]) => {
                   const isSQLKey = sqlKeys.includes(key.toLowerCase());
                   const isMultiline = value.includes('\n');
 
                   return (
-                    <div key={key} className="flex items-start gap-2 text-xs font-mono">
-                      <span className="text-sky-400 font-semibold flex-shrink-0">{key}=</span>
+                    <div key={key} className="text-xs font-mono break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                      <span className="text-sky-400 font-semibold">{key}=</span>
                       {isSQLKey && isMultiline ? (
-                        <SyntaxHighlighter
-                          language="sql"
-                          style={vscDarkPlus}
-                          customStyle={{
-                            margin: 0,
-                            padding: '0.25rem 0.5rem',
-                            background: '#1a1a1a',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.7rem',
-                            lineHeight: '1.4',
-                          }}
-                        >
+                        <pre className="text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded text-[0.7rem] leading-relaxed whitespace-pre-wrap break-words mt-1">
                           {value}
-                        </SyntaxHighlighter>
+                        </pre>
                       ) : isMultiline ? (
-                        <pre className="text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded text-[0.7rem] leading-relaxed overflow-x-auto">
+                        <pre className="text-zinc-300 bg-zinc-900/50 px-2 py-1 rounded text-[0.7rem] leading-relaxed whitespace-pre-wrap break-words mt-1">
                           {value}
                         </pre>
                       ) : (
-                        <span className="text-zinc-300">{value}</span>
+                        <span className="text-zinc-300 break-words">{value}</span>
                       )}
                     </div>
                   );
@@ -167,7 +157,7 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
                 </Button>
               </div>
             ) : (
-              <div className="text-zinc-500 text-xs bg-zinc-900/50 px-2 py-1 rounded inline-flex items-center gap-2">
+              <div className="text-zinc-500 text-xs bg-zinc-900/50 px-2 py-1 rounded inline-flex items-center gap-2 flex-wrap">
                 <span className="text-zinc-400 font-mono">{'{key=value}'}</span>
                 <span className="text-zinc-500">{entries.length} campos - Click para expandir</span>
               </div>
@@ -191,50 +181,37 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
     const shouldCollapse = lineCount > 5; // Colapsar si más de 5 líneas
 
     return (
-      <div className={`${className} group relative`}>
-        <div className="flex items-start gap-2 py-1">
-          {/* Prefix (si existe, ej: "[INFO] User data:") */}
-          {parsed.prefix && (
-            <span className={`${getLogLevelColor(parsed.prefix)} flex-shrink-0`}>
-              {parsed.prefix}
-            </span>
-          )}
-
-          {/* Toggle collapse/expand (si JSON es grande) */}
-          {shouldCollapse && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="h-5 w-5 p-0 text-zinc-500 hover:text-zinc-300 flex-shrink-0"
-            >
-              {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </Button>
-          )}
+      <div className={`${className} group relative overflow-hidden`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+        <div className="flex flex-col gap-1 py-1">
+          {/* Prefix y toggle en la misma línea */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {parsed.prefix && (
+              <span className={`${getLogLevelColor(parsed.prefix)} break-words`}>
+                {parsed.prefix}
+              </span>
+            )}
+            {shouldCollapse && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-5 w-5 p-0 text-zinc-500 hover:text-zinc-300 flex-shrink-0"
+              >
+                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              </Button>
+            )}
+          </div>
 
           {/* Contenido JSON */}
-          <div className="flex-1 min-w-0">
+          <div className="w-full overflow-hidden">
             {isExpanded ? (
-              <div className="relative">
-                <SyntaxHighlighter
-                  language="json"
-                  style={vscDarkPlus}
-                  customStyle={{
-                    margin: 0,
-                    padding: '0.5rem',
-                    background: '#0f0f0f',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.75rem',
-                    lineHeight: '1.5',
-                  }}
-                  codeTagProps={{
-                    style: {
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    }
-                  }}
+              <div className="relative bg-[#0f0f0f] rounded-md p-2 overflow-hidden">
+                <pre
+                  className="text-xs font-mono text-emerald-300 whitespace-pre-wrap break-words"
+                  style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                 >
                   {formattedJSON}
-                </SyntaxHighlighter>
+                </pre>
 
                 {/* Botón copiar */}
                 <Button
@@ -247,7 +224,7 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
                 </Button>
               </div>
             ) : (
-              <div className="text-zinc-500 text-xs bg-zinc-900/50 px-2 py-1 rounded inline-flex items-center gap-2">
+              <div className="text-zinc-500 text-xs bg-zinc-900/50 px-2 py-1 rounded inline-flex items-center gap-2 flex-wrap">
                 <span className="text-zinc-400 font-mono">{'{...}'}</span>
                 <span className="text-zinc-500">{lineCount} líneas - Click para expandir</span>
               </div>
@@ -259,5 +236,5 @@ export function LogLine({ line, index, className = '' }: LogLineProps) {
   }
 
   // Fallback
-  return <div className={className}>{line}</div>;
+  return <div className={`${className} break-words`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{line}</div>;
 }

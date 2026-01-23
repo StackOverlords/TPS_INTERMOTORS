@@ -8,7 +8,12 @@ export const useDeleteProvider = () => {
     return useMutation({
         mutationFn: (id: number) => providersService.delete(id),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.lists() });
+            // Purchases module (select de proveedores en compras)
+            queryClient.invalidateQueries({ queryKey: ["purchases", "commons", "providers"] });
+            // Orders module (select de proveedores en pedidos)
+            queryClient.invalidateQueries({ queryKey: ["orders", "commons", "providers"] });
         }
     });
 };

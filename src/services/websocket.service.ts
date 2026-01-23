@@ -1,11 +1,14 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import logger from '@/utils/logger';
 
 declare global {
   interface Window {
     Pusher: typeof Pusher;
   }
 }
+
+const wsLogger = logger.withModule('WEBSOCKET');
 
 export class WebSocketService {
   private echo: Echo<any> | null = null;
@@ -15,6 +18,7 @@ export class WebSocketService {
 
   constructor() {
     window.Pusher = Pusher;
+    wsLogger.debug('WebSocketService inicializado');
   }
 
   /**
@@ -22,7 +26,7 @@ export class WebSocketService {
    */
   connect(): Promise<void> {
     if (this.echo) {
-      // console.log('⚠️ Echo ya está conectado');
+      wsLogger.warn('Echo ya está conectado, ignorando nueva conexión');
       return Promise.resolve();
     }
 
@@ -34,13 +38,13 @@ export class WebSocketService {
         const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
         const useTLS = scheme === 'https' || scheme === 'wss';
 
-        // console.log('🔌 Configurando conexión a Reverb:', {
-        //   host,
-        //   port,
-        //   appKey,
-        //   scheme,
-        //   useTLS
-        // });
+        wsLogger.info('Configurando conexión a Reverb', {
+          host,
+          port,
+          appKey: appKey ? `${appKey.substring(0, 8)}...` : 'NO_KEY',
+          scheme,
+          useTLS
+        });
 
         // Configuración correcta para Reverb compatible con Pusher
         this.echo = new Echo({
@@ -58,7 +62,7 @@ export class WebSocketService {
           // Configuración adicional para Reverb
           auth: {
             headers: {
-              // Aquí vamosss a agregar headers de autenticación si es necesario
+              // Aquí vamos a agregar headers de autenticación si es necesario
               // 'Authorization': `Bearer ${token}`
             },
           },
@@ -66,28 +70,51 @@ export class WebSocketService {
 
         // Escuchar eventos de conexión
         this.echo.connector.pusher.connection.bind('connected', () => {
+            wsLogger.info('CONEXION ESTABLECIDA', {
+              status: 'connected',
+              host,
+              port,
+              timestamp: new Date().toISOString()
+            });
             resolve();
         });
 
         this.echo.connector.pusher.connection.bind('error', (err: any) => {
-            console.error('❌ Error en la conexión:', err);
+            wsLogger.error('ERROR CONEXION', {
+              status: 'error',
+              error: err,
+              host,
+              port
+            });
         });
 
         this.echo.connector.pusher.connection.bind('failed', (err: any) => {
-            console.error('❌ Falló la conexión a Reverb:', err);
+            wsLogger.error('CONEXION FALLIDA', {
+              status: 'failed',
+              error: err,
+              host,
+              port
+            });
             reject(new Error(`Failed to connect: ${JSON.stringify(err)}`));
         });
 
         this.echo.connector.pusher.connection.bind('disconnected', () => {
-            // console.log('Desconectado de Reverb');
+            wsLogger.warn('DESCONECTADO', {
+              status: 'disconnected',
+              timestamp: new Date().toISOString()
+            });
         });
 
         this.echo.connector.pusher.connection.bind('state_change', (states: any) => {
-            // console.log('Estado de conexión cambió:', states.previous, '->', states.current);
+            wsLogger.debug('ESTADO CAMBIO', {
+              from: states.previous,
+              to: states.current,
+              timestamp: new Date().toISOString()
+            });
         });
 
       } catch (error) {
-        console.error(' Error inicializando Echo:', error);
+        wsLogger.error('Error inicializando Echo', { error });
         reject(error);
       }
     });
@@ -95,10 +122,13 @@ export class WebSocketService {
 
   disconnect(): void {
     if (this.echo) {
+      wsLogger.info('Desconectando WebSocket...');
       this.echo.disconnect();
       this.echo = null;
     }
+    const channelCount = this.channels.size;
     this.channels.clear();
+    wsLogger.info('WebSocket desconectado', { channelsCleared: channelCount });
   }
 
   /**
@@ -109,11 +139,11 @@ export class WebSocketService {
    */
   listen(channelName: string, eventName: string, callback: Function): void {
     if (!this.echo) {
-      console.warn('Echo no está conectado. Llama a connect() primero.');
+      wsLogger.warn('Echo no está conectado. Llama a connect() primero.', { channelName, eventName });
       return;
     }
 
-    // console.log(`Intentando suscribirse a canal: "${channelName}" con evento: "${eventName}"`);
+    wsLogger.debug('Intentando suscribirse a canal', { channelName, eventName });
 
     // Reutilizar instancia del canal si ya existe
     let channel = this.channels.get(channelName);
@@ -122,14 +152,14 @@ export class WebSocketService {
       // Determinar el tipo de canal basado en el nombre
       if (channelName.startsWith('private-')) {
         const privateChannelName = channelName.replace('private-', '');
-        // // console.log(`Creando canal privado: ${privateChannelName}`);
+        wsLogger.debug('Creando canal privado', { privateChannelName });
         channel = this.echo.private(privateChannelName);
       } else if (channelName.startsWith('presence-')) {
         const presenceChannelName = channelName.replace('presence-', '');
-        // // console.log(`Creando canal de presencia: ${presenceChannelName}`);
+        wsLogger.debug('Creando canal de presencia', { presenceChannelName });
         channel = this.echo.join(presenceChannelName);
       } else {
-        // // console.log(`Creando canal público: ${channelName}`);
+        wsLogger.debug('Creando canal público', { channelName });
         channel = this.echo.channel(channelName);
       }
 
@@ -137,11 +167,19 @@ export class WebSocketService {
 
       // Escuchar eventos de suscripción
       channel.on('pusher:subscription_succeeded', () => {
-        // console.log(`Suscripción exitosa al canal: ${channelName}`);
+        wsLogger.info('CANAL SUSCRITO', {
+          channel: channelName,
+          status: 'subscribed',
+          timestamp: new Date().toISOString()
+        });
       });
 
       channel.on('pusher:subscription_error', (error: any) => {
-        console.error(`❌ Error al suscribirse al canal ${channelName}:`, error);
+        wsLogger.error('ERROR SUSCRIPCION', {
+          channel: channelName,
+          error,
+          status: 'failed'
+        });
       });
     }
 
@@ -151,11 +189,22 @@ export class WebSocketService {
     const formattedEvent = eventName.startsWith('.') ? eventName : `.${eventName}`;
 
     channel.listen(formattedEvent, (data: any) => {
-      // console.log(`Evento recibido [${channelName}] [${eventName}]:`, data);
+      wsLogger.info('EVENTO RECIBIDO', {
+        channel: channelName,
+        event: eventName,
+        formattedEvent,
+        dataType: typeof data,
+        dataKeys: data ? Object.keys(data) : [],
+        data
+      });
       callback(data);
     });
 
-    // console.log(`🎧 Escuchando evento "${formattedEvent}" en canal "${channelName}"`);
+    wsLogger.info('SUSCRIPCION ACTIVA', {
+      channel: channelName,
+      event: formattedEvent,
+      status: 'listening'
+    });
   }
 
   /**
@@ -163,6 +212,7 @@ export class WebSocketService {
    */
   leave(channelName: string): void {
     if (this.echo) {
+      wsLogger.info('Dejando canal', { channelName });
       this.echo.leave(channelName);
       this.channels.delete(channelName);
     }
