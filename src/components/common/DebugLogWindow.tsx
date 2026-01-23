@@ -1,10 +1,10 @@
 import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
-import { ScrollArea } from '@/components/atoms/scroll-area';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/atoms/resizable';
 import { appLogDir } from '@tauri-apps/api/path';
 import { save } from '@tauri-apps/plugin-dialog';
 import { BaseDirectory, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
-import { ArrowUpDown, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { ArrowUpDown, PanelRightClose, PanelRightOpen, RefreshCw, Search, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { LogLine } from './LogLine';
 
@@ -15,15 +15,22 @@ interface SystemStats {
   cpuUsage: number;
 }
 
+// Patrones para identificar logs de WebSocket
+const WS_PATTERNS = ['[WEBSOCKET]', '[WS_CONTEXT]'];
+
 export function DebugLogWindow() {
   const [logs, setLogs] = useState<string>('Cargando logs...');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [logPath, setLogPath] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [wsSearchTerm, setWsSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<LogLevel>('ALL');
   const [reverseOrder, setReverseOrder] = useState(false);
   const [maxLines, setMaxLines] = useState(1000);
   const [systemStats, setSystemStats] = useState<SystemStats>({ memoryUsage: 0, cpuUsage: 0 });
+  const [showWsPanel, setShowWsPanel] = useState(true);
+  const [excludeWsFromMain, setExcludeWsFromMain] = useState(true);
+  const [wsReverseOrder, setWsReverseOrder] = useState(true); // Por defecto, más recientes arriba
 
   const loadLogs = async () => {
     try {
@@ -67,7 +74,6 @@ export function DebugLogWindow() {
 
   const downloadLogs = async () => {
     try {
-      // Usar logs filtrados (lo que el usuario está viendo)
       const logsToDownload = processedLogs.lines.join('\n');
 
       if (!logsToDownload || logsToDownload.length === 0) {
@@ -75,44 +81,32 @@ export function DebugLogWindow() {
         return;
       }
 
-      // Generar nombre de archivo con timestamp y filtros aplicados
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('.')[0];
       let fileName = `app-logs-${timestamp}`;
 
-      // Agregar nivel al nombre si hay filtro activo
       if (selectedLevel !== 'ALL') {
         fileName += `-${selectedLevel}`;
       }
 
-      // Agregar indicador de búsqueda si hay filtro de texto
       if (searchTerm) {
         fileName += `-search`;
       }
 
       fileName += '.txt';
 
-      // Abrir diálogo nativo "Guardar como"
       const filePath = await save({
         defaultPath: fileName,
         filters: [
-          {
-            name: 'Text Files',
-            extensions: ['txt']
-          },
-          {
-            name: 'All Files',
-            extensions: ['*']
-          }
+          { name: 'Text Files', extensions: ['txt'] },
+          { name: 'All Files', extensions: ['*'] }
         ]
       });
 
-      // Si el usuario canceló, no hacer nada
       if (!filePath) {
         console.log('Download cancelled by user');
         return;
       }
 
-      // Crear header con información de los filtros
       let header = `# TPS Intermotors - Log Export\n`;
       header += `# Export Date: ${new Date().toLocaleString()}\n`;
       header += `# Total Lines: ${processedLogs.lines.length}\n`;
@@ -125,7 +119,6 @@ export function DebugLogWindow() {
 
       const finalContent = header + logsToDownload;
 
-      // Guardar el archivo en la ruta seleccionada
       await writeTextFile(filePath, finalContent);
 
       console.log('Filtered logs saved successfully to:', filePath);
@@ -134,13 +127,11 @@ export function DebugLogWindow() {
     }
   };
 
-  // Cargar stats del sistema
   const loadSystemStats = async () => {
     try {
-      // Memoria usada por el proceso (aproximado usando performance API)
       if (performance && (performance as any).memory) {
         const memory = (performance as any).memory;
-        const usedMemoryMB = memory.usedJSHeapSize / 1048576; // Convertir a MB
+        const usedMemoryMB = memory.usedJSHeapSize / 1048576;
         setSystemStats(prev => ({ ...prev, memoryUsage: usedMemoryMB }));
       }
     } catch (error) {
@@ -148,22 +139,33 @@ export function DebugLogWindow() {
     }
   };
 
-  // Procesar y filtrar logs
+  // Función helper para detectar si una línea es de WebSocket
+  const isWebSocketLog = (line: string): boolean => {
+    return WS_PATTERNS.some(pattern => line.includes(pattern));
+  };
+
+  // Procesar y filtrar logs generales (excluyendo WebSocket si está activo)
   const processedLogs = useMemo(() => {
     if (!logs || logs.startsWith('📝') || logs.startsWith('❌') || logs.startsWith('✅')) {
-      return { lines: [logs], stats: { total: 0, info: 0, warn: 0, error: 0, debug: 0 } };
+      return { lines: [logs], stats: { total: 0, info: 0, warn: 0, error: 0, debug: 0, websocket: 0 } };
     }
 
     let lines = logs.split('\n').filter(line => line.trim());
 
-    // Estadísticas de logs
+    // Estadísticas de todos los logs
     const stats = {
       total: lines.length,
       info: lines.filter(l => l.includes('[INFO')).length,
       warn: lines.filter(l => l.includes('[WARN')).length,
       error: lines.filter(l => l.includes('[ERROR')).length,
       debug: lines.filter(l => l.includes('[DEBUG')).length,
+      websocket: lines.filter(l => isWebSocketLog(l)).length,
     };
+
+    // Excluir WebSocket del panel principal si está activo
+    if (excludeWsFromMain) {
+      lines = lines.filter(line => !isWebSocketLog(line));
+    }
 
     // Filtrar por nivel
     if (selectedLevel !== 'ALL') {
@@ -178,7 +180,7 @@ export function DebugLogWindow() {
     }
 
     // Limitar líneas
-    if (lines.length > maxLines) {
+    if (maxLines > 0 && lines.length > maxLines) {
       lines = lines.slice(-maxLines);
     }
 
@@ -188,9 +190,44 @@ export function DebugLogWindow() {
     }
 
     return { lines, stats };
-  }, [logs, selectedLevel, searchTerm, maxLines, reverseOrder]);
+  }, [logs, selectedLevel, searchTerm, maxLines, reverseOrder, excludeWsFromMain]);
 
-  // Auto-refresh cada 2 segundos si está activado
+  // Procesar logs de WebSocket exclusivamente
+  const wsLogs = useMemo(() => {
+    if (!logs || logs.startsWith('📝') || logs.startsWith('❌') || logs.startsWith('✅')) {
+      return { lines: [], stats: { total: 0, connected: 0, events: 0, errors: 0 } };
+    }
+
+    let lines = logs.split('\n').filter(line => line.trim() && isWebSocketLog(line));
+
+    // Estadísticas de WebSocket
+    const stats = {
+      total: lines.length,
+      connected: lines.filter(l => l.toLowerCase().includes('conectado') || l.toLowerCase().includes('connected') || l.toLowerCase().includes('conexión establecida')).length,
+      events: lines.filter(l => l.toLowerCase().includes('evento recibido') || l.toLowerCase().includes('event received')).length,
+      errors: lines.filter(l => l.includes('[ERROR') || l.toLowerCase().includes('error') || l.toLowerCase().includes('failed')).length,
+    };
+
+    // Filtrar por búsqueda de WebSocket
+    if (wsSearchTerm) {
+      lines = lines.filter(line =>
+        line.toLowerCase().includes(wsSearchTerm.toLowerCase())
+      );
+    }
+
+    // Limitar a últimas 500 líneas para WebSocket
+    if (lines.length > 500) {
+      lines = lines.slice(-500);
+    }
+
+    // Ordenar según preferencia del usuario
+    if (wsReverseOrder) {
+      lines = [...lines].reverse();
+    }
+
+    return { lines, stats };
+  }, [logs, wsSearchTerm, wsReverseOrder]);
+
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
@@ -201,7 +238,6 @@ export function DebugLogWindow() {
     }
   }, [autoRefresh]);
 
-  // Cargar logs al montar
   useEffect(() => {
     loadLogs();
     loadSystemStats();
@@ -253,6 +289,17 @@ export function DebugLogWindow() {
               <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 sm:mr-1.5" />
               <span className="hidden sm:inline">Clear</span>
             </Button>
+            {/* Toggle WebSocket Panel */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 sm:h-8 px-2 sm:px-3 text-xs ${showWsPanel ? 'text-violet-400 bg-violet-950/30 hover:bg-violet-950/50' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'}`}
+              onClick={() => setShowWsPanel(!showWsPanel)}
+              title={showWsPanel ? 'Ocultar panel WebSocket' : 'Mostrar panel WebSocket'}
+            >
+              {showWsPanel ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline ml-1.5">WS</span>
+            </Button>
           </div>
         </div>
 
@@ -263,14 +310,14 @@ export function DebugLogWindow() {
             <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-3.5 sm:h-3.5 text-zinc-500" />
             <Input
               type="text"
-              placeholder="Search..."
+              placeholder="Search logs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8 sm:pl-9 bg-zinc-900 border-zinc-800 text-zinc-100 placeholder-zinc-600 h-7 sm:h-8 text-xs sm:text-sm focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700"
             />
           </div>
 
-          {/* Filtro de nivel - Scrollable en móvil */}
+          {/* Filtro de nivel */}
           <div className="flex items-center gap-0.5 bg-zinc-900 rounded-lg p-0.5 border border-zinc-800 overflow-x-auto scrollbar-hide">
             {logLevels.map(level => (
               <Button
@@ -295,6 +342,17 @@ export function DebugLogWindow() {
 
           {/* Controles adicionales */}
           <div className="flex items-center gap-1.5">
+            {/* Toggle excluir WS del main */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExcludeWsFromMain(!excludeWsFromMain)}
+              className={`h-7 sm:h-8 px-2 sm:px-2.5 transition-all text-[10px] sm:text-xs ${excludeWsFromMain ? 'text-violet-400 bg-violet-950/30' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
+              title={excludeWsFromMain ? 'WebSocket excluido del panel principal' : 'WebSocket incluido en panel principal'}
+            >
+              {excludeWsFromMain ? <WifiOff className="w-3 h-3" /> : <Wifi className="w-3 h-3" />}
+            </Button>
+
             {/* Orden inverso */}
             <Button
               variant="ghost"
@@ -310,7 +368,7 @@ export function DebugLogWindow() {
             <select
               value={maxLines}
               onChange={(e) => setMaxLines(Number(e.target.value))}
-              className="h-7 sm:h-8 px-1.5 sm:px-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] sm:text-xs font-medium focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 focus:outline-none"
+              className="h-7 sm:h-8 px-1.5 sm:px-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-[10px] sm:text-xs font-medium focus:border-zinc-700 focus:ring-1 focus:ring-zinc-700 focus:outline-none text-zinc-300"
             >
               <option value={100}>100</option>
               <option value={500}>500</option>
@@ -321,7 +379,7 @@ export function DebugLogWindow() {
           </div>
         </div>
 
-        {/* Stats - Scrollable en móvil */}
+        {/* Stats */}
         <div className="flex items-center gap-2 sm:gap-3 mt-2.5 sm:mt-3 text-[10px] sm:text-xs overflow-x-auto scrollbar-hide pb-1">
           <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
             <span className="text-zinc-500 text-[10px] sm:text-xs">Total</span>
@@ -355,6 +413,13 @@ export function DebugLogWindow() {
               <span className="text-zinc-400 font-semibold tabular-nums">{processedLogs.stats.debug}</span>
             </div>
           )}
+          {processedLogs.stats.websocket > 0 && (
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-violet-400"></div>
+              <span className="text-zinc-500 hidden sm:inline">WS</span>
+              <span className="text-violet-400 font-semibold tabular-nums">{processedLogs.stats.websocket}</span>
+            </div>
+          )}
           <div className="ml-auto flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <div className="flex items-center gap-1 sm:gap-1.5">
               <span className="text-zinc-500">Showing</span>
@@ -370,14 +435,119 @@ export function DebugLogWindow() {
         </div>
       </div>
 
-      {/* Contenido de logs */}
-      <ScrollArea className="flex-1 p-2 sm:p-3 md:p-4 bg-[#0a0a0a]">
-        <div className="space-y-1">
-          {processedLogs.lines.map((line, index) => (
-            <LogLine key={index} line={line} index={index} />
-          ))}
+      {/* Contenido principal - Dos columnas resizables */}
+      {showWsPanel ? (
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          {/* Panel izquierdo - Logs generales */}
+          <ResizablePanel defaultSize={65} minSize={30}>
+            <div className="h-full overflow-y-auto bg-[#0a0a0a] p-2 sm:p-3 md:p-4">
+              <div className="space-y-1">
+                {processedLogs.lines.map((line, index) => (
+                  <div key={index} className="break-words overflow-hidden">
+                    <LogLine line={line} index={index} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle className="bg-violet-900/30 hover:bg-violet-700/50 transition-colors" />
+
+          {/* Panel derecho - WebSocket */}
+          <ResizablePanel defaultSize={35} minSize={20} maxSize={60}>
+            <div className="h-full flex flex-col bg-[#080810]">
+              {/* Header WebSocket */}
+              <div className="p-3 border-b border-violet-900/30 bg-violet-950/20 flex-shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Wifi className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                    <h3 className="text-sm font-semibold text-violet-300 truncate">WebSocket Logs</h3>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] flex-shrink-0">
+                    <span className="text-zinc-500">Events</span>
+                    <span className="text-violet-400 font-semibold">{wsLogs.stats.events}</span>
+                    {wsLogs.stats.errors > 0 && (
+                      <>
+                        <span className="text-zinc-600">|</span>
+                        <span className="text-rose-400 font-semibold">{wsLogs.stats.errors} err</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Búsqueda WebSocket */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3 h-3 text-violet-500/50" />
+                  <Input
+                    type="text"
+                    placeholder="Search WebSocket logs..."
+                    value={wsSearchTerm}
+                    onChange={(e) => setWsSearchTerm(e.target.value)}
+                    className="pl-8 bg-violet-950/30 border-violet-900/50 text-violet-100 placeholder-violet-500/50 h-7 text-xs focus:border-violet-700 focus:ring-1 focus:ring-violet-700"
+                  />
+                </div>
+
+                {/* Stats y controles WebSocket */}
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-3 text-[10px]">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></div>
+                      <span className="text-zinc-500">Connected</span>
+                      <span className="text-emerald-400 font-semibold">{wsLogs.stats.connected}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0"></div>
+                      <span className="text-zinc-500">Total</span>
+                      <span className="text-violet-400 font-semibold">{wsLogs.stats.total}</span>
+                    </div>
+                  </div>
+                  {/* Botón ordenar */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setWsReverseOrder(!wsReverseOrder)}
+                    className={`h-6 px-2 transition-all text-[10px] ${wsReverseOrder ? 'text-violet-400 bg-violet-950/30' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
+                    title={wsReverseOrder ? 'Más recientes arriba' : 'Más antiguos arriba'}
+                  >
+                    <ArrowUpDown className="w-3 h-3 mr-1" />
+                    {wsReverseOrder ? 'Nuevos' : 'Antiguos'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Contenido WebSocket */}
+              <div className="flex-1 overflow-y-auto p-2">
+                {wsLogs.lines.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <WifiOff className="w-8 h-8 text-violet-500/30 mb-2" />
+                    <p className="text-violet-500/50 text-xs">No WebSocket logs yet</p>
+                    <p className="text-violet-500/30 text-[10px] mt-1">Logs will appear here when WebSocket events occur</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {wsLogs.lines.map((line, index) => (
+                      <div key={index} className="break-words overflow-hidden">
+                        <LogLine line={line} index={index} className="text-[11px]" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        /* Panel único cuando WS está oculto */
+        <div className="flex-1 overflow-y-auto bg-[#0a0a0a] p-2 sm:p-3 md:p-4">
+          <div className="space-y-1">
+            {processedLogs.lines.map((line, index) => (
+              <div key={index} className="break-words overflow-hidden">
+                <LogLine line={line} index={index} />
+              </div>
+            ))}
+          </div>
         </div>
-      </ScrollArea>
+      )}
 
       {/* Footer */}
       <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-t border-zinc-800 bg-[#111111]">
@@ -396,6 +566,12 @@ export function DebugLogWindow() {
               <>
                 <span className="text-zinc-700 flex-shrink-0">|</span>
                 <span className="flex-shrink-0">Filter: <span className="text-zinc-300">{selectedLevel}</span></span>
+              </>
+            )}
+            {excludeWsFromMain && (
+              <>
+                <span className="text-zinc-700 flex-shrink-0">|</span>
+                <span className="flex-shrink-0 text-violet-400">WS excluded</span>
               </>
             )}
           </div>

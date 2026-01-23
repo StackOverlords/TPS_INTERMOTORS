@@ -9,7 +9,12 @@ export const useCreateCategory = () => {
     return useMutation({
         mutationFn: (data: CreateCategory) => categoriesService.create(data),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEYS.lists() });
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({ queryKey: ["shared", "categories-with-subcategories"] });
+            // Legacy categories module
+            queryClient.invalidateQueries({ queryKey: ["categories"] });
         }
     });
 };

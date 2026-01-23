@@ -7,7 +7,10 @@ export const useDeleteCustomer = () => {
     return useMutation({
         mutationFn: (id: number) => customersService.delete(id),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: ["customers"] });
+            // Sales module (select de clientes en ventas, cotizaciones, devoluciones, cuentas por pagar)
+            queryClient.invalidateQueries({ queryKey: ["sale-customers"] });
         },
     });
 };
