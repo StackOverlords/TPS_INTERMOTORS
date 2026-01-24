@@ -9,7 +9,12 @@ export const useCreateProvider = () => {
     return useMutation({
         mutationFn: (data: CreateProvider) => providersService.create(data),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.lists() });
+            // Purchases module (select de proveedores en compras)
+            queryClient.invalidateQueries({ queryKey: ["purchases", "commons", "providers"] });
+            // Orders module (select de proveedores en pedidos)
+            queryClient.invalidateQueries({ queryKey: ["orders", "commons", "providers"] });
         }
     });
 };

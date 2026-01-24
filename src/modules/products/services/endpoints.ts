@@ -13,5 +13,8 @@ export const PRODUCT_ENDPOINTS = {
     actions: {
         updateImage: (producto: string | number) =>
             `${BASE_PATH}/actions/update_image/${producto}`,
+    },
+    reports: {
+        stockMinimo: `${BASE_PATH}/reports/stockminimo`,
     }
 } as const;

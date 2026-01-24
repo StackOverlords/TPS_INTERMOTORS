@@ -55,7 +55,7 @@ const CATEGORIES_DIALOG_CONFIG: DialogConfig = {
   title: "División",
   description: "una división",
   field: {
-    name: "división",
+    name: "categoria",
     label: "División",
     placeholder: "Ingresa el nombre de la división...",
     required: true,

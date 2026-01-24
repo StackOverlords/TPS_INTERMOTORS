@@ -162,6 +162,21 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
       ),
     },
     {
+      accessorKey: "fecha_actualizacion",
+      header: "Fecha Mod Precio",
+      minSize: 30,
+      size: 80,
+      cell: ({ getValue }) => {
+        const rawFecha = getValue() as string;
+
+        if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
+
+        return (
+          <span className="text-gray-400">{parseDateForUi(rawFecha)}</span>
+        );
+      },
+    },
+    {
       id: "actions",
       header: "Acciones",
       size: 80,
