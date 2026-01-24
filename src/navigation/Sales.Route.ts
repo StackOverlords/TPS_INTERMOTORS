@@ -5,6 +5,8 @@ import SalesListScreen from "@/modules/sales/screens/salesListScreen";
 import { Receipt, ShoppingBag, Table2 } from "lucide-react";
 import type RouteType from "./RouteType";
 import { salesListViewConfig } from "@/modules/sales/config/sale.config";
+import MostSoldScreen from "@/modules/reports/screens/mostSoldScreen";
+import TopRevenueScreen from "@/modules/reports/screens/TopRevenueScreen";
 
 const salesProtectedRoutes: RouteType[] = [
   {
@@ -33,6 +35,30 @@ const salesProtectedRoutes: RouteType[] = [
         name: "Lista de ventas",
         type: "protected",
         element: SalesListScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin","Invitado"],
+        icon: Table2,
+        viewConfig: salesListViewConfig,
+        isHeader: false,
+        showSidebar: true
+      },
+       {
+        path: "/dashboard/saleRepor/mostsold",
+        name: "Reporte Mayor Cantidad Vendida",
+        type: "protected",
+        element: MostSoldScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin","Invitado"],
+        icon: Table2,
+        viewConfig: salesListViewConfig,
+        isHeader: false,
+        showSidebar: true
+      },
+      {
+        path: "/dashboard/saleReport/mostrevenue",
+        name: "Reporte Mayor Ingreso",
+        type: "protected",
+        element: TopRevenueScreen,
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin","Invitado"],
         icon: Table2,
