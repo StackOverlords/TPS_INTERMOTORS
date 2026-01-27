@@ -1,3 +1,4 @@
+import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import {
   Dialog,
@@ -37,7 +38,8 @@ export const AccountPayableDetailModal = ({
         return "text-gray-600";
     }, [accountPayable]);
 
-    const totalVenta = useMemo(() => {
+    // Calcular el total original de la venta (sin considerar devoluciones)
+    const totalVentaOriginal = useMemo(() => {
         if (!saleData?.detalles) return 0;
         return saleData.detalles.reduce((total, detalle) => {
             const subtotal = detalle.precio * detalle.cantidad;
@@ -46,6 +48,35 @@ export const AccountPayableDetailModal = ({
                 : 1;
             return total + subtotal * descuento;
         }, 0);
+    }, [saleData?.detalles]);
+
+    // Calcular el total real considerando devoluciones
+    const totalVentaReal = useMemo(() => {
+        if (!saleData?.detalles) return 0;
+        return saleData.detalles.reduce((total, detalle) => {
+            const cantidadReal = detalle.cantidad - detalle.cantidad_dev;
+            const subtotal = detalle.precio * cantidadReal;
+            const descuento = detalle.porcentaje_descuento != null
+                ? (1 - detalle.porcentaje_descuento / 100)
+                : 1;
+            return total + subtotal * descuento;
+        }, 0);
+    }, [saleData?.detalles]);
+
+    // Calcular el total devuelto
+    const totalDevuelto = useMemo(() => {
+        return totalVentaOriginal - totalVentaReal;
+    }, [totalVentaOriginal, totalVentaReal]);
+
+    // Calcular el saldo pendiente real (considerando devoluciones)
+    const saldoPendienteReal = useMemo(() => {
+        if (!accountPayable) return 0;
+        return totalVentaReal - accountPayable.total_pagado;
+    }, [totalVentaReal, accountPayable]);
+
+    // Verificar si hay devoluciones
+    const tieneDevoluciones = useMemo(() => {
+        return saleData?.detalles?.some(detalle => detalle.cantidad_dev > 0) ?? false;
     }, [saleData?.detalles]);
 
     if (!accountPayable) {
@@ -74,16 +105,40 @@ export const AccountPayableDetailModal = ({
 
                 <div className="flex-1 overflow-auto space-y-2">
                     {/* Información General - Compacta */}
-                    <div className="flex-shrink-0">
-                        {/* Resumen Financiero - Grid de 5 columnas compacto */}
+                    <div className="flex-shrink-0 space-y-2">
+                        {/* Alerta de devoluciones */}
+                        {tieneDevoluciones && totalDevuelto > 0 && (
+                            <div className="rounded-md p-2   flex items-center gap-2">
+                                <Badge variant="outline" className="border-orange-400 text-orange-700 bg-orange-100">
+                                    Devoluciones detectadas
+                                </Badge>
+                                <span className="text-xs text-orange-700">
+                                    Total devuelto: <strong>{formatCurrency(totalDevuelto)}</strong>
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Resumen Financiero - Grid compacto */}
                         <div className="rounded-md p-2 border border-gray-200 bg-white shadow-sm">
-                            <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                            <div className="grid grid-cols-6 gap-2 text-center text-xs">
                                 <div>
-                                    <span className="text-gray-500 block mb-0.5">Total Vendido</span>
-                                    <p className="text-sm font-bold text-blue-600">
+                                    <span className="text-gray-500 block mb-0.5">Total Original</span>
+                                    <p className="text-sm font-bold text-gray-600">
                                         {formatCurrency(accountPayable.total_vendido)}
                                     </p>
+                                    {tieneDevoluciones && (
+                                        <p className="text-[10px] text-gray-400">(antes dev.)</p>
+                                    )}
                                 </div>
+                                {tieneDevoluciones && (
+                                    <div>
+                                        <span className="text-gray-500 block mb-0.5">Total Real</span>
+                                        <p className="text-sm font-bold text-blue-600">
+                                            {formatCurrency(totalVentaReal)}
+                                        </p>
+                                        <p className="text-[10px] text-blue-400">(después dev.)</p>
+                                    </div>
+                                )}
                                 <div>
                                     <span className="text-gray-500 block mb-0.5">Total Pagado</span>
                                     <p className="text-sm font-bold text-green-600">
@@ -92,9 +147,14 @@ export const AccountPayableDetailModal = ({
                                 </div>
                                 <div>
                                     <span className="text-gray-500 block mb-0.5">Saldo Pendiente</span>
-                                    <p className={`text-sm font-bold ${saldoColor}`}>
-                                        {formatCurrency(accountPayable.saldo)}
+                                    <p className={`text-sm font-bold ${saldoPendienteReal <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {formatCurrency(saldoPendienteReal)}
                                     </p>
+                                    {tieneDevoluciones && saldoPendienteReal !== accountPayable.saldo && (
+                                        <p className="text-[10px] text-gray-400">
+                                            (Original: {formatCurrency(accountPayable.saldo)})
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <span className="text-gray-500 block mb-0.5">Plazo de Pago</span>
@@ -118,7 +178,7 @@ export const AccountPayableDetailModal = ({
                         <div className="flex flex-col min-h-0">
                             <PaymentsList
                                 id_venta={accountPayable.id}
-                                saldoPendiente={accountPayable.saldo}
+                                saldoPendiente={saldoPendienteReal}
                                 onPaymentChange={onPaymentChange}
                             />
                         </div>
@@ -128,7 +188,7 @@ export const AccountPayableDetailModal = ({
                             <SaleProductsSection
                                 products={saleData?.detalles ?? []}
                                 isLoading={isLoadingSale}
-                                totalAmount={totalVenta}
+                                totalAmount={totalVentaReal}
                             />
                         </div>
                     </div>

@@ -51,7 +51,7 @@ export const salesService = {
             count: response.data.length,
         }, MODULE_NAME);
 
-        return response;
+        return response as SalesGetAllResponse;
     },
 
     /**

@@ -4,7 +4,8 @@ import { Label } from "@/components/atoms/label";
 import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { Loader2 } from "lucide-react";
+import { formatCurrency } from "@/utils/formaters";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCreatePayment } from "../../hooks/mutations/useCreatePayment";
 import { usePaymentTypes } from "../../hooks/queries/usePaymentTypes";
@@ -41,8 +42,53 @@ export const CreatePaymentForm = ({
         }));
     }, [paymentTypesData]);
 
+    // Validación en tiempo real del monto
+    const montoValidation = useMemo(() => {
+        // Redondear ambos valores a 2 decimales para comparación precisa
+        const montoRounded = parseFloat(formData.monto.toFixed(2));
+        const saldoRounded = parseFloat(saldoMaximo.toFixed(2));
+
+        if (montoRounded <= 0) {
+            return {
+                isValid: false,
+                message: "El monto debe ser mayor a 0",
+                type: "error" as const,
+            };
+        }
+        if (montoRounded > saldoRounded) {
+            return {
+                isValid: false,
+                message: `El monto excede el saldo pendiente (${formatCurrency(saldoRounded)})`,
+                type: "error" as const,
+            };
+        }
+        if (montoRounded === saldoRounded) {
+            return {
+                isValid: true,
+                message: "Pago total del saldo pendiente",
+                type: "success" as const,
+            };
+        }
+        if (montoRounded > 0 && montoRounded < saldoRounded) {
+            return {
+                isValid: true,
+                message: `Pago parcial. Restará: ${formatCurrency(saldoRounded - montoRounded)}`,
+                type: "info" as const,
+            };
+        }
+        return {
+            isValid: true,
+            message: "",
+            type: "info" as const,
+        };
+    }, [formData.monto, saldoMaximo]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Redondear valores para validación
+        const montoRedondeado = parseFloat(formData.monto.toFixed(2));
+        const saldoRedondeado = parseFloat(saldoMaximo.toFixed(2));
 
         // Validaciones
         if (!formData.fecha) {
@@ -53,7 +99,7 @@ export const CreatePaymentForm = ({
             return;
         }
 
-        if (formData.monto <= 0) {
+        if (montoRedondeado <= 0) {
             showErrorToast({
                 title: "Error",
                 description: "El monto debe ser mayor a 0",
@@ -61,10 +107,10 @@ export const CreatePaymentForm = ({
             return;
         }
 
-        if (formData.monto > saldoMaximo) {
+        if (montoRedondeado > saldoRedondeado) {
             showErrorToast({
                 title: "Error",
-                description: `El monto no puede ser mayor al saldo pendiente (${saldoMaximo})`,
+                description: `El monto no puede ser mayor al saldo pendiente (${formatCurrency(saldoRedondeado)})`,
             });
             return;
         }
@@ -72,6 +118,7 @@ export const CreatePaymentForm = ({
         const paymentData: CreatePaymentData = {
             id_venta,
             ...formData,
+            monto: montoRedondeado,
         };
 
         createPayment(paymentData, {
@@ -134,23 +181,78 @@ export const CreatePaymentForm = ({
 
                 {/* Monto */}
                 <div className="space-y-1">
-                    <Label htmlFor="monto" className="text-sm">
-                        Monto <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                        id="monto"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        max={saldoMaximo}
-                        value={formData.monto}
-                        onChange={(e) =>
-                            setFormData({ ...formData, monto: Number(e.target.value) })
-                        }
-                        required
-                        className="h-9"
-                        placeholder={`Máx: ${saldoMaximo}`}
-                    />
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="monto" className="text-sm">
+                            Monto <span className="text-red-500">*</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                                (Máx: {formatCurrency(saldoMaximo)})
+                            </span>
+                        </Label>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                // Asegurar que el saldo máximo esté redondeado a 2 decimales
+                                const rounded = parseFloat(saldoMaximo.toFixed(2));
+                                setFormData({ ...formData, monto: rounded });
+                            }}
+                            className="h-5 text-[10px] px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                            Pago total
+                        </Button>
+                    </div>
+                    <div className="relative">
+                        <Input
+                            id="monto"
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            value={formData.monto || ""}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === "") {
+                                    setFormData({ ...formData, monto: 0 });
+                                    return;
+                                }
+                                // Redondear a 2 decimales y parsear de nuevo para evitar errores de precisión
+                                const rounded = parseFloat(Number(value).toFixed(2));
+                                setFormData({ ...formData, monto: rounded });
+                            }}
+                            required
+                            className={`h-9 pr-8 ${
+                                formData.monto > 0 && !montoValidation.isValid
+                                    ? "border-red-500 focus-visible:ring-red-500"
+                                    : formData.monto > 0 && montoValidation.type === "success"
+                                    ? "border-green-500 focus-visible:ring-green-500"
+                                    : ""
+                            }`}
+                            placeholder="0.00"
+                        />
+                        {formData.monto > 0 && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                {montoValidation.isValid ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                ) : (
+                                    <AlertCircle className="h-4 w-4 text-red-600" />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {/* Mensaje de validación */}
+                    {formData.monto > 0 && montoValidation.message && (
+                        <p
+                            className={`text-xs flex items-center gap-1 ${
+                                montoValidation.type === "error"
+                                    ? "text-red-600"
+                                    : montoValidation.type === "success"
+                                    ? "text-green-600"
+                                    : "text-blue-600"
+                            }`}
+                        >
+                            {montoValidation.message}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -176,7 +278,7 @@ export const CreatePaymentForm = ({
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
                     Cancelar
                 </Button>
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" disabled={isPending || !montoValidation.isValid}>
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Registrar Pago
                 </Button>

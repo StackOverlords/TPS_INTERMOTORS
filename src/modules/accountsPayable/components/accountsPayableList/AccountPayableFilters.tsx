@@ -1,3 +1,4 @@
+import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
@@ -6,7 +7,7 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox";
 // import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
 import { useFilterNavigation } from "@/hooks/keyBindings/useFilterNavigation";
 import { useSaleCustomers } from "@/modules/sales/hooks/useSaleCustomers";
-import { Search } from "lucide-react";
+import { CalendarDays, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 import { usePaymentTypes } from "../../hooks/queries/usePaymentTypes";
@@ -56,8 +57,22 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
         }));
     }, [termTypesData]);
 
+    // Calcular si se están usando fechas
+    const hasDateFilters = filters.fecha_inicio || filters.fecha_fin;
+
     return (
         <div ref={containerRef} className="space-y-2">
+            {/* Indicador de filtro de fechas activo */}
+            {/* {hasDateFilters && (
+                <div className="flex items-center gap-2 text-xs">
+                    <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700 flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        Filtrando por fecha: {filters.fecha_inicio ? new Date(filters.fecha_inicio).toLocaleDateString('es-ES') : '...'} - {filters.fecha_fin ? new Date(filters.fecha_fin).toLocaleDateString('es-ES') : '...'}
+                    </Badge>
+                    <span className="text-gray-500 text-[10px]">(Por defecto: últimos 3 meses)</span>
+                </div>
+            )} */}
+
             {/* Primera fila: Filtros principales */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                 {/* Nro. Venta */}
