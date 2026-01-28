@@ -1,5 +1,8 @@
 import AccountsPayableListScreen from "@/modules/accountsPayable/screens/AccountsPayableListScreen";
-import { FolderOpen, TableCellsMerge } from "lucide-react";
+import AccountsReceivableGeneralReportScreen from "@/modules/accountsPayable/screens/AccountsReceivableGeneralReportScreen";
+import AccountsReceivablePaidReportScreen from "@/modules/accountsPayable/screens/AccountsReceivablePaidReportScreen";
+import AccountsReceivableByCustomerReportScreen from "@/modules/accountsPayable/screens/AccountsReceivableByCustomerReportScreen";
+import { FolderOpen, TableCellsMerge, FileText, CheckCircle2, User } from "lucide-react";
 import type RouteType from "./RouteType";
 
 const accountsPayable: RouteType[] = [
@@ -22,6 +25,42 @@ const accountsPayable: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: TableCellsMerge,
+
+        isHeader: false,
+        showSidebar: true
+      },
+      {
+        path: "/dashboard/reports/accounts-receivable-general",
+        name: "Reporte General",
+        type: "protected",
+        element: AccountsReceivableGeneralReportScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        icon: FileText,
+
+        isHeader: false,
+        showSidebar: true
+      },
+      {
+        path: "/dashboard/reports/accounts-receivable-paid",
+        name: "Reporte Pagadas",
+        type: "protected",
+        element: AccountsReceivablePaidReportScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        icon: CheckCircle2,
+
+        isHeader: false,
+        showSidebar: true
+      },
+      {
+        path: "/dashboard/reports/accounts-receivable-by-customer",
+        name: "Reporte Por Cliente",
+        type: "protected",
+        element: AccountsReceivableByCustomerReportScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        icon: User,
 
         isHeader: false,
         showSidebar: true

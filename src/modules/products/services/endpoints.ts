@@ -16,5 +16,7 @@ export const PRODUCT_ENDPOINTS = {
     },
     reports: {
         stockMinimo: `${BASE_PATH}/reports/stockminimo`,
+        utilidades: `${BASE_PATH}/reports/utilidades`,
+        inventarioGeneral: `${BASE_PATH}/reports/general`,
     }
 } as const;

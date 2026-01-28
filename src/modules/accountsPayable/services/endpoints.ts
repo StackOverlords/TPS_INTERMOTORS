@@ -7,4 +7,10 @@ export const ACCOUNT_PAYABLE_ENDPOINTS = {
     createPayment: (id_venta: number) => `/accounts-receivable/actions/payments/${id_venta}`,
     deletePayment: (id_pago: number) => `/accounts-receivable/actions/payments/${id_pago}`,
     showPayment: (id_pago: number) => `/accounts-receivable/actions/payments/${id_pago}/show`,
+    // Endpoints de reportes
+    reports: {
+        general: '/accounts-receivable/reports/general',
+        paid: '/accounts-receivable/reports/paid',
+        byCustomer: '/accounts-receivable/reports/by_customer',
+    },
 } as const;
