@@ -6,9 +6,11 @@ import { Separator } from "@/components/atoms/separator";
 import { Slider } from "@/components/atoms/slider";
 import ThemeCard from "../ThemeCard";
 import { useRef } from "react";
+import { useTheme } from "@/hooks/useTheme";
 
 const AppearanceSettings = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { theme, setTheme } = useTheme();
     // const [customColor, setCustomColor] = useState('');
 
     const brandColors = [
@@ -152,11 +154,11 @@ const AppearanceSettings = () => {
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <div className="relative group cursor-pointer">
-                                <div className="w-full h-20 sm:hidden rounded-lg border-2 border-primary bg-background flex items-center justify-center">
+                            <div className="relative group cursor-pointer" onClick={() => setTheme('light')}>
+                                <div className={`w-full h-20 sm:hidden rounded-lg border-2 ${theme === 'light' ? 'border-primary' : 'border-gray-200'} bg-background flex items-center justify-center`}>
                                     <Sun className="h-6 w-6 text-foreground" />
                                 </div>
-                                <div className="w-full h-50 hidden sm:flex rounded-lg border-2 border-primary bg-gray-50 justify-center items-end overflow-hidden">
+                                <div className={`w-full h-50 hidden sm:flex rounded-lg border-2 ${theme === 'light' ? 'border-primary' : 'border-gray-200'} bg-gray-50 justify-center items-end overflow-hidden`}>
                                     {/* mockup dashboard */}
                                     <div className="w-11/12 h-11/12">
                                         <ThemeCard
@@ -165,16 +167,16 @@ const AppearanceSettings = () => {
                                     </div>
                                 </div>
 
-                                <Badge className="absolute -top-2 -right-2 bg-primary">Activo</Badge>
+                                {theme === 'light' && <Badge className="absolute -top-2 -right-2 bg-primary">Activo</Badge>}
                             </div>
                             <p className="text-sm text-center">Claro</p>
                         </div>
                         <div className="space-y-2">
-                            <div className="relative group cursor-pointer">
-                                <div className="w-full sm:hidden h-20 rounded-lg border border-border bg-gray-900 flex items-center justify-center hover:border-primary transition-colors">
+                            <div className="relative group cursor-pointer" onClick={() => setTheme('dark')}>
+                                <div className={`w-full sm:hidden h-20 rounded-lg border-2 ${theme === 'dark' ? 'border-primary' : 'border-gray-200'} bg-gray-900 flex items-center justify-center hover:border-primary transition-colors`}>
                                     <Moon className="h-6 w-6 text-white" />
                                 </div>
-                                <div className="w-full h-50 hidden sm:flex rounded-lg border-2 border-primary bg-gray-900 justify-center items-end overflow-hidden">
+                                <div className={`w-full h-50 hidden sm:flex rounded-lg border-2 ${theme === 'dark' ? 'border-primary' : 'border-gray-200'} bg-gray-900 justify-center items-end overflow-hidden`}>
                                     {/* mockup dashboard */}
                                     <div className="w-11/12 h-11/12">
                                         <ThemeCard
@@ -182,15 +184,16 @@ const AppearanceSettings = () => {
                                         />
                                     </div>
                                 </div>
+                                {theme === 'dark' && <Badge className="absolute -top-2 -right-2 bg-primary">Activo</Badge>}
                             </div>
                             <p className="text-sm text-center">Oscuro</p>
                         </div>
                         <div className="space-y-2">
-                            <div className="relative group cursor-pointer">
-                                <div className="w-full sm:hidden h-20 rounded-lg border border-border bg-gradient-to-b from-gray-200 to-gray-50 flex items-center justify-center hover:border-primary transition-colors">
+                            <div className="relative group cursor-pointer" onClick={() => setTheme('system')}>
+                                <div className={`w-full sm:hidden h-20 rounded-lg border-2 ${theme === 'system' ? 'border-primary' : 'border-gray-200'} bg-gradient-to-b from-gray-200 to-gray-50 flex items-center justify-center hover:border-primary transition-colors`}>
                                     <Monitor className="h-6 w-6 text-foreground" />
                                 </div>
-                                <div className="w-full h-50 hidden sm:flex rounded-lg border-2 border-gray-200 bg-gradient-to-r from-gray-50 from-50% to-gray-900 to-50% justify-center items-end overflow-hidden">
+                                <div className={`w-full h-50 hidden sm:flex rounded-lg border-2 ${theme === 'system' ? 'border-primary' : 'border-gray-200'} bg-gradient-to-r from-gray-50 from-50% to-gray-900 to-50% justify-center items-end overflow-hidden`}>
                                     {/* mockup dashboard */}
                                     <div className="w-11/12 h-11/12">
                                         <ThemeCard
@@ -198,6 +201,7 @@ const AppearanceSettings = () => {
                                         />
                                     </div>
                                 </div>
+                                {theme === 'system' && <Badge className="absolute -top-2 -right-2 bg-primary">Activo</Badge>}
                             </div>
                             <p className="text-sm text-center">Sistema</p>
                         </div>

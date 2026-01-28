@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
+    <script>
+      // Inicializar color-scheme ANTES de que se cargue el CSS
+      (function() {
+        try {
+          const stored = localStorage.getItem('theme-storage');
+          const theme = stored ? JSON.parse(stored).state.theme : 'light';
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          const resolvedTheme = theme === 'system' ? systemTheme : theme;
+          document.documentElement.style.colorScheme = resolvedTheme;
+        } catch (e) {
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

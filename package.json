@@ -48,6 +48,7 @@
     "@tailwindcss/vite": "4.1.11",
     "@tanstack/react-query": "5.81.5",
     "@tanstack/react-table": "8.21.3",
+    "@tanstack/react-virtual": "^3.13.18",
     "@tauri-apps/api": "^2.9.0",
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@tauri-apps/plugin-fs": "^2.4.2",

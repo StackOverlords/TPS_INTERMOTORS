@@ -3,7 +3,7 @@ import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
-import CustomizableTable from "@/components/common/CustomizableTable";
+import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useBranchStore } from "@/states/branchStore";
@@ -15,12 +15,15 @@ import {
   Loader2,
   RefreshCcw,
   Search,
+  TrendingDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useStockMinimoReport } from "../hooks/queries/useStockMinimoReport";
 import { productsService } from "../services/productService";
 import type { StockMinimoFilters, StockMinimoItem } from "../types/StockMinimoReport.types";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { StockViewToggle, type StockViewMode } from "../components/StockViewToggle";
+import { StockDistributionChart } from "../components/StockDistributionChart";
 
 const ProductoStockReports = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -31,6 +34,7 @@ const ProductoStockReports = () => {
   const [parametro, setParametro] = useState<number>(5);
   const [isDownloading, setIsDownloading] = useState(false);
   const [shouldFetch, setShouldFetch] = useState(false);
+  const [viewMode, setViewMode] = useState<StockViewMode>("table");
 
   // Construir filtros
   const filters: StockMinimoFilters = useMemo(() => ({
@@ -60,10 +64,23 @@ const ProductoStockReports = () => {
   const columns = useMemo<ColumnDef<StockMinimoItem>[]>(
     () => [
       {
+        id: "rowNumber",
+        header: "Nro",
+        size: 30,
+        minSize: 30,
+        enableSorting: false,
+        enableHiding: false,
+        cell: ({ row }) => (
+          <div className="text-center text-xs font-semibold text-gray-500">
+            {row.index + 1}
+          </div>
+        ),
+      },
+      {
         accessorKey: "codigo",
         header: "Codigo",
-        size: 150,
-        minSize: 100,
+        size: 50,
+        minSize: 50,
         cell: ({ getValue }) => (
           <div className="font-mono font-medium">{getValue<string>()}</div>
         ),
@@ -142,7 +159,7 @@ const ProductoStockReports = () => {
   const { table } = useCustomTable({
     data,
     columns,
-    enableSorting: true,
+    // enableSorting: true,
     enableColumnResizing: true,
     enableColumnVisibility: true,
     enableColumnOrdering: true,
@@ -224,46 +241,22 @@ const ProductoStockReports = () => {
   }, [data]);
 
   return (
-    <main className="h-full p-2 gap-2 flex flex-col">
-      {/* Header */}
-      <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
-        <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
-          <div className="flex items-center gap-2 md:gap-4 grow">
-            <FileSpreadsheet className="size-6 text-primary" />
-            <h1 className="text-lg font-bold text-primary">
-              Reporte de Stock Minimo
-            </h1>
-          </div>
+    <main className="h-full p-4 gap-4 flex flex-col">
+      {/* Header Compacto */}
+      <header className="flex items-center gap-3 flex-shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Reporte de Stock Mínimo
+          </h1>
+          <p className="text-muted-foreground">
+            Análisis de productos con stock bajo o crítico
+          </p>
+        </div>
+      </header>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Boton Refresh */}
-            <TooltipButton
-              onClick={handleRefresh}
-              buttonProps={{
-                className: "w-8",
-                disabled: isFetching,
-              }}
-              tooltip="Actualizar reporte"
-            >
-              <RefreshCcw
-                className={`size-4 ${isFetching ? "animate-spin" : ""}`}
-              />
-            </TooltipButton>
-
-            {/* Boton Descargar */}
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              disabled={data.length === 0 || isDownloading}
-            >
-              <Download className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`} />
-              {isDownloading ? "Descargando..." : "Exportar Excel"}
-            </Button>
-          </div>
-        </section>
-
-        {/* Filtros */}
-        <section className="flex items-center gap-4 flex-wrap pt-2 border-t border-border">
+      {/* Filtros Compactos */}
+      <section className="bg-background rounded-lg p-3 border border-border flex-shrink-0">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Switch
               id="ver-menor-igual"
@@ -271,7 +264,7 @@ const ProductoStockReports = () => {
               onCheckedChange={handleVerSoloMenorIgualChange}
             />
             <Label htmlFor="ver-menor-igual" className="text-sm cursor-pointer">
-              Ver solo stock menor o igual al minimo
+              Stock ≤ Mínimo
             </Label>
           </div>
 
@@ -282,14 +275,14 @@ const ProductoStockReports = () => {
               onCheckedChange={handleVerSoloCercanoChange}
             />
             <Label htmlFor="ver-cercano" className="text-sm cursor-pointer">
-              Ver cercanos al minimo segun parametro
+              Cercanos al mínimo
             </Label>
           </div>
 
           {verSoloCercano && (
             <div className="flex items-center gap-2">
               <Label htmlFor="parametro" className="text-sm">
-                Parametro:
+                Parámetro:
               </Label>
               <Input
                 id="parametro"
@@ -302,7 +295,7 @@ const ProductoStockReports = () => {
             </div>
           )}
 
-          <Button variant="secondary" onClick={handleSearch} disabled={isFetching}>
+          <Button variant="default" onClick={handleSearch} disabled={isFetching}>
             {isFetching ? (
               <Loader2 className="size-4 mr-2 animate-spin" />
             ) : (
@@ -310,73 +303,109 @@ const ProductoStockReports = () => {
             )}
             {isFetching ? "Buscando..." : "Buscar"}
           </Button>
-        </section>
-      </header>
 
-      {/* Loading Message */}
-      {isFetching && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700 text-sm flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" />
-          <span>Cargando reporte... Este proceso puede tardar hasta 2 minutos dependiendo de la cantidad de productos.</span>
-        </div>
-      )}
+          <div className="ml-auto flex items-center gap-2">
+            <TooltipButton
+              onClick={handleRefresh}
+              buttonProps={{
+                variant: "outline",
+                size: "sm",
+                disabled: isFetching,
+              }}
+              tooltip="Actualizar reporte"
+            >
+              <RefreshCcw
+                className={`size-4 ${isFetching ? "animate-spin" : ""}`}
+              />
+            </TooltipButton>
 
-      {/* Error Message */}
-      {isError && error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
-          <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte. Verifica que el endpoint esté disponible."}
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <div className="bg-background rounded-lg p-3 border border-border">
-          <div className="text-sm text-muted-foreground">Total Productos</div>
-          <div className="text-2xl font-bold text-primary">
-            {stats.totalItems}
-          </div>
-        </div>
-        <div className="bg-background rounded-lg p-3 border border-border">
-          <div className="text-sm text-muted-foreground">Stock Critico (0)</div>
-          <div className="text-2xl font-bold text-red-600">
-            {stats.itemsConStockCritico}
-          </div>
-        </div>
-        <div className="bg-background rounded-lg p-3 border border-border">
-          <div className="text-sm text-muted-foreground">Bajo Minimo</div>
-          <div className="text-2xl font-bold text-orange-600">
-            {stats.itemsBajoMinimo}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              disabled={data.length === 0 || isDownloading}
+            >
+              <Download className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`} />
+              {isDownloading ? "Descargando..." : "Exportar"}
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Tabla */}
-      <div className="flex-1 bg-background rounded-lg border border-border min-h-0">
-        <div className="h-full flex flex-col">
-          {/* Info de resultados */}
-          <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0">
-            {!shouldFetch
-              ? "Presiona 'Buscar' para cargar el reporte"
-              : data.length > 0
-                ? `Mostrando ${data.length} productos`
-                : "Sin resultados"}
+      {/* ViewToggle y Stats integrados */}
+      <div className="flex items-center justify-between flex-shrink-0">
+        <StockViewToggle value={viewMode} onChange={setViewMode} />
+
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
+              <FileSpreadsheet className="size-4 text-primary" />
+              <span className="font-semibold text-primary">{stats.totalItems}</span>
+            </div>
+            <span className="text-muted-foreground hidden sm:inline">productos</span>
           </div>
 
-          {/* Tabla */}
-          <div className="flex-1 min-h-0">
-            <CustomizableTable
-              table={table}
-              isLoading={isLoading}
-              isFetching={isFetching}
-              isError={isError}
-              errorMessage="Error al cargar el reporte de stock"
-              noDataMessage="No se encontraron productos con los filtros seleccionados"
-              rows={20}
-              enableColumnReordering
-              enableSorting
-            />
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10">
+            <AlertTriangle className="size-4 text-red-600" />
+            <span className="font-semibold text-red-600">{stats.itemsConStockCritico}</span>
+            <span className="text-red-600/70 text-xs">críticos</span>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10">
+            <TrendingDown className="size-4 text-orange-600" />
+            <span className="font-semibold text-orange-600">{stats.itemsBajoMinimo}</span>
+            <span className="text-orange-600/70 text-xs">bajo mínimo</span>
           </div>
         </div>
+      </div>
+
+      {/* Loading Message */}
+      {/* {isFetching && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700 text-sm flex items-center gap-2 flex-shrink-0">
+          <Loader2 className="size-4 animate-spin" />
+          <span>Cargando reporte... Este proceso puede tardar hasta 2 minutos dependiendo de la cantidad de productos.</span>
+        </div>
+      )} */}
+
+      {/* Error Message */}
+      {isError && error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex-shrink-0">
+          <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte. Verifica que el endpoint esté disponible."}
+        </div>
+      )}
+
+      {/* Contenido principal - Tabla o Gráfico */}
+      <div className="flex-1 min-h-0">
+        {viewMode === "chart" ? (
+          <StockDistributionChart data={data} />
+        ) : (
+          <div className="h-full bg-background rounded-lg border border-border flex flex-col">
+            {/* Info de resultados */}
+            <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0">
+              {!shouldFetch
+                ? "Presiona 'Buscar' para cargar el reporte"
+                : data.length > 0
+                  ? `Mostrando ${data.length} productos`
+                  : "Sin resultados"}
+            </div>
+
+            {/* Tabla */}
+            <div className="flex-1 min-h-0">
+              <VirtualizedCustomizableTable
+                table={table}
+                isLoading={isLoading}
+                isFetching={isFetching}
+                isError={isError}
+                errorMessage="Error al cargar el reporte de stock"
+                noDataMessage="No se encontraron productos con los filtros seleccionados"
+                rows={20}
+                enableColumnReordering
+                enableSorting
+                estimatedRowHeight={50}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

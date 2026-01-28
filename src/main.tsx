@@ -7,6 +7,7 @@ import Navigation from './navigation/Navigation.tsx';
 // import { Toaster as Sonner } from "./components/atoms/sonner.tsx";
 import '@/config/zodI18nConfig.ts';
 import { HotkeysProvider, useHotkeys } from 'react-hotkeys-hook';
+import { useEffect } from 'react';
 import { Toaster } from './components/atoms/toaster.tsx';
 import { ZoomManager } from './components/common/ZoomManager.tsx';
 import { TaskNotificationsProvider } from './contexts/TaskNotificationsContext.tsx';
@@ -14,6 +15,7 @@ import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
 import { useDebugLogWindow } from './hooks/useSecondaryWindow';
 import { initializeKeybindingStore } from './keybindings/index.ts';
 import { queryClient } from './lib/reactQueryConfig.ts';
+import { useThemeStore } from './stores/themeStore.ts';
 import logger from './utils/logger.ts';
 
 // ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
@@ -23,6 +25,11 @@ initializeKeybindingStore().catch((error) => {
 
 function App() {
   const debugLogWindow = useDebugLogWindow();
+
+  // Inicializar tema al cargar la app
+  useEffect(() => {
+    useThemeStore.getState().initializeTheme();
+  }, []);
 
   // Atajos de teclado globales para abrir el panel de debug
   useHotkeys('ctrl+shift+d, meta+shift+d', () => {

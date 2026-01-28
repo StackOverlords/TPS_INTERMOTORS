@@ -6,6 +6,8 @@ import { ProductListResponseSchema } from "../schemas/productResponse.schema";
 import { ProductStockListSchema } from "../schemas/productStock.schema";
 import { ProductSalesSchema } from "../schemas/productTwoYaersSales.schema";
 import { StockMinimoReportResponseSchema } from "../schemas/stockMinimoReport.schema";
+import { utilidadesReportResponseSchema } from "../schemas/utilidades.schema";
+import { inventarioReportResponseSchema } from "../schemas/inventario.schema";
 import type { ProductCreate } from "../types/ProductCreate.types";
 import type { ProductDetail } from "../types/productDetail";
 import type { ProvOrdersParams, SalesParams, StockParams } from "../types/productDetailParams";
@@ -16,6 +18,8 @@ import type { ProductSalesStats } from "../types/ProductSalesStats";
 import type { ProductStock } from "../types/productStock";
 import type { ProductUpdate } from "../types/ProductUpdate.types";
 import type { StockMinimoFilters, StockMinimoReportResponse } from "../types/StockMinimoReport.types";
+import type { UtilidadesFilters, UtilidadesReportResponse } from "../types/UtilidadesReport.types";
+import type { InventarioFilters, InventarioReportResponse } from "../types/InventarioReport.types";
 import { PRODUCT_ENDPOINTS } from "./endpoints";
 import { ProductGetByIdWithStockSchema } from "../schemas/ProductGetByIdWithStock.schema";
 import type { ProductGetByIdWithStock } from "../types/ProductGetByIdWithStock.type";
@@ -237,6 +241,82 @@ export const productsService = {
 			}
 		);
 		Logger.info("Stock minimo report downloaded successfully", {}, MODULE_NAME);
+		return response as Blob;
+	},
+
+	/**
+	 * Obtener reporte de utilidades
+	 * @param filters - Filtros para el reporte
+	 */
+	async getUtilidadesReport(filters: UtilidadesFilters): Promise<UtilidadesReportResponse> {
+		Logger.info("Fetching utilidades report", { filters }, MODULE_NAME);
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.reports.utilidades,
+			filters,
+			utilidadesReportResponseSchema,
+			{ timeout: 120000 } // 2 minutos para reportes pesados
+		);
+		Logger.info("Utilidades report fetched successfully", { count: response.data.length }, MODULE_NAME);
+		return response as UtilidadesReportResponse;
+	},
+
+	/**
+	 * Descargar reporte de utilidades en Excel
+	 * @param filters - Filtros para el reporte
+	 */
+	async downloadUtilidadesReport(filters: UtilidadesFilters): Promise<Blob> {
+		Logger.info("Downloading utilidades report", { filters }, MODULE_NAME);
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.reports.utilidades,
+			{ ...filters, downloadable: true },
+			undefined,
+			{
+				timeout: 180000, // 3 minutos para descarga de Excel
+				responseType: 'blob',
+				headers: {
+					'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+				}
+			}
+		);
+		Logger.info("Utilidades report downloaded successfully", {}, MODULE_NAME);
+		return response as Blob;
+	},
+
+	/**
+	 * Obtener reporte general de inventario
+	 * @param filters - Filtros para el reporte
+	 */
+	async getInventarioReport(filters: InventarioFilters): Promise<InventarioReportResponse> {
+		Logger.info("Fetching inventario report", { filters }, MODULE_NAME);
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.reports.inventarioGeneral,
+			filters,
+			inventarioReportResponseSchema,
+			{ timeout: 120000 } // 2 minutos para reportes pesados
+		);
+		Logger.info("Inventario report fetched successfully", { count: response.data.length }, MODULE_NAME);
+		return response as InventarioReportResponse;
+	},
+
+	/**
+	 * Descargar reporte de inventario en Excel
+	 * @param filters - Filtros para el reporte
+	 */
+	async downloadInventarioReport(filters: InventarioFilters): Promise<Blob> {
+		Logger.info("Downloading inventario report", { filters }, MODULE_NAME);
+		const response = await ApiService.post(
+			PRODUCT_ENDPOINTS.reports.inventarioGeneral,
+			{ ...filters, downloadable: true },
+			undefined,
+			{
+				timeout: 180000, // 3 minutos para descarga de Excel
+				responseType: 'blob',
+				headers: {
+					'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+				}
+			}
+		);
+		Logger.info("Inventario report downloaded successfully", {}, MODULE_NAME);
 		return response as Blob;
 	},
 };

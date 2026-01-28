@@ -2,10 +2,12 @@ import CreateProduct from "@/modules/products/screens/CreateProduct";
 import ProductDetailScreen from "@/modules/products/screens/ProductDetailScreen";
 import ProductEditScreen from "@/modules/products/screens/ProductEditScreen";
 import ProductListScreen from "@/modules/products/screens/ProductListScreen";
-import { AreaChartIcon, BoxIcon, Package, Table2Icon } from "lucide-react";
+import { AreaChartIcon, BoxIcon, Package, Table2Icon, DollarSign, Warehouse } from "lucide-react";
 import type RouteType from "./RouteType";
 import { productsListViewConfig } from "@/modules/products/config/product.config";
 import ProductoStockReports from "@/modules/products/screens/ProductoStockReports";
+import UtilidadesReportScreen from "@/modules/products/screens/UtilidadesReportScreen";
+import InventarioReportScreen from "@/modules/products/screens/InventarioReportScreen";
 
 const productosProtectedRoutes: RouteType[] = [
   {
@@ -71,10 +73,36 @@ const productosProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
 
-        icon:AreaChartIcon,
+        icon: AreaChartIcon,
         isHeader: false,
         showSidebar: true,
-        showInCommandPalette:true
+        showInCommandPalette: true
+      },
+      {
+        path: "/dashboard/utilidades-reporte",
+        name: "Reporte de Utilidades",
+        type: "protected",
+        element: UtilidadesReportScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+
+        icon: DollarSign,
+        isHeader: false,
+        showSidebar: true,
+        showInCommandPalette: true
+      },
+      {
+        path: "/dashboard/inventario-reporte",
+        name: "Reporte de Inventario",
+        type: "protected",
+        element: InventarioReportScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+
+        icon: Warehouse,
+        isHeader: false,
+        showSidebar: true,
+        showInCommandPalette: true
       }
     ]
   },
