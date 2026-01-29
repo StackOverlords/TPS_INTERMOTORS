@@ -14,8 +14,18 @@ export const useUpdateSubcategory = () => {
     return useMutation({
         mutationFn: ({ id, data }: UpdateParams) => subcategoriesService.update(id, data),
         onSuccess: (updated, { id }) => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: SUBCATEGORY_QUERY_KEYS.lists() });
             queryClient.setQueryData(SUBCATEGORY_QUERY_KEYS.detail(id), updated);
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "common-subcategories"],
+                refetchType: 'active'
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "categories-with-subcategories"],
+                refetchType: 'active'
+            });
         }
     });
 };

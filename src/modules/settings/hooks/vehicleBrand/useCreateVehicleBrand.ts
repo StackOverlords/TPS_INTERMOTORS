@@ -9,7 +9,13 @@ export const useCreateVehicleBrand = () => {
     return useMutation({
         mutationFn: (data: CreateVehicleBrand) => vehiclebrandsService.create(data),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: VEHICLE_BRAND_QUERY_KEYS.lists() });
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "common-vehicle-brands"],
+                refetchType: 'active'
+            });
         }
     });
 };
