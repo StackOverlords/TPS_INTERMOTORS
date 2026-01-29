@@ -14,8 +14,14 @@ export const useUpdateVehicleBrand = () => {
     return useMutation({
         mutationFn: ({ id, data }: UpdateParams) => vehiclebrandsService.update(id, data),
         onSuccess: (updated, { id }) => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: VEHICLE_BRAND_QUERY_KEYS.lists() });
             queryClient.setQueryData(VEHICLE_BRAND_QUERY_KEYS.detail(id), updated);
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "common-vehicle-brands"],
+                refetchType: 'active'
+            });
         }
     });
 };

@@ -10,7 +10,10 @@ export const useDeleteCustomer = () => {
             // Settings module
             queryClient.invalidateQueries({ queryKey: ["customers"] });
             // Sales module (select de clientes en ventas, cotizaciones, devoluciones, cuentas por pagar)
-            queryClient.invalidateQueries({ queryKey: ["sale-customers"] });
+            queryClient.invalidateQueries({
+                queryKey: ["sale-customers"],
+                refetchType: 'active'
+            });
         },
     });
 };

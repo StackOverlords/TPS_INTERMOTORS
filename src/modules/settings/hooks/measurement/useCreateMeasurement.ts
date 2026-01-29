@@ -9,7 +9,13 @@ export const useCreateMeasurement = () => {
     return useMutation({
         mutationFn: (data: CreateMeasurement) => measurementsService.create(data),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: MEASUREMENT_QUERY_KEYS.lists() });
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "common-measurements"],
+                refetchType: 'active'
+            });
         }
     });
 };
