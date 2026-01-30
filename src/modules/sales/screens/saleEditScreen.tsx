@@ -656,7 +656,7 @@ const SaleEditScreen = () => {
                       {isUsingTempData ? tempCreatedSale?.nro : saleData?.nro}
                     </h1>
                     {saleData && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {saleData.cliente
                           ? `${saleData.cliente?.cliente} - `
                           : ""}
@@ -667,7 +667,7 @@ const SaleEditScreen = () => {
                       </p>
                     )}
                     {isUsingTempData && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {tempCreatedSale?.cliente
                           ? `${tempCreatedSale.cliente?.cliente} - `
                           : ""}
@@ -754,7 +754,7 @@ const SaleEditScreen = () => {
                             disabled={isReadOnly}
                           />
                           {errors.fecha && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.fecha.message}
                             </p>
                           )}
@@ -777,7 +777,7 @@ const SaleEditScreen = () => {
                             )}
                           />
                           {errors.id_responsable && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               El campo es requerido
                             </p>
                           )}
@@ -821,7 +821,7 @@ const SaleEditScreen = () => {
                             )}
                           />
                           {errors.id_cliente && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               El campo es requerido
                             </p>
                           )}
@@ -901,7 +901,7 @@ const SaleEditScreen = () => {
                               )}
                             />
                             {errors.forma_venta && (
-                              <p className="text-red-500 text-xs">
+                              <p className="text-destructive text-xs">
                                 {errors.forma_venta.message}
                               </p>
                             )}
@@ -941,7 +941,7 @@ const SaleEditScreen = () => {
                             )}
                           />
                           {errors.forma_pago && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.forma_pago.message}
                             </p>
                           )}
@@ -981,7 +981,7 @@ const SaleEditScreen = () => {
                             )}
                           />
                           {errors.tipo_venta && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               El campo es requerido
                             </p>
                           )}
@@ -1002,7 +1002,7 @@ const SaleEditScreen = () => {
                             }
                           />
                           {errors.plazo_pago && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.plazo_pago.message}
                             </p>
                           )}
@@ -1109,8 +1109,8 @@ const SaleEditScreen = () => {
                           <CardContent className="flex-1 min-h-0">
                             <div className="h-full overflow-auto">
                               {saleData?.detalles.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                                   <p>No hay productos agregados</p>
                                   <p className="text-sm">
                                     Haz clic en "Seleccionar Productos" para

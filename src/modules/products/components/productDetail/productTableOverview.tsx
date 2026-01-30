@@ -61,7 +61,7 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
       cell: ({ getValue }) => {
         const rawFecha = getValue() as string;
 
-        if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
+        if (!rawFecha) return <span className="text-muted-foreground">Sin fecha</span>;
 
         return (
           <div className="flex flex-col gap-1">
@@ -175,10 +175,10 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
       cell: ({ getValue }) => {
         const rawFecha = getValue() as string;
 
-        if (!rawFecha) return <span className="text-gray-400">Sin fecha</span>;
+        if (!rawFecha) return <span className="text-muted-foreground">Sin fecha</span>;
 
         return (
-          <span className="text-gray-400">{parseDateForUi(rawFecha)}</span>
+          <span className="text-muted-foreground">{parseDateForUi(rawFecha)}</span>
         );
       },
     },
@@ -229,9 +229,9 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
       className={cn("bg-card border border-border flex flex-col", className)}
     >
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex items-center justify-between gap-3 text-base font-semibold text-gray-900">
+        <CardTitle className="flex items-center justify-between gap-3 text-base font-semibold text-foreground">
           <span className="flex items-center gap-2">
-            <ShoppingCart className="size-4 text-gray-700" />
+            <ShoppingCart className="size-4 text-muted-foreground" />
             Compras Disponibles
             {filterByStock && (
               <Badge variant="info" className="text-xs ml-2">

@@ -53,8 +53,8 @@ const MostSoldScreen = () => {
       title="Productos Más Vendidos"
       description="Ranking de productos por cantidad vendida"
       icon={Trophy}
-      iconBgColor="bg-blue-500/10"
-      iconColor="text-blue-500"
+      iconBgColor="bg-blue-500/10 dark:bg-blue-400/10"
+      iconColor="text-blue-600 dark:text-blue-400"
       // Datos
       data={data?.data || []}
       isLoading={isLoading}

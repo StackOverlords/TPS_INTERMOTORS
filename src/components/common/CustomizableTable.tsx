@@ -123,7 +123,7 @@ const DraggableTableHeader = <T,>({
       colSpan={header.colSpan}
       className={cn(
         `relative group select-none text-left border-b border-border overflow-hidden px-0.5 h-max py-2 max-h-12`,
-        isDragging && "bg-blue-50 shadow-lg cursor-grabbing"
+        isDragging && "bg-primary/10 dark:bg-primary/20 shadow-lg cursor-grabbing"
       )}
     >
       {header.isPlaceholder ? null : (
@@ -142,7 +142,7 @@ const DraggableTableHeader = <T,>({
             <GripVertical
               className={cn(
                 `size-2.5 transition-colors`,
-                isDragging && "text-blue-600"
+                isDragging && "text-primary"
               )}
             />
           </Button>
@@ -159,13 +159,13 @@ const DraggableTableHeader = <T,>({
           >
             {flexRender(header.column.columnDef.header, header.getContext())}
             {canSort && !isDragging && (
-              <div className="flex flex-col text-blue-400">
+              <div className="flex flex-col text-primary">
                 {header.column.getIsSorted() === "asc" ? (
                   <ArrowUp className="w-3 h-3" />
                 ) : header.column.getIsSorted() === "desc" ? (
                   <ArrowDown className="w-3 h-3" />
                 ) : (
-                  <ArrowUpDown className="w-3 h-3 text-gray-400" />
+                  <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
                 )}
               </div>
             )}
@@ -176,7 +176,7 @@ const DraggableTableHeader = <T,>({
         <div
           onMouseDown={header.getResizeHandler()}
           onTouchStart={header.getResizeHandler()}
-          className="absolute right-0 top-0 h-full w-px group-hover:w-1 cursor-col-resize bg-border group-hover:bg-blue-300 transition-all duration-300"
+          className="absolute right-0 top-0 h-full w-px group-hover:w-1 cursor-col-resize bg-border group-hover:bg-primary/40 transition-all duration-300"
           style={{ zIndex: 2 }}
         />
       )}
@@ -202,7 +202,7 @@ const DragAlongCell = <T,>({ cell }: { cell: Cell<T, unknown> }) => {
     <TableCell
       ref={setNodeRef}
       style={style}
-      className={`p-1 overflow-hidden flex-shrink-0 ${isDragging ? "bg-blue-50" : ""}`}
+      className={`p-1 overflow-hidden flex-shrink-0 ${isDragging ? "bg-primary/10 dark:bg-primary/20" : ""}`}
     >
       <div className="flex-1 flex-shrink-0 truncate">
         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -336,13 +336,13 @@ const CustomizableTable = <T,>({
                               header.getContext()
                             )}
                             {canSort && (
-                              <div className="flex flex-col text-blue-400">
+                              <div className="flex flex-col text-primary">
                                 {header.column.getIsSorted() === "asc" ? (
                                   <ArrowUp className="w-3 h-3" />
                                 ) : header.column.getIsSorted() === "desc" ? (
                                   <ArrowDown className="w-3 h-3" />
                                 ) : (
-                                  <ArrowUpDown className="w-3 h-3 text-gray-400" />
+                                  <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
                                 )}
                               </div>
                             )}
@@ -352,7 +352,7 @@ const CustomizableTable = <T,>({
                           <div
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
-                            className="absolute right-0 top-0 h-full w-px group-hover:w-1 cursor-col-resize bg-border group-hover:bg-blue-300 transition-all duration-300"
+                            className="absolute right-0 top-0 h-full w-px group-hover:w-1 cursor-col-resize bg-border group-hover:bg-primary/40 transition-all duration-300"
                           />
                         )}
                       </TableHead>
@@ -405,7 +405,7 @@ const CustomizableTable = <T,>({
                       data-row-index={index}
                       className={`${
                         isSelected && focused
-                          ? "bg-blue-100 hover:bg-blue-100"
+                          ? "bg-primary/20 dark:bg-primary/30 hover:bg-primary/20 dark:hover:bg-primary/30"
                           : ""
                       }`}
                       onClick={() => {

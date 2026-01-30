@@ -191,7 +191,7 @@ export function PaginatedCombobox<T extends Record<string, any> & { id: string |
                         >
                             <ComboboxOptions
                                 static
-                                className="absolute z-50 mt-1 max-h-80 w-full min-w-[250px] overflow-hidden text-sm rounded-md bg-popover border border-gray-200 shadow-lg focus:outline-none"
+                                className="absolute z-50 mt-1 max-h-80 w-full min-w-[250px] overflow-hidden text-sm rounded-md bg-popover border border-border shadow-lg focus:outline-none"
                             >
                                 {/* Lista de opciones */}
                                 <div className="max-h-60 overflow-auto p-1">
@@ -243,7 +243,7 @@ export function PaginatedCombobox<T extends Record<string, any> & { id: string |
                                 {/* Paginación */}
                                 {/* {meta && meta.last_page > 0 && ( */}
                                 {meta && meta.total > 10 && (
-                                    <div className="flex items-center justify-between px-2 py-2 border-t border-gray-200 bg-gray-50">
+                                    <div className="flex items-center justify-between px-2 py-2 border-t border-border bg-accent/30">
                                         <div className="text-xs text-muted-foreground">
                                             {meta.total} resultados
                                         </div>

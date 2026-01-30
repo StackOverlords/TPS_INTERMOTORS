@@ -71,7 +71,7 @@ const ProductoStockReports = () => {
         enableSorting: false,
         enableHiding: false,
         cell: ({ row }) => (
-          <div className="text-center text-xs font-semibold text-gray-500">
+          <div className="text-center text-xs font-semibold text-muted-foreground">
             {row.index + 1}
           </div>
         ),
@@ -122,7 +122,7 @@ const ProductoStockReports = () => {
           const stockMin = parseFloat(getValue<string>());
           return (
             <div className="text-center">
-              <span className="font-medium text-orange-600">
+              <span className="font-medium text-orange-600 dark:text-orange-400">
                 {stockMin.toFixed(0)}
               </span>
             </div>
@@ -345,16 +345,16 @@ const ProductoStockReports = () => {
             <span className="text-muted-foreground hidden sm:inline">productos</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10">
-            <AlertTriangle className="size-4 text-red-600" />
-            <span className="font-semibold text-red-600">{stats.itemsConStockCritico}</span>
-            <span className="text-red-600/70 text-xs">críticos</span>
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 dark:bg-destructive/20">
+            <AlertTriangle className="size-4 text-destructive" />
+            <span className="font-semibold text-destructive">{stats.itemsConStockCritico}</span>
+            <span className="text-destructive/70 text-xs">críticos</span>
           </div>
 
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10">
-            <TrendingDown className="size-4 text-orange-600" />
-            <span className="font-semibold text-orange-600">{stats.itemsBajoMinimo}</span>
-            <span className="text-orange-600/70 text-xs">bajo mínimo</span>
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
+            <TrendingDown className="size-4 text-orange-600 dark:text-orange-400" />
+            <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.itemsBajoMinimo}</span>
+            <span className="text-orange-600/70 dark:text-orange-400/70 text-xs">bajo mínimo</span>
           </div>
         </div>
       </div>
@@ -369,7 +369,7 @@ const ProductoStockReports = () => {
 
       {/* Error Message */}
       {isError && error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex-shrink-0">
+        <div className="bg-destructive/10 dark:bg-destructive/20 border border-destructive/30 dark:border-destructive/40 rounded-lg p-3 text-destructive text-sm flex-shrink-0">
           <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte. Verifica que el endpoint esté disponible."}
         </div>
       )}

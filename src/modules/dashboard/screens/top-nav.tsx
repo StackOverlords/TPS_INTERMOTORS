@@ -152,7 +152,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
       <Link
         key="dashboard"
         to={"/dashboard"}
-        className="text-gray-500 hover:text-gray-700"
+        className="text-muted-foreground hover:text-foreground"
       >
         Dashboard/
       </Link>
@@ -160,7 +160,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
 
     if (parentRoute) {
       breadcrumbItems.push(
-        <span key="parent" className="text-gray-500">
+        <span key="parent" className="text-muted-foreground">
           {parentRoute.name}/
         </span>
       );
@@ -169,7 +169,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
       <Link
         key="current"
         to={location.pathname}
-        className="text-gray-800 hover:text-gray-900"
+        className="text-foreground hover:text-foreground/80"
       >
         {currentRoute?.name || "Ruta Desconocida"}
       </Link>
@@ -178,7 +178,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
     return <div className="hidden sm:flex">{breadcrumbItems}</div>;
   };
   return (
-    <nav className="flex items-center justify-between h-full px-2 bg-white border-b border-gray-200 sm:px-4">
+    <nav className="flex items-center justify-between h-full px-2 bg-background border-b border-border sm:px-4">
       <div className="font-medium text-sm flex items-center space-x-1 truncate w-full">
         <SidebarTrigger />
         {renderBreadcrumb()}
@@ -227,9 +227,9 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             <Button
               variant={"outline"}
               type="button"
-              className="relative flex items-center justify-center hover:bg-gray-100 transition-colors size-8"
+              className="relative flex items-center justify-center hover:bg-accent transition-colors size-8"
             >
-              <Bell className="w-4 h-4 text-gray-600" />
+              <Bell className="w-4 h-4" />
               {inProgressCount > 0 && (
                 <Badge
                   variant="info"
@@ -250,15 +250,15 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           }}
           tooltip={
             <div className="flex flex-col space-y-3">
-              <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                 Atajos de teclado
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                <h4 className="text-xs font-medium text-foreground tracking-wide">
                   Navegación
                 </h4>
-                <div className="space-y-1 text-gray-600 text-xs">
+                <div className="space-y-1 text-muted-foreground text-xs">
                   <p>
                     {" "}
                     <ShortcutKey combo={commandPaletteKeys} />
@@ -284,7 +284,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             </div>
           }
         >
-          <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+          <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
             <HelpCircle className="w-4 h-4" />
           </span>
         </TooltipWrapper>
@@ -292,13 +292,13 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           isOpen={openProfile}
           onOpenChange={setOpenProfile}
           trigger={
-            <div className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer">
-              <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-gray-600 font-semibold">
+            <div className="hidden sm:flex items-center space-x-2 border-l border-border pl-4 cursor-pointer">
+              <div className="h-8 w-8 bg-muted rounded-full flex items-center justify-center">
+                <span className="text-foreground font-semibold">
                   {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </span>
               </div>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-foreground">
                 {user?.name || "Usuario"}
               </span>
               {

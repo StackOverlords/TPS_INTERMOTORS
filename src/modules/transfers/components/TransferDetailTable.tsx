@@ -357,11 +357,11 @@ function TransferDetailTableInner({
 
     return (
       <div
-        className="editable-cell w-full h-8 flex items-center justify-between px-3 cursor-pointer hover:bg-gray-50 transition-colors border border-gray-200 rounded-lg group"
+        className="editable-cell w-full h-8 flex items-center justify-between px-3 cursor-pointer hover:bg-accent/30 transition-colors border border-border rounded-lg group"
         onClick={handleClick}
       >
         <span className="text-sm flex-1 text-center">{formatValue(value, format)}</span>
-        <Edit3 className="text-gray-300 group-hover:text-gray-500 h-3 w-3 flex-shrink-0 transition-colors ml-1" />
+        <Edit3 className="text-muted-foreground/50 group-hover:text-muted-foreground h-3 w-3 flex-shrink-0 transition-colors ml-1" />
       </div>
     );
   };
@@ -414,7 +414,7 @@ function TransferDetailTableInner({
       size: 70,
       minSize: 60,
       cell: ({ row }) => (
-        <span className="text-xs text-gray-600">{row.index + 1}</span>
+        <span className="text-xs text-muted-foreground">{row.index + 1}</span>
       )
     },
     {
@@ -426,10 +426,10 @@ function TransferDetailTableInner({
       enableHiding: false,
       cell: ({ getValue, row }) => (
         <div className="flex flex-col space-y-1">
-          <h3 className="font-medium text-gray-700 truncate text-sm">
+          <h3 className="font-medium text-muted-foreground truncate text-sm">
             {getValue<string>()}
           </h3>
-          <span className="text-xs text-gray-500 font-mono">
+          <span className="text-xs text-muted-foreground font-mono">
             OEM: {row.original.product.codigo_oem || 'N/A'}
           </span>
         </div>
@@ -463,7 +463,7 @@ function TransferDetailTableInner({
         //   value={row.original.costo_entrada}
         //   format="currency"
         // />
-        <div className="text-sm font-medium text-gray-900 text-center">
+        <div className="text-sm font-medium text-foreground text-center">
             {formatCurrency(row.original.costo_entrada)}
           </div>
       ),
@@ -475,7 +475,7 @@ function TransferDetailTableInner({
       size: 120,
       minSize: 100,
       cell: ({ row }) => (
-        <div className="text-sm font-medium text-gray-900 text-center">
+        <div className="text-sm font-medium text-foreground text-center">
             {formatCurrency(row.original.precio_salida)}
           </div>
         // <EditableCell
@@ -493,7 +493,7 @@ function TransferDetailTableInner({
       size: 120,
       minSize: 100,
       cell: ({ row }) => (
-        <div className="text-sm font-medium text-gray-900 text-center">
+        <div className="text-sm font-medium text-foreground text-center">
             {formatCurrency(row.original.precio_entrada_venta)}
           </div>
         // <EditableCell
@@ -511,7 +511,7 @@ function TransferDetailTableInner({
       size: 130,
       minSize: 110,
       cell: ({ row }) => (
-        <div className="text-sm font-medium text-gray-900 text-center">
+        <div className="text-sm font-medium text-foreground text-center">
             {formatCurrency(row.original.precio_entrada_venta_alt)}
           </div>
         // <EditableCell
@@ -529,7 +529,7 @@ function TransferDetailTableInner({
     //   size: 100,
     //   minSize: 80,
     //   cell: ({ row }) => (
-    //     <div className="text-sm font-medium text-gray-900 text-center">
+    //     <div className="text-sm font-medium text-foreground text-center">
     //         {formatCurrency(row.original.incremento_p_entrada_venta)}
     //       </div>
     //     // <EditableCell
@@ -547,7 +547,7 @@ function TransferDetailTableInner({
     //   size: 100,
     //   minSize: 80,
     //   cell: ({ row }) => (
-    //     <div className="text-sm font-medium text-gray-900 text-center">
+    //     <div className="text-sm font-medium text-foreground text-center">
     //         {formatCurrency(row.original.incremento_p_entrada_venta_alt)}
     //       </div>
     //     // <EditableCell
@@ -566,7 +566,7 @@ function TransferDetailTableInner({
     //   cell: ({ row }) => {
     //     const subtotal = row.original.cantidad_entrada_salida * row.original.costo_entrada;
     //     return (
-    //       <div className="text-sm font-medium text-gray-900 text-center">
+    //       <div className="text-sm font-medium text-foreground text-center">
     //         {formatCurrency(subtotal)}
     //       </div>
     //     )
@@ -584,7 +584,7 @@ function TransferDetailTableInner({
             variant="outline"
             size="sm"
             onClick={() => onRemoveProduct(row.original.producto_id, row.original.purchase_id)}
-            className="size-7 text-red-500 hover:text-red-500"
+            className="size-7 text-destructive hover:text-destructive"
           >
             <Trash2 className="size-3" />
           </Button>

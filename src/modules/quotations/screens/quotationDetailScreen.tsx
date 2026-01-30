@@ -233,7 +233,7 @@ const QuotationDetailScreen = () => {
                 <Card className="bg-card border border-border shadow-none flex-shrink-0">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-primary">
-                            <FileText className="size-4 text-gray-700" />
+                            <FileText className="size-4 text-muted-foreground" />
                             Información General
                         </CardTitle>
                     </CardHeader>
@@ -242,13 +242,13 @@ const QuotationDetailScreen = () => {
                             <div>
                                 <Label className="text-xs text-muted-foreground">Fecha</Label>
                                 <p className="text-sm font-medium flex items-center gap-2">
-                                    <Calendar className="size-4 text-gray-600" />
+                                    <Calendar className="size-4 text-muted-foreground" />
                                     {formatDate(quotationData?.fecha ?? '')}
                                 </p>
                             </div>
                             <div>
                                 <Label className="text-xs text-muted-foreground">Anticipo</Label>
-                                <p className="text-sm font-bold text-green-600">{formatCurrency(quotationData?.anticipo)}</p>
+                                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(quotationData?.anticipo)}</p>
                             </div>
                             <div>
                                 <Label className="text-xs text-muted-foreground">Tipo de cotizacion</Label>
@@ -301,7 +301,7 @@ const QuotationDetailScreen = () => {
                     <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <Building2 className="h-5 w-5 text-gray-700" />
+                                <Building2 className="h-5 w-5 text-muted-foreground" />
                                 Información del cliente
                             </CardTitle>
                         </CardHeader>
@@ -309,7 +309,7 @@ const QuotationDetailScreen = () => {
                             <div className="text-xs text-primary space-y-4">
                                 <div>
                                     <Label>Cliente</Label>
-                                    <p className="text-base text-blue-600 font-semibold">{quotationData?.cliente?.cliente}</p>
+                                    <p className="text-base text-blue-600 dark:text-blue-400 font-semibold">{quotationData?.cliente?.cliente}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
@@ -324,13 +324,13 @@ const QuotationDetailScreen = () => {
                                 {
                                     quotationData?.cliente_telefono && (
                                         <div className="flex items-center gap-2">
-                                            <Phone className="size-3.5 text-gray-400" />
+                                            <Phone className="size-3.5 text-muted-foreground/70" />
                                             <p>{formatCell(quotationData?.cliente_telefono)}</p>
                                         </div>
                                     )
                                 }
                                 <div className="flex items-center gap-2">
-                                    <MapPin className="size-3.5 text-gray-400" />
+                                    <MapPin className="size-3.5 text-muted-foreground/70" />
                                     <p>{formatCell(quotationData?.cliente?.direccion)}</p>
                                 </div>
                             </div>
@@ -340,7 +340,7 @@ const QuotationDetailScreen = () => {
                     <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <User className="h-5 w-5 text-gray-700" />
+                                <User className="h-5 w-5 text-muted-foreground" />
                                 Responsable de cotizacion
                             </CardTitle>
                         </CardHeader>

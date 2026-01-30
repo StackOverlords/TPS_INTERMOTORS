@@ -96,7 +96,7 @@ function ProductDetailTableInner({
             minSize: 30,
             enableHiding: false,
             cell: ({ getValue }) => (
-                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+                <span className="text-center text-xs text-muted-foreground">{getValue<number>()}</span>
             ),
         },
         {
@@ -201,7 +201,7 @@ function ProductDetailTableInner({
                         value={itemSubtotal}
                         onSubmit={(value) => updateCustomSubtotal(product.id, value as number)}
                         className="w-full"
-                        inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
+                        inputClassName="hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                         numberProps={{ min: 0, step: 0.01 }}
                         disabled={isReadOnly}
                     />
@@ -243,7 +243,7 @@ function ProductDetailTableInner({
                             variant="outline"
                             size="sm"
                             onClick={() => removeItem(product.id)}
-                            className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                            className="w-8 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
                         >
                             <Trash2 className="size-3" />
                         </Button>

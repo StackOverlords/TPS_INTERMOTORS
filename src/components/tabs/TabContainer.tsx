@@ -8,11 +8,11 @@ import { matchPath } from "react-router";
 import TabContent from "./TabContent";
 
 const TabContainer: React.FC = () => {
-  // ✅ Optimizado: Solo suscribirse a lo que realmente necesitamos
+  // Optimizado: Solo suscribirse a lo que realmente necesitamos
   const tabs = useTabStore((state) => state.tabs);
   const activeTabId = useTabStore((state) => state.activeTabId);
 
-  // 🎯 Keep-Alive: Trackear qué tabs han sido visitadas
+  // Keep-Alive: Trackear qué tabs han sido visitadas
   const mountedTabsRef = useRef<Set<string>>(new Set());
 
   // Aplanar todas las rutas protegidas
@@ -33,10 +33,10 @@ const TabContainer: React.FC = () => {
     return flatten(protectedRoutes);
   }, []);
 
-  // ✅ Cache persistente (no se recrea en cada render)
+  // Cache persistente (no se recrea en cada render)
   const routeCacheRef = useRef(new Map<string, RouteType | null>());
 
-  // ✅ Función de búsqueda optimizada con cache persistente
+  // Función de búsqueda optimizada con cache persistente
   const findMatchingRoute = useMemo(() => {
     return (path: string): RouteType | undefined => {
       // Verificar cache primero
@@ -62,7 +62,7 @@ const TabContainer: React.FC = () => {
     };
   }, [flatRoutes]);
 
-  // 🎯 KEEP-ALIVE INTELIGENTE: Mantener tabs visitadas en memoria
+  // KEEP-ALIVE INTELIGENTE: Mantener tabs visitadas en memoria
   // Límite de tabs en memoria (configurable en src/config/tabsConfig.ts)
   const MAX_MOUNTED_TABS = TABS_CONFIG.MAX_MOUNTED_TABS;
 
@@ -115,7 +115,7 @@ const TabContainer: React.FC = () => {
 
   return (
     <div className="h-full relative">
-      {/* 🎯 KEEP-ALIVE: Renderizar todas las tabs montadas, pero solo mostrar la activa */}
+      {/* KEEP-ALIVE: Renderizar todas las tabs montadas, pero solo mostrar la activa */}
       {tabComponents.map(({ tabId, Component, routePath }) => (
         <TabContent
           key={tabId}

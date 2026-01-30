@@ -242,7 +242,7 @@ const TransferListScreen = () => {
           <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
             <div className="flex items-center gap-2 md:gap-4 grow">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-4 w-4" />
                 <Input
                   placeholder="Buscar por palabras clave..."
                   value={filters.keywords}
@@ -279,7 +279,7 @@ const TransferListScreen = () => {
                 }
               >
                 <Zap
-                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
+                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500 dark:text-yellow-400" : "text-muted-foreground"}`}
                 />
                 {searchMode === "realtime" ? "Tiempo real" : "Manual"}
               </Button>

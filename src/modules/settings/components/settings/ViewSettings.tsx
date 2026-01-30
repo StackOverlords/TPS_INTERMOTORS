@@ -125,7 +125,7 @@ const ViewSettings = () => {
         {/* Search */}
         <div className="p-2">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Buscar vista..."
               value={searchQuery}
@@ -141,7 +141,7 @@ const ViewSettings = () => {
             <div key={moduleName} className="mb-1">
               <button
                 onClick={() => toggleModule(moduleName)}
-                className="w-full flex items-center gap-1 px-2 py-1 hover:bg-gray-100 rounded text-xs font-medium text-gray-700"
+                className="w-full flex items-center gap-1 px-2 py-1 hover:bg-accent rounded text-xs font-medium text-foreground"
               >
                 <ChevronRight
                   className={cn(
@@ -150,7 +150,7 @@ const ViewSettings = () => {
                   )}
                 />
                 <span className="flex-1 text-left">{moduleName}</span>
-                <span className="text-[10px] text-gray-400">{views.length}</span>
+                <span className="text-[10px] text-muted-foreground">{views.length}</span>
               </button>
 
               {expandedModules.has(moduleName) && (
@@ -162,8 +162,8 @@ const ViewSettings = () => {
                       className={cn(
                         "w-full text-left px-2 py-1 rounded text-xs transition-colors",
                         selectedViewId === view.id
-                          ? "bg-blue-50 text-blue-500 font-medium"
-                          : "hover:bg-gray-50 text-gray-600"
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-accent text-muted-foreground"
                       )}
                     >
                       {view.name}
@@ -199,7 +199,7 @@ const ViewSettings = () => {
               <div>
                 <h3 className="font-semibold text-sm">{selectedView.name}</h3>
                 {viewConfig?._sources && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {Object.values(viewConfig._sources.features || {}).some(s => s === 'user') ||
                      Object.values(viewConfig._sources.behaviors || {}).some(s => s === 'user')
                       ? 'Configuración personalizada'
@@ -223,14 +223,14 @@ const ViewSettings = () => {
             <div className="flex-1 overflow-auto p-2 space-y-2">
               {isLoadingConfig ? (
                 <div className="flex items-center justify-center h-full">
-                  <Loader2 className="size-6 animate-spin text-gray-400" />
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
                 <>
                   {/* Features */}
                   {selectedView.features && Object.keys(selectedView.features).length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Funcionalidades
                       </h4>
                       <div className="space-y-2">
@@ -243,24 +243,24 @@ const ViewSettings = () => {
                           return (
                             <div
                               key={key}
-                              className="flex items-center justify-between p-2 rounded hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
+                              className="flex items-center justify-between p-2 rounded hover:bg-accent transition-colors border border-transparent hover:border-border"
                             >
                               <div className="flex-1 pr-3">
                                 <div className="flex items-center gap-2">
-                                  <Label 
-                                    htmlFor={`${selectedView.id}-${key}`} 
-                                    className="text-sm font-medium cursor-pointer"
+                                  <Label
+                                    htmlFor={`${selectedView.id}-${key}`}
+                                    className="text-sm font-semibold cursor-pointer text-foreground"
                                   >
                                     {feature.label}
                                   </Label>
                                   {source === 'user' && (
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded">
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded">
                                       Personalizado
                                     </span>
                                   )}
                                 </div>
                                 {feature.description && (
-                                  <p className="text-[11px] text-gray-500 mt-0.5">
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">
                                     {feature.description}
                                   </p>
                                 )}
@@ -281,13 +281,13 @@ const ViewSettings = () => {
                   {/* Behaviors */}
                   {selectedView.behaviors && Object.keys(selectedView.behaviors).length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Comportamientos
                       </h4>
                       <div className="space-y-2">
                         {selectedView.behaviors.productSelectorMode !== undefined && (
                           <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-medium">Modo Selector de Productos</Label>
+                            <Label className="text-xs font-semibold text-foreground">Modo Selector de Productos</Label>
                             <Select
                               value={getBehaviorValue('productSelectorMode')}
                               onValueChange={(value) =>
@@ -309,7 +309,7 @@ const ViewSettings = () => {
 
                         {selectedView.behaviors.openDetailsIn !== undefined && (
                           <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-medium">Abrir Detalles En</Label>
+                            <Label className="text-xs font-semibold text-foreground">Abrir Detalles En</Label>
                             <Select
                               value={getBehaviorValue('openDetailsIn')}
                               onValueChange={(value) =>
@@ -332,7 +332,7 @@ const ViewSettings = () => {
 
                         {selectedView.behaviors.persistFilters !== undefined && (
                           <div className="flex items-center justify-between p-2 border border-border rounded">
-                            <Label className="text-xs font-medium">Guardar Filtros</Label>
+                            <Label className="text-xs font-semibold text-foreground">Guardar Filtros</Label>
                             <Switch
                               checked={getBehaviorValue('persistFilters')}
                               disabled={isUpdating}
@@ -345,7 +345,7 @@ const ViewSettings = () => {
 
                         {selectedView.behaviors.defaultRowsPerPage !== undefined && (
                           <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-medium">Filas por Página</Label>
+                            <Label className="text-xs font-semibold text-foreground">Filas por Página</Label>
                             <Select
                               value={String(getBehaviorValue('defaultRowsPerPage'))}
                               onValueChange={(value) =>
@@ -370,7 +370,7 @@ const ViewSettings = () => {
 
                         {selectedView.behaviors.defaultSearchMode !== undefined && (
                           <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-medium">Modo de Búsqueda</Label>
+                            <Label className="text-xs font-semibold text-foreground">Modo de Búsqueda</Label>
                             <Select
                               value={getBehaviorValue('defaultSearchMode')}
                               onValueChange={(value) =>
@@ -396,7 +396,7 @@ const ViewSettings = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <p className="text-sm">Selecciona una vista</p>
           </div>
         )}

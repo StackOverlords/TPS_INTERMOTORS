@@ -26,10 +26,10 @@ interface List02Props {
 }
 
 const categoryStyles = {
-  shopping: "bg-zinc-100 text-zinc-900",
-  food: "bg-zinc-100 text-zinc-900",
-  transport: "bg-zinc-100 text-zinc-900",
-  entertainment: "bg-zinc-100 text-zinc-900",
+  shopping: "bg-accent text-foreground",
+  food: "bg-accent text-foreground",
+  transport: "bg-accent text-foreground",
+  entertainment: "bg-accent text-foreground",
 }
 
 const TRANSACTIONS: Transaction[] = [
@@ -100,19 +100,19 @@ export default function List02({ transactions = TRANSACTIONS, className }: List0
     <div
       className={cn(
         "w-full max-w-xl mx-auto",
-        "bg-white",
-        "border border-zinc-100",
+        "bg-card",
+        "border border-border",
         "rounded-xl shadow-sm backdrop-blur-xl",
         className,
       )}
     >
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-zinc-900">
+          <h2 className="text-sm font-semibold text-foreground">
             Recent Activity
-            <span className="text-xs font-normal text-zinc-600 ml-1">(23 transactions)</span>
+            <span className="text-xs font-normal text-muted-foreground ml-1">(23 transactions)</span>
           </h2>
-          <span className="text-xs text-zinc-600">This Month</span>
+          <span className="text-xs text-muted-foreground">This Month</span>
         </div>
 
         <div className="space-y-1">
@@ -122,24 +122,24 @@ export default function List02({ transactions = TRANSACTIONS, className }: List0
               className={cn(
                 "group flex items-center gap-3",
                 "p-2 rounded-lg",
-                "hover:bg-zinc-100",
+                "hover:bg-accent",
                 "transition-all duration-200",
               )}
             >
               <div
                 className={cn(
                   "p-2 rounded-lg",
-                  "bg-zinc-100",
-                  "border border-zinc-200",
+                  "bg-accent",
+                  "border border-border",
                 )}
               >
-                <transaction.icon className="w-4 h-4 text-zinc-900" />
+                <transaction.icon className="w-4 h-4 text-foreground" />
               </div>
 
               <div className="flex-1 flex items-center justify-between min-w-0">
                 <div className="space-y-0.5">
-                  <h3 className="text-xs font-medium text-zinc-900">{transaction.title}</h3>
-                  <p className="text-[11px] text-zinc-600">{transaction.timestamp}</p>
+                  <h3 className="text-xs font-medium text-foreground">{transaction.title}</h3>
+                  <p className="text-[11px] text-muted-foreground">{transaction.timestamp}</p>
                 </div>
 
                 <div className="flex items-center gap-1.5 pl-3">
@@ -166,22 +166,22 @@ export default function List02({ transactions = TRANSACTIONS, className }: List0
         </div>
       </div>
 
-      <div className="p-2 border-t border-zinc-100">
+      <div className="p-2 border-t border-border">
         <button
           type="button"
           className={cn(
             "w-full flex items-center justify-center gap-2",
             "py-2 px-3 rounded-lg",
             "text-xs font-medium",
-            "bg-gradient-to-r from-zinc-900 to-zinc-800",
-            "text-zinc-50",
-            "hover:from-zinc-800 hover:to-zinc-700",
+            "bg-primary",
+            "text-primary-foreground",
+            "hover:bg-primary/90",
             "shadow-sm hover:shadow",
             "transform transition-all duration-200",
             "hover:-translate-y-0.5",
             "active:translate-y-0",
             "focus:outline-none focus:ring-2",
-            "focus:ring-zinc-500",
+            "focus:ring-ring",
             "focus:ring-offset-2",
           )}
         >

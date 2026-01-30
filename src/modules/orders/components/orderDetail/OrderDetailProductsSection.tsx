@@ -102,7 +102,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
         enableHiding: false,
         cell: ({ row }) => {
           return (
-            <span className="text-center text-xs text-gray-600">
+            <span className="text-center text-xs text-muted-foreground">
               {row.original.producto.codigo_interno}
             </span>
           );
@@ -116,7 +116,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
         minSize: 80,
         cell: ({ getValue }) => (
           <div className="space-y-0.5">
-            <div className="font-mono text-xs text-gray-900 truncate">
+            <div className="font-mono text-xs text-foreground truncate">
               {formatCell(getValue<string>())}
             </div>
           </div>
@@ -135,17 +135,17 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
             <div className="space-y-0.5">
               <h3
                 title="Descripción"
-                className="text-xs font-medium text-gray-900 leading-tight truncate"
+                className="text-xs font-medium text-foreground leading-tight truncate"
               >
                 {descripcion}
               </h3>
 
               {/* <div className="flex flex-wrap gap-1 mt-1">
               {product.categoria && (
-                <Badge variant="accent" title="Categoria" className="text-[10px] border-gray-300">{product.categoria.categoria}</Badge>
+                <Badge variant="accent" title="Categoria" className="text-[10px] border-border">{product.categoria.categoria}</Badge>
               )}
               {product.marca && (
-                <Badge variant="outline" title="Marca" className="text-[10px] border-gray-300"> {product.marca.marca}</Badge>
+                <Badge variant="outline" title="Marca" className="text-[10px] border-border"> {product.marca.marca}</Badge>
               )}
             </div> */}
             </div>
@@ -248,7 +248,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
                 <Badge
                   variant="outline"
                   title="Marca"
-                  className="text-[10px] border-gray-300"
+                  className="text-[10px] border-border"
                 >
                   {" "}
                   {product.marca.marca}
@@ -266,7 +266,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
         minSize: 80,
         cell: ({ getValue }) => (
           <div className="space-y-0.5">
-            <div className="font-mono text-xs text-gray-900 truncate">
+            <div className="font-mono text-xs text-foreground truncate">
               {formatCell(getValue<string>())}
             </div>
           </div>
@@ -363,7 +363,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
           <Package className="size-4" />
           Productos del Pedido
         </h3>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           {filteredOrderItems.length}{" "}
           {filteredOrderItems.length === 1 ? "producto" : "productos"} en total
         </p>
@@ -384,7 +384,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
                   setSearchInput("");
                   if (isManual) setSearchTerm(""); // reset también en manual
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
               >
                 <X className="size-3" />
               </Button>
@@ -406,7 +406,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
           stickyHeader={true}
           rows={filteredOrderItems.length}
           renderBottomRow={() => (
-            <TableRow className="bg-gray-50 font-semibold sticky bottom-0 hover:bg-gray-50">
+            <TableRow className="bg-accent/30 font-semibold sticky bottom-0 hover:bg-accent/30">
               {table.getVisibleFlatColumns().map((column) => {
                 if (column.id === "cantidad") {
                   return (
@@ -414,7 +414,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
                       <div className="text-xs text-muted-foreground mb-0.5">
                         Total Cantidad
                       </div>
-                      <div className="text-sm font-bold text-blue-600">
+                      <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                         {totalCantidad.toFixed(0)}
                       </div>
                     </TableCell>
@@ -426,7 +426,7 @@ const OrderDetailProductsSection: React.FC<OrderDetailProductsSectionProps> = ({
                       <div className="text-xs text-muted-foreground mb-0.5">
                         Total
                       </div>
-                      <div className="text-sm font-bold text-emerald-600">
+                      <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(finalTotal)}
                       </div>
                     </TableCell>

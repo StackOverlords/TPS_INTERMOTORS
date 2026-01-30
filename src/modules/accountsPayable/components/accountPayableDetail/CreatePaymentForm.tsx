@@ -139,14 +139,14 @@ export const CreatePaymentForm = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="rounded-lg p-4 bg-gray-50 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-lg p-4 bg-accent/30 space-y-4">
             <h4 className="font-semibold text-md">Registrar Nuevo Pago</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Fecha */}
                 <div className="space-y-1">
                     <Label htmlFor="fecha" className="text-sm">
-                        Fecha <span className="text-red-500">*</span>
+                        Fecha <span className="text-destructive">*</span>
                     </Label>
                     <Input
                         id="fecha"
@@ -163,7 +163,7 @@ export const CreatePaymentForm = ({
                 {/* Tipo de Pago */}
                 <div className="space-y-1">
                     <Label htmlFor="tipo_pago" className="text-sm">
-                        Tipo de Pago <span className="text-red-500">*</span>
+                        Tipo de Pago <span className="text-destructive">*</span>
                     </Label>
                     <ComboboxSelect
                         value={formData.tipo_pago}
@@ -183,8 +183,8 @@ export const CreatePaymentForm = ({
                 <div className="space-y-1">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="monto" className="text-sm">
-                            Monto <span className="text-red-500">*</span>
-                            <span className="text-xs text-gray-500 ml-2">
+                            Monto <span className="text-destructive">*</span>
+                            <span className="text-xs text-muted-foreground ml-2">
                                 (Máx: {formatCurrency(saldoMaximo)})
                             </span>
                         </Label>
@@ -197,7 +197,7 @@ export const CreatePaymentForm = ({
                                 const rounded = parseFloat(saldoMaximo.toFixed(2));
                                 setFormData({ ...formData, monto: rounded });
                             }}
-                            className="h-5 text-[10px] px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="h-5 text-[10px] px-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50"
                         >
                             Pago total
                         </Button>
@@ -222,7 +222,7 @@ export const CreatePaymentForm = ({
                             required
                             className={`h-9 pr-8 ${
                                 formData.monto > 0 && !montoValidation.isValid
-                                    ? "border-red-500 focus-visible:ring-red-500"
+                                    ? "border-destructive focus-visible:ring-destructive"
                                     : formData.monto > 0 && montoValidation.type === "success"
                                     ? "border-green-500 focus-visible:ring-green-500"
                                     : ""
@@ -232,9 +232,9 @@ export const CreatePaymentForm = ({
                         {formData.monto > 0 && (
                             <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                 {montoValidation.isValid ? (
-                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                 ) : (
-                                    <AlertCircle className="h-4 w-4 text-red-600" />
+                                    <AlertCircle className="h-4 w-4 text-destructive" />
                                 )}
                             </div>
                         )}
@@ -244,10 +244,10 @@ export const CreatePaymentForm = ({
                         <p
                             className={`text-xs flex items-center gap-1 ${
                                 montoValidation.type === "error"
-                                    ? "text-red-600"
+                                    ? "text-destructive"
                                     : montoValidation.type === "success"
-                                    ? "text-green-600"
-                                    : "text-blue-600"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-blue-600 dark:text-blue-400"
                             }`}
                         >
                             {montoValidation.message}

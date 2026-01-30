@@ -106,7 +106,7 @@ const KeybindingRecorderModal = ({
         <DialogHeader className="space-y-1 pb-2">
           <DialogTitle className="text-sm font-medium">{description}</DialogTitle>
           <DialogDescription className="text-xs">
-            {currentKeys && <span className="text-muted-foreground">Actual: <kbd className="px-1.5 py-0.5 bg-muted border border-gray-200 rounded text-xs font-mono">{currentKeys}</kbd></span>}
+            {currentKeys && <span className="text-muted-foreground">Actual: <kbd className="px-1.5 py-0.5 bg-muted border border-border rounded text-xs font-mono">{currentKeys}</kbd></span>}
           </DialogDescription>
         </DialogHeader>
 
@@ -116,7 +116,7 @@ const KeybindingRecorderModal = ({
               <div className="flex items-center gap-1.5">
                 {recordedKeys.map((key, index) => (
                   <span key={index} className="flex items-center">
-                    <kbd className="px-2 py-1 text-xs font-mono bg-background border border-gray-200 rounded shadow-sm">
+                    <kbd className="px-2 py-1 text-xs font-mono bg-background border border-border rounded shadow-sm">
                       {key}
                     </kbd>
                     {index < recordedKeys.length - 1 && <span className="mx-1 text-muted-foreground text-sm">+</span>}
@@ -139,7 +139,7 @@ const KeybindingRecorderModal = ({
           )}
 
           {tempKeys && !hasConflict && (
-            <div className="flex items-center gap-1.5 text-gray-600 text-xs mt-1">
+            <div className="flex items-center gap-1.5 text-muted-foreground text-xs mt-1">
               <CheckCircle2 className="w-3 h-3" />
               <span>Presiona Enter para confirmar</span>
             </div>

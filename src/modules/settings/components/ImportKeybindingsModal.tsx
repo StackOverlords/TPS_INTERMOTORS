@@ -69,7 +69,7 @@ const ImportKeybindingsModal = ({
           {/* Estado de validación */}
           <div className="space-y-2">
             {hasErrors && (
-              <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 dark:bg-destructive/20 border border-destructive/40 dark:border-destructive/50 rounded-md">
                 <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
                 <div className="flex-1 text-sm">
                   <p className="font-medium text-destructive">
@@ -87,10 +87,10 @@ const ImportKeybindingsModal = ({
             )}
 
             {!hasErrors && hasWarnings && (
-              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-md">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 dark:bg-yellow-500/20 border border-yellow-500/30 dark:border-yellow-500/40 rounded-md">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 text-sm">
-                  <p className="font-medium text-yellow-700 dark:text-yellow-600">
+                  <p className="font-medium text-yellow-700 dark:text-yellow-500">
                     Advertencias ({validation.warnings.length})
                   </p>
                   <ul className="mt-1 space-y-1">
@@ -110,9 +110,9 @@ const ImportKeybindingsModal = ({
             )}
 
             {!hasErrors && !hasWarnings && (
-              <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/30 rounded-md">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-sm font-medium text-green-700 dark:text-green-600">
+              <div className="flex items-center gap-2 p-3 bg-green-500/10 dark:bg-green-500/20 border border-green-500/30 dark:border-green-500/40 rounded-md">
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-500" />
+                <p className="text-sm font-medium text-green-700 dark:text-green-500">
                   Archivo válido y listo para importar
                 </p>
               </div>
@@ -163,11 +163,11 @@ const ImportKeybindingsModal = ({
                         {conflict.id}
                       </p>
                       <div className="flex items-center gap-2 pt-1">
-                        <kbd className="px-1.5 py-0.5 bg-destructive/10 border border-destructive/30 rounded text-[10px]">
+                        <kbd className="px-1.5 py-0.5 bg-destructive/15 dark:bg-destructive/25 border border-destructive/50 dark:border-destructive/60 rounded text-[10px]">
                           {conflict.existingKeys}
                         </kbd>
                         <span className="text-muted-foreground">→</span>
-                        <kbd className="px-1.5 py-0.5 bg-primary/10 border border-primary/30 rounded text-[10px]">
+                        <kbd className="px-1.5 py-0.5 bg-primary/15 dark:bg-primary/25 border border-primary/40 dark:border-primary/50 rounded text-[10px]">
                           {conflict.importedKeys}
                         </kbd>
                       </div>

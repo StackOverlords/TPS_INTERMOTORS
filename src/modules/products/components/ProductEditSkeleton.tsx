@@ -6,7 +6,7 @@ const ProductEditSkeleton = () => {
         <main>
             <div className="space-y-3">
                 {/* Header */}
-                <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+                <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Skeleton className="h-8 w-8 rounded-lg" />

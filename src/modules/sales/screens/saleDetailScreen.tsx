@@ -177,11 +177,11 @@ const SaleDetailScreen = () => {
                   <CornerUpLeft />
                 </TooltipButton>
                 <div>
-                  <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                  <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                     Venta {saleData?.nro}
                   </h1>
                   {saleData && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {saleData.cliente
                         ? `${saleData.cliente?.cliente} - `
                         : ""}
@@ -265,17 +265,17 @@ const SaleDetailScreen = () => {
 
           <Card className="bg-card border border-border shadow-none">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                <FileText className="size-4 text-gray-700" />
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <FileText className="size-4 text-muted-foreground" />
                 Información General
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-base font-semibold text-gray-900">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-base font-semibold text-foreground">
                 <div>
                   <Label className="text-xs text-muted-foreground">Fecha</Label>
                   <p className="font-semibold flex items-center gap-2 text-sm">
-                    <Calendar className="size-4 text-gray-600" />
+                    <Calendar className="size-4 text-muted-foreground" />
                     {formatDate(saleData?.fecha ?? "")}
                   </p>
                 </div>
@@ -317,7 +317,7 @@ const SaleDetailScreen = () => {
                     Cliente
                   </Label>
                   <p className="text-sm font-medium flex items-center gap-1">
-                    <Building2 className="size-3 text-gray-600" />
+                    <Building2 className="size-3 text-muted-foreground" />
                     {formatCell(saleData?.cliente?.cliente)}
                   </p>
                 </div>
@@ -326,7 +326,7 @@ const SaleDetailScreen = () => {
                     Responsable
                   </Label>
                   <p className="text-sm font-medium flex items-center gap-1">
-                    <User className="size-3 text-gray-600" />
+                    <User className="size-3 text-muted-foreground" />
                     {formatCell(
                       [
                         saleData?.responsable_venta?.nombre,

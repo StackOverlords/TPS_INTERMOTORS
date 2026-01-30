@@ -158,7 +158,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
           <div className="space-y-0.5">
             <div
               title="Código interno"
-              className="font-mono text-xs text-gray-900 truncate"
+              className="font-mono text-xs text-foreground truncate"
             >
               {formatCell(getValue<string>())}
             </div>
@@ -179,7 +179,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
           <div className="space-y-0.5">
             <div
               title="Descripción"
-              className="text-sm font-medium text-gray-900 leading-tight truncate"
+              className="text-sm font-medium text-foreground leading-tight truncate"
             >
               {row.original.descripcion}
             </div>
@@ -225,7 +225,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         cell: ({ row }) => (
           <div className="space-y-0.5">
             {row.original.motor && (
-              <div className="text-xs text-gray-700 truncate">
+              <div className="text-xs text-foreground truncate">
                 Motor: {row.original.motor}
               </div>
             )}
@@ -240,12 +240,12 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         cell: ({ row }) => (
           <div className="space-y-0.5">
             {row.original.medida && (
-              <div className="text-xs text-gray-500 truncate">
+              <div className="text-xs text-muted-foreground truncate">
                 Medida: {row.original.medida}
               </div>
             )}
             {!row.original.motor && !row.original.medida && (
-              <div className="text-xs text-gray-400">N/A</div>
+              <div className="text-xs text-muted-foreground">N/A</div>
             )}
           </div>
         ),
@@ -261,7 +261,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
               {row.original.cantidad.toFixed(0)}
             </div>
             {row.original.unidad && (
-              <div className="text-[10px] text-gray-500">
+              <div className="text-[10px] text-muted-foreground">
                 {row.original.unidad}
               </div>
             )}
@@ -325,10 +325,10 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         size: 80,
         minSize: 30,
         cell: ({ getValue, row }) => (
-          <div className="text-center font-semibold text-emerald-600">
+          <div className="text-center font-semibold text-emerald-600 dark:text-emerald-400">
             {formatCurrency(getValue<number>())}
             {row.original.moneda && (
-              <span className="ml-1 text-[10px] text-gray-500">
+              <span className="ml-1 text-[10px] text-muted-foreground">
                 {row.original.moneda}
               </span>
             )}
@@ -361,7 +361,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
     return (
       <div className="animate-pulse space-y-2 flex-1">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-10 bg-gray-200 rounded" />
+          <div key={i} className="h-10 bg-muted rounded" />
         ))}
       </div>
     );
@@ -369,22 +369,22 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
 
   if (isError || !purchase) {
     return (
-      <div className="text-center text-gray-500 py-8 flex-1">
+      <div className="text-center text-muted-foreground py-8 flex-1">
         Error al cargar los productos de la compra
       </div>
     );
   }
 
   return (
-    <section className="border border-gray-200 rounded-lg bg-white flex-1 flex flex-col overflow-hidden">
-      <header className="p-4 border-b border-gray-200 flex-shrink-0">
+    <section className="border border-border rounded-lg bg-card flex-1 flex flex-col overflow-hidden">
+      <header className="p-4 border-b border-border flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h3 className="text-base font-medium text-gray-900 flex gap-2 items-center">
+            <h3 className="text-base font-medium text-foreground flex gap-2 items-center">
               <Package className="size-4" />
               Productos de la compra
             </h3>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {purchase.cantidad_detalles}{" "}
               {purchase.cantidad_detalles === 1 ? "producto" : "productos"} en
               total
@@ -411,7 +411,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
           keyboardNavigationEnabled={true}
           stickyHeader={true}
           renderBottomRow={() => (
-            <TableRow className="bg-gray-50 font-semibold sticky bottom-0">
+            <TableRow className="bg-accent/30 dark:bg-accent/50 font-semibold sticky bottom-0">
               {table.getVisibleFlatColumns().map((column) => {
                 if (column.id === "cantidad") {
                   return (
@@ -419,7 +419,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
                       <div className="text-xs text-muted-foreground mb-0.5">
                         Total Cantidad
                       </div>
-                      <div className="text-sm font-bold text-blue-600">
+                      <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                         {totalCantidad.toFixed(0)}
                       </div>
                     </TableCell>
@@ -431,7 +431,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
                       <div className="text-xs text-muted-foreground mb-0.5">
                         Total
                       </div>
-                      <div className="text-sm font-bold text-emerald-600">
+                      <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(totalImporte)}
                       </div>
                     </TableCell>

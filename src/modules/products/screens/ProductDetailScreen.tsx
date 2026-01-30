@@ -239,7 +239,7 @@ const ProductDetailScreen = () => {
     <div className="p-2 h-full">
       <div className="max-w-7xl mx-auto space-y-4">
         {/* Header Simple - Solo nombre del producto */}
-        <div className="bg-white border border-gray-200 rounded-lg p-3">
+        <div className="bg-card border border-border rounded-lg p-3">
           <div className="flex items-center gap-3">
             <TooltipButton
               tooltipContentProps={{
@@ -258,7 +258,7 @@ const ProductDetailScreen = () => {
               <CornerUpLeft />
             </TooltipButton>
             <div>
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                 {product?.descripcion}
               </h1>
             </div>
@@ -268,31 +268,31 @@ const ProductDetailScreen = () => {
         {/* Navigation Tabs */}
         <Tabs defaultValue="sales" className="space-y-4">
           <div className="flex flex-wrap-reverse gap-2 justify-between">
-            <TabsList className="bg-white border border-gray-200 gap-2 h-10">
+            <TabsList className="bg-card border border-border gap-2 h-10">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-gray-900 data-[state=active]:text-white rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors h-8"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-3 py-2 hover:bg-accent transition-colors h-8"
               >
                 <Activity className="h-4 w-4 mr-2" />
                 Resumen
               </TabsTrigger>
               <TabsTrigger
                 value="inventory"
-                className="data-[state=active]:bg-gray-900 data-[state=active]:text-white rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors h-8"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-3 py-2 hover:bg-accent transition-colors h-8"
               >
                 <Box className="h-4 w-4 mr-2" />
                 Inventario
               </TabsTrigger>
               <TabsTrigger
                 value="sales"
-                className="data-[state=active]:bg-gray-900 data-[state=active]:text-white rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors h-8"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-3 py-2 hover:bg-accent transition-colors h-8"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Ventas
               </TabsTrigger>
               <TabsTrigger
                 value="logistics"
-                className="data-[state=active]:bg-gray-900 data-[state=active]:text-white rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors h-8"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-3 py-2 hover:bg-accent transition-colors h-8"
               >
                 <Truck className="h-4 w-4 mr-2" />
                 Logística
@@ -301,9 +301,9 @@ const ProductDetailScreen = () => {
 
             <div className="flex items-center gap-2">
               {/* Branch Selector */}
-              <div className="flex items-center gap-2 bg-white rounded-md px-1 h-10 border border-gray-200">
-                <MapPin className="h-4 w-4 text-gray-500 ml-2" />
-                <span className="text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-2 bg-card rounded-md px-1 h-10 border border-border">
+                <MapPin className="h-4 w-4 text-muted-foreground ml-2" />
+                <span className="text-sm font-medium text-foreground">
                   Sucursal:
                 </span>
                 {user?.sucursales &&

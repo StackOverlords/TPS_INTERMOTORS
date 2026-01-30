@@ -121,7 +121,7 @@ const AccountsPayableListScreen = () => {
         minSize: 30,
         enableHiding: true,
         cell: ({ getValue }) => (
-          <div className="text-center font-semibold text-blue-600">
+          <div className="text-center font-semibold text-blue-600 dark:text-blue-400">
             {
               formatColumnNumber(getValue<string>(), "-")
             }
@@ -147,7 +147,7 @@ const AccountsPayableListScreen = () => {
       //     minSize: 30,
       //     enableHiding: true,
       //     cell: ({ getValue }) => (
-      //         <div className="text-center text-sm text-gray-600">{getValue<number>()}</div>
+      //         <div className="text-center text-sm text-muted-foreground">{getValue<number>()}</div>
       //     ),
       // },
       {
@@ -199,7 +199,7 @@ const AccountsPayableListScreen = () => {
         cell: ({ getValue }) => {
           const date = getValue<string>();
           return (
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-muted-foreground">
               {new Date(date).toLocaleTimeString("es-ES", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -235,16 +235,16 @@ const AccountsPayableListScreen = () => {
           const dias = calcularDiasVencimiento(plazoPago);
 
           if (dias === null) {
-            return <div className="text-center text-gray-400">{formatCell(null)}</div>;
+            return <div className="text-center text-muted-foreground/50">{formatCell(null)}</div>;
           }
 
           return (
             <div
               className={`text-center text-sm font-medium ${dias < 0
-                ? "text-red-600"
+                ? "text-destructive"
                 : dias <= 15
                   ? "text-yellow-600"
-                  : "text-green-600"
+                  : "text-emerald-600 dark:text-emerald-400"
                 }`}
             >
               {dias < 0
@@ -262,7 +262,7 @@ const AccountsPayableListScreen = () => {
         enableHiding: true,
         cell: ({ getValue }) => {
           return (
-            <div className="text-right font-bold text-blue-600">
+            <div className="text-right font-bold text-blue-600 dark:text-blue-400">
               {formatCurrency(getValue<number>())}
             </div>
           );
@@ -276,7 +276,7 @@ const AccountsPayableListScreen = () => {
         enableHiding: true,
         cell: ({ getValue }) => {
           return (
-            <div className="text-right font-medium text-green-600">
+            <div className="text-right font-medium text-emerald-600 dark:text-emerald-400">
               {formatCurrency(getValue<number>())}
             </div>
           );
@@ -327,7 +327,7 @@ const AccountsPayableListScreen = () => {
           } | null>();
 
           if (!responsable) {
-            return <div className="text-center text-gray-400">{formatCell(null)}</div>;
+            return <div className="text-center text-muted-foreground/50">{formatCell(null)}</div>;
           }
 
           return (
@@ -347,7 +347,7 @@ const AccountsPayableListScreen = () => {
       //     cell: ({ getValue }) => {
       //         const id = getValue<number | undefined>();
       //         return (
-      //             <div className="text-center text-sm text-gray-600">
+      //             <div className="text-center text-sm text-muted-foreground">
       //                 {id || formatCell(null)}
       //             </div>
       //         );
@@ -392,7 +392,7 @@ const AccountsPayableListScreen = () => {
               {comentarios ? (
                 <span className="italic">{comentarios}</span>
               ) : (
-                <span className="text-gray-400">{formatCell(null)}</span>
+                <span className="text-muted-foreground/50">{formatCell(null)}</span>
               )}
             </div>
           );
@@ -507,7 +507,7 @@ const AccountsPayableListScreen = () => {
                 }
               >
                 <Zap
-                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"
+                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500 dark:text-yellow-400" : "text-muted-foreground"
                     }`}
                 />
                 {searchMode === "realtime" ? "Tiempo real" : "Manual"}
@@ -546,14 +546,14 @@ const AccountsPayableListScreen = () => {
                 }}
                 tooltip={
                   <div className="flex flex-col space-y-3">
-                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                       Atajos de teclado
                     </div>
                     <div className="space-y-1.5">
-                      <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                      <h4 className="text-xs font-medium text-muted-foreground tracking-wide">
                         Navegación filtros
                       </h4>
-                      <div className="space-y-1 text-gray-600 text-xs">
+                      <div className="space-y-1 text-muted-foreground text-xs">
                         <p>
                           <ShortcutKey combo={filter1Keys} />
                           {COMMANDS["tableAndFilters.filter1"].description}: Nro. Venta
@@ -590,7 +590,7 @@ const AccountsPayableListScreen = () => {
         {/* Tabla */}
         <div className="bg-background rounded-lg border border-border flex-1 min-h-0 flex flex-col">
           {/* Results Info */}
-          <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+          <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
             {accountsPayable.length > 0 ? (
               isInfiniteScroll ? (
                 `Mostrando ${accountsPayable.length} de ${accountsPayableData?.meta.total} cuentas por cobrar`
@@ -616,14 +616,14 @@ const AccountsPayableListScreen = () => {
                 }}
                 tooltip={
                   <div className="flex flex-col space-y-3">
-                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                       Atajos de teclado
                     </div>
                     <div className="space-y-1.5">
-                      <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                      <h4 className="text-xs font-medium text-muted-foreground tracking-wide">
                         Navegación
                       </h4>
-                      <div className="space-y-1 text-gray-600 text-xs">
+                      <div className="space-y-1 text-muted-foreground text-xs">
                         <p>
                           <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar tabla
                         </p>
@@ -655,7 +655,7 @@ const AccountsPayableListScreen = () => {
                   next={() => setPage((filters.pagina || 1) + 1)}
                   hasMore={accountsPayable.length < (accountsPayableData?.meta.total || 0)}
                   loader={
-                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-accent/30">
                       <Loader2 className="size-4 animate-spin" />
                       Cargando más cuentas por cobrar...
                     </div>
@@ -719,24 +719,24 @@ const AccountsPayableListScreen = () => {
           <div className="p-3 border-t border-border flex-shrink-0 bg-muted/30">
             <div className="flex items-center justify-center gap-6 flex-wrap text-sm">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-600">Total Vendido:</span>
-                <span className="font-bold text-blue-600">
+                <span className="font-medium text-muted-foreground">Total Vendido:</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">
                   {formatCurrency(
                     accountsPayable.reduce((sum, ap) => sum + ap.total_vendido, 0)
                   )}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-600">Total Pagado:</span>
-                <span className="font-bold text-green-600">
+                <span className="font-medium text-muted-foreground">Total Pagado:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(
                     accountsPayable.reduce((sum, ap) => sum + ap.total_pagado, 0)
                   )}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-600">Saldo Pendiente:</span>
-                <span className="font-bold text-red-600">
+                <span className="font-medium text-muted-foreground">Saldo Pendiente:</span>
+                <span className="font-bold text-destructive">
                   {formatCurrency(
                     accountsPayable.reduce((sum, ap) => sum + ap.saldo, 0)
                   )}

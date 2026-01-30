@@ -109,7 +109,7 @@ const TransferDetailScreen = () => {
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
             <div className="max-w-7xl w-full h-full flex flex-col gap-2 mx-auto">
-                <header className="border-gray-200 border bg-white rounded-lg p-3 flex-shrink-0">
+                <header className="border-border border bg-card rounded-lg p-3 flex-shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <TooltipButton
@@ -125,7 +125,7 @@ const TransferDetailScreen = () => {
                                 <CornerUpLeft />
                             </TooltipButton>
                             <div>
-                                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                                     Transferencia Nro. {transferData?.nro_completo}
                                 </h1>
                                 {transferData && (
@@ -193,19 +193,19 @@ const TransferDetailScreen = () => {
 
                 {/* Contenedor con scroll interno */}
                 <div className="flex-1 min-h-0 overflow-auto flex flex-col gap-2">
-                    <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+                    <Card className="bg-card border border-border shadow-none flex-shrink-0">
                         <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                                <FileText className="size-4 text-gray-700" />
+                            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <FileText className="size-4 text-muted-foreground" />
                                 Información General
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 text-base font-semibold text-gray-900">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 text-base font-semibold text-foreground">
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Fecha</Label>
                                     <p className="font-semibold flex items-center gap-2 text-sm">
-                                        <Calendar className="size-4 text-gray-600" />
+                                        <Calendar className="size-4 text-muted-foreground" />
                                         {formatDate(transferData?.fecha ?? '')}
                                     </p>
                                 </div>
@@ -221,7 +221,7 @@ const TransferDetailScreen = () => {
                                 </div>
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Total</Label>
-                                    <p className="font-bold text-sm text-green-600">{formatCurrency(totalTransfer)}</p>
+                                    <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">{formatCurrency(totalTransfer)}</p>
                                 </div>
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Productos</Label>
@@ -234,14 +234,14 @@ const TransferDetailScreen = () => {
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Sucursal Origen</Label>
                                     <p className="text-sm font-medium flex items-center gap-1">
-                                        <Building2 className="size-3 text-gray-600" />
+                                        <Building2 className="size-3 text-muted-foreground" />
                                         {formatCell(transferData?.sucursal_origen_nombre)}
                                     </p>
                                 </div>
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Sucursal Destino</Label>
                                     <p className="text-sm font-medium flex items-center gap-1">
-                                        <ArrowLeftRight className="size-3 text-gray-600" />
+                                        <ArrowLeftRight className="size-3 text-muted-foreground" />
                                         {formatCell(transferData?.sucursal_destino_nombre)}
                                     </p>
                                 </div>
@@ -252,7 +252,7 @@ const TransferDetailScreen = () => {
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Responsable</Label>
                                     <p className="text-sm font-medium flex items-center gap-1">
-                                        <User className="size-3 text-gray-600" />
+                                        <User className="size-3 text-muted-foreground" />
                                         {formatCell(
                                             [
                                                 transferData?.responsable?.nombre,

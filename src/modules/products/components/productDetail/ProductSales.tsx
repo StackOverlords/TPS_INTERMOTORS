@@ -82,9 +82,9 @@ const ProductSales: React.FC<ProductSalesProps> = ({
                                 {Math.abs(diferencia)}
                             </Badge>
                             {diferencia >= 0 ? (
-                                <TrendingUp className="h-3 w-3 text-green-600" />
+                                <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                             ) : (
-                                <TrendingDown className="h-3 w-3 text-red-600" />
+                                <TrendingDown className="h-3 w-3 text-destructive" />
                             )}
                         </div>
                     );
@@ -136,8 +136,8 @@ const ProductSales: React.FC<ProductSalesProps> = ({
     return (
         <Card className="bg-card border border-border">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                    <TrendingUp className="size-4 text-gray-700" />
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                    <TrendingUp className="size-4 text-muted-foreground" />
                     Análisis de Ventas Anuales
                     <div className="flex items-center ml-auto gap-4">
                         <YearSelector
@@ -169,12 +169,12 @@ const ProductSales: React.FC<ProductSalesProps> = ({
                         rows={13}
                         renderBottomRow={() => (
                             !isErrorData && !isLoadingData && !isFetchingData &&
-                            <TableRow className="bg-gray-50 font-bold">
+                            <TableRow className="bg-muted font-bold">
                                 <TableCell className="font-bold p-1">TOTAL</TableCell>
-                                <TableCell className="font-bold p-1 text-gray-900 text-end">
+                                <TableCell className="font-bold p-1 text-foreground text-end">
                                     {totalVentasAnterior.toLocaleString()}
                                 </TableCell>
-                                <TableCell className="font-bold p-1  text-gray-600 text-end">
+                                <TableCell className="font-bold p-1 text-foreground text-end">
                                     {totalVentasActual.toLocaleString()}
                                 </TableCell>
                                 {
@@ -189,9 +189,9 @@ const ProductSales: React.FC<ProductSalesProps> = ({
                                                         {Math.abs(diferenciaTotalVentas)}
                                                     </Badge>
                                                     {diferenciaTotalVentas >= 0 ? (
-                                                        <TrendingUp className="h-4 w-4 text-green-600" />
+                                                        <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                                     ) : (
-                                                        <TrendingDown className="h-4 w-4 text-red-600" />
+                                                        <TrendingDown className="h-4 w-4 text-destructive" />
                                                     )}
                                                 </div>
                                             </TableCell>

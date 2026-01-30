@@ -516,7 +516,7 @@ const ReturnEditScreen = () => {
                     {isUsingTempData ? tempCreatedReturn?.nro : returnData?.nro}
                   </h1>
                   {returnData && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {returnData.cantidad_detalles}{" "}
                       {returnData.cantidad_detalles === 1
                         ? "producto"
@@ -524,7 +524,7 @@ const ReturnEditScreen = () => {
                     </p>
                   )}
                   {isUsingTempData && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {tempCreatedReturn?.cantidad_detalles}{" "}
                       {tempCreatedReturn?.cantidad_detalles === 1
                         ? "producto"
@@ -584,7 +584,7 @@ const ReturnEditScreen = () => {
                           autoFocus
                         />
                         {errors.fecha && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             {errors.fecha.message}
                           </p>
                         )}
@@ -606,7 +606,7 @@ const ReturnEditScreen = () => {
                           )}
                         />
                         {errors.responsable && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             El campo es requerido
                           </p>
                         )}
@@ -643,7 +643,7 @@ const ReturnEditScreen = () => {
                           )}
                         />
                         {errors.motivo_devolucion && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             El campo es requerido
                           </p>
                         )}
@@ -737,8 +737,8 @@ const ReturnEditScreen = () => {
                         <CardContent className="flex-1 min-h-0">
                           <div className="h-full overflow-auto">
                             {returnDetailsHook.details.length === 0 ? (
-                              <div className="text-center py-8 text-gray-500">
-                                <Undo2 className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                              <div className="text-center py-8 text-muted-foreground">
+                                <Undo2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                                 <p>No hay productos agregados</p>
                                 <p className="text-sm">
                                   Haz clic en "Agregar" para añadir productos
@@ -789,7 +789,7 @@ const ReturnEditScreen = () => {
                   <Card className="border border-border shadow-none pt-3">
                     <CardContent className="space-y-2">
                       <footer className="flex gap-2 items-center justify-between">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           * Campos requeridos
                         </span>
                         <div className="flex gap-2">

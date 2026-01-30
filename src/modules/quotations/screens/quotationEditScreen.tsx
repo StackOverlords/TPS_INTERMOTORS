@@ -635,7 +635,7 @@ const QuotationEditScreen = () => {
                       : quotationData?.nro}
                   </h1>
                   {quotationData && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {quotationData.cliente
                         ? `${quotationData.cliente?.cliente} - `
                         : ""}
@@ -646,7 +646,7 @@ const QuotationEditScreen = () => {
                     </p>
                   )}
                   {isUsingTempData && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {tempCreatedQuotation?.cliente
                         ? `${tempCreatedQuotation.cliente?.cliente} - `
                         : ""}
@@ -742,7 +742,7 @@ const QuotationEditScreen = () => {
                           disabled={isReadOnly}
                         />
                         {errors.fecha && (
-                          <p className="text-red-500 text-xs">
+                          <p className="text-destructive text-xs">
                             {errors.fecha.message}
                           </p>
                         )}
@@ -765,7 +765,7 @@ const QuotationEditScreen = () => {
                           )}
                         />
                         {errors.id_responsable && (
-                          <p className="text-red-500 text-xs">
+                          <p className="text-destructive text-xs">
                             El campo es requerido
                           </p>
                         )}
@@ -806,7 +806,7 @@ const QuotationEditScreen = () => {
                             )}
                           />
                           {errors.forma_cotizacion && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.forma_cotizacion.message}
                             </p>
                           )}
@@ -849,7 +849,7 @@ const QuotationEditScreen = () => {
                           )}
                         />
                         {errors.tipo_cotizacion && (
-                          <p className="text-red-500 text-xs">
+                          <p className="text-destructive text-xs">
                             El campo es requerido
                           </p>
                         )}
@@ -881,7 +881,7 @@ const QuotationEditScreen = () => {
                       <div>
                         <Label htmlFor="fechaPlazo">
                           Fecha Plazo
-                          <span className="text-xs ml-1 text-gray-500">
+                          <span className="text-xs ml-1 text-muted-foreground">
                             (Crédito)
                           </span>
                         </Label>
@@ -894,7 +894,7 @@ const QuotationEditScreen = () => {
                           }
                         />
                         {errors.plazo_pago && (
-                          <p className="text-red-500 text-xs">
+                          <p className="text-destructive text-xs">
                             {errors.plazo_pago.message}
                           </p>
                         )}
@@ -971,7 +971,7 @@ const QuotationEditScreen = () => {
                           )}
                         />
                         {errors.id_cliente && (
-                          <p className="text-red-500 text-xs">
+                          <p className="text-destructive text-xs">
                             El campo es requerido
                           </p>
                         )}
@@ -1103,8 +1103,8 @@ const QuotationEditScreen = () => {
                         <CardContent className="flex-1 min-h-0">
                           <div className="h-full overflow-auto">
                             {detalles.length === 0 ? (
-                              <div className="text-center py-8 text-gray-500">
-                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                              <div className="text-center py-8 text-muted-foreground">
+                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                                 <p>No hay productos agregados</p>
                                 <p className="text-sm">
                                   Haz clic en "Seleccionar Productos" para

@@ -31,9 +31,9 @@ interface List03Props {
 }
 
 const iconStyles = {
-  savings: "bg-zinc-100 text-zinc-900",
-  investment: "bg-zinc-100 text-zinc-900",
-  debt: "bg-zinc-100 text-zinc-900",
+  savings: "bg-accent text-foreground",
+  investment: "bg-accent text-foreground",
+  debt: "bg-accent text-foreground",
 }
 
 const statusConfig = {
@@ -100,10 +100,10 @@ export default function List03({ items = ITEMS, className }: List03Props) {
             className={cn(
               "flex flex-col",
               "w-[280px] shrink-0",
-              "bg-white",
+              "bg-card",
               "rounded-xl",
-              "border border-zinc-100",
-              "hover:border-zinc-200",
+              "border border-border",
+              "hover:border-border",
               "transition-all duration-200",
               "shadow-sm backdrop-blur-xl",
             )}
@@ -126,19 +126,19 @@ export default function List03({ items = ITEMS, className }: List03Props) {
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-zinc-900 mb-1">{item.title}</h3>
-                <p className="text-xs text-zinc-600 line-clamp-2">{item.subtitle}</p>
+                <h3 className="text-sm font-medium text-foreground mb-1">{item.title}</h3>
+                <p className="text-xs text-muted-foreground line-clamp-2">{item.subtitle}</p>
               </div>
 
               {typeof item.progress === "number" && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-zinc-600">Progress</span>
-                    <span className="text-zinc-900">{item.progress}%</span>
+                    <span className="text-muted-foreground">Progress</span>
+                    <span className="text-foreground">{item.progress}%</span>
                   </div>
-                  <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-accent rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-zinc-900 rounded-full"
+                      className="h-full bg-primary rounded-full"
                       style={{ width: `${item.progress}%` }}
                     />
                   </div>
@@ -147,26 +147,26 @@ export default function List03({ items = ITEMS, className }: List03Props) {
 
               {item.amount && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-medium text-zinc-900">{item.amount}</span>
-                  <span className="text-xs text-zinc-600">target</span>
+                  <span className="text-sm font-medium text-foreground">{item.amount}</span>
+                  <span className="text-xs text-muted-foreground">target</span>
                 </div>
               )}
 
-              <div className="flex items-center text-xs text-zinc-600">
+              <div className="flex items-center text-xs text-muted-foreground">
                 <Calendar className="w-3.5 h-3.5 mr-1.5" />
                 <span>{item.date}</span>
               </div>
             </div>
 
-            <div className="mt-auto border-t border-zinc-100">
+            <div className="mt-auto border-t border-border">
               <button
                 className={cn(
                   "w-full flex items-center justify-center gap-2",
                   "py-2.5 px-3",
                   "text-xs font-medium",
-                  "text-zinc-600",
-                  "hover:text-zinc-900",
-                  "hover:bg-zinc-100",
+                  "text-muted-foreground",
+                  "hover:text-foreground",
+                  "hover:bg-accent",
                   "transition-colors duration-200",
                 )}
               >

@@ -37,8 +37,8 @@ const CreateUserScreen = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
-          <p className="text-sm text-gray-500">Verificando permisos...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">Verificando permisos...</p>
         </div>
       </div>
     );
@@ -53,14 +53,14 @@ const CreateUserScreen = () => {
     <div className="flex justify-center items-center">
       <div className="w-full space-y-2">
         {/* Header */}
-        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Nuevo Usuario
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Registra un nuevo usuario en el sistema
                 </p>
               </div>

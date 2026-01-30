@@ -19,7 +19,7 @@ const configSections = [
     title: "Sucursales",
     description: "Gestiona las sucursales de la aplicación",
     icon: GitBranchIcon,
-    iconClassName: "bg-indigo-100 text-indigo-600",
+    iconClassName: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
   },
   {
     key: "categorias",
@@ -27,7 +27,7 @@ const configSections = [
     title: "Divisiónes",
     description: "Divisiónes principales",
     icon: FolderOpen,
-    iconClassName: "bg-purple-100 text-purple-600",
+    iconClassName: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
   },
   // {
   //   key: 'subcategorias',
@@ -43,7 +43,7 @@ const configSections = [
     title: "Procedencias",
     description: "Origen de los productos",
     icon: MapPin,
-    iconClassName: "bg-blue-100 text-blue-600",
+    iconClassName: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
   },
   {
     key: "marcas",
@@ -51,7 +51,7 @@ const configSections = [
     title: "Marcas",
     description: "Marcas de productos",
     icon: Tag,
-    iconClassName: "bg-emerald-100 text-emerald-600",
+    iconClassName: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
   },
   {
     key: "marcasVehiculo",
@@ -59,7 +59,7 @@ const configSections = [
     title: "Marcas de Vehículo",
     description: "Marcas de vehículos",
     icon: Car,
-    iconClassName: "bg-red-100 text-red-600",
+    iconClassName: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
   },
   {
     key: "medidas",
@@ -67,7 +67,7 @@ const configSections = [
     title: "Medidas",
     description: "Medidas de productos",
     icon: Ruler,
-    iconClassName: "bg-yellow-100 text-yellow-600",
+    iconClassName: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400",
   },
   {
     key: "proveedores",
@@ -75,7 +75,7 @@ const configSections = [
     title: "Proveedores",
     description: "Proveedores de productos",
     icon: Truck,
-    iconClassName: "bg-yellow-100 text-yellow-600",
+    iconClassName: "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400",
   },
   {
     key: "clientes",
@@ -83,7 +83,7 @@ const configSections = [
     title: "Clientes",
     description: "Gestiona los clientes",
     icon: Users,
-    iconClassName: "bg-cyan-100 text-cyan-600",
+    iconClassName: "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400",
   },
 ];
 

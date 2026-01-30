@@ -177,7 +177,7 @@ const PurchaseListScreen = () => {
         id: 'Select',
         header: ({ table }) => (
           <Checkbox
-            className="border border-gray-400"
+            className="border border-input"
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && 'indeterminate')
@@ -189,7 +189,7 @@ const PurchaseListScreen = () => {
         cell: ({ row }) => (
           <div className="px-1">
             <Checkbox
-              className="border border-gray-400"
+              className="border border-input"
               checked={row.getIsSelected()}
               onCheckedChange={value => row.toggleSelected(!!value)}
               aria-label="Seleccionar fila"
@@ -269,7 +269,7 @@ const PurchaseListScreen = () => {
                     <DropdownMenuItem
                       onKeyDown={e => e.stopPropagation()}
                       onClick={() => handleDeletePurchase(row.original.id)}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Eliminar compra
@@ -289,7 +289,7 @@ const PurchaseListScreen = () => {
                   </p>
                 }
               >
-                <h3 className="font-medium text-gray-900 leading-tight hover:underline truncate">
+                <h3 className="font-medium text-foreground leading-tight hover:underline truncate">
                   {getValue<string>().split('-')[1]}
                 </h3>
               </TooltipWrapper>
@@ -319,11 +319,11 @@ const PurchaseListScreen = () => {
         cell: ({ row }) => {
           const proveedor = row.original.proveedor;
           if (!proveedor) {
-            return <div className="text-gray-400 italic">Sin proveedor</div>;
+            return <div className="text-muted-foreground italic">Sin proveedor</div>;
           }
           return (
             <div className="space-y-1 font-bold">
-              <div className="text-blue-600">
+              <div className="text-blue-600 dark:text-blue-400">
                 {proveedor.proveedor}
               </div>
               {/* <div className="text-xs text-gray-800">ID: {proveedor.id}</div> */}
@@ -348,7 +348,7 @@ const PurchaseListScreen = () => {
           const totalDisplay = isFinite(total) ? total.toFixed(2) : "0.00";
           return (
             <div className="text-right">
-              <div className="font-bold text-green-600">
+              <div className="font-bold text-emerald-600 dark:text-emerald-400">
                 ${totalDisplay}
               </div>
             </div>
@@ -391,7 +391,7 @@ const PurchaseListScreen = () => {
                   <Badge
                     key={index}
                     variant="outline"
-                    className={`text-xs font-mono border-gray-300 ${isMediumLong ? 'basis-full' : 'basis-auto'
+                    className={`text-xs font-mono ${isMediumLong ? 'basis-full' : 'basis-auto'
                       }`}
                   >
                     {comprobante}
@@ -410,7 +410,7 @@ const PurchaseListScreen = () => {
         cell: ({ row }) => {
           const responsable = row.original.responsable;
           if (!responsable) {
-            return <div className="text-gray-400 italic">Sin asignar</div>;
+            return <div className="text-muted-foreground italic">Sin asignar</div>;
           }
           return (
             <div className="space-y-1">
@@ -433,7 +433,7 @@ const PurchaseListScreen = () => {
           const comentarios = getValue<string>();
           return (
             <div
-              className={`text-xs ${!comentarios ? 'italic text-gray-400' : ''
+              className={`text-xs ${!comentarios ? 'italic text-muted-foreground' : ''
                 }`}
             >
               {formatCell(comentarios, 'Sin comentarios')}
@@ -542,7 +542,7 @@ const PurchaseListScreen = () => {
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
           <div className="flex items-center gap-2 md:gap-4 grow">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-4 w-4" />
               <Input
                 placeholder="Buscar por palabras clave..."
                 value={filters.keywords}
@@ -562,7 +562,7 @@ const PurchaseListScreen = () => {
               className="text-xs h-7"
               title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
             >
-              <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+              <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500 dark:text-yellow-400' : 'text-muted-foreground'}`} />
               {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
             </Button>
 
@@ -631,11 +631,11 @@ const PurchaseListScreen = () => {
       <div className="bg-card rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
         <section className="flex flex-col h-full">
           {/* Results Info */}
-          <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+          <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
             {isLoading || isFetching ? (
               <span>Cargando...</span>
             ) : isError ? (
-              <span className="text-red-600">Error al cargar los datos</span>
+              <span className="text-destructive">Error al cargar los datos</span>
             ) : purchases.length > 0 ? (
               isInfiniteScroll ? (
                 `Mostrando ${purchases.length} de ${purchaseData?.meta?.total || 0
@@ -645,7 +645,7 @@ const PurchaseListScreen = () => {
                 } de ${purchaseData?.meta?.total || 0} compras`
               )
             ) : (
-              <span className="text-amber-600">
+              <span className="text-amber-600 dark:text-amber-400">
                 No se encontraron compras para la sucursal actual
               </span>
             )}
@@ -660,7 +660,7 @@ const PurchaseListScreen = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+                  className="w-56 max-h-96 overflow-y-auto"
                 >
                   {table
                     .getAllColumns()
@@ -675,7 +675,7 @@ const PurchaseListScreen = () => {
                         }
                       >
                         <Checkbox
-                          className="border border-gray-400"
+                          className="border border-input"
                           checked={column.getIsVisible()}
                           onCheckedChange={value =>
                             column.toggleVisibility(!!value)
@@ -715,7 +715,7 @@ const PurchaseListScreen = () => {
                   next={() => setPage((filters.pagina || 1) + 1)}
                   hasMore={purchases.length < ((purchaseData?.meta?.total ?? 0))}
                   loader={
-                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-accent/30">
                       <Loader2 className="size-4 animate-spin" />
                       Cargando más compras...
                     </div>

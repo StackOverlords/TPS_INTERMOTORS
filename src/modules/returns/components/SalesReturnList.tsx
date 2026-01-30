@@ -205,7 +205,7 @@ function SaleReturnList<T extends BaseWithId>({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {format(date, "dd/MM/yyyy", { locale: es })}
                 </div>
@@ -277,7 +277,7 @@ function SaleReturnList<T extends BaseWithId>({
         size: 120,
         minSize: 100,
         cell: ({ getValue }) => (
-          <div className="text-right font-medium text-green-600">
+          <div className="text-right font-medium text-emerald-600 dark:text-emerald-400">
             {formatCurrency(getValue<number>())}
           </div>
         ),
@@ -467,7 +467,7 @@ function SaleReturnList<T extends BaseWithId>({
               }
             >
               <Zap
-                className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
+                className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500 dark:text-yellow-400" : "text-muted-foreground"}`}
               />
               {searchMode === "realtime" ? "Tiempo real" : "Manual"}
             </Button>
@@ -500,7 +500,7 @@ function SaleReturnList<T extends BaseWithId>({
             <div className="space-y-2">
               <Label>Nro. de Venta</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 w-4 h-4" />
                 <Input
                   type="number"
                   placeholder="Ej: 2054"
@@ -537,7 +537,7 @@ function SaleReturnList<T extends BaseWithId>({
             <div className="space-y-2">
               <Label>Código OEM</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 w-4 h-4" />
                 <Input
                   placeholder="11122-10040-D..."
                   value={filters.codigo_oem_producto}
@@ -633,7 +633,7 @@ function SaleReturnList<T extends BaseWithId>({
           </div>
 
           {dateError && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
+            <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-2 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               <span>{dateError}</span>
             </div>

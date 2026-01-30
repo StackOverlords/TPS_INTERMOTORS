@@ -171,7 +171,7 @@ export function SalesReportWrapper({
           <div className="space-y-6">
             {/* Indicador de carga mientras refetch */}
             {isFetching && (
-              <div className="flex items-center justify-center gap-2 p-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
+              <div className="flex items-center justify-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Actualizando datos...
               </div>
