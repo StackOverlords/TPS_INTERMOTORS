@@ -94,9 +94,9 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
           type="button"
           onKeyDown={handleTriggerKeyDown}
           className={cn(
-            "flex-1 justify-between text-left font-normal px-2",
+            "w-full justify-between text-left font-normal px-2",
             !value && "text-muted-foreground",
-            hasError && "border-red-500 focus:border-red-500",
+            hasError && "border-destructive focus:border-destructive focus:ring-destructive",
             className
           )}
         >
@@ -112,7 +112,7 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
                 e.stopPropagation();
                 onChange(undefined);
               }}
-              className="rounded-md p-0 flex items-center justify-center size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+              className="rounded-md p-0 flex items-center justify-center size-6 cursor-pointer text-destructive hover:text-destructive/80 hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
             >
               <X className="size-3" />
             </Badge>

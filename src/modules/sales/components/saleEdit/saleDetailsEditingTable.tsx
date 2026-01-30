@@ -132,7 +132,7 @@ function SaleDetailsEditingTableInner(
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
             <div
-              className={`text-center ${isFullyReturned ? "text-gray-400 italic" : ""}`}
+              className={`text-center ${isFullyReturned ? "text-muted-foreground/70 italic" : ""}`}
             >
               {getValue<number>()}
             </div>
@@ -174,7 +174,7 @@ function SaleDetailsEditingTableInner(
           const cantidadDev = row.original.cantidad_dev ?? 0;
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
-            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
               {getValue<number>()}
             </div>
           );
@@ -188,7 +188,7 @@ function SaleDetailsEditingTableInner(
           const cantidadDev = row.original.cantidad_dev ?? 0;
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
-            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
               {formatCell(getValue<string>())}
             </div>
           );
@@ -207,7 +207,7 @@ function SaleDetailsEditingTableInner(
 
           return (
             <div
-              className={`flex items-center gap-2 ${isFullyReturned ? "text-gray-400 italic" : "text-gray-700"}`}
+              className={`flex items-center gap-2 ${isFullyReturned ? "text-muted-foreground/70 italic" : "text-foreground"}`}
             >
               <h3 className="font-medium truncate">{getValue<string>()}</h3>
               {isFullyReturned && (
@@ -239,11 +239,11 @@ function SaleDetailsEditingTableInner(
 
           return (
             <div
-              className={`flex items-center gap-2 w-full ${isFullyReturned ? "text-gray-400 italic" : ""}`}
+              className={`flex items-center gap-2 w-full ${isFullyReturned ? "text-muted-foreground/70 italic" : ""}`}
             >
               <EditableQuantity
                 value={cantidadReal}
-                className={cn("w-full", hasReturns && "text-gray-400 italic")}
+                className={cn("w-full", hasReturns && "text-muted-foreground/70 italic")}
                 buttonClassName="w-full"
                 onSubmit={(value) => updateQuantity(productId, value as number)}
                 validate={(val) => {
@@ -308,7 +308,7 @@ function SaleDetailsEditingTableInner(
           const isFullyReturned = cantidadDev === row.original.cantidad;
 
           return (
-            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
               <EditablePrice
                 value={basePrice}
                 onSubmit={(value) => updatePrice(product.id, value as number)}
@@ -334,14 +334,14 @@ function SaleDetailsEditingTableInner(
           const isFullyReturned = cantidadDev === item.cantidad;
 
           return (
-            <div className={isFullyReturned ? "text-gray-400 italic" : ""}>
+            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
               <EditablePrice
                 value={subtotal}
                 onSubmit={(value) =>
                   updateCustomSubtotal(product.id, value as number)
                 }
                 className="w-full"
-                inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
+                inputClassName="hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                 numberProps={{ min: 0, step: 0.01 }}
                 disabled={isReadOnly || isFullyReturned}
               />
@@ -358,7 +358,7 @@ function SaleDetailsEditingTableInner(
           const cantidadDev = row.original.cantidad_dev ?? 0;
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
-            <span className={isFullyReturned ? "text-gray-400 italic" : ""}>
+            <span className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
               {marca}
             </span>
           );
@@ -377,7 +377,7 @@ function SaleDetailsEditingTableInner(
 
           if (isFullyReturned && !isNew) {
             return (
-              <div className="flex items-center justify-center text-gray-400 italic">
+              <div className="flex items-center justify-center text-muted-foreground/70 italic">
                 <Button
                   disabled={true}
                   type="button"
@@ -401,7 +401,7 @@ function SaleDetailsEditingTableInner(
                 onClick={() =>
                   isNew ? removeItem(item.id_producto) : handleRemoveItem(item)
                 }
-                className="text-red-500 hover:text-red-500 size-7 cursor-pointer"
+                className="text-destructive hover:text-destructive size-7 cursor-pointer"
               >
                 {isNew ? (
                   <X className="size-3" />

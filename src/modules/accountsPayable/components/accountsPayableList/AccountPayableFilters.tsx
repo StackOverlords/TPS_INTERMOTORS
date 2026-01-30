@@ -65,11 +65,11 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
             {/* Indicador de filtro de fechas activo */}
             {/* {hasDateFilters && (
                 <div className="flex items-center gap-2 text-xs">
-                    <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700 flex items-center gap-1">
+                    <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
                         Filtrando por fecha: {filters.fecha_inicio ? new Date(filters.fecha_inicio).toLocaleDateString('es-ES') : '...'} - {filters.fecha_fin ? new Date(filters.fecha_fin).toLocaleDateString('es-ES') : '...'}
                     </Badge>
-                    <span className="text-gray-500 text-[10px]">(Por defecto: últimos 3 meses)</span>
+                    <span className="text-muted-foreground text-[10px]">(Por defecto: últimos 3 meses)</span>
                 </div>
             )} */}
 
@@ -79,7 +79,7 @@ const AccountPayableFilters: React.FC<AccountPayableFiltersProps> = ({
                 <div className="space-y-0.5" data-filter="nro_venta">
                     <Label className="text-xs">Nro. Venta</Label>
                     <div className="relative">
-                        <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+                        <Search className="absolute left-1.5 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-3 w-3" />
                         <Input
                             type="string"
                             placeholder="Nro..."

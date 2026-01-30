@@ -348,7 +348,7 @@ const EditTransfer = () => {
             <FormProvider {...methods}>
                 <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2 p-2">
                     {/* Header */}
-                    <header className="border-gray-200 border bg-white rounded-lg p-2 sm:px-3 flex-shrink-0">
+                    <header className="border-border border bg-card rounded-lg p-2 sm:px-3 flex-shrink-0">
                         <div className="flex flex-wrap gap-2 items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <TooltipButton
@@ -365,10 +365,10 @@ const EditTransfer = () => {
                                     <CornerUpLeft />
                                 </TooltipButton>
                                 <div>
-                                    <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                    <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                                         Editar Transferencia {transferData?.nro_completo}
                                     </h1>
-                                    <p className="text-sm text-gray-500">Modifica los datos de la transferencia</p>
+                                    <p className="text-sm text-muted-foreground">Modifica los datos de la transferencia</p>
                                 </div>
                             </div>
                         </div>
@@ -386,7 +386,7 @@ const EditTransfer = () => {
                                         {...register("fecha")}
                                         className="w-full text-xs h-8"
                                     />
-                                    {errors.fecha && <p className="text-red-500 text-xs mt-0.5">{errors.fecha.message}</p>}
+                                    {errors.fecha && <p className="text-destructive text-xs mt-0.5">{errors.fecha.message}</p>}
                                 </div>
                                 <div className="w-full">
                                     <Label htmlFor="responsable" className="text-xs">Responsable *</Label>
@@ -404,7 +404,7 @@ const EditTransfer = () => {
                                             />
                                         )}
                                     />
-                                    {errors.responsable && <p className="text-red-500 text-xs mt-0.5">El campo es requerido</p>}
+                                    {errors.responsable && <p className="text-destructive text-xs mt-0.5">El campo es requerido</p>}
                                 </div>
 
                                 <div className="w-full">
@@ -413,7 +413,7 @@ const EditTransfer = () => {
                                         id="sucursal_origen"
                                         value={sucursalOrigenNombre}
                                         disabled
-                                        className="bg-gray-100 text-xs h-8"
+                                        className="bg-muted text-xs h-8"
                                     />
                                 </div>
 
@@ -442,7 +442,7 @@ const EditTransfer = () => {
                                             />
                                         )}
                                     />
-                                    {errors.sucursal_destino && <p className="text-red-500 text-xs mt-0.5">{errors.sucursal_destino.message}</p>}
+                                    {errors.sucursal_destino && <p className="text-destructive text-xs mt-0.5">{errors.sucursal_destino.message}</p>}
                                 </div>
 
                                 <div className="w-full">
@@ -488,8 +488,8 @@ const EditTransfer = () => {
                         </CardHeader>
                         <CardContent className="flex-1 min-h-0 flex flex-col">
                             {transferDetailsHook.details.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                                     <p>No hay productos agregados</p>
                                     <p className="text-sm">Haz clic en "Agregar producto" para añadir productos</p>
                                 </div>
@@ -511,7 +511,7 @@ const EditTransfer = () => {
                                     </div>
                                     <Separator className="h-[0.5px] flex-shrink-0" />
                                     <div className="flex justify-between items-center px-2 pt-2 flex-shrink-0">
-                                        <span className="font-medium text-gray-500">Total (Costo Entrada):</span>
+                                        <span className="font-medium text-muted-foreground">Total (Costo Entrada):</span>
                                         <span className="font-bold text-emerald-600">{formatCurrency(transferDetailsHook.getTotal())}</span>
                                     </div>
                                 </>
@@ -520,10 +520,10 @@ const EditTransfer = () => {
                     </Card>
 
                     {/* Footer fijo */}
-                    <Card className="border border-gray-200 shadow-none pt-3 flex-shrink-0">
+                    <Card className="border border-border shadow-none pt-3 flex-shrink-0">
                         <CardContent className="space-y-2">
                             <footer className="flex gap-2 items-center justify-between">
-                                <span className="text-xs text-gray-500">* Campos requeridos</span>
+                                <span className="text-xs text-muted-foreground">* Campos requeridos</span>
                                 <div className="flex gap-2">
                                     <TooltipButton
                                         buttonProps={{

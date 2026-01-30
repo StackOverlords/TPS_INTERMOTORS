@@ -130,7 +130,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         header: "Producto",
         size: 150,
         cell: ({ getValue }) => (
-          <div className="font-bold text-xs text-gray-900 truncate ">
+          <div className="font-bold text-xs text-foreground truncate ">
             {getValue() as string}
           </div>
         ),
@@ -140,7 +140,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         header: "OEM",
         size: 100,
         cell: ({ getValue }) => (
-          <div className="text-xs text-gray-600 font-mono">
+          <div className="text-xs text-muted-foreground font-mono">
             {getValue() as string}
           </div>
         ),
@@ -170,7 +170,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
         header: "Precio",
         size: 80,
         cell: ({ getValue }) => (
-          <div className="text-xs font-semibold text-green-600 text-right">
+          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 text-right">
             {formatCurrency(Number(getValue()))}
           </div>
         ),
@@ -185,12 +185,12 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
             <div className="text-xs text-center">
               <span
                 className={
-                  stock > 0 ? "text-gray-900 font-medium" : "text-red-600"
+                  stock > 0 ? "text-foreground font-medium" : "text-destructive"
                 }
               >
                 {stock}
               </span>
-              <span className="text-xs text-gray-500 ml-1">
+              <span className="text-xs text-muted-foreground ml-1">
                 {row.original.unidad_medida}
               </span>
             </div>
@@ -211,8 +211,8 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
               onClick={() => onProductSelect(row.original)}
               className={
                 isSelected
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed h-7 text-xs"
-                  : "bg-gray-900 hover:bg-gray-800 h-7 text-xs"
+                  ? "h-7 text-xs"
+                  : "h-7 text-xs"
               }
             >
               {isSelected ? (
@@ -254,11 +254,11 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg">
+    <div className="h-full flex flex-col bg-card border border-border rounded-lg">
       {/* Header con Filtros */}
-      <div className="p-3 border-b border-gray-200 space-y-2">
+      <div className="p-3 border-b border-border space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             Buscar Productos
           </h3>
           <div className="flex gap-1">
@@ -274,7 +274,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
             <Button
               size="sm"
               onClick={handleSearch}
-              className="h-7 text-xs bg-gray-900 hover:bg-gray-800"
+              className="h-7 text-xs"
             >
               <Search className="h-3 w-3 mr-1" />
               Buscar
@@ -288,7 +288,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
           <div className="space-y-1">
             <Label className="text-xs">Descripción</Label>
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-3 w-3" />
               <Input
                 placeholder="Buscar..."
                 value={localFilters.descripcion}
@@ -305,7 +305,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
           <div className="space-y-1">
             <Label className="text-xs">Código OEM</Label>
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-3 w-3" />
               <Input
                 placeholder="OEM..."
                 value={localFilters.codigo_oem}
@@ -367,20 +367,20 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-sm text-gray-500">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" />
+            <span className="ml-2 text-sm text-muted-foreground">
               Cargando productos...
             </span>
           </div>
         ) : error ? (
-          <div className="text-center py-8 text-red-500 text-sm">
+          <div className="text-center py-8 text-destructive text-sm">
             <p>Error al cargar los productos</p>
             <p className="text-xs mt-1">Intenta nuevamente</p>
           </div>
         ) : products.length > 0 ? (
           <CustomizableTable table={table} isLoading={false} />
         ) : (
-          <div className="text-center py-8 text-gray-500 text-sm">
+          <div className="text-center py-8 text-muted-foreground text-sm">
             No se encontraron productos
           </div>
         )}
@@ -388,7 +388,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
 
       {/* Footer con Paginación */}
       {products.length > 0 && (
-        <div className="border-t border-gray-200 bg-gray-50">
+        <div className="border-t border-border bg-accent/30 dark:bg-accent/50">
           <Pagination
             currentPage={page}
             onPageChange={handlePageChange}

@@ -174,7 +174,7 @@ const ReturnListScreen = () => {
                             {
                                 isFeatureEnabled('keywordFilter') && (
                                     <div className="relative w-full">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-4 w-4" />
                                         <Input
                                             placeholder="Buscar por palabras clave..."
                                             value={filters.keywords}
@@ -196,7 +196,7 @@ const ReturnListScreen = () => {
                                     className="text-xs h-7"
                                     title={searchMode === 'realtime' ? 'Cambiar a búsqueda manual' : 'Cambiar a búsqueda en tiempo real'}
                                 >
-                                    <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500' : 'text-gray-500'}`} />
+                                    <Zap className={`h-3 w-3 ${searchMode === 'realtime' ? 'text-yellow-500 dark:text-yellow-400' : 'text-muted-foreground'}`} />
                                     {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
                                 </Button>
                             )}

@@ -137,7 +137,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         id: "Select",
         header: ({ table }) => (
           <Checkbox
-            className="border border-gray-400"
+            className="border border-input"
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -151,7 +151,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         cell: ({ row }) => (
           <div className="px-1">
             <Checkbox
-              className="border border-gray-400"
+              className="border border-input"
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
               aria-label="Seleccionar fila"
@@ -237,7 +237,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                     <DropdownMenuItem
                       onKeyDown={(e) => e.stopPropagation()}
                       onClick={() => handleDeleteTransfer(row.original.id)}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
                     >
                       <Trash2 className="size-4 mr-2" />
                       Eliminar transferencia
@@ -286,7 +286,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {format(date, "dd/MM/yyyy", { locale: es })}
                 </div>
@@ -336,7 +336,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         cell: ({ getValue }) => {
           return (
             <div className="flex flex-col space-y-0.5 items-end">
-              <span className=" font-medium text-green-600">
+              <span className=" font-medium text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </span>
             </div>
@@ -441,7 +441,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                       variant: "outline",
                       size: "sm",
                       className:
-                        "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
+                        "h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10",
                       // title: "Rechazar transferencia",
                       onClick: (e) => {
                         e.stopPropagation();
@@ -583,7 +583,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
   return (
     <section className="flex flex-col h-full">
       {/* Results Info */}
-      <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
         {transfers.length > 0 ? (
           isInfiniteScroll ? (
             `Mostrando ${transfers.length} de ${data?.meta?.total} transferencias`
@@ -612,7 +612,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+              className="w-56 max-h-96 overflow-y-auto border border-border"
             >
               {table
                 .getAllColumns()
@@ -627,7 +627,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                     }
                   >
                     <Checkbox
-                      className="border border-gray-400"
+                      className="border border-input"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
@@ -661,16 +661,16 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
             tooltip={
               <div className="flex flex-col space-y-3">
                 {/* Título del tooltip */}
-                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                   Atajos de teclado
                 </div>
 
                 {/* Sección de navegación básica */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  <h4 className="text-xs font-medium text-muted-foreground tracking-wide">
                     Navegación
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar
@@ -697,10 +697,10 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
 
                 {/* Sección de acciones */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-blue-600 tracking-wide">
+                  <h4 className="text-xs font-medium text-blue-600 dark:text-blue-400 tracking-wide">
                     Acciones
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={hotkeys.primaryAction ?? ""} />{" "}
@@ -730,7 +730,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               next={() => setPage((filters.pagina || 1) + 1)}
               hasMore={transfers.length < (data?.meta?.total ?? 0)}
               loader={
-                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-accent/30">
                   <Loader2 className="size-4 animate-spin" />
                   Cargando más transferencias...
                 </div>

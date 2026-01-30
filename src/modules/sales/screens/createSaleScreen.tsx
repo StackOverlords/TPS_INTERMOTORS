@@ -637,7 +637,7 @@ const CreateSaleScreen = () => {
                     <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                       Nueva Venta
                     </h1>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       Registra una nueva venta en el sistema
                     </p>
                   </div>
@@ -718,7 +718,7 @@ const CreateSaleScreen = () => {
                             autoFocus
                           />
                           {errors.fecha && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.fecha.message}
                             </p>
                           )}
@@ -741,7 +741,7 @@ const CreateSaleScreen = () => {
                             )}
                           />
                           {errors.id_responsable && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               El campo es requerido
                             </p>
                           )}
@@ -783,7 +783,7 @@ const CreateSaleScreen = () => {
                             )}
                           />
                           {errors.id_cliente && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               El campo es requerido
                             </p>
                           )}
@@ -855,7 +855,7 @@ const CreateSaleScreen = () => {
                               )}
                             />
                             {errors.forma_venta && (
-                              <p className="text-red-500 text-xs">
+                              <p className="text-destructive text-xs">
                                 {errors.forma_venta.message}
                               </p>
                             )}
@@ -894,7 +894,7 @@ const CreateSaleScreen = () => {
                             )}
                           />
                           {errors.forma_pago && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.forma_pago.message}
                             </p>
                           )}
@@ -930,7 +930,7 @@ const CreateSaleScreen = () => {
                             )}
                           />
                           {errors.tipo_venta && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               El campo es requerido
                             </p>
                           )}
@@ -938,7 +938,7 @@ const CreateSaleScreen = () => {
                         <div>
                           <Label htmlFor="fechaPlazo">
                             Fecha Plazo
-                            <span className="text-xs ml-1 text-gray-500">
+                            <span className="text-xs ml-1 text-muted-foreground">
                               (Crédito)
                             </span>
                           </Label>
@@ -949,7 +949,7 @@ const CreateSaleScreen = () => {
                             disabled={formValues.tipo_venta !== "VC"}
                           />
                           {errors.plazo_pago && (
-                            <p className="text-red-500 text-xs">
+                            <p className="text-destructive text-xs">
                               {errors.plazo_pago.message}
                             </p>
                           )}
@@ -1053,8 +1053,8 @@ const CreateSaleScreen = () => {
                           <CardContent className="flex-1 min-h-0">
                             <div className="h-full overflow-auto">
                               {items.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
                                   <p>No hay productos agregados</p>
                                   <p className="text-sm">
                                     Haz clic en "Seleccionar Productos" para

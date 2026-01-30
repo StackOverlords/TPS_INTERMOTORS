@@ -78,19 +78,19 @@ export default function CommandPalette({
 
   const commandPalette = (
     <div
-      className="fixed inset-0 z-[9999] flex items-start justify-center pt-16 sm:pt-24 px-2 bg-black/50"
+      className="fixed inset-0 z-[9999] flex items-start justify-center pt-16 sm:pt-24 px-2 bg-background/80 backdrop-blur-sm"
       onMouseDown={() => setOpen(false)}
     >
       <Command
         onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-white p-2 border border-gray-200 shadow-2xl rounded-xl animate-in fade-in-0 zoom-in-95 overflow-hidden"
+        className="w-full max-w-2xl bg-popover p-2 border border-border shadow-2xl rounded-xl animate-in fade-in-0 zoom-in-95 overflow-hidden"
       >
-        <div className="flex items-center px-2 border-b border-gray-200">
-          <Search className="size-4 text-gray-400" />
+        <div className="flex items-center px-2 border-b border-border">
+          <Search className="size-4 text-muted-foreground" />
           <CommandInput
             autoFocus
             placeholder="Busca una ruta o escribe un comando..."
-            className="w-full h-12 px-2 text-sm text-gray-800 bg-transparent placeholder:text-gray-400 focus:outline-none"
+            className="w-full h-12 px-2 text-sm text-foreground bg-transparent placeholder:text-muted-foreground focus:outline-none"
           />
           <Kbd onClick={() => setOpen(false)} className="hidden sm:block">esc</Kbd>
           <Button
@@ -102,7 +102,7 @@ export default function CommandPalette({
           </Button>
         </div>
         <CommandList className="max-h-[350px] overflow-y-auto pt-2">
-          <CommandEmpty className="py-6 min-h-40 flex items-center justify-center font-medium text-center text-base text-gray-500">
+          <CommandEmpty className="py-6 min-h-40 flex items-center justify-center font-medium text-center text-base text-muted-foreground">
             No se encontraron resultados.
           </CommandEmpty>
 
@@ -112,7 +112,7 @@ export default function CommandPalette({
                 heading={route.name}
                 className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:mb-2"
               >
-                <div className="ml-4 border-l border-gray-200">
+                <div className="ml-4 border-l border-border">
                   {
                     route.path && (
                       <CommandItem

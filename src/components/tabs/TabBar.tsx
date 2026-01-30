@@ -100,13 +100,13 @@ const TabItem = React.memo(
               {...listeners}
               className={cn(
                 'group relative flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium transition-colors',
-                'hover:bg-gray-100',
+                'hover:bg-accent',
                 'min-w-[120px] max-w-[200px] h-7',
                 'cursor-grab active:cursor-grabbing',
                 isDragging && 'shadow-lg ring-2 ring-primary/20',
                 isActive
-                  ? 'bg-gray-100 text-primary'
-                  : 'text-gray-600 hover:text-primary'
+                  ? 'bg-accent text-primary'
+                  : 'text-foreground hover:text-primary'
               )}
             >
               {tab.icon && <tab.icon className="size-3 flex-shrink-0" />}
@@ -259,7 +259,7 @@ const TabBar: React.FC<TabBarProps> = ({
         value={activeTabId || undefined}
         onValueChange={setActiveTab}
         className={cn(
-          'flex items-center border-b border-border bg-white',
+          'flex items-center border-b border-border bg-background',
           className
         )}
       >
@@ -292,13 +292,13 @@ const TabBar: React.FC<TabBarProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="size-7 p-0 hover:bg-gray-100"
+                className="size-7 p-0 hover:bg-accent"
               >
                 <ChevronDown className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
-              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                 Pestañas abiertas ({tabs.length})
               </div>
               <DropdownMenuSeparator />
@@ -308,7 +308,7 @@ const TabBar: React.FC<TabBarProps> = ({
                   onClick={() => handleTabClick(tab)}
                   className={cn(
                     "flex items-center gap-2 cursor-pointer",
-                    "hover:bg-blue-50 focus:bg-blue-100",
+                    "hover:bg-accent focus:bg-accent",
                     tab.id === activeTabId && "bg-primary/10 text-primary hover:bg-primary/15 focus:bg-primary/20"
                   )}
                 >

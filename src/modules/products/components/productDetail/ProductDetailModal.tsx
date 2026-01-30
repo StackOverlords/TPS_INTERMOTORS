@@ -216,8 +216,8 @@ export const ProductDetailModal = ({
                   <div className="flex items-center gap-2">
                     {/* Branch Selector */}
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-500 ml-2" />
-                      <span className="text-sm font-medium text-gray-700">
+                      <MapPin className="h-4 w-4 text-muted-foreground ml-2" />
+                      <span className="text-sm font-medium text-foreground">
                         Sucursal:
                       </span>
                       {user?.sucursales &&

@@ -34,19 +34,19 @@ const CustomTooltip = ({ active, payload }: any) => {
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Compras:</span>
-            <span className="font-bold text-blue-600">
+            <span className="font-bold text-blue-600 dark:text-blue-400">
               {parseFloat(data.compras.toString()).toLocaleString()} u.
             </span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Ventas:</span>
-            <span className="font-bold text-green-600">
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">
               {parseFloat(data.ventas.toString()).toLocaleString()} u.
             </span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Stock:</span>
-            <span className="font-bold text-orange-600">
+            <span className="font-bold text-orange-600 dark:text-orange-400">
               {parseFloat(data.stock.toString()).toLocaleString()} u.
             </span>
           </div>

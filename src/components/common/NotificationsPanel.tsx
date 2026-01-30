@@ -67,7 +67,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-96 p-0">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 bg-white">
+        <div className="p-4 border-b border-border bg-card">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-foreground">
               Notificaciones

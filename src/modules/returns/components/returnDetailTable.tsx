@@ -221,7 +221,7 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                 cell: ({ getValue }) => {
                     const precio = getValue<number>();
                     return (
-                        <div className="font-medium text-green-600">
+                        <div className="font-medium text-emerald-600 dark:text-emerald-400">
                             {formatCurrency(precio)}
                         </div>
                     )
@@ -267,7 +267,7 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                                 disabled={isReadOnly || isSaving}
                             />
                             {maxQuantity && maxQuantity !== Infinity && (
-                                <div className="text-[10px] text-gray-500 text-center">
+                                <div className="text-[10px] text-muted-foreground text-center">
                                     Máx: {maxQuantity}
                                 </div>
                             )}
@@ -311,7 +311,7 @@ function ReturnDetailTableInner<T extends ReturnDetailUnion>({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleRemoveItem(item)}
-                                className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                                className="w-8 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
                             >
                                 {isNew && isEditMode ? (
                                     <X className="size-3" />

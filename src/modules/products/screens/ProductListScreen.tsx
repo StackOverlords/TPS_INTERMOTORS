@@ -348,7 +348,7 @@ const ProductListScreen = () => {
         id: "Select",
         header: () => (
           <Checkbox
-            className="border border-gray-400"
+            className="border border-border"
             checked={areAllProductsSelected(products)}
             onCheckedChange={() => toggleAllProductsSelection(products)}
             aria-label="Seleccionar todo"
@@ -357,7 +357,7 @@ const ProductListScreen = () => {
         cell: ({ row }) => (
           <div className="px-1">
             <Checkbox
-              className="border border-gray-400"
+              className="border border-border"
               checked={isProductSelected(row.original.id)}
               onCheckedChange={() => toggleProductSelection(row.original)}
               aria-label="Seleccionar fila"
@@ -498,7 +498,7 @@ const ProductListScreen = () => {
 
           return (
             <div className="space-y-1 flex items-end flex-col">
-              <div className="font-bold text-green-600">
+              <div className="font-bold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </div>
               {showAlt && (
@@ -569,7 +569,7 @@ const ProductListScreen = () => {
         minSize: 30,
         cell: ({ row, getValue }) => (
           <div className="space-y-1">
-            <span className="text-blue-600 font-medium">
+            <span className="text-blue-600 dark:text-blue-400 font-medium">
               {getValue<string>()}
             </span>
             <div>{row.original.subcategoria}</div>
@@ -604,7 +604,7 @@ const ProductListScreen = () => {
           return (
             <div className="text-center">
               <div
-                className={`text-sm font-medium ${value > 0 ? "text-blue-600" : ""}`}
+                className={`text-sm font-medium ${value > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}
               >
                 {valueDisplay}
               </div>
@@ -619,7 +619,7 @@ const ProductListScreen = () => {
         minSize: 30,
         cell: ({ getValue }) => (
           <div className="text-center">
-            <div className="text-sm font-medium text-green-600">
+            <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
               {getValue<number>()}
             </div>
           </div>
@@ -640,7 +640,7 @@ const ProductListScreen = () => {
           const value = getValue<string>();
           const formatValue = formatCell(value);
           return (
-            <div className={`${!value ? "italic text-gray-400" : ""}`}>
+            <div className={`${!value ? "italic text-muted-foreground" : ""}`}>
               {formatValue}
             </div>
           );
@@ -883,7 +883,7 @@ const ProductListScreen = () => {
                 }
               >
                 <Zap
-                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
+                  className={`h-3 w-3 ${searchMode === "realtime" ? "text-yellow-500 dark:text-yellow-400" : "text-muted-foreground"}`}
                 />
                 {searchMode === "realtime" ? "Tiempo real" : "Manual"}
               </Button>
@@ -964,14 +964,14 @@ const ProductListScreen = () => {
                 }}
                 tooltip={
                   <div className="flex flex-col space-y-3">
-                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                       Atajos de teclado
                     </div>
                     <div className="space-y-1.5">
-                      <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                      <h4 className="text-xs font-medium text-foreground tracking-wide">
                         Navegación filtros
                       </h4>
-                      <div className="space-y-1 text-gray-600 text-xs">
+                      <div className="space-y-1 text-muted-foreground text-xs">
                         <p>
                           <ShortcutKey combo={filter1Keys} />
                           {COMMANDS["tableAndFilters.filter1"].description}:
@@ -1031,7 +1031,7 @@ const ProductListScreen = () => {
         >
           <div className="h-full flex flex-col">
             {/* Results Info */}
-            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+            <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
               {products.length > 0 ? (
                 isInfiniteScroll ? (
                   `Mostrando ${products.length} de ${productData?.meta.total} productos`
@@ -1086,14 +1086,14 @@ const ProductListScreen = () => {
                     }}
                     tooltip={
                       <div className="flex flex-col space-y-3">
-                        <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                        <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                           Atajos de teclado
                         </div>
                         <div className="space-y-1.5">
-                          <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                          <h4 className="text-xs font-medium text-foreground tracking-wide">
                             Navegación
                           </h4>
-                          <div className="space-y-1 text-gray-600 text-xs">
+                          <div className="space-y-1 text-muted-foreground text-xs">
                             <p>
                               <ShortcutKey combo={hotkeys.activate ?? ""} />{" "}
                               Activar tabla{" "}
@@ -1114,10 +1114,10 @@ const ProductListScreen = () => {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <h4 className="text-xs font-medium text-blue-600 tracking-wide">
+                          <h4 className="text-xs font-medium text-blue-600 dark:text-blue-400 tracking-wide">
                             Acciones
                           </h4>
-                          <div className="space-y-1 text-gray-600 text-xs">
+                          <div className="space-y-1 text-muted-foreground text-xs">
                             <p>
                               <ShortcutKey
                                 combo={hotkeys.primaryAction ?? ""}
@@ -1159,7 +1159,7 @@ const ProductListScreen = () => {
                     next={() => setPage((filters.pagina || 1) + 1)}
                     hasMore={products.length < (productData?.meta.total || 0)}
                     loader={
-                      <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                      <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-muted">
                         <Loader2 className="size-4 animate-spin" />
                         Cargando más productos...
                       </div>

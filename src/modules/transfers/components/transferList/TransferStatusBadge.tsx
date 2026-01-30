@@ -42,20 +42,20 @@ const TransferStatusBadge: React.FC<TransferStatusBadgeProps> = ({
 
     // Determinar el icono y estilo según la dirección
     let Icon = Circle;
-    let iconColor = "text-gray-400";
+    let iconColor = "text-muted-foreground/50";
     let textoDireccion = "";
 
     if (direccion === "salida") {
       Icon = ArrowUpRight;
-      iconColor = "text-blue-500";
+      iconColor = "text-blue-500 dark:text-blue-400";
       textoDireccion = "Salida";
     } else if (direccion === "entrada") {
       Icon = ArrowDownLeft;
-      iconColor = "text-green-500";
+      iconColor = "text-emerald-500 dark:text-emerald-400";
       textoDireccion = "Entrada";
     } else if (direccion === "entre") {
       Icon = ArrowLeftRight;
-      iconColor = "text-purple-500";
+      iconColor = "text-purple-500 dark:text-purple-400";
       textoDireccion = "Entre sucursales";
     }
 
@@ -67,27 +67,27 @@ const TransferStatusBadge: React.FC<TransferStatusBadgeProps> = ({
       upperEstado.includes("RECEPCIONADO") ||
       upperEstado.includes("RECIBIDO")
     ) {
-      estadoColor = "text-green-700 font-semibold";
+      estadoColor = "text-emerald-700 dark:text-emerald-400 font-semibold";
     } else if (
       upperEstado.includes("TRANSFERIDO") ||
       upperEstado.includes("ENVIADO")
     ) {
-      estadoColor = "text-blue-700 font-semibold";
+      estadoColor = "text-blue-700 dark:text-blue-400 font-semibold";
     } else if (
       upperEstado.includes("PENDIENTE") ||
       upperEstado.includes("POR")
     ) {
-      estadoColor = "text-amber-700 font-medium";
+      estadoColor = "text-amber-700 dark:text-amber-400 font-medium";
     } else if (
       upperEstado.includes("CANCELADO") ||
       upperEstado.includes("RECHAZADO")
     ) {
-      estadoColor = "text-red-700 font-semibold";
+      estadoColor = "text-destructive font-semibold";
     } else if (
       upperEstado.includes("SIN RECEPCIONAR") ||
       upperEstado.includes("SIN RECIBIR")
     ) {
-      estadoColor = "text-purple-500 font-semibold";
+      estadoColor = "text-purple-500 dark:text-purple-400 font-semibold";
     }
 
     return {

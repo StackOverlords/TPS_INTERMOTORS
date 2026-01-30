@@ -129,7 +129,7 @@ const SelectBranch = () => {
             placeholder="Selecciona una sucursal"
           />
         </SelectTrigger>
-        <SelectContent className="border border-gray-200">
+        <SelectContent className="border border-border">
           {branches.map((branch: Branch) => (
             <SelectItem
               className="hover:bg-gray-200"

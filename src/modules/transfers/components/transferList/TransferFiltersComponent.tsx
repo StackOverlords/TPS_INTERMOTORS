@@ -97,13 +97,13 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
       <ProtectedAction
         permission="tra-list"
         roles={["Super Admin", "Administrador", "Vendedor"]}
-        fallback={<div className="text-sm text-red-500">No tienes permisos para buscar.</div>}
+        fallback={<div className="text-sm text-destructive">No tienes permisos para buscar.</div>}
       >
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           <div className="space-y-2">
             <Label>Nro. de transferencia</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 w-4 h-4" />
               <Input
                 type="number"
                 placeholder="Ej: 2054"
@@ -140,7 +140,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
           <div className="space-y-2">
             <Label>Código OEM</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 w-4 h-4" />
               <Input
                 placeholder="11122-10040-D..."
                 value={filters.codigo_oem_producto}
@@ -302,7 +302,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
 
         {/* Mostrar error de validación */}
         {dateError && (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-2 flex items-center gap-2">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{dateError}</span>
           </div>

@@ -96,7 +96,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
         id: "Select",
         header: ({ table }) => (
           <Checkbox
-            className="border border-gray-400"
+            className="border border-input"
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -110,7 +110,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
         cell: ({ row }) => (
           <div className="px-1">
             <Checkbox
-              className="border border-gray-400"
+              className="border border-input"
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
               aria-label="Seleccionar fila"
@@ -182,7 +182,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     <DropdownMenuItem
                       onKeyDown={(e) => e.stopPropagation()}
                       onClick={() => handleDeleteSale(row.original.id)}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
                     >
                       <Trash2 className="size-4 mr-2" />
                       Eliminar venta
@@ -202,7 +202,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
               }
             >
               <div className="space-y-1 flex flex-col">
-                <span className="font-semibold text-blue-600">
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
                   {formatColumnNumber(getValue<string>(), "-")}
                 </span>
                 {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
@@ -226,7 +226,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {format(date, "dd/MM/yyyy", { locale: es })}
                 </div>
@@ -318,7 +318,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
         header: "Total",
         size: 120,
         cell: ({ getValue }) => (
-          <div className="text-right font-medium text-green-600">
+          <div className="text-right font-medium text-emerald-600 dark:text-emerald-400">
             {formatCurrency(getValue<number>())}
           </div>
         ),
@@ -462,7 +462,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
   return (
     <section className="flex flex-col h-full">
       {/* Results Info - FIJO */}
-      <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
         {sales.length > 0 ? (
           isInfiniteScroll ? (
             `Mostrando ${sales.length} de ${data?.meta?.total} ventas`
@@ -506,7 +506,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     }
                   >
                     <Checkbox
-                      className="border border-gray-400"
+                      className="border border-input"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
@@ -539,14 +539,14 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
             }}
             tooltip={
               <div className="flex flex-col space-y-3">
-                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                   Atajos de teclado
                 </div>
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  <h4 className="text-xs font-medium text-foreground tracking-wide">
                     Navegación
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar
@@ -571,10 +571,10 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-blue-600 tracking-wide">
+                  <h4 className="text-xs font-medium text-blue-600 dark:text-blue-400 tracking-wide">
                     Acciones
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={hotkeys.primaryAction ?? ""} />{" "}
@@ -604,7 +604,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
               next={() => setPage((filters.pagina || 1) + 1)}
               hasMore={sales.length < (data?.meta?.total ?? 0)}
               loader={
-                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-accent/30">
                   <Loader2 className="size-4 animate-spin" />
                   Cargando más ventas...
                 </div>

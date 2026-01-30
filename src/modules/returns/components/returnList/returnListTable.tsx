@@ -70,7 +70,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
             id: "Select",
             header: ({ table }) => (
                 <Checkbox
-                    className="border border-gray-400"
+                    className="border border-input"
                     checked={
                         table.getIsAllPageRowsSelected() ||
                         (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -82,7 +82,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
             cell: ({ row }) => (
                 <div className="px-1">
                     <Checkbox
-                        className="border border-gray-400"
+                        className="border border-input"
                         checked={row.getIsSelected()}
                         onCheckedChange={(value) => row.toggleSelected(!!value)}
                         aria-label="Seleccionar fila"
@@ -154,7 +154,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                                     <DropdownMenuItem
                                         onKeyDown={e => e.stopPropagation()}
                                         onClick={() => handleDeleteSale(row.original.id)}
-                                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
                                     >
                                         <Trash2 className="size-4 mr-2" />
                                         Eliminar devolución
@@ -193,7 +193,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
 
                     return (
                         <div className="text-center text-xs">
-                            <div className={`font-medium ${isToday ? 'text-blue-600' : 'text-foreground'}`}>
+                            <div className={`font-medium ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'}`}>
                                 {formatInTimeZone(dateString, timeZone, 'dd/MM/yyyy', { locale: es })}
                             </div>
                             <div className="text-muted-foreground flex items-center justify-center gap-1">
@@ -242,7 +242,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
             cell: ({ getValue }) => {
                 return (
                     <div className="flex flex-col space-y-0.5 items-end">
-                        <span className=" font-medium text-green-600">{formatCurrency(getValue<number>())}</span>
+                        <span className=" font-medium text-emerald-600 dark:text-emerald-400">{formatCurrency(getValue<number>())}</span>
                     </div>
                 )
             }
@@ -391,7 +391,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
     return (
         <section className="flex flex-col h-full">
             {/* Results Info */}
-            <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+            <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
                 {
                     returns.length > 0 ? (
                         isInfiniteScroll ? (
@@ -420,7 +420,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                                 Columnas
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                             {table
                                 .getAllColumns()
                                 .filter((column) => column.getCanHide())
@@ -432,7 +432,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                                         onClick={() => column.toggleVisibility(!column.getIsVisible())}
                                     >
                                         <Checkbox
-                                            className="border border-gray-400"
+                                            className="border border-input"
                                             checked={column.getIsVisible()}
                                             onCheckedChange={(value) => column.toggleVisibility(!!value)}
                                         />
@@ -463,14 +463,14 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                         tooltip={
                             <div className="flex flex-col space-y-3">
                                 {/* Título del tooltip */}
-                                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                                <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                                     Atajos de teclado
                                 </div>
 
                                 {/* Sección de navegación básica */}
                                 <div className="space-y-1.5">
-                                    <h4 className="text-xs font-medium text-gray-700 tracking-wide">Navegación</h4>
-                                    <div className="space-y-1 text-gray-600 text-xs">
+                                    <h4 className="text-xs font-medium text-muted-foreground tracking-wide">Navegación</h4>
+                                    <div className="space-y-1 text-muted-foreground text-xs">
                                         <p> <ShortcutKey combo={hotkeys.activate ?? ''} /> Activar tabla </p>
                                         <p> <ShortcutKey combo={hotkeys.deactivate ?? ''} /> Salir de tabla </p>
                                         <p> <ShortcutKey combo={hotkeys.moveUp ?? ''} /> / <ShortcutKey combo={hotkeys.moveDown ?? ''} /> Navegar filas </p>
@@ -480,8 +480,8 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
 
                                 {/* Sección de acciones */}
                                 <div className="space-y-1.5">
-                                    <h4 className="text-xs font-medium text-blue-600 tracking-wide">Acciones</h4>
-                                    <div className="space-y-1 text-gray-600 text-xs">
+                                    <h4 className="text-xs font-medium text-blue-600 dark:text-blue-400 tracking-wide">Acciones</h4>
+                                    <div className="space-y-1 text-muted-foreground text-xs">
                                         <p> <ShortcutKey combo={hotkeys.primaryAction ?? ''} /> Detalle de devolución </p>
                                     </div>
                                 </div>
@@ -506,7 +506,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                             next={() => setPage((filters.pagina || 1) + 1)}
                             hasMore={returns.length < ((data?.meta?.total ?? 0))}
                             loader={
-                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-accent/30">
                                     <Loader2 className="size-4 animate-spin" />
                                     Cargando más devoluciones...
                                 </div>

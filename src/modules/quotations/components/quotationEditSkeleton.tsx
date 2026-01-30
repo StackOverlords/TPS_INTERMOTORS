@@ -7,7 +7,7 @@ const QuotationEditSkeleton = () => {
         <main className="flex flex-col items-center">
             <div className="w-full space-y-2">
                 {/* Header */}
-                <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+                <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
                     <div className="flex flex-wrap gap-2 items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Skeleton className="h-10 w-10 rounded-md" />
@@ -69,9 +69,9 @@ const QuotationEditSkeleton = () => {
                     <CardContent>
                         <div className="space-y-2">
                             {/* Table Skeleton */}
-                            <div className="w-full overflow-hidden border border-gray-200 rounded-lg">
+                            <div className="w-full overflow-hidden border border-border rounded-lg">
                                 {/* Table Header */}
-                                <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
+                                <div className="bg-accent/30 border-b border-border px-4 py-3">
                                     <div className="grid grid-cols-12 gap-4 items-center">
                                         <div className="col-span-1">
                                             <Skeleton className="h-4 w-4" />
@@ -100,7 +100,7 @@ const QuotationEditSkeleton = () => {
                                 {/* Table Rows */}
                                 <div className="divide-y divide-gray-200">
                                     {Array.from({ length: 3 }).map((_, index) => (
-                                        <div key={index} className="bg-white px-4 py-3">
+                                        <div key={index} className="bg-card px-4 py-3">
                                             <div className="grid grid-cols-12 gap-4 items-center">
                                                 <div className="col-span-1">
                                                     <Skeleton className="h-4 w-4" />
@@ -133,11 +133,11 @@ const QuotationEditSkeleton = () => {
                 </Card>
 
                 {/* Totals Section */}
-                <Card className="border shadow-none border-gray-200 pt-3">
+                <Card className="border shadow-none border-border pt-3">
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-3">
                             {/* Discount Section */}
-                            <section className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                            <section className="space-y-2 bg-accent/30 p-3 rounded-lg">
                                 <header className="flex items-center gap-2 mb-2">
                                     <Skeleton className="h-5 w-16" />
                                 </header>
@@ -160,7 +160,7 @@ const QuotationEditSkeleton = () => {
 
                             {/* Totals Section */}
                             <section className="space-y-4">
-                                <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                                <div className="space-y-2 bg-accent/30 p-3 rounded-lg">
                                     <div className="flex justify-between items-center">
                                         <Skeleton className="h-4 w-16" />
                                         <Skeleton className="h-5 w-20" />
@@ -172,7 +172,7 @@ const QuotationEditSkeleton = () => {
 
                                     <Separator className="my-2" />
 
-                                    <div className="bg-white rounded-lg p-2 border border-green-200">
+                                    <div className="bg-card rounded-lg p-2 border border-green-200">
                                         <div className="flex justify-between items-center">
                                             <Skeleton className="h-5 w-12" />
                                             <Skeleton className="h-6 w-24" />

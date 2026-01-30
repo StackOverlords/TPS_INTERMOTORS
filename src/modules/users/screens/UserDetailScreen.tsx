@@ -293,10 +293,10 @@ const UserDetailScreen = () => {
     return (
       <div className="min-h-screen max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Error al cargar usuario
           </h2>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             {error?.message || 'No se pudo encontrar el usuario solicitado'}
           </p>
           <Button onClick={() => navigate('/dashboard/user')}>
@@ -325,14 +325,14 @@ const UserDetailScreen = () => {
 
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-              <User2 className="h-8 w-8 text-blue-600" />
+            <div className="h-16 w-16 bg-primary/20 dark:bg-primary/30 rounded-full flex items-center justify-center">
+              <User2 className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 {user.empleado.nombre}
               </h1>
-              <p className="text-lg text-gray-600">@{user.nickname}</p>
+              <p className="text-lg text-muted-foreground">@{user.nickname}</p>
               <Badge
                 variant={user.activo ? 'success' : 'destructive'}
                 className="flex items-center gap-1 w-fit mt-2"
@@ -393,7 +393,7 @@ const UserDetailScreen = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Información Principal */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="border border-gray-200">
+          <Card className="border border-border">
             <CardHeader>
               <CardTitle className="text-lg font-semibold">
                 Información Personal
@@ -406,24 +406,24 @@ const UserDetailScreen = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-semibold text-foreground">
                       ID de Usuario
                     </label>
-                    <p className="text-lg font-mono text-gray-900">{user.id}</p>
+                    <p className="text-lg font-mono text-foreground">{user.id}</p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-semibold text-foreground">
                       Nickname
                     </label>
-                    <p className="text-lg text-gray-900">{user.nickname}</p>
+                    <p className="text-lg text-foreground">{user.nickname}</p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-semibold text-foreground">
                       Nombre Completo
                     </label>
-                    <p className="text-lg text-gray-900">
+                    <p className="text-lg text-foreground">
                       {user.empleado.nombre}
                     </p>
                   </div>
@@ -431,22 +431,22 @@ const UserDetailScreen = () => {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-semibold text-foreground">
                       ID de Empleado
                     </label>
-                    <p className="text-lg font-mono text-gray-900">
+                    <p className="text-lg font-mono text-foreground">
                       {user.empleado.id}
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                       <Mail className="h-4 w-4" />
                       Email
                     </label>
-                    <p className="text-lg text-gray-900">
+                    <p className="text-lg text-foreground">
                       {user.email || (
-                        <span className="italic text-gray-400">
+                        <span className="italic text-muted-foreground">
                           No registrado
                         </span>
                       )}
@@ -454,7 +454,7 @@ const UserDetailScreen = () => {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-semibold text-foreground">
                       Estado
                     </label>
                     <div className="mt-1">
@@ -479,7 +479,7 @@ const UserDetailScreen = () => {
 
         {/* Información Adicional */}
         <div className="space-y-6">
-          <Card className="border border-gray-200">
+          <Card className="border border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Calendar className="h-5 w-5" />
@@ -488,10 +488,10 @@ const UserDetailScreen = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-semibold text-foreground">
                   Fecha de Creación
                 </label>
-                <p className="text-sm text-gray-900 mt-1">
+                <p className="text-sm text-foreground mt-1">
                   {formatDate(user.fecha_creacion)}
                 </p>
               </div>
@@ -499,10 +499,10 @@ const UserDetailScreen = () => {
               <Separator />
 
               <div>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-semibold text-foreground">
                   Último Acceso
                 </label>
-                <p className="text-sm text-gray-400 italic mt-1">
+                <p className="text-sm text-muted-foreground italic mt-1">
                   Información no disponible
                 </p>
               </div>
@@ -544,11 +544,11 @@ const UserDetailScreen = () => {
         {/* Sección de Gestión de Permisos */}
         {viewConfig?.features?.permissions?.enabled && (
           <div className="lg:col-span-3 mt-6" ref={permisosRef}>
-            <Card className="border border-gray-200">
+            <Card className="border border-border">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-gray-400" />
+                    <Shield className="h-5 w-5 text-muted-foreground" />
                     <CardTitle className="text-lg font-semibold">
                       Gestión de Permisos
                     </CardTitle>
@@ -593,7 +593,7 @@ const UserDetailScreen = () => {
                   </div>
                 ) : isPermissionsError || isUserPermissionsError ? (
                   <div className="text-center py-8">
-                    <p className="text-red-600 mb-4">
+                    <p className="text-destructive mb-4">
                       Error al cargar los permisos
                     </p>
                     <Button onClick={() => window.location.reload()}>
@@ -604,7 +604,7 @@ const UserDetailScreen = () => {
                   <div className="space-y-2">
                     {/* Buscador de permisos */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Buscar permisos por nombre, descripción o categoría..."
                         value={searchPermissions}
@@ -614,12 +614,12 @@ const UserDetailScreen = () => {
                     </div>
 
                     {/* Estadísticas generales */}
-                    <div className="bg-blue-50 p-2 rounded-lg">
+                    <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-lg">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-blue-700 font-medium">
+                        <span className="text-primary font-medium">
                           Permisos seleccionados: {selectedPermissions.size}
                         </span>
-                        <span className="text-blue-600">
+                        <span className="text-primary">
                           Total disponible:{' '}
                           {Object.values(processedPermissions).flat().length}
                         </span>
@@ -679,7 +679,7 @@ const UserDetailScreen = () => {
                     <ScrollArea className="w-full">
                       <div className="space-y-2 pr-4">
                         {Object.keys(filteredPermissions).length === 0 ? (
-                          <div className="text-center py-8 text-gray-500">
+                          <div className="text-center py-8 text-muted-foreground">
                             {searchPermissions ? (
                               <>
                                 No se encontraron permisos que coincidan con "
@@ -708,13 +708,13 @@ const UserDetailScreen = () => {
                                   onOpenChange={() => toggleGroup(groupName)}
                                 >
                                   <CollapsibleTrigger asChild>
-                                    <div className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors">
+                                    <div className="flex items-center justify-between p-3 bg-muted/30 hover:bg-accent rounded-lg cursor-pointer transition-colors">
                                       <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-2">
                                           {isExpanded ? (
-                                            <ChevronDown className="h-4 w-4 text-gray-600" />
+                                            <ChevronDown className="h-4 w-4 text-foreground" />
                                           ) : (
-                                            <ChevronRight className="h-4 w-4 text-gray-600" />
+                                            <ChevronRight className="h-4 w-4 text-foreground" />
                                           )}
                                           <Checkbox
                                             checked={
@@ -734,10 +734,10 @@ const UserDetailScreen = () => {
                                           />
                                         </div>
                                         <div>
-                                          <h3 className="font-medium text-gray-900">
+                                          <h3 className="font-medium text-foreground">
                                             {groupName}
                                           </h3>
-                                          <p className="text-sm text-gray-500">
+                                          <p className="text-sm text-muted-foreground">
                                             {stats.selected}/{stats.total}{' '}
                                             permisos seleccionados
                                           </p>
@@ -760,7 +760,7 @@ const UserDetailScreen = () => {
                                       {permissions.map(permission => (
                                         <div
                                           key={permission.name}
-                                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                          className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
                                         >
                                           <div className="flex items-center gap-3">
                                             <Checkbox
@@ -778,7 +778,7 @@ const UserDetailScreen = () => {
                                             {permission.name}
                                           </h4> */}
                                               {permission.descripcion && (
-                                                <p className="text-xs text-gray-600 mt-1">
+                                                <p className="text-xs text-muted-foreground mt-1">
                                                   {permission.descripcion}
                                                 </p>
                                               )}
@@ -791,8 +791,8 @@ const UserDetailScreen = () => {
                                             selectedPermissions.has(
                                               permission.name
                                             )
-                                              ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500'
-                                              : 'bg-transparent text-gray-500 border-gray-300 hover:border-gray-400'
+                                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400'
+                                              : 'bg-transparent text-muted-foreground border-border hover:border-muted-foreground/50'
                                           }`}
                                           >
                                             {selectedPermissions.has(

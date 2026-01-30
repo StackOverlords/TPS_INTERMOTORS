@@ -1019,10 +1019,10 @@ export function ImageViewer({
                                             ))}
                                         </div>
                                         {/* Corner handles */}
-                                        <div className="absolute -top-1 -left-1 w-3 h-3 bg-white border border-zinc-800" />
-                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-white border border-zinc-800" />
-                                        <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white border border-zinc-800" />
-                                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white border border-zinc-800" />
+                                        <div className="absolute -top-1 -left-1 w-3 h-3 bg-card border border-zinc-800 dark:border-zinc-600" />
+                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-card border border-zinc-800 dark:border-zinc-600" />
+                                        <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-card border border-zinc-800 dark:border-zinc-600" />
+                                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-card border border-zinc-800 dark:border-zinc-600" />
                                         {/* Dimensions */}
                                         {getCropOverlayStyle() && (
                                             <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-zinc-800 text-white text-xs rounded">

@@ -5,7 +5,7 @@ const TransferDetailSkeleton = () => {
     return (
         <div className="max-w-7xl w-full space-y-2">
             {/* Header */}
-            <header className="border-gray-200 border bg-white rounded-lg p-6">
+            <header className="border-border border bg-card rounded-lg p-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-lg" />
@@ -24,7 +24,7 @@ const TransferDetailSkeleton = () => {
             {/* Información General y Responsable */}
             <div className="grid md:grid-cols-3 gap-2">
                 {/* Información General */}
-                <Card className="bg-white border border-gray-200 shadow-none col-span-2">
+                <Card className="bg-card border border-border shadow-none col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3">
                             <Skeleton className="h-5 w-5 rounded" />
@@ -44,7 +44,7 @@ const TransferDetailSkeleton = () => {
                 </Card>
 
                 {/* Responsable */}
-                <Card className="bg-white border border-gray-200 shadow-none">
+                <Card className="bg-card border border-border shadow-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3">
                             <Skeleton className="h-5 w-5 rounded" />
@@ -75,7 +75,7 @@ const TransferDetailSkeleton = () => {
             </div>
 
             {/* Productos */}
-            <Card className="bg-white border border-gray-200 shadow-none">
+            <Card className="bg-card border border-border shadow-none">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                         <Skeleton className="h-5 w-5 rounded" />

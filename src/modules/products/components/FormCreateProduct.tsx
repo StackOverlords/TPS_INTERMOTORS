@@ -137,14 +137,14 @@ const FormCreateProduct: React.FC = () => {
   const getInputClassName = (fieldName: keyof ProductCreate): string => {
     const baseClass = "";
     return errors[fieldName]
-      ? `${baseClass} border-red-500 focus:border-red-500 focus:ring-red-500`
+      ? `${baseClass} border-destructive focus:border-destructive focus:ring-destructive`
       : baseClass;
   };
 
   const getSelectClassName = (fieldName: keyof ProductCreate): string => {
     const baseClass = "";
     return errors[fieldName]
-      ? `${baseClass} border-red-500 focus:border-red-500`
+      ? `${baseClass} border-destructive focus:border-destructive`
       : baseClass;
   };
 
@@ -222,9 +222,9 @@ const FormCreateProduct: React.FC = () => {
       ref={refForm}
     >
       {/* Información Principal */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="p-3 bg-card border border-border rounded-lg">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+          <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
             <Package className="w-4 h-4" />
             Información Principal
           </h2>
@@ -235,15 +235,15 @@ const FormCreateProduct: React.FC = () => {
             }}
             tooltip={
               <div className="flex flex-col space-y-3">
-                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                   Atajos de teclado
                 </div>
 
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  <h4 className="text-xs font-medium text-foreground tracking-wide">
                     Navegación
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={"Tab"} /> Siguiente campo{" "}
@@ -266,7 +266,7 @@ const FormCreateProduct: React.FC = () => {
               </div>
             }
           >
-            <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+            <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
               <HelpCircle className="w-4 h-4" />
             </span>
           </TooltipWrapper>
@@ -296,7 +296,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.id_categoria && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.id_categoria.message}
                 </p>
               )}
@@ -323,7 +323,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.id_marca && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.id_marca.message}
                 </p>
               )}
@@ -336,7 +336,7 @@ const FormCreateProduct: React.FC = () => {
             <Input {...register("codigo_oem")} placeholder="Código OEM" />
             <div className="mt-1">
               {errors.codigo_oem && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.codigo_oem.message}
                 </p>
               )}
@@ -355,7 +355,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.codigo_upc && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.codigo_upc.message}
                 </p>
               )}
@@ -383,7 +383,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.id_procedencia && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.id_procedencia.message}
                 </p>
               )}
@@ -411,7 +411,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.id_unidad && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.id_unidad.message}
                 </p>
               )}
@@ -440,7 +440,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.stock_minimo && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.stock_minimo.message}
                 </p>
               )}
@@ -468,7 +468,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.costo_referencia && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.costo_referencia.message}
                 </p>
               )}
@@ -497,7 +497,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.precio_venta && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.precio_venta.message}
                 </p>
               )}
@@ -525,7 +525,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.precio_venta_alt && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.precio_venta_alt.message}
                 </p>
               )}
@@ -551,7 +551,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.id_marca_vehiculo && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.id_marca_vehiculo.message}
                 </p>
               )}
@@ -567,7 +567,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.medida && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.medida.message}
                 </p>
               )}
@@ -583,7 +583,7 @@ const FormCreateProduct: React.FC = () => {
             />
             <div className="mt-1">
               {errors.nro_motor && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.nro_motor.message}
                 </p>
               )}
@@ -592,7 +592,7 @@ const FormCreateProduct: React.FC = () => {
         </div>
       </div>
       {/* Campos adicionales para la generación de descripción */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="p-3 bg-card border border-border rounded-lg">
         {/* <h3 className="mb-3 text-sm font-semibold text-gray-900">
           Información Complementaria
         </h3> */}
@@ -615,7 +615,7 @@ const FormCreateProduct: React.FC = () => {
               />
               <div className="mt-1">
                 {errors.descripcion_alt && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.descripcion_alt.message}
                   </p>
                 )}
@@ -628,7 +628,7 @@ const FormCreateProduct: React.FC = () => {
             <Input {...register("modelo")} placeholder="Ej: 2020-2024" />
             <div className="mt-1">
               {errors.modelo && (
-                <p className="text-xs text-red-500 truncate">
+                <p className="text-xs text-destructive truncate">
                   {errors.modelo.message}
                 </p>
               )}
@@ -638,19 +638,19 @@ const FormCreateProduct: React.FC = () => {
       </div>
 
       {/* 11. Descripción Auto-generada */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
+      <div className="p-3 bg-card border border-border rounded-lg">
+        <h3 className="flex items-center gap-2 mb-2 text-sm font-bold text-foreground">
           <Wand2 className="w-4 h-4" />
           Descripción Auto-generada
         </h3>
-        <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
+        <div className="p-3 text-sm text-foreground border border-border rounded bg-muted min-h-[40px] flex items-center">
           {autoDescription || "Completa los campos para generar la descripción"}
         </div>
       </div>
       {/* Botones de acción */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="p-3 bg-card border border-border rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-gray-500">* Campos requeridos</span>
+          <span className="text-xs text-muted-foreground">* Campos requeridos</span>
           <TooltipButton
             buttonProps={{
               type: "submit",

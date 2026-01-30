@@ -334,7 +334,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
                 variant="outline"
                 size="sm"
                 onClick={() => handleRemoveItem(item)}
-                className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                className="w-8 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
               >
                 {isNew && isEditMode ? (
                   <X className="size-3" />
@@ -405,7 +405,7 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
                 <div className="text-sm text-muted-foreground">
                   Total Cantidad
                 </div>
-                <div className="text-base font-bold text-blue-600">
+                <div className="text-base font-bold text-blue-600 dark:text-blue-400">
                   {totalCantidad}
                 </div>
               </TableCell>

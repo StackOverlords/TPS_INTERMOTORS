@@ -63,7 +63,7 @@ const HeaderTagRoute = ({
         onClick={() => toggleHeader(route.name)}
         className={cn(
           "flex items-center justify-between gap-2 p-2 text-sm font-medium cursor-pointer rounded-md transition-colors",
-          "bg-primary/90 text-white hover:bg-primary/80"
+          "bg-primary/90 text-primary-foreground hover:bg-primary/80"
         )}
       >
         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ const HeaderTagRoute = ({
             {route.name}
           </span>
           {isInSubRoute && !isExpanded && (
-            <span className="h-2 w-2 rounded-full bg-white animate-pulse" title="Ruta activa" />
+            <span className="h-2 w-2 rounded-full bg-primary-foreground animate-pulse" title="Ruta activa" />
           )}
         </div>
         {hasSubRoutes && (
@@ -87,7 +87,7 @@ const HeaderTagRoute = ({
 
       {hasSubRoutes && isExpanded && (
         <SidebarMenuSub className={cn(
-          "ml-3 mt-1 border-l border-gray-400 pl-2 mr-0 pr-0 py-0",
+          "ml-3 mt-1 border-l border-border pl-2 mr-0 pr-0 py-0",
         )}>
           {route.subRoutes
             ?.filter((subRoute) =>

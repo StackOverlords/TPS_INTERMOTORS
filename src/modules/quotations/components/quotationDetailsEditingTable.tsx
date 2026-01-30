@@ -263,7 +263,7 @@ function QuotationDetailsEditingTableInner({
                         value={subtotal}
                         onSubmit={(value) => updateCustomSubtotal(item.id_producto, value as number)}
                         className="w-full"
-                        inputClassName="hover:bg-green-50 text-green-600 hover:text-green-600 border-green-200"
+                        inputClassName="hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                         numberProps={{ min: 0, step: 0.01 }}
                         disabled={isReadOnly}
                     />
@@ -303,7 +303,7 @@ function QuotationDetailsEditingTableInner({
                             variant="outline"
                             size="sm"
                             onClick={() => isNew ? removeItem(item.id_producto) : handleRemoveItem(item)}
-                            className="text-red-500 hover:text-red-500 size-7 cursor-pointer"
+                            className="text-destructive hover:text-destructive size-7 cursor-pointer"
                             disabled={isReadOnly}
                         >
                             {

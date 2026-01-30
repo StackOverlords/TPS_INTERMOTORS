@@ -19,7 +19,9 @@ import { LoginSchema } from "../schemas/login.schema";
 import type { Login } from "../types/login.types";
 import { useForm } from "react-hook-form";
 import { useBranchStore } from "@/states/branchStore";
-import logoImage from "@/assets/images/logo_light.webp";
+import logoLight from "@/assets/images/logo_light.webp";
+import logoDark from "@/assets/images/darkmodeweb.webp";
+import { useThemeStore } from "@/stores/themeStore";
 
 const LoginScreen = ({
   className,
@@ -28,6 +30,8 @@ const LoginScreen = ({
 
   const [showPassword, setShowPassword] = useState(false)
   const { selectedBranchId } = useBranchStore()
+  const { resolvedTheme } = useThemeStore();
+  
 
   const {
     mutate: signIn,
@@ -73,7 +77,7 @@ const LoginScreen = ({
       <div className="flex w-full max-w-md flex-col gap-6">
         <header className="flex items-center justify-center self-center">
           <img
-            src={logoImage}
+            src={resolvedTheme === 'dark' ? logoDark : logoLight}
             alt="Intermotors Logo"
             className="h-16 w-auto object-contain"
           />
@@ -83,10 +87,10 @@ const LoginScreen = ({
 
           <Card className="p-4">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-xl font-semibold text-gray-900">
+              <CardTitle className="text-xl font-semibold text-foreground">
                 {selectedBranchId ? "Bienvenido de nuevo" : "Iniciar Sesión"}
               </CardTitle>
-              <CardDescription className="text-gray-600 mt-2 text-xs sm:text-sm">
+              <CardDescription className="text-muted-foreground mt-2 text-xs sm:text-sm">
                 Ingresa tus credenciales para acceder al sistema
               </CardDescription>
             </CardHeader>
@@ -104,11 +108,11 @@ const LoginScreen = ({
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="username" className="text-sm font-medium text-foreground">
                     Usuario
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       required
                       id="usuario"
@@ -129,11 +133,11 @@ const LoginScreen = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
                     Contraseña
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="clave"
                       type={showPassword ? "text" : "password"}
@@ -149,7 +153,7 @@ const LoginScreen = ({
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                           disabled={isPending || isSubmitting}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -167,7 +171,7 @@ const LoginScreen = ({
 
                 <Button
                   type="submit"
-                  className="w-full h-10"
+                  className="w-full h-8"
                   disabled={isPending || isSubmitting}
                 >
                   {(isPending || isSubmitting) ? (
@@ -181,12 +185,12 @@ const LoginScreen = ({
                 </Button>
               </form>
 
-              {/* <div className="text-center pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600">
+              {/* <div className="text-center pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
                   ¿Olvidaste tu contraseña?{" "}
                   <a
                     href="#"
-                    className="text-xs underline-offset-4 hover:underline text-black font-medium"
+                    className="text-xs underline-offset-4 hover:underline text-foreground font-medium"
                   >
                     Recuperar acceso
                   </a>

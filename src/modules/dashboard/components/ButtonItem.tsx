@@ -16,7 +16,7 @@ const ButtonItem = ({
     <div
       onClick={onClick}
       className={cn(
-        "flex items-center p-2 text-sm rounded-md transition-colors text-gray-700 hover:bg-secondary hover:text-secondary-foreground cursor-pointer",
+        "flex items-center p-2 text-sm rounded-md transition-colors text-foreground hover:bg-secondary hover:text-secondary-foreground cursor-pointer",
         className
       )}
     >

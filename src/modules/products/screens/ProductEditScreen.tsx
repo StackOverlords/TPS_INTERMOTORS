@@ -211,14 +211,14 @@ const ProductEditScreen = () => {
   const getInputClassName = (fieldName: keyof ProductUpdate): string => {
     const baseClass = "";
     return errors[fieldName]
-      ? `${baseClass} border-red-500 focus:border-red-500 focus:ring-red-500`
+      ? `${baseClass} border-destructive focus:border-destructive focus:ring-destructive`
       : baseClass;
   };
 
   const getSelectClassName = (fieldName: keyof ProductUpdate): string => {
     const baseClass = "";
     return errors[fieldName]
-      ? `${baseClass} border-red-500 focus:border-red-500`
+      ? `${baseClass} border-destructive focus:border-destructive`
       : baseClass;
   };
 
@@ -271,7 +271,7 @@ const ProductEditScreen = () => {
   return (
     <main>
       <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-2">
-        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <TooltipButton
@@ -292,10 +292,10 @@ const ProductEditScreen = () => {
                 <CornerUpLeft />
               </TooltipButton>
               <div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Editar producto #{productData?.codigo_interno}
                 </h1>
-                <p className="text-sm text-gray-600"></p>
+                <p className="text-sm text-muted-foreground"></p>
               </div>
             </div>
 
@@ -334,8 +334,8 @@ const ProductEditScreen = () => {
           </div>
         </header>
         {/* Información Principal */}
-        <div className="p-3 bg-white border border-gray-200 rounded-lg">
-          <h2 className="flex items-center gap-2 mb-3 text-base font-semibold text-gray-900">
+        <div className="p-3 bg-card border border-border rounded-lg">
+          <h2 className="flex items-center gap-2 mb-3 text-base font-bold text-foreground">
             <Package className="w-4 h-4" />
             Información Principal
           </h2>
@@ -363,7 +363,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.id_categoria && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.id_categoria.message}
                   </p>
                 )}
@@ -390,7 +390,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.id_marca && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.id_marca.message}
                   </p>
                 )}
@@ -403,7 +403,7 @@ const ProductEditScreen = () => {
               <Input {...register("codigo_oem")} placeholder="Código OEM" />
               <div className="mt-1">
                 {errors.codigo_oem && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.codigo_oem.message}
                   </p>
                 )}
@@ -422,7 +422,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.codigo_upc && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.codigo_upc.message}
                   </p>
                 )}
@@ -449,7 +449,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.id_procedencia && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.id_procedencia.message}
                   </p>
                 )}
@@ -476,7 +476,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.id_unidad && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.id_unidad.message}
                   </p>
                 )}
@@ -505,7 +505,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.stock_minimo && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.stock_minimo.message}
                   </p>
                 )}
@@ -534,7 +534,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.costo_referencia && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.costo_referencia.message}
                   </p>
                 )}
@@ -564,7 +564,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.precio_venta && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.precio_venta.message}
                   </p>
                 )}
@@ -592,7 +592,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.precio_venta_alt && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.precio_venta_alt.message}
                   </p>
                 )}
@@ -619,7 +619,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.id_marca_vehiculo && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.id_marca_vehiculo.message}
                   </p>
                 )}
@@ -636,7 +636,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.medida && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.medida.message}
                   </p>
                 )}
@@ -653,7 +653,7 @@ const ProductEditScreen = () => {
               />
               <div className="mt-1">
                 {errors.nro_motor && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.nro_motor.message}
                   </p>
                 )}
@@ -663,7 +663,7 @@ const ProductEditScreen = () => {
         </div>
 
         {/* Campos adicionales para la generación de descripción */}
-        <div className="p-3 bg-white border border-gray-200 rounded-lg">
+        <div className="p-3 bg-card border border-border rounded-lg">
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {/* 14. Descripción alt. */}
             <div className="flex flex-col sm:col-span-2">
@@ -678,7 +678,7 @@ const ProductEditScreen = () => {
                 />
                 <div className="mt-1">
                   {errors.descripcion_alt && (
-                    <p className="text-xs text-red-500 truncate">
+                    <p className="text-xs text-destructive truncate">
                       {errors.descripcion_alt.message}
                     </p>
                   )}
@@ -692,7 +692,7 @@ const ProductEditScreen = () => {
               <Input {...register("modelo")} placeholder="Ej: 2020-2024" />
               <div className="mt-1">
                 {errors.modelo && (
-                  <p className="text-xs text-red-500 truncate">
+                  <p className="text-xs text-destructive truncate">
                     {errors.modelo.message}
                   </p>
                 )}
@@ -702,12 +702,12 @@ const ProductEditScreen = () => {
         </div>
 
         {/* Descripción Auto-generada */}
-        <div className="p-3 bg-white border border-gray-200 rounded-lg">
-          <h3 className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-900">
+        <div className="p-3 bg-card border border-border rounded-lg">
+          <h3 className="flex items-center gap-2 mb-2 text-sm font-bold text-foreground">
             <Wand2 className="w-4 h-4" />
             Descripción Auto-generada
           </h3>
-          <div className="p-3 text-sm text-gray-800 border border-gray-200 rounded bg-gray-50 min-h-[40px] flex items-center">
+          <div className="p-3 text-sm text-foreground border border-border rounded bg-muted min-h-[40px] flex items-center">
             {autoDescription ||
               "Completa los campos para generar la descripción"}
           </div>

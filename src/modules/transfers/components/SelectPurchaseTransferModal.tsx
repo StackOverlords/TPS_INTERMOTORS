@@ -76,7 +76,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
             minSize: 30,
             enableHiding: false,
             cell: ({ getValue }) => (
-                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+                <span className="text-center text-xs text-muted-foreground">{getValue<number>()}</span>
             ),
         },
         {
@@ -96,10 +96,10 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
 
                         <div className="flex flex-wrap gap-1 mt-1">
                             {product.categoria && (
-                                <Badge variant="accent" title="División" className="text-[10px] border-gray-300">{product.categoria.categoria}</Badge>
+                                <Badge variant="accent" title="División" className="text-[10px] border-border">{product.categoria.categoria}</Badge>
                             )}
                             {product.marca && (
-                                <Badge variant="outline" title="Marca" className="text-[10px] border-gray-300">{product.marca.marca}</Badge>
+                                <Badge variant="outline" title="Marca" className="text-[10px] border-border">{product.marca.marca}</Badge>
                             )}
                         </div>
                     </div>
@@ -128,7 +128,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
                     <div className="text-center">
                         <div className="text-sm font-medium">{cantidad.toFixed(0)}</div>
                         {product.unidad_medida && (
-                            <div className="text-[10px] text-gray-500">{product.unidad_medida.unidad_medida}</div>
+                            <div className="text-[10px] text-muted-foreground">{product.unidad_medida.unidad_medida}</div>
                         )}
                     </div>
                 );
@@ -142,7 +142,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
             cell: ({ getValue }) => {
                 const costo = Number.parseFloat(getValue<string>());
                 return (
-                    <div className="font-medium flex items-center justify-end text-blue-600">
+                    <div className="font-medium flex items-center justify-end text-blue-600 dark:text-blue-400">
                         {formatCurrency(costo)}
                     </div>
                 );
@@ -156,7 +156,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
             cell: ({ getValue }) => {
                 const precio = Number.parseFloat(getValue<string>());
                 return (
-                    <div className="font-medium flex items-center justify-end text-green-600">
+                    <div className="font-medium flex items-center justify-end text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(precio)}
                     </div>
                 );
@@ -234,29 +234,29 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
                     <div className="px-6">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div className="space-y-1">
-                                <p className="text-gray-500 text-xs flex items-center gap-1">
+                                <p className="text-muted-foreground text-xs flex items-center gap-1">
                                     <Calculator className="size-3" />
                                     Número de Compra
                                 </p>
                                 <p className="font-semibold">{purchaseData.nro}</p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-gray-500 text-xs flex items-center gap-1">
+                                <p className="text-muted-foreground text-xs flex items-center gap-1">
                                     <CalendarDays className="size-3" />
                                     Fecha
                                 </p>
                                 <p className="font-medium">{formatDate(purchaseData.fecha)}</p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-gray-500 text-xs flex items-center gap-1">
+                                <p className="text-muted-foreground text-xs flex items-center gap-1">
                                     <User className="size-3" />
                                     Proveedor
                                 </p>
                                 <p className="font-medium">{purchaseData.proveedor?.proveedor || "N/A"}</p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-gray-500 text-xs">Total Productos</p>
-                                <p className="font-semibold text-blue-600">{purchaseData.cantidad_detalles}</p>
+                                <p className="text-muted-foreground text-xs">Total Productos</p>
+                                <p className="font-semibold text-blue-600 dark:text-blue-400">{purchaseData.cantidad_detalles}</p>
                             </div>
                         </div>
                     </div>
@@ -265,7 +265,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
                 {/* Buscador */}
                 <div className="px-6 py-3">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 h-4 w-4" />
                         <Input
                             type="text"
                             placeholder="Buscar producto por descripción..."
@@ -301,14 +301,14 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
                             renderBottomRow={() => {
                                 const colSpan = table.getVisibleFlatColumns().length;
                                 return (
-                                    <TableRow className="bg-gray-50 border-t-2">
+                                    <TableRow className="bg-accent/30 border-t-2">
                                         <TableCell colSpan={colSpan} className="p-3">
                                             <div className="flex items-center justify-between">
-                                                <div className="text-sm text-gray-600">
-                                                    Total de productos: <span className="font-semibold text-gray-900">{filteredPurchaseDetailData?.length || 0}</span>
+                                                <div className="text-sm text-muted-foreground">
+                                                    Total de productos: <span className="font-semibold text-foreground">{filteredPurchaseDetailData?.length || 0}</span>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-xs text-gray-500 mb-1">Total de la compra</div>
+                                                    <div className="text-xs text-muted-foreground mb-1">Total de la compra</div>
                                                     <div className="text-lg font-bold text-emerald-600">
                                                         {formatCurrency(totalAmount)}
                                                     </div>
@@ -323,7 +323,7 @@ const SelectPurchaseTransferModal: React.FC<SelectPurchaseTransferModalProps> = 
                 </div>
 
                 {/* Footer */}
-                {/* <div className="px-6 py-3 border-t bg-white flex justify-end items-center">
+                {/* <div className="px-6 py-3 border-t bg-card flex justify-end items-center">
                     <Button variant="outline" onClick={() => onCloseDialog(false)}>
                         Cerrar
                     </Button>

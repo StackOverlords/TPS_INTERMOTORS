@@ -269,11 +269,11 @@ const CreatePurchase: React.FC = () => {
               <CornerUpLeft />
             </TooltipButton>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-lg font-semibold text-foreground">
                 Registrar Compra
               </h1>
               {creationMode === "order-import" && selectedOrderId && (
-                <p className="text-sm text-blue-600 flex items-center gap-2 mt-1">
+                <p className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-2 mt-1">
                   <AlertCircle className="h-4 w-4" />
                   Importando desde Pedido #{selectedOrderId}
                 </p>
@@ -348,8 +348,7 @@ const CreatePurchase: React.FC = () => {
                           buttonProps={{
                             onClick: handleCancelOrderImport,
                             disabled: isLoading,
-                            className:
-                              "bg-red-500 hover:bg-red-600 hover:text-white text-white",
+                            variant: "destructive",
                           }}
                           tooltip="Cancelar importación de pedido"
                         >
