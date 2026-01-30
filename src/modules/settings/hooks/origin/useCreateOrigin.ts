@@ -9,7 +9,13 @@ export const useCreateOrigin = () => {
     return useMutation({
         mutationFn: (data: CreateOrigin) => originsService.create(data),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: ORIGIN_QUERY_KEYS.lists() });
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "common-origins"],
+                refetchType: 'active'
+            });
         }
     });
 };

@@ -19,10 +19,10 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-2">
-        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-6 bg-muted rounded w-1/4"></div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            <div key={i} className="h-16 bg-muted rounded"></div>
           ))}
         </div>
       </div>
@@ -31,7 +31,7 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
 
   if (isError || !purchase) {
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="text-center text-muted-foreground py-8">
         Error al cargar los datos de la compra
       </div>
     );
@@ -72,9 +72,9 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
   }, 0);
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-none flex-shrink-0">
+    <Card className="bg-card border border-border shadow-none flex-shrink-0">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-900">
+        <CardTitle className="text-sm font-semibold text-foreground">
           Información General
         </CardTitle>
       </CardHeader>
@@ -89,7 +89,7 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
           {/* Total */}
           <div>
             <Label className="text-xs text-muted-foreground">Total</Label>
-            <p className="text-sm font-bold text-green-600">{formatCurrency(totalCompra)}</p>
+            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalCompra)}</p>
           </div>
 
           {/* Tipo de Compra */}

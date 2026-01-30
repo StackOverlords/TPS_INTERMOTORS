@@ -91,7 +91,7 @@ const ReturnDetailProductsSection: React.FC<ReturnDetailProductsSectionProps> = 
             minSize: 30,
             enableHiding: false,
             cell: ({ getValue }) => (
-                <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+                <span className="text-center text-xs text-muted-foreground">{getValue<number>()}</span>
             ),
         },
         {
@@ -209,7 +209,7 @@ const ReturnDetailProductsSection: React.FC<ReturnDetailProductsSectionProps> = 
                     <Package className="size-4" />
                     Productos de la devolución
                 </h3>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-muted-foreground">
                     {filteredReturnItems.length} {filteredReturnItems.length === 1 ? "producto" : "productos"} en total
                 </p>
 
@@ -232,7 +232,7 @@ const ReturnDetailProductsSection: React.FC<ReturnDetailProductsSectionProps> = 
                                     setSearchInput("");
                                     if (isManual) setSearchTerm(""); // reset también en manual
                                 }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
                             >
                                 <X className="size-3" />
                             </Button>
@@ -254,13 +254,13 @@ const ReturnDetailProductsSection: React.FC<ReturnDetailProductsSectionProps> = 
                     stickyHeader={true}
                     rows={filteredReturnItems.length}
                     renderBottomRow={() => (
-                        <TableRow className="bg-gray-50 font-semibold sticky bottom-0 hover:bg-gray-50">
+                        <TableRow className="bg-accent/30 font-semibold sticky bottom-0 hover:bg-accent/30">
                             {table.getVisibleFlatColumns().map((column) => {
                                 if (column.id === 'cantidad') {
                                     return (
                                         <TableCell key={column.id} className="text-center p-1">
                                             <div className="text-xs text-muted-foreground mb-0.5">Total Cantidad</div>
-                                            <div className="text-sm font-bold text-blue-600">
+                                            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                                                 {totalCantidad.toFixed(0)}
                                             </div>
                                         </TableCell>
@@ -270,7 +270,7 @@ const ReturnDetailProductsSection: React.FC<ReturnDetailProductsSectionProps> = 
                                     return (
                                         <TableCell key={column.id} className="text-right p-1">
                                             <div className="text-xs text-muted-foreground mb-0.5">Total</div>
-                                            <div className="text-sm font-bold text-emerald-600">
+                                            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                                                 {formatCurrency(finalTotal)}
                                             </div>
                                         </TableCell>

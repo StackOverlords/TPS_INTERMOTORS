@@ -14,17 +14,17 @@ const badgeVariants = cva(
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground border-gray-300",
+        outline: "text-foreground border-border",
         success:
-          "border-transparent bg-emerald-100 text-emerald-600 hover:bg-emerald-100/80",
+          "border-transparent bg-emerald-100 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100/80 dark:hover:bg-emerald-500/40",
         info:
-          "border-transparent bg-blue-100 text-blue-600 hover:bg-blue-100/80",
+          "border-transparent bg-blue-100 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100/80 dark:hover:bg-blue-500/40",
         warning:
-          "border-transparent bg-amber-100 text-amber-600 hover:bg-amber-100/80",
+          "border-transparent bg-amber-100 dark:bg-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100/80 dark:hover:bg-amber-500/40",
         danger:
-          "border-transparent bg-red-100 text-red-600 hover:bg-red-100/80",
+          "border-transparent bg-red-100 dark:bg-red-500/30 text-red-700 dark:text-red-300 hover:bg-red-100/80 dark:hover:bg-red-500/40",
         accent:
-          "border-transparent bg-purple-100 text-purple-600 hover:bg-purple-100/80",
+          "border-transparent bg-purple-100 dark:bg-purple-500/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100/80 dark:hover:bg-purple-500/40",
       },
     },
     defaultVariants: {

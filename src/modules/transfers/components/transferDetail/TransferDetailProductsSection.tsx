@@ -35,7 +35,7 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
         //     minSize: 30,
         //     enableHiding: false,
         //     cell: ({ getValue }) => (
-        //         <span className="text-center text-xs text-gray-600">{getValue<number>()}</span>
+        //         <span className="text-center text-xs text-muted-foreground">{getValue<number>()}</span>
         //     ),
         // },
         {
@@ -44,7 +44,7 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
             minSize: 30,
             enableHiding: false,
             cell: ({ row }) => (
-                <span className="text-center text-xs text-gray-600">{row.index + 1}</span>
+                <span className="text-center text-xs text-muted-foreground">{row.index + 1}</span>
             ),
         },
         {
@@ -200,13 +200,13 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
     })
 
     return (
-        <section className="border border-gray-200 rounded-lg bg-white flex-1 flex flex-col overflow-hidden">
-            <header className="p-4 border-b border-gray-200 flex-shrink-0">
-                <h3 className="text-base font-medium text-gray-900 flex gap-2 items-center">
+        <section className="border border-border rounded-lg bg-card flex-1 flex flex-col overflow-hidden">
+            <header className="p-4 border-b border-border flex-shrink-0">
+                <h3 className="text-base font-medium text-foreground flex gap-2 items-center">
                     <Package className="size-4" />
                     Productos de la transferencia
                 </h3>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                     {products.length} {products.length === 1 ? "producto" : "productos"} en total
                 </p>
             </header>
@@ -216,13 +216,13 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
                 isLoading={isLoading}
                 stickyHeader={true}
                 renderBottomRow={() => (
-                    <TableRow className="bg-gray-50 font-semibold sticky bottom-0">
+                    <TableRow className="bg-accent/30 font-semibold sticky bottom-0">
                         {table.getVisibleFlatColumns().map((column) => {
                             if (column.id === 'cantidad') {
                                 return (
                                     <TableCell key={column.id} className="text-center">
                                         <div className="text-xs text-muted-foreground mb-0.5">Total Cantidad</div>
-                                        <div className="text-sm font-bold text-blue-600">
+                                        <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                                             {totalCantidad.toFixed(0)}
                                         </div>
                                     </TableCell>

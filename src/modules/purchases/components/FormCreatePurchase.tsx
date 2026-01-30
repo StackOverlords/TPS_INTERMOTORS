@@ -123,9 +123,9 @@ const FormCreatePurchase: React.FC<Props> = ({
   ]);
 
   return (
-    <div className="p-3 bg-white border border-gray-200 rounded-lg">
+    <div className="p-3 bg-card border border-border rounded-lg">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <ShoppingBag className="w-4 h-4" />
           Información de Compra
         </h2>
@@ -136,15 +136,15 @@ const FormCreatePurchase: React.FC<Props> = ({
           }}
           tooltip={
             <div className="flex flex-col space-y-3">
-              <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                 Atajos de teclado
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                <h4 className="text-xs font-medium text-muted-foreground tracking-wide">
                   Navegación
                 </h4>
-                <div className="space-y-1 text-gray-600 text-xs">
+                <div className="space-y-1 text-muted-foreground text-xs">
                   <p>
                     {" "}
                     <ShortcutKey combo={"Tab"} /> Siguiente campo{" "}
@@ -179,7 +179,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             </div>
           }
         >
-          <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+          <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
             <HelpCircle className="w-4 h-4" />
           </span>
         </TooltipWrapper>
@@ -196,7 +196,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             className={inputClass("fecha")}
           />
           {errors.fecha && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.fecha}
             </p>
           )}
@@ -218,7 +218,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             name="id_proveedor"
           />
           {errors.id_proveedor && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.id_proveedor}
             </p>
           )}
@@ -237,7 +237,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             name="nro_comprobante"
           />
           {errors.nro_comprobante && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.nro_comprobante}
             </p>
           )}
@@ -258,7 +258,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             placeholder="COMP-123"
           />
           {errors.nro_comprobante2 && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.nro_comprobante2}
             </p>
           )}
@@ -281,7 +281,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             name="tipo_compra"
           />
           {errors.tipo_compra && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.tipo_compra}
             </p>
           )}
@@ -304,7 +304,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             name="forma_compra"
           />
           {errors.forma_compra && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.forma_compra}
             </p>
           )}
@@ -324,14 +324,14 @@ const FormCreatePurchase: React.FC<Props> = ({
             name="id_responsable"
           />
           {errors.id_responsable && (
-            <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+            <p className="text-xs text-destructive absolute -bottom-5 left-0">
               {errors.id_responsable}
             </p>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg">
+      <div className="bg-card rounded-lg">
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">
             Comentarios (Opcional)
@@ -342,7 +342,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur("comentario")}
             placeholder="Comentarios adicionales"
             rows={1}
-            className="p-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+            className="p-2 text-xs border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical bg-background text-foreground"
           />
         </div>
       </div>

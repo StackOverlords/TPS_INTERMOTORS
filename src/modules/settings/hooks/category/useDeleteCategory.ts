@@ -11,7 +11,10 @@ export const useDeleteCategory = () => {
             // Settings module
             queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEYS.lists() });
             // Shared module (filtros productos, crear/editar productos)
-            queryClient.invalidateQueries({ queryKey: ["shared", "categories-with-subcategories"] });
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "categories-with-subcategories"],
+                refetchType: 'active' // Fuerza refetch de queries activas
+            });
             // Legacy categories module
             queryClient.invalidateQueries({ queryKey: ["categories"] });
         },

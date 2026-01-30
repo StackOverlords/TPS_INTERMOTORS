@@ -155,11 +155,11 @@ const EditPurchase: React.FC = () => {
               <CornerUpLeft />
             </TooltipButton>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-lg font-semibold text-foreground">
                 Editar Compra #{purchase?.nro}
               </h1>
               {purchase && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {purchase.proveedor.proveedor} - {purchase.cantidad_detalles}{" "}
                   {purchase.cantidad_detalles === 1 ? "producto" : "productos"}
                 </p>
@@ -215,7 +215,7 @@ const EditPurchase: React.FC = () => {
                     <Button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="bg-gray-900 hover:bg-gray-800 text-white"
+                      variant="default"
                     >
                       {isSaving ? (
                         <>

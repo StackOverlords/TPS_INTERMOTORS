@@ -121,7 +121,7 @@ const ReturnDetailScreen = () => {
                                 <CornerUpLeft />
                             </TooltipButton>
                             <div>
-                                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                                     Devolución Nro. {returnData?.nro}
                                 </h1>
                                 {returnData && (
@@ -187,8 +187,8 @@ const ReturnDetailScreen = () => {
 
                 <Card className="bg-card border border-border shadow-none flex-shrink-0">
                     <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                            <FileText className="size-4 text-gray-700" />
+                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                            <FileText className="size-4 text-muted-foreground" />
                             Información General
                         </CardTitle>
                     </CardHeader>
@@ -197,7 +197,7 @@ const ReturnDetailScreen = () => {
                             <div>
                                 <Label className="text-xs text-muted-foreground">Fecha</Label>
                                 <p className="text-sm font-medium flex items-center gap-2">
-                                    <Calendar className="size-4 text-gray-600" />
+                                    <Calendar className="size-4 text-muted-foreground" />
                                     {formatDate(returnData?.fecha ?? '')}
                                 </p>
                             </div>
@@ -237,13 +237,13 @@ const ReturnDetailScreen = () => {
                 {/* Información detallada de responsable - Comentado por si se necesita más adelante */}
                 {/* <Card className="bg-white border border-gray-200 shadow-none">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                            <User className="size-4 text-gray-700" />
+                        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                            <User className="size-4 text-muted-foreground" />
                             Responsable de devolución
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-xs text-gray-900 space-y-4">
+                        <div className="text-xs text-foreground space-y-4">
                             <div>
                                 <Label className="text-xs text-muted-foreground">Nombre</Label>
                                 <p className="text-base font-semibold">

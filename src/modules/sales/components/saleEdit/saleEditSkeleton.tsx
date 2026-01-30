@@ -6,7 +6,7 @@ const SaleEditSkeleton = () => {
         <main className="flex flex-col items-center">
             <div className="max-w-7xl w-full space-y-2">
                 {/* Header */}
-                <header className="border-gray-200 border bg-white rounded-lg p-4 sm:p-6 flex justify-between items-center">
+                <header className="border-border border bg-card rounded-lg p-4 sm:p-6 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-lg" />
                         <div className="space-y-2">
@@ -21,7 +21,7 @@ const SaleEditSkeleton = () => {
                 </header>
 
                 {/* Formulario de datos */}
-                <Card className="border-gray-200 shadow-none pt-4">
+                <Card className="border-border shadow-none pt-4">
                     <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                             {Array.from({ length: 12 }).map((_, i) => (
@@ -58,7 +58,7 @@ const SaleEditSkeleton = () => {
                 <Card className="border-0 shadow-sm pt-6">
                     <CardContent>
                         <div className="grid md:grid-cols-2 gap-3">
-                            <section className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                            <section className="space-y-2 bg-accent/30 p-3 rounded-lg">
                                 <Skeleton className="h-5 w-24" />
                                 <div className="grid grid-cols-2 gap-2">
                                     <Skeleton className="h-10 w-full" />
@@ -70,7 +70,7 @@ const SaleEditSkeleton = () => {
                                     ))}
                                 </div>
                             </section>
-                            <section className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                            <section className="space-y-2 bg-accent/30 p-3 rounded-lg">
                                 <Skeleton className="h-5 w-24" />
                                 <Skeleton className="h-5 w-24" />
                                 <Skeleton className="h-12 w-full rounded-lg" />

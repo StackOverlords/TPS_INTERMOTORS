@@ -104,30 +104,30 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         {/* Header con Avatar */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="h-14 w-14 bg-gray-900 rounded-full flex items-center justify-center">
-              <span className="text-white text-xl font-bold">
+            <div className="h-14 w-14 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-primary-foreground text-xl font-bold">
                 {getInitials(user?.name, user?.full_name)}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-gray-900 font-semibold text-base truncate">
+              <h3 className="text-foreground font-semibold text-base truncate">
                 {user?.full_name || 'Usuario'}
               </h3>
-              <p className="text-gray-500 text-sm truncate">@{user?.name || 'username'}</p>
+              <p className="text-muted-foreground text-sm truncate">@{user?.name || 'username'}</p>
             </div>
           </div>
         </div>
 
         {/* Info del usuario */}
-        <div className="p-3 space-y-2 bg-gray-50">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <User className="h-4 w-4 text-gray-400" />
+        <div className="p-3 space-y-2 bg-accent/30">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4 text-muted-foreground/70" />
             <Badge variant={"success"}>ID: {user?.id || 'N/A'}</Badge>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Mail className="h-4 w-4 text-gray-400" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Mail className="h-4 w-4 text-muted-foreground/70" />
             <span className="truncate">{user?.email || 'Sin email'}</span>
           </div>
         </div>
@@ -139,8 +139,8 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
           <>
             <div className="p-3">
               <div className="flex items-center gap-2 mb-2">
-                <Building2 className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Sucursales</span>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Sucursales</span>
                 <Badge variant="secondary" className="ml-auto text-xs">
                   {sucursales.length}
                 </Badge>
@@ -163,17 +163,17 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
             <div className="p-3">
               <button
                 onClick={() => setShowPermissions(!showPermissions)}
-                className="flex items-center gap-2 w-full text-left hover:bg-gray-50 -m-1 p-1 rounded transition-colors"
+                className="flex items-center gap-2 w-full text-left hover:bg-accent -m-1 p-1 rounded transition-colors"
               >
-                <Shield className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Permisos</span>
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Permisos</span>
                 <Badge variant="secondary" className="ml-auto text-xs">
                   {permissions.length}
                 </Badge>
                 {showPermissions ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground/70" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
                 )}
               </button>
 
@@ -182,7 +182,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
                   <div className="space-y-3">
                     {Object.entries(permissionsByCategory).map(([category, perms]) => (
                       <div key={category}>
-                        <p className="text-xs font-medium text-gray-500 mb-1.5">
+                        <p className="text-xs font-medium text-muted-foreground mb-1.5">
                           {category} ({perms.length})
                         </p>
                         <div className="flex flex-wrap gap-1">
@@ -204,7 +204,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
               )}
 
               {!showPermissions && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted-foreground/70 mt-1">
                   {categoryCount} categorías de permisos
                 </p>
               )}
@@ -217,7 +217,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
         <div className="p-2">
           <Button
             variant="default"
-            className="w-full justify-start hover:bg-gray-700"
+            className="w-full justify-start"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4 mr-2" />

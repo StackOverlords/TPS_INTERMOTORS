@@ -134,7 +134,7 @@ const OrderDetailScreen = () => {
                 <CornerUpLeft />
               </TooltipButton>
               <div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Pedido {orderData?.nro}
                 </h1>
                 {orderData && (
@@ -204,8 +204,8 @@ const OrderDetailScreen = () => {
 
         <Card className="bg-card border border-border shadow-none flex-shrink-0">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <FileText className="size-4 text-gray-700" />
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FileText className="size-4 text-muted-foreground" />
               Información General
             </CardTitle>
           </CardHeader>
@@ -214,7 +214,7 @@ const OrderDetailScreen = () => {
               <div>
                 <Label className="text-xs text-muted-foreground">Fecha</Label>
                 <p className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="size-4 text-gray-600" />
+                  <Calendar className="size-4 text-muted-foreground" />
                   {formatDate(orderData?.fecha ?? "")}
                 </p>
               </div>
@@ -276,13 +276,13 @@ const OrderDetailScreen = () => {
         {/* <div className="grid md:grid-cols-2 gap-2 flex-shrink-0">
                     <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                                <Building2 className="size-4 text-gray-700" />
+                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                                <Building2 className="size-4 text-muted-foreground" />
                                 Información del Proveedor
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
+                            <div className="text-xs text-foreground space-y-4">
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Proveedor</Label>
                                     <p className="text-sm text-primary font-semibold">{orderData?.proveedor.proveedor}</p>
@@ -307,13 +307,13 @@ const OrderDetailScreen = () => {
 
                     <Card className="bg-card border border-border shadow-none">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
-                                <User className="size-4 text-gray-700" />
+                            <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+                                <User className="size-4 text-muted-foreground" />
                                 Responsable de pedido
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-xs text-gray-900 space-y-4">
+                            <div className="text-xs text-foreground space-y-4">
                                 <div>
                                     <Label className="text-xs text-muted-foreground">Nombre</Label>
                                     <p className="text-base font-semibold">

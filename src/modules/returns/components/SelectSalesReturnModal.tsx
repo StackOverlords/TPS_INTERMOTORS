@@ -328,13 +328,13 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
               <div className="text-sm font-medium">
                 {cantidadDisplay}
                 {tempQty > 0 && (
-                  <span className="text-xs text-blue-600 ml-1">
+                  <span className="text-xs text-blue-600 dark:text-blue-400 ml-1">
                     ({tempQty} selec.)
                   </span>
                 )}
               </div>
               {product.unidad_medida && (
-                <div className="text-[10px] text-gray-500">
+                <div className="text-[10px] text-muted-foreground">
                   {product.unidad_medida.unidad_medida}
                 </div>
               )}
@@ -361,7 +361,7 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
               <div className="text-center">
                 <div className="text-sm font-medium">{cantidadDisplay}</div>
                 {product.unidad_medida && (
-                  <div className="text-[10px] text-gray-500">
+                  <div className="text-[10px] text-muted-foreground">
                     {product.unidad_medida.unidad_medida}
                   </div>
                 )}
@@ -403,7 +403,7 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
           return (
             <div className="font-medium flex items-end justify-center flex-col">
               {discountPercentDisplay && (
-                <span className="text-red-500">{discountPercentDisplay}%</span>
+                <span className="text-destructive">{discountPercentDisplay}%</span>
               )}
               <span>
                 {formatCurrency(getValue<number>(), {
@@ -431,7 +431,7 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
           const total = subtotal * descuento;
 
           return (
-            <div className="text-right font-bold text-emerald-600">
+            <div className="text-right font-bold text-emerald-600 dark:text-emerald-400">
               {formatCurrency(total, { currency: product.monenda })}
             </div>
           );
@@ -634,17 +634,17 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
                 renderBottomRow={() => {
                   const colSpan = table.getVisibleFlatColumns().length;
                   return (
-                    <TableRow className="bg-gray-50">
+                    <TableRow className="bg-accent/30">
                       <TableCell colSpan={colSpan} className="p-2">
                         <div className="flex items-center justify-between text-sm">
-                          <div className="text-gray-500">
+                          <div className="text-muted-foreground">
                             Total de ítems:{" "}
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-foreground">
                               {saleData?.cantidad_detalles}
                             </span>
                           </div>
-                          <div className="text-gray-500">
-                            <span className="text-sm font-bold text-emerald-600">
+                          <div className="text-muted-foreground">
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                               {formatCurrency(totalAmount)}
                             </span>
                           </div>

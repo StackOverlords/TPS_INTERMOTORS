@@ -118,7 +118,7 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
                 key={percentage}
                 type="button"
                 variant="outline"
-                className="text-xs h-7 px-2 border-orange-300 text-orange-700 hover:bg-orange-100 hover:text-orange-600 transition-colors duration-300"
+                className="text-xs h-7 px-2 border-orange-300 dark:border-orange-800 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-950 hover:text-orange-600 dark:hover:text-orange-200 transition-colors duration-300"
                 onClick={() =>
                   isEditMode
                     ? aplyGlobalDiscount?.(percentage, "percentage")

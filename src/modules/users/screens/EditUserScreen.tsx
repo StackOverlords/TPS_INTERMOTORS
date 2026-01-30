@@ -48,8 +48,8 @@ const EditUserScreen = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
-          <p className="text-sm text-gray-500">Verificando permisos...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">Verificando permisos...</p>
         </div>
       </div>
     );
@@ -75,10 +75,10 @@ const EditUserScreen = () => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Error al cargar usuario
           </h2>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             {error?.message || 'No se pudo encontrar el usuario solicitado'}
           </p>
           <Button onClick={() => navigate('/dashboard/user')}>
@@ -123,14 +123,14 @@ const EditUserScreen = () => {
     <div className="flex justify-center items-center">
       <div className="w-full space-y-2">
         {/* Header */}
-        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Editar Usuario: {user.nickname}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {persona.nombre || 'Sin nombre'} - Modifica la información del usuario
                 </p>
               </div>

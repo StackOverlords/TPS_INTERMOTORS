@@ -32,10 +32,10 @@ export const AccountPayableDetailModal = ({
     const { data: saleData, isLoading: isLoadingSale } = useSaleGetById(accountPayable?.id ?? 0);
 
     const saldoColor = useMemo(() => {
-        if (!accountPayable) return "text-gray-600";
-        if (accountPayable.saldo === 0) return "text-green-600";
-        if (accountPayable.saldo > 0) return "text-red-600";
-        return "text-gray-600";
+        if (!accountPayable) return "text-muted-foreground";
+        if (accountPayable.saldo === 0) return "text-emerald-600 dark:text-emerald-400";
+        if (accountPayable.saldo > 0) return "text-destructive";
+        return "text-muted-foreground";
     }, [accountPayable]);
 
     // Calcular el total original de la venta (sin considerar devoluciones)
@@ -84,7 +84,7 @@ export const AccountPayableDetailModal = ({
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
                     <div className="flex items-center justify-center h-96">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -119,45 +119,45 @@ export const AccountPayableDetailModal = ({
                         )}
 
                         {/* Resumen Financiero - Grid compacto */}
-                        <div className="rounded-md p-2 border border-gray-200 bg-white shadow-sm">
+                        <div className="rounded-md p-2 border border-border bg-card shadow-sm">
                             <div className="grid grid-cols-6 gap-2 text-center text-xs">
                                 <div>
-                                    <span className="text-gray-500 block mb-0.5">Total Original</span>
-                                    <p className="text-sm font-bold text-gray-600">
+                                    <span className="text-muted-foreground block mb-0.5">Total Original</span>
+                                    <p className="text-sm font-bold text-muted-foreground">
                                         {formatCurrency(accountPayable.total_vendido)}
                                     </p>
                                     {tieneDevoluciones && (
-                                        <p className="text-[10px] text-gray-400">(antes dev.)</p>
+                                        <p className="text-[10px] text-muted-foreground/50">(antes dev.)</p>
                                     )}
                                 </div>
                                 {tieneDevoluciones && (
                                     <div>
-                                        <span className="text-gray-500 block mb-0.5">Total Real</span>
-                                        <p className="text-sm font-bold text-blue-600">
+                                        <span className="text-muted-foreground block mb-0.5">Total Real</span>
+                                        <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                                             {formatCurrency(totalVentaReal)}
                                         </p>
-                                        <p className="text-[10px] text-blue-400">(después dev.)</p>
+                                        <p className="text-[10px] text-blue-400 dark:text-blue-300">(después dev.)</p>
                                     </div>
                                 )}
                                 <div>
-                                    <span className="text-gray-500 block mb-0.5">Total Pagado</span>
-                                    <p className="text-sm font-bold text-green-600">
+                                    <span className="text-muted-foreground block mb-0.5">Total Pagado</span>
+                                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                                         {formatCurrency(accountPayable.total_pagado)}
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-gray-500 block mb-0.5">Saldo Pendiente</span>
-                                    <p className={`text-sm font-bold ${saldoPendienteReal <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    <span className="text-muted-foreground block mb-0.5">Saldo Pendiente</span>
+                                    <p className={`text-sm font-bold ${saldoPendienteReal <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                                         {formatCurrency(saldoPendienteReal)}
                                     </p>
                                     {tieneDevoluciones && saldoPendienteReal !== accountPayable.saldo && (
-                                        <p className="text-[10px] text-gray-400">
+                                        <p className="text-[10px] text-muted-foreground/50">
                                             (Original: {formatCurrency(accountPayable.saldo)})
                                         </p>
                                     )}
                                 </div>
                                 <div>
-                                    <span className="text-gray-500 block mb-0.5">Plazo de Pago</span>
+                                    <span className="text-muted-foreground block mb-0.5">Plazo de Pago</span>
                                     <p className="text-sm font-medium">
                                         {accountPayable.plazo_pago
                                             ? new Date(accountPayable.plazo_pago).toLocaleDateString("es-ES")
@@ -165,7 +165,7 @@ export const AccountPayableDetailModal = ({
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-gray-500 block mb-0.5">Comprobantes</span>
+                                    <span className="text-muted-foreground block mb-0.5">Comprobantes</span>
                                     <p className="text-sm font-medium">{accountPayable.comprobantes || "N/A"}</p>
                                 </div>
                             </div>
@@ -194,7 +194,7 @@ export const AccountPayableDetailModal = ({
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                <div className="flex justify-end gap-2 pt-2 border-t border-border">
                     <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                         Cerrar
                     </Button>

@@ -28,7 +28,7 @@ const NavItem = ({
         "flex items-center p-2 gap-2 text-sm rounded-md transition-all relative overflow-hidden",
         isActive
           ? " bg-secondary text-primary font-bold before:absolute before:left-0 before:top-1/2 before:h-full before:w-1.5 before:-translate-y-1/2 before:rounded-r before:bg-primary"
-          : "text-gray-700 hover:bg-secondary hover:text-secondary-foreground"
+          : "text-foreground hover:bg-secondary hover:text-secondary-foreground"
       )}
     >
       {

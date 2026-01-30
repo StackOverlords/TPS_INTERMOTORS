@@ -25,7 +25,7 @@ const CreateProduct = () => {
           <Panel className="" minSize={30} maxSize={80} defaultSize={isMobile ? 40 : 55}> */}
       <div className="w-full space-y-2">
         {/* Header */}
-        <header className="border-gray-200 border bg-white rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               {/* <TooltipButton
@@ -42,10 +42,10 @@ const CreateProduct = () => {
                 <CornerUpLeft />
               </TooltipButton> */}
               <div>
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Nuevo Producto
                 </h1>
-                <p className="text-sm text-gray-500">Registra un nuevo producto en el sistema</p>
+                <p className="text-sm text-muted-foreground">Registra un nuevo producto en el sistema</p>
               </div>
             </div >
 

@@ -111,7 +111,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
         id: "Select",
         header: ({ table }) => (
           <Checkbox
-            className="border border-gray-400"
+            className="border border-input"
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -125,7 +125,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
         cell: ({ row }) => (
           <div className="px-1">
             <Checkbox
-              className="border border-gray-400"
+              className="border border-input"
               checked={row.getIsSelected()}
               onCheckedChange={(value) => row.toggleSelected(!!value)}
               aria-label="Seleccionar fila"
@@ -199,7 +199,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     <DropdownMenuItem
                       onKeyDown={(e) => e.stopPropagation()}
                       onClick={() => handleDeleteSale(row.original.id)}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
                     >
                       <Trash2 className="size-4 mr-2" />
                       Eliminar pedido
@@ -219,7 +219,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
               }
             >
               <div className="space-y-1 flex flex-col">
-                <span className="font-semibold text-blue-600">
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
                   {formatColumnNumber(getValue<string>(), "-")}
                 </span>
                 {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
@@ -244,7 +244,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
                     locale: es,
@@ -282,7 +282,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
                     locale: es,
@@ -316,7 +316,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
                     locale: es,
@@ -400,7 +400,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
           const items = row.original.numero_items;
           return (
             <div className="flex flex-col space-y-0.5 items-end">
-              <span className=" font-medium text-green-600">
+              <span className=" font-medium text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </span>
               <span className="text-muted-foreground">{items} items</span>
@@ -582,7 +582,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
   return (
     <section className="flex flex-col h-full">
       {/* Results Info */}
-      <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
         {orders.length > 0 ? (
           isInfiniteScroll ? (
             `Mostrando ${orders.length} de ${data?.meta?.total} pedidos`
@@ -611,7 +611,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+              className="w-56 max-h-96 overflow-y-auto border border-border"
             >
               {table
                 .getAllColumns()
@@ -626,7 +626,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     }
                   >
                     <Checkbox
-                      className="border border-gray-400"
+                      className="border border-input"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
@@ -664,16 +664,16 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
             tooltip={
               <div className="flex flex-col space-y-3">
                 {/* Título del tooltip */}
-                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                   Atajos de teclado
                 </div>
 
                 {/* Sección de navegación básica */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  <h4 className="text-xs font-medium text-muted-foreground tracking-wide">
                     Navegación
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={hotkeys.activate ?? ""} /> Activar
@@ -700,10 +700,10 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
 
                 {/* Sección de acciones */}
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-blue-600 tracking-wide">
+                  <h4 className="text-xs font-medium text-blue-600 dark:text-blue-400 tracking-wide">
                     Acciones
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p>
                       {" "}
                       <ShortcutKey combo={hotkeys.primaryAction ?? ""} />{" "}
@@ -733,7 +733,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
               next={() => setPage((filters.pagina || 1) + 1)}
               hasMore={orders.length < (data?.meta?.total ?? 0)}
               loader={
-                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-accent/30">
                   <Loader2 className="size-4 animate-spin" />
                   Cargando más pedidos...
                 </div>

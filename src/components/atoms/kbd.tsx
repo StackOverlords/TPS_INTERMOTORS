@@ -204,7 +204,7 @@ const Kbd = React.forwardRef<HTMLElement, KbdProps>(
         const variantClasses =
             variant === "dark"
                 ? "bg-primary-foreground/20 text-primary-foreground border border-primary-foreground/30 shadow-gray-600"
-                : "text-gray-400 border-gray-200 bg-white";
+                : "text-muted-foreground border-border bg-card";
 
         // Procesar el contenido para mostrar los símbolos/iconos correctos
         const processedContent = React.useMemo(() => {

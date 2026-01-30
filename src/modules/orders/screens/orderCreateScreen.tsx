@@ -541,7 +541,7 @@ const OrderCreateScreen = () => {
                   <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                     Nuevo Pedido
                   </h1>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Registra un nuevo pedido en el sistema
                   </p>
                 </div>
@@ -597,7 +597,7 @@ const OrderCreateScreen = () => {
                           className="w-full"
                         />
                         {errors.fecha && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             {errors.fecha.message}
                           </p>
                         )}
@@ -620,7 +620,7 @@ const OrderCreateScreen = () => {
                           )}
                         />
                         {errors.id_responsable && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             El campo es requerido
                           </p>
                         )}
@@ -658,7 +658,7 @@ const OrderCreateScreen = () => {
                           )}
                         />
                         {errors.forma_pedido && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             {errors.forma_pedido.message}
                           </p>
                         )}
@@ -691,7 +691,7 @@ const OrderCreateScreen = () => {
                           )}
                         />
                         {errors.tipo_pedido && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             El campo es requerido
                           </p>
                         )}
@@ -774,7 +774,7 @@ const OrderCreateScreen = () => {
                           )}
                         />
                         {errors.id_proveedor && (
-                          <p className="text-red-500 text-sm mt-1">
+                          <p className="text-destructive text-sm mt-1">
                             El campo es requerido
                           </p>
                         )}
@@ -876,13 +876,13 @@ const OrderCreateScreen = () => {
                               <div className="flex items-center gap-2">
                                 <Label
                                   htmlFor="currency-switch"
-                                  className="text-xs font-medium text-gray-700"
+                                  className="text-xs font-medium text-muted-foreground"
                                 >
                                   Moneda:
                                 </Label>
-                                <div className="flex items-center gap-2 bg-gray-50 rounded-md px-2 py-1 border border-gray-300">
+                                <div className="flex items-center gap-2 bg-accent/30 rounded-md px-2 py-1 border border-border">
                                   <span
-                                    className={`text-xs font-medium ${!isUSD ? "text-green-600" : "text-gray-400"}`}
+                                    className={`text-xs font-medium ${!isUSD ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70"}`}
                                   >
                                     BOB
                                   </span>
@@ -892,7 +892,7 @@ const OrderCreateScreen = () => {
                                     onCheckedChange={setIsUSD}
                                   />
                                   <span
-                                    className={`text-xs font-medium ${isUSD ? "text-blue-600" : "text-gray-400"}`}
+                                    className={`text-xs font-medium ${isUSD ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"}`}
                                   >
                                     USD
                                   </span>
@@ -903,7 +903,7 @@ const OrderCreateScreen = () => {
                               <div className="flex items-center gap-2">
                                 <Label
                                   htmlFor="exchange-rate"
-                                  className="text-xs font-medium text-gray-700 whitespace-nowrap"
+                                  className="text-xs font-medium text-muted-foreground whitespace-nowrap"
                                 >
                                   T.C:
                                 </Label>
@@ -965,8 +965,8 @@ const OrderCreateScreen = () => {
                         <CardContent className="flex-1 min-h-0">
                           <div className="h-full overflow-auto">
                             {orderDetailsHook.details.length === 0 ? (
-                              <div className="text-center py-8 text-gray-500">
-                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                              <div className="text-center py-8 text-muted-foreground">
+                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                                 <p>No hay productos agregados</p>
                                 <p className="text-sm">
                                   Haz clic en "Seleccionar Productos" para
@@ -1009,7 +1009,7 @@ const OrderCreateScreen = () => {
                   <Card className="border border-border shadow-none pt-3">
                     <CardContent className="space-y-2">
                       <footer className="flex gap-2 items-center justify-between">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           * Campos requeridos
                         </span>
                         <div className="flex gap-2">

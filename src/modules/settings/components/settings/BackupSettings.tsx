@@ -1,18 +1,247 @@
-import { Download, Upload, RefreshCw, HardDrive, Calendar, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { RefreshCw, Loader2, Save, Clock, Database, Calendar, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
-import { Progress } from "@/components/atoms/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/atoms/select";
-import { Switch } from "@/components/atoms/switch";
 import { Label } from "@/components/atoms/label";
 import { Separator } from "@/components/atoms/separator";
+import { useBackupSettings } from "../../hooks/backup/useBackupSettings";
+import { useUpdateBackupSettings } from "../../hooks/backup/useUpdateBackupSettings";
+import { FREQUENCY_OPTIONS, RETENTION_OPTIONS, getFrequencyFromCron, getHourFromCron, updateCronHour } from "../../utils/cronHelper";
 
 const BackupSettings = () => {
+    const { data: settings, isLoading } = useBackupSettings();
+    const { mutate: updateSettings, isPending } = useUpdateBackupSettings();
+
+    const [frequency, setFrequency] = useState<keyof typeof FREQUENCY_OPTIONS>("daily");
+    const [hour, setHour] = useState("04:00");
+    const [retention, setRetention] = useState(30);
+    const [currentCron, setCurrentCron] = useState("0 4 * * *");
+
+    // Sincronizar con datos del servidor
+    useEffect(() => {
+        if (settings) {
+            const freq = getFrequencyFromCron(settings.cron_expression);
+            if (freq !== "custom") {
+                setFrequency(freq);
+            }
+            setHour(getHourFromCron(settings.cron_expression));
+            setRetention(settings.retention_days);
+            setCurrentCron(settings.cron_expression);
+        }
+    }, [settings]);
+
+    const handleFrequencyChange = (value: string) => {
+        const freq = value as keyof typeof FREQUENCY_OPTIONS;
+        setFrequency(freq);
+        const newCron = updateCronHour(FREQUENCY_OPTIONS[freq].cron, hour);
+        setCurrentCron(newCron);
+    };
+
+    const handleHourChange = (value: string) => {
+        setHour(value);
+        const newCron = updateCronHour(FREQUENCY_OPTIONS[frequency].cron, value);
+        setCurrentCron(newCron);
+    };
+
+    const handleRetentionChange = (value: string) => {
+        setRetention(Number(value));
+    };
+
+    const handleSave = () => {
+        updateSettings({
+            cron: currentCron,
+            dias_retencion: retention,
+        });
+    };
+
+    // Verificar si hay cambios
+    const hasChanges = settings && (
+        currentCron !== settings.cron_expression ||
+        retention !== settings.retention_days
+    );
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <div className="text-center space-y-3">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+                    <p className="text-sm text-muted-foreground">Cargando configuración...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-6">
-            {/* Backup Status */}
-            <Card>
+        <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Header Info */}
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
+                <div className="p-2 rounded-lg bg-primary/20 dark:bg-primary/30">
+                    <Database className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">Respaldos Automáticos de Base de Datos</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Los backups se ejecutan automáticamente según la configuración programada
+                    </p>
+                </div>
+                {hasChanges && (
+                    <Badge className="bg-amber-100 dark:bg-blue-500/30 text-amber-700 dark:text-blue-300 border-amber-200 dark:border-blue-500/50 animate-pulse">
+                        Cambios sin guardar
+                    </Badge>
+                )}
+            </div>
+
+            {/* Configuration Card */}
+            <Card className="border-border shadow-sm hover:shadow-md transition-shadow duration-300">
+                <CardHeader className="bg-muted/30 border-b border-border">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-lg bg-primary/10">
+                                <RefreshCw className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-lg">Configuración de Programación</CardTitle>
+                                <CardDescription className="text-xs mt-1">
+                                    Define cuándo y por cuánto tiempo mantener los respaldos
+                                </CardDescription>
+                            </div>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-8 pt-6">
+                    {/* Frequency & Time Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                            <Clock className="h-4 w-4" />
+                            Programación de Ejecución
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-2.5">
+                                <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                    Frecuencia
+                                </Label>
+                                <Select value={frequency} onValueChange={handleFrequencyChange}>
+                                    <SelectTrigger className="h-11 transition-colors">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="hourly">⚡ Cada hora</SelectItem>
+                                        <SelectItem value="daily">📅 Diario</SelectItem>
+                                        <SelectItem value="weekly">📆 Semanal</SelectItem>
+                                        <SelectItem value="monthly">🗓️ Mensual</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    {FREQUENCY_OPTIONS[frequency].label}
+                                </p>
+                            </div>
+                            <div className="space-y-2.5">
+                                <Label className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                    Hora de Ejecución
+                                </Label>
+                                <Select value={hour} onValueChange={handleHourChange}>
+                                    <SelectTrigger className="h-11 transition-colors">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="01:00">🌙 1:00 AM</SelectItem>
+                                        <SelectItem value="02:00">🌙 2:00 AM</SelectItem>
+                                        <SelectItem value="03:00">🌙 3:00 AM</SelectItem>
+                                        <SelectItem value="04:00">🌙 4:00 AM</SelectItem>
+                                        <SelectItem value="05:00">🌅 5:00 AM</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    Hora de menor actividad recomendada
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Retention Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                            <Database className="h-4 w-4" />
+                            Gestión de Almacenamiento
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-sm font-semibold text-foreground">Período de Retención</Label>
+                            <Select value={retention.toString()} onValueChange={handleRetentionChange}>
+                                <SelectTrigger className="border-gray-200 h-11 hover:border-gray-300 transition-colors">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {RETENTION_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value.toString()}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-cyan-500/25 border border-amber-100 dark:border-cyan-500/40">
+                                <Info className="h-4 w-4 text-amber-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-800 dark:text-cyan-300">
+                                    Los backups más antiguos de <strong>{retention} días</strong> se eliminarán automáticamente para liberar espacio
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Cron Expression & Save */}
+                    <div className="space-y-4">
+                        <div className="p-4 rounded-lg bg-muted/30 border border-border">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 space-y-1">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                        Expresión Cron Generada
+                                    </p>
+                                    <code className="text-sm font-mono text-foreground bg-background px-2.5 py-1.5 rounded border border-border inline-block">
+                                        {currentCron}
+                                    </code>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Esta expresión define la programación exacta del backup
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Button
+                            onClick={handleSave}
+                            disabled={!hasChanges || isPending}
+                            className="w-full h-11 gap-2"
+                        >
+                            {isPending ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Guardando configuración...
+                                </>
+                            ) : hasChanges ? (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    Guardar Cambios
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-4 w-4" />
+                                    Configuración Guardada
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* TODO: Secciones deshabilitadas temporalmente - Sin endpoints disponibles */}
+            {/*
+            <Card className="border-gray-200">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <HardDrive className="h-5 w-5" />
@@ -35,96 +264,10 @@ const BackupSettings = () => {
                         </div>
                         <Badge className="bg-green-100 text-green-800">Completo</Badge>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 rounded-lg border">
-                            <div className="text-2xl font-bold text-primary">156 MB</div>
-                            <p className="text-sm text-muted-foreground">Tamaño total</p>
-                        </div>
-                        <div className="text-center p-4 rounded-lg border">
-                            <div className="text-2xl font-bold text-primary">247</div>
-                            <p className="text-sm text-muted-foreground">Archivos respaldados</p>
-                        </div>
-                        <div className="text-center p-4 rounded-lg border">
-                            <div className="text-2xl font-bold text-primary">99.8%</div>
-                            <p className="text-sm text-muted-foreground">Tasa de éxito</p>
-                        </div>
-                    </div>
                 </CardContent>
             </Card>
 
-            {/* Automatic Backups */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <RefreshCw className="h-5 w-5" />
-                        Respaldos Automáticos
-                    </CardTitle>
-                    <CardDescription>
-                        Configura la frecuencia y tipo de respaldos automáticos
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                            <Label>Respaldos automáticos</Label>
-                            <p className="text-sm text-muted-foreground">Crear respaldos de forma automática</p>
-                        </div>
-                        <Switch defaultChecked />
-                    </div>
-
-                    <Separator />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Frecuencia</Label>
-                            <Select>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Diario" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="hourly">Cada hora</SelectItem>
-                                    <SelectItem value="daily">Diario</SelectItem>
-                                    <SelectItem value="weekly">Semanal</SelectItem>
-                                    <SelectItem value="monthly">Mensual</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Hora programada</Label>
-                            <Select>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="3:00 AM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="01:00">1:00 AM</SelectItem>
-                                    <SelectItem value="02:00">2:00 AM</SelectItem>
-                                    <SelectItem value="03:00">3:00 AM</SelectItem>
-                                    <SelectItem value="04:00">4:00 AM</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Label>Retención de respaldos</Label>
-                        <Select>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Mantener por 30 días" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="7">7 días</SelectItem>
-                                <SelectItem value="30">30 días</SelectItem>
-                                <SelectItem value="90">90 días</SelectItem>
-                                <SelectItem value="365">1 año</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Manual Backup */}
-            <Card>
+            <Card className="border-gray-200">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Download className="h-5 w-5" />
@@ -140,28 +283,11 @@ const BackupSettings = () => {
                             <Download className="h-4 w-4" />
                             Crear respaldo completo
                         </Button>
-                        <Button variant="outline" className="flex-1 gap-2">
-                            <Download className="h-4 w-4" />
-                            Respaldo incremental
-                        </Button>
-                    </div>
-
-                    <div className="p-4 rounded-lg bg-muted">
-                        <div className="flex items-start gap-3">
-                            <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm">
-                                <p className="font-medium">Importante</p>
-                                <p className="text-muted-foreground">
-                                    El respaldo completo puede tomar varios minutos dependiendo del tamaño de tus datos.
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Restore Options */}
-            <Card>
+            <Card className="border-gray-200">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Upload className="h-5 w-5" />
@@ -172,75 +298,12 @@ const BackupSettings = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                        <div className="p-4 rounded-lg border">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium">Respaldo del 25 Sep 2024</span>
-                                <Badge variant="outline">156 MB</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">3:00 AM - Respaldo completo</p>
-                            <Button size="sm" variant="outline">Restaurar</Button>
-                        </div>
-
-                        <div className="p-4 rounded-lg border">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium">Respaldo del 24 Sep 2024</span>
-                                <Badge variant="outline">154 MB</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">3:00 AM - Respaldo completo</p>
-                            <Button size="sm" variant="outline">Restaurar</Button>
-                        </div>
-
-                        <div className="p-4 rounded-lg border">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium">Respaldo del 23 Sep 2024</span>
-                                <Badge variant="outline">152 MB</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">3:00 AM - Respaldo completo</p>
-                            <Button size="sm" variant="outline">Restaurar</Button>
-                        </div>
-                    </div>
-
-                    <Button variant="outline" className="w-full gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Ver todos los respaldos
-                    </Button>
+                    <p className="text-sm text-muted-foreground">Funcionalidad en desarrollo</p>
                 </CardContent>
             </Card>
-
-            {/* Storage Usage */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <HardDrive className="h-5 w-5" />
-                        Uso de Almacenamiento
-                    </CardTitle>
-                    <CardDescription>
-                        Espacio utilizado para respaldos
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span>Almacenamiento utilizado</span>
-                            <span>1.2 GB de 10 GB</span>
-                        </div>
-                        <Progress value={12} className="h-2" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                        <div className="p-3 rounded-lg bg-muted">
-                            <div className="text-lg font-semibold">1.2 GB</div>
-                            <p className="text-xs text-muted-foreground">Utilizado</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-muted">
-                            <div className="text-lg font-semibold">8.8 GB</div>
-                            <p className="text-xs text-muted-foreground">Disponible</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            */}
         </div>
     );
 };
+
 export default BackupSettings;

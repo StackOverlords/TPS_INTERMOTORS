@@ -91,7 +91,7 @@ const PurchaseDetailScreen = () => {
         <main className="h-full flex flex-col items-center overflow-hidden p-2">
           <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
             {/* Header */}
-            <header className="bg-white border border-gray-200 rounded-lg p-3 flex-shrink-0">
+            <header className="bg-card border border-border rounded-lg p-3 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <TooltipButton
@@ -112,7 +112,7 @@ const PurchaseDetailScreen = () => {
                     <CornerUpLeft />
                   </TooltipButton>
                   <div>
-                    <h1 className="text-lg font-bold text-gray-900 leading-tight">
+                    <h1 className="text-lg font-bold text-foreground leading-tight">
                       Compra Nro. {purchase?.nro}
                     </h1>
                     {purchase && (

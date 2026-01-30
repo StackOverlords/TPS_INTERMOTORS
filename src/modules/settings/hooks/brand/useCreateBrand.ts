@@ -9,7 +9,13 @@ export const useCreateBrand = () => {
     return useMutation({
         mutationFn: (data: CreateBrand) => brandsService.create(data),
         onSuccess: () => {
+            // Settings module
             queryClient.invalidateQueries({ queryKey: BRAND_QUERY_KEYS.lists() });
+            // Shared module (filtros productos, crear/editar productos)
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "common-brands"],
+                refetchType: 'active'
+            });
         }
     });
 };

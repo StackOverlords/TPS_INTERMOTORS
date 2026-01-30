@@ -97,7 +97,7 @@ const AccountsReceivablePaidReportScreen = () => {
         enableSorting: false,
         enableHiding: false,
         cell: ({ row }) => (
-          <div className="text-center text-xs font-semibold text-gray-500">
+          <div className="text-center text-xs font-semibold text-muted-foreground">
             {row.index + 1}
           </div>
         ),
@@ -138,7 +138,7 @@ const AccountsReceivablePaidReportScreen = () => {
           const total = parseFloat(getValue<string>());
           return (
             <div className="text-right">
-              <span className="font-medium text-blue-600">
+              <span className="font-medium text-blue-600 dark:text-blue-400">
                 Bs. {total.toLocaleString("es-BO", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -380,24 +380,24 @@ const AccountsReceivablePaidReportScreen = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10">
-            <DollarSign className="size-4 text-green-600" />
-            <span className="font-semibold text-green-600">
+            <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
               Bs. {stats.totalPagos.toLocaleString("es-BO", { maximumFractionDigits: 0 })}
             </span>
-            <span className="text-green-600/70 text-xs">cobrado</span>
+            <span className="text-emerald-600 dark:text-emerald-400/70 text-xs">cobrado</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10">
-            <CheckCircle2 className="size-4 text-blue-600" />
-            <span className="font-semibold text-blue-600">{stats.cuentasPagadas}</span>
-            <span className="text-blue-600/70 text-xs">completadas</span>
+            <CheckCircle2 className="size-4 text-blue-600 dark:text-blue-400" />
+            <span className="font-semibold text-blue-600 dark:text-blue-400">{stats.cuentasPagadas}</span>
+            <span className="text-blue-600 dark:text-blue-400/70 text-xs">completadas</span>
           </div>
         </div>
       </div>
 
       {/* Error Message */}
       {isError && error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex-shrink-0">
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-destructive text-sm flex-shrink-0">
           <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte"}
         </div>
       )}

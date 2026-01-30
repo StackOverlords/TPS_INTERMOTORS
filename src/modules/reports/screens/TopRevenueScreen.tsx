@@ -52,8 +52,8 @@ const TopRevenueScreen = () => {
       title="Productos con Mayor Ingreso"
       description="Ranking de productos por total generado en ventas"
       icon={DollarSign}
-      iconBgColor="bg-green-500/10"
-      iconColor="text-green-500"
+      iconBgColor="bg-emerald-500/10 dark:bg-emerald-400/10"
+      iconColor="text-emerald-600 dark:text-emerald-400"
       // Datos
       data={data?.data || []}
       isLoading={isLoading}

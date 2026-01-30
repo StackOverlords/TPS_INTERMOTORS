@@ -46,7 +46,7 @@ export default function Layout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="min-w-0 flex flex-col h-screen">
+      <SidebarInset className="min-w-0 flex flex-col h-full">
         <header className="border-b border-border sticky top-0 z-10 bg-background flex-shrink-0">
           <div className="h-16">
             <TopNav onOpenCartChange={toggle} />
@@ -55,7 +55,7 @@ export default function Layout() {
         </header>
         <div
           id="main-scroll-container"
-          className="flex-1 bg-gray-50 overflow-auto"
+          className="flex-1 bg-secondary overflow-auto"
         >
           <TabContainer />
         </div>

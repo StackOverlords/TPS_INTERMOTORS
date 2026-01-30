@@ -18,7 +18,10 @@ export const useUpdateCategory = () => {
             queryClient.invalidateQueries({ queryKey: CATEGORY_QUERY_KEYS.lists() });
             queryClient.setQueryData(CATEGORY_QUERY_KEYS.detail(id), updated);
             // Shared module (filtros productos, crear/editar productos)
-            queryClient.invalidateQueries({ queryKey: ["shared", "categories-with-subcategories"] });
+            queryClient.invalidateQueries({
+                queryKey: ["shared", "categories-with-subcategories"],
+                refetchType: 'active' // Fuerza refetch de queries activas
+            });
             // Legacy categories module
             queryClient.invalidateQueries({ queryKey: ["categories"] });
         }

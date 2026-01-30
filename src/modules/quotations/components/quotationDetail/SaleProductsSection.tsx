@@ -101,7 +101,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
         minSize: 30,
         enableHiding: false,
         cell: ({ getValue }) => (
-          <span className="text-center text-xs text-gray-600">
+          <span className="text-center text-xs text-muted-foreground">
             {getValue<number>()}
           </span>
         ),
@@ -173,7 +173,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
             <div className="text-center">
               <div className="text-sm font-medium">{cantidadDisplay}</div>
               {product.unidad_medida && (
-                <div className="text-[10px] text-gray-500">
+                <div className="text-[10px] text-muted-foreground">
                   {product.unidad_medida.unidad_medida}
                 </div>
               )}
@@ -208,7 +208,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
           return (
             <div className="font-medium flex items-end justify-center flex-col">
               {discountPercent && (
-                <span className="text-red-500">{discountPercent}%</span>
+                <span className="text-destructive">{discountPercent}%</span>
               )}
               <span>
                 {formatCurrency(getValue<number>(), {
@@ -264,7 +264,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
           <Package className="size-4" />
           Productos de la cotizacion
         </h3>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           {filteredQuotationItems.length}{" "}
           {filteredQuotationItems.length === 1 ? "producto" : "productos"} en
           total
@@ -286,7 +286,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
                   setSearchInput("");
                   if (isManual) setSearchTerm(""); // reset también en manual
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                className="absolute right-2 top-1/2 -translate-y-1/2 size-6 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
               >
                 <X className="size-3" />
               </Button>
@@ -308,7 +308,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
           stickyHeader={true}
           rows={filteredQuotationItems.length}
           renderBottomRow={() => (
-            <TableRow className="bg-gray-50 font-semibold sticky bottom-0 hover:bg-gray-50">
+            <TableRow className="bg-accent/30 font-semibold sticky bottom-0 hover:bg-accent/30">
               {table.getVisibleFlatColumns().map((column) => {
                 if (column.id === "cantidad") {
                   return (
@@ -316,7 +316,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
                       <div className="text-xs text-muted-foreground mb-0.5">
                         Total Cantidad
                       </div>
-                      <div className="text-sm font-bold text-blue-600">
+                      <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                         {totalCantidad.toFixed(0)}
                       </div>
                     </TableCell>

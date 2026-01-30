@@ -12,7 +12,7 @@ const renderSystemTheme = () => {
         <div className="w-full h-full grid grid-cols-2">
             {/* light */}
             <div className={cn(
-                "h-full w-full border-l border-y bg-white border-gray-200 rounded-l-md shadow-sm overflow-hidden ",
+                "h-full w-full border-l border-y bg-card border-border rounded-l-md shadow-sm overflow-hidden ",
             )}>
                 <div className={cn(
                     "p-1 flex gap-1 border-b border-gray-200",

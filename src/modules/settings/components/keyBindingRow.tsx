@@ -63,7 +63,7 @@ const KeybindingRow = ({
       <div
         className={cn(
           "group grid grid-cols-[2fr_1.5fr_200px_80px] gap-4 items-center px-3 py-1.5 hover:bg-accent/30 border-b border-border/30 last:border-b-0 transition-colors text-sm",
-          hasConflict && "bg-destructive/[0.03]"
+          hasConflict && "bg-destructive/10 dark:bg-destructive/20"
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -82,7 +82,7 @@ const KeybindingRow = ({
         <div className="flex items-center justify-end gap-1">
           <kbd className={cn(
             "px-1.5 py-0.5 text-[11px] font-mono bg-muted/40 border border-border/50 rounded select-none",
-            hasConflict && "border-destructive/40 text-destructive bg-destructive/5"
+            hasConflict && "border-destructive/60 text-destructive bg-destructive/15 dark:border-destructive/70 dark:bg-destructive/25"
           )}>
             {formatKeys(currentKeys)}
           </kbd>

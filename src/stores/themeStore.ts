@@ -16,7 +16,14 @@ const getSystemTheme = (): ResolvedTheme => {
 }
 
 const applyTheme = (resolvedTheme: ResolvedTheme) => {
-  document.documentElement.style.colorScheme = resolvedTheme
+  const root = document.documentElement
+  root.style.colorScheme = resolvedTheme
+
+  if (resolvedTheme === 'dark') {
+    root.classList.add('dark')
+  } else {
+    root.classList.remove('dark')
+  }
 }
 
 const resolveTheme = (theme: Theme): ResolvedTheme => {

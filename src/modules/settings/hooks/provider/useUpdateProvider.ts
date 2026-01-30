@@ -14,9 +14,15 @@ export const useUpdateProvider = () => {
             queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.lists() });
             queryClient.invalidateQueries({ queryKey: PROVIDER_QUERY_KEYS.detail(variables.id) });
             // Purchases module (select de proveedores en compras)
-            queryClient.invalidateQueries({ queryKey: ["purchases", "commons", "providers"] });
+            queryClient.invalidateQueries({
+                queryKey: ["purchases", "commons", "providers"],
+                refetchType: 'active'
+            });
             // Orders module (select de proveedores en pedidos)
-            queryClient.invalidateQueries({ queryKey: ["orders", "commons", "providers"] });
+            queryClient.invalidateQueries({
+                queryKey: ["orders", "commons", "providers"],
+                refetchType: 'active'
+            });
         }
     });
 };

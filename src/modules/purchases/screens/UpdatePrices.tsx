@@ -151,7 +151,7 @@ const UpdatePrices = () => {
   };
 
   return (
-    <main className="h-full p-4 overflow-auto bg-gray-50">
+    <main className="h-full p-4 overflow-auto bg-background">
       <ProtectedAction
         permission="com-update_prices"
         roles={["Super Admin", "Administrador", "Vendedor"]}
@@ -160,9 +160,9 @@ const UpdatePrices = () => {
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Success Alert */}
         {lastSuccess && (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
+          <Alert className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <AlertDescription className="text-emerald-800 dark:text-emerald-200">
               {lastSuccess}
             </AlertDescription>
           </Alert>
@@ -193,11 +193,11 @@ const UpdatePrices = () => {
                 }}
                 tooltip={
                   <div className="flex flex-col space-y-3">
-                    <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                       Atajos de teclado
                     </div>
                     <div className="space-y-1.5">
-                      <div className="space-y-1 text-gray-600 text-xs">
+                      <div className="space-y-1 text-muted-foreground text-xs">
                         <p>
                           <ShortcutKey combo={"Alt + S"} /> Actualizar precios
                         </p>
@@ -209,7 +209,7 @@ const UpdatePrices = () => {
                   </div>
                 }
               >
-                <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+                <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
                   <HelpCircle className="w-4 h-4" />
                 </span>
               </TooltipWrapper>
@@ -249,7 +249,7 @@ const UpdatePrices = () => {
               <Button
                 onClick={handleSubmit}
                 disabled={updatePricesMutation.isPending}
-                className="bg-gray-900 hover:bg-gray-800 text-white"
+                variant="default"
               >
                 {updatePricesMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -270,7 +270,7 @@ const UpdatePrices = () => {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <AlertCircle className="h-5 w-5 text-amber-500 dark:text-amber-400" />
                 Confirmar Actualización de Precios
               </AlertDialogTitle>
               <AlertDialogDescription asChild className="space-y-3 pt-2">
@@ -332,7 +332,7 @@ const UpdatePrices = () => {
                     </div>
                   </div>
 
-                  <p className="text-amber-600 font-medium">
+                  <p className="text-amber-600 dark:text-amber-400 font-medium">
                     ⚠️ Esta acción modificará los precios de los productos.
                     ¿Deseas continuar?
                   </p>

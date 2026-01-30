@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import React from 'react';
+import { useThemeStore } from '@/stores/themeStore';
 
 interface ReleaseNotesProps {
   // Información de versión
@@ -53,6 +54,7 @@ export default function ReleaseNotes({
   // onDismiss,
 }: ReleaseNotesProps) {
   const [showDetails, setShowDetails] = React.useState(true);
+  const { resolvedTheme } = useThemeStore();
   // alert(JSON.stringify(variant));
   return (
     <div className="w-full">
@@ -60,12 +62,12 @@ export default function ReleaseNotes({
         {/* Columna Izquierda - Contenido/Detalles (2/3) */}
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+            <h3 className="text-2xl font-semibold text-foreground mb-2">
               {releaseNotes
                 ? `Novedades en v${hasUpdate ? latestVersion : currentVersion}`
                 : 'Actualizaciones'}
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {releaseNotes
                 ? (hasUpdate
                     ? `Nueva versión disponible para actualizar`
@@ -79,7 +81,7 @@ export default function ReleaseNotes({
             <>
               <button
                 onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200 group -ml-1"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 group -ml-1"
               >
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-300 ease-out ${
@@ -103,12 +105,12 @@ export default function ReleaseNotes({
                       source={releaseNotes}
                       style={{
                         backgroundColor: 'transparent',
-                        color: '#374151',
+                        color: resolvedTheme === 'dark' ? '#f9fafb' : '#374151',
                         fontSize: '14px',
                         fontFamily: 'inherit',
                       }}
                       wrapperElement={{
-                        'data-color-mode': 'light',
+                        'data-color-mode': resolvedTheme === 'dark' ? 'dark' : 'light',
                       }}
                     />
                   </div>
@@ -120,10 +122,10 @@ export default function ReleaseNotes({
           {/* Si NO hay release notes, mostrar estado simple */}
           {!releaseNotes && (
             <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Estás en la última versión conocida
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Usa el botón "Buscar actualizaciones" para verificar si hay nuevas versiones
               </p>
             </div>
@@ -133,17 +135,17 @@ export default function ReleaseNotes({
         {/* Columna Derecha - Detalles Técnicos y Acciones (1/3) */}
         <div className="space-y-6">
           {/* Card de información */}
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-2 space-y-4">
+          <div className="bg-muted/30 rounded-lg border border-border p-2 space-y-4">
             {/* Versión actual */}
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Package className="h-3.5 w-3.5" />
                 <span>Versión actual</span>
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-2xl font-semibold text-gray-800">{currentVersion}</p>
+                <p className="text-2xl font-semibold text-foreground">{currentVersion}</p>
                 {variant && (
-                  <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md uppercase">
+                  <span className="px-2 py-0.5 text-xs font-semibold bg-primary/20 dark:bg-primary/30 text-primary rounded-md uppercase">
                     {variant}
                   </span>
                 )}
@@ -152,23 +154,23 @@ export default function ReleaseNotes({
 
             {/* Nueva versión disponible */}
             {hasUpdate && latestVersion && (
-              <div className="space-y-1 pt-3 border-t border-gray-200">
+              <div className="space-y-1 pt-3 border-t border-border">
                 <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                  <span className="text-xs font-medium text-blue-700">Nueva versión</span>
+                  <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+                  <span className="text-xs font-medium text-primary">Nueva versión</span>
                 </div>
-                <p className="text-xl font-semibold text-blue-800">{latestVersion}</p>
+                <p className="text-xl font-semibold text-primary">{latestVersion}</p>
               </div>
             )}
 
             {/* Fecha de lanzamiento */}
             {releaseDate && (
-              <div className="space-y-1 pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="space-y-1 pt-3 border-t border-border">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5" />
                   <span>Fecha de lanzamiento</span>
                 </div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-foreground">
                   {new Date(releaseDate).toLocaleDateString('es-ES', {
                     year: 'numeric',
                     month: 'long',
@@ -180,12 +182,12 @@ export default function ReleaseNotes({
 
             {/* Enlace al release en GitHub */}
             {releaseNotes && (
-              <div className="pt-3 border-t border-gray-200">
+              <div className="pt-3 border-t border-border">
                 <a
                   href={`https://github.com/StackOverlords/TPS_INTERMOTORS/releases/tag/v${currentVersion}${variant ? `-${variant}` : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                  className="flex items-center gap-2 text-sm text-primary hover:opacity-80 hover:underline"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Ver en GitHub
@@ -196,18 +198,18 @@ export default function ReleaseNotes({
 
           {/* Progreso de descarga/instalación */}
           {(isDownloading || isInstalling) && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+            <div className="bg-primary/10 dark:bg-primary/20 border border-primary/30 dark:border-primary/40 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-900">
+                <span className="text-sm font-medium text-foreground">
                   {isInstalling ? 'Instalando...' : 'Descargando...'}
                 </span>
-                <span className="text-sm font-semibold text-blue-900">
+                <span className="text-sm font-semibold text-foreground">
                   {Math.round(downloadProgress)}%
                 </span>
               </div>
-              <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-600 transition-all duration-300"
+                  className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${downloadProgress}%` }}
                 />
               </div>
@@ -216,10 +218,10 @@ export default function ReleaseNotes({
 
           {/* Error */}
           {error && !error.includes('Ya estás en la última versión') && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-destructive/10 dark:bg-destructive/20 border border-destructive/40 dark:border-destructive/50 rounded-lg p-4">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{error}</p>
+                <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-destructive">{error}</p>
               </div>
             </div>
           )}
@@ -278,7 +280,7 @@ export default function ReleaseNotes({
 
           {/* Mensaje de última versión */}
           {error && error.includes('Ya estás en la última versión') && (
-            <p className="text-xs text-center text-gray-400">Tienes la última versión</p>
+            <p className="text-xs text-center text-muted-foreground">Tienes la última versión</p>
           )}
         </div>
       </div>

@@ -6,30 +6,30 @@ import {
   CardTitle,
 } from '@/components/atoms/card';
 import {
-  Bell,
-  Code,
+  // Bell,
+  // Code,
   Database,
   Eye,
   HardDrive,
   Keyboard,
-  Link,
+  // Link,
   Palette,
   RefreshCw,
   Settings,
-  Settings as SettingsIcon,
-  Shield,
+  // Settings as SettingsIcon,
+  // Shield,
 } from 'lucide-react';
 import { useState } from 'react';
-import AdvancedSettings from '../components/settings/AdvancedSettings';
+// import AdvancedSettings from '../components/settings/AdvancedSettings';
 import AppearanceSettings from '../components/settings/AppearanceSettings';
 import BackupSettings from '../components/settings/BackupSettings';
-import IntegrationSettings from '../components/settings/IntegrationSettings';
+// import IntegrationSettings from '../components/settings/IntegrationSettings';
 import KeybindingsSettings from '../components/settings/KeybindingsSettings';
 import MasterDataSettings from '../components/settings/MasterDataSettings';
-import NotificationSettings from '../components/settings/NotificationSettings';
-import SecuritySettings from '../components/settings/SecuritySettings';
+// import NotificationSettings from '../components/settings/NotificationSettings';
+// import SecuritySettings from '../components/settings/SecuritySettings';
 import { SettingsNavigation } from '../components/settings/SettingsNavigation';
-import SystemSettings from '../components/settings/SystemSettings';
+// import SystemSettings from '../components/settings/SystemSettings';
 import UpdateSettings from '../components/settings/UpdateSettings';
 import ViewSettings from '../components/settings/ViewSettings';
 import { cn } from '@/lib/utils';
@@ -76,14 +76,14 @@ const settingsSections: SettingsSection[] = [
     component: KeybindingsSettings,
     stickyHeader: false,
   },
-  {
-    id: 'system',
-    label: 'Sistema',
-    icon: SettingsIcon,
-    description: 'Configuraciones de cuenta y sistema',
-    component: SystemSettings,
-    stickyHeader: false,
-  },
+  // {
+  //   id: 'system',
+  //   label: 'Sistema',
+  //   icon: SettingsIcon,
+  //   description: 'Configuraciones de cuenta y sistema',
+  //   component: SystemSettings,
+  //   stickyHeader: false,
+  // },
   {
     id: 'backups',
     label: 'Respaldos',
@@ -92,38 +92,38 @@ const settingsSections: SettingsSection[] = [
     component: BackupSettings,
     stickyHeader: false,
   },
-  {
-    id: 'integrations',
-    label: 'Integraciones',
-    icon: Link,
-    description: 'APIs y conexiones externas',
-    component: IntegrationSettings,
-    stickyHeader: false,
-  },
-  {
-    id: 'security',
-    label: 'Seguridad',
-    icon: Shield,
-    description: 'Permisos y control de acceso',
-    component: SecuritySettings,
-    stickyHeader: false,
-  },
-  {
-    id: 'notifications',
-    label: 'Notificaciones',
-    icon: Bell,
-    description: 'Alertas y notificaciones',
-    component: NotificationSettings,
-    stickyHeader: false,
-  },
-  {
-    id: 'advanced',
-    label: 'Avanzado',
-    icon: Code,
-    description: 'Configuraciones avanzadas',
-    component: AdvancedSettings,
-    stickyHeader: false,
-  },
+  // {
+  //   id: 'integrations',
+  //   label: 'Integraciones',
+  //   icon: Link,
+  //   description: 'APIs y conexiones externas',
+  //   component: IntegrationSettings,
+  //   stickyHeader: false,
+  // },
+  // {
+  //   id: 'security',
+  //   label: 'Seguridad',
+  //   icon: Shield,
+  //   description: 'Permisos y control de acceso',
+  //   component: SecuritySettings,
+  //   stickyHeader: false,
+  // },
+  // {
+  //   id: 'notifications',
+  //   label: 'Notificaciones',
+  //   icon: Bell,
+  //   description: 'Alertas y notificaciones',
+  //   component: NotificationSettings,
+  //   stickyHeader: false,
+  // },
+  // {
+  //   id: 'advanced',
+  //   label: 'Avanzado',
+  //   icon: Code,
+  //   description: 'Configuraciones avanzadas',
+  //   component: AdvancedSettings,
+  //   stickyHeader: false,
+  // },
   {
     id: 'updates',
     label: 'Actualizaciones',
@@ -168,12 +168,12 @@ const SettingsScreen = () => {
       <header className="border-border border bg-card rounded-lg p-2 sm:px-3 sm:py-2 flex-shrink-0">
         <div className="flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-3">
-            <Settings className="size-5 lg:size-7 text-gray-700" />
+            <Settings className="size-5 lg:size-7 text-foreground" />
             <div>
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                 Configuración
               </h1>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Gestiona la configuración del sistema
               </p>
             </div>

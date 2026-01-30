@@ -162,7 +162,7 @@ const UserListScreen = () => {
         id: 'Select',
         header: ({ table }) => (
           <Checkbox
-            className="border border-gray-400"
+            className="border border-border"
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && 'indeterminate')
@@ -174,7 +174,7 @@ const UserListScreen = () => {
         cell: ({ row }) => (
           <div className="px-1">
             <Checkbox
-              className="border border-gray-400"
+              className="border border-border"
               checked={row.getIsSelected()}
               onCheckedChange={value => row.toggleSelected(!!value)}
               aria-label="Seleccionar fila"
@@ -231,7 +231,7 @@ const UserListScreen = () => {
                   >
                     <DropdownMenuItem
                       onClick={() => handleDeleteUser(row.original)}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Eliminar usuario
@@ -241,7 +241,7 @@ const UserListScreen = () => {
               </DropdownMenu>
             </div>
             <div className="flex flex-col">
-              <h3 className="font-medium text-gray-900 leading-tight hover:underline truncate">
+              <h3 className="font-medium text-foreground leading-tight hover:underline truncate">
                 {getValue<string>()}
               </h3>
             </div>
@@ -258,7 +258,7 @@ const UserListScreen = () => {
           const empleado = row.original.empleado;
           return (
             <div className="space-y-1">
-              <div className="font-medium">{empleado.nombre}</div>
+              <div className="font-medium text-foreground">{empleado.nombre}</div>
             </div>
           );
         },
@@ -272,7 +272,7 @@ const UserListScreen = () => {
         cell: ({ getValue }) => {
           const email = getValue<string | null>();
           return (
-            <div className={`${!email ? 'italic text-gray-400' : ''}`}>
+            <div className={`${!email ? 'italic text-muted-foreground' : ''}`}>
               {formatCell(email, 'No registrado')}
             </div>
           );
@@ -403,12 +403,12 @@ const UserListScreen = () => {
         roles={["Super Admin"]}
         showUnauthorizedMessage={true}
       >
-        <div className="bg-white rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="p-2 border-b border-gray-200">
+          <header className="p-2 border-b border-border">
             <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
               <div className="flex items-center gap-2 md:gap-4 grow">
-                <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <Users className="h-5 w-5" />
                   Gestión de Usuarios
                 </h1>
@@ -484,7 +484,7 @@ const UserListScreen = () => {
             {viewConfig?.features?.searchBar?.enabled && (
               <section className="mt-2">
                 <div className="relative w-full">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Buscar usuarios por nickname o nombre..."
                     value={searchKeywords}
@@ -497,7 +497,7 @@ const UserListScreen = () => {
           </header>
 
           {/* Results Info */}
-          <div className="flex-shrink-0 p-2 text-sm text-gray-600 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex-shrink-0 p-2 text-sm text-muted-foreground border-b border-border flex items-center justify-between flex-wrap gap-2">
             {users.length > 0 ? (
               isInfiniteScroll ? (
                 `Mostrando ${users.length} de ${userData?.meta.total} usuarios`
@@ -533,7 +533,7 @@ const UserListScreen = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="w-56 max-h-96 overflow-y-auto border border-gray-200"
+                    className="w-56 max-h-96 overflow-y-auto"
                   >
                     {table
                       .getAllColumns()
@@ -548,7 +548,7 @@ const UserListScreen = () => {
                           }
                         >
                           <Checkbox
-                            className="border border-gray-400"
+                            className="border border-border"
                             checked={column.getIsVisible()}
                             onCheckedChange={value =>
                               column.toggleVisibility(!!value)
@@ -586,7 +586,7 @@ const UserListScreen = () => {
                   next={() => setPage((filters.pagina || 1) + 1)}
                   hasMore={users.length < (userData?.meta.total || 0)}
                   loader={
-                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-gray-500 bg-gray-50">
+                    <div className="flex items-center justify-center gap-2 text-center p-6 text-xs sm:text-sm text-muted-foreground bg-muted/30">
                       <Loader2 className="size-4 animate-spin" />
                       Cargando más usuarios...
                     </div>

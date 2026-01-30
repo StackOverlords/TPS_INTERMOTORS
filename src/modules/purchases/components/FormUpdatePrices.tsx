@@ -60,7 +60,7 @@ const FormUpdatePrices: React.FC<Props> = ({
             >
               <Label
                 htmlFor="incremento"
-                className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-md px-2 cursor-pointer hover:border-green-500 hover:bg-green-50/50 transition-colors"
+                className="flex items-center justify-center space-x-1.5 border border-border rounded-md px-2 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/50 transition-colors"
               >
                 <RadioGroupItem
                   value="incremento"
@@ -68,14 +68,14 @@ const FormUpdatePrices: React.FC<Props> = ({
                   className="h-3 w-3"
                 />
                 <span className="flex items-center gap-1 text-xs whitespace-nowrap">
-                  <ArrowUp className="h-3 w-3 text-green-600" />
+                  <ArrowUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                   <span>Incremento</span>
                 </span>
               </Label>
 
               <Label
                 htmlFor="decremento"
-                className="flex items-center justify-center space-x-1.5 border border-gray-200 rounded-md px-2 cursor-pointer hover:border-red-500 hover:bg-red-50/50 transition-colors"
+                className="flex items-center justify-center space-x-1.5 border border-border rounded-md px-2 cursor-pointer hover:border-destructive hover:bg-destructive/10 transition-colors"
               >
                 <RadioGroupItem
                   value="decremento"
@@ -83,13 +83,13 @@ const FormUpdatePrices: React.FC<Props> = ({
                   className="h-3 w-3"
                 />
                 <span className="flex items-center gap-1 text-xs whitespace-nowrap">
-                  <ArrowDown className="h-3 w-3 text-red-600" />
+                  <ArrowDown className="h-3 w-3 text-destructive" />
                   <span>Decremento</span>
                 </span>
               </Label>
             </RadioGroup>
             {errors.tipo_ajuste && (
-              <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+              <p className="text-xs text-destructive absolute -bottom-5 left-0">
                 {errors.tipo_ajuste}
               </p>
             )}
@@ -113,7 +113,7 @@ const FormUpdatePrices: React.FC<Props> = ({
               clearOnEmpty={true}
             />
             {errors.categoria && (
-              <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+              <p className="text-xs text-destructive absolute -bottom-5 left-0">
                 {errors.categoria}
               </p>
             )}
@@ -137,12 +137,12 @@ const FormUpdatePrices: React.FC<Props> = ({
                 min="0"
                 placeholder="10"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 %
               </span>
             </div>
             {errors.porcentaje && (
-              <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+              <p className="text-xs text-destructive absolute -bottom-5 left-0">
                 {errors.porcentaje}
               </p>
             )}
@@ -172,7 +172,7 @@ const FormUpdatePrices: React.FC<Props> = ({
               disabled={() => isLoading}
             />
             {errors.fecha && (
-              <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+              <p className="text-xs text-destructive absolute -bottom-5 left-0">
                 {errors.fecha}
               </p>
             )}
@@ -211,7 +211,7 @@ const FormUpdatePrices: React.FC<Props> = ({
               error={!!errors.sucursal}
             />
             {errors.sucursal && (
-              <p className="text-xs text-red-500 absolute -bottom-5 left-0">
+              <p className="text-xs text-destructive absolute -bottom-5 left-0">
                 {errors.sucursal}
               </p>
             )}

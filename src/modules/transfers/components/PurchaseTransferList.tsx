@@ -169,7 +169,7 @@ function PurchaseTransferList<T extends BaseWithId>({
               <div className="text-center text-xs">
                 <div
                   className={`font-medium ${
-                    isToday ? 'text-blue-600' : 'text-foreground'
+                    isToday ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'
                   }`}
                 >
                   {format(date, 'dd/MM/yyyy', { locale: es })}
@@ -240,7 +240,7 @@ function PurchaseTransferList<T extends BaseWithId>({
         size: 120,
         minSize: 100,
         cell: ({ getValue }) => (
-          <div className="text-right font-medium text-green-600">
+          <div className="text-right font-medium text-emerald-600 dark:text-emerald-400">
             {formatCurrency(getValue<number>())}
           </div>
         ),
@@ -363,11 +363,11 @@ function PurchaseTransferList<T extends BaseWithId>({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-card border border-border rounded-lg overflow-hidden">
       {/* Header con Filtros */}
-      <div className="p-3 border-b border-gray-200 space-y-3">
+      <div className="p-3 border-b border-border space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">
+          <h3 className="text-base font-semibold text-foreground">
             Buscar Compras
           </h3>
           <div className="flex gap-2">
@@ -388,7 +388,7 @@ function PurchaseTransferList<T extends BaseWithId>({
                 className={`h-3 w-3 mr-1 ${
                   searchMode === 'realtime'
                     ? 'text-yellow-500'
-                    : 'text-gray-500'
+                    : 'text-muted-foreground'
                 }`}
               />
               {searchMode === 'realtime' ? 'Tiempo real' : 'Manual'}
@@ -425,7 +425,7 @@ function PurchaseTransferList<T extends BaseWithId>({
               Buscar
             </Label>
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground/50 w-3.5 h-3.5" />
               <Input
                 id="search-keywords"
                 placeholder="Comentarios..."
@@ -555,7 +555,7 @@ function PurchaseTransferList<T extends BaseWithId>({
 
         {/* Mostrar error de validación */}
         {dateError && (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 flex items-center gap-2">
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md p-2 flex items-center gap-2">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{dateError}</span>
           </div>
@@ -575,7 +575,7 @@ function PurchaseTransferList<T extends BaseWithId>({
             noDataMessage="No se encontraron compras"
           />
         ) : (
-          <div className="text-center py-8 text-gray-500 text-sm">
+          <div className="text-center py-8 text-muted-foreground text-sm">
             No se encontraron compras
           </div>
         )}
@@ -583,7 +583,7 @@ function PurchaseTransferList<T extends BaseWithId>({
 
       {/* Footer con Paginación */}
       {purchases.length > 0 && (
-        <div className="border-t border-gray-200 bg-gray-50">
+        <div className="border-t border-border bg-accent/30">
           <Pagination
             currentPage={filters.pagina || 1}
             onPageChange={handlePageChange}

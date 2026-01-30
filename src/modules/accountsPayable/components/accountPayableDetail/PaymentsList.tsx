@@ -129,7 +129,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 size: 120,
                 minSize: 30,
                 cell: ({ getValue }) => (
-                    <div className="text-right font-semibold text-green-600">
+                    <div className="text-right font-semibold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(getValue<number>())}
                     </div>
                 ),
@@ -142,7 +142,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 cell: ({ getValue }) => {
                     const comentarios = getValue<string | null>();
                     return (
-                        <div className="text-sm text-gray-600 truncate">
+                        <div className="text-sm text-muted-foreground truncate">
                             {comentarios || "-"}
                         </div>
                     );
@@ -168,7 +168,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                                     openDeleteDialog(row.original);
                                 }}
                                 disabled={isDeleting}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 title="Eliminar pago"
                             >
                                 <Trash2 className="h-4 w-4" />
@@ -201,7 +201,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
             </div>
         );
     }
@@ -212,7 +212,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
             <div className="flex items-center justify-between p-1">
                 <div>
                     <h3 className="text-lg font-semibold">Lista de Pagos</h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                         Total de pagos registrados: {payments.length}
                     </p>
                 </div>
@@ -226,7 +226,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                             ✓ Pagado completamente
                         </Badge>
                     ) : (
-                        <Badge variant="outline" className="text-sm border-blue-400 text-blue-700 bg-blue-50">
+                        <Badge variant="outline" className="text-sm border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30">
                             ℹ️ Saldo a favor: {formatCurrency(Math.abs(saldoPendiente))}
                         </Badge>
                     )}
@@ -296,7 +296,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                         <AlertDialogAction
                             onClick={handleConfirmDelete}
                             disabled={isDeleting}
-                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            className="bg-destructive hover:bg-destructive/90 focus:ring-destructive"
                         >
                             {isDeleting ? (
                                 <>

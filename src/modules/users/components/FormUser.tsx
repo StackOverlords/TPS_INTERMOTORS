@@ -106,7 +106,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
     const baseClass = '';
     const hasError = errors[fieldName as keyof (UserCreate | UserUpdate)];
     return hasError
-      ? `${baseClass} border-red-500 focus:border-red-500 focus:ring-red-500`
+      ? `${baseClass} border-destructive focus:border-destructive focus:ring-destructive`
       : baseClass;
   };
 
@@ -133,9 +133,9 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       ref={refForm}
     >
       {/* Información Personal */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="p-3 bg-card border border-border rounded-lg">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="flex items-center gap-2 text-base font-semibold text-gray-900">
+          <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
             <UserPlus className="w-4 h-4" />
             Información Personal
           </h2>
@@ -143,14 +143,14 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             tooltipContentProps={{ align: 'end', className: 'max-w-xs' }}
             tooltip={
               <div className="flex flex-col space-y-3">
-                <div className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
                   Atajos de teclado
                 </div>
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-medium text-gray-700 tracking-wide">
+                  <h4 className="text-xs font-medium text-foreground tracking-wide">
                     Navegación
                   </h4>
-                  <div className="space-y-1 text-gray-600 text-xs">
+                  <div className="space-y-1 text-muted-foreground text-xs">
                     <p><ShortcutKey combo={'Tab'} /> Siguiente campo</p>
                     <p><ShortcutKey combo={'Shift + Tab'} /> Campo anterior</p>
                     <p><ShortcutKey combo={'Alt + S'} /> Guardar usuario</p>
@@ -159,7 +159,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
               </div>
             }
           >
-            <span className="border-gray-200 border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+            <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
               <HelpCircle className="w-4 h-4" />
             </span>
           </TooltipWrapper>
@@ -176,7 +176,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.nombre && (
-                <p className="text-xs text-red-500 truncate">{errors.nombre.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.nombre.message}</p>
               )}
             </div>
           </div>
@@ -191,7 +191,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.apellido_p && (
-                <p className="text-xs text-red-500 truncate">{errors.apellido_p.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.apellido_p.message}</p>
               )}
             </div>
           </div>
@@ -206,7 +206,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.apellido_m && (
-                <p className="text-xs text-red-500 truncate">{errors.apellido_m.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.apellido_m.message}</p>
               )}
             </div>
           </div>
@@ -234,7 +234,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.sexo && (
-                <p className="text-xs text-red-500 truncate">{errors.sexo.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.sexo.message}</p>
               )}
             </div>
           </div>
@@ -242,8 +242,8 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Documentación */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">
+      <div className="p-3 bg-card border border-border rounded-lg">
+        <h2 className="text-base font-bold text-foreground mb-3">
           Documentación
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -266,7 +266,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.dni && (
-                <p className="text-xs text-red-500 truncate">{errors.dni.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.dni.message}</p>
               )}
             </div>
           </div>
@@ -294,7 +294,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.dni_tipo && (
-                <p className="text-xs text-red-500 truncate">{errors.dni_tipo.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.dni_tipo.message}</p>
               )}
             </div>
           </div>
@@ -309,7 +309,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.dni_comp && (
-                <p className="text-xs text-red-500 truncate">{errors.dni_comp.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.dni_comp.message}</p>
               )}
             </div>
           </div>
@@ -339,7 +339,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.fecha_ingreso && (
-                <p className="text-xs text-red-500 truncate">{errors.fecha_ingreso.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.fecha_ingreso.message}</p>
               )}
             </div>
           </div>
@@ -347,8 +347,8 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Información de Contacto */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">
+      <div className="p-3 bg-card border border-border rounded-lg">
+        <h2 className="text-base font-bold text-foreground mb-3">
           Información de Contacto
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -362,7 +362,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.telefono && (
-                <p className="text-xs text-red-500 truncate">{errors.telefono.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.telefono.message}</p>
               )}
             </div>
           </div>
@@ -377,7 +377,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.celular && (
-                <p className="text-xs text-red-500 truncate">{errors.celular.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.celular.message}</p>
               )}
             </div>
           </div>
@@ -393,7 +393,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.email && (
-                <p className="text-xs text-red-500 truncate">{errors.email.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.email.message}</p>
               )}
             </div>
           </div>
@@ -408,7 +408,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.direccion && (
-                <p className="text-xs text-red-500 truncate">{errors.direccion.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.direccion.message}</p>
               )}
             </div>
           </div>
@@ -416,8 +416,8 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Credenciales de Acceso */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">
+      <div className="p-3 bg-card border border-border rounded-lg">
+        <h2 className="text-base font-bold text-foreground mb-3">
           Credenciales de Acceso
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -431,7 +431,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.nombre_usuario && (
-                <p className="text-xs text-red-500 truncate">{errors.nombre_usuario.message}</p>
+                <p className="text-xs text-destructive truncate">{errors.nombre_usuario.message}</p>
               )}
             </div>
           </div>
@@ -449,7 +449,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
                 />
                 <div className="mt-1">
                   {(errors as any).clave_acceso && (
-                    <p className="text-xs text-red-500 truncate">{(errors as any).clave_acceso.message}</p>
+                    <p className="text-xs text-destructive truncate">{(errors as any).clave_acceso.message}</p>
                   )}
                 </div>
               </div>
@@ -464,7 +464,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
                 />
                 <div className="mt-1">
                   {(errors as any).clave_acceso_confirmation && (
-                    <p className="text-xs text-red-500 truncate">
+                    <p className="text-xs text-destructive truncate">
                       {(errors as any).clave_acceso_confirmation.message}
                     </p>
                   )}
@@ -476,9 +476,9 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Botones de acción */}
-      <div className="p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="p-3 bg-card border border-border rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-gray-500">* Campos requeridos</span>
+          <span className="text-xs text-muted-foreground">* Campos requeridos</span>
           <TooltipButton
             buttonProps={{
               type: 'submit',
