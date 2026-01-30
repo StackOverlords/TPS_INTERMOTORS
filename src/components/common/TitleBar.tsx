@@ -25,7 +25,6 @@ const TitleBar = () => {
   const handleMaximize = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await appWindow.toggleMaximize();
-    // No hace falta setear el estado aquí porque el listener onResized lo hará por ti
   };
 
   const handleClose = async (e: React.MouseEvent) => {
