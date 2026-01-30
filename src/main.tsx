@@ -10,6 +10,7 @@ import { HotkeysProvider, useHotkeys } from 'react-hotkeys-hook';
 import { useEffect } from 'react';
 import { Toaster } from './components/atoms/toaster.tsx';
 import { ZoomManager } from './components/common/ZoomManager.tsx';
+import TitleBar from './components/common/TitleBar.tsx';
 import { TaskNotificationsProvider } from './contexts/TaskNotificationsContext.tsx';
 import { WebSocketProvider } from './contexts/WebSocketContext.tsx';
 import { useDebugLogWindow } from './hooks/useSecondaryWindow';
@@ -41,26 +42,31 @@ function App() {
   }, { enableOnFormTags: true });
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TaskNotificationsProvider>
-        <WebSocketProvider>
-          <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
-            <TooltipProvider>
-              <Toaster />
-              <ZoomManager />
-              {/* <Sonner /> */}
-              {/* <KeybindingProvider> */}
-              <BrowserRouter>
-                {/* <SidebarProvider> */}
-                <Navigation />
-                {/* </SidebarProvider> */}
-              </BrowserRouter>
-              {/* </KeybindingProvider> */}
-            </TooltipProvider>
-          </HotkeysProvider>
-        </WebSocketProvider>
-      </TaskNotificationsProvider>
-    </QueryClientProvider>
+    <div className="flex flex-col h-screen overflow-hidden">
+      <TitleBar />
+      <div className="flex-1 overflow-auto">
+        <QueryClientProvider client={queryClient}>
+          <TaskNotificationsProvider>
+            <WebSocketProvider>
+              <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}>
+                <TooltipProvider>
+                  <Toaster />
+                  <ZoomManager />
+                  {/* <Sonner /> */}
+                  {/* <KeybindingProvider> */}
+                  <BrowserRouter>
+                    {/* <SidebarProvider> */}
+                    <Navigation />
+                    {/* </SidebarProvider> */}
+                  </BrowserRouter>
+                  {/* </KeybindingProvider> */}
+                </TooltipProvider>
+              </HotkeysProvider>
+            </WebSocketProvider>
+          </TaskNotificationsProvider>
+        </QueryClientProvider>
+      </div>
+    </div>
   );
 }
 
