@@ -2,6 +2,7 @@ import { Minus, Square, Copy, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
+// Pendiente ver de agregar más cosas a la barra
 const TitleBar = () => {
   const [isMaximized, setIsMaximized] = useState(false);
   const appWindow = getCurrentWindow();
