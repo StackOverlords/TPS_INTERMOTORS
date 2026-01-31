@@ -23,7 +23,11 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   const { rol: userRole, isLoading: isLoadingRole } = useUserRole();
 
   if (isLoading || isLoadingRole) {
-    return <div>Cargando...</div>;
+    return (
+      <div className="flex-1 items-center justify-center font-medium">
+        Cargando...
+      </div>
+    );
   }
 
   if (!isLoading && route.type === "protected" && isAuthenticated) {
@@ -31,7 +35,11 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   }
 
   if (!Component) {
-    return <div>Componente no encontrado para la ruta: {route.path}</div>;
+    return (
+      <div className="flex-1 items-center justify-center font-medium">
+        Componente no encontrado para la ruta: {route.path}
+      </div>
+    );
   }
 
   if (route.type === "protected" && !isAuthenticated) {
@@ -39,7 +47,11 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   }
 
   // Validar permisos por rol
-  if (route.type === "protected" && isAuthenticated && !hasRouteAccess(route, userRole)) {
+  if (
+    route.type === "protected" &&
+    isAuthenticated &&
+    !hasRouteAccess(route, userRole)
+  ) {
     return <Navigate to="/dashboard" replace />;
   }
 

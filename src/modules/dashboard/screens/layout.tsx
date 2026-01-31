@@ -1,30 +1,39 @@
-import { SidebarInset, SidebarProvider } from '@/components/atoms/sidebar';
-import TabBar from '@/components/tabs/TabBar';
-import TabContainer from '@/components/tabs/TabContainer';
-import { useTabNavigation } from '@/hooks/useTabNavigation';
-import { useCommands } from '@/keybindings';
-import CartSidebar from '@/modules/shoppingCart/components/CartSidebar';
-import { useCartUiStore } from '@/modules/shoppingCart/store/cartUiStore';
-import { useEffect, useState } from 'react';
-import AppSidebar from './appSidebar';
-import TopNav from './top-nav';
+import { SidebarInset, SidebarProvider } from "@/components/atoms/sidebar";
+// import TabBar from "@/components/tabs/TabBar";
+import TabContainer from "@/components/tabs/TabContainer";
+// import { useTabNavigation } from "@/hooks/useTabNavigation";
+// import { useCommands } from "@/keybindings";
+import CartSidebar from "@/modules/shoppingCart/components/CartSidebar";
+import { useCartUiStore } from "@/modules/shoppingCart/store/cartUiStore";
+import { useEffect, useState } from "react";
+import AppSidebar from "./appSidebar";
+import TopNav from "./top-nav";
 
 export default function Layout() {
-  const { isOpen, close, toggle,
-    // open 
+  const {
+    isOpen,
+    close,
+    toggle,
+    // open
   } = useCartUiStore();
   const [mounted, setMounted] = useState(false);
-  const { nextTab, previousTab, closeCurrentTab,
-    // tabs 
-  } = useTabNavigation();
+  // const {
+  //   nextTab,
+  //   previousTab,
+  //   closeCurrentTab,
+  //   // tabs
+  // } = useTabNavigation();
 
-  useCommands({
-    'tabs.next': nextTab,
-    'tabs.previous': previousTab,
-    'tabs.close': closeCurrentTab
-  },{
-    enableOnFormTags: true
-  })
+  // useCommands(
+  //   {
+  //     "tabs.next": nextTab,
+  //     "tabs.previous": previousTab,
+  //     "tabs.close": closeCurrentTab,
+  //   },
+  //   {
+  //     enableOnFormTags: true,
+  //   }
+  // );
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -44,18 +53,18 @@ export default function Layout() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-full w-full flex overflow-hidden relative min-h-0">
       <AppSidebar />
-      <SidebarInset className="min-w-0 flex flex-col h-full">
-        <header className="border-b border-border sticky top-0 z-10 bg-background flex-shrink-0">
+      <SidebarInset className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
+        <header className="border-b border-border bg-background flex-shrink-0">
           <div className="h-16">
             <TopNav onOpenCartChange={toggle} />
           </div>
-          <TabBar onCloseTab={closeCurrentTab} />
+          {/* <TabBar onCloseTab={closeCurrentTab} /> */}
         </header>
         <div
           id="main-scroll-container"
-          className="flex-1 bg-secondary overflow-auto"
+          className="bg-secondary flex-1 min-h-0 overflow-hidden"
         >
           <TabContainer />
         </div>
