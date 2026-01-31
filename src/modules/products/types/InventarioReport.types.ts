@@ -5,6 +5,7 @@ export interface InventarioFilters {
   fecha_inicio_costo?: string; // Fecha inicio para cálculo de costos (opcional)
   fecha_fin_costo?: string; // Fecha fin para cálculo de costos (opcional)
   sucursal?: number; // Sucursal (opcional, default: 0)
+  categoria?: number; // Categoría/División (opcional)
   incluir_transito?: boolean; // Incluir productos en tránsito (opcional, default: false)
   ver_solo_con_movimiento?: boolean; // Ver solo productos con movimiento (opcional, default: false)
   downloadable?: boolean; // Para descarga Excel (opcional, usado internamente)
