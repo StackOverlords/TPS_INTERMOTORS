@@ -163,7 +163,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                   </DropdownMenuItem>
                   <ProtectedAction
                     permission="ven-edit"
-                    roles={["Super Admin", "Administrador","Vendedor"]}
+                    roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
                     <DropdownMenuItem
@@ -176,7 +176,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                   </ProtectedAction>
                   <ProtectedAction
                     permission="ven-delete"
-                    roles={["Super Admin", "Administrador","Vendedor"]}
+                    roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
                     <DropdownMenuItem
@@ -318,7 +318,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
         header: "Total",
         size: 120,
         cell: ({ getValue }) => (
-          <div className="text-right font-medium text-emerald-600 dark:text-emerald-400">
+          <div className="text-right font-semibold text-emerald-600 dark:text-emerald-400">
             {formatCurrency(getValue<number>())}
           </div>
         ),
@@ -379,7 +379,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
           const comentarios = getValue<string | null>();
           return (
             <div
-              className={`text-xs text-muted-foreground truncate ${!comentarios ? "italic" : ""}`}
+              className={`text-xs truncate ${!comentarios ? "italic text-muted-foreground" : ""}`}
             >
               {comentarios || "Sin comentarios"}
             </div>

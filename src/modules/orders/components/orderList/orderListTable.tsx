@@ -182,28 +182,28 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     roles={["Super Admin", "Administrador"]}
                     fallback={null}
                   > */}
-                    <DropdownMenuItem
-                      onKeyDown={(e) => e.stopPropagation()}
-                      disabled={row.original.situacion_actual === "Disponible"}
-                      onClick={() => handleUpdateOrder(row.original.id)}
-                    >
-                      <Edit className="size-4 mr-2" />
-                      Editar pedido
-                    </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onKeyDown={(e) => e.stopPropagation()}
+                    disabled={row.original.situacion_actual === "Disponible"}
+                    onClick={() => handleUpdateOrder(row.original.id)}
+                  >
+                    <Edit className="size-4 mr-2" />
+                    Editar pedido
+                  </DropdownMenuItem>
                   {/* </ProtectedAction> */}
                   {/* <ProtectedAction
                     permission="ped-delete"
                     roles={["Super Admin", "Administrador"]}
                     fallback={null}
                   > */}
-                    <DropdownMenuItem
-                      onKeyDown={(e) => e.stopPropagation()}
-                      onClick={() => handleDeleteSale(row.original.id)}
-                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    >
-                      <Trash2 className="size-4 mr-2" />
-                      Eliminar pedido
-                    </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onClick={() => handleDeleteSale(row.original.id)}
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <Trash2 className="size-4 mr-2" />
+                    Eliminar pedido
+                  </DropdownMenuItem>
                   {/* </ProtectedAction> */}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -400,7 +400,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
           const items = row.original.numero_items;
           return (
             <div className="flex flex-col space-y-0.5 items-end">
-              <span className=" font-medium text-emerald-600 dark:text-emerald-400">
+              <span className=" font-semibold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </span>
               <span className="text-muted-foreground">{items} items</span>
@@ -498,7 +498,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
           const comentarios = getValue<string | null>();
           return (
             <div
-              className={`text-xs text-muted-foreground truncate ${!comentarios ? "italic" : ""}`}
+              className={`text-xs truncate ${!comentarios ? "italic text-muted-foreground" : ""}`}
             >
               {comentarios || "Sin comentarios"}
             </div>

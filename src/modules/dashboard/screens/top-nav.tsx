@@ -11,7 +11,14 @@ import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
-import { Bell, ChevronDown, ChevronRight, HelpCircle, MessageSquare, ShoppingCart } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
+  MessageSquare,
+  ShoppingCart,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import { Link, matchPath, useLocation } from "react-router";
 import SelectBranch from "../components/SelectBranch";
@@ -19,6 +26,7 @@ import { ZoomControls } from "../components/ZoomControls";
 import CommandPalette from "./CommandPalette/CommandPalette";
 import SearchButton from "./CommandPalette/SearchButton";
 import ProfilePanel from "@/components/common/ProfilePanel";
+import ThemeToggle from "@/components/common/ThemeToggle";
 
 interface TopNavProps {
   onOpenCartChange: () => void;
@@ -85,12 +93,10 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
   // Profile
   const [openProfile, setOpenProfile] = useState(false);
 
-
   const routes = protectedRoutes.filter((route) => route.type === "protected");
   const currentRoute = matchRoute(routes, location.pathname);
   const parentRoute = findParentRoute(routes, location.pathname);
   const cart = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
-
 
   // Context de notificaciones
   const { tasks, removeTask, clearTasks } = useTaskNotificationsContext();
@@ -194,10 +200,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           <SelectBranch></SelectBranch>
         </div>
         <div className="flex items-center gap-4 w-full">
-          <Button
-            variant="outline"
-            className="relative size-8"
-          >
+          <Button variant="outline" className="relative size-8">
             <MessageSquare></MessageSquare>
           </Button>
         </div>
@@ -284,10 +287,11 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             </div>
           }
         >
-          <span className="border-border border h-8 w-8 px-1 rounded-md flex items-center justify-center cursor-help hover:bg-accent">
+          <span className="border-border border h-8 w-8 px-1 rounded-md flex flex-shrink-0 items-center justify-center cursor-help hover:bg-accent">
             <HelpCircle className="w-4 h-4" />
           </span>
         </TooltipWrapper>
+        <ThemeToggle />
         <ProfilePanel
           isOpen={openProfile}
           onOpenChange={setOpenProfile}
@@ -301,11 +305,11 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
               <span className="text-sm font-medium text-foreground">
                 {user?.name || "Usuario"}
               </span>
-              {
-                openProfile ? (
-                  <ChevronRight className="w-4 h-4"></ChevronRight>
-                ) : (<ChevronDown className="w-4 h-4"></ChevronDown>)
-              }
+              {openProfile ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </div>
           }
         />

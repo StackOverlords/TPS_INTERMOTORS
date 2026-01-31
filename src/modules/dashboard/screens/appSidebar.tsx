@@ -1,4 +1,14 @@
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, useSidebar } from "@/components/atoms/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  useSidebar,
+} from "@/components/atoms/sidebar";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
 import { useUserRole } from "@/hooks/useUserRole";
 import protectedRoutes from "@/navigation/Protected.Route";
@@ -20,7 +30,7 @@ const AppSidebar = () => {
   const { setOpenMobile, isMobile } = useSidebar();
   const { available } = useUpdateChecker();
   const { rol: userRole } = useUserRole();
-  const closeAllTabs = useTabStore(state => state.closeAllTabs);
+  const closeAllTabs = useTabStore((state) => state.closeAllTabs);
   const { resolvedTheme } = useThemeStore();
 
   // Filtrar rutas basándose en el rol del usuario
@@ -32,7 +42,7 @@ const AppSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
     try {
@@ -46,20 +56,23 @@ const AppSidebar = () => {
   };
 
   const toggleHeader = (headerName: string) => {
-    setExpandedHeaders(prev =>
+    setExpandedHeaders((prev) =>
       prev.includes(headerName)
-        ? prev.filter(name => name !== headerName)
+        ? prev.filter((name) => name !== headerName)
         : [...prev, headerName]
     );
   };
 
   return (
-    <Sidebar collapsible="offcanvas" className="border-r border-border bg-background">
-      <SidebarHeader className="h-20 flex justify-center px-4">
+    <Sidebar
+      collapsible="offcanvas"
+      className="border-r border-border bg-background h-full"
+    >
+      <SidebarHeader className="h-16 flex justify-center px-4 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="flex flex-col">
             <img
-              src={resolvedTheme === 'dark' ? logoDark : logoLight}
+              src={resolvedTheme === "dark" ? logoDark : logoLight}
               alt="Intermotors Logo"
               className="h-10 w-auto object-contain transition-opacity duration-300"
             />
@@ -69,7 +82,7 @@ const AppSidebar = () => {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <SidebarGroupLabel className="px-1 text-xs mt-2 font-semibold uppercase tracking-wider text-muted-foreground">
             Principal
           </SidebarGroupLabel>
           <SidebarGroupContent className="px-1">
@@ -86,7 +99,6 @@ const AppSidebar = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-0">
@@ -114,7 +126,8 @@ const AppSidebar = () => {
               <ButtonItem
                 className="bg-primary text-primary-foreground hover:text-primary-foreground hover:bg-primary/90"
                 icon={LogOut}
-                onClick={handleLogout}>
+                onClick={handleLogout}
+              >
                 Cerrar Sesión
               </ButtonItem>
             </SidebarMenu>
