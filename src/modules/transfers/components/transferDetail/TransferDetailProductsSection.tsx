@@ -84,6 +84,25 @@ const TransferDetailProductsSection: React.FC<TransferDetailProductsSectionProps
             sortingFn: "alphanumeric",
         },
         {
+            header: "Marca",
+            accessorFn: (row) => row.producto.marca?.marca,
+            id: "marca",
+            size: 120,
+            minSize: 100,
+            cell: ({ getValue }) => {
+                const marca = getValue<string | null>();
+                return (
+                    <span className={cn(
+                        "text-xs text-center",
+                        !marca && "text-muted-foreground italic"
+                    )}>
+                        {formatCell(marca)}
+                    </span>
+                )
+            },
+            sortingFn: "alphanumeric",
+        },
+        {
             accessorKey: "cantidad",
             header: "Cantidad",
             size: 90,

@@ -10,6 +10,7 @@ export interface UITransferDetailCreate extends TransferDetailCreate {
         descripcion: string;
         codigo_oem: string | null;
         codigo_upc: string | null;
+        marca: string | null;
         costo: number;
         precio_venta: number;
         precio_venta_alt: number;

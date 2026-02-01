@@ -17,6 +17,20 @@ export const useCreateSale = () => {
       queryClient.invalidateQueries({
         queryKey: ["product-provider-orders"],
       });
+      // Invalidar cuentas por cobrar (si la venta es a crédito)
+      queryClient.invalidateQueries({
+        queryKey: ["accountsPayable"],
+      });
+      // Invalidar reportes de cuentas por cobrar
+      queryClient.invalidateQueries({
+        queryKey: ["accounts-receivable-general-report"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["accounts-receivable-paid-report"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["accounts-receivable-by-customer-report"],
+      });
     },
   });
 };
