@@ -1,13 +1,20 @@
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/atoms/dialog";
 import { Button } from "@/components/atoms/button";
-import { AlertTriangle, Check, CircleCheck, Package, Trash2, TrendingDown } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CircleCheck,
+  Package,
+  Trash2,
+  TrendingDown,
+} from "lucide-react";
 import { ScrollArea } from "@/components/atoms/scroll-area";
 import { useCartWithUtils } from "../hooks/useCartWithUtils";
 import authSDK from "@/services/sdk-simple-auth";
@@ -20,258 +27,293 @@ import { RadioGroup, RadioGroupItem } from "@/components/atoms/radio-group";
 import { useGoBack } from "@/hooks/useGoBack";
 
 interface CartModeConversionModalProps {
-    open: boolean;
-    onClose: () => void;
-    targetMode: CartMode;
-    shouldGoBackOnClose?: boolean;
+  open: boolean;
+  onClose: () => void;
+  targetMode: CartMode;
+  shouldGoBackOnClose?: boolean;
 }
 
 const CartModeConversionModal: React.FC<CartModeConversionModalProps> = ({
-    open,
-    onClose,
-    targetMode: initialTargetMode,
-    shouldGoBackOnClose = false,
+  open,
+  onClose,
+  targetMode: initialTargetMode,
+  shouldGoBackOnClose = false,
 }) => {
-    const user = authSDK.getCurrentUser();
-    const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
-    const handleGoBack = useGoBack("/dashboard/products");
+  const user = authSDK.getCurrentUser();
+  const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+  const handleGoBack = useGoBack("/dashboard/products");
 
-    const {
-        previewConversion,
-        convertToSaleStrictWithToast,
-        setCartMode,
-        clearCart,
-    } = useCartWithUtils(user?.name || '', selectedBranchId ?? '');
+  const {
+    previewConversion,
+    convertToSaleStrictWithToast,
+    setCartMode,
+    clearCart,
+  } = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
 
-    const [selectedMode, setSelectedMode] = useState<'sale-strict' | 'sale-permissive'>(
-        initialTargetMode === 'sale-strict' ? 'sale-strict' : 'sale-permissive'
-    );
+  const [selectedMode, setSelectedMode] = useState<
+    "sale-strict" | "sale-permissive"
+  >(initialTargetMode === "sale-strict" ? "sale-strict" : "sale-permissive");
 
-    const preview = previewConversion('sale-strict');
-    const willHaveChanges = preview.willHaveChanges;
+  const preview = previewConversion("sale-strict");
+  const willHaveChanges = preview.willHaveChanges;
 
-    useEffect(() => {
-        if (open) {
-            setSelectedMode(initialTargetMode === 'sale-strict' ? 'sale-strict' : 'sale-permissive');
-        }
-    }, [open, initialTargetMode]);
-
-    const handleConvert = () => {
-        if (selectedMode === 'sale-strict') {
-            convertToSaleStrictWithToast();
-        } else {
-            setCartMode('sale-permissive');
-        }
-        onClose();
-    };
-
-    const handleClearAndStart = () => {
-        clearCart();
-        setCartMode(selectedMode);
-        onClose();
-    };
-
-    const handleCancel = () => {
-        if (shouldGoBackOnClose) {
-            handleGoBack();
-        }
-        onClose();
+  useEffect(() => {
+    if (open) {
+      setSelectedMode(
+        initialTargetMode === "sale-strict" ? "sale-strict" : "sale-permissive"
+      );
     }
+  }, [open, initialTargetMode]);
 
-    const hasRemoved = preview.removedCount > 0;
-    const hasAdjusted = preview.adjustedCount > 0;
-    const hasKept = preview.keptCount > 0;
+  const handleConvert = () => {
+    if (selectedMode === "sale-strict") {
+      convertToSaleStrictWithToast();
+    } else {
+      setCartMode("sale-permissive");
+    }
+    onClose();
+  };
 
-    return (
-        <Dialog open={open} onOpenChange={handleCancel}>
-            <DialogContent className="max-w-4xl max-h-[90vh] h-full flex flex-col">
-                <DialogHeader>
-                    <DialogTitle className="text-xl flex items-center gap-2">
-                        <Package className="h-5 w-5 text-primary" />
-                        Configurar Modo de Venta
-                    </DialogTitle>
-                    <DialogDescription>
-                        Selecciona el modo de venta y revisa los cambios que se aplicarán al carrito
-                    </DialogDescription>
-                </DialogHeader>
+  const handleClearAndStart = () => {
+    clearCart();
+    setCartMode(selectedMode);
+    onClose();
+  };
 
-                <div className="space-y-2 h-full flex flex-col overflow-hidden">
-                    {/* Selector de Modo */}
-                    <div className="flex-shrink-0 space-y-2">
-                        <RadioGroup
-                            value={selectedMode}
-                            onValueChange={(value) => setSelectedMode(value as 'sale-strict' | 'sale-permissive')}
-                            className="grid-cols-2"
-                        >
-                            <div className="flex items-center justify-start space-x-2 rounded-lg border p-2 cursor-pointer hover:bg-accent transition-colors">
-                                <RadioGroupItem value="sale-strict" id="strict" />
-                                <Label htmlFor="strict" className="flex-1 cursor-pointer">
-                                    <span className="font-medium">Venta Estricta</span>
-                                    <div className="text-xs text-muted-foreground">
-                                        Valida stock estrictamente. No permite productos sin stock ni exceder cantidades.
-                                    </div>
-                                </Label>
-                            </div>
+  const handleCancel = () => {
+    if (shouldGoBackOnClose) {
+      handleGoBack();
+    }
+    onClose();
+  };
 
-                            <div className="flex items-center justify-start space-x-2 rounded-lg border p-2 cursor-pointer hover:bg-accent transition-colors">
-                                <RadioGroupItem value="sale-permissive" id="permissive" />
-                                <Label htmlFor="permissive" className="flex-1 cursor-pointer">
-                                    <span className="font-medium">Venta Permisiva</span>
-                                    <div className="text-xs text-muted-foreground">
-                                        Permite productos sin stock y cantidades que excedan el inventario (con advertencias).
-                                    </div>
-                                </Label>
-                            </div>
-                        </RadioGroup>
+  const hasRemoved = preview.removedCount > 0;
+  const hasAdjusted = preview.adjustedCount > 0;
+  const hasKept = preview.keptCount > 0;
 
-                        {selectedMode === 'sale-strict' && willHaveChanges && (
-                            <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                                <AlertTriangle className="size-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                                <div className="text-xs text-blue-900">
-                                    Al convertir a <strong>Venta Estricta</strong>, se validará el stock y se realizarán ajustes automáticos en el carrito.
-                                </div>
-                            </div>
-                        )}
-                    </div>
+  return (
+    <Dialog open={open} onOpenChange={handleCancel}>
+      <DialogContent className="max-w-4xl max-h-[90vh] h-full flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Configurar Modo de Venta
+          </DialogTitle>
+          <DialogDescription>
+            Selecciona el modo de venta y revisa los cambios que se aplicarán al
+            carrito
+          </DialogDescription>
+        </DialogHeader>
 
-                    {/* Preview de Cambios (solo si hay cambios y modo strict seleccionado) */}
-                    {selectedMode === 'sale-strict' && willHaveChanges && (
-                        <div className="flex-1 min-h-0">
-                            <ScrollArea className="pr-4 h-full">
-                                <div className="space-y-2">
-                                    <div className="flex flex-wrap gap-2">
-                                        {hasRemoved && (
-                                            <Badge variant="danger" className="gap-1 border border-red-300 py-1">
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                {preview.removedCount} sin stock
-                                            </Badge>
-                                        )}
-                                        {hasAdjusted && (
-                                            <Badge variant="warning" className="gap-1 border border-amber-300 py-1">
-                                                <TrendingDown className="w-3.5 h-3.5" />
-                                                {preview.adjustedCount} ajustados
-                                            </Badge>
-                                        )}
-                                        {hasKept && (
-                                            <Badge variant="success" className="gap-1 border border-emerald-300 py-1">
-                                                <Check className="w-3.5 h-3.5" />
-                                                {preview.keptCount} confirmados
-                                            </Badge>
-                                        )}
-                                    </div>
+        <div className="space-y-2 h-full flex flex-col overflow-hidden">
+          {/* Selector de Modo */}
+          <div className="flex-shrink-0 space-y-2">
+            <RadioGroup
+              value={selectedMode}
+              onValueChange={(value) =>
+                setSelectedMode(value as "sale-strict" | "sale-permissive")
+              }
+              className="grid-cols-2"
+            >
+              <div className="flex items-center justify-start space-x-2 rounded-lg border border-border p-2 cursor-pointer hover:bg-accent transition-colors">
+                <RadioGroupItem value="sale-strict" id="strict" />
+                <Label htmlFor="strict" className="flex-1 cursor-pointer">
+                  <span className="font-medium">Venta Estricta</span>
+                  <div className="text-xs text-muted-foreground">
+                    Valida stock estrictamente. No permite productos sin stock
+                    ni exceder cantidades.
+                  </div>
+                </Label>
+              </div>
 
-                                    {hasKept && (
-                                        <div className="border-b border-border pb-2">
-                                            <h3 className="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
-                                                <CircleCheck className="w-4 h-4 text-emerald-400" />
-                                                Confirmados ({preview.keptCount})
-                                            </h3>
-                                            <div className="space-y-2 max-h-32 overflow-y-auto">
-                                                {preview.itemsToKeep.map((item) => (
-                                                    <div key={item.product.id} className="text-sm flex justify-between items-start gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-primary truncate">{item.product.descripcion}</p>
-                                                            <p className="text-xs text-gray-500">{item.product.codigo_oem}</p>
-                                                        </div>
-                                                        <span className="inline-block bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">
-                                                            {item.quantity}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+              <div className="flex items-center justify-start space-x-2 rounded-lg border border-border p-2 cursor-pointer hover:bg-accent transition-colors">
+                <RadioGroupItem value="sale-permissive" id="permissive" />
+                <Label htmlFor="permissive" className="flex-1 cursor-pointer">
+                  <span className="font-medium">Venta Permisiva</span>
+                  <div className="text-xs text-muted-foreground">
+                    Permite productos sin stock y cantidades que excedan el
+                    inventario (con advertencias).
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
 
-                                    {hasRemoved && (
-                                        <div className="border-b border-border pb-2">
-                                            <h3 className="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
-                                                <Trash2 className="w-4 h-4 text-red-600" />
-                                                Serán Removidos ({preview.removedCount})
-                                            </h3>
-                                            <div className="space-y-2">
-                                                {preview.itemsToRemove.map((item) => (
-                                                    <div key={item.product.id} className="text-sm flex justify-between items-start gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-primary truncate">{item.product.descripcion}</p>
-                                                            <p className="text-xs text-gray-500">{item.product.codigo_oem}</p>
-                                                        </div>
-                                                        <span className="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">
-                                                            {item.quantity}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {hasAdjusted && (
-                                        <div>
-                                            <h3 className="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
-                                                <TrendingDown className="w-4 h-4 text-amber-600" />
-                                                Serán Ajustados ({preview.adjustedCount})
-                                            </h3>
-                                            <div className="space-y-2">
-                                                {preview.itemsToAdjust.map((adjustment) => (
-                                                    <div key={adjustment.productId} className="text-sm flex justify-between items-start gap-2">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium text-primary truncate">{adjustment.productName}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                                            <span className="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-semibold">
-                                                                {adjustment.originalQuantity}
-                                                            </span>
-                                                            <span className="text-gray-400">→</span>
-                                                            <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">
-                                                                {adjustment.adjustedQuantity}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </div>
-                    )}
-
-                    {selectedMode === 'sale-strict' && !willHaveChanges && (
-                        <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
-                            <Check className="size-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <div className="text-xs text-green-900">
-                                Todos los productos tienen stock suficiente. No se realizarán cambios.
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedMode === 'sale-permissive' && (
-                        <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                            <AlertTriangle className="size-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <div className="text-xs text-amber-900">
-                                El modo permisivo permite agregar productos sin validación estricta de stock. Recibirás advertencias pero podrás continuar.
-                            </div>
-                        </div>
-                    )}
+            {selectedMode === "sale-strict" && willHaveChanges && (
+              <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800">
+                <AlertTriangle className="size-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-blue-900 dark:text-blue-200">
+                  Al convertir a <strong>Venta Estricta</strong>, se validará el
+                  stock y se realizarán ajustes automáticos en el carrito.
                 </div>
+              </div>
+            )}
+          </div>
 
-                <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row flex-shrink-0">
-                    <Button
-                        variant="outline"
-                        onClick={handleClearAndStart}
-                        className="flex-1"
-                    >
-                        Limpiar y empezar nuevo
-                    </Button>
-                    <Button
-                        onClick={handleConvert}
-                        className="flex-1"
-                    >
-                        Confirmar y continuar
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+          {/* Preview de Cambios (solo si hay cambios y modo strict seleccionado) */}
+          {selectedMode === "sale-strict" && willHaveChanges && (
+            <div className="flex-1 min-h-0">
+              <ScrollArea className="pr-4 h-full">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {hasRemoved && (
+                      <Badge
+                        variant="danger"
+                        className="gap-1 border border-red-300 dark:border-red-800 py-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {preview.removedCount} sin stock
+                      </Badge>
+                    )}
+                    {hasAdjusted && (
+                      <Badge
+                        variant="warning"
+                        className="gap-1 border border-amber-300 dark:border-amber-800 py-1"
+                      >
+                        <TrendingDown className="w-3.5 h-3.5" />
+                        {preview.adjustedCount} ajustados
+                      </Badge>
+                    )}
+                    {hasKept && (
+                      <Badge
+                        variant="success"
+                        className="gap-1 border border-emerald-300 dark:border-emerald-800 py-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        {preview.keptCount} confirmados
+                      </Badge>
+                    )}
+                  </div>
+
+                  {hasKept && (
+                    <div className="border-b border-border pb-2">
+                      <h3 className="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <CircleCheck className="w-4 h-4 text-emerald-400" />
+                        Confirmados ({preview.keptCount})
+                      </h3>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {preview.itemsToKeep.map((item) => (
+                          <div
+                            key={item.product.id}
+                            className="text-sm flex justify-between items-start gap-2"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {item.product.descripcion}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.product.codigo_oem}
+                              </p>
+                            </div>
+                            <span className="inline-block bg-emerald-100 dark:bg-emerald-400 text-emerald-700 dark:text-emerald-950 px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">
+                              {item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasRemoved && (
+                    <div className="border-b border-border pb-2">
+                      <h3 className="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        Serán Removidos ({preview.removedCount})
+                      </h3>
+                      <div className="space-y-2">
+                        {preview.itemsToRemove.map((item) => (
+                          <div
+                            key={item.product.id}
+                            className="text-sm flex justify-between items-start gap-2"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {item.product.descripcion}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.product.codigo_oem}
+                              </p>
+                            </div>
+                            <span className="inline-block bg-red-100 dark:bg-red-300 text-red-700 dark:text-red-950 px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">
+                              {item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasAdjusted && (
+                    <div>
+                      <h3 className="text-xs font-bold text-primary uppercase tracking-wide mb-2 flex items-center gap-2">
+                        <TrendingDown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        Serán Ajustados ({preview.adjustedCount})
+                      </h3>
+                      <div className="space-y-2">
+                        {preview.itemsToAdjust.map((adjustment) => (
+                          <div
+                            key={adjustment.productId}
+                            className="text-sm flex justify-between items-start gap-2"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {adjustment.productName}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 whitespace-nowrap">
+                              <span className="inline-block bg-red-100 dark:bg-red-300 text-red-700 dark:text-red-950 px-2 py-0.5 rounded text-xs font-semibold">
+                                {adjustment.originalQuantity}
+                              </span>
+                              <span className="text-gray-400">→</span>
+                              <span className="inline-block bg-green-100 dark:bg-emerald-400 text-green-700 dark:text-emerald-950 px-2 py-0.5 rounded text-xs font-semibold">
+                                {adjustment.adjustedQuantity}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+
+          {selectedMode === "sale-strict" && !willHaveChanges && (
+            <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
+              <Check className="size-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-green-900">
+                Todos los productos tienen stock suficiente. No se realizarán
+                cambios.
+              </div>
+            </div>
+          )}
+
+          {selectedMode === "sale-permissive" && (
+            <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <AlertTriangle className="size-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-amber-900">
+                El modo permisivo permite agregar productos sin validación
+                estricta de stock. Recibirás advertencias pero podrás continuar.
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-2 flex-col sm:flex-row flex-shrink-0">
+          <Button
+            variant="outline"
+            onClick={handleClearAndStart}
+            className="flex-1"
+          >
+            Limpiar y empezar nuevo
+          </Button>
+          <Button onClick={handleConvert} className="flex-1">
+            Confirmar y continuar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default CartModeConversionModal;

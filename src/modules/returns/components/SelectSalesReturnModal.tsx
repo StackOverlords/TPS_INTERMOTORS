@@ -403,7 +403,9 @@ const SelectSalesReturnModal: React.FC<SelectSalesReturnModalProps> = ({
           return (
             <div className="font-medium flex items-end justify-center flex-col">
               {discountPercentDisplay && (
-                <span className="text-destructive">{discountPercentDisplay}%</span>
+                <span className="text-destructive">
+                  {discountPercentDisplay}%
+                </span>
               )}
               <span>
                 {formatCurrency(getValue<number>(), {

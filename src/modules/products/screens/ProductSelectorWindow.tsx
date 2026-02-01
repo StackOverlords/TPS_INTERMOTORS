@@ -592,11 +592,11 @@ const ProductSelectorWindow: React.FC = () => {
           const precioAlt = row.original.precio_venta_alt;
           return (
             <div className="space-y-1 flex items-end flex-col">
-              <div className="font-bold text-green-600">
+              <div className="font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(getValue<number>())}
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-gray-500">
+                <span className="text-muted-foreground">
                   Alt: {formatCurrency(precioAlt)}
                 </span>
               </div>
@@ -643,10 +643,12 @@ const ProductSelectorWindow: React.FC = () => {
         minSize: 120,
         cell: ({ row, getValue }) => (
           <div className="space-y-1">
-            <span className="text-blue-600 font-medium">
+            <span className="text-blue-600 dark:text-blue-400 font-medium">
               {getValue<string>()}
             </span>
-            <div className="text-gray-500">{row.original.subcategoria}</div>
+            <div className="text-muted-foreground">
+              {row.original.subcategoria}
+            </div>
           </div>
         ),
       },
@@ -708,10 +710,10 @@ const ProductSelectorWindow: React.FC = () => {
                   <span
                     className={`text-[10px] ${
                       validation.availableToAdd === 0
-                        ? "text-red-600 font-semibold"
+                        ? "text-red-600 dark:text-red-400 font-semibold"
                         : validation.availableToAdd <= 3
-                          ? "text-orange-600"
-                          : "text-gray-500"
+                          ? "text-orange-600 dark:text-orange-400"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {validation.availableToAdd === 0
@@ -842,7 +844,7 @@ const ProductSelectorWindow: React.FC = () => {
   });
 
   return (
-    <main className="h-full p-2 flex flex-col bg-gray-50 gap-2">
+    <main className="h-full p-2 flex flex-col bg-secondary gap-2">
       {/* Header */}
       <header className="bg-background rounded-lg p-2 border border-border flex-shrink-0 flex flex-col divide-y divide-border gap-1">
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap pb-2">
@@ -928,7 +930,7 @@ const ProductSelectorWindow: React.FC = () => {
       <div className="bg-background rounded-lg border border-border flex-1 min-h-0">
         <div className="h-full flex flex-col">
           {/* Results Info */}
-          <div className="p-2 text-sm text-gray-600 border-b border-border flex-shrink-0 flex items-center justify-between">
+          <div className="p-2 text-sm text-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
             {products.length > 0 ? (
               (() => {
                 const pagina = filters.pagina ?? 1;
@@ -998,7 +1000,7 @@ const ProductSelectorWindow: React.FC = () => {
               <h3 className="font-semibold text-sm text-primary">
                 Productos para Agregar ({getSelectedCount()})
               </h3>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Total unidades: {totalSelectedProducts}
               </p>
             </div>
@@ -1009,7 +1011,7 @@ const ProductSelectorWindow: React.FC = () => {
                   buttonProps={{
                     variant: "ghost",
                     className:
-                      "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
+                      "size-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/50",
                   }}
                   tooltip="Limpiar selección"
                 >
@@ -1019,7 +1021,7 @@ const ProductSelectorWindow: React.FC = () => {
               <Button
                 variant="ghost"
                 onClick={() => setShowSelectionPanel(false)}
-                className="h-7 w-7 p-0"
+                className="size-7 p-0"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -1040,7 +1042,7 @@ const ProductSelectorWindow: React.FC = () => {
               return (
                 <div
                   key={product.id}
-                  className={`p-2 hover:bg-gray-50 ${hasWarning ? "bg-orange-50/50" : ""}`}
+                  className={`p-2 hover:bg-muted ${hasWarning ? "bg-orange-50/50 dark:bg-amber-700/50" : ""}`}
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
@@ -1048,7 +1050,7 @@ const ProductSelectorWindow: React.FC = () => {
                         {product.descripcion}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-gray-500 font-mono">
+                        <p className="text-xs text-muted-foreground font-mono">
                           {product.codigo_oem || "Sin código"}
                         </p>
                         {selectedItem && (
@@ -1062,7 +1064,9 @@ const ProductSelectorWindow: React.FC = () => {
                       {config.validateStock && hasWarning && (
                         <p
                           className={`text-xs mt-1 font-medium ${
-                            isAtLimit ? "text-red-600" : "text-orange-600"
+                            isAtLimit
+                              ? "text-red-600 dark:text-red-300"
+                              : "text-orange-600 dark:text-amber-300"
                           }`}
                         >
                           {isAtLimit
@@ -1074,7 +1078,7 @@ const ProductSelectorWindow: React.FC = () => {
                       {config.validateStock &&
                         config.mode === "edit" &&
                         validation.availableToAdd !== undefined && (
-                          <p className="text-xs text-gray-600 mt-1">
+                          <p className="text-xs text-foreground mt-1">
                             Disponible para agregar: {validation.availableToAdd}
                           </p>
                         )}
@@ -1084,7 +1088,7 @@ const ProductSelectorWindow: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
-                        className="h-7 w-7 p-0"
+                        className="size-7 p-0"
                         onClick={() =>
                           handleQuantityChange(product.id, quantity - 1)
                         }
@@ -1096,7 +1100,7 @@ const ProductSelectorWindow: React.FC = () => {
                       </span>
                       <Button
                         variant="outline"
-                        className={`h-7 w-7 p-0 ${
+                        className={`size-7 p-0 ${
                           config.validateStock && isAtLimit
                             ? "opacity-50 cursor-not-allowed"
                             : ""
@@ -1121,7 +1125,7 @@ const ProductSelectorWindow: React.FC = () => {
                       buttonProps={{
                         variant: "ghost",
                         className:
-                          "h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50",
+                          "size-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/50",
                       }}
                       tooltip="Remover producto"
                     >
@@ -1134,9 +1138,9 @@ const ProductSelectorWindow: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-4 py-3 border-t border-border space-y-2">
+          <div className="bg-muted px-4 py-3 border-t border-border space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Total a agregar:</span>
+              <span className="text-foreground">Total a agregar:</span>
               <span className="font-bold text-primary">
                 {totalSelectedProducts} unidad
                 {totalSelectedProducts !== 1 ? "es" : ""}
