@@ -240,7 +240,6 @@ function SaleReturnList<T extends BaseWithId>({
               </span>
               {cliente && (
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  {cliente.nit && <div>NIT: {cliente.nit}</div>}
                   {cliente.contacto && (
                     <div className="flex items-center gap-1">
                       <Phone className="size-3" />

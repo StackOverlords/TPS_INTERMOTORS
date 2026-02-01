@@ -40,6 +40,11 @@ export const useThemeStore = create<ThemeStore>()(
         const resolvedTheme = resolveTheme(theme)
         applyTheme(resolvedTheme)
         set({ theme, resolvedTheme })
+        
+        // Notificar a otras ventanas del cambio
+        window.dispatchEvent(new CustomEvent('theme-changed', { 
+          detail: { theme, resolvedTheme } 
+        }))
       },
 
       initializeTheme: () => {
@@ -48,9 +53,9 @@ export const useThemeStore = create<ThemeStore>()(
         applyTheme(resolvedTheme)
         set({ resolvedTheme })
 
-        // Listen for system theme changes
+        // Escuchar cambios del sistema (prefers-color-scheme)
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-        const handleChange = (e: MediaQueryListEvent) => {
+        const handleSystemChange = (e: MediaQueryListEvent) => {
           const { theme } = get()
           if (theme === 'system') {
             const newResolvedTheme = e.matches ? 'dark' : 'light'
@@ -59,7 +64,30 @@ export const useThemeStore = create<ThemeStore>()(
           }
         }
 
-        mediaQuery.addEventListener('change', handleChange)
+        mediaQuery.addEventListener('change', handleSystemChange)
+
+        //  Sincronizar cambios entre ventanas (localStorage)
+        const handleStorageChange = (e: StorageEvent) => {
+          if (e.key === 'theme-storage' && e.newValue) {
+            try {
+              const newState = JSON.parse(e.newValue).state
+              const newResolvedTheme = resolveTheme(newState.theme)
+              applyTheme(newResolvedTheme)
+              set({ theme: newState.theme, resolvedTheme: newResolvedTheme })
+              
+            } catch (err) {
+              console.error('[ThemeStore] Error sincronizando tema:', err)
+            }
+          }
+        }
+
+        window.addEventListener('storage', handleStorageChange)
+
+        // Cleanup
+        return () => {
+          mediaQuery.removeEventListener('change', handleSystemChange)
+          window.removeEventListener('storage', handleStorageChange)
+        }
       },
     }),
     {

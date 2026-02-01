@@ -1,16 +1,52 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secondary Window - TPS Intermotors</title>
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('theme-storage');
+          
+          if (!stored) {
+            // Si no hay tema guardado, usar light por defecto
+            document.documentElement.style.colorScheme = 'light';
+            return;
+          }
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TPS Intermotors</title>
-</head>
-
-<body>
-  <div id="window-root"></div>
-  <script type="module" src="/src/window-entry.tsx"></script>
-</body>
-
+          const state = JSON.parse(stored).state;
+          const theme = state.theme || 'light';
+          
+          // Resolver el tema (system -> light/dark real)
+          let resolvedTheme;
+          if (theme === 'system') {
+            resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches 
+              ? 'dark' 
+              : 'light';
+          } else {
+            resolvedTheme = theme;
+          }
+          
+          document.documentElement.style.colorScheme = resolvedTheme;
+          
+          if (resolvedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          
+          console.log('[WindowHTML] Tema inicializado:', resolvedTheme, '(configurado:', theme + ')');
+        } catch (e) {
+          console.error('[WindowHTML] Error inicializando tema:', e);
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="window-root"></div>
+    <script type="module" src="/src/window-entry.tsx"></script>
+  </body>
 </html>

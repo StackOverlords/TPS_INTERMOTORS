@@ -27,6 +27,7 @@ import CommandPalette from "./CommandPalette/CommandPalette";
 import SearchButton from "./CommandPalette/SearchButton";
 import ProfilePanel from "@/components/common/ProfilePanel";
 import ThemeToggle from "@/components/common/ThemeToggle";
+import { getUserAvatarGradient } from "@/utils/userColors";
 
 interface TopNavProps {
   onOpenCartChange: () => void;
@@ -89,6 +90,8 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const avatarGradient = getUserAvatarGradient(user?.id, user?.name);
 
   // Profile
   const [openProfile, setOpenProfile] = useState(false);
@@ -297,8 +300,10 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           onOpenChange={setOpenProfile}
           trigger={
             <div className="hidden sm:flex items-center space-x-2 border-l border-border pl-4 cursor-pointer">
-              <div className="h-8 w-8 bg-muted rounded-full flex items-center justify-center">
-                <span className="text-foreground font-semibold">
+              <div
+                className={`h-8 w-8 ${avatarGradient.gradient} ${avatarGradient.darkGradient} rounded-full flex items-center justify-center flex-shrink-0`}
+              >
+                <span className={`${avatarGradient.text} font-semibold`}>
                   {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </span>
               </div>

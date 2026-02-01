@@ -27,24 +27,18 @@ const LoginScreen = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) => {
-
-  const [showPassword, setShowPassword] = useState(false)
-  const { selectedBranchId } = useBranchStore()
+  const [showPassword, setShowPassword] = useState(false);
+  const { selectedBranchId } = useBranchStore();
   const { resolvedTheme } = useThemeStore();
-  
 
-  const {
-    mutate: signIn,
-    isPending,
-    isError
-  } = useLogin()
+  const { mutate: signIn, isPending, isError } = useLogin();
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-    clearErrors
+    clearErrors,
   } = useForm<Login>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
@@ -55,7 +49,6 @@ const LoginScreen = ({
   });
 
   const onSubmit = async (data: Login) => {
-
     clearErrors("root");
     signIn(data, {
       onSuccess: () => {
@@ -64,27 +57,27 @@ const LoginScreen = ({
       onError: (error: { message?: string }) => {
         setError("root", {
           type: "server",
-          message: error?.message || "Error al iniciar sesión. Verifica tus credenciales."
+          message:
+            error?.message ||
+            "Error al iniciar sesión. Verifica tus credenciales.",
         });
         // console.error("Error al iniciar sesión, verifica tus credenciales:", error?.message);
-      }
+      },
     });
-
   };
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-3 md:p-10 w-full">
+    <main className="flex h-full flex-col items-center justify-center gap-6 bg-muted p-3 md:p-10 w-full">
       <div className="flex w-full max-w-md flex-col gap-6">
         <header className="flex items-center justify-center self-center">
           <img
-            src={resolvedTheme === 'dark' ? logoDark : logoLight}
+            src={resolvedTheme === "dark" ? logoDark : logoLight}
             alt="Intermotors Logo"
             className="h-16 w-auto object-contain"
           />
         </header>
 
         <div className={cn("flex flex-col", className)} {...props}>
-
           <Card className="p-4">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-xl font-semibold text-foreground">
@@ -101,14 +94,18 @@ const LoginScreen = ({
                 <Alert className="border-red-200 bg-red-50 p-2">
                   <AlertDescription className="text-red-700 flex items-center gap-2 text-xs">
                     <AlertCircle className="h-4 w-4 text-red-600" />
-                    {errors.root?.message || "Error al iniciar sesión. Verifica tus credenciales."}
+                    {errors.root?.message ||
+                      "Error al iniciar sesión. Verifica tus credenciales."}
                   </AlertDescription>
                 </Alert>
               )}
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="text-sm font-medium text-foreground">
+                  <Label
+                    htmlFor="username"
+                    className="text-sm font-medium text-foreground"
+                  >
                     Usuario
                   </Label>
                   <div className="relative">
@@ -133,7 +130,10 @@ const LoginScreen = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-foreground"
+                  >
                     Contraseña
                   </Label>
                   <div className="relative">
@@ -148,18 +148,20 @@ const LoginScreen = ({
                       disabled={isPending || isSubmitting}
                       {...register("clave")}
                     />
-                    {
-                      2 < 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                          disabled={isPending || isSubmitting}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      )
-                    }
+                    {2 < 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        disabled={isPending || isSubmitting}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
                   </div>
                   {errors.clave && (
                     <p className="text-xs text-red-600 flex items-center gap-1">
@@ -174,7 +176,7 @@ const LoginScreen = ({
                   className="w-full h-8"
                   disabled={isPending || isSubmitting}
                 >
-                  {(isPending || isSubmitting) ? (
+                  {isPending || isSubmitting ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Iniciando sesión...

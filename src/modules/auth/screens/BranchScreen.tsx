@@ -3,6 +3,7 @@ import type { AuthUser } from "sdk-simple-auth";
 import React, { useEffect, useState } from "react";
 import { Building2 } from "lucide-react";
 import authSDK from "@/services/sdk-simple-auth";
+import { Button } from "@/components/atoms/button";
 
 interface BranchSelectionProps {
   user: AuthUser;
@@ -40,8 +41,8 @@ const BranchSelection: React.FC<BranchSelectionProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 w-full">
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+      <div className="h-full bg-muted flex items-center justify-center p-4 w-full">
+        <div className="bg-background rounded-xl p-6 border border-border">
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900"></div>
           </div>
@@ -51,34 +52,33 @@ const BranchSelection: React.FC<BranchSelectionProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 w-full">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+    <div className="h-full bg-muted flex items-center justify-center p-4 w-full">
+      <div className="w-full max-w-xl">
+        <div className="bg-card rounded-xl p-10 border border-border">
           <div className="text-center mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center justify-center gap-2">
-              <Building2 className="w-3.5 h-3.5 text-zinc-900" />
+            <h2 className="text-lg font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+              <Building2 className="size-5 text-primary" />
               Bienvenido, {user.name}
             </h2>
-            <p className="text-gray-600 text-sm">
+            <p className="text-muted-foreground text-sm">
               Por favor selecciona una sucursal para continuar:
             </p>
           </div>
-          
+
           <div className="space-y-3">
             {branchs &&
               branchs.map((branch: any) => (
-                <button
+                <Button
                   key={branch.id}
                   onClick={() => handleSelect(branch.id)}
-                  className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  variant={"outline"}
+                  className="w-full p-6 justify-start text-left rounded-xl h-auto focus:outline-none focus:ring-2 focus:ring-blue-500 dark:ring-blue-700 focus:ring-offset-2"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-900 font-medium">
-                      {branch.sucursal}
-                    </span>
+                    <div className="w-2 h-2 bg-green-500 dark:bg-green-700 rounded-full"></div>
+                    <span className="font-medium">{branch.sucursal}</span>
                   </div>
-                </button>
+                </Button>
               ))}
           </div>
         </div>

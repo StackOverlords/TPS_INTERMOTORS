@@ -1,9 +1,9 @@
-import { DebugLogWindow } from '@/components/common/DebugLogWindow';
-import OrderSelectorWindow from '@/modules/orders/screens/OrderSelectorWindow';
-import ProductSelectorWindow from '@/modules/products/screens/ProductSelectorWindow';
-import PurchaseSelectorWindow from '@/modules/purchases/screens/PurchaseSelectorWindow';
-import React from 'react';
-import SaleDetailSelectorWindow from '@/modules/sales/screens/SaleDetailSelectorWindow';
+import { DebugLogWindow } from "@/components/common/DebugLogWindow";
+import OrderSelectorWindow from "@/modules/orders/screens/OrderSelectorWindow";
+import ProductSelectorWindow from "@/modules/products/screens/ProductSelectorWindow";
+import PurchaseSelectorWindow from "@/modules/purchases/screens/PurchaseSelectorWindow";
+import React from "react";
+import SaleDetailSelectorWindow from "@/modules/sales/screens/SaleDetailSelectorWindow";
 
 // Tipo para componentes que pueden renderizarse en ventanas
 export type WindowComponent = React.ComponentType<any>;
@@ -53,29 +53,29 @@ export function getRegisteredComponentIds(): string[] {
 
 export function registerDefaultWindowComponents(): void {
   // Registrar ProductSelectorWindow || Todos los que vamos a usar
-  registerWindowComponent('product-selector', ProductSelectorWindow);
-  registerWindowComponent('purchase-selector', PurchaseSelectorWindow);
-  registerWindowComponent('debug-log', DebugLogWindow);
-  registerWindowComponent('order-selector', OrderSelectorWindow);
-  registerWindowComponent('sale-detail-selector', SaleDetailSelectorWindow);
+  registerWindowComponent("product-selector", ProductSelectorWindow);
+  registerWindowComponent("purchase-selector", PurchaseSelectorWindow);
+  registerWindowComponent("debug-log", DebugLogWindow);
+  registerWindowComponent("order-selector", OrderSelectorWindow);
+  registerWindowComponent("sale-detail-selector", SaleDetailSelectorWindow);
   // registerWindowComponent('settings-routes', ViewSettingsWithSuspense);
 }
 
 export const WindowComponentRenderer: React.FC = () => {
   const params = new URLSearchParams(window.location.search);
-  const componentId = params.get('component');
+  const componentId = params.get("component");
 
   if (!componentId) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-100">
+      <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-primary mb-2">
             Error: No component specified
           </h1>
-          <p className="text-gray-600">
+          <p className="text-foreground">
             URL debe incluir el parámetro 'component'
           </p>
-          <p className="text-sm text-gray-500 mt-2 font-mono">
+          <p className="text-sm text-muted-foreground mt-2 font-mono">
             Ejemplo: /window.html?component=product-selector
           </p>
         </div>
@@ -87,20 +87,20 @@ export const WindowComponentRenderer: React.FC = () => {
 
   if (!Component) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-100">
+      <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">
+          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
             Error: Component not found
           </h1>
-          <p className="text-gray-600">
+          <p className="text-foreground">
             Componente "{componentId}" no está registrado
           </p>
           <div className="mt-4 text-left inline-block">
-            <p className="text-sm font-semibold text-gray-700 mb-1">
+            <p className="text-sm font-semibold text-foreground mb-1">
               Componentes disponibles:
             </p>
-            <ul className="text-sm text-gray-600 space-y-1">
-              {getRegisteredComponentIds().map(id => (
+            <ul className="text-sm text-foreground space-y-1">
+              {getRegisteredComponentIds().map((id) => (
                 <li key={id} className="font-mono">
                   • {id}
                 </li>
@@ -112,9 +112,7 @@ export const WindowComponentRenderer: React.FC = () => {
     );
   }
 
-  return (
-      <Component />
-  );
+  return <Component />;
 };
 
 export { windowComponentRegistry };

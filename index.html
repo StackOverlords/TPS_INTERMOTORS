@@ -4,17 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>TPS Intermotors</title>
     <script>
-      // Inicializar color-scheme ANTES de que se cargue el CSS
+      // ⚡ Inicializar color-scheme ANTES de que se cargue el CSS
       (function() {
         try {
           const stored = localStorage.getItem('theme-storage');
-          const theme = stored ? JSON.parse(stored).state.theme : 'light';
-          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          const resolvedTheme = theme === 'system' ? systemTheme : theme;
+          
+          if (!stored) {
+            document.documentElement.style.colorScheme = 'light';
+            return;
+          }
+
+          const state = JSON.parse(stored).state;
+          const theme = state.theme || 'light';
+          
+          let resolvedTheme;
+          if (theme === 'system') {
+            resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches 
+              ? 'dark' 
+              : 'light';
+          } else {
+            resolvedTheme = theme;
+          }
+          
           document.documentElement.style.colorScheme = resolvedTheme;
+          
+          if (resolvedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
         } catch (e) {
+          console.error('Error inicializando tema:', e);
           document.documentElement.style.colorScheme = 'light';
         }
       })();
