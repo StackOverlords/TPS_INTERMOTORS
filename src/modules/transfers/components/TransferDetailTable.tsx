@@ -421,17 +421,38 @@ function TransferDetailTableInner({
       accessorFn: row => row.product.descripcion,
       id: "descripcion",
       header: "Descripción",
-      size: 300,
-      minSize: 250,
+      size: 250,
+      minSize: 200,
       enableHiding: false,
-      cell: ({ getValue, row }) => (
+      cell: ({ getValue }) => (
         <div className="flex flex-col space-y-1">
           <h3 className="font-medium text-muted-foreground truncate text-sm">
             {getValue<string>()}
           </h3>
-          <span className="text-xs text-muted-foreground font-mono">
-            OEM: {row.original.product.codigo_oem || 'N/A'}
-          </span>
+        </div>
+      )
+    },
+    {
+      accessorFn: row => row.product.codigo_oem,
+      id: "codigo_oem",
+      header: "OEM",
+      size: 130,
+      minSize: 100,
+      cell: ({ getValue }) => (
+        <div className="text-sm text-muted-foreground font-mono text-center">
+          {getValue<string>() || 'N/A'}
+        </div>
+      )
+    },
+    {
+      accessorFn: row => row.product.marca,
+      id: "marca",
+      header: "Marca",
+      size: 120,
+      minSize: 100,
+      cell: ({ getValue }) => (
+        <div className="text-sm text-muted-foreground text-center">
+          {getValue<string>() || 'N/A'}
         </div>
       )
     },

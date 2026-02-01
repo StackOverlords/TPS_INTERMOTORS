@@ -35,6 +35,7 @@ export const useTransferDetails = () => {
                     descripcion: product.descripcion,
                     codigo_oem: product.codigo_oem,
                     codigo_upc: product.codigo_upc,
+                    marca: product.marca || null,
                     costo: product.costo_mas_antiguo || 0,
                     precio_venta: product.precio_venta,
                     precio_venta_alt: product.precio_venta_alt,

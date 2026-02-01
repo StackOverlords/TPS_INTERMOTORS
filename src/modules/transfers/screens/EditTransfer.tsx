@@ -133,6 +133,7 @@ const EditTransfer = () => {
                         descripcion: detalle.producto.descripcion,
                         codigo_oem: detalle.producto.codigo_oem,
                         codigo_upc: detalle.producto.codigo_upc,
+                        marca: detalle.producto.marca?.marca || null,
                         costo: parseFloat(detalle.costo_entrada),
                         precio_venta: parseFloat(detalle.precio_entrada_venta),
                         precio_venta_alt: parseFloat(detalle.precio_entrada_venta_alt),
