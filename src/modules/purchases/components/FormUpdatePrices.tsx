@@ -46,6 +46,26 @@ const FormUpdatePrices: React.FC<Props> = ({
   return (
     <div className="p-1">
       <div className="space-y-3 mb-6">
+        {/* Switch: Aplicar a todo el sistema */}
+        <div className="flex items-center justify-between p-3 border border-border rounded-md bg-muted/30">
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={formData.aplicar_todo_sistema}
+              onCheckedChange={(v) => {
+                onChange("aplicar_todo_sistema", v);
+                if (v) {
+                  onChange("categoria", null);
+                }
+              }}
+              disabled={isLoading}
+              id="aplicar_todo_sistema"
+            />
+            <Label htmlFor="aplicar_todo_sistema" className="text-sm font-medium cursor-pointer">
+              Aplicar a todo el sistema (todas las divisiones)
+            </Label>
+          </div>
+        </div>
+
         {/* Primera fila: División, Tipo, Porcentaje, Fecha */}
         <div>
           <Label>Tipo de Ajuste *</Label>
@@ -98,17 +118,21 @@ const FormUpdatePrices: React.FC<Props> = ({
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {/* División */}
           <div>
-            <Label>División *</Label>
+            <Label>División {!formData.aplicar_todo_sistema && '*'}</Label>
             <ComboboxSelect
               value={formData.categoria || undefined}
               onChange={(v) => onChange("categoria", Number(v))}
               options={categories}
               optionTag="categoria"
               placeholder={
-                loadingCategories ? "Cargando..." : "Seleccionar División"
+                formData.aplicar_todo_sistema
+                  ? "Todo el sistema"
+                  : loadingCategories
+                  ? "Cargando..."
+                  : "Seleccionar División"
               }
               className={inputClass("categoria")}
-              disabled={loadingCategories || isLoading}
+              disabled={formData.aplicar_todo_sistema || loadingCategories || isLoading}
               error={!!errors.categoria}
               clearOnEmpty={true}
             />

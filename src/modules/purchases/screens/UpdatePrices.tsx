@@ -47,10 +47,11 @@ const UpdatePrices = () => {
 
   const [formData, setFormData] = useState<UpdatePricesFormData>({
     aplicar_todas: true,
+    aplicar_todo_sistema: false,
     tipo_ajuste: "incremento",
     porcentaje: 0,
     fecha: null,
-    categoria: 0,
+    categoria: null,
     sucursal: null,
   });
 
@@ -115,10 +116,11 @@ const UpdatePrices = () => {
   const handleReset = () => {
     setFormData({
       aplicar_todas: true,
+      aplicar_todo_sistema: false,
       tipo_ajuste: "incremento",
       porcentaje: 0,
       fecha: "",
-      categoria: 0,
+      categoria: null,
       sucursal: null,
     });
     setErrors({});
@@ -215,7 +217,7 @@ const UpdatePrices = () => {
               </TooltipWrapper>
             </CardTitle>
             <CardDescription>
-              Actualiza los precios de productos por división con un porcentaje
+              Actualiza los precios de productos por división o de todo el sistema con un porcentaje
               de incremento o decremento
             </CardDescription>
           </CardHeader>
@@ -270,7 +272,7 @@ const UpdatePrices = () => {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                <AlertCircle className="h-5 w-5 text-muted-foreground" />
                 Confirmar Actualización de Precios
               </AlertDialogTitle>
               <AlertDialogDescription asChild className="space-y-3 pt-2">
@@ -281,14 +283,27 @@ const UpdatePrices = () => {
                   </p>
 
                   <div className="space-y-2 bg-muted p-3 rounded-md text-sm text-foreground">
-                    <div className="flex justify-between">
-                      <span className="font-medium">División:</span>
-                      <Badge variant="secondary">
-                        {formData.categoria
-                          ? getCategoryName(formData.categoria)
-                          : "N/A"}
-                      </Badge>
-                    </div>
+                    {formData.aplicar_todo_sistema && (
+                      <div className="flex justify-between items-center p-2 bg-muted border border-border rounded-md">
+                        <span className="font-semibold">
+                          Alcance:
+                        </span>
+                        <Badge variant="outline">
+                          Todo el sistema (todas las divisiones)
+                        </Badge>
+                      </div>
+                    )}
+
+                    {!formData.aplicar_todo_sistema && (
+                      <div className="flex justify-between">
+                        <span className="font-medium">División:</span>
+                        <Badge variant="secondary">
+                          {formData.categoria
+                            ? getCategoryName(formData.categoria)
+                            : "N/A"}
+                        </Badge>
+                      </div>
+                    )}
 
                     <div className="flex justify-between">
                       <span className="font-medium">Aplicar a:</span>
@@ -332,9 +347,10 @@ const UpdatePrices = () => {
                     </div>
                   </div>
 
-                  <p className="text-amber-600 dark:text-amber-400 font-medium">
-                    ⚠️ Esta acción modificará los precios de los productos.
-                    ¿Deseas continuar?
+                  <p className="text-sm">
+                    {formData.aplicar_todo_sistema
+                      ? "Esta acción modificará los precios de todos los productos del sistema. ¿Deseas continuar?"
+                      : "Esta acción modificará los precios de los productos seleccionados. ¿Deseas continuar?"}
                   </p>
                 </div>
               </AlertDialogDescription>
