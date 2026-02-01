@@ -4,9 +4,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/atoms/dropdown-menu';
-import { Button } from '@/components/atoms/button';
-import { Badge } from '@/components/atoms/badge';
+} from "@/components/atoms/dropdown-menu";
+import { Button } from "@/components/atoms/button";
+import { Badge } from "@/components/atoms/badge";
 import {
   Mail,
   User,
@@ -15,9 +15,10 @@ import {
   LogOut,
   // ChevronDown,
   // ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 // import { useState, useMemo } from 'react';
-import authSDK from '@/services/sdk-simple-auth';
+import authSDK from "@/services/sdk-simple-auth";
+import { getUserAvatarGradient } from "@/utils/userColors";
 // import { useNavigate } from 'react-router';
 
 interface Permission {
@@ -57,6 +58,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
 }) => {
   // const navigate = useNavigate();
   const user = authSDK.getCurrentUser();
+  const avatarGradient = getUserAvatarGradient(user?.id, user?.name);
   // const [showPermissions, setShowPermissions] = useState(false);
 
   // const permissions = user?.permisos || user?.permissions || [];
@@ -87,18 +89,18 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
 
   const getInitials = (name?: string, fullName?: string) => {
     if (fullName) {
-      const parts = fullName.split(' ');
+      const parts = fullName.split(" ");
       if (parts.length >= 2) {
         return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
       }
       return fullName.charAt(0).toUpperCase();
     }
-    return name?.charAt(0).toUpperCase() || 'U';
+    return name?.charAt(0).toUpperCase() || "U";
   };
 
   const handleLogout = async () => {
     await authSDK.logout();
-  }
+  };
   return (
     <DropdownMenu open={isOpen} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
@@ -106,16 +108,20 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
         {/* Header con Avatar */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="h-14 w-14 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-primary-foreground text-xl font-bold">
+            <div
+              className={`h-14 w-14 ${avatarGradient.gradient} ${avatarGradient.darkGradient} rounded-full flex items-center justify-center flex-shrink-0`}
+            >
+              <span className={`${avatarGradient.text} text-xl font-bold`}>
                 {getInitials(user?.name, user?.full_name)}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-foreground font-semibold text-base truncate">
-                {user?.full_name || 'Usuario'}
+                {user?.full_name || "Usuario"}
               </h3>
-              <p className="text-muted-foreground text-sm truncate">@{user?.name || 'username'}</p>
+              <p className="text-muted-foreground text-sm truncate">
+                @{user?.name || "username"}
+              </p>
             </div>
           </div>
         </div>
@@ -124,11 +130,11 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
         <div className="p-3 space-y-2 bg-accent/30">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <User className="h-4 w-4 text-muted-foreground/70" />
-            <Badge variant={"success"}>ID: {user?.id || 'N/A'}</Badge>
+            <Badge variant={"success"}>ID: {user?.id || "N/A"}</Badge>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Mail className="h-4 w-4 text-muted-foreground/70" />
-            <span className="truncate">{user?.email || 'Sin email'}</span>
+            <span className="truncate">{user?.email || "Sin email"}</span>
           </div>
         </div>
 
@@ -140,7 +146,9 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
             <div className="p-3">
               <div className="flex items-center gap-2 mb-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">Sucursales</span>
+                <span className="text-sm font-medium text-foreground">
+                  Sucursales
+                </span>
                 <Badge variant="secondary" className="ml-auto text-xs">
                   {sucursales.length}
                 </Badge>

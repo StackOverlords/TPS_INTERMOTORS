@@ -61,7 +61,7 @@ export const useShowTabBar = () => {
       return false;
     }
 
-    if (!authState.selectedBranch && location.pathname === "/branch") {
+    if (!authState.selectedBranch && location.pathname === "/select-branch") {
       return false;
     }
 

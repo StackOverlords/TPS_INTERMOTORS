@@ -1,12 +1,12 @@
-import { Toaster } from '@/components/atoms/toaster';
-import { TooltipProvider } from '@/components/atoms/tooltip';
-import { ZoomManager } from '@/components/common/ZoomManager';
+import { Toaster } from "@/components/atoms/toaster";
+import { TooltipProvider } from "@/components/atoms/tooltip";
+import { ZoomManager } from "@/components/common/ZoomManager";
 // import { KeybindingProvider } from '@/contexts/KeybindingContext'; // ⚠️ DEPRECATED: Reemplazado por el nuevo sistema de keybindings con Zustand
-import { WebSocketProvider } from '@/contexts/WebSocketContext';
-import { queryClient } from '@/lib/reactQueryConfig';
-import authSDK from '@/services/sdk-simple-auth';
-import { QueryClientProvider } from '@tanstack/react-query';
-import React, { useEffect, useState } from 'react';
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
+import { queryClient } from "@/lib/reactQueryConfig";
+import authSDK from "@/services/sdk-simple-auth";
+import { QueryClientProvider } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
 
 interface WindowLayoutProps {
   children: React.ReactNode;
@@ -30,7 +30,7 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
           }, 300);
         }
       } catch (error) {
-        console.error('[WindowLayout] Error checking auth:', error);
+        console.error("[WindowLayout] Error checking auth:", error);
         // Marcar como ready de todos modos después de un timeout
         setTimeout(() => setIsAuthReady(true), 500);
       }
@@ -42,10 +42,10 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
   // Mostrar un loading mientras espera el auth
   if (!isAuthReady) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-sm text-gray-600">Cargando...</p>
+          <p className="text-sm text-foreground">Cargando...</p>
         </div>
       </div>
     );
@@ -59,9 +59,7 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
         <TooltipProvider>
           <Toaster />
           <ZoomManager />
-          <div className="h-screen w-screen overflow-hidden">
-            {children}
-          </div>
+          <div className="h-screen w-screen overflow-hidden">{children}</div>
         </TooltipProvider>
         {/* </HotkeysProvider> */}
       </QueryClientProvider>

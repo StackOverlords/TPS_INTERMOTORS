@@ -85,7 +85,7 @@ const TitleBar = () => {
   return (
     <div
       onMouseDown={handleDragAreaClick}
-      className="bg-background border-b border-border flex items-center justify-between flex-shrink-0 z-50 relative pt-2 px-2 pb-1"
+      className="bg-background border-b border-border flex items-center justify-between flex-shrink-0 z-50 relative py-1 px-2"
     >
       <div className="flex items-center flex-1 overflow-hidden gap-2 h-8">
         <span className="font-black uppercase text-xs text-primary flex-shrink-0">

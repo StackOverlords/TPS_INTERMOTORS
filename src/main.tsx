@@ -7,7 +7,6 @@ import Navigation from "./navigation/Navigation.tsx";
 // import { Toaster as Sonner } from "./components/atoms/sonner.tsx";
 import "@/config/zodI18nConfig.ts";
 import { HotkeysProvider, useHotkeys } from "react-hotkeys-hook";
-import { useEffect } from "react";
 import { Toaster } from "./components/atoms/toaster.tsx";
 import { ZoomManager } from "./components/common/ZoomManager.tsx";
 import TitleBar from "./components/common/TitleBar.tsx";
@@ -19,6 +18,9 @@ import { queryClient } from "./lib/reactQueryConfig.ts";
 import { useThemeStore } from "./stores/themeStore.ts";
 import logger from "./utils/logger.ts";
 
+// Inicializar tema ANTES de renderizar la app
+useThemeStore.getState().initializeTheme();
+
 // ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
 initializeKeybindingStore().catch((error) => {
   logger.error("❌ Error initializing keybinding store:", error);
@@ -26,11 +28,6 @@ initializeKeybindingStore().catch((error) => {
 
 function App() {
   const debugLogWindow = useDebugLogWindow();
-
-  // Inicializar tema al cargar la app
-  useEffect(() => {
-    useThemeStore.getState().initializeTheme();
-  }, []);
 
   // Atajos de teclado globales para abrir el panel de debug
   useHotkeys(
@@ -50,8 +47,6 @@ function App() {
   );
 
   return (
-    // <div className="flex flex-col h-screen overflow-hidden">
-    //   <div className="flex-1 overflow-auto">
     <QueryClientProvider client={queryClient}>
       <TaskNotificationsProvider>
         <WebSocketProvider>
@@ -77,8 +72,6 @@ function App() {
         </WebSocketProvider>
       </TaskNotificationsProvider>
     </QueryClientProvider>
-    //   </div>
-    // </div>
   );
 }
 
