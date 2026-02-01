@@ -17,13 +17,14 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useTabStore } from "@/states/tabStore";
 import { useThemeStore } from "@/stores/themeStore";
 import { filterRoutesByRole } from "@/utils/permissions";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, SquarePlus, SquareMinus, CopyMinus } from "lucide-react";
 import { useMemo, useState } from "react";
 import ButtonItem from "../components/ButtonItem";
 import HeaderTagRoute from "../components/HeaderTagRoute";
 import NavItem from "../components/NavItem";
 import logoLight from "@/assets/images/logo_light.webp";
 import logoDark from "@/assets/images/darkmodeweb.webp";
+import { Button } from "@/components/atoms/button";
 
 const AppSidebar = () => {
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
@@ -63,6 +64,19 @@ const AppSidebar = () => {
     );
   };
 
+  const toggleExpandCollapse = () => {
+    if (expandedHeaders.length > 0) {
+      // Si hay headers expandidos, colapsar todo
+      setExpandedHeaders([]);
+    } else {
+      // Si no hay headers expandidos, expandir todo
+      const allHeaders = filteredRoutes
+        .filter((route) => route.isHeader && route.subRoutes && route.subRoutes.length > 0)
+        .map((route) => route.name);
+      setExpandedHeaders(allHeaders);
+    }
+  };
+
   return (
     <Sidebar
       collapsible="offcanvas"
@@ -82,9 +96,24 @@ const AppSidebar = () => {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="px-1 text-xs mt-2 font-semibold uppercase tracking-wider text-muted-foreground">
-            Principal
-          </SidebarGroupLabel>
+          <div className="flex items-center justify-between px-1 mt-2 mb-2">
+            <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0">
+              Principal
+            </SidebarGroupLabel>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 hover:bg-accent"
+              onClick={toggleExpandCollapse}
+              title={expandedHeaders.length > 0 ? "Colapsar todo" : "Expandir todo"}
+            >
+              {expandedHeaders.length > 0 ? (
+                <CopyMinus className="h-3.5 w-3.5 transform scale-x-[-1]" />
+              ) : (
+                <SquarePlus className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
           <SidebarGroupContent className="px-1">
             <SidebarMenu>
               {filteredRoutes.map((route: RouteType, index) => (
