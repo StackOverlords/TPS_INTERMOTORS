@@ -3,20 +3,24 @@ import { type ColumnDef, type SortingState } from "@tanstack/react-table";
 import type { ReportItem } from "../types/report.types";
 import { cn } from "@/lib/utils";
 import { useCustomTable } from "@/hooks/useCustomTable";
-import CustomizableTable from "@/components/common/CustomizableTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { Award } from "lucide-react";
 import { Badge } from "@/components/atoms/badge";
 import { TableCell, TableRow } from "@/components/atoms/table";
+import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 
 interface ReportTableProps {
   data: ReportItem[];
   showRanking?: boolean;
   highlightTotalColumn?: boolean;
+  highlightQuantityColumn?: boolean;
   isLoading?: boolean;
   isFetching?: boolean;
   initialSorting?: SortingState;
   reportType?: "XIngreso" | "XCantidad";
+  rows?: number;
+  isError?: boolean;
+  showRowNumbers?: boolean;
 }
 
 const formatNumber = (value: string | number, decimals: number = 2): string => {
@@ -37,12 +41,16 @@ const formatCurrency = (value: string | number): string => {
 
 export function SaleReportTable({
   data,
-  showRanking = false,
+  showRanking = true,
   highlightTotalColumn = false,
+  highlightQuantityColumn = false,
   isLoading = false,
   isFetching = false,
   initialSorting,
   reportType,
+  rows,
+  isError = false,
+  showRowNumbers = false,
 }: ReportTableProps) {
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null);
@@ -71,13 +79,19 @@ export function SaleReportTable({
 
   const columns = useMemo<ColumnDef<ReportItem>[]>(
     () => [
-      ...(showRanking
+      ...(showRanking || showRowNumbers
         ? [
             {
               id: "ranking",
               header: "# Ranking",
               cell: ({ row }: any) => (
-                <div className="w-20">{getRankingBadge(row.index + 1)}</div>
+                <div className="w-20">
+                  {showRanking && !showRowNumbers ? (
+                    getRankingBadge(row.index + 1)
+                  ) : (
+                    <span className="font-medium px-2">{row.index + 1}°</span>
+                  )}
+                </div>
               ),
               enableSorting: false,
               size: 100,
@@ -125,7 +139,8 @@ export function SaleReportTable({
           <div
             className={cn(
               "text-right",
-              reportType === "XCantidad" && "font-semibold text-blue-600"
+              (reportType === "XCantidad" || highlightQuantityColumn) &&
+                "font-semibold text-blue-600 dark:text-blue-400"
             )}
           >
             {formatNumber(getValue(), 0)}
@@ -150,7 +165,8 @@ export function SaleReportTable({
           <div
             className={cn(
               "text-right text-sm",
-              reportType === "XIngreso" && "font-semibold text-blue-600"
+              reportType === "XIngreso" &&
+                "font-semibold text-blue-600 dark:text-blue-400"
             )}
           >
             {formatCurrency(getValue())}
@@ -165,7 +181,7 @@ export function SaleReportTable({
         cell: ({ getValue }: any) => {
           const value = parseFloat(getValue().toString());
           return (
-            <div className="text-right text-sm text-red-600">
+            <div className="text-right text-sm text-red-600 dark:text-red-400">
               {value > 0 ? `-${formatCurrency(value)}` : "-"}
             </div>
           );
@@ -180,7 +196,7 @@ export function SaleReportTable({
           <div
             className={cn(
               "text-right font-semibold text-sm",
-              highlightTotalColumn && "text-green-600"
+              highlightTotalColumn && "text-emerald-600 dark:text-emerald-400"
             )}
           >
             {formatCurrency(getValue())}
@@ -243,14 +259,6 @@ export function SaleReportTable({
     [data]
   );
 
-  if (data.length === 0 && !isLoading) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>No hay datos para mostrar</p>
-      </div>
-    );
-  }
-
   // Renderizar fila de totales
   const renderTotalsRow = () => {
     const visibleColumns = table.getVisibleLeafColumns();
@@ -269,7 +277,7 @@ export function SaleReportTable({
                 style={{ width: column.getSize() }}
               >
                 <div className="text-sm text-muted-foreground">Cantidad</div>
-                <div className="text-sm font-bold text-blue-600">
+                <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                   {totals.cantidad}
                 </div>
               </TableCell>
@@ -285,7 +293,7 @@ export function SaleReportTable({
                 style={{ width: column.getSize() }}
               >
                 <div className="text-sm text-muted-foreground">Subtotal</div>
-                <div className="text-sm font-bold text-blue-600">
+                <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                   {formatCurrency(totals.subtotal)}
                 </div>
               </TableCell>
@@ -300,7 +308,7 @@ export function SaleReportTable({
                 style={{ width: column.getSize() }}
               >
                 <div className="text-sm text-muted-foreground">Descuento</div>
-                <div className="text-sm font-bold text-red-600">
+                <div className="text-sm font-bold text-red-600 dark:text-red-400">
                   -{formatCurrency(totals.descuento)}
                 </div>
               </TableCell>
@@ -315,7 +323,7 @@ export function SaleReportTable({
                 style={{ width: column.getSize() }}
               >
                 <div className="text-sm text-muted-foreground">Total</div>
-                <div className="text-base font-bold text-emerald-600">
+                <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(totals.total)}
                 </div>
               </TableCell>
@@ -336,48 +344,47 @@ export function SaleReportTable({
   };
 
   return (
-    <div className="space-y-4">
-      <CustomizableTable
-        table={table}
-        isLoading={isLoading}
-        isFetching={isFetching}
-        isError={false}
-        errorMessage="Error al cargar el reporte"
-        noDataMessage="No hay datos para mostrar"
-        tableRef={tableRef}
-        enableColumnReordering={true}
-        enableSorting={false}
-        stickyHeader={true}
-        renderTableFooter={renderTotalsRow}
-        // renderBottomRow={
-        //   <tr className="bg-muted/90 backdrop-blur-sm font-semibold">
-        //     {showRanking && <td className="p-2" />}
-        //     <td className="p-2 text-base" colSpan={3}>
-        //       TOTALES ({data.length} productos)
-        //     </td>
-        //     <td className="p-2 text-right text-blue-600 text-base">
-        //       {formatNumber(totals.cantidad, 0)}
-        //     </td>
-        //     <td className="p-2" />
-        //     <td className="p-2 text-right text-base">
-        //       {formatCurrency(totals.subtotal)}
-        //     </td>
-        //     <td className="p-2 text-right text-red-600 text-base">
-        //       {totals.descuento > 0
-        //         ? `-${formatCurrency(totals.descuento)}`
-        //         : "-"}
-        //     </td>
-        //     <td
-        //       className={cn(
-        //         "p-2 text-right text-base",
-        //         highlightTotalColumn && "text-green-600"
-        //       )}
-        //     >
-        //       {formatCurrency(totals.total)}
-        //     </td>
-        //   </tr>
-        // }
-      />
-    </div>
+    <VirtualizedCustomizableTable
+      table={table}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      isError={isError}
+      errorMessage={"Error al cargar el reporte"}
+      noDataMessage="No hay datos para mostrar"
+      tableRef={tableRef}
+      enableColumnReordering={true}
+      enableSorting={false}
+      stickyHeader={true}
+      rows={rows}
+      renderTableFooter={renderTotalsRow}
+      // renderBottomRow={
+      //   <tr className="bg-muted/90 backdrop-blur-sm font-semibold">
+      //     {showRanking && <td className="p-2" />}
+      //     <td className="p-2 text-base" colSpan={3}>
+      //       TOTALES ({data.length} productos)
+      //     </td>
+      //     <td className="p-2 text-right text-blue-600 text-base">
+      //       {formatNumber(totals.cantidad, 0)}
+      //     </td>
+      //     <td className="p-2" />
+      //     <td className="p-2 text-right text-base">
+      //       {formatCurrency(totals.subtotal)}
+      //     </td>
+      //     <td className="p-2 text-right text-red-600 text-base">
+      //       {totals.descuento > 0
+      //         ? `-${formatCurrency(totals.descuento)}`
+      //         : "-"}
+      //     </td>
+      //     <td
+      //       className={cn(
+      //         "p-2 text-right text-base",
+      //         highlightTotalColumn && "text-green-600"
+      //       )}
+      //     >
+      //       {formatCurrency(totals.total)}
+      //     </td>
+      //   </tr>
+      // }
+    />
   );
 }

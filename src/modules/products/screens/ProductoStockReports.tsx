@@ -20,10 +20,15 @@ import {
 import { useMemo, useState } from "react";
 import { useStockMinimoReport } from "../hooks/queries/useStockMinimoReport";
 import { productsService } from "../services/productService";
-import type { StockMinimoFilters, StockMinimoItem } from "../types/StockMinimoReport.types";
+import type {
+  StockMinimoFilters,
+  StockMinimoItem,
+} from "../types/StockMinimoReport.types";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
-import { StockViewToggle, type StockViewMode } from "../components/StockViewToggle";
+import { type StockViewMode } from "../components/StockViewToggle";
 import { StockDistributionChart } from "../components/StockDistributionChart";
+import { ViewToggle } from "@/modules/reports/components/ViewToggle";
+import { cn } from "@/lib/utils";
 
 const ProductoStockReports = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -37,12 +42,15 @@ const ProductoStockReports = () => {
   const [viewMode, setViewMode] = useState<StockViewMode>("table");
 
   // Construir filtros
-  const filters: StockMinimoFilters = useMemo(() => ({
-    sucursal: Number(selectedBranchId) || 1,
-    ver_solo_con_saldo_menorigual_al_minimo: verSoloMenorIgual,
-    ver_solo_con_saldo_cercano_al_minimo_segun_parametro: verSoloCercano,
-    parametro: verSoloCercano ? parametro : undefined,
-  }), [selectedBranchId, verSoloMenorIgual, verSoloCercano, parametro]);
+  const filters: StockMinimoFilters = useMemo(
+    () => ({
+      sucursal: Number(selectedBranchId) || 1,
+      ver_solo_con_saldo_menorigual_al_minimo: verSoloMenorIgual,
+      ver_solo_con_saldo_cercano_al_minimo_segun_parametro: verSoloCercano,
+      parametro: verSoloCercano ? parametro : undefined,
+    }),
+    [selectedBranchId, verSoloMenorIgual, verSoloCercano, parametro]
+  );
 
   const {
     data: reportData,
@@ -188,9 +196,9 @@ const ProductoStockReports = () => {
 
       // Crear URL y descargar
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `reporte-stock-minimo-${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = `reporte-stock-minimo-${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -241,155 +249,191 @@ const ProductoStockReports = () => {
   }, [data]);
 
   return (
-    <main className="h-full p-4 gap-4 flex flex-col">
+    <main className="h-full p-2 gap-2 flex flex-col">
       {/* Header Compacto */}
-      <header className="flex items-center gap-3 flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Reporte de Stock Mínimo
-          </h1>
-          <p className="text-muted-foreground">
-            Análisis de productos con stock bajo o crítico
-          </p>
-        </div>
-      </header>
-
-      {/* Filtros Compactos */}
-      <section className="bg-background rounded-lg p-3 border border-border flex-shrink-0">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="ver-menor-igual"
-              checked={verSoloMenorIgual}
-              onCheckedChange={handleVerSoloMenorIgualChange}
-            />
-            <Label htmlFor="ver-menor-igual" className="text-sm cursor-pointer">
-              Stock ≤ Mínimo
-            </Label>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Switch
-              id="ver-cercano"
-              checked={verSoloCercano}
-              onCheckedChange={handleVerSoloCercanoChange}
-            />
-            <Label htmlFor="ver-cercano" className="text-sm cursor-pointer">
-              Cercanos al mínimo
-            </Label>
-          </div>
-
-          {verSoloCercano && (
-            <div className="flex items-center gap-2">
-              <Label htmlFor="parametro" className="text-sm">
-                Parámetro:
-              </Label>
-              <Input
-                id="parametro"
-                type="number"
-                min={1}
-                value={parametro}
-                onChange={(e) => setParametro(Number(e.target.value) || 1)}
-                className="w-20 h-8"
-              />
+      <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3 flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight tracking-tight">
+                Reporte de Stock Mínimo
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Análisis de productos con stock bajo o crítico
+              </p>
             </div>
-          )}
+          </div>
 
-          <Button variant="default" onClick={handleSearch} disabled={isFetching}>
-            {isFetching ? (
-              <Loader2 className="size-4 mr-2 animate-spin" />
-            ) : (
-              <Search className="size-4 mr-2" />
-            )}
-            {isFetching ? "Buscando..." : "Buscar"}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end w-full sm:w-auto gap-2"></div>
+        </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <TooltipButton
-              onClick={handleRefresh}
-              buttonProps={{
-                variant: "outline",
-                size: "sm",
-                disabled: isFetching,
-              }}
-              tooltip="Actualizar reporte"
-            >
-              <RefreshCcw
-                className={`size-4 ${isFetching ? "animate-spin" : ""}`}
+        {/* Filtros Compactos */}
+        <section className="border-t border-border pt-2">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="ver-menor-igual"
+                checked={verSoloMenorIgual}
+                onCheckedChange={handleVerSoloMenorIgualChange}
               />
-            </TooltipButton>
+              <Label
+                htmlFor="ver-menor-igual"
+                className="text-sm cursor-pointer"
+              >
+                Stock ≤ Mínimo
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="ver-cercano"
+                checked={verSoloCercano}
+                onCheckedChange={handleVerSoloCercanoChange}
+              />
+              <Label htmlFor="ver-cercano" className="text-sm cursor-pointer">
+                Cercanos al mínimo
+              </Label>
+            </div>
+
+            {verSoloCercano && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="parametro" className="text-sm">
+                  Parámetro:
+                </Label>
+                <Input
+                  id="parametro"
+                  type="number"
+                  min={1}
+                  value={parametro}
+                  onChange={(e) => setParametro(Number(e.target.value) || 1)}
+                  className="w-20 h-8"
+                />
+              </div>
+            )}
 
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={data.length === 0 || isDownloading}
+              variant="default"
+              onClick={handleSearch}
+              disabled={isFetching}
             >
-              <Download className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`} />
-              {isDownloading ? "Descargando..." : "Exportar"}
+              {isFetching ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                <Search className="size-4 mr-2" />
+              )}
+              {isFetching ? "Buscando..." : "Buscar"}
             </Button>
-          </div>
-        </div>
-      </section>
 
-      {/* ViewToggle y Stats integrados */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <StockViewToggle value={viewMode} onChange={setViewMode} />
+            <div className="ml-auto flex items-center gap-2">
+              <TooltipButton
+                onClick={handleRefresh}
+                buttonProps={{
+                  variant: "outline",
+                  size: "sm",
+                  disabled: isFetching,
+                }}
+                tooltip="Actualizar reporte"
+              >
+                <RefreshCcw
+                  className={`size-4 ${isFetching ? "animate-spin" : ""}`}
+                />
+              </TooltipButton>
 
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
-              <FileSpreadsheet className="size-4 text-primary" />
-              <span className="font-semibold text-primary">{stats.totalItems}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                disabled={data.length === 0 || isDownloading}
+              >
+                <Download
+                  className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`}
+                />
+                {isDownloading ? "Descargando..." : "Exportar"}
+              </Button>
             </div>
-            <span className="text-muted-foreground hidden sm:inline">productos</span>
           </div>
-
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 dark:bg-destructive/20">
-            <AlertTriangle className="size-4 text-destructive" />
-            <span className="font-semibold text-destructive">{stats.itemsConStockCritico}</span>
-            <span className="text-destructive/70 text-xs">críticos</span>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
-            <TrendingDown className="size-4 text-orange-600 dark:text-orange-400" />
-            <span className="font-semibold text-orange-600 dark:text-orange-400">{stats.itemsBajoMinimo}</span>
-            <span className="text-orange-600/70 dark:text-orange-400/70 text-xs">bajo mínimo</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Loading Message */}
-      {/* {isFetching && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700 text-sm flex items-center gap-2 flex-shrink-0">
-          <Loader2 className="size-4 animate-spin" />
-          <span>Cargando reporte... Este proceso puede tardar hasta 2 minutos dependiendo de la cantidad de productos.</span>
-        </div>
-      )} */}
+        </section>
+      </header>
 
       {/* Error Message */}
       {isError && error && (
         <div className="bg-destructive/10 dark:bg-destructive/20 border border-destructive/30 dark:border-destructive/40 rounded-lg p-3 text-destructive text-sm flex-shrink-0">
-          <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte. Verifica que el endpoint esté disponible."}
+          <strong>Error:</strong>{" "}
+          {(error as Error)?.message ||
+            "No se pudo cargar el reporte. Verifica que el endpoint esté disponible."}
         </div>
       )}
 
       {/* Contenido principal - Tabla o Gráfico */}
       <div className="flex-1 min-h-0">
-        {viewMode === "chart" ? (
-          <StockDistributionChart data={data} />
-        ) : (
-          <div className="h-full bg-background rounded-lg border border-border flex flex-col">
-            {/* Info de resultados */}
-            <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0">
-              {!shouldFetch
-                ? "Presiona 'Buscar' para cargar el reporte"
-                : data.length > 0
-                  ? `Mostrando ${data.length} productos`
-                  : "Sin resultados"}
+        <div
+          className={cn(
+            "bg-background rounded-lg border border-border flex flex-col",
+            viewMode === "chart" ? "h-auto" : "h-full"
+          )}
+        >
+          <div className="flex flex-col flex-shrink-0 p-2 gap-2 border-b border-border">
+            {/* ViewToggle y Stats integrados */}
+            <div className="flex items-center justify-between flex-shrink-0">
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
+                  <FileSpreadsheet className="size-4 text-primary" />
+                  <span className="font-semibold text-primary">
+                    {stats.totalItems}
+                  </span>
+                  <span className="text-primary hidden sm:inline">
+                    productos
+                  </span>
+                </div>
+
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 dark:bg-destructive/20">
+                  <AlertTriangle className="size-4 text-destructive" />
+                  <span className="font-semibold text-destructive">
+                    {stats.itemsConStockCritico}
+                  </span>
+                  <span className="text-destructive/70 text-xs">críticos</span>
+                </div>
+
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
+                  <TrendingDown className="size-4 text-orange-600 dark:text-orange-400" />
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    {stats.itemsBajoMinimo}
+                  </span>
+                  <span className="text-orange-600/70 dark:text-orange-400/70 text-xs">
+                    bajo mínimo
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Tabla */}
+            {/* Info de resultados */}
+            {viewMode === "table" && (
+              <div className="flex-shrink-0 flex items-center justify-between gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {!shouldFetch
+                    ? "Presiona 'Buscar' para cargar el reporte"
+                    : data.length > 0
+                      ? `Mostrando ${data.length} productos`
+                      : "Sin resultados"}
+                </span>
+
+                {/* Indicador de carga mientras refetch */}
+                {(isFetching || isLoading) && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-4 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cargando datos... Este proceso puede tardar.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {viewMode === "chart" ? (
+            <StockDistributionChart data={data} />
+          ) : (
+            // Tabla
             <div className="flex-1 min-h-0">
               <VirtualizedCustomizableTable
                 table={table}
@@ -397,15 +441,15 @@ const ProductoStockReports = () => {
                 isFetching={isFetching}
                 isError={isError}
                 errorMessage="Error al cargar el reporte de stock"
-                noDataMessage="No se encontraron productos con los filtros seleccionados"
+                noDataMessage="Ajusta los filtros y presiona 'Buscar' para cargar el reporte."
                 rows={20}
                 enableColumnReordering
                 enableSorting
                 estimatedRowHeight={50}
               />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </main>
   );

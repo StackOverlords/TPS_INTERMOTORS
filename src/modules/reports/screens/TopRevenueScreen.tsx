@@ -18,12 +18,14 @@ const TopRevenueScreen = () => {
     appliedFilters,
     updateFilter,
     applyFilters,
+    chartVisualLimit,
+    setChartVisualLimit,
   } = useSalesReportFilters(Number(selectedBranchId));
 
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
 
-  const { data, isLoading, isFetching, isError, error, refetch } =
+  const { data, isLoading, isFetching, isError, refetch } =
     useReportMayorIngreso({
       filters: activeFilters,
       enabled: !!activeFilters.fecha_inicio && !!activeFilters.ranking,
@@ -59,7 +61,6 @@ const TopRevenueScreen = () => {
       isLoading={isLoading}
       isFetching={isFetching}
       isError={isError}
-      error={error}
       // Filtros y acciones
       filters={filters}
       onFiltersChange={(key: string, value: any) =>
@@ -67,18 +68,19 @@ const TopRevenueScreen = () => {
       }
       onRefresh={() => refetch()}
       onExport={handleExport}
-      showRanking
       searchMode={searchMode}
       onSearchModeToggle={toggleSearchMode}
       onSearch={handleManualSearch}
       isDownloading={isDownloading}
       // Configuración del gráfico (por TOTAL en vez de cantidad)
       chartDataKey="total"
-      chartColor="#10b981"
       chartTitle="Ranking por Ingresos Generados"
       tableTitle="Detalle de Ingresos"
       highlightTotalColumn={true}
       reportType="XIngreso"
+      colorPreset="green"
+      chartVisualLimit={chartVisualLimit}
+      onChartVisualLimitChange={setChartVisualLimit}
     />
   );
 };

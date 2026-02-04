@@ -20,9 +20,16 @@ import {
   Calendar,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useInventarioReport, useDownloadInventarioReport } from "../hooks/queries/useInventarioReport";
-import type { InventarioFilters, InventarioItem, InventarioStats } from "../types/InventarioReport.types";
-import { StockViewToggle, type StockViewMode } from "../components/StockViewToggle";
+import {
+  useInventarioReport,
+  useDownloadInventarioReport,
+} from "../hooks/queries/useInventarioReport";
+import type {
+  InventarioFilters,
+  InventarioItem,
+  InventarioStats,
+} from "../types/InventarioReport.types";
+import { type StockViewMode } from "../components/StockViewToggle";
 import { InventarioChart } from "../components/InventarioChart";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 import { cn } from "@/lib/utils";
@@ -42,7 +49,8 @@ const InventarioReportScreen = () => {
   const [fechaInicioCosto, setFechaInicioCosto] = useState<string>("");
   const [fechaFinCosto, setFechaFinCosto] = useState<string>("");
   const [incluirTransito, setIncluirTransito] = useState<boolean>(true);
-  const [verSoloConMovimiento, setVerSoloConMovimiento] = useState<boolean>(true);
+  const [verSoloConMovimiento, setVerSoloConMovimiento] =
+    useState<boolean>(true);
 
   // Filtros aplicados (solo se inicializa con fecha requerida)
   const [appliedFilters, setAppliedFilters] = useState<InventarioFilters>({
@@ -50,11 +58,17 @@ const InventarioReportScreen = () => {
   });
 
   // Query del reporte
-  const { data: reportData, isLoading, isFetching, isError, error, refetch } =
-    useInventarioReport({
-      filters: appliedFilters,
-      enabled: shouldFetch,
-    });
+  const {
+    data: reportData,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useInventarioReport({
+    filters: appliedFilters,
+    enabled: shouldFetch,
+  });
 
   // Mutation para descargar
   const { mutate: downloadReport, isPending: isDownloading } =
@@ -144,7 +158,8 @@ const InventarioReportScreen = () => {
           return (
             <div className="text-center">
               <Badge variant="info" className="rounded font-bold">
-                {compras.toLocaleString("es-BO", { maximumFractionDigits: 0 })} u.
+                {compras.toLocaleString("es-BO", { maximumFractionDigits: 0 })}{" "}
+                u.
               </Badge>
             </div>
           );
@@ -160,7 +175,8 @@ const InventarioReportScreen = () => {
           return (
             <div className="text-center">
               <Badge variant="success" className="rounded font-bold">
-                {ventas.toLocaleString("es-BO", { maximumFractionDigits: 0 })} u.
+                {ventas.toLocaleString("es-BO", { maximumFractionDigits: 0 })}{" "}
+                u.
               </Badge>
             </div>
           );
@@ -195,7 +211,8 @@ const InventarioReportScreen = () => {
           return (
             <div className="text-right">
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                Bs. {valor.toLocaleString("es-BO", {
+                Bs.{" "}
+                {valor.toLocaleString("es-BO", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -230,7 +247,8 @@ const InventarioReportScreen = () => {
     if (!selectedBranchId) {
       showErrorToast({
         title: "Sucursal requerida",
-        description: "Por favor selecciona una sucursal para generar el reporte",
+        description:
+          "Por favor selecciona una sucursal para generar el reporte",
       });
       return;
     }
@@ -250,7 +268,7 @@ const InventarioReportScreen = () => {
       filters.fecha_fin_costo = fechaFinCosto;
     }
 
-    console.log('🔍 Filtros enviados al API:', filters);
+    console.log("🔍 Filtros enviados al API:", filters);
     setAppliedFilters(filters);
 
     if (!shouldFetch) {
@@ -265,183 +283,179 @@ const InventarioReportScreen = () => {
   };
 
   return (
-    <main className="h-full p-4 gap-4 flex flex-col">
+    <main className="h-full p-2 gap-2 flex flex-col">
       {/* Header Compacto */}
-      <header className="flex items-center gap-3 flex-shrink-0">
-        {/* <div className="rounded-lg bg-purple-500/10 p-2">
-          <Package className="h-6 w-6 text-purple-500" />
-        </div> */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Reporte General de Inventario
-          </h1>
-          {/* <p className="text-muted-foreground text-sm">
-            <strong>Fecha de Corte:</strong> Suma todas las compras y ventas desde el inicio hasta esta fecha.
-            <br />
-            <strong>Fechas de Costo (opcional):</strong> Rango para calcular el costo promedio de valorización.
-          </p> */}
-        </div>
-      </header>
+      <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3 flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight tracking-tight">
+                Reporte General de Inventario
+              </h1>
+              {/* <p className="text-sm text-muted-foreground">
+                Análisis de productos con stock bajo o crítico
+              </p> */}
+            </div>
+          </div>
 
-      {/* Controles */}
-      <section className="bg-background rounded-lg p-4 border border-border flex-shrink-0">
-        <div className="space-y-4">
-          {/* Primera fila: Fechas */}
-          <div className="flex items-end gap-4 flex-wrap">
-            {/* Fecha de corte */}
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="fecha" className="flex items-center gap-2 text-sm font-semibold">
-                <Calendar className="size-4 text-primary" />
-                Fecha de Corte (hasta cuándo contar)
-              </Label>
-              <div className="flex gap-2">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end w-full sm:w-auto gap-2"></div>
+        </div>
+
+        {/* Filtros Compactos */}
+        <section className="border-t border-border pt-2">
+          <div className="space-y-4">
+            {/* Primera fila: Fechas */}
+            <div className="flex items-end gap-4 flex-wrap">
+              {/* Fecha de corte */}
+              <div className="flex flex-col gap-1">
+                <Label
+                  htmlFor="fecha"
+                  className="flex items-center gap-2 text-sm font-semibold"
+                >
+                  <Calendar className="size-4 text-primary" />
+                  Fecha de Corte (hasta cuándo contar)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="fecha"
+                    type="date"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    className="w-auto"
+                    max={format(new Date(), "yyyy-MM-dd")}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFecha(format(new Date(), "yyyy-MM-dd"))}
+                    className="whitespace-nowrap"
+                  >
+                    Hoy
+                  </Button>
+                </div>
+              </div>
+
+              {/* Fecha inicio costo */}
+              <div className="flex flex-col gap-1">
+                <Label
+                  htmlFor="fecha-inicio-costo"
+                  className="text-sm text-muted-foreground"
+                >
+                  Rango para Costo Promedio (opcional) - Desde:
+                </Label>
                 <Input
-                  id="fecha"
+                  id="fecha-inicio-costo"
                   type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  value={fechaInicioCosto}
+                  onChange={(e) => setFechaInicioCosto(e.target.value)}
                   className="w-auto"
+                  max={fechaFinCosto || format(new Date(), "yyyy-MM-dd")}
+                />
+              </div>
+
+              {/* Fecha fin costo */}
+              <div className="flex flex-col gap-1">
+                <Label
+                  htmlFor="fecha-fin-costo"
+                  className="text-sm text-muted-foreground"
+                >
+                  Hasta:
+                </Label>
+                <Input
+                  id="fecha-fin-costo"
+                  type="date"
+                  value={fechaFinCosto}
+                  onChange={(e) => setFechaFinCosto(e.target.value)}
+                  className="w-auto"
+                  min={fechaInicioCosto}
                   max={format(new Date(), "yyyy-MM-dd")}
                 />
+              </div>
+            </div>
+
+            {/* Segunda fila: Opciones y botones */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Checkboxes */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="incluir-transito"
+                    checked={incluirTransito}
+                    onCheckedChange={(checked) =>
+                      setIncluirTransito(checked as boolean)
+                    }
+                  />
+                  <Label
+                    htmlFor="incluir-transito"
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Incluir tránsito
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="solo-movimiento"
+                    checked={verSoloConMovimiento}
+                    onCheckedChange={(checked) =>
+                      setVerSoloConMovimiento(checked as boolean)
+                    }
+                  />
+                  <Label
+                    htmlFor="solo-movimiento"
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    Solo con movimiento
+                  </Label>
+                </div>
+              </div>
+
+              <Button
+                variant="default"
+                onClick={handleSearch}
+                disabled={isFetching}
+              >
+                {isFetching ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                ) : (
+                  <Search className="size-4 mr-2" />
+                )}
+                {isFetching ? "Cargando..." : "Buscar"}
+              </Button>
+
+              <div className="ml-auto flex items-center gap-2">
+                <TooltipButton
+                  onClick={handleRefresh}
+                  buttonProps={{
+                    variant: "outline",
+                    size: "sm",
+                    disabled: isFetching,
+                  }}
+                  tooltip="Actualizar reporte"
+                >
+                  <RefreshCcw
+                    className={`size-4 ${isFetching ? "animate-spin" : ""}`}
+                  />
+                </TooltipButton>
+
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setFecha(format(new Date(), "yyyy-MM-dd"))}
-                  className="whitespace-nowrap"
+                  onClick={handleDownload}
+                  disabled={data.length === 0 || isDownloading}
                 >
-                  Hoy
+                  <Download
+                    className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`}
+                  />
+                  {isDownloading ? "Descargando..." : "Exportar"}
                 </Button>
               </div>
             </div>
-
-            {/* Fecha inicio costo */}
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="fecha-inicio-costo" className="text-sm text-muted-foreground">
-                Rango para Costo Promedio (opcional) - Desde:
-              </Label>
-              <Input
-                id="fecha-inicio-costo"
-                type="date"
-                value={fechaInicioCosto}
-                onChange={(e) => setFechaInicioCosto(e.target.value)}
-                className="w-auto"
-                max={fechaFinCosto || format(new Date(), "yyyy-MM-dd")}
-              />
-            </div>
-
-            {/* Fecha fin costo */}
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="fecha-fin-costo" className="text-sm text-muted-foreground">
-                Hasta:
-              </Label>
-              <Input
-                id="fecha-fin-costo"
-                type="date"
-                value={fechaFinCosto}
-                onChange={(e) => setFechaFinCosto(e.target.value)}
-                className="w-auto"
-                min={fechaInicioCosto}
-                max={format(new Date(), "yyyy-MM-dd")}
-              />
-            </div>
           </div>
-
-          {/* Segunda fila: Opciones y botones */}
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Checkboxes */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="incluir-transito"
-                  checked={incluirTransito}
-                  onCheckedChange={(checked) => setIncluirTransito(checked as boolean)}
-                />
-                <Label htmlFor="incluir-transito" className="text-sm font-normal cursor-pointer">
-                  Incluir tránsito
-                </Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="solo-movimiento"
-                  checked={verSoloConMovimiento}
-                  onCheckedChange={(checked) => setVerSoloConMovimiento(checked as boolean)}
-                />
-                <Label htmlFor="solo-movimiento" className="text-sm font-normal cursor-pointer">
-                  Solo con movimiento
-                </Label>
-              </div>
-            </div>
-
-            <Button variant="default" onClick={handleSearch} disabled={isFetching}>
-              {isFetching ? (
-                <Loader2 className="size-4 mr-2 animate-spin" />
-              ) : (
-                <Search className="size-4 mr-2" />
-              )}
-              {isFetching ? "Cargando..." : "Buscar"}
-            </Button>
-
-            <div className="ml-auto flex items-center gap-2">
-              <TooltipButton
-                onClick={handleRefresh}
-                buttonProps={{
-                  variant: "outline",
-                  size: "sm",
-                  disabled: isFetching,
-                }}
-                tooltip="Actualizar reporte"
-              >
-                <RefreshCcw
-                  className={`size-4 ${isFetching ? "animate-spin" : ""}`}
-                />
-              </TooltipButton>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                disabled={data.length === 0 || isDownloading}
-              >
-                <Download className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`} />
-                {isDownloading ? "Descargando..." : "Exportar"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ViewToggle y Stats integrados */}
-      <div className="flex items-center justify-between flex-shrink-0 flex-wrap gap-3">
-        {/* <StockViewToggle value={viewMode} onChange={setViewMode} /> */}
-
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
-              <Package className="size-4 text-primary" />
-              <span className="font-semibold text-primary">{stats.totalItems}</span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">productos</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20">
-            <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-              Bs. {stats.totalValor.toLocaleString("es-BO", { maximumFractionDigits: 0 })}
-            </span>
-            <span className="text-emerald-600/70 dark:text-emerald-400/70 text-xs">valor</span>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
-            <Package className="size-4 text-orange-600 dark:text-orange-400" />
-            <span className="font-semibold text-orange-600 dark:text-orange-400">
-              {stats.totalStock.toLocaleString("es-BO", { maximumFractionDigits: 0 })}
-            </span>
-            <span className="text-orange-600/70 dark:text-orange-400/70 text-xs">stock</span>
-          </div>
-        </div>
-      </div>
+        </section>
+      </header>
 
       {/* Selector de Top (solo visible en modo gráfico) */}
       {viewMode === "chart" && data.length > 0 && (
@@ -487,7 +501,8 @@ const InventarioReportScreen = () => {
       {/* Error Message */}
       {isError && error && (
         <div className="bg-destructive/10 dark:bg-destructive/20 border border-destructive/30 dark:border-destructive/40 rounded-lg p-3 text-destructive text-sm flex-shrink-0">
-          <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte"}
+          <strong>Error:</strong>{" "}
+          {(error as Error)?.message || "No se pudo cargar el reporte"}
         </div>
       )}
 
@@ -498,27 +513,75 @@ const InventarioReportScreen = () => {
         ) : (
           <div className="h-full bg-background rounded-lg border border-border flex flex-col">
             {/* Info de resultados */}
-            <div className="p-2 text-sm border-b border-border flex-shrink-0">
-              {!shouldFetch ? (
-                <div className="text-muted-foreground space-y-1">
-                  <div><strong>Tip:</strong> Selecciona la fecha de hoy para ver el inventario actual</div>
-                  <div className="text-xs">
-                    • Asegúrate de tener una sucursal seleccionada
-                    <br />• Si obtienes valores en 0, puede ser que la sucursal seleccionada no tenga movimientos
+            <div className="flex items-center justify-between border-b border-border flex-shrink-0 p-2">
+              <div className="text-sm">
+                {!shouldFetch ? (
+                  <div className="text-muted-foreground space-y-1">
+                    <div>
+                      <strong>Tip:</strong> Selecciona la fecha de hoy para ver
+                      el inventario actual
+                    </div>
+                    <div className="text-xs">
+                      • Asegúrate de tener una sucursal seleccionada
+                      <br />• Si obtienes valores en 0, puede ser que la
+                      sucursal seleccionada no tenga movimientos
+                    </div>
                   </div>
+                ) : data.length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">
+                      Mostrando {data.length} productos
+                    </span>
+                    {selectedBranchId && (
+                      <span className="text-xs text-primary">
+                        (sucursal ID: {selectedBranchId})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-amber-600 dark:text-amber-400">
+                    Sin resultados - Verifica la fecha o la sucursal
+                    seleccionada
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 text-sm flex-shrink-0">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
+                  <Package className="size-4 text-primary" />
+                  <span className="font-semibold text-primary">
+                    {stats.totalItems}
+                  </span>
+                  <span className="text-primary hidden sm:inline">
+                    productos
+                  </span>
                 </div>
-              ) : data.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Mostrando {data.length} productos</span>
-                  {selectedBranchId && (
-                    <span className="text-xs text-primary">(sucursal ID: {selectedBranchId})</span>
-                  )}
+
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20">
+                  <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    Bs.{" "}
+                    {stats.totalValor.toLocaleString("es-BO", {
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                  <span className="text-emerald-600/70 dark:text-emerald-400/70 text-xs">
+                    valor
+                  </span>
                 </div>
-              ) : (
-                <span className="text-amber-600 dark:text-amber-400">
-                  Sin resultados - Verifica la fecha o la sucursal seleccionada
-                </span>
-              )}
+
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
+                  <Package className="size-4 text-orange-600 dark:text-orange-400" />
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    {stats.totalStock.toLocaleString("es-BO", {
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
+                  <span className="text-orange-600/70 dark:text-orange-400/70 text-xs">
+                    stock
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Tabla */}

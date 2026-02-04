@@ -9,22 +9,31 @@ import { useBranchStore } from "@/states/branchStore";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
   Download,
-  DollarSign,
   Loader2,
   RefreshCcw,
   Search,
   TrendingUp,
   TrendingDown,
   Calendar,
+  ChartBar,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useUtilidadesReport, useDownloadUtilidadesReport } from "../hooks/queries/useUtilidadesReport";
-import type { UtilidadesFilters, UtilidadesItem, UtilidadesStats } from "../types/UtilidadesReport.types";
-import { StockViewToggle, type StockViewMode } from "../components/StockViewToggle";
+import {
+  useUtilidadesReport,
+  useDownloadUtilidadesReport,
+} from "../hooks/queries/useUtilidadesReport";
+import type {
+  UtilidadesFilters,
+  UtilidadesItem,
+  UtilidadesStats,
+} from "../types/UtilidadesReport.types";
+import { type StockViewMode } from "../components/StockViewToggle";
 import { UtilidadesChart } from "../components/UtilidadesChart";
-import { subMonths, subWeeks, subYears, startOfYear, format } from "date-fns";
+import { subMonths, subWeeks, format } from "date-fns";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formaters";
+import { ViewToggle } from "@/modules/reports/components/ViewToggle";
 
 const UtilidadesReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -48,11 +57,17 @@ const UtilidadesReportScreen = () => {
   });
 
   // Query del reporte (usa filtros aplicados)
-  const { data: reportData, isLoading, isFetching, isError, error, refetch } =
-    useUtilidadesReport({
-      filters: appliedFilters,
-      enabled: shouldFetch,
-    });
+  const {
+    data: reportData,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useUtilidadesReport({
+    filters: appliedFilters,
+    enabled: shouldFetch,
+  });
 
   // Mutation para descargar
   const { mutate: downloadReport, isPending: isDownloading } =
@@ -78,7 +93,8 @@ const UtilidadesReportScreen = () => {
       (sum, item) => sum + parseFloat(item.utilidad.toString()),
       0
     );
-    const margenPromedio = totalIngreso > 0 ? (totalUtilidad / totalIngreso) * 100 : 0;
+    const margenPromedio =
+      totalIngreso > 0 ? (totalUtilidad / totalIngreso) * 100 : 0;
     const productosRentables = data.filter(
       (item) => parseFloat(item.utilidad.toString()) > 0
     ).length;
@@ -109,7 +125,7 @@ const UtilidadesReportScreen = () => {
         enableSorting: false,
         enableHiding: false,
         cell: ({ row }) => (
-          <div className="text-center text-xs font-semibold text-gray-500">
+          <div className="text-center text-xs font-semibold text-muted-foreground">
             {row.index + 1}
           </div>
         ),
@@ -155,8 +171,9 @@ const UtilidadesReportScreen = () => {
           const costo = parseFloat(getValue<string>());
           return (
             <div className="text-right">
-              <span className="font-medium text-red-600">
-                Bs. {costo.toLocaleString("es-BO", {
+              <span className="font-medium text-red-600 dark:text-red-400">
+                Bs.{" "}
+                {costo.toLocaleString("es-BO", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -174,8 +191,9 @@ const UtilidadesReportScreen = () => {
           const ingreso = parseFloat(getValue<string>());
           return (
             <div className="text-right">
-              <span className="font-medium text-blue-600">
-                Bs. {ingreso.toLocaleString("es-BO", {
+              <span className="font-medium text-blue-600 dark:text-blue-400">
+                Bs.{" "}
+                {ingreso.toLocaleString("es-BO", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -197,7 +215,13 @@ const UtilidadesReportScreen = () => {
           return (
             <div className="text-right">
               <Badge
-                variant={utilidad > 0 ? "success" : utilidad < 0 ? "danger" : "secondary"}
+                variant={
+                  utilidad > 0
+                    ? "success"
+                    : utilidad < 0
+                      ? "danger"
+                      : "secondary"
+                }
                 className="rounded font-bold"
               >
                 {utilidad > 0 ? (
@@ -205,7 +229,8 @@ const UtilidadesReportScreen = () => {
                 ) : utilidad < 0 ? (
                   <TrendingDown className="size-3 mr-1" />
                 ) : null}
-                Bs. {utilidad.toLocaleString("es-BO", {
+                Bs.{" "}
+                {utilidad.toLocaleString("es-BO", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -275,60 +300,71 @@ const UtilidadesReportScreen = () => {
     setDateRange(subMonths(new Date(), 3), new Date());
   };
 
-  const setThisYear = () => {
-    setDateRange(startOfYear(new Date()), new Date());
-  };
+  // const setThisYear = () => {
+  //   setDateRange(startOfYear(new Date()), new Date());
+  // };
 
-  const setLastYear = () => {
-    const lastYear = subYears(new Date(), 1);
-    setDateRange(startOfYear(lastYear), new Date(lastYear.getFullYear(), 11, 31));
-  };
+  // const setLastYear = () => {
+  //   const lastYear = subYears(new Date(), 1);
+  //   setDateRange(
+  //     startOfYear(lastYear),
+  //     new Date(lastYear.getFullYear(), 11, 31)
+  //   );
+  // };
 
   return (
-    <main className="h-full p-4 gap-4 flex flex-col">
+    <main className="h-full p-2 gap-2 flex flex-col">
       {/* Header Compacto */}
-      <header className="flex items-center gap-3 flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Reporte de Utilidades
-          </h1>
-          <p className="text-muted-foreground">
-            Análisis de rentabilidad por producto
-          </p>
-        </div>
-      </header>
+      <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3 flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight tracking-tight">
+                Reporte de Utilidades
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Análisis de rentabilidad por producto
+              </p>
+            </div>
+          </div>
 
-      {/* Filtros Compactos */}
-      <section className="bg-background rounded-lg p-3 border border-border flex-shrink-0 space-y-3">
-        {/* Fila 1: Shortcuts de fechas */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Calendar className="size-4 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground font-medium">Rápido:</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={setLastWeek}
-            className="h-7 text-xs"
-          >
-            Última semana
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={setLastMonth}
-            className="h-7 text-xs"
-          >
-            Último mes
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={setLast3Months}
-            className="h-7 text-xs"
-          >
-            Últimos 3 meses
-          </Button>
-          {/* <Button
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end w-full sm:w-auto gap-2"></div>
+        </div>
+
+        {/* Filtros Compactos */}
+        <section className="border-t border-border pt-2 space-y-2">
+          {/* Fila 1: Shortcuts de fechas */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Calendar className="size-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground font-medium">
+              Rápido:
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={setLastWeek}
+              className="h-7 text-xs"
+            >
+              Última semana
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={setLastMonth}
+              className="h-7 text-xs"
+            >
+              Último mes
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={setLast3Months}
+              className="h-7 text-xs"
+            >
+              Últimos 3 meses
+            </Button>
+            {/* <Button
             variant="outline"
             size="sm"
             onClick={setThisYear}
@@ -344,167 +380,197 @@ const UtilidadesReportScreen = () => {
           >
             Año pasado
           </Button> */}
-        </div>
-
-        {/* Fila 2: Controles principales */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="fecha-inicio" className="text-sm">
-              Desde:
-            </Label>
-            <input
-              id="fecha-inicio"
-              type="date"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="h-8 px-2 rounded-md border border-border text-sm"
-            />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Label htmlFor="fecha-fin" className="text-sm">
-              Hasta:
-            </Label>
-            <input
-              id="fecha-fin"
-              type="date"
-              value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="h-8 px-2 rounded-md border border-border text-sm"
-            />
-          </div>
-
-          <Button variant="default" onClick={handleSearch} disabled={isFetching}>
-            {isFetching ? (
-              <Loader2 className="size-4 mr-2 animate-spin" />
-            ) : (
-              <Search className="size-4 mr-2" />
-            )}
-            {isFetching ? "Buscando..." : "Buscar"}
-          </Button>
-
-          <div className="ml-auto flex items-center gap-2">
-            <TooltipButton
-              onClick={handleRefresh}
-              buttonProps={{
-                variant: "outline",
-                size: "sm",
-                disabled: isFetching,
-              }}
-              tooltip="Actualizar reporte"
-            >
-              <RefreshCcw
-                className={`size-4 ${isFetching ? "animate-spin" : ""}`}
+          {/* Fila 2: Controles principales */}
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="fecha-inicio" className="text-sm">
+                Desde:
+              </Label>
+              <input
+                id="fecha-inicio"
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="h-8 px-2 rounded-md border border-border text-sm"
               />
-            </TooltipButton>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Label htmlFor="fecha-fin" className="text-sm">
+                Hasta:
+              </Label>
+              <input
+                id="fecha-fin"
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="h-8 px-2 rounded-md border border-border text-sm"
+              />
+            </div>
 
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={data.length === 0 || isDownloading}
+              variant="default"
+              onClick={handleSearch}
+              disabled={isFetching}
             >
-              <Download className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`} />
-              {isDownloading ? "Descargando..." : "Exportar"}
+              {isFetching ? (
+                <Loader2 className="size-4 mr-2 animate-spin" />
+              ) : (
+                <Search className="size-4 mr-2" />
+              )}
+              {isFetching ? "Buscando..." : "Buscar"}
             </Button>
-          </div>
-        </div>
-      </section>
 
-      {/* ViewToggle y Stats integrados */}
-      <div className="flex items-center justify-between flex-shrink-0 flex-wrap gap-3">
-        <StockViewToggle value={viewMode} onChange={setViewMode} />
-
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
-              <DollarSign className="size-4 text-primary" />
-              <span className="font-semibold text-primary">{stats.totalItems}</span>
-            </div>
-            <span className="text-muted-foreground hidden sm:inline">productos</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10">
-            <TrendingUp className="size-4 text-green-600" />
-            <span className="font-semibold text-green-600">
-              Bs. {stats.totalUtilidad.toLocaleString("es-BO", { maximumFractionDigits: 0 })}
-            </span>
-            <span className="text-green-600/70 text-xs">utilidad</span>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10">
-            <span className="text-blue-600 text-xs">📊</span>
-            <span className="font-semibold text-blue-600">{stats.margenPromedio.toFixed(1)}%</span>
-            <span className="text-blue-600/70 text-xs">margen</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Selector de Top (solo visible en modo gráfico) */}
-      {viewMode === "chart" && data.length > 0 && (
-        <div className="bg-background rounded-lg p-3 border border-border flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <Label className="flex items-center gap-2 text-sm font-medium whitespace-nowrap">
-              <span>Top {topLimit} productos</span>
-              <EditableQuantity
-                value={topLimit}
-                className={cn("w-16 h-7 text-xs text-center font-bold")}
-                onSubmit={(value) => {
-                  const num = value as number;
-                  if (num >= 1 && num <= data.length) {
-                    setTopLimit(num);
-                  } else if (num > data.length) {
-                    setTopLimit(data.length);
-                  } else {
-                    setTopLimit(1);
-                  }
+            <div className="ml-auto flex items-center gap-2">
+              <TooltipButton
+                onClick={handleRefresh}
+                buttonProps={{
+                  variant: "outline",
+                  size: "sm",
+                  disabled: isFetching,
                 }}
-                validate={(val) => {
-                  const num = parseInt(val);
-                  return !isNaN(num) && num > 0;
-                }}
-              />
-            </Label>
-            <div className="flex-1 max-w-md">
-              <Slider
-                value={[topLimit]}
-                onValueChange={(value) => setTopLimit(value[0])}
-                min={1}
-                max={data.length}
-                step={data.length > 100 ? 5 : 1}
-              />
-            </div>
-            <div className="text-xs text-muted-foreground">
-              de {data.length} total
+                tooltip="Actualizar reporte"
+              >
+                <RefreshCcw
+                  className={`size-4 ${isFetching ? "animate-spin" : ""}`}
+                />
+              </TooltipButton>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                disabled={data.length === 0 || isDownloading}
+              >
+                <Download
+                  className={`size-4 mr-2 ${isDownloading ? "animate-pulse" : ""}`}
+                />
+                {isDownloading ? "Descargando..." : "Exportar"}
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </section>
+      </header>
 
       {/* Error Message */}
       {isError && error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex-shrink-0">
-          <strong>Error:</strong> {(error as Error)?.message || "No se pudo cargar el reporte"}
+          <strong>Error:</strong>{" "}
+          {(error as Error)?.message || "No se pudo cargar el reporte"}
         </div>
       )}
 
       {/* Contenido principal - Tabla o Gráfico */}
       <div className="flex-1 min-h-0">
-        {viewMode === "chart" ? (
-          <UtilidadesChart data={data} limit={topLimit} />
-        ) : (
-          <div className="h-full bg-background rounded-lg border border-border flex flex-col">
-            {/* Info de resultados */}
-            <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0">
-              {!shouldFetch
-                ? "Presiona 'Buscar' para cargar el reporte"
-                : data.length > 0
-                  ? `Mostrando ${data.length} productos`
-                  : "Sin resultados"}
+        <div
+          className={cn(
+            "h-full bg-background rounded-lg border border-border flex flex-col"
+          )}
+        >
+          <div className="flex flex-col flex-shrink-0 p-2 gap-2 border-b border-border">
+            {/* ViewToggle y Stats integrados */}
+            <div className="flex items-center justify-between flex-shrink-0">
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+
+              <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
+                  <span className="font-semibold text-primary">
+                    {stats.totalItems}
+                  </span>
+                  <span className="text-primary hidden sm:inline">
+                    productos
+                  </span>
+                </div>
+
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10">
+                  <TrendingUp className="size-4 text-green-600 dark:text-green-400" />
+                  <span className="font-semibold text-green-600 dark:text-green-400">
+                    {formatCurrency(stats.totalUtilidad)}
+                  </span>
+                  <span className="text-green-600/70 dark:text-green-400 text-xs">
+                    utilidad
+                  </span>
+                </div>
+
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 dark:bg-blue-950/50">
+                  <ChartBar className="size-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">
+                    {stats.margenPromedio.toFixed(1)}%
+                  </span>
+                  <span className="text-blue-600/70 dark:text-blue-400 text-xs">
+                    margen
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Tabla */}
-            <div className="flex-1 min-h-0">
+            {/* Info de resultados */}
+            {viewMode === "table" ? (
+              <div className="flex-shrink-0 flex items-center justify-between gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {!shouldFetch
+                    ? "Presiona 'Buscar' para cargar el reporte"
+                    : data.length > 0
+                      ? `Mostrando ${data.length} productos`
+                      : "Sin resultados"}
+                </span>
+
+                {/* Indicador de carga mientras refetch */}
+                {(isFetching || isLoading) && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-4 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cargando datos... Este proceso puede tardar.
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Selector de Top (solo visible en modo gráfico)
+              <div className="flex-shrink-0">
+                <div className="flex items-center gap-4">
+                  <Label className="flex items-center gap-2 text-sm font-medium whitespace-nowrap">
+                    <span>Top {topLimit} productos</span>
+                    <EditableQuantity
+                      value={topLimit}
+                      className={cn("w-16 h-7 text-xs text-center font-bold")}
+                      onSubmit={(value) => {
+                        const num = value as number;
+                        if (num >= 1 && num <= data.length) {
+                          setTopLimit(num);
+                        } else if (num > data.length) {
+                          setTopLimit(data.length);
+                        } else {
+                          setTopLimit(1);
+                        }
+                      }}
+                      validate={(val) => {
+                        const num = parseInt(val);
+                        return !isNaN(num) && num > 0;
+                      }}
+                    />
+                  </Label>
+                  <div className="flex-1 max-w-md">
+                    <Slider
+                      value={[topLimit]}
+                      onValueChange={(value) => setTopLimit(value[0])}
+                      min={1}
+                      max={data.length}
+                      step={data.length > 100 ? 5 : 1}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    de {data.length} total
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-h-0">
+            {viewMode === "chart" ? (
+              <UtilidadesChart data={data} limit={topLimit} />
+            ) : (
+              // Tabla
               <VirtualizedCustomizableTable
                 table={table}
                 isLoading={isLoading}
@@ -517,9 +583,9 @@ const UtilidadesReportScreen = () => {
                 enableSorting
                 estimatedRowHeight={50}
               />
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </main>
   );
