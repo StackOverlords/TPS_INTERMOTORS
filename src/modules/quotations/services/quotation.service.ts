@@ -51,7 +51,7 @@ export const quotationService = {
             count: response.data.length,
         }, MODULE_NAME);
 
-        return response;
+        return response as QuotationGetAllResponse;
     },
 
     /**

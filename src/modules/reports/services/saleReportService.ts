@@ -21,7 +21,7 @@ import type {
   ReportMayorIngresoFilters,
 } from '../types/report.types';
 import { REPORT_ENDPOINTS } from './reportEndpoints';
-import apiClient from '@/services/axios';
+import type { AxiosRequestConfig } from 'axios';
 
 const MODULE_NAME = 'SALE_REPORT_SERVICE';
 
@@ -41,19 +41,16 @@ const createFormData = (filters: Record<string, any>): FormData => {
 };
 
 /**
- * Obtiene el blob Excel del backend
+ * Configuracion para descargar excel
  */
-const fetchExcelBlob = async (endpoint: string, formData: FormData): Promise<Blob> => {
-  const response = await apiClient.post(endpoint, formData, {
-    responseType: 'blob',
-    headers: {
-      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    },
-  });
-
-  return new Blob([response.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
+const ExcelRequestConfig =  (timeout?:number): AxiosRequestConfig => {
+  return  {
+	responseType: 'blob',
+	headers: {
+	  'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+	},
+	timeout: timeout || 120000, // 2 minutos por defecto
+  };
 };
 
 export const reportService = {
@@ -78,9 +75,14 @@ export const reportService = {
     });
 
     if (isDownloadable) {
-      const blob = await fetchExcelBlob(REPORT_ENDPOINTS.sales.general, formData);
+      const blob = await ApiService.post(
+      REPORT_ENDPOINTS.sales.general,
+      formData,
+      undefined,
+      ExcelRequestConfig()
+    );
       Logger.info('General report blob fetched successfully', {}, MODULE_NAME);
-      return blob;
+      return blob as Blob;
     }
 
     const response = await ApiService.post(
@@ -120,9 +122,14 @@ export const reportService = {
     });
 
     if (isDownloadable) {
-      const blob = await fetchExcelBlob(REPORT_ENDPOINTS.sales.masVendido, formData);
+      const blob = await ApiService.post(
+      REPORT_ENDPOINTS.sales.masVendido,
+      formData,
+      undefined,
+      ExcelRequestConfig()
+    );
       Logger.info('Most sold report blob fetched successfully', {}, MODULE_NAME);
-      return blob;
+      return blob as Blob;
     }
 
     const response = await ApiService.post(
@@ -162,9 +169,14 @@ export const reportService = {
     });
 
     if (isDownloadable) {
-      const blob = await fetchExcelBlob(REPORT_ENDPOINTS.sales.mayorIngreso, formData);
+      const blob = await ApiService.post(
+      REPORT_ENDPOINTS.sales.mayorIngreso,
+      formData,
+      undefined,
+      ExcelRequestConfig()
+    );
       Logger.info('Top revenue report blob fetched successfully', {}, MODULE_NAME);
-      return blob;
+      return blob as Blob;
     }
 
     const response = await ApiService.post(

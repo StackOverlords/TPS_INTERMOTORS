@@ -8,6 +8,7 @@ import { Award } from "lucide-react";
 import { Badge } from "@/components/atoms/badge";
 import { TableCell, TableRow } from "@/components/atoms/table";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
+import { formatCurrency } from "@/utils/formaters";
 
 interface ReportTableProps {
   data: ReportItem[];
@@ -29,14 +30,6 @@ const formatNumber = (value: string | number, decimals: number = 2): string => {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
-};
-
-const formatCurrency = (value: string | number): string => {
-  const num = typeof value === "string" ? parseFloat(value.toString()) : value;
-  return `Bs ${num.toLocaleString("es-BO", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
 };
 
 export function SaleReportTable({

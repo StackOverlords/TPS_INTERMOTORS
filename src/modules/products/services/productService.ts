@@ -10,313 +10,390 @@ import { utilidadesReportResponseSchema } from "../schemas/utilidades.schema";
 import { inventarioReportResponseSchema } from "../schemas/inventario.schema";
 import type { ProductCreate } from "../types/ProductCreate.types";
 import type { ProductDetail } from "../types/productDetail";
-import type { ProvOrdersParams, SalesParams, StockParams } from "../types/productDetailParams";
+import type {
+  ProvOrdersParams,
+  SalesParams,
+  StockParams,
+} from "../types/productDetailParams";
 import type { ProductFilters } from "../types/productFilters";
 import type { ProductListResponse } from "../types/productListResponse ";
 import type { ProductProviderOrder } from "../types/ProductProviderOrder";
 import type { ProductSalesStats } from "../types/ProductSalesStats";
 import type { ProductStock } from "../types/productStock";
 import type { ProductUpdate } from "../types/ProductUpdate.types";
-import type { StockMinimoFilters, StockMinimoReportResponse } from "../types/StockMinimoReport.types";
-import type { UtilidadesFilters, UtilidadesReportResponse } from "../types/UtilidadesReport.types";
-import type { InventarioFilters, InventarioReportResponse } from "../types/InventarioReport.types";
+import type {
+  StockMinimoFilters,
+  StockMinimoReportResponse,
+} from "../types/StockMinimoReport.types";
+import type {
+  UtilidadesFilters,
+  UtilidadesReportResponse,
+} from "../types/UtilidadesReport.types";
+import type {
+  InventarioFilters,
+  InventarioReportResponse,
+} from "../types/InventarioReport.types";
 import { PRODUCT_ENDPOINTS } from "./endpoints";
 import { ProductGetByIdWithStockSchema } from "../schemas/ProductGetByIdWithStock.schema";
 import type { ProductGetByIdWithStock } from "../types/ProductGetByIdWithStock.type";
+import type { AxiosRequestConfig } from "axios";
 
 const MODULE_NAME = "PRODUCTS_SERVICE";
 
-export const productsService = {
-	/**
-	 * Obtener todos los productos con filtros opcionales
-	 * @param filters - Filtros opcionales para la consulta
-	 */
-	async getAll(filters: Partial<ProductFilters>): Promise<ProductListResponse> {
-		Logger.info("Fetching products", { filters }, MODULE_NAME);
-		const response = await ApiService.get(
-			PRODUCT_ENDPOINTS.all,
-			ProductListResponseSchema,
-			{ params: filters }
-		);
-		Logger.info("Products fetched successfully", { count: response.data.length }, MODULE_NAME);
-		return response as ProductListResponse;
-	},
-
-	/**
-	 * Obtener detalle de un producto por ID
-	 * @param id - ID del producto
-	 */
-	async getById(id: number): Promise<ProductDetail> {
-		Logger.info("Fetching product detail", { id }, MODULE_NAME);
-		const response = await ApiService.get(
-			PRODUCT_ENDPOINTS.byId(id),
-			ProductDetailSchema,
-			undefined,
-			{ unwrapData: true }
-		);
-		Logger.info("Product detail fetched successfully", { id }, MODULE_NAME);
-		return response as ProductDetail;
-	},
-
-	/**
-	 * Obtener detalle de un producto por ID de una determinada sucursal
-	 * @param id - ID del producto
-	 * @param sucursalId - ID de la sucursal
-	 */
-	async getByIdWithStock(id: number, sucursalId: number): Promise<ProductGetByIdWithStock> {
-		Logger.info("Fetching product detail with stock", { id }, MODULE_NAME);
-		const response = await ApiService.get(
-			PRODUCT_ENDPOINTS.getByIdWithStock(id, sucursalId),
-			ProductGetByIdWithStockSchema,
-			undefined
-		);
-		Logger.info("Product detail with stock fetched successfully", { id, sucursalId }, MODULE_NAME);
-		return response as ProductGetByIdWithStock;
-	},
-
-	/**
-	 * Obtener stock de un producto con filtros opcionales
-	 * @param params - Parámetros para la consulta de stock
-	 */
-	async getStock(params: StockParams): Promise<ProductStock[]> {
-		Logger.info("Fetching product stock", { params }, MODULE_NAME);
-		const response = await ApiService.get(
-			PRODUCT_ENDPOINTS.stockDetails,
-			ProductStockListSchema,
-			{ params },
-			{ unwrapData: true }
-		);
-		Logger.info("Product stock fetched successfully", { length: response.length }, MODULE_NAME);
-		return response as ProductStock[];
-	},
-
-	/**
-	 * Obtener órdenes de productos con filtros opcionales
-	 * @param params - Parámetros para la consulta de órdenes de productos
-	 */
-	async getProviderOrders(params: ProvOrdersParams): Promise<ProductProviderOrder[]> {
-		Logger.info("Fetching provider orders", { params }, MODULE_NAME);
-		const response = await ApiService.get(
-			PRODUCT_ENDPOINTS.providerOrders,
-			ProductProviderOrderListSchema,
-			{ params },
-			{ unwrapData: true }
-		);
-		Logger.info("Provider orders fetched successfully", { length: response.length }, MODULE_NAME);
-		return response as ProductProviderOrder[];
-	},
-
-	/**
-	 * Obtener estadísticas de ventas de un producto, basado en dos años
-	 * @param params - Parámetros para la consulta de estadísticas
-	 */
-	async getSalesStats(params: SalesParams): Promise<ProductSalesStats> {
-		Logger.info("Fetching product sales stats", { params }, MODULE_NAME);
-		const response = await ApiService.get(
-			PRODUCT_ENDPOINTS.twoYearsSales,
-			ProductSalesSchema,
-			{ params }
-		);
-		Logger.info("Product sales stats fetched successfully", {}, MODULE_NAME);
-		return response as ProductSalesStats;
-	},
-
-	/**
-	 * Eliminar un producto por ID
-	 * @param id - ID del producto
-	 */
-	async delete(id: number): Promise<void> {
-		Logger.info("Deleting product", { id }, MODULE_NAME);
-		await ApiService.delete(PRODUCT_ENDPOINTS.delete(id));
-		Logger.info("Product deleted successfully", { id }, MODULE_NAME);
-	},
-
-	/**	
-	 * Modificar producto
-	 * @param id - ID del producto
-	 * @param data - Datos para actualizar el producto
-	 */
-	async update(id: number, data: ProductUpdate): Promise<ProductDetail> {
-		Logger.info('Updating product', { id, data }, MODULE_NAME);
-
-		const response = await ApiService.put(
-			PRODUCT_ENDPOINTS.update(id),
-			data,
-			ProductDetailSchema,
-			undefined,
-			{ unwrapData: true }
-		);
-
-		Logger.info('Product updated successfully', {
-			id
-		}, MODULE_NAME);
-		return response as ProductDetail;
-	},
-
-	/**
-		 * Crear un nuevo producto
-		 * @param data - Datos del producto a crear
-		 */
-	async create(data: ProductCreate): Promise<ProductDetail> {
-		Logger.info('Creating product', { data }, MODULE_NAME);
-		if (data.id_subcategoria === 0) {
-			delete data.id_subcategoria;
-		}
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.create,
-			data,
-			ProductDetailSchema,
-			undefined,
-			{ unwrapData: true }
-		);
-
-		Logger.info(
-			"Product created successfully",
-			undefined,
-			// response.data.id && { id: response.data.id },
-			MODULE_NAME
-		);
-		return response as ProductDetail;
-	},
-
-	/**
- * Actualizar imagen de un producto
- * @param id - ID del producto
- * @param imageFile - Archivo de imagen
+/**
+ * Configuracion para descargar excel
  */
-	async updateImage(id: number, imageFile: File): Promise<{ success: boolean }> {
-		Logger.info("Updating product image", { id, fileName: imageFile.name }, MODULE_NAME);
+const ExcelRequestConfig = (timeout?: number): AxiosRequestConfig => {
+  return {
+    responseType: "blob",
+    headers: {
+      Accept:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+    timeout: timeout || 120000, // 2 minutos por defecto
+  };
+};
 
-		const formData = new FormData();
-		formData.append("imagen", imageFile);
+export const productsService = {
+  /**
+   * Obtener todos los productos con filtros opcionales
+   * @param filters - Filtros opcionales para la consulta
+   */
+  async getAll(filters: Partial<ProductFilters>): Promise<ProductListResponse> {
+    Logger.info("Fetching products", { filters }, MODULE_NAME);
+    const response = await ApiService.get(
+      PRODUCT_ENDPOINTS.all,
+      ProductListResponseSchema,
+      { params: filters },
+    );
+    Logger.info(
+      "Products fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
+    );
+    return response as ProductListResponse;
+  },
 
-		// Usar el post existente con config para multipart/form-data
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.actions.updateImage(id),
-			formData,
-			undefined,
-			{
-				headers: {
-					'Content-Type': 'multipart/form-data',
-				},
-			}
-		);
+  /**
+   * Obtener detalle de un producto por ID
+   * @param id - ID del producto
+   */
+  async getById(id: number): Promise<ProductDetail> {
+    Logger.info("Fetching product detail", { id }, MODULE_NAME);
+    const response = await ApiService.get(
+      PRODUCT_ENDPOINTS.byId(id),
+      ProductDetailSchema,
+      undefined,
+      { unwrapData: true },
+    );
+    Logger.info("Product detail fetched successfully", { id }, MODULE_NAME);
+    return response as ProductDetail;
+  },
 
-		Logger.info("Product image updated successfully", { id }, MODULE_NAME);
-		return response as { success: boolean };
-	},
+  /**
+   * Obtener detalle de un producto por ID de una determinada sucursal
+   * @param id - ID del producto
+   * @param sucursalId - ID de la sucursal
+   */
+  async getByIdWithStock(
+    id: number,
+    sucursalId: number,
+  ): Promise<ProductGetByIdWithStock> {
+    Logger.info("Fetching product detail with stock", { id }, MODULE_NAME);
+    const response = await ApiService.get(
+      PRODUCT_ENDPOINTS.getByIdWithStock(id, sucursalId),
+      ProductGetByIdWithStockSchema,
+      undefined,
+    );
+    Logger.info(
+      "Product detail with stock fetched successfully",
+      { id, sucursalId },
+      MODULE_NAME,
+    );
+    return response as ProductGetByIdWithStock;
+  },
 
-	/**
-	 * Obtener reporte de stock mínimo
-	 * @param filters - Filtros para el reporte
-	 */
-	async getStockMinimoReport(filters: StockMinimoFilters): Promise<StockMinimoReportResponse> {
-		Logger.info("Fetching stock minimo report", { filters }, MODULE_NAME);
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.reports.stockMinimo,
-			filters,
-			StockMinimoReportResponseSchema,
-			{ timeout: 120000 } // 2 minutos para reportes pesados
-		);
-		Logger.info("Stock minimo report fetched successfully", { count: response.data.length }, MODULE_NAME);
-		return response as StockMinimoReportResponse;
-	},
+  /**
+   * Obtener stock de un producto con filtros opcionales
+   * @param params - Parámetros para la consulta de stock
+   */
+  async getStock(params: StockParams): Promise<ProductStock[]> {
+    Logger.info("Fetching product stock", { params }, MODULE_NAME);
+    const response = await ApiService.get(
+      PRODUCT_ENDPOINTS.stockDetails,
+      ProductStockListSchema,
+      { params },
+      { unwrapData: true },
+    );
+    Logger.info(
+      "Product stock fetched successfully",
+      { length: response.length },
+      MODULE_NAME,
+    );
+    return response as ProductStock[];
+  },
 
-	/**
-	 * Descargar reporte de stock mínimo en Excel
-	 * @param filters - Filtros para el reporte
-	 */
-	async downloadStockMinimoReport(filters: StockMinimoFilters): Promise<Blob> {
-		Logger.info("Downloading stock minimo report", { filters }, MODULE_NAME);
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.reports.stockMinimo,
-			{ ...filters, downloadable: true },
-			undefined,
-			{
-				timeout: 180000, // 3 minutos para descarga de Excel
-				responseType: 'blob',
-				headers: {
-					'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-				}
-			}
-		);
-		Logger.info("Stock minimo report downloaded successfully", {}, MODULE_NAME);
-		return response as Blob;
-	},
+  /**
+   * Obtener órdenes de productos con filtros opcionales
+   * @param params - Parámetros para la consulta de órdenes de productos
+   */
+  async getProviderOrders(
+    params: ProvOrdersParams,
+  ): Promise<ProductProviderOrder[]> {
+    Logger.info("Fetching provider orders", { params }, MODULE_NAME);
+    const response = await ApiService.get(
+      PRODUCT_ENDPOINTS.providerOrders,
+      ProductProviderOrderListSchema,
+      { params },
+      { unwrapData: true },
+    );
+    Logger.info(
+      "Provider orders fetched successfully",
+      { length: response.length },
+      MODULE_NAME,
+    );
+    return response as ProductProviderOrder[];
+  },
 
-	/**
-	 * Obtener reporte de utilidades
-	 * @param filters - Filtros para el reporte
-	 */
-	async getUtilidadesReport(filters: UtilidadesFilters): Promise<UtilidadesReportResponse> {
-		Logger.info("Fetching utilidades report", { filters }, MODULE_NAME);
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.reports.utilidades,
-			filters,
-			utilidadesReportResponseSchema,
-			{ timeout: 120000 } // 2 minutos para reportes pesados
-		);
-		Logger.info("Utilidades report fetched successfully", { count: response.data.length }, MODULE_NAME);
-		return response as UtilidadesReportResponse;
-	},
+  /**
+   * Obtener estadísticas de ventas de un producto, basado en dos años
+   * @param params - Parámetros para la consulta de estadísticas
+   */
+  async getSalesStats(params: SalesParams): Promise<ProductSalesStats> {
+    Logger.info("Fetching product sales stats", { params }, MODULE_NAME);
+    const response = await ApiService.get(
+      PRODUCT_ENDPOINTS.twoYearsSales,
+      ProductSalesSchema,
+      { params },
+    );
+    Logger.info("Product sales stats fetched successfully", {}, MODULE_NAME);
+    return response as ProductSalesStats;
+  },
 
-	/**
-	 * Descargar reporte de utilidades en Excel
-	 * @param filters - Filtros para el reporte
-	 */
-	async downloadUtilidadesReport(filters: UtilidadesFilters): Promise<Blob> {
-		Logger.info("Downloading utilidades report", { filters }, MODULE_NAME);
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.reports.utilidades,
-			{ ...filters, downloadable: true },
-			undefined,
-			{
-				timeout: 180000, // 3 minutos para descarga de Excel
-				responseType: 'blob',
-				headers: {
-					'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-				}
-			}
-		);
-		Logger.info("Utilidades report downloaded successfully", {}, MODULE_NAME);
-		return response as Blob;
-	},
+  /**
+   * Eliminar un producto por ID
+   * @param id - ID del producto
+   */
+  async delete(id: number): Promise<void> {
+    Logger.info("Deleting product", { id }, MODULE_NAME);
+    await ApiService.delete(PRODUCT_ENDPOINTS.delete(id));
+    Logger.info("Product deleted successfully", { id }, MODULE_NAME);
+  },
 
-	/**
-	 * Obtener reporte general de inventario
-	 * @param filters - Filtros para el reporte
-	 */
-	async getInventarioReport(filters: InventarioFilters): Promise<InventarioReportResponse> {
-		Logger.info("Fetching inventario report", { filters }, MODULE_NAME);
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.reports.inventarioGeneral,
-			filters,
-			inventarioReportResponseSchema,
-			{ timeout: 120000 } // 2 minutos para reportes pesados
-		);
-		Logger.info("Inventario report fetched successfully", { count: response.data.length }, MODULE_NAME);
-		return response as InventarioReportResponse;
-	},
+  /**
+   * Modificar producto
+   * @param id - ID del producto
+   * @param data - Datos para actualizar el producto
+   */
+  async update(id: number, data: ProductUpdate): Promise<ProductDetail> {
+    Logger.info("Updating product", { id, data }, MODULE_NAME);
 
-	/**
-	 * Descargar reporte de inventario en Excel
-	 * @param filters - Filtros para el reporte
-	 */
-	async downloadInventarioReport(filters: InventarioFilters): Promise<Blob> {
-		Logger.info("Downloading inventario report", { filters }, MODULE_NAME);
-		const response = await ApiService.post(
-			PRODUCT_ENDPOINTS.reports.inventarioGeneral,
-			{ ...filters, downloadable: true },
-			undefined,
-			{
-				timeout: 180000, // 3 minutos para descarga de Excel
-				responseType: 'blob',
-				headers: {
-					'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-				}
-			}
-		);
-		Logger.info("Inventario report downloaded successfully", {}, MODULE_NAME);
-		return response as Blob;
-	},
+    const response = await ApiService.put(
+      PRODUCT_ENDPOINTS.update(id),
+      data,
+      ProductDetailSchema,
+      undefined,
+      { unwrapData: true },
+    );
+
+    Logger.info(
+      "Product updated successfully",
+      {
+        id,
+      },
+      MODULE_NAME,
+    );
+    return response as ProductDetail;
+  },
+
+  /**
+   * Crear un nuevo producto
+   * @param data - Datos del producto a crear
+   */
+  async create(data: ProductCreate): Promise<ProductDetail> {
+    Logger.info("Creating product", { data }, MODULE_NAME);
+    if (data.id_subcategoria === 0) {
+      delete data.id_subcategoria;
+    }
+    const response = await ApiService.post(
+      PRODUCT_ENDPOINTS.create,
+      data,
+      ProductDetailSchema,
+      undefined,
+      { unwrapData: true },
+    );
+
+    Logger.info(
+      "Product created successfully",
+      undefined,
+      // response.data.id && { id: response.data.id },
+      MODULE_NAME,
+    );
+    return response as ProductDetail;
+  },
+
+  /**
+   * Actualizar imagen de un producto
+   * @param id - ID del producto
+   * @param imageFile - Archivo de imagen
+   */
+  async updateImage(
+    id: number,
+    imageFile: File,
+  ): Promise<{ success: boolean }> {
+    Logger.info(
+      "Updating product image",
+      { id, fileName: imageFile.name },
+      MODULE_NAME,
+    );
+
+    const formData = new FormData();
+    formData.append("imagen", imageFile);
+
+    // Usar el post existente con config para multipart/form-data
+    const response = await ApiService.post(
+      PRODUCT_ENDPOINTS.actions.updateImage(id),
+      formData,
+      undefined,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    Logger.info("Product image updated successfully", { id }, MODULE_NAME);
+    return response as { success: boolean };
+  },
+
+  /**
+   * Obtener reporte de stock mínimo
+   * @param filters - Filtros para el reporte
+   */
+  async getStockMinimoReport({
+    filters,
+    isDownloadable = false,
+  }: {
+    filters: StockMinimoFilters;
+    isDownloadable?: boolean;
+  }): Promise<StockMinimoReportResponse | Blob> {
+    Logger.info("Fetching stock minimo report", { filters }, MODULE_NAME);
+
+    const canDownloadable = isDownloadable ?? filters.downloadable;
+
+    if (canDownloadable) {
+      const blob = await ApiService.post(
+        PRODUCT_ENDPOINTS.reports.stockMinimo,
+        filters,
+        undefined,
+        ExcelRequestConfig(),
+      );
+      Logger.info(
+        "Stock minimo report downloaded successfully",
+        {},
+        MODULE_NAME,
+      );
+      return blob as Blob;
+    }
+
+    const response = await ApiService.post(
+      PRODUCT_ENDPOINTS.reports.stockMinimo,
+      filters,
+      StockMinimoReportResponseSchema,
+      {
+        timeout: 120000, // 2 minutos para reportes pesados
+      },
+    );
+
+    Logger.info(
+      "Stock minimo report fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
+    );
+
+    return response as StockMinimoReportResponse;
+  },
+
+  /**
+   * Obtener reporte de utilidades
+   * @param filters - Filtros para el reporte
+   */
+  async getUtilidadesReport({
+    filters,
+    isDownloadable = false,
+  }: {
+    filters: UtilidadesFilters;
+    isDownloadable?: boolean;
+  }): Promise<UtilidadesReportResponse | Blob> {
+    Logger.info("Fetching utilidades report", { filters }, MODULE_NAME);
+
+    if (isDownloadable) {
+      const blob = await ApiService.post(
+        PRODUCT_ENDPOINTS.reports.utilidades,
+        filters,
+        undefined,
+        ExcelRequestConfig(),
+      );
+      Logger.info("Utilidades report downloaded successfully", {}, MODULE_NAME);
+      return blob as Blob;
+    }
+
+    const response = await ApiService.post(
+      PRODUCT_ENDPOINTS.reports.utilidades,
+      filters,
+      utilidadesReportResponseSchema,
+      {
+        timeout: 120000, // 2 minutos para reportes pesados
+      },
+    );
+
+    Logger.info(
+      "Utilidades report fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
+    );
+
+    return response as UtilidadesReportResponse;
+  },
+
+  /**
+   * Obtener reporte general de inventario
+   * @param filters - Filtros para el reporte
+   */
+  async getInventarioReport({
+    filters,
+    isDownloadable = false,
+  }: {
+    filters: InventarioFilters;
+    isDownloadable?: boolean;
+  }): Promise<InventarioReportResponse | Blob> {
+    Logger.info("Fetching inventario report", { filters }, MODULE_NAME);
+
+    if (isDownloadable) {
+      const blob = await ApiService.post(
+        PRODUCT_ENDPOINTS.reports.inventarioGeneral,
+        filters,
+        undefined,
+        ExcelRequestConfig(180000),
+      );
+      Logger.info("Inventario report downloaded successfully", {}, MODULE_NAME);
+      return blob as Blob;
+    }
+
+    const response = await ApiService.post(
+      PRODUCT_ENDPOINTS.reports.inventarioGeneral,
+      filters,
+      inventarioReportResponseSchema,
+      {
+        timeout: 120000, // 2 minutos para reportes pesados
+      },
+    );
+    Logger.info(
+      "Inventario report fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
+    );
+
+    return response as InventarioReportResponse;
+  },
 };
