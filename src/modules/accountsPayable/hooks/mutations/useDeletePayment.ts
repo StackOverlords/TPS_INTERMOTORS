@@ -16,9 +16,19 @@ export const useDeletePayment = () => {
             queryClient.invalidateQueries({
                 queryKey: ["accountsPayable", "payments", variables.id_venta],
             });
-            // También invalidar la lista de cuentas por pagar para refrescar saldos
+            // Invalidar la lista de cuentas por cobrar para refrescar saldos
             queryClient.invalidateQueries({
-                queryKey: ["accountsPayable", "list"],
+                queryKey: ["accountsPayable"],
+            });
+            // Invalidar reportes de cuentas por cobrar
+            queryClient.invalidateQueries({
+                queryKey: ["accounts-receivable-general-report"],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["accounts-receivable-paid-report"],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ["accounts-receivable-by-customer-report"],
             });
         },
     });

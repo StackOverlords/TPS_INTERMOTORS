@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 export const UpdatePricesSchema = z.object({
-  categoria: z.number({
-    required_error: 'Selecciona una categoría',
-  }).int().positive('Selecciona una categoría válida'),
+  categoria: z.number().int().positive().optional().nullable(),
 
   aplicar_todas: z.boolean(),
+
+  aplicar_todo_sistema: z.boolean(),
 
   tipo_ajuste: z.enum(['incremento', 'decremento'], {
     required_error: 'Selecciona el tipo de ajuste',
@@ -36,13 +36,25 @@ export const UpdatePricesSchema = z.object({
     message: 'Debes seleccionar una sucursal o aplicar a todas',
     path: ['sucursal'],
   }
+).refine(
+  (data) => {
+    // Si NO se aplica a todo el sistema, la categoría es requerida
+    if (!data.aplicar_todo_sistema && !data.categoria) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Debes seleccionar una categoría o aplicar a todo el sistema',
+    path: ['categoria'],
+  }
 );
 
 export type UpdatePricesFormData = z.infer<typeof UpdatePricesSchema>;
 
 // Tipo para el API (formato que espera el backend)
 export interface UpdatePricesApiData {
-  categoria: number;
+  categoria?: number | null;
   aplicar_todas: boolean;
   incremento: number;
   sucursal?: number | null;
@@ -56,7 +68,7 @@ export const transformToApiFormat = (data: UpdatePricesFormData): UpdatePricesAp
     : -data.porcentaje;
 
   return {
-    categoria: data.categoria,
+    categoria: data.aplicar_todo_sistema ? null : data.categoria,
     aplicar_todas: data.aplicar_todas,
     incremento,
     sucursal: data.sucursal,

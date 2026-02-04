@@ -16,6 +16,15 @@ interface UseAccountPayableFiltersReturn {
     resetFilters: () => void;
 }
 
+// Helper para agregar horas a las fechas antes de enviar al backend
+const addTimeToFilters = (filters: AccountPayableFilters): AccountPayableFilters => ({
+    ...filters,
+    // Agregar hora al inicio del día para fecha_inicio (00:00:00)
+    fecha_inicio: filters.fecha_inicio ? `${filters.fecha_inicio}T00:00:00` : undefined,
+    // Agregar hora al final del día para fecha_fin (23:59:59)
+    fecha_fin: filters.fecha_fin ? `${filters.fecha_fin}T23:59:59` : undefined,
+});
+
 // Función helper para obtener las fechas por defecto (últimos 3 meses)
 const getDefaultDateRange = () => {
     const today = new Date();
@@ -129,8 +138,8 @@ export const useAccountPayableFilters = (
     return useMemo(
         () => ({
             filters,
-            debouncedFilters,
-            appliedFilters,
+            debouncedFilters: addTimeToFilters(debouncedFilters),
+            appliedFilters: addTimeToFilters(appliedFilters),
             updateFilter,
             setPage,
             setPageSize,

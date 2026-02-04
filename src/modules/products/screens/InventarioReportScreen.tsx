@@ -36,6 +36,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/atoms/input";
 import { format, subMonths } from "date-fns";
 import { showErrorToast } from "@/hooks/use-toast-enhanced";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
 
 const InventarioReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -48,9 +50,14 @@ const InventarioReportScreen = () => {
   const [fecha, setFecha] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [fechaInicioCosto, setFechaInicioCosto] = useState<string>("");
   const [fechaFinCosto, setFechaFinCosto] = useState<string>("");
+  const [categoria, setCategoria] = useState<number | undefined>(undefined);
   const [incluirTransito, setIncluirTransito] = useState<boolean>(true);
   const [verSoloConMovimiento, setVerSoloConMovimiento] =
     useState<boolean>(true);
+
+  // Obtener categorías/divisiones
+  const { data: categoriesData, isLoading: isCategoriesLoading } =
+    useCategoriesWithSubcategories();
 
   // Filtros aplicados (solo se inicializa con fecha requerida)
   const [appliedFilters, setAppliedFilters] = useState<InventarioFilters>({
@@ -267,6 +274,10 @@ const InventarioReportScreen = () => {
     if (fechaFinCosto) {
       filters.fecha_fin_costo = fechaFinCosto;
     }
+    // Agregar categoría si está seleccionada
+    if (categoria) {
+      filters.categoria = categoria;
+    }
 
     console.log("🔍 Filtros enviados al API:", filters);
     setAppliedFilters(filters);
@@ -371,6 +382,34 @@ const InventarioReportScreen = () => {
                   className="w-auto"
                   min={fechaInicioCosto}
                   max={format(new Date(), "yyyy-MM-dd")}
+                />
+              </div>
+
+              {/* División/Categoría */}
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="categoria" className="text-sm font-semibold">
+                  División (opcional)
+                </Label>
+                <ComboboxSelect
+                  value={categoria?.toString() ?? "all"}
+                  onChange={(value) => {
+                    if (value === "all" || !value) {
+                      setCategoria(undefined);
+                    } else {
+                      setCategoria(Number(value));
+                    }
+                  }}
+                  options={
+                    categoriesData?.map((cat) => ({
+                      id: cat.id.toString(),
+                      label: cat.categoria,
+                    })) || []
+                  }
+                  optionTag="label"
+                  // enableAllOption={true}
+                  placeholder="Todas las divisiones"
+                  clearOnEmpty={true}
+                  className="w-[200px]"
                 />
               </div>
             </div>
