@@ -460,7 +460,7 @@ const ProductListScreen = () => {
               title="Presiona enter para ver los detalles"
               className="flex flex-col"
             >
-              <h3 className="font-medium text-primary">{getValue<string>()}</h3>
+              <h3 className="font-medium">{getValue<string>()}</h3>
             </div>
           </div>
         ),

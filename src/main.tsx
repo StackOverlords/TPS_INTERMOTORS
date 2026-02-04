@@ -15,16 +15,24 @@ import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
 import { useDebugLogWindow } from "./hooks/useSecondaryWindow";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
 import { queryClient } from "./lib/reactQueryConfig.ts";
-import { useThemeStore } from "./stores/themeStore.ts";
+// import { useThemeStore } from "./stores/themeStore.ts";
 import logger from "./utils/logger.ts";
+// import { useAppearanceStore } from "./stores/appearanceStore.ts";
+import { flushTabStorage } from "./states/tabStore.ts";
+import { useEffect } from "react";
 
-// Inicializar tema ANTES de renderizar la app
-useThemeStore.getState().initializeTheme();
+// try {
+//   useThemeStore.getState().initializeTheme();
+//   useAppearanceStore.getState().initializeAppearance();
+// } catch (error) {
+//   logger.error("Error inicializando tema y apariencia: ", error);
+// }
 
 // ✨ Inicializar keybindings de forma asíncrona SIN bloquear el renderizado
 initializeKeybindingStore().catch((error) => {
   logger.error("❌ Error initializing keybinding store:", error);
 });
+
 
 function App() {
   const debugLogWindow = useDebugLogWindow();
@@ -45,6 +53,17 @@ function App() {
     },
     { enableOnFormTags: true }
   );
+
+  // ✅ Forzar guardado de tabs antes de cerrar la aplicación
+  // Esto previene pérdida de datos cuando el usuario cierra antes de los 300ms del debounce
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushTabStorage();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

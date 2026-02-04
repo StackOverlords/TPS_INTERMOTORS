@@ -254,7 +254,7 @@ const ProductSearchPanel: React.FC<ProductSearchPanelProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-card border border-border rounded-lg">
+    <div className="h-full flex flex-col border border-border rounded-lg">
       {/* Header con Filtros */}
       <div className="p-3 border-b border-border space-y-2">
         <div className="flex items-center justify-between">

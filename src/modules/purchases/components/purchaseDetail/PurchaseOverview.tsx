@@ -72,7 +72,7 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
   }, 0);
 
   return (
-    <Card className="bg-card border border-border shadow-none flex-shrink-0">
+    <Card className="bg-background border border-border shadow-none flex-shrink-0">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold text-foreground">
           Información General

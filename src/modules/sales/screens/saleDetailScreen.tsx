@@ -157,7 +157,7 @@ const SaleDetailScreen = () => {
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
-          <header className="border-border border bg-card rounded-lg py-2 px-3">
+          <header className="border-border border bg-background rounded-lg py-2 px-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <TooltipButton
@@ -263,7 +263,7 @@ const SaleDetailScreen = () => {
             </div>
           </header>
 
-          <Card className="bg-card border border-border shadow-none">
+          <Card className="bg-background border border-border shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <FileText className="size-4 text-muted-foreground" />

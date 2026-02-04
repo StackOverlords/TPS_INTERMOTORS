@@ -296,7 +296,7 @@ const CreateTransfer = () => {
                 <FormProvider {...methods}>
                     <form onSubmit={handleSubmit(onSubmit, onError)} className="h-full flex flex-col gap-2 p-2">
                         {/* Header */}
-                        <header className="border-border border bg-card rounded-lg p-2 sm:px-3 flex-shrink-0">
+                        <header className="border-border border bg-background rounded-lg p-2 sm:px-3 flex-shrink-0">
                             <div className="flex flex-wrap gap-2 items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <TooltipButton
@@ -323,7 +323,7 @@ const CreateTransfer = () => {
                         </header>
 
                         {/* 1. Datos de la transferencia */}
-                        <Card className="shadow-none flex-shrink-0">
+                        <Card className="shadow-none flex-shrink-0 bg-background">
                             <CardContent className="py-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
                                     <div className="w-full">
@@ -437,7 +437,7 @@ const CreateTransfer = () => {
                         </div>
                     </div> */}
 
-                        <Card className="shadow-none flex-1 min-h-0 flex flex-col">
+                        <Card className="shadow-none flex-1 min-h-0 flex flex-col bg-background">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <ArrowLeftRight className="size-4" />

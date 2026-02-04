@@ -270,7 +270,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         accessorKey: "fecha",
         header: "Fecha",
         size: 100,
-        minSize: 90,
+        minSize: 50,
         cell: ({ getValue }) => {
           const dateString = getValue<string>();
 
@@ -284,7 +284,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
             return (
-              <div className="text-center text-xs">
+              <div className=" text-xs">
                 <div
                   className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
@@ -309,7 +309,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         accessorKey: "responsable",
         header: "Responsable",
         size: 180,
-        minSize: 150,
+        minSize: 50,
         cell: ({ row }) => {
           const resp = row.original.responsable;
           const nombreCompleto = resp
@@ -335,7 +335,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         minSize: 100,
         cell: ({ getValue }) => {
           return (
-            <div className="flex flex-col space-y-0.5 items-end">
+            <div className="flex flex-col space-y-0.5 items-start">
               <span className=" font-medium text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </span>
@@ -347,7 +347,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         accessorKey: "estado",
         header: "Estado",
         size: 200,
-        minSize: 150,
+        minSize: 50,
         cell: ({ getValue }) => {
           const estado = getValue<string>();
           return <TransferStatusBadge estado={estado} />;
@@ -357,7 +357,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         id: "transfer_actions",
         header: "Acciones",
         size: 120,
-        minSize: 100,
+        minSize: 50,
         enableHiding: false,
         cell: ({ row }) => {
           const estado = row.original.estado;
@@ -466,7 +466,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         accessorKey: "comprobante",
         header: "Comprobante",
         size: 140,
-        minSize: 120,
+        minSize: 50,
         cell: ({ getValue }) => {
           const comprobante = getValue<string | null>();
 
@@ -496,7 +496,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
         accessorKey: "comentarios",
         header: "Comentarios",
         size: 200,
-        minSize: 150,
+        minSize: 50,
         cell: ({ getValue }) => {
           const comentarios = getValue<string | null>();
           return (
@@ -583,7 +583,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
   return (
     <section className="flex flex-col h-full">
       {/* Results Info */}
-      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
+      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between bg-background">
         {transfers.length > 0 ? (
           isInfiniteScroll ? (
             `Mostrando ${transfers.length} de ${data?.meta?.total} transferencias`

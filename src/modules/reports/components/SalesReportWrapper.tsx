@@ -89,9 +89,9 @@ export function SalesReportWrapper({
     <div className="h-full p-4 gap-4 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        <div className={`rounded-lg ${iconBgColor} p-2`}>
+        {/* <div className={`rounded-lg ${iconBgColor} p-2`}>
           <Icon className={`h-6 w-6 ${iconColor}`} />
-        </div>
+        </div> */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
           <p className="text-muted-foreground">{description}</p>
@@ -205,7 +205,7 @@ export function SalesReportWrapper({
 
             {/* Table View */}
             {(viewMode === "table" || viewMode === "both") && (
-              <Card className="flex flex-col h-full">
+              <Card className="flex flex-col h-full bg-background">
                 <CardHeader className="flex flex-shrink-0">
                   <CardTitle className="text-base flex items-center gap-2">
                     <SquareKanban className="size-6" />

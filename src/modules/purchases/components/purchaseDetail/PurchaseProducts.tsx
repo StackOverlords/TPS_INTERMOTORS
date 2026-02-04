@@ -376,7 +376,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
   }
 
   return (
-    <section className="border border-border rounded-lg bg-card flex-1 flex flex-col overflow-hidden">
+    <section className="border border-border rounded-lg bg-background flex-1 flex flex-col overflow-hidden">
       <header className="p-4 border-b border-border flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>

@@ -25,7 +25,7 @@ const CreateProduct = () => {
           <Panel className="" minSize={30} maxSize={80} defaultSize={isMobile ? 40 : 55}> */}
       <div className="w-full space-y-2">
         {/* Header */}
-        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-background rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               {/* <TooltipButton

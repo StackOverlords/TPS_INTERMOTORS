@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { tauriThemeStorage } from './tauriPluginAdapterStore'
 
 type Theme = 'light' | 'dark' | 'system'
 type ResolvedTheme = 'light' | 'dark'
@@ -40,10 +41,10 @@ export const useThemeStore = create<ThemeStore>()(
         const resolvedTheme = resolveTheme(theme)
         applyTheme(resolvedTheme)
         set({ theme, resolvedTheme })
-        
+
         // Notificar a otras ventanas del cambio
-        window.dispatchEvent(new CustomEvent('theme-changed', { 
-          detail: { theme, resolvedTheme } 
+        window.dispatchEvent(new CustomEvent('theme-changed', {
+          detail: { theme, resolvedTheme }
         }))
       },
 
@@ -74,7 +75,7 @@ export const useThemeStore = create<ThemeStore>()(
               const newResolvedTheme = resolveTheme(newState.theme)
               applyTheme(newResolvedTheme)
               set({ theme: newState.theme, resolvedTheme: newResolvedTheme })
-              
+
             } catch (err) {
               console.error('[ThemeStore] Error sincronizando tema:', err)
             }
@@ -92,7 +93,12 @@ export const useThemeStore = create<ThemeStore>()(
     }),
     {
       name: 'theme-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => tauriThemeStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.initializeTheme();
+        }
+      }
     }
   )
 )

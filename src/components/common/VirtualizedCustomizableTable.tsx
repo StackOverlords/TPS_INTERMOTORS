@@ -306,7 +306,7 @@ const VirtualizedCustomizableTable = <T,>({
         >
           <TableHeader
             className={cn(
-              stickyHeader && "sticky top-0 z-10 bg-background shadow-sm"
+              stickyHeader && "sticky top-0 z-20 bg-background shadow-md border-b"
             )}
           >
             {table.getHeaderGroups().map((headerGroup) => (
@@ -425,11 +425,11 @@ const VirtualizedCustomizableTable = <T,>({
                       key={row.id}
                       data-index={virtualRow.index}
                       data-row-index={virtualRow.index}
-                      className={`${
-                        isSelected && focused
+                      className={`${isSelected && focused
                           ? "bg-blue-100 hover:bg-blue-100"
                           : ""
-                      }`}
+                        }`}
+                      data-state={isSelected && focused ? "selected" : undefined}
                       onClick={() => {
                         if (!isDragging) {
                           onRowClick?.(virtualRow.index);
@@ -462,10 +462,9 @@ const VirtualizedCustomizableTable = <T,>({
                 {/* Espaciador inferior para simular las filas no renderizadas abajo */}
                 <tr
                   style={{
-                    height: `${
-                      rowVirtualizer.getTotalSize() -
+                    height: `${rowVirtualizer.getTotalSize() -
                       (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0)
-                    }px`
+                      }px`
                   }}
                 />
 
@@ -481,7 +480,7 @@ const VirtualizedCustomizableTable = <T,>({
               <TableFooter
                 className={cn(
                   stickyFooter &&
-                    "sticky bottom-0 z-10 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
+                  "sticky bottom-0 z-10 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
                 )}
               >
                 {renderTableFooter()}

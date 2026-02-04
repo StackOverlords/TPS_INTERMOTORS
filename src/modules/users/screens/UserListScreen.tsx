@@ -405,7 +405,7 @@ const UserListScreen = () => {
       >
         <div className="bg-card rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
           {/* Header */}
-          <header className="p-2 border-b border-border">
+          <header className="p-2 border-b border-border bg-background">
             <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
               <div className="flex items-center gap-2 md:gap-4 grow">
                 <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -497,7 +497,7 @@ const UserListScreen = () => {
           </header>
 
           {/* Results Info */}
-          <div className="flex-shrink-0 p-2 text-sm text-muted-foreground border-b border-border flex items-center justify-between flex-wrap gap-2">
+          <div className="flex-shrink-0 p-2 text-sm text-muted-foreground border-b border-border flex items-center justify-between flex-wrap gap-2 bg-background">
             {users.length > 0 ? (
               isInfiniteScroll ? (
                 `Mostrando ${users.length} de ${userData?.meta.total} usuarios`

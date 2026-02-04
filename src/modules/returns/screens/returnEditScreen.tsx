@@ -490,7 +490,7 @@ const ReturnEditScreen = () => {
           className="h-full flex flex-col gap-2"
         >
           {/* Header */}
-          <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3">
+          <header className="border-border flex-shrink-0 border bg-background rounded-lg p-2 sm:px-3">
             <div className="flex flex-wrap gap-2 items-center justify-between">
               <div className="flex items-center gap-3">
                 <TooltipButton
@@ -559,7 +559,7 @@ const ReturnEditScreen = () => {
                 {/* 1. Datos de la venta */}
                 <Card
                   className={cn(
-                    "shadow-none",
+                    "shadow-none bg-background",
                     configuraciones.formulario === "top" &&
                       "h-full flex-shrink-0",
                     configuraciones.formulario === "left" && "h-auto md:h-full"
@@ -714,7 +714,7 @@ const ReturnEditScreen = () => {
                       className="h-full flex flex-col"
                     >
                       {/* 2. Productos */}
-                      <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+                      <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col bg-background">
                         <CardHeader className="flex-shrink-0">
                           <CardTitle className="flex justify-between">
                             <h2 className="text-primary text-base">

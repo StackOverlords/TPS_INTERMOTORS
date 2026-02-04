@@ -9,11 +9,13 @@ import {
   WindowComponentRenderer,
 } from "./windows/WindowRegistry";
 import { useThemeStore } from "./stores/themeStore.ts";
+import { useAppearanceStore } from "./stores/appearanceStore.ts";
 
 try {
   useThemeStore.getState().initializeTheme();
+  useAppearanceStore.getState().initializeAppearance();
 } catch (error) {
-  console.error("[WindowEntry] ❌ Error inicializando tema:", error);
+  console.error("[WindowEntry] ❌ Error inicializando tema y apariencia:", error);
 }
 
 // ✨ Inicializar keybindings de forma asíncrona en ventanas secundarias
