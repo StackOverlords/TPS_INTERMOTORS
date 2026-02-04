@@ -1,10 +1,11 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { reportService } from '../services/reportService';
+import { reportService } from '../services/saleReportService';
 import type {
   ReportMayorIngresoFilters,
   ReportMayorIngresoResponse,
 } from '../types/report.types';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast-enhanced';
+import { generateExcelFilename, saveExcelFile } from '@/lib/excelUtils';
 
 export const REPORT_MAYOR_INGRESO_QUERY_KEY = 'report-mayor-ingreso';
 
@@ -37,9 +38,19 @@ export function useDownloadReportMayorIngreso() {
   return useMutation({
     mutationFn: async (filters: ReportMayorIngresoFilters) => {
       const downloadFilters = { ...filters, downloadable: true };
-      await reportService.getMayorIngreso(downloadFilters);
+
+      const blob = await reportService.getMayorIngreso(downloadFilters) as Blob;
+
+      const filename = generateExcelFilename('productos_con_mayor_ingreso');
+       const saved = await saveExcelFile(blob, filename);
+
+      // Retornamos el resultado para que onSuccess lo reciba
+      return saved;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // Si el usuario canceló, no mostrar nada
+      if (!saved) return;
+      
       showSuccessToast({
         title: 'Descarga exitosa',
         description: 'El reporte de productos con mayor ingreso se ha descargado correctamente',

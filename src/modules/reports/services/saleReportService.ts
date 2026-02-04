@@ -23,54 +23,48 @@ import type {
 import { REPORT_ENDPOINTS } from './reportEndpoints';
 import apiClient from '@/services/axios';
 
-const MODULE_NAME = 'REPORT_SERVICE';
-
-/**
- * Helper para descargar archivo desde blob
- */
-const downloadFile = (blob: Blob, filename: string) => {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
-};
-
-/**
- * Generar nombre de archivo con fecha
- */
-const generateFilename = (baseFilename: string): string => {
-  const date = new Date().toISOString().split('T')[0];
-  return `${baseFilename}_${date}.xlsx`;
-};
+const MODULE_NAME = 'SALE_REPORT_SERVICE';
 
 /**
  * Crear FormData desde filtros
  */
 const createFormData = (filters: Record<string, any>): FormData => {
   const formData = new FormData();
-  
+
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== null && value !== undefined) {
       formData.append(key, value.toString());
     }
   });
-  
+
   return formData;
+};
+
+/**
+ * Obtiene el blob Excel del backend
+ */
+const fetchExcelBlob = async (endpoint: string, formData: FormData): Promise<Blob> => {
+  const response = await apiClient.post(endpoint, formData, {
+    responseType: 'blob',
+    headers: {
+      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  });
+
+  return new Blob([response.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
 };
 
 export const reportService = {
   /**
    * Obtener reporte general de ventas
-   * Si downloadable=true, descarga Excel y retorna void
+   * Si downloadable=true, retorna Blob (Excel)
    * Si downloadable=false, retorna datos JSON
    */
   async getGeneral(
     filters: ReportGeneralFilters
-  ): Promise<ReportGeneralResponse | void> {
+  ): Promise<ReportGeneralResponse | Blob> {
     Logger.info('Fetching general report', { filters }, MODULE_NAME);
 
     const validatedFilters = ReportGeneralFiltersSchema.parse(filters);
@@ -83,35 +77,12 @@ export const reportService = {
       downloadable: isDownloadable,
     });
 
-    // Si es descarga, usar axios directamente para manejar blob
     if (isDownloadable) {
-      try {
-        const response = await apiClient.post(
-          REPORT_ENDPOINTS.sales.general,
-          formData,
-          {
-            responseType: 'blob',
-            headers: {
-              'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
-          }
-        );
-
-        const blob = new Blob([response.data], { 
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-        });
-        const filename = generateFilename('reporte_general_ventas');
-        downloadFile(blob, filename);
-
-        Logger.info('General report downloaded successfully', { filename }, MODULE_NAME);
-        return;
-      } catch (error) {
-        Logger.error('Error downloading general report', error, MODULE_NAME);
-        throw error;
-      }
+      const blob = await fetchExcelBlob(REPORT_ENDPOINTS.sales.general, formData);
+      Logger.info('General report blob fetched successfully', {}, MODULE_NAME);
+      return blob;
     }
 
-    // Si no es descarga, obtener datos JSON
     const response = await ApiService.post(
       REPORT_ENDPOINTS.sales.general,
       formData,
@@ -129,12 +100,12 @@ export const reportService = {
 
   /**
    * Obtener reporte de productos más vendidos
-   * Si downloadable=true, descarga Excel y retorna void
+   * Si downloadable=true, retorna Blob (Excel)
    * Si downloadable=false, retorna datos JSON
    */
   async getMasVendido(
     filters: ReportMasVendidoFilters
-  ): Promise<ReportMasVendidoResponse | void> {
+  ): Promise<ReportMasVendidoResponse | Blob> {
     Logger.info('Fetching most sold report', { filters }, MODULE_NAME);
 
     const validatedFilters = ReportMasVendidoFiltersSchema.parse(filters);
@@ -148,35 +119,12 @@ export const reportService = {
       downloadable: isDownloadable,
     });
 
-    // Si es descarga, usar axios directamente para manejar blob
     if (isDownloadable) {
-      try {
-        const response = await apiClient.post(
-          REPORT_ENDPOINTS.sales.masVendido,
-          formData,
-          {
-            responseType: 'blob',
-            headers: {
-              'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
-          }
-        );
-
-        const blob = new Blob([response.data], { 
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-        });
-        const filename = generateFilename('productos_mas_vendidos');
-        downloadFile(blob, filename);
-
-        Logger.info('Most sold report downloaded successfully', { filename }, MODULE_NAME);
-        return;
-      } catch (error) {
-        Logger.error('Error downloading most sold report', error, MODULE_NAME);
-        throw error;
-      }
+      const blob = await fetchExcelBlob(REPORT_ENDPOINTS.sales.masVendido, formData);
+      Logger.info('Most sold report blob fetched successfully', {}, MODULE_NAME);
+      return blob;
     }
 
-    // Si no es descarga, obtener datos JSON
     const response = await ApiService.post(
       REPORT_ENDPOINTS.sales.masVendido,
       formData,
@@ -194,12 +142,12 @@ export const reportService = {
 
   /**
    * Obtener reporte de productos con mayor ingreso
-   * Si downloadable=true, descarga Excel y retorna void
+   * Si downloadable=true, retorna Blob (Excel)
    * Si downloadable=false, retorna datos JSON
    */
   async getMayorIngreso(
     filters: ReportMayorIngresoFilters
-  ): Promise<ReportMayorIngresoResponse | void> {
+  ): Promise<ReportMayorIngresoResponse | Blob> {
     Logger.info('Fetching top revenue report', { filters }, MODULE_NAME);
 
     const validatedFilters = ReportMayorIngresoFiltersSchema.parse(filters);
@@ -213,35 +161,12 @@ export const reportService = {
       downloadable: isDownloadable,
     });
 
-    // Si es descarga, usar axios directamente para manejar blob
     if (isDownloadable) {
-      try {
-        const response = await apiClient.post(
-          REPORT_ENDPOINTS.sales.mayorIngreso,
-          formData,
-          {
-            responseType: 'blob',
-            headers: {
-              'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
-          }
-        );
-
-        const blob = new Blob([response.data], { 
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-        });
-        const filename = generateFilename('productos_mayor_ingreso');
-        downloadFile(blob, filename);
-
-        Logger.info('Top revenue report downloaded successfully', { filename }, MODULE_NAME);
-        return;
-      } catch (error) {
-        Logger.error('Error downloading top revenue report', error, MODULE_NAME);
-        throw error;
-      }
+      const blob = await fetchExcelBlob(REPORT_ENDPOINTS.sales.mayorIngreso, formData);
+      Logger.info('Top revenue report blob fetched successfully', {}, MODULE_NAME);
+      return blob;
     }
 
-    // Si no es descarga, obtener datos JSON
     const response = await ApiService.post(
       REPORT_ENDPOINTS.sales.mayorIngreso,
       formData,

@@ -1,10 +1,11 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { reportService } from '../services/reportService';
+import { reportService } from '../services/saleReportService';
 import type {
   ReportGeneralFilters,
   ReportGeneralResponse,
 } from '../types/report.types';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast-enhanced';
+import { generateExcelFilename, saveExcelFile } from '@/lib/excelUtils';
 
 export const REPORT_GENERAL_QUERY_KEY = 'report-general';
 
@@ -36,10 +37,19 @@ export function useReportGeneral({
 export function useDownloadReportGeneral() {
   return useMutation({
     mutationFn: async (filters: ReportGeneralFilters) => {
-      const downloadFilters = { ...filters, downloadable: true };
-      await reportService.getGeneral(downloadFilters);
+     const downloadFilters = { ...filters, downloadable: true };
+
+      const blob = await reportService.getGeneral(downloadFilters) as Blob;
+
+      const filename = generateExcelFilename('reporte_ventas_general');
+      const saved = await saveExcelFile(blob, filename);
+
+      // Retornamos el resultado para que onSuccess lo reciba
+      return saved;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // Si el usuario canceló, no mostrar nada
+      if (!saved) return;
       showSuccessToast({
         title: 'Descarga exitosa',
         description: 'El reporte general se ha descargado correctamente',

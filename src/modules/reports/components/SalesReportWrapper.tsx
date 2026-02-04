@@ -1,19 +1,23 @@
-import { useState } from "react";
-import { Loader2, SquareKanban, type LucideIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2, BarChart3, type LucideIcon } from "lucide-react";
 import type { ViewMode } from "../types/report.types";
 import { ViewToggle } from "../components/ViewToggle";
-import { Skeleton } from "@/components/atoms/skeleton";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/atoms/card";
-import { HorizontalBarChart } from "../components/charts/HorizontalBarChart";
-import { Alert, AlertDescription } from "@/components/atoms/alert";
+import { Label } from "@/components/atoms/label";
+import { Button } from "@/components/atoms/button";
+import { Slider } from "@/components/atoms/slider";
 import type { ReportItem } from "../types/report.types";
 import { SaleReportFiltersPanel } from "./saleReportFiltersPanel";
 import { SaleReportTable } from "./saleReportTable";
+import { SaleHorizontalBarChart } from "./charts/saleHorizontalBarChart";
+import type { ColorConfig } from "@/components/charts/Basehorizontalbarchart";
+import type { themeColorPresets } from "@/hooks/charts/useChatThemeColors";
+import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 
 interface SalesReportWrapperProps {
   // Título y descripción
@@ -28,26 +32,29 @@ interface SalesReportWrapperProps {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
-  error?: Error | null;
 
   // Filtros
   filters: any;
   onFiltersChange: (key: string, value: any) => void;
   onRefresh: () => void;
   onExport: () => void;
-  showRanking?: boolean;
   searchMode?: "realtime" | "manual";
   onSearchModeToggle?: () => void;
   onSearch?: () => void;
+
+  // Control de visualización del gráfico (NUEVO)
+  chartVisualLimit: number;
+  onChartVisualLimitChange: (limit: number) => void;
 
   // Estados de carga
   isDownloading?: boolean;
 
   // Configuración del gráfico
   chartDataKey?: "cantidad" | "total";
-  chartColor?: string;
   chartTitle?: string;
   tableTitle?: string;
+  colorPreset?: keyof typeof themeColorPresets;
+  customColorConfig?: ColorConfig;
 
   // Props adicionales
   highlightTotalColumn?: boolean;
@@ -64,168 +71,202 @@ export function SalesReportWrapper({
   isLoading,
   isFetching,
   isError,
-  error,
   filters,
   onFiltersChange,
   onRefresh,
   onExport,
-  showRanking = false,
   searchMode = "manual",
   onSearchModeToggle,
   onSearch,
+  chartVisualLimit,
+  onChartVisualLimitChange,
   isDownloading = false,
   chartDataKey = "cantidad",
-  chartColor = "#3b82f6",
   chartTitle = "Ranking Visual",
   tableTitle = "Detalle del Ranking",
   highlightTotalColumn = false,
   reportType,
+  colorPreset,
+  customColorConfig,
 }: SalesReportWrapperProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-  const chartHeight = Math.max(400, (filters.ranking || 10) * 40);
+  // Calcular límite efectivo (no más de 100)
+  const effectiveChartLimit = useMemo(() => {
+    return Math.min(chartVisualLimit, 100, data.length);
+  }, [chartVisualLimit, data.length]);
+
+  const CHART_LIMIT = 100;
+  const hasLimit = data.length > CHART_LIMIT;
 
   return (
-    <div className="h-full p-4 gap-4 flex flex-col">
+    <div className="h-full p-2 gap-2 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className={`rounded-lg ${iconBgColor} p-2`}>
-          <Icon className={`h-6 w-6 ${iconColor}`} />
+      <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3 flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`rounded-lg ${iconBgColor} p-2`}>
+              <Icon className={`h-6 w-6 ${iconColor}`} />
+            </div>
+            <div>
+              <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight tracking-tight">
+                {title}
+              </h1>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          <p className="text-muted-foreground">{description}</p>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="flex-shrink-0">
+        {/* Filters */}
         <SaleReportFiltersPanel
           filters={filters}
           onFiltersChange={onFiltersChange}
           onRefresh={onRefresh}
           onExport={onExport}
-          showRanking={showRanking}
           loading={isFetching || isDownloading}
           searchMode={searchMode}
           onSearchModeToggle={onSearchModeToggle}
           onSearch={onSearch}
+          isDownloading={isDownloading}
+          isFetching={isFetching}
         />
-      </div>
-
-      {/* View Toggle y resumen */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <ViewToggle value={viewMode} onChange={setViewMode} />
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          {data.length > 0 && (
-            <>
-              <span>
-                Mostrando{" "}
-                {showRanking
-                  ? `top ${Math.min(filters.ranking || 10, data.length)}`
-                  : data.length}{" "}
-                productos
-              </span>
-              <span className="hidden md:inline">•</span>
-              <span className="hidden md:inline">
-                Total:{" "}
-                {data
-                  .reduce(
-                    (sum, item) => sum + parseFloat(item.cantidad.toString()),
-                    0
-                  )
-                  .toLocaleString("es-BO", { maximumFractionDigits: 0 })}{" "}
-                unidades
-              </span>
-            </>
-          )}
-        </div>
-      </div>
+      </header>
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto">
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-[400px] w-full" />
-          </div>
-        ) : isError ? (
-          <Alert variant="destructive">
-            <AlertDescription>
-              Error al cargar el reporte:{" "}
-              {error?.message || "Error desconocido"}
-            </AlertDescription>
-          </Alert>
-        ) : data.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Icon className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-1">
-                Sin datos disponibles
-              </h3>
-              <p className="text-muted-foreground text-sm">
-                No se encontraron productos en el período seleccionado
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {/* Indicador de carga mientras refetch */}
-            {isFetching && (
-              <div className="flex items-center justify-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Actualizando datos...
-              </div>
-            )}
+        <div className="h-full">
+          <Card className="flex flex-col h-full overflow-hidden">
+            <CardHeader className="flex flex-col flex-shrink-0 items-center p-2 border-border border-b">
+              <CardTitle className="text-base flex flex-row justify-between items-center gap-2 w-full">
+                <div className="flex items-center">
+                  <ViewToggle value={viewMode} onChange={setViewMode} />
+                  <span className="text-sm font-medium text-muted-foreground sr-only">
+                    {viewMode === "table" ? tableTitle : chartTitle}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {/* Indicador de carga mientras refetch */}
+                  {(isFetching || isLoading) && (
+                    <div className="flex items-center justify-center font-medium gap-2 h-8 px-4 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Cargando datos... Este proceso puede tardar.
+                    </div>
+                  )}
+                  {data.length > 0 && (
+                    <>
+                      <span>
+                        Mostrando{" "}
+                        {`${Math.min(filters.ranking || 10, data.length)} `}
+                        productos
+                      </span>
+                    </>
+                  )}
+                </div>
+              </CardTitle>
+              {viewMode === "chart" && (
+                <div className="w-full">
+                  {data.length > 0 && (
+                    <Card className="border-dashed border-primary/30 bg-primary/5">
+                      <CardContent className="py-2 px-3 space-y-1">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="h-4 w-4 text-primary" />
+                            <Label className="text-sm font-semibold">
+                              Visualización de productos
+                            </Label>
+                          </div>
 
-            {/* Chart View */}
-            {(viewMode === "chart" || viewMode === "both") && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <span className="text-xl">📊</span>
-                    {chartTitle}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <HorizontalBarChart
+                          <div className="flex items-center gap-3 flex-1">
+                            <Slider
+                              value={[chartVisualLimit]}
+                              onValueChange={(value) =>
+                                onChartVisualLimitChange(value[0])
+                              }
+                              min={5}
+                              max={
+                                data.length < CHART_LIMIT
+                                  ? data.length
+                                  : CHART_LIMIT
+                              }
+                              step={1}
+                              className="flex-1"
+                            />
+
+                            <EditableQuantity
+                              value={effectiveChartLimit}
+                              className="h-8 w-16 text-xs text-center font-semibold"
+                              onSubmit={(value) => {
+                                const num = Math.min(
+                                  value as number,
+                                  CHART_LIMIT
+                                );
+                                onChartVisualLimitChange(num);
+                              }}
+                              validate={(val) => {
+                                const num = parseInt(val);
+                                return (
+                                  !isNaN(num) && num > 0 && num <= CHART_LIMIT
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Descripción */}
+                        <p className="text-xs text-muted-foreground leading-snug">
+                          {hasLimit ? (
+                            <>
+                              El gráfico muestra hasta{" "}
+                              <strong className="text-foreground">
+                                {CHART_LIMIT} productos
+                              </strong>{" "}
+                              para una mejor lectura.{" "}
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-primary underline font-medium text-xs"
+                                onClick={() => setViewMode("table")}
+                              >
+                                Ver todos en la tabla
+                              </Button>
+                              .
+                            </>
+                          ) : (
+                            <>Todos los productos se muestran en el gráfico.</>
+                          )}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </CardHeader>
+
+            <CardContent className="min-h-0 flex-1 p-0">
+              {viewMode === "table" ? (
+                <SaleReportTable
+                  data={data}
+                  isLoading={isLoading}
+                  isFetching={isFetching}
+                  highlightTotalColumn={highlightTotalColumn}
+                  reportType={reportType}
+                  isError={isError}
+                />
+              ) : (
+                <div className="h-full pt-2">
+                  <SaleHorizontalBarChart
                     data={data}
                     dataKey={chartDataKey}
-                    color={chartColor}
-                    height={
-                      viewMode === "both"
-                        ? Math.min(chartHeight, 500)
-                        : chartHeight
-                    }
-                    showGradient
-                    limit={filters.ranking || data.length}
+                    limit={effectiveChartLimit}
+                    colorPreset={colorPreset}
+                    customColorConfig={customColorConfig}
                   />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Table View */}
-            {(viewMode === "table" || viewMode === "both") && (
-              <Card className="flex flex-col h-full">
-                <CardHeader className="flex flex-shrink-0">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <SquareKanban className="size-6" />
-                    {tableTitle}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="min-h-0 flex-1 overflow-hidden">
-                  <SaleReportTable
-                    data={data}
-                    showRanking={showRanking}
-                    isLoading={isLoading}
-                    isFetching={isFetching}
-                    highlightTotalColumn={highlightTotalColumn}
-                    reportType={reportType}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

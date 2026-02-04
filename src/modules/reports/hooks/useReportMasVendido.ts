@@ -1,10 +1,11 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { reportService } from '../services/reportService';
+import { reportService } from '../services/saleReportService';
 import type {
   ReportMasVendidoFilters,
   ReportMasVendidoResponse,
 } from '../types/report.types';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast-enhanced';
+import { generateExcelFilename, saveExcelFile } from '@/lib/excelUtils';
 
 export const REPORT_MAS_VENDIDO_QUERY_KEY = 'report-mas-vendido';
 
@@ -39,9 +40,19 @@ export function useDownloadReportMasVendido() {
   return useMutation({
     mutationFn: async (filters: ReportMasVendidoFilters) => {
       const downloadFilters = { ...filters, downloadable: true };
-      await reportService.getMasVendido(downloadFilters);
+
+      const blob = await reportService.getMasVendido(downloadFilters) as Blob;
+
+      const filename = generateExcelFilename('productos_mas_vendidos');
+       const saved = await saveExcelFile(blob, filename);
+
+      // Retornamos el resultado para que onSuccess lo reciba
+      return saved;
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      // Si el usuario canceló, no mostrar nada
+      if (!saved) return;
+      
       showSuccessToast({
         title: 'Descarga exitosa',
         description: 'El reporte se ha descargado correctamente',

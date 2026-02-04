@@ -13,15 +13,14 @@ import { useState, useRef } from "react";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
-import type { ReportMasVendidoFilters } from "../types/report.types";
-import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
+import type { ReportGeneralFilters } from "../types/report.types";
 import authSDK from "@/services/sdk-simple-auth";
 
-interface ReportFiltersPanelProps {
-  filters: ReportMasVendidoFilters;
-  onFiltersChange: <K extends keyof ReportMasVendidoFilters>(
+interface GeneralReportFiltersPanelProps {
+  filters: ReportGeneralFilters;
+  onFiltersChange: <K extends keyof ReportGeneralFilters>(
     key: K,
-    value: ReportMasVendidoFilters[K]
+    value: ReportGeneralFilters[K]
   ) => void;
   onRefresh: () => void;
   onExport: () => void;
@@ -33,7 +32,7 @@ interface ReportFiltersPanelProps {
   isDownloading?: boolean;
 }
 
-export function SaleReportFiltersPanel({
+export function GeneralReportFiltersPanel({
   filters,
   onFiltersChange,
   onRefresh,
@@ -44,7 +43,7 @@ export function SaleReportFiltersPanel({
   onSearch,
   isFetching = false,
   isDownloading = false,
-}: ReportFiltersPanelProps) {
+}: GeneralReportFiltersPanelProps) {
   const [dateError, setDateError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const branches = authSDK.getCurrentUser()?.sucursales || [];
@@ -110,52 +109,41 @@ export function SaleReportFiltersPanel({
 
   return (
     <div className="space-y-2">
-      <div
-        ref={containerRef}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2"
-      >
+      <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {/* Fecha Inicio */}
         <div className="space-y-2 w-full">
           <Label>Desde *</Label>
-          <div className="flex gap-2">
-            <PopoverDatePicker
-              value={
-                filters.fecha_inicio
-                  ? new Date(filters.fecha_inicio)
-                  : undefined
-              }
-              onChange={handleFechaInicioChange}
-              hasError={dateError}
-              disabled={(date) => {
-                const fechaFin = filters.fecha_fin
-                  ? new Date(filters.fecha_fin)
-                  : undefined;
-                if (fechaFin && date > fechaFin) return true;
-                return false;
-              }}
-            />
-          </div>
+          <PopoverDatePicker
+            value={
+              filters.fecha_inicio ? new Date(filters.fecha_inicio) : undefined
+            }
+            onChange={handleFechaInicioChange}
+            hasError={dateError}
+            disabled={(date) => {
+              const fechaFin = filters.fecha_fin
+                ? new Date(filters.fecha_fin)
+                : undefined;
+              if (fechaFin && date > fechaFin) return true;
+              return false;
+            }}
+          />
         </div>
 
         {/* Fecha Fin */}
         <div className="space-y-2 w-full">
           <Label>Hasta</Label>
-          <div className="flex gap-2">
-            <PopoverDatePicker
-              value={
-                filters.fecha_fin ? new Date(filters.fecha_fin) : undefined
-              }
-              onChange={handleFechaFinChange}
-              hasError={dateError}
-              disabled={(date) => {
-                const fechaInicio = filters.fecha_inicio
-                  ? new Date(filters.fecha_inicio)
-                  : undefined;
-                if (fechaInicio && date < fechaInicio) return true;
-                return false;
-              }}
-            />
-          </div>
+          <PopoverDatePicker
+            value={filters.fecha_fin ? new Date(filters.fecha_fin) : undefined}
+            onChange={handleFechaFinChange}
+            hasError={dateError}
+            disabled={(date) => {
+              const fechaInicio = filters.fecha_inicio
+                ? new Date(filters.fecha_inicio)
+                : undefined;
+              if (fechaInicio && date < fechaInicio) return true;
+              return false;
+            }}
+          />
         </div>
 
         {/* Sucursal */}
@@ -172,24 +160,6 @@ export function SaleReportFiltersPanel({
             enableAllOption={true}
             optionTag="sucursal"
             allowClear={false}
-          />
-        </div>
-
-        {/* Top N Productos - Input simple (sin slider) */}
-        <div className="space-y-2">
-          <Label>Top N productos</Label>
-
-          <EditableQuantity
-            value={filters.ranking}
-            className="h-9 text-sm text-center w-full"
-            onSubmit={(value) =>
-              onFiltersChange("ranking", (value as number) || 50)
-            }
-            validate={(val) => {
-              const num = parseInt(val);
-              return !isNaN(num) && num > 0 && num <= 1000;
-            }}
-            placeholder="Ej: 100"
           />
         </div>
       </div>
@@ -273,7 +243,11 @@ export function SaleReportFiltersPanel({
               className="text-xs"
             >
               <Zap
-                className={`h-3 w-3 mr-1 ${searchMode === "realtime" ? "text-yellow-500" : "text-gray-500"}`}
+                className={`h-3 w-3 mr-1 ${
+                  searchMode === "realtime"
+                    ? "text-yellow-500"
+                    : "text-gray-500"
+                }`}
               />
               {searchMode === "realtime" ? "Tiempo real" : "Manual"}
             </Button>
