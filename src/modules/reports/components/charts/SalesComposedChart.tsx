@@ -40,13 +40,13 @@ const ProductTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-80">
         {/* Header */}
-        <div className="flex items-start gap-2 mb-2 pb-2 border-b border-border/50">
-          <span className="font-mono text-muted-foreground text-xs">
-            {data.codigo}
-          </span>
+        <div className="flex items-center gap-3 mb-2 pb-2 border-b border-border/50">
           <Badge variant="outline" className="text-xs">
             {data.sucursal}
           </Badge>
+          <span className="font-mono text-muted-foreground text-xs">
+            {data.codigo}
+          </span>
         </div>
 
         {/* Producto */}

@@ -1,7 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { productsService } from "../../services/productService";
-import type { InventarioFilters } from "../../types/InventarioReport.types";
+import type {
+  InventarioFilters,
+  InventarioReportResponse,
+} from "../../types/InventarioReport.types";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { generateExcelFilename, saveExcelFile } from "@/lib/excelUtils";
 
 interface UseInventarioReportOptions {
   filters: InventarioFilters;
@@ -11,11 +15,20 @@ interface UseInventarioReportOptions {
 /**
  * Hook para obtener el reporte general de inventario
  */
-export function useInventarioReport({ filters, enabled = true }: UseInventarioReportOptions) {
-  return useQuery({
-    queryKey: ["inventario-report", filters],
-    queryFn: () => productsService.getInventarioReport(filters),
-    enabled: enabled && !!filters.fecha, // Solo ejecutar si fecha está presente
+export function useInventarioReport({
+  filters,
+  enabled = true,
+}: UseInventarioReportOptions) {
+  const queryFilters = { ...filters, downloadable: false };
+
+  return useQuery<InventarioReportResponse, Error>({
+    queryKey: ["inventario-report", queryFilters],
+    queryFn: () =>
+      productsService.getInventarioReport({
+        filters,
+        isDownloadable: false,
+      }) as Promise<InventarioReportResponse>,
+    enabled: enabled && !!queryFilters.fecha,
     staleTime: 1000 * 60 * 5, // 5 minutos
   });
 }
@@ -25,19 +38,21 @@ export function useInventarioReport({ filters, enabled = true }: UseInventarioRe
  */
 export function useDownloadInventarioReport() {
   return useMutation({
-    mutationFn: (filters: InventarioFilters) =>
-      productsService.downloadInventarioReport(filters),
-    onSuccess: (blob) => {
-      // Crear URL del blob y descargar
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `reporte_inventario_${new Date().toISOString().split("T")[0]}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+    mutationFn: async (filters: InventarioFilters) => {
+      const downloadFilters = { ...filters, downloadable: true };
 
+      const blob = (await productsService.getInventarioReport({
+        filters: downloadFilters,
+        isDownloadable: true,
+      })) as Blob;
+
+      const filename = generateExcelFilename("reporte_inventario");
+      const saved = await saveExcelFile(blob, filename);
+
+      return saved;
+    },
+    onSuccess: (saved) => {
+      if (!saved) return;
       showSuccessToast({
         title: "Descarga exitosa",
         description: "El reporte de inventario se descargó correctamente",

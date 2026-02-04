@@ -28,6 +28,7 @@ export function useReportGeneral({
     queryFn: () => reportService.getGeneral(queryFilters) as Promise<ReportGeneralResponse>,
     enabled: enabled && !!queryFilters.fecha_inicio,
     staleTime: 1000 * 60 * 5, // 5 minutos
+    retry: 1, // Solo reintentar 1 vez
   });
 }
 
