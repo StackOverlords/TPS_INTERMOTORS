@@ -2,17 +2,18 @@ import {
   Monitor,
   Sun,
   Moon,
-  Palette,
   Type,
   Layout,
-  Paintbrush,
   Eye,
+  // Imports comentados - para funcionalidades futuras
+  // Palette,
+  // Paintbrush,
   Table,
-  Zap,
-  Plus,
-  Package,
-  Upload,
-  Building2,
+  // Zap,
+  // Plus,
+  // Package,
+  // Upload,
+  // Building2,
 } from "lucide-react";
 import {
   Card,
@@ -26,55 +27,104 @@ import { Badge } from "@/components/atoms/badge";
 import { Separator } from "@/components/atoms/separator";
 import { Slider } from "@/components/atoms/slider";
 import ThemeCard from "../ThemeCard";
-import { useRef } from "react";
+// import { useRef } from "react"; // Comentado - para funcionalidades futuras
 import { useTheme } from "@/hooks/useTheme";
+import { useAppearance } from "@/hooks/useAppearance";
+import { ColorPicker } from "@/components/common/ColorPicker";
 
 const AppearanceSettings = () => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme, setTheme } = useTheme();
+
+  const {
+    fontFamily,
+    fontSize,
+    setFontFamily,
+    setFontSize,
+    highContrast,
+    focusWidth,
+    reduceAnimations,
+    setHighContrast,
+    setFocusWidth,
+    setReduceAnimations,
+    contentWidth,
+    elementSpacing,
+    borderRadius,
+    setContentWidth,
+    setElementSpacing,
+    setBorderRadius,
+    tableColors,
+    setTableColor
+  } = useAppearance();
+
+/* 
+ (Para funcionalidades futuras)
+*/
+
+  // const fileInputRef = useRef<HTMLInputElement>(null);
   // const [customColor, setCustomColor] = useState('');
 
-  const brandColors = [
-    "#374151",
-    "#059669",
-    "#3B82F6",
-    "#7C3AED",
-    "#DC2626",
-    "#DB2777",
-    "#EA580C",
-    "#CA8A04",
-  ];
+  // const brandColors = [
+  //   "#374151",
+  //   "#059669",
+  //   "#3B82F6",
+  //   "#7C3AED",
+  //   "#DC2626",
+  //   "#DB2777",
+  //   "#EA580C",
+  //   "#CA8A04",
+  // ];
 
-  const ColorPalette = ({ colors, selected, onSelect }: any) => (
-    <div className="flex gap-2 flex-wrap">
-      {colors.map((color: string) => (
-        <div
-          key={color}
-          className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
-            selected === color ? "border-foreground" : "border-transparent"
-          } hover:scale-110 transition-transform`}
-          style={{ backgroundColor: color }}
-          onClick={() => onSelect(color)}
-        />
-      ))}
-      <div
-        className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
-        onClick={() => {
-          const color = prompt("Ingresa un color en formato hex (ej: #FF5733)");
-          if (color && /^#[0-9A-F]{6}$/i.test(color)) {
-            onSelect(color);
-          }
-        }}
-      >
-        <Plus className="w-4 h-4" />
-      </div>
-    </div>
-  );
+  // const ColorPalette = ({ colors, selected, onSelect }: any) => (
+  //   <div className="flex gap-2 flex-wrap">
+  //     {colors.map((color: string) => (
+  //       <div
+  //         key={color}
+  //         className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+  //           selected === color ? "border-foreground" : "border-transparent"
+  //         } hover:scale-110 transition-transform`}
+  //         style={{ backgroundColor: color }}
+  //         onClick={() => onSelect(color)}
+  //       />
+  //     ))}
+  //     <div
+  //       className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+  //       onClick={() => {
+  //         const color = prompt("Ingresa un color en formato hex (ej: #FF5733)");
+  //         if (color && /^#[0-9A-F]{6}$/i.test(color)) {
+  //           onSelect(color);
+  //         }
+  //       }}
+  //     >
+  //       <Plus className="w-4 h-4" />
+  //     </div>
+  //   </div>
+  // );
+
+  /*  
+     ESTRUCTURA DEL COMPONENTE  
+
+     Funcionales:
+       - Selección de Tema (Light/Dark/System)
+       - Tipografía (fuentes del sistema + tamaños)
+       - Accesibilidad (contraste, animaciones, focus)
+       - Diseño y Espaciado (ancho, espaciado, bordes)
+
+     (Implementación futura):
+       - Logo de la Empresa
+       - Color de Marca
+       - Colores de Tablas
+       - Elementos Interactivos
+       - Paleta de Colores Personalizados
+     ============================================ */
 
   return (
     <div className="space-y-6">
-      {/* Company Logo */}
-      <Card>
+      {/* 
+          SECCIONES COMENTADAS - IMPLEMENTACIÓN FUTURA
+          */}
+
+      {/* Company Logo - PENDIENTE DE IMPLEMENTACIÓN */}
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -86,15 +136,6 @@ const AppearanceSettings = () => {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-lg bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center relative overflow-hidden">
               <Package className="w-8 h-8 text-primary" />
-              {/* {settings.logo ? (
-                                <img
-                                    src={settings.logo}
-                                    alt="Company Logo"
-                                    className="w-full h-full object-contain"
-                                />
-                            ) : (
-                                <Package className="w-8 h-8 text-primary" />
-                            )} */}
             </div>
             <div className="flex gap-2">
               <Button
@@ -104,32 +145,20 @@ const AppearanceSettings = () => {
               >
                 <Upload className="w-4 h-4" />
                 Subir Logo
-                {/* {settings.logo ? 'Cambiar logo' : 'Subir logo'} */}
               </Button>
-              {/* {settings.logo && (
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => updateLogo(null)}
-                                    className="text-destructive hover:text-destructive"
-                                >
-                                    <X className="w-4 h-4" />
-                                </Button>
-                            )} */}
             </div>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              // onChange={handleLogoUpload}
               className="hidden"
             />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Brand Color */}
-      <Card>
+      {/* Brand Color - PENDIENTE DE IMPLEMENTACIÓN */}
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5" />
@@ -142,31 +171,23 @@ const AppearanceSettings = () => {
         <CardContent className="space-y-4">
           <ColorPalette
             colors={brandColors}
-            // selected={settings.brandColor}
-            // onSelect={updateBrandColor}
           />
           <div className="flex items-center gap-2">
             <input
               type="color"
-              // value={settings.brandColor}
-              // onChange={(e) => updateBrandColor(e.target.value)}
               className="w-8 h-8 rounded border cursor-pointer"
             />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{brandColors[0]}</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              // onClick={() => updateBrandColor('#3B82F6')}
-            >
+            <Button variant="outline" size="sm">
               Restablecer
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Theme Selection */}
+      {/* Tema - Implementado y funcional */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -292,27 +313,45 @@ const AppearanceSettings = () => {
                 </CardContent>
             </Card> */}
 
-      {/* Typography */}
+      {/* Tipografía - Implementado y funcional
+          Usa fuentes del sistema configuradas en index.css
+          Funciona completamente offline */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Type className="h-5 w-5" />
             Tipografía
           </CardTitle>
-          <CardDescription>Ajusta el tamaño y tipo de fuente</CardDescription>
+          <CardDescription>Ajusta el tamaño y tipo de fuente (usa fuentes del sistema)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm">Tamaño de fuente</span>
-              <Badge variant="outline">Mediano</Badge>
+              <Badge variant="outline">
+                {fontSize === 'small' ? 'Pequeño' : fontSize === 'medium' ? 'Mediano' : 'Grande'}
+              </Badge>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button
+                variant={fontSize === 'small' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFontSize('small')}
+              >
                 Pequeño
               </Button>
-              <Button size="sm">Mediano</Button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant={fontSize === 'medium' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFontSize('medium')}
+              >
+                Mediano
+              </Button>
+              <Button
+                variant={fontSize === 'large' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFontSize('large')}
+              >
                 Grande
               </Button>
             </div>
@@ -320,98 +359,85 @@ const AppearanceSettings = () => {
           <Separator />
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm">Fuente del sistema</span>
-              <Badge variant="outline">Inter</Badge>
+              <span className="text-sm">Tipo de fuente</span>
+              <Badge variant="outline">
+                {fontFamily === 'sans' ? 'Sistema (Default)' : fontFamily === 'mono' ? 'Monospace' : 'Serif'}
+              </Badge>
             </div>
             <div className="flex gap-2">
-              <Button size="sm">Inter</Button>
-              <Button variant="outline" size="sm">
-                Roboto
+              <Button
+                variant={fontFamily === 'sans' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFontFamily('sans')}
+              >
+                Sistema (Default)
               </Button>
-              <Button variant="outline" size="sm">
-                Open Sans
+              <Button
+                variant={fontFamily === 'mono' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFontFamily('mono')}
+              >
+                Monospace
+              </Button>
+              <Button
+                variant={fontFamily === 'serif' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFontFamily('serif')}
+              >
+                Serif
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Table Colors */}
+      {/* Table Colors - PENDIENTE DE IMPLEMENTACIÓN */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Table className="h-5 w-5" />
-            Colores de Tablas
-          </CardTitle>
-          <CardDescription>
-            Personaliza los colores de filas, encabezados y estados de las
-            tablas
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Fila seleccionada</p>
-                <p className="text-sm text-muted-foreground">
-                  Color cuando una fila está seleccionada
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-primary/20 border border-primary/30"></div>
-                <Button variant="outline" size="sm">
-                  Cambiar
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Fila hover</p>
-                <p className="text-sm text-muted-foreground">
-                  Color al pasar el mouse sobre una fila
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-muted border"></div>
-                <Button variant="outline" size="sm">
-                  Cambiar
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Encabezado</p>
-                <p className="text-sm text-muted-foreground">
-                  Color de fondo del encabezado de tabla
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-card border-2"></div>
-                <Button variant="outline" size="sm">
-                  Cambiar
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Filas alternas</p>
-                <p className="text-sm text-muted-foreground">
-                  Color para filas intercaladas (zebra)
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-muted/50 border"></div>
-                <Button variant="outline" size="sm">
-                  Cambiar
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layout className="h-5 w-5" />
+              Colores de Tablas
+            </CardTitle>
+            <CardDescription>
+              Personaliza los colores de filas, encabezados y estados de las tablas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <ColorPicker
+              label="Fila seleccionada"
+              description="Color cuando una fila está seleccionada"
+              value={tableColors.selectedRow}
+              onChange={(color) => setTableColor('selectedRow', color)}
+            />
+            <Separator />
 
-      {/* Interactive Elements */}
-      <Card>
+            <ColorPicker
+              label="Fila hover"
+              description="Color al pasar el mouse sobre una fila"
+              value={tableColors.hoverRow}
+              onChange={(color) => setTableColor('hoverRow', color)}
+            />
+            <Separator />
+
+            <ColorPicker
+              label="Encabezado"
+              description="Color de fondo del encabezado de tabla"
+              value={tableColors.header}
+              onChange={(color) => setTableColor('header', color)}
+            />
+            <Separator />
+
+            <ColorPicker
+              label="Filas alternas"
+              description="Color para filas intercaladas (zebra)"
+              value={tableColors.alternateRows}
+              onChange={(color) => setTableColor('alternateRows', color)}
+            />
+          </CardContent>
+        </Card>
+
+      {/* Interactive Elements - PENDIENTE DE IMPLEMENTACIÓN */}
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
@@ -491,9 +517,10 @@ const AppearanceSettings = () => {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Accessibility */}
+      {/* Accesibilidad - Implementado y funcional
+          Contraste alto, tamaño de focus, reducir animaciones */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -514,8 +541,12 @@ const AppearanceSettings = () => {
                     Aumenta el contraste de colores
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  Desactivado
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setHighContrast(!highContrast)}
+                >
+                  {highContrast ? 'Activado' : 'Desactivado'}
                 </Button>
               </div>
               <div className="flex items-center justify-between">
@@ -527,13 +558,14 @@ const AppearanceSettings = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Slider
-                    defaultValue={[2]}
+                    value={[focusWidth]}
+                    onValueChange={([value]) => setFocusWidth(value)}
                     max={6}
                     min={1}
                     step={1}
                     className="w-20"
                   />
-                  <Badge variant="outline">2px</Badge>
+                  <Badge variant="outline">{focusWidth}px</Badge>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -543,8 +575,12 @@ const AppearanceSettings = () => {
                     Minimiza las transiciones y efectos
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  Desactivado
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setReduceAnimations(!reduceAnimations)}
+                >
+                  {reduceAnimations ? 'Activado' : 'Desactivado'}
                 </Button>
               </div>
             </div>
@@ -552,8 +588,9 @@ const AppearanceSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Custom Colors */}
-      <Card>
+      {/* Custom Colors - PENDIENTE DE IMPLEMENTACIÓN */}
+      {/* Paleta de colores favoritos del usuario para reutilizar en diferentes partes del sistema */}
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Paintbrush className="h-5 w-5" />
@@ -600,9 +637,10 @@ const AppearanceSettings = () => {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Layout */}
+      {/* Diseño y Espaciado - Implementado y funcional
+          Espaciado entre elementos, radio de bordes */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -615,22 +653,39 @@ const AppearanceSettings = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
-            <div className="space-y-3">
+            {/* Ancho del contenido - Desactivado por problemas de layout */}
+            {/* <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Ancho del contenido</span>
-                <Badge variant="outline">Estándar</Badge>
+                <Badge variant="outline">
+                  {contentWidth === 'compact' ? 'Compacto' : contentWidth === 'standard' ? 'Estándar' : 'Amplio'}
+                </Badge>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant={contentWidth === 'compact' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setContentWidth('compact')}
+                >
                   Compacto
                 </Button>
-                <Button size="sm">Estándar</Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant={contentWidth === 'standard' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setContentWidth('standard')}
+                >
+                  Estándar
+                </Button>
+                <Button
+                  variant={contentWidth === 'wide' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setContentWidth('wide')}
+                >
                   Amplio
                 </Button>
               </div>
             </div>
-            <Separator />
+            <Separator /> */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -641,13 +696,14 @@ const AppearanceSettings = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Slider
-                    defaultValue={[16]}
+                    value={[elementSpacing]}
+                    onValueChange={([value]) => setElementSpacing(value)}
                     max={32}
                     min={8}
                     step={4}
                     className="w-20"
                   />
-                  <Badge variant="outline">16px</Badge>
+                  <Badge variant="outline">{elementSpacing}px</Badge>
                 </div>
               </div>
             </div>
@@ -655,17 +711,37 @@ const AppearanceSettings = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Radio de bordes</span>
-                <Badge variant="outline">Mediano</Badge>
+                <Badge variant="outline">
+                  {borderRadius === 'none' ? 'Sin radio' : borderRadius === 'sm' ? 'Pequeño' : borderRadius === 'md' ? 'Mediano' : 'Grande'}
+                </Badge>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button
+                  variant={borderRadius === 'none' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setBorderRadius('none')}
+                >
                   Sin radio
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant={borderRadius === 'sm' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setBorderRadius('sm')}
+                >
                   Pequeño
                 </Button>
-                <Button size="sm">Mediano</Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant={borderRadius === 'md' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setBorderRadius('md')}
+                >
+                  Mediano
+                </Button>
+                <Button
+                  variant={borderRadius === 'lg' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setBorderRadius('lg')}
+                >
                   Grande
                 </Button>
               </div>

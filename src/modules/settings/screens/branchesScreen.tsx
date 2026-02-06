@@ -136,7 +136,7 @@ const BranchesScreen = () => {
                                 <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                                     Sucursales
                                 </h1>
-                                <p className="text-sm text-gray-500">Gestiona las sucursales de la aplicación</p>
+                                <p className="text-sm">Gestiona las sucursales de la aplicación</p>
                             </div>
                         </div >
                     </div >

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { debounce } from 'lodash-es';
 
 export interface Tab {
   id: string;
@@ -36,6 +37,31 @@ interface TabState {
   reorderTabs: (fromIndex: number, toIndex: number) => void;
 }
 
+// Debounced setItem para evitar thrashing de localStorage durante drag & drop
+const debouncedSetItem = debounce(
+  (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (error) {
+      // Si falla por quota, limpiar storage antiguo
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        try {
+          localStorage.removeItem(name);
+        } catch (e) {
+          // console.error('Error limpiando storage por quota:', e);
+        }
+      }
+    }
+  },
+  300, // Esperar 300ms después del último cambio antes de guardar
+  { leading: false, trailing: true } // Solo ejecutar al final, no al inicio
+);
+
+// Exponer flush para forzar guardado inmediato (usado en beforeunload)
+export const flushTabStorage = () => {
+  debouncedSetItem.flush();
+};
+
 // Storage wrapper con manejo de errores robusto
 const safeStorage = createJSONStorage<TabState>(() => ({
   getItem: (name: string) => {
@@ -58,18 +84,8 @@ const safeStorage = createJSONStorage<TabState>(() => ({
     }
   },
   setItem: (name: string, value: string) => {
-    try {
-      localStorage.setItem(name, value);
-    } catch (error) {
-      // Si falla por quota, limpiar storage antiguo
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        try {
-          localStorage.removeItem(name);
-        } catch (e) {
-          // console.error('Error limpiando storage por quota:', e);
-        }
-      }
-    }
+    // ✅ Usar versión con debounce para evitar múltiples writes durante drag & drop
+    debouncedSetItem(name, value);
   },
   removeItem: (name: string) => {
     try {

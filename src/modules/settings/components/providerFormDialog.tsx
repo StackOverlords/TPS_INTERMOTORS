@@ -189,10 +189,10 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                 permission='pro-create'
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={
-                <Button disabled variant={"destructive"} className="flex items-center gap-2">
-                    <ShieldAlert className="size-4" />
-                    Sin permiso para crear
-                </Button>}
+                    <Button disabled variant={"destructive"} className="flex items-center gap-2">
+                        <ShieldAlert className="size-4" />
+                        Sin permiso para crear
+                    </Button>}
             >
                 <DialogTrigger asChild>
                     {triggerButton || defaultTrigger}
@@ -203,7 +203,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                     <DialogTitle>
                         {isEditing ? "Editar" : "Agregar"} Proveedor
                         {isEditing && editingId && (
-                            <span className="text-gray-500 ml-2">
+                            <span className=" ml-2">
                                 #{editingId}
                             </span>
                         )}
@@ -220,7 +220,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                             <Label htmlFor="nombre">Nombre *</Label>
                             {isEditing && isLoadingProviderById ? (
                                 <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                    <p className="text-sm text-gray-500">Cargando...</p>
+                                    <p className="text-sm ">Cargando...</p>
                                 </div>
                             ) : (
                                 <>
@@ -244,7 +244,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                             <Label htmlFor="nit">NIT</Label>
                             {isEditing && isLoadingProviderById ? (
                                 <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                    <p className="text-sm text-gray-500">Cargando...</p>
+                                    <p className="text-sm ">Cargando...</p>
                                 </div>
                             ) : (
                                 <Input
@@ -261,7 +261,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                         <Label htmlFor="direccion">Dirección</Label>
                         {isEditing && isLoadingProviderById ? (
                             <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                <p className="text-sm text-gray-500">Cargando...</p>
+                                <p className="text-sm ">Cargando...</p>
                             </div>
                         ) : (
                             <Input
@@ -274,8 +274,8 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                     </div>
 
                     {/* Información de Contacto */}
-                    <div className="pt-2 border-t">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Información de Contacto</h3>
+                    <div className="pt-2 ">
+                        <h3 className="text-sm font-semibold  mb-3">Información de Contacto</h3>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -283,7 +283,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                                     <Label htmlFor="telefono">Teléfono</Label>
                                     {isEditing && isLoadingProviderById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -299,7 +299,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                                     <Label htmlFor="celular">Celular</Label>
                                     {isEditing && isLoadingProviderById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -316,7 +316,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                                 <Label htmlFor="contacto">Nombre de Contacto</Label>
                                 {isEditing && isLoadingProviderById ? (
                                     <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                        <p className="text-sm text-gray-500">Cargando...</p>
+                                        <p className="text-sm ">Cargando...</p>
                                     </div>
                                 ) : (
                                     <Input
@@ -331,8 +331,8 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                     </div>
 
                     {/* Ubicación */}
-                    <div className="pt-2 border-t">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Ubicación</h3>
+                    <div className="pt-2 ">
+                        <h3 className="text-sm font-semibold  mb-3">Ubicación</h3>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -341,7 +341,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                                     <Label htmlFor="pais_id">País *</Label>
                                     {isEditing && isLoadingProviderById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Controller
@@ -377,7 +377,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                                     <Label htmlFor="provincia_departamento_id">Estado/Provincia *</Label>
                                     {isEditing && isLoadingProviderById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Controller
@@ -411,7 +411,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
                                     <Label htmlFor="ciudad_id">Ciudad *</Label>
                                     {isEditing && isLoadingProviderById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Controller

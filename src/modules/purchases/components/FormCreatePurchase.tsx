@@ -123,7 +123,7 @@ const FormCreatePurchase: React.FC<Props> = ({
   ]);
 
   return (
-    <div className="p-3 bg-card border border-border rounded-lg">
+    <div className="p-3 bg-background border border-border rounded-lg">
       <div className="flex items-center justify-between mb-3">
         <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <ShoppingBag className="w-4 h-4" />
@@ -331,7 +331,7 @@ const FormCreatePurchase: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="bg-card rounded-lg">
+      <div className="rounded-lg">
         <div className="flex flex-col">
           <Label className="text-xs font-medium mb-1">
             Comentarios (Opcional)
@@ -342,7 +342,7 @@ const FormCreatePurchase: React.FC<Props> = ({
             onBlur={() => onBlur("comentario")}
             placeholder="Comentarios adicionales"
             rows={1}
-            className="p-2 text-xs border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical bg-background text-foreground"
+            className="p-2 text-xs border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical bg-card text-foreground"
           />
         </div>
       </div>

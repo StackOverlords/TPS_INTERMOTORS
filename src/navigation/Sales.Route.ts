@@ -51,7 +51,7 @@ const salesProtectedRoutes: RouteType[] = [
         showSidebar: true,
       },
       {
-        path: "/dashboard/sales/reports/general",
+        path: "/dashboard/reports/general",
         name: "Reporte general",
         type: "protected",
         element: GeneralReportScreen,
@@ -62,7 +62,7 @@ const salesProtectedRoutes: RouteType[] = [
         showSidebar: true,
       },
       {
-        path: "/dashboard/sales/reports/most-sold",
+        path: "/dashboard/reports/most-sold",
         name: "Reporte más vendidos",
         type: "protected",
         element: MostSoldScreen,
@@ -73,7 +73,7 @@ const salesProtectedRoutes: RouteType[] = [
         showSidebar: true,
       },
       {
-        path: "/dashboard/sales/reports/top-revenue",
+        path: "/dashboard/reports/top-revenue",
         name: "Reporte mayor ingreso",
         type: "protected",
         element: TopRevenueScreen,

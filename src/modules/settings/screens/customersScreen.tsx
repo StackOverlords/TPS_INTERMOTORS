@@ -161,7 +161,7 @@ const CustomersScreen = () => {
                                     <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                                         Clientes
                                     </h1>
-                                    <p className="text-sm text-gray-500">Gestiona los clientes de la aplicación</p>
+                                    <p className="text-sm">Gestiona los clientes de la aplicación</p>
                                 </div>
                             </div >
                         </div >
@@ -170,7 +170,7 @@ const CustomersScreen = () => {
                     <Card className="shadow-none">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <Filter className="size-5 text-gray-700" />
+                                <Filter className="size-5" />
                                 Filtros
                             </CardTitle>
                         </CardHeader>

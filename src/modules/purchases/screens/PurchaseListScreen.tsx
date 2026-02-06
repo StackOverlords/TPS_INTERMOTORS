@@ -537,7 +537,7 @@ const PurchaseListScreen = () => {
       >
 
       {/* Header */}
-      <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+      <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
         <h1 className="text-lg font-bold text-primary">Compras</h1>
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
           <div className="flex items-center gap-2 md:gap-4 grow">
@@ -628,7 +628,7 @@ const PurchaseListScreen = () => {
         )}
       </header>
 
-      <div className="bg-card rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
+      <div className="bg-background rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
         <section className="flex flex-col h-full">
           {/* Results Info */}
           <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">

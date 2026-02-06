@@ -114,7 +114,7 @@ const OrderDetailScreen = () => {
   return (
     <main className="h-full flex flex-col items-center overflow-hidden p-2">
       <div className="max-w-max w-full h-full flex flex-col gap-2 overflow-auto">
-        <header className="border-border border bg-card rounded-lg py-2 px-3 flex-shrink-0">
+        <header className="border-border border bg-background rounded-lg py-2 px-3 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <TooltipButton
@@ -202,7 +202,7 @@ const OrderDetailScreen = () => {
           </div>
         </header>
 
-        <Card className="bg-card border border-border shadow-none flex-shrink-0">
+        <Card className="bg-background border border-border shadow-none flex-shrink-0">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <FileText className="size-4 text-muted-foreground" />

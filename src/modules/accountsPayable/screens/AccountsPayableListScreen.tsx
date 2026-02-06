@@ -121,7 +121,7 @@ const AccountsPayableListScreen = () => {
         minSize: 30,
         enableHiding: true,
         cell: ({ getValue }) => (
-          <div className="text-center font-semibold text-blue-600 dark:text-blue-400">
+          <div className="text-center font-semibold">
             {
               formatColumnNumber(getValue<string>(), "-")
             }
@@ -136,7 +136,7 @@ const AccountsPayableListScreen = () => {
         minSize: 30,
         enableHiding: true,
         cell: ({ getValue }) => (
-          <div className="font-medium text-primary">{getValue<string>()}</div>
+          <div className="font-medium">{getValue<string>()}</div>
         ),
       },
       // {
