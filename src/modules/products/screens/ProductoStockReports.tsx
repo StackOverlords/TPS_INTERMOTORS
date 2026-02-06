@@ -18,13 +18,14 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useStockMinimoReport } from "../hooks/queries/useStockMinimoReport";
-import { productsService } from "../services/productService";
+import {
+  useDownloadStockMinimoReport,
+  useStockMinimoReport,
+} from "../hooks/queries/useStockMinimoReport";
 import type {
   StockMinimoFilters,
   StockMinimoItem,
 } from "../types/StockMinimoReport.types";
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { type StockViewMode } from "../components/StockViewToggle";
 import { StockDistributionChart } from "../components/StockDistributionChart";
 import { ViewToggle } from "@/modules/reports/components/ViewToggle";
@@ -37,7 +38,6 @@ const ProductoStockReports = () => {
   const [verSoloMenorIgual, setVerSoloMenorIgual] = useState(true);
   const [verSoloCercano, setVerSoloCercano] = useState(false);
   const [parametro, setParametro] = useState<number>(5);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [shouldFetch, setShouldFetch] = useState(false);
   const [viewMode, setViewMode] = useState<StockViewMode>("table");
 
@@ -60,6 +60,9 @@ const ProductoStockReports = () => {
     error,
     refetch,
   } = useStockMinimoReport(filters, shouldFetch);
+
+  const { mutate: downloadReport, isPending: isDownloading } =
+    useDownloadStockMinimoReport();
 
   // Log de errores para debugging
   if (isError && error) {
@@ -190,32 +193,7 @@ const ProductoStockReports = () => {
   };
 
   const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      const blob = await productsService.downloadStockMinimoReport(filters);
-
-      // Crear URL y descargar
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `reporte-stock-minimo-${new Date().toISOString().split("T")[0]}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      showSuccessToast({
-        title: "Descarga completada",
-        description: "El reporte se ha descargado correctamente",
-      });
-    } catch (error) {
-      showErrorToast({
-        title: "Error al descargar",
-        description: "No se pudo descargar el reporte",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
+    downloadReport(filters);
   };
 
   // Manejar cambio de filtros
