@@ -28,14 +28,14 @@ const ThemeToggle = () => {
           onClick={() => setTheme("light")}
         >
           <Sun className="mr-2 size-4" />
-          <span>Light</span>
+          <span>Claro</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           className={cn(theme === "dark" && "bg-accent text-accent-foreground")}
           onClick={() => setTheme("dark")}
         >
           <Moon className="mr-2 size-4" />
-          <span>Dark</span>
+          <span>Oscuro</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           className={cn(
@@ -44,7 +44,7 @@ const ThemeToggle = () => {
           onClick={() => setTheme("system")}
         >
           <Monitor className="mr-2 size-4" />
-          <span>System</span>
+          <span>Sistema</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

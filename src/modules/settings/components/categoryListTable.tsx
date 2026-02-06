@@ -256,7 +256,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
         size: 40,
         minSize: 30,
         cell: ({ getValue }) => (
-          <span className="font-medium font-mono text-gray-700">
+          <span className="font-medium font-mono">
             #{getValue<number>()}
           </span>
         ),
@@ -265,7 +265,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
         accessorKey: "categoria",
         header: "División",
         cell: ({ getValue }) => (
-          <h3 className="font-medium text-gray-700 truncate">
+          <h3 className="font-medium truncate">
             {getValue<string>()}
           </h3>
         ),
@@ -475,8 +475,8 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
     <Card className="h-full flex flex-col">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
         <div>
-          <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-            <FolderOpen className="size-5 text-gray-700" />
+          <CardTitle className="flex items-center gap-3 text-lg font-semibold">
+            <FolderOpen className="size-5" />
             Gestionar Divisiónes
           </CardTitle>
           <CardDescription className="text-sm">

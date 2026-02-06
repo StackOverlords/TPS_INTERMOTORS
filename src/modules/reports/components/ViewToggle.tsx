@@ -1,6 +1,6 @@
-import { BarChart3, Table, LayoutGrid } from "lucide-react";
+import { BarChart3, Table } from "lucide-react";
 import type { ViewMode } from "../types/report.types";
-import { ToggleGroup, ToggleGroupItem } from "@/components/atoms/toggle-group";
+import { Button } from "@/components/atoms/button";
 
 interface ViewToggleProps {
   value: ViewMode;
@@ -9,38 +9,27 @@ interface ViewToggleProps {
 
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
   return (
-    <ToggleGroup
-      type="single"
-      value={value}
-      onValueChange={(newValue) => {
-        if (newValue) onChange(newValue as ViewMode);
-      }}
-      className="border border-border rounded-lg"
-    >
-      <ToggleGroupItem
-        value="table"
-        aria-label="Vista de tabla"
-        className="gap-2"
+    <div className="flex gap-1 border border-border rounded-lg p-1">
+      <Button
+        type="button"
+        size="sm"
+        variant={value === "table" ? "default" : "ghost"}
+        onClick={() => onChange("table")}
+        className="h-7 text-xs"
       >
-        <Table className="h-4 w-4" />
+        <Table className="size-4" />
         <span className="hidden sm:inline">Tabla</span>
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="chart"
-        aria-label="Vista de gráfico"
-        className="gap-2"
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={value === "chart" ? "default" : "ghost"}
+        onClick={() => onChange("chart")}
+        className="h-7 text-xs"
       >
-        <BarChart3 className="h-4 w-4" />
+        <BarChart3 className="size-4" />
         <span className="hidden sm:inline">Gráfico</span>
-      </ToggleGroupItem>
-      <ToggleGroupItem
-        value="both"
-        aria-label="Vista combinada"
-        className="gap-2"
-      >
-        <LayoutGrid className="h-4 w-4" />
-        <span className="hidden sm:inline">Ambos</span>
-      </ToggleGroupItem>
-    </ToggleGroup>
+      </Button>
+    </div>
   );
 }

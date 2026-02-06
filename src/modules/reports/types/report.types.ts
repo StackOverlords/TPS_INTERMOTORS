@@ -25,7 +25,7 @@ export type ReportMayorIngresoResponse = z.infer<typeof ReportMayorIngresoRespon
 export type ReportMayorIngresoFilters = z.infer<typeof ReportMayorIngresoFiltersSchema>;
 
 // Configuración de vista (solo frontend)
-export type ViewMode = 'chart' | 'table' | 'both';
+export type ViewMode = 'chart' | 'table';
 
 // Configuración de ordenamiento (solo frontend)
 export interface SortConfig {

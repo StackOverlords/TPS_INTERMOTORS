@@ -98,7 +98,7 @@ const TitleBar = () => {
       className="bg-background border-b border-border flex items-center justify-between flex-shrink-0 z-50 relative py-1 px-2"
     >
       <div className="flex items-center flex-1 overflow-hidden gap-2 h-8">
-        <span className="font-black uppercase text-xs text-primary flex-shrink-0">
+        <span className="font-black uppercase text-xs flex-shrink-0">
           Intermotors
         </span>
         <Separator orientation="vertical" />

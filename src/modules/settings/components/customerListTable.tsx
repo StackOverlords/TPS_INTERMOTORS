@@ -101,7 +101,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             size: 40,
             minSize: 30,
             cell: ({ getValue }) => (
-                <span className="font-medium font-mono text-gray-700">
+                <span className="font-medium font-mono ">
                     #{getValue<number>()}
                 </span>
             )
@@ -110,7 +110,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             accessorKey: "nombre",
             header: "Nombre",
             cell: ({ getValue }) => (
-                <h3 className="font-medium text-gray-700 truncate">
+                <h3 className="font-medium  truncate">
                     {getValue<string>()}
                 </h3>
             )
@@ -123,8 +123,8 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             cell: ({ getValue }) => {
                 const value = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600">
-                        {value || <span className="text-gray-400 italic">Sin NIT</span>}
+                    <span className="text-sm ">
+                        {value || <span className=" italic">Sin NIT</span>}
                     </span>
                 )
             }
@@ -137,8 +137,8 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             cell: ({ getValue }) => {
                 const value = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600">
-                        {value || <span className="text-gray-400 italic">Sin contacto</span>}
+                    <span className="text-sm ">
+                        {value || <span className=" italic">Sin contacto</span>}
                     </span>
                 )
             }
@@ -151,8 +151,8 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             cell: ({ getValue }) => {
                 const direccion = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600 truncate">
-                        {direccion || <span className="text-gray-400 italic">Sin dirección</span>}
+                    <span className="text-sm  truncate">
+                        {direccion || <span className=" italic">Sin dirección</span>}
                     </span>
                 )
             }
@@ -163,7 +163,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             size: 120,
             minSize: 100,
             cell: ({ getValue }) => (
-                <span className="font-mono text-sm text-gray-600">
+                <span className="font-mono text-sm ">
                     {getValue<number>()}
                 </span>
             )
@@ -174,7 +174,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             size: 100,
             minSize: 80,
             cell: ({ getValue }) => (
-                <span className="text-sm text-gray-600">
+                <span className="text-sm ">
                     {getValue<number>()} días
                 </span>
             )
@@ -187,8 +187,8 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             cell: ({ getValue }) => {
                 const pais = getValue<string>();
                 return (
-                    <span className="text-sm text-gray-600">
-                        {pais || <span className="text-gray-400 italic">Sin país</span>}
+                    <span className="text-sm ">
+                        {pais || <span className=" italic">Sin país</span>}
                     </span>
                 )
             }
@@ -301,7 +301,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                 <div>
                     <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                        <Users className="size-5 text-gray-700" />
+                        <Users className="size-5 " />
                         Gestionar Clientes
                     </CardTitle>
                     <CardDescription className="text-sm">
@@ -317,7 +317,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
                                 Columnas
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-gray-200">
+                        <DropdownMenuContent align="end" className="w-56 max-h-96 overflow-y-auto border border-border">
                             {table
                                 .getAllColumns()
                                 .filter((column) => column.getCanHide())

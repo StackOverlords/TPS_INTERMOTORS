@@ -107,7 +107,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
             size: 40,
             minSize: 30,
             cell: ({ getValue }) => (
-                <span className="font-medium font-mono text-gray-700">
+                <span className="font-medium font-mono">
                     #{getValue<number>()}
                 </span>
             )
@@ -116,7 +116,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
             accessorKey: "nombre",
             header: "Nombre",
             cell: ({ getValue }) => (
-                <h3 className="font-medium text-gray-700 truncate">
+                <h3 className="font-medium truncate">
                     {getValue<string>()}
                 </h3>
             )
@@ -127,7 +127,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
             size: 80,
             minSize: 60,
             cell: ({ getValue }) => (
-                <span className="font-mono text-sm text-gray-600 font-semibold">
+                <span className="font-mono text-sm font-semibold">
                     {getValue<string>()}
                 </span>
             )
@@ -138,7 +138,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
             cell: ({ getValue }) => {
                 const value = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm">
                         {value || <span className="text-gray-400 italic">Sin nombre comercial</span>}
                     </span>
                 )
@@ -175,12 +175,12 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                 return (
                     <div className="flex flex-col gap-1">
                         {contactInfo?.telefono && (
-                            <span className="text-xs text-gray-600">
+                            <span className="text-xs">
                                 📞 {contactInfo.telefono}
                             </span>
                         )}
                         {contactInfo?.celular && (
-                            <span className="text-xs text-gray-600">
+                            <span className="text-xs">
                                 📱 {contactInfo.celular}
                             </span>
                         )}
@@ -200,7 +200,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
             cell: ({ getValue }) => {
                 const direccion = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600 truncate">
+                    <span className="text-sm truncate">
                         {direccion || <span className="text-gray-400 italic">Sin dirección</span>}
                     </span>
                 )
@@ -307,7 +307,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                 <div>
                     <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                        <GitBranchIcon className="size-5 text-gray-700" />
+                        <GitBranchIcon className="size-5" />
                         Gestionar Sucursales
                     </CardTitle>
                     <CardDescription className="text-sm">

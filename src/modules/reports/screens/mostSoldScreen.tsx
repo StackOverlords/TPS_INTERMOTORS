@@ -18,17 +18,20 @@ const MostSoldScreen = () => {
     appliedFilters,
     updateFilter,
     applyFilters,
+    chartVisualLimit,
+    setChartVisualLimit,
   } = useSalesReportFilters(Number(selectedBranchId));
 
   // Determinar qué filtros usar según el modo
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
 
-  const { data, isLoading, isFetching, isError, error, refetch } =
-    useReportMasVendido({
+  const { data, isLoading, isFetching, isError, refetch } = useReportMasVendido(
+    {
       filters: activeFilters,
       enabled: !!activeFilters.fecha_inicio && !!activeFilters.ranking,
-    });
+    }
+  );
 
   const { mutate: downloadReport, isPending: isDownloading } =
     useDownloadReportMasVendido();
@@ -60,7 +63,6 @@ const MostSoldScreen = () => {
       isLoading={isLoading}
       isFetching={isFetching}
       isError={isError}
-      error={error}
       // Filtros y acciones
       filters={filters}
       onFiltersChange={(key: string, value: any) =>
@@ -68,18 +70,19 @@ const MostSoldScreen = () => {
       }
       onRefresh={() => refetch()}
       onExport={handleExport}
-      showRanking
       searchMode={searchMode}
       onSearchModeToggle={toggleSearchMode}
       onSearch={handleManualSearch}
       isDownloading={isDownloading}
       // Configuración del gráfico
       chartDataKey="cantidad"
-      chartColor="#3b82f6"
       chartTitle="Ranking por Cantidad Vendida"
       tableTitle="Detalle del Ranking"
       highlightTotalColumn={false}
       reportType="XCantidad"
+      colorPreset="blue"
+      chartVisualLimit={chartVisualLimit}
+      onChartVisualLimitChange={setChartVisualLimit}
     />
   );
 };
