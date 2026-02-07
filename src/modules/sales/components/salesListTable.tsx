@@ -462,7 +462,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
   return (
     <section className="flex flex-col h-full">
       {/* Results Info - FIJO */}
-      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
+      <div className="p-2 text-sm text-muted-foreground border-b border-border flex-shrink-0 flex items-center justify-between bg-background">
         {sales.length > 0 ? (
           isInfiniteScroll ? (
             `Mostrando ${sales.length} de ${data?.meta?.total} ventas`
@@ -658,7 +658,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
 
       {/* Pagination - FIJO en la parte inferior */}
       {!isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
-        <div className="flex-shrink-0 border-t border-border bg-card">
+        <div className="flex-shrink-0 border-t border-border bg-background">
           <Pagination
             currentPage={filters.pagina || 1}
             onPageChange={onPageChange}

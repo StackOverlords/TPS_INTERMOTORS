@@ -205,7 +205,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                     <DialogTitle>
                         {isEditing ? "Editar" : "Agregar"} Cliente
                         {isEditing && editingId && (
-                            <span className="text-gray-500 ml-2">
+                            <span className=" ml-2">
                                 #{editingId}
                             </span>
                         )}
@@ -222,7 +222,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                             <Label htmlFor="nombre">Nombre *</Label>
                             {isEditing && isLoadingCustomerById ? (
                                 <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                    <p className="text-sm text-gray-500">Cargando...</p>
+                                    <p className="text-sm ">Cargando...</p>
                                 </div>
                             ) : (
                                 <>
@@ -246,7 +246,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                             <Label htmlFor="nit">NIT</Label>
                             {isEditing && isLoadingCustomerById ? (
                                 <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                    <p className="text-sm text-gray-500">Cargando...</p>
+                                    <p className="text-sm ">Cargando...</p>
                                 </div>
                             ) : (
                                 <Input
@@ -263,7 +263,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                         <Label htmlFor="direccion">Dirección</Label>
                         {isEditing && isLoadingCustomerById ? (
                             <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                <p className="text-sm text-gray-500">Cargando...</p>
+                                <p className="text-sm ">Cargando...</p>
                             </div>
                         ) : (
                             <Input
@@ -277,7 +277,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
 
                     {/* Información de Contacto */}
                     <div className="pt-2">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Información de Contacto</h3>
+                        <h3 className="text-sm font-semibold  mb-3">Información de Contacto</h3>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -285,7 +285,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="telefono">Teléfono</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -301,7 +301,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="celular">Celular</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -319,7 +319,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="contacto">Nombre de Contacto</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -335,7 +335,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="dias_plazo">Días de Plazo</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -353,7 +353,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
 
                     {/* Ubicación */}
                     <div className="pt-2">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Ubicación</h3>
+                        <h3 className="text-sm font-semibold  mb-3">Ubicación</h3>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -362,7 +362,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="pais_id">País *</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Controller
@@ -398,7 +398,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="provincia_departamento_id">Estado/Provincia *</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Controller
@@ -432,7 +432,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
                                     <Label htmlFor="ciudad_id">Ciudad *</Label>
                                     {isEditing && isLoadingCustomerById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm ">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Controller

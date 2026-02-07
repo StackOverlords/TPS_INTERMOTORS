@@ -283,7 +283,7 @@ const CustomizableTable = <T,>({
       collisionDetection={closestCenter}
       modifiers={[restrictToHorizontalAxis, restrictToTableContainer]}
     >
-      <div className="relative w-full overflow-auto h-full">
+      <div className="relative w-full overflow-auto h-full bg-background">
         <AtomTable
           ref={tableRef}
           className="table-fixed text-xs"
@@ -291,7 +291,7 @@ const CustomizableTable = <T,>({
         >
           <TableHeader
             className={cn(
-              stickyHeader && "sticky top-0 z-10 bg-background shadow-sm"
+              stickyHeader && "sticky top-0 z-20 bg-background shadow-md border-b"
             )}
           >
             {table.getHeaderGroups().map((headerGroup) => (
@@ -403,11 +403,11 @@ const CustomizableTable = <T,>({
                     <TableRow
                       key={row.id}
                       data-row-index={index}
-                      className={`${
-                        isSelected && focused
+                      className={`${isSelected && focused
                           ? "bg-primary/20 dark:bg-primary/30 hover:bg-primary/20 dark:hover:bg-primary/30"
                           : ""
-                      }`}
+                        }`}
+                      data-state={isSelected && focused ? "selected" : undefined}
                       onClick={() => {
                         if (!isDragging) {
                           onRowClick?.(index);
@@ -458,7 +458,7 @@ const CustomizableTable = <T,>({
               <TableFooter
                 className={cn(
                   stickyFooter &&
-                    "sticky bottom-0 z-10 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
+                  "sticky bottom-0 z-10 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
                 )}
               >
                 {renderTableFooter()}

@@ -258,7 +258,7 @@ const QuotationProductsSection: React.FC<QuotationProductsSectionProps> = ({
   });
 
   return (
-    <section className="border border-border rounded-lg bg-card flex-1 flex flex-col overflow-hidden">
+    <section className="border border-border rounded-lg bg-background flex-1 flex flex-col overflow-hidden">
       <header className="p-2 border-b border-border flex-shrink-0 space-y-1">
         <h3 className="text-base font-medium text-primary flex gap-2 items-center">
           <Package className="size-4" />

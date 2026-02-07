@@ -171,7 +171,7 @@ const QuotationListScreen = () => {
 
   return (
     <main ref={containerRef} className="h-full p-2 gap-2 flex flex-col">
-      <header className="bg-card rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
+      <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
         <h1 className="text-lg font-bold text-primary">Cotizaciones</h1>
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
           <div className="flex items-center gap-2 md:gap-4 grow">
@@ -271,7 +271,7 @@ const QuotationListScreen = () => {
         )}
       </header>
 
-      <div className="bg-card rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
+      <div className="bg-background rounded-lg border border-border flex-1 min-h-screen md:min-h-0 overflow-hidden">
         <QuotationsListTable
           data={quotationData || { data: [], meta: null, links: null }}
           filters={filters}

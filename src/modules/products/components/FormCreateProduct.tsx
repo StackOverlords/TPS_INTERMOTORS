@@ -222,7 +222,7 @@ const FormCreateProduct: React.FC = () => {
       ref={refForm}
     >
       {/* Información Principal */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <div className="flex items-center justify-between mb-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
             <Package className="w-4 h-4" />
@@ -592,7 +592,7 @@ const FormCreateProduct: React.FC = () => {
         </div>
       </div>
       {/* Campos adicionales para la generación de descripción */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         {/* <h3 className="mb-3 text-sm font-semibold text-gray-900">
           Información Complementaria
         </h3> */}
@@ -638,7 +638,7 @@ const FormCreateProduct: React.FC = () => {
       </div>
 
       {/* 11. Descripción Auto-generada */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <h3 className="flex items-center gap-2 mb-2 text-sm font-bold text-foreground">
           <Wand2 className="w-4 h-4" />
           Descripción Auto-generada
@@ -648,7 +648,7 @@ const FormCreateProduct: React.FC = () => {
         </div>
       </div>
       {/* Botones de acción */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">* Campos requeridos</span>
           <TooltipButton

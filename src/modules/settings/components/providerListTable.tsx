@@ -94,7 +94,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             size: 40,
             minSize: 30,
             cell: ({ getValue }) => (
-                <span className="font-medium font-mono text-gray-700">
+                <span className="font-medium font-mono">
                     #{getValue<number>()}
                 </span>
             )
@@ -103,7 +103,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             accessorKey: "nombre",
             header: "Nombre",
             cell: ({ getValue }) => (
-                <h3 className="font-medium text-gray-700 truncate">
+                <h3 className="font-medium truncate">
                     {getValue<string>()}
                 </h3>
             )
@@ -116,7 +116,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             cell: ({ getValue }) => {
                 const value = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm">
                         {value || <span className="text-gray-400 italic">Sin NIT</span>}
                     </span>
                 )
@@ -130,7 +130,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             cell: ({ getValue }) => {
                 const value = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm">
                         {value || <span className="text-gray-400 italic">Sin contacto</span>}
                     </span>
                 )
@@ -144,7 +144,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             cell: ({ getValue }) => {
                 const direccion = getValue<string | null>();
                 return (
-                    <span className="text-sm text-gray-600 truncate">
+                    <span className="text-sm truncate">
                         {direccion || <span className="text-gray-400 italic">Sin dirección</span>}
                     </span>
                 )
@@ -156,7 +156,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             size: 120,
             minSize: 100,
             cell: ({ getValue }) => (
-                <span className="font-mono text-sm text-gray-600">
+                <span className="font-mono text-sm">
                     {getValue<number>()}
                 </span>
             )
@@ -169,7 +169,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             cell: ({ getValue }) => {
                 const pais = getValue<string>();
                 return (
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm">
                         {pais || <span className="text-gray-400 italic">Sin país</span>}
                     </span>
                 )
@@ -283,7 +283,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                 <div>
                     <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                        <Truck className="size-5 text-gray-700" />
+                        <Truck className="size-5" />
                         Gestionar Proveedores
                     </CardTitle>
                     <CardDescription className="text-sm">

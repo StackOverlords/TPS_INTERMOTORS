@@ -153,7 +153,7 @@ const UpdatePrices = () => {
   };
 
   return (
-    <main className="h-full p-4 overflow-auto bg-background">
+    <main className="h-full p-4 overflow-auto">
       <ProtectedAction
         permission="com-update_prices"
         roles={["Super Admin", "Administrador", "Vendedor"]}
@@ -181,7 +181,7 @@ const UpdatePrices = () => {
           </Alert>
         )}
 
-        <Card>
+        <Card className="bg-background">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 justify-between">
               <h1 className="flex gap-2 items-center">

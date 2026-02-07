@@ -78,7 +78,7 @@ export default function CommandPalette({
 
   const commandPalette = (
     <div
-      className="fixed inset-0 z-[9999] flex items-start justify-center pt-16 sm:pt-24 px-2 bg-background/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-start justify-center pt-16 sm:pt-24 px-2 bg-background/40 backdrop-blur-sm"
       onMouseDown={() => setOpen(false)}
     >
       <Command

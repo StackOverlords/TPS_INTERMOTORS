@@ -7,6 +7,7 @@ import { useCommands } from "@/keybindings";
 import { Button } from "../atoms/button";
 import { useShowTabBar } from "@/hooks/tabs/useShowTabBar";
 import { Separator } from "../atoms/separator";
+import { flushTabStorage } from "@/states/tabStore";
 
 const TitleBar = () => {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -37,6 +38,8 @@ const TitleBar = () => {
 
   const handleClose = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    // ✅ Forzar guardado inmediato antes de cerrar
+    flushTabStorage();
     await appWindow.close();
   };
 
@@ -48,6 +51,13 @@ const TitleBar = () => {
     if (target.closest("a")) return;
     if (target.closest("[role='tab']")) return;
     if (target.closest("[data-radix-scroll-area-viewport]")) return;
+
+    // Prevenir drag en menús de Radix UI (ContextMenu y DropdownMenu)
+    if (target.closest("[role='menu']")) return;
+    if (target.closest("[role='menuitem']")) return;
+    if (target.closest("[data-radix-popper-content-wrapper]")) return;
+    if (target.closest("[data-radix-context-menu-content]")) return;
+    if (target.closest("[data-radix-dropdown-menu-content]")) return;
 
     // Áreas específicas para drag
     if (
@@ -88,7 +98,7 @@ const TitleBar = () => {
       className="bg-background border-b border-border flex items-center justify-between flex-shrink-0 z-50 relative py-1 px-2"
     >
       <div className="flex items-center flex-1 overflow-hidden gap-2 h-8">
-        <span className="font-black uppercase text-xs text-primary flex-shrink-0">
+        <span className="font-black uppercase text-xs flex-shrink-0">
           Intermotors
         </span>
         <Separator orientation="vertical" />

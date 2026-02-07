@@ -233,7 +233,7 @@ const MeasurementsScreen = () => {
             size: 40,
             minSize: 30,
             cell: ({ getValue }) => (
-                <span className="font-medium font-mono text-gray-700">
+                <span className="font-medium font-mono">
                     #{getValue<number>()}
                 </span>
             )
@@ -242,7 +242,7 @@ const MeasurementsScreen = () => {
             accessorKey: "unidad_medida",
             header: "Unidad de Medida",
             cell: ({ getValue }) => (
-                <h3 className="font-medium text-gray-700 truncate">
+                <h3 className="font-medium truncate">
                     {getValue<string>()}
                 </h3>
             )
@@ -367,7 +367,7 @@ const MeasurementsScreen = () => {
                 <Card className="shadow-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                            <Filter className="size-5 text-gray-700" />
+                            <Filter className="size-5" />
                             Filtros
                         </CardTitle>
                     </CardHeader>
@@ -410,7 +410,7 @@ const MeasurementsScreen = () => {
                     <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                         <div>
                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <Ruler className="size-5 text-gray-700" />
+                                <Ruler className="size-5" />
                                 Gestionar Medidas
                             </CardTitle>
                             <CardDescription className="text-sm">

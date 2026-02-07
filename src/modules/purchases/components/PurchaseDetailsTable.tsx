@@ -859,7 +859,7 @@ const PurchaseDetailsTable: React.FC<Props> = ({
   );
 
   return (
-    <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col">
+    <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col bg-background">
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex justify-between items-center gap-3 flex-wrap">
           <h2 className="text-primary text-base">Detalle de Compra</h2>

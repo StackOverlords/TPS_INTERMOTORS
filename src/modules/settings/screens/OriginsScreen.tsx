@@ -233,7 +233,7 @@ const OriginsScreen = () => {
             size: 40,
             minSize: 30,
             cell: ({ getValue }) => (
-                <span className="font-medium font-mono text-gray-700">
+                <span className="font-medium font-mono">
                     #{getValue<number>()}
                 </span>
             )
@@ -242,7 +242,7 @@ const OriginsScreen = () => {
             accessorKey: "procedencia",
             header: "Procedencia",
             cell: ({ getValue }) => (
-                <h3 className="font-medium text-gray-700 truncate">
+                <h3 className="font-medium truncate">
                     {getValue<string>()}
                 </h3>
             )
@@ -367,7 +367,7 @@ const OriginsScreen = () => {
                 <Card className="shadow-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                            <Filter className="size-5 text-gray-700" />
+                            <Filter className="size-5" />
                             Filtros
                         </CardTitle>
                     </CardHeader>
@@ -410,7 +410,7 @@ const OriginsScreen = () => {
                     <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-shrink-0">
                         <div>
                             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <MapPin className="size-5 text-gray-700" />
+                                <MapPin className="size-5" />
                                 Gestionar Procedencias
                             </CardTitle>
                             <CardDescription className="text-sm">
