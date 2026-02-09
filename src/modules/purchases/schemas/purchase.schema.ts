@@ -75,7 +75,7 @@ export const ProductoDetalleSchema = z.object({
   id_subcategoria: z.number().nullable(),
   subcategoria: SubcategoriaSchema.nullable(),
   id_marca: z.number(),
-  marca: MarcaSchema,
+  marca: MarcaSchema.nullable(),
   id_procedencia: z.number(),
   procedencia: ProcedenciaSchema,
   id_unidad_medida: z.number(),
