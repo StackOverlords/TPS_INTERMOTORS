@@ -4,7 +4,6 @@ import { useCommonMeasurements } from "@/modules/shared/hooks/useCommonMeasureme
 import { useCommonOrigins } from "@/modules/shared/hooks/useCommonOrigins";
 import { useCommonVehicleBrands } from "@/modules/shared/hooks/useCommonVehicleBrands";
 import { useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
 import { useUpdateProduct } from "../hooks/mutations/useUpdateProduct";
 import { useProductById } from "../hooks/queries/useProductById";
 import { useGoBack } from "@/hooks/useGoBack";
@@ -16,7 +15,6 @@ import { ProductUpdateSchema } from "../schemas/productUpdate.schema";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useHotkeys } from "react-hotkeys-hook";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useCommonSubcategories } from "@/modules/shared/hooks/useCommonSubcategories";
 import { CornerUpLeft, Loader2, Package, Save, Wand2 } from "lucide-react";
 import { Label } from "@/components/atoms/label";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
@@ -27,24 +25,27 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { Kbd } from "@/components/atoms/kbd";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import ProductEditSkeleton from "../components/ProductEditSkeleton";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const ProductEditScreen = () => {
-  const navigate = useNavigate();
-  const { updateProductId } = useParams();
+  const { value: updateProductId, isValid: isValidProductId } =
+    useValidatedRouteParam({
+      paramName: "updateProductId",
+      minValidValue: 1,
+    });
+
   const isFirstLoad = useRef(true);
 
-  const { data: categoriesData, isLoading: isLoadingCategories } =
-    useCategoriesWithSubcategories();
+  const { data: categoriesData } = useCategoriesWithSubcategories();
 
-  const { data: brandsData, isLoading: isLoadingBrands } = useCommonBrands();
+  const { data: brandsData } = useCommonBrands();
 
-  const { data: vehicleBrandsData, isLoading: isLoadingVehicleBrandsData } =
-    useCommonVehicleBrands();
+  const { data: vehicleBrandsData } = useCommonVehicleBrands();
 
-  const { data: originsData, isLoading: isLoadingOrigins } = useCommonOrigins();
+  const { data: originsData } = useCommonOrigins();
 
-  const { data: measurementsData, isLoading: isLoadingMeasurements } =
-    useCommonMeasurements();
+  const { data: measurementsData } = useCommonMeasurements();
 
   const { mutate: handleUpdateProduct, isPending: isSaving } =
     useUpdateProduct();
@@ -53,7 +54,23 @@ const ProductEditScreen = () => {
     data: productData,
     isLoading: isLoadingProduct,
     isError: isErrorProduct,
-  } = useProductById(Number(updateProductId));
+    refetch: refetchProduct,
+  } = useProductById(updateProductId ?? 0);
+
+  const { renderView } = useViewRenderer({
+    queryStates: [
+      {
+        isLoading: isLoadingProduct,
+        isError: isErrorProduct,
+        data: productData,
+      },
+    ],
+    isValidating: isValidProductId, // Pasar la validación externa
+    SkeletonComponent: ProductEditSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar el producto.",
+    onRetry: refetchProduct,
+  });
 
   const handleGoBack = useGoBack("/dashboard/productos");
   const { handleError } = useErrorHandler();
@@ -128,13 +145,13 @@ const ProductEditScreen = () => {
     id_subcategoria,
   } = watchedValues;
 
-  const {
-    // data: subcategoriesData,
-    isLoading: isLoadingSubcategories,
-  } = useCommonSubcategories({
-    categoria: id_categoria,
-    enabled: !!id_categoria,
-  });
+  // const {
+  //   // data: subcategoriesData,
+  //   isLoading: isLoadingSubcategories,
+  // } = useCommonSubcategories({
+  //   categoria: id_categoria,
+  //   enabled: !!id_categoria,
+  // });
 
   const selectedCategory = categoriesData?.find(
     (cat) => cat.id === id_categoria
@@ -175,7 +192,7 @@ const ProductEditScreen = () => {
 
   const onSubmit = (data: ProductUpdate) => {
     handleUpdateProduct(
-      { id: Number(updateProductId), data },
+      { id: updateProductId ?? 0, data },
       {
         onSuccess: () => {
           showSuccessToast({
@@ -240,38 +257,13 @@ const ProductEditScreen = () => {
     handleSubmit(onSubmit, onError)();
   });
 
-  const isLoading = [
-    isLoadingProduct,
-    isLoadingCategories,
-    isLoadingBrands,
-    isLoadingVehicleBrandsData,
-    isLoadingSubcategories,
-    isLoadingOrigins,
-    isLoadingMeasurements,
-  ].some(Boolean);
-
-  if (isLoading) return <ProductEditSkeleton />;
-
-  if (isErrorProduct || !productData) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar el producto."
-          showButtonIcon={false}
-          buttonText="Ir a lista de productos"
-          onRetry={() => {
-            navigate("/dashboard/productos");
-          }}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main>
-      <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-2">
-        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-2 p-2">
+        <header className="border-border border bg-background rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <TooltipButton
@@ -295,46 +287,18 @@ const ProductEditScreen = () => {
                 <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Editar producto #{productData?.codigo_interno}
                 </h1>
-                <p className="text-sm text-muted-foreground"></p>
+                <p className="text-sm text-muted-foreground">
+                  Modifica la información del producto y guarda los cambios
+                </p>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end w-full sm:w-auto gap-2">
-              <Button type="button" onClick={handleGoBack} variant={"outline"}>
-                Cancelar
-              </Button>
-
-              <TooltipButton
-                tooltip={
-                  <span className="flex items-center gap-1">
-                    Guardar Cambios <ShortcutKey combo="alt+s" />
-                  </span>
-                }
-                buttonProps={{
-                  variant: "default",
-                  size: "sm",
-                  type: "submit",
-                  disabled: isSaving || isSubmitting,
-                }}
-              >
-                {!isSaving || isSubmitting ? (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Guardar Cambios
-                  </>
-                ) : (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Guardando...
-                  </>
-                )}
-              </TooltipButton>
-            </div>
+            <div className="flex items-center justify-end w-full sm:w-auto gap-2"></div>
           </div>
         </header>
         {/* Información Principal */}
-        <div className="p-3 bg-card border border-border rounded-lg">
+        <div className="p-3 bg-background border border-border rounded-lg">
           <h2 className="flex items-center gap-2 mb-3 text-base font-bold text-foreground">
             <Package className="w-4 h-4" />
             Información Principal
@@ -663,7 +627,7 @@ const ProductEditScreen = () => {
         </div>
 
         {/* Campos adicionales para la generación de descripción */}
-        <div className="p-3 bg-card border border-border rounded-lg">
+        <div className="p-3 bg-background border border-border rounded-lg">
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {/* 14. Descripción alt. */}
             <div className="flex flex-col sm:col-span-2">
@@ -702,7 +666,7 @@ const ProductEditScreen = () => {
         </div>
 
         {/* Descripción Auto-generada */}
-        <div className="p-3 bg-card border border-border rounded-lg">
+        <div className="p-3 bg-background border border-border rounded-lg">
           <h3 className="flex items-center gap-2 mb-2 text-sm font-bold text-foreground">
             <Wand2 className="w-4 h-4" />
             Descripción Auto-generada
@@ -722,6 +686,47 @@ const ProductEditScreen = () => {
                         
                     </div>
                 </div> */}
+
+        {/* Botones de acción */}
+        <div className="p-3 bg-background border border-border rounded-lg">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs text-muted-foreground">
+              * Campos requeridos
+            </span>
+
+            <div className="flex items-center justify-end w-full sm:w-auto gap-2">
+              <Button type="button" onClick={handleGoBack} variant={"outline"}>
+                Cancelar
+              </Button>
+
+              <TooltipButton
+                tooltip={
+                  <span className="flex items-center gap-1">
+                    Guardar Cambios <ShortcutKey combo="alt+s" />
+                  </span>
+                }
+                buttonProps={{
+                  variant: "default",
+                  size: "sm",
+                  type: "submit",
+                  disabled: isSaving || isSubmitting,
+                }}
+              >
+                {!isSaving || isSubmitting ? (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Guardar Cambios
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                )}
+              </TooltipButton>
+            </div>
+          </div>
+        </div>
       </form>
     </main>
   );

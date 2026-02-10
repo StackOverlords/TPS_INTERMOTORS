@@ -19,6 +19,25 @@ export const useDeleteReturn = () => {
       queryClient.invalidateQueries({
         queryKey: ["product-provider-orders"],
       });
+
+      // Invalidar la lista de pagos para esa venta
+      queryClient.invalidateQueries({
+        queryKey: ["accountsPayable", "payments"],
+      });
+      // Invalidar la lista de cuentas por cobrar para refrescar saldos
+      queryClient.invalidateQueries({
+        queryKey: ["accountsPayable"],
+      });
+      // Invalidar los reportes de cuentas por cobrar también
+      queryClient.invalidateQueries({
+        queryKey: ["accounts-receivable-general-report"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["accounts-receivable-paid-report"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["accounts-receivable-by-customer-report"],
+      });
     },
     retry: false,
     networkMode: "offlineFirst",

@@ -17,10 +17,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  useGeneralReport,
-  useDownloadGeneralReport,
-} from "../hooks/useAccountsReceivableReports";
 import type {
   AccountsReceivableGeneralFilters,
   AccountsReceivableItem,
@@ -30,6 +26,10 @@ import { subMonths, format } from "date-fns";
 import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
+import {
+  useAccountsReceivableGeneralReport,
+  useDownloadAccountsReceivableGeneralReport,
+} from "../hooks/useAccountsReceivableGeneralReport";
 
 const AccountsReceivableGeneralReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -55,13 +55,10 @@ const AccountsReceivableGeneralReportScreen = () => {
     isError,
     error,
     refetch,
-  } = useGeneralReport({
-    filters: appliedFilters,
-    enabled: shouldFetch,
-  });
+  } = useAccountsReceivableGeneralReport(appliedFilters, shouldFetch);
 
   const { mutate: downloadReport, isPending: isDownloading } =
-    useDownloadGeneralReport();
+    useDownloadAccountsReceivableGeneralReport();
 
   const data = reportData?.data ?? [];
 

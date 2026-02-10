@@ -315,7 +315,7 @@ const UtilidadesReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       {/* Header Compacto */}
-      <header className="border-border flex-shrink-0 border bg-card rounded-lg p-2 sm:px-3 flex flex-col gap-2">
+      <header className="border-border flex-shrink-0 border bg-background rounded-lg p-2 sm:px-3 flex flex-col gap-2">
         <div className="flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-3">
             <div>

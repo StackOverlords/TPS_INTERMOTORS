@@ -17,10 +17,6 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  usePaidReport,
-  useDownloadPaidReport,
-} from "../hooks/useAccountsReceivableReports";
 import type {
   AccountsReceivablePaidFilters,
   AccountsReceivableItem,
@@ -30,6 +26,10 @@ import { subMonths, format } from "date-fns";
 import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
+import {
+  useAccountsReceivablePaidReport,
+  useDownloadAccountsReceivablePaidReport,
+} from "../hooks/useAccountsReceivablePaidReport";
 
 const AccountsReceivablePaidReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -55,13 +55,10 @@ const AccountsReceivablePaidReportScreen = () => {
     isError,
     error,
     refetch,
-  } = usePaidReport({
-    filters: appliedFilters,
-    enabled: shouldFetch,
-  });
+  } = useAccountsReceivablePaidReport(appliedFilters, shouldFetch);
 
   const { mutate: downloadReport, isPending: isDownloading } =
-    useDownloadPaidReport();
+    useDownloadAccountsReceivablePaidReport();
 
   const data = reportData?.data ?? [];
 

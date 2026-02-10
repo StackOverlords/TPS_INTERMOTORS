@@ -650,7 +650,9 @@ const FormCreateProduct: React.FC = () => {
       {/* Botones de acción */}
       <div className="p-3 bg-background border border-border rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-muted-foreground">* Campos requeridos</span>
+          <span className="text-xs text-muted-foreground">
+            * Campos requeridos
+          </span>
           <TooltipButton
             buttonProps={{
               type: "submit",

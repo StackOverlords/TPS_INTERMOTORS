@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import type { UserRole } from '@/hooks/useUserRole';
-import { usePermissionCheck } from '@/hooks/usePermissionCheck';
-import { ShieldAlert } from 'lucide-react';
+import type { ReactNode } from "react";
+import type { UserRole } from "@/hooks/useUserRole";
+import { usePermissionCheck } from "@/hooks/usePermissionCheck";
+import { ShieldAlert } from "lucide-react";
 
 interface ProtectedActionProps {
   permission: string;
@@ -16,30 +16,34 @@ interface ProtectedActionProps {
 
 const DefaultUnauthorizedMessage: React.FC = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-    <div className="rounded-full bg-red-100 p-4 mb-4">
-      <ShieldAlert className="h-12 w-12 text-red-600" />
+    <div className="rounded-full bg-red-100 dark:bg-red-950/50 p-4 mb-4">
+      <ShieldAlert className="h-12 w-12 text-red-600 dark:text-red-400" />
     </div>
-    <h2 className="text-xl font-semibold text-gray-900 mb-2">
-      Acceso Denegado
-    </h2>
-    <p className="text-gray-600 max-w-md">
-      No tienes los permisos necesarios para acceder a esta sección.
-      Por favor, contacta al administrador si crees que esto es un error.
+    <h2 className="text-xl font-semibold text-primary mb-2">Acceso Denegado</h2>
+    <p className="text-muted-foreground max-w-md">
+      No tienes los permisos necesarios para acceder a esta sección. Por favor,
+      contacta al administrador si crees que esto es un error.
     </p>
   </div>
 );
 
 const LoaderText: React.FC = () => (
   <div className="flex items-center justify-center h-full min-h-[100vh] gap-1">
-    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce"></div>
-    
-    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{
-      animationDelay: '-0.2s'
-    }}></div>
+    <div className="w-2 h-2 bg-blue-300 dark:bg-blue-800/50 rounded-full animate-bounce"></div>
 
-    <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce" style={{
-      animationDelay: '-0.4s'
-    }}></div>
+    <div
+      className="w-2 h-2 bg-blue-300 dark:bg-blue-800/50 rounded-full animate-bounce"
+      style={{
+        animationDelay: "-0.2s",
+      }}
+    ></div>
+
+    <div
+      className="w-2 h-2 bg-blue-300 dark:bg-blue-800/50 rounded-full animate-bounce"
+      style={{
+        animationDelay: "-0.4s",
+      }}
+    ></div>
   </div>
 );
 export const ProtectedAction: React.FC<ProtectedActionProps> = ({
@@ -59,13 +63,11 @@ export const ProtectedAction: React.FC<ProtectedActionProps> = ({
   } = usePermissionCheck({
     permission,
     roles,
-    bypassForSuperAdmin
+    bypassForSuperAdmin,
   });
 
   if (isLoading && showLoader) {
-    return (
-      <LoaderText />
-    );
+    return <LoaderText />;
   }
 
   if (isLoading) {
@@ -81,7 +83,10 @@ export const ProtectedAction: React.FC<ProtectedActionProps> = ({
       return <DefaultUnauthorizedMessage />;
     }
 
-    if (showUnauthorizedMessage && typeof showUnauthorizedMessage !== 'boolean') {
+    if (
+      showUnauthorizedMessage &&
+      typeof showUnauthorizedMessage !== "boolean"
+    ) {
       return <>{showUnauthorizedMessage}</>;
     }
 

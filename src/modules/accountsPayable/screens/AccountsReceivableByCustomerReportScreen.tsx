@@ -18,10 +18,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import {
-  useByCustomerReport,
-  useDownloadByCustomerReport,
-} from "../hooks/useAccountsReceivableReports";
 import type {
   AccountsReceivableByCustomerFilters,
   AccountsReceivableItem,
@@ -39,6 +35,10 @@ import {
 } from "@/components/atoms/select";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
+import {
+  useAccountsReceivableByCustomerReport,
+  useDownloadAccountsReceivableByCustomerReport,
+} from "../hooks/useAccountsReceivableByCustomerReport";
 
 const AccountsReceivableByCustomerReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -75,13 +75,10 @@ const AccountsReceivableByCustomerReportScreen = () => {
     isError,
     error,
     refetch,
-  } = useByCustomerReport({
-    filters: appliedFilters,
-    enabled: shouldFetch,
-  });
+  } = useAccountsReceivableByCustomerReport(appliedFilters, shouldFetch);
 
   const { mutate: downloadReport, isPending: isDownloading } =
-    useDownloadByCustomerReport();
+    useDownloadAccountsReceivableByCustomerReport();
 
   const data = reportData?.data ?? [];
 
