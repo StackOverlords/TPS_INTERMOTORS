@@ -15,7 +15,7 @@ import {
   TabsTrigger,
 } from "@/components/atoms/tabs";
 import { Button } from "@/components/atoms/button";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import { useProductById } from "../hooks/queries/useProductById";
 import { useProductSalesStats } from "../hooks/queries/useProductSalesStats";
 import { useBranchStore } from "@/states/branchStore";
@@ -36,10 +36,18 @@ import { useProductByIdWithStock } from "../hooks/queries/useProductByIdWithStoc
 import type { ProductGet } from "../types/ProductGet";
 import type { ProductStock } from "../types/productStock";
 import UpdatePurchaseDetailPricesFormModal from "@/modules/purchases/components/UpdatePurchaseDetailPricesFormModal";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const ProductDetailScreen = () => {
   const navigate = useNavigate();
-  const { productId } = useParams();
+
+  const { value: productId, isValid: isValidProductId } =
+    useValidatedRouteParam({
+      paramName: "productId",
+      minValidValue: 1,
+    });
+
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   const user = authSDK.getCurrentUser();
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState<number>(
@@ -74,7 +82,7 @@ const ProductDetailScreen = () => {
     // error,
     // isFetching,
     // isError,
-  } = useProductByIdWithStock(Number(productId), Number(selectedBranchId));
+  } = useProductByIdWithStock(productId ?? 0, Number(selectedBranchId));
 
   const {
     data: product,
@@ -82,7 +90,7 @@ const ProductDetailScreen = () => {
     isError: isErrorProduct,
     refetch: refetchProduct,
     // isFetching: isFetchingProduct
-  } = useProductById(Number(productId));
+  } = useProductById(productId ?? 0);
 
   const {
     data: twoYearSalesData,
@@ -90,7 +98,7 @@ const ProductDetailScreen = () => {
     isError: isErrorTwoYearSalesData,
     isFetching: isFetchingTwoYearSalesData,
   } = useProductSalesStats({
-    producto: Number(productId),
+    producto: productId ?? 0,
     sucursal: sucursalSeleccionada,
     gestion_1: gestiones.gestion_1,
     gestion_2: gestiones.gestion_2,
@@ -103,7 +111,7 @@ const ProductDetailScreen = () => {
     isLoading: isLoadingStockLocalData,
     refetch: refetchStockLocal,
   } = useProductStock({
-    producto: Number(productId),
+    producto: productId ?? 0,
     sucursal: sucursalSeleccionada,
     resto_only: 0,
   });
@@ -114,7 +122,7 @@ const ProductDetailScreen = () => {
     isLoading: isLoadingStockSucursalesData,
     refetch: refetchStockSucursales,
   } = useProductStock({
-    producto: Number(productId),
+    producto: productId ?? 0,
     sucursal: sucursalSeleccionada,
     resto_only: 1,
   });
@@ -124,8 +132,23 @@ const ProductDetailScreen = () => {
     isError: isErrorProviderOrders,
     isLoading: isLoadingProviderOrders,
   } = useProductProviderOrders({
-    producto: Number(productId),
+    producto: productId ?? 0,
     sucursal: sucursalSeleccionada,
+  });
+
+  const { renderView } = useViewRenderer({
+    queryStates: [
+      {
+        isLoading: isLoadingProduct,
+        isError: isErrorProduct,
+        data: product,
+      },
+    ],
+    isValidating: isValidProductId, // Pasar la validación externa
+    SkeletonComponent: ProductDetailSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar el producto.",
+    onRetry: refetchProduct,
   });
 
   useEffect(() => {
@@ -182,10 +205,6 @@ const ProductDetailScreen = () => {
     addItemToCart(transformedProduct);
   };
 
-  const handleRetry = () => {
-    refetchProduct();
-  };
-
   const handleGoBack = () => {
     navigate("/dashboard/productos");
   };
@@ -218,22 +237,8 @@ const ProductDetailScreen = () => {
     enabled: true,
   });
 
-  if (isLoadingProduct) {
-    return <ProductDetailSkeleton />;
-  }
-
-  if (isErrorProduct || !product) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar el producto."
-          showButtonIcon={false}
-          onRetry={handleRetry}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <div className="p-2 h-full">

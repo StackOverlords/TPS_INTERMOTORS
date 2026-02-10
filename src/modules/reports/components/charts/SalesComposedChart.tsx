@@ -1,4 +1,3 @@
-// components/charts/SalesComposedChart.tsx
 import { useMemo } from "react";
 import type { ReportItem } from "../../types/report.types";
 import {
