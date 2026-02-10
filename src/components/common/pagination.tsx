@@ -108,7 +108,7 @@ const Pagination: React.FC<PaginationProps> = ({
           {getVisiblePages().map((page, index) => (
             <React.Fragment key={index}>
               {page === "..." ? (
-                <span className="flex items-center justify-center size-6 sm:size-8 text-gray-500">
+                <span className="flex items-center justify-center size-6 sm:size-8 text-muted-foreground">
                   ...
                 </span>
               ) : (

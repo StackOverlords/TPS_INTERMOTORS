@@ -443,7 +443,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
     screenPath: SCREEN_PATH,
     isDragging: isDraggingColumn,
     onPrimaryAction: (quotation) => {
-      handleSeeDetails(quotation.id);
+      handleSeeDetails(quotation);
     },
     getItemId: (quotation) => quotation.id,
   });
@@ -680,7 +680,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
 
       {/* Pagination - FIJO en la parte inferior */}
       {!isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
-        <div className="flex-shrink-0 border-t border-border bg-card">
+        <div className="flex-shrink-0 border-t border-border bg-background">
           <Pagination
             currentPage={filters.pagina || 1}
             onPageChange={onPageChange}

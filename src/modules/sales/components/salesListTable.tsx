@@ -430,7 +430,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
     screenPath: SCREEN_PATH,
     isDragging: isDraggingColumn,
     onPrimaryAction: (sale) => {
-      handleSeeDetails(sale.id);
+      handleSeeDetails(sale);
     },
     getItemId: (sale) => sale.id,
   });

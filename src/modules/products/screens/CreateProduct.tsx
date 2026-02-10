@@ -11,16 +11,20 @@ const CreateProduct = () => {
   const handleGoBack = useGoBack("/dashboard/productos");
 
   // Shortcuts
-  useHotkeys('escape', (e) => {
-    e.preventDefault();
-    handleGoBack();
-  }, {
-    scopes: ["esc-key"],
-    enabled: true
-  });
+  useHotkeys(
+    "escape",
+    (e) => {
+      e.preventDefault();
+      handleGoBack();
+    },
+    {
+      scopes: ["esc-key"],
+      enabled: true,
+    }
+  );
 
   return (
-    <div className={`flex justify-center items-center`}>
+    <div className={`flex justify-center h-full w-full p-2`}>
       {/* <PanelGroup direction={isMobile ? "vertical" : "horizontal"}>
           <Panel className="" minSize={30} maxSize={80} defaultSize={isMobile ? 40 : 55}> */}
       <div className="w-full space-y-2">
@@ -45,18 +49,17 @@ const CreateProduct = () => {
                 <h1 className="text-lg lg:text-xl font-bold text-foreground leading-tight">
                   Nuevo Producto
                 </h1>
-                <p className="text-sm text-muted-foreground">Registra un nuevo producto en el sistema</p>
+                <p className="text-sm text-muted-foreground">
+                  Registra un nuevo producto en el sistema
+                </p>
               </div>
-            </div >
+            </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end w-full sm:w-auto gap-2" >
-
-            </div >
-          </div >
-        </header >
-        <FormCreateProduct
-        />
+            <div className="flex items-center justify-end w-full sm:w-auto gap-2"></div>
+          </div>
+        </header>
+        <FormCreateProduct />
       </div>
       {/* </Panel> */}
       {/* <PanelResizeHandle className={`${

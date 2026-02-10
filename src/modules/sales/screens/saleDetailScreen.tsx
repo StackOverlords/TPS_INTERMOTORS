@@ -29,31 +29,53 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useParams } from "react-router";
 import SaleDetailSkeleton from "../components/saleDetail/saleDetailSkeleton";
 import SaleProductsSection from "../components/saleDetail/SaleProducts";
 import { useDeleteSale } from "../hooks/useDeleteSale";
 import { useSaleGetById } from "../hooks/useSaleGetById";
 import { useSalePDF } from "../hooks/useSalePDF";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const SaleDetailScreen = () => {
   // const navigate = useNavigate()
   const { navigateWithTab } = useTabNavigation();
-  const { saleCod } = useParams();
+
+  const { value: saleCod, isValid: isValidSaleCod } = useValidatedRouteParam({
+    paramName: "saleCod",
+    minValidValue: 1,
+  });
+
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const {
     data: saleData,
     isLoading: isLoadingSale,
     isError: isErrorSale,
-  } = useSaleGetById(Number(saleCod));
+    refetch: refetchSale,
+  } = useSaleGetById(saleCod ?? 0);
 
   const {
     data: pdfBlob,
     isLoading: isLoadingPdf,
     isError: isErrorPdf,
-  } = useSalePDF(Number(saleCod), isDialogOpen && !!saleCod);
+  } = useSalePDF(saleCod ?? 0, isDialogOpen && !!saleCod);
+
+  const { renderView } = useViewRenderer({
+    queryStates: [
+      {
+        isLoading: isLoadingSale,
+        isError: isErrorSale,
+        data: saleData,
+      },
+    ],
+    isValidating: isValidSaleCod, // Pasar la validación externa
+    SkeletonComponent: SaleDetailSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar la venta.",
+    onRetry: refetchSale,
+  });
 
   const handleDeleteSuccess = (_data: unknown, saleId: number) => {
     showSuccessToast({
@@ -130,25 +152,8 @@ const SaleDetailScreen = () => {
     enabled: true,
   });
 
-  if (isLoadingSale) {
-    return <SaleDetailSkeleton />;
-  }
-
-  if (isErrorSale || !saleData) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar la venta."
-          showButtonIcon={false}
-          buttonText="Ir a lista de ventas"
-          onRetry={() => {
-            navigateWithTab("/dashboard/sales");
-          }}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main className="h-full flex flex-col items-center overflow-hidden p-2">
@@ -361,7 +366,7 @@ const SaleDetailScreen = () => {
         {/* Modal PDF Viewer */}
         {isDialogOpen && (
           <PDFViewer
-            id={Number(saleCod)}
+            id={saleCod ?? 0}
             pdfBlob={pdfBlob}
             isLoading={isLoadingPdf}
             isError={isErrorPdf}

@@ -1,5 +1,5 @@
 import { ApiService } from "@/lib/apiService";
-import Logger from "@/utils/logger";
+import { Logger } from "@/lib/logger";
 import { ACCOUNT_PAYABLE_ENDPOINTS } from "./endpoints";
 import {
   type AccountsReceivableGeneralFilters,
@@ -8,121 +8,155 @@ import {
   type AccountsReceivableReportResponse,
 } from "../types/AccountsReceivableReport.types";
 import { accountsReceivableReportResponseSchema } from "../schemas/accountsReceivableReport.schema";
+import type { AxiosRequestConfig } from "axios";
 
-const MODULE_NAME = "AccountsReceivableReportService";
+const MODULE_NAME = "ACCOUNTS_RECEIVABLE_REPORT_SERVICE";
+
+/**
+ * Configuracion para descargar excel
+ */
+const ExcelRequestConfig = (timeout?: number): AxiosRequestConfig => {
+  return {
+    responseType: "blob",
+    headers: {
+      Accept:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+    timeout: timeout || 120000, // 2 minutos por defecto
+  };
+};
 
 export const accountsReceivableReportService = {
   /**
    * Obtener reporte general de cuentas por cobrar
-   * @param filters - Filtros para el reporte
+   * Si downloadable=true, retorna Blob (Excel)
+   * Si downloadable=false, retorna datos JSON
    */
-  async getGeneralReport(filters: AccountsReceivableGeneralFilters): Promise<AccountsReceivableReportResponse> {
-    Logger.info("Fetching accounts receivable general report", { filters }, MODULE_NAME);
+  async getGeneralReport(
+    filters: AccountsReceivableGeneralFilters,
+  ): Promise<AccountsReceivableReportResponse | Blob> {
+    Logger.info(
+      "Fetching accounts receivable general report",
+      { filters },
+      MODULE_NAME,
+    );
+
+    const isDownloadable = filters.downloadable ?? false;
+
+    if (isDownloadable) {
+      const blob = await ApiService.post(
+        ACCOUNT_PAYABLE_ENDPOINTS.reports.general,
+        filters,
+        undefined,
+        ExcelRequestConfig(180000), // 3 minutos para descarga
+      );
+      Logger.info("General report blob fetched successfully", {}, MODULE_NAME);
+      return blob as Blob;
+    }
+
     const response = await ApiService.post(
       ACCOUNT_PAYABLE_ENDPOINTS.reports.general,
       filters,
       accountsReceivableReportResponseSchema,
-      { timeout: 120000 } // 2 minutos para reportes pesados
+      { timeout: 120000 },
     );
-    Logger.info("General report fetched successfully", { count: response.data.length }, MODULE_NAME);
-    return response as AccountsReceivableReportResponse;
-  },
 
-  /**
-   * Descargar reporte general en Excel
-   * @param filters - Filtros para el reporte
-   */
-  async downloadGeneralReport(filters: AccountsReceivableGeneralFilters): Promise<Blob> {
-    Logger.info("Downloading accounts receivable general report", { filters }, MODULE_NAME);
-    const response = await ApiService.post(
-      ACCOUNT_PAYABLE_ENDPOINTS.reports.general,
-      { ...filters, downloadable: true },
-      undefined,
-      {
-        timeout: 180000, // 3 minutos para descarga de Excel
-        responseType: 'blob',
-        headers: {
-          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        }
-      }
+    Logger.info(
+      "General report fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
     );
-    Logger.info("General report downloaded successfully", {}, MODULE_NAME);
-    return response as Blob;
+
+    return response as AccountsReceivableReportResponse;
   },
 
   /**
    * Obtener reporte de cuentas efectivamente pagadas
-   * @param filters - Filtros para el reporte
+   * Si downloadable=true, retorna Blob (Excel)
+   * Si downloadable=false, retorna datos JSON
    */
-  async getPaidReport(filters: AccountsReceivablePaidFilters): Promise<AccountsReceivableReportResponse> {
-    Logger.info("Fetching accounts receivable paid report", { filters }, MODULE_NAME);
+  async getPaidReport(
+    filters: AccountsReceivablePaidFilters,
+  ): Promise<AccountsReceivableReportResponse | Blob> {
+    Logger.info(
+      "Fetching accounts receivable paid report",
+      { filters },
+      MODULE_NAME,
+    );
+
+    const isDownloadable = filters.downloadable ?? false;
+
+    if (isDownloadable) {
+      const blob = await ApiService.post(
+        ACCOUNT_PAYABLE_ENDPOINTS.reports.paid,
+        filters,
+        undefined,
+        ExcelRequestConfig(180000),
+      );
+      Logger.info("Paid report blob fetched successfully", {}, MODULE_NAME);
+      return blob as Blob;
+    }
+
     const response = await ApiService.post(
       ACCOUNT_PAYABLE_ENDPOINTS.reports.paid,
       filters,
       accountsReceivableReportResponseSchema,
-      { timeout: 120000 }
+      { timeout: 120000 },
     );
-    Logger.info("Paid report fetched successfully", { count: response.data.length }, MODULE_NAME);
-    return response as AccountsReceivableReportResponse;
-  },
 
-  /**
-   * Descargar reporte de pagadas en Excel
-   * @param filters - Filtros para el reporte
-   */
-  async downloadPaidReport(filters: AccountsReceivablePaidFilters): Promise<Blob> {
-    Logger.info("Downloading accounts receivable paid report", { filters }, MODULE_NAME);
-    const response = await ApiService.post(
-      ACCOUNT_PAYABLE_ENDPOINTS.reports.paid,
-      { ...filters, downloadable: true },
-      undefined,
-      {
-        timeout: 180000,
-        responseType: 'blob',
-        headers: {
-          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        }
-      }
+    Logger.info(
+      "Paid report fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
     );
-    Logger.info("Paid report downloaded successfully", {}, MODULE_NAME);
-    return response as Blob;
+
+    return response as AccountsReceivableReportResponse;
   },
 
   /**
    * Obtener reporte por cliente
-   * @param filters - Filtros para el reporte
+   * Si downloadable=true, retorna Blob (Excel)
+   * Si downloadable=false, retorna datos JSON
    */
-  async getByCustomerReport(filters: AccountsReceivableByCustomerFilters): Promise<AccountsReceivableReportResponse> {
-    Logger.info("Fetching accounts receivable by customer report", { filters }, MODULE_NAME);
+  async getByCustomerReport(
+    filters: AccountsReceivableByCustomerFilters,
+  ): Promise<AccountsReceivableReportResponse | Blob> {
+    Logger.info(
+      "Fetching accounts receivable by customer report",
+      { filters },
+      MODULE_NAME,
+    );
+
+    const isDownloadable = filters.downloadable ?? false;
+
+    if (isDownloadable) {
+      const blob = await ApiService.post(
+        ACCOUNT_PAYABLE_ENDPOINTS.reports.byCustomer,
+        filters,
+        undefined,
+        ExcelRequestConfig(180000),
+      );
+      Logger.info(
+        "By customer report blob fetched successfully",
+        {},
+        MODULE_NAME,
+      );
+      return blob as Blob;
+    }
+
     const response = await ApiService.post(
       ACCOUNT_PAYABLE_ENDPOINTS.reports.byCustomer,
       filters,
       accountsReceivableReportResponseSchema,
-      { timeout: 120000 }
+      { timeout: 120000 },
     );
-    Logger.info("By customer report fetched successfully", { count: response.data.length }, MODULE_NAME);
-    return response as AccountsReceivableReportResponse;
-  },
 
-  /**
-   * Descargar reporte por cliente en Excel
-   * @param filters - Filtros para el reporte
-   */
-  async downloadByCustomerReport(filters: AccountsReceivableByCustomerFilters): Promise<Blob> {
-    Logger.info("Downloading accounts receivable by customer report", { filters }, MODULE_NAME);
-    const response = await ApiService.post(
-      ACCOUNT_PAYABLE_ENDPOINTS.reports.byCustomer,
-      { ...filters, downloadable: true },
-      undefined,
-      {
-        timeout: 180000,
-        responseType: 'blob',
-        headers: {
-          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        }
-      }
+    Logger.info(
+      "By customer report fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
     );
-    Logger.info("By customer report downloaded successfully", {}, MODULE_NAME);
-    return response as Blob;
+
+    return response as AccountsReceivableReportResponse;
   },
 };
