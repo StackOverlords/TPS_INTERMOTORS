@@ -1,5 +1,5 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import TooltipButton from "@/components/common/TooltipButton";
 import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
 import { Kbd } from "@/components/atoms/kbd";
@@ -71,6 +71,8 @@ import {
 } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
 
 const QuotationEditScreen = () => {
   const configuraciones = {
@@ -92,12 +94,17 @@ const QuotationEditScreen = () => {
   const fromCreate = currentTab?.createdTempData?.fromCreate;
   const originalPath = currentTab?.createdTempData?.originalPath;
 
-  const { updateQuotationId } = useParams();
+  const { value: updateQuotationId, isValid: isValidQuotationId } =
+    useValidatedRouteParam({
+      paramName: "updateQuotationId",
+      minValidValue: 1,
+    });
+
   const effectiveQuotationId = useMemo(() => {
     if (fromCreate && tempCreatedQuotation?.id) {
       return tempCreatedQuotation.id;
     }
-    return updateQuotationId ? Number(updateQuotationId) : null;
+    return updateQuotationId;
   }, [fromCreate, tempCreatedQuotation?.id, updateQuotationId]);
 
   const [isReadOnly] = useState<boolean>(false);
@@ -142,7 +149,43 @@ const QuotationEditScreen = () => {
     data: quotationData,
     isLoading: isLoadingQuotation,
     isError: isErrorQuotation,
+    refetch: refetchQuotation,
   } = useQuotationGetById(effectiveQuotationId ?? 0);
+
+  const { renderView } = useViewRendererWithTempData({
+    queryState: {
+      isLoading: isLoadingQuotation,
+      isError: isErrorQuotation,
+      data: quotationData,
+    },
+    tempDataConfig: {
+      tempData: tempCreatedQuotation,
+      isUsingTempData: fromCreate && !!tempCreatedQuotation && !quotationData,
+      validateTempData: (data) => !!data?.id && !!data?.detalles,
+    },
+    isParamValid: isValidQuotationId,
+    additionalQueryStates: [
+      {
+        isLoading: isLoadingQuotationTypes,
+        isError: false,
+        data: quotationTypesData,
+      },
+      {
+        isLoading: isLoadingQuotationModalities,
+        isError: false,
+        data: quotationModalitiesData,
+      },
+      {
+        isLoading: isLoadingQuotationResponsibles,
+        isError: false,
+        data: quotationResponsiblesData,
+      },
+    ],
+    SkeletonComponent: QuotationEditSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar la cotización.",
+    onRetry: refetchQuotation,
+  });
 
   const handleGoBack = useGoBack("/dashboard/quotations");
   const { handleError } = useErrorHandler();
@@ -575,29 +618,8 @@ const QuotationEditScreen = () => {
     handleSubmit(onSubmit, onError)();
   });
 
-  if (
-    (isLoadingQuotation ||
-      isLoadingQuotationTypes ||
-      isLoadingQuotationModalities ||
-      isLoadingQuotationResponsibles) &&
-    !isUsingTempData
-  ) {
-    return <QuotationEditSkeleton />;
-  }
-
-  if ((isErrorQuotation || !quotationData) && !isUsingTempData) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar la cotización."
-          showButtonIcon={false}
-          buttonText="Ir a lista de cotizaciones"
-          onRetry={() => navigate("/dashboard/quotations")}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main className="p-2 h-full">

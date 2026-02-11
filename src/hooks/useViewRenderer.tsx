@@ -36,7 +36,7 @@ export function useViewRenderer({
   SkeletonComponent,
   ErrorComponent,
   errorMessage = "No se pudo cargar los datos.",
-  errorContainerClassName = "h-full flex items-center justify-center p-2 lg:p-8",
+  errorContainerClassName = "h-full flex items-center justify-center p-2 lg:p-8 w-full",
   onRetry,
 }: UseViewRendererConfig): UseViewRendererResult {
   // Análisis de estados de las queries

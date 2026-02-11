@@ -16,4 +16,7 @@ export const PURCHASE_ENDPOINTS = {
 
   // purchase detail (producto / stock)
   updateDetailPrices: `/products/purchases-detail/update_prices`,
+  details:{
+    delete: (id: string | number) => `${BASE_PATH}-detail/${id}`,
+  }
 } as const;

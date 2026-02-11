@@ -1,798 +1,391 @@
 import { Button } from "@/components/atoms/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
-import { Input } from "@/components/atoms/input";
-import { Label } from "@/components/atoms/label";
-import { Switch } from "@/components/atoms/switch";
+import { Badge } from "@/components/atoms/badge";
+import { TableRow, TableCell } from "@/components/atoms/table";
+import { Trash2, X } from "lucide-react";
+import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
+import { formatCell } from "@/utils/formatCell";
 import CustomizableTable from "@/components/common/CustomizableTable";
-import TooltipButton from "@/components/common/TooltipButton";
-import { showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useCustomTable } from "@/hooks/useCustomTable";
+import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
+import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import { formatCurrency } from "@/utils/formaters";
-import {
-  roundTo2Decimals,
-  roundTo5Decimals,
-  multiplyPrecise,
-  dividePrecise,
-  addPrecise,
-  subtractPrecise,
-} from "@/utils/decimalUtils";
-import {
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-} from "@tanstack/react-table";
-import {
-  ArrowRightLeft,
-  Edit3,
-  Maximize2,
-  Package,
-  Trash2,
-} from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
+import authSDK from "@/services/sdk-simple-auth";
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import useConfirmMutation from "@/hooks/useConfirmMutation";
+import ConfirmationModal from "@/components/common/confirmationModal";
+import type {
+  UIPurchaseDetail,
+  UIPurchaseDetailUpdate,
+} from "../hooks/usePurchaseDetails";
+import { EditablePercentage } from "@/modules/shoppingCart/components/EditablePercentage";
 
-interface PurchaseDetail {
-  id?: number;
-  id_producto?: string;
-  producto: {
-    id: number;
-    codigo_interno: number;
-    descripcion: string;
-    descripcion_alt: string;
-    codigo_oem: string;
-    codigo_upc: string;
-    modelo: string | null;
-    medida: string;
-    nro_motor: string;
-    id_categoria: number;
-    categoria?: {
-      id: number;
-      categoria: string;
-      id_estado: string;
-      codigo_interno: number;
-      version?: number;
-    } | null;
-    id_subcategora: number;
-    subcategoria: {
-      id: number;
-      subcategoria: string;
-      id_categoria: number;
-      id_estado: string;
-      codigo_interno: number;
-    };
-    id_marca: number;
-    marca: {
-      id: number;
-      marca: string;
-      id_estado: string;
-      codigo_interno: number;
-    };
-    id_procedencia: number;
-    procedencia: {
-      id: number;
-      procedencia: string;
-      id_estado: string;
-      codigo_interno: number;
-    };
-    id_unidad_medida: number;
-    unidad_medida: {
-      id: number;
-      unidad_medida: string;
-      id_estado: string;
-      codigo_interno: number;
-    };
-    costo_referencia: string;
-    stock_minimo: string;
-    precio_venta: string;
-    precio_venta_alt: string;
-    id_marca_vehiculo: number;
-    marca_vehiculo: {
-      id: number;
-      marca_vehiculo: string;
-      codigo_interno: number;
-      id_estado: string;
-    };
-  };
-  cantidad: string | number;
-  costo: string | number;
-  inc_precio_venta: string | number;
-  precio_venta: string | number;
-  inc_precio_venta_alt: string | number;
-  precio_venta_alt: string | number;
-  moneda: string;
-  fecha_mod_precio: string;
-  subtotal?: number;
-  inc_p_venta?: number;
-  inc_p_venta_alt?: number;
-  tc_compra?: number; // Tipo de cambio
+type PurchaseDetailUnion = UIPurchaseDetail | UIPurchaseDetailUpdate;
+
+interface PurchaseDetailsTableProps<T extends PurchaseDetailUnion> {
+  details: T[];
+  onUpdateCantidad: (id_producto: number, cantidad: number) => void;
+  onUpdateCosto: (id_producto: number, costo: number) => void;
+  onUpdatePrecioVenta: (id_producto: number, precio: number) => void;
+  onUpdateIncPVenta: (id_producto: number, inc: number) => void;
+  onUpdatePrecioVentaAlt: (id_producto: number, precio: number) => void;
+  onUpdateIncPVentaAlt: (id_producto: number, inc: number) => void;
+  onRemoveProduct: (id_producto: number) => void;
+  onDeleteDetail?: (id_detalle_compra: number) => void;
+  isLoading?: boolean;
+  isReadOnly?: boolean;
+  isSaving?: boolean;
+  isDeleting?: boolean;
+  isEditMode?: boolean;
+  isUSD?: boolean;
+  totalCosto?: number;
+  totalPrecioVenta?: number;
+  totalPrecioVentaAlt?: number;
 }
 
-interface Props {
-  detalles: PurchaseDetail[];
-  setDetalles: (d: PurchaseDetail[]) => void;
-  toggleSelectorMode?: () => void;
-  toggleOrderSelector?: () => void;
-  canAddProducts?: boolean;
-  canImportOrder?: boolean;
-  onExchangeRateChange?: (rate: number) => void; // Callback para notificar cambio de TC
+export interface PurchaseDetailsTableRef {
+  focusFirstQuantityInput: () => void;
+  focusQuantityInputByProductId: (productId: number) => void;
 }
 
-type NormalizedPurchaseDetail = PurchaseDetail & {
-  id_detalle_compra: number;
-  cantidad: number;
-  costo: number;
-  inc_p_venta: number;
-  precio_venta: number;
-  inc_p_venta_alt: number;
-  precio_venta_alt: number;
-  subtotal: number;
-  tc_compra: number; // Tipo de cambio (obligatorio en normalizado)
-};
+function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
+  {
+    details,
+    onUpdateCantidad,
+    onUpdateCosto,
+    onUpdatePrecioVenta,
+    onUpdateIncPVenta,
+    onUpdatePrecioVentaAlt,
+    onUpdateIncPVentaAlt,
+    onRemoveProduct,
+    onDeleteDetail,
+    isLoading = false,
+    isReadOnly = false,
+    isSaving = false,
+    isDeleting = false,
+    isEditMode = false,
+    isUSD = false,
+    totalCosto = 0,
+    totalPrecioVenta = 0,
+    totalPrecioVentaAlt = 0,
+  }: PurchaseDetailsTableProps<T>,
+  ref: React.Ref<PurchaseDetailsTableRef>
+) {
+  const user = authSDK.getCurrentUser();
 
-type EditableNumericKey = keyof Pick<
-  NormalizedPurchaseDetail,
-  | "cantidad"
-  | "costo"
-  | "inc_p_venta"
-  | "precio_venta"
-  | "inc_p_venta_alt"
-  | "precio_venta_alt"
->;
+  const firstQuantityInputRef = useRef<HTMLInputElement | null>(null);
+  const quantityInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
 
-const PurchaseDetailsTable: React.FC<Props> = ({
-  detalles,
-  setDetalles,
-  toggleSelectorMode,
-  toggleOrderSelector,
-  canAddProducts = true,
-  canImportOrder = true,
-  onExchangeRateChange,
-}) => {
-  const [editing, setEditing] = useState<{ row: number; col: string } | null>(
-    null
-  );
-  const [tempValue, setTempValue] = useState("");
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const prevDetallesLengthRef = useRef(detalles.length);
-  const pendingDetallesRef = useRef<PurchaseDetail[] | null>(null);
-
-  // Estados para conversión de moneda
-  const [isUSD, setIsUSD] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(() => {
-    const saved = localStorage.getItem("purchase_exchange_rate");
-    return saved ? parseFloat(saved) : 6.96;
-  });
-
-  // Usar roundTo2Decimals de decimalUtils para mostrar en UI
-  // y roundTo5Decimals para cálculos internos
-
-  const normalizeDetail = (
-    detail: PurchaseDetail
-  ): NormalizedPurchaseDetail => {
-    return {
-      ...detail,
-      id_detalle_compra: detail.id || 0,
-      id_producto: detail.id_producto || detail.producto.id.toString(),
-      cantidad:
-        typeof detail.cantidad === "string"
-          ? parseFloat(detail.cantidad)
-          : detail.cantidad,
-      costo:
-        typeof detail.costo === "string"
-          ? parseFloat(detail.costo)
-          : detail.costo,
-      inc_p_venta: (detail.inc_p_venta ??
-        (typeof detail.inc_precio_venta === "string"
-          ? parseFloat(detail.inc_precio_venta)
-          : detail.inc_precio_venta)) as number,
-      precio_venta:
-        typeof detail.precio_venta === "string"
-          ? parseFloat(detail.precio_venta)
-          : (detail.precio_venta as number),
-      inc_p_venta_alt: (detail.inc_p_venta_alt ??
-        (typeof detail.inc_precio_venta_alt === "string"
-          ? parseFloat(detail.inc_precio_venta_alt)
-          : detail.inc_precio_venta_alt)) as number,
-      precio_venta_alt:
-        typeof detail.precio_venta_alt === "string"
-          ? parseFloat(detail.precio_venta_alt)
-          : (detail.precio_venta_alt as number),
-      subtotal: 0,
-      tc_compra: detail.tc_compra ?? exchangeRate, // Usar el tipo de cambio del detalle o el actual
-    };
-  };
-
-  const normalizedDetalles: NormalizedPurchaseDetail[] = useMemo(
-    () =>
-      detalles.map((detail) => {
-        const normalized = normalizeDetail(detail);
-        normalized.subtotal = multiplyPrecise(
-          normalized.cantidad,
-          normalized.costo
-        );
-        return normalized;
-      }),
-    [detalles]
-  );
-
-  const calculatePrecise = (
-    detail: NormalizedPurchaseDetail,
-    fieldName: EditableNumericKey,
-    newValue: number
-  ) => {
-    const updatedDetail: NormalizedPurchaseDetail = { ...detail };
-    const toNum = (v: unknown): number =>
-      typeof v === "number" ? v : parseFloat(String(v ?? 0)) || 0;
-    const inc = toNum(updatedDetail.inc_p_venta);
-    const incAlt = toNum(updatedDetail.inc_p_venta_alt);
-
-    if (fieldName === "costo") {
-      updatedDetail.costo = roundTo5Decimals(newValue);
-      // precio_venta = costo * (1 + inc/100)
-      const multiplier = addPrecise(1, dividePrecise(inc, 100));
-      updatedDetail.precio_venta = multiplyPrecise(newValue, multiplier);
-      // precio_venta_alt = precio_venta * (1 + incAlt/100)
-      const multiplierAlt = addPrecise(1, dividePrecise(incAlt, 100));
-      updatedDetail.precio_venta_alt = multiplyPrecise(updatedDetail.precio_venta, multiplierAlt);
-    } else if (fieldName === "inc_p_venta") {
-      updatedDetail.inc_p_venta = roundTo5Decimals(newValue);
-      // precio_venta = costo * (1 + newValue/100)
-      const multiplier = addPrecise(1, dividePrecise(newValue, 100));
-      updatedDetail.precio_venta = multiplyPrecise(toNum(updatedDetail.costo), multiplier);
-      // precio_venta_alt = precio_venta * (1 + incAlt/100)
-      const multiplierAlt = addPrecise(1, dividePrecise(toNum(updatedDetail.inc_p_venta_alt), 100));
-      updatedDetail.precio_venta_alt = multiplyPrecise(updatedDetail.precio_venta, multiplierAlt);
-    } else if (fieldName === "inc_p_venta_alt") {
-      updatedDetail.inc_p_venta_alt = roundTo5Decimals(newValue);
-      // precio_venta_alt = precio_venta * (1 + newValue/100)
-      const multiplier = addPrecise(1, dividePrecise(newValue, 100));
-      updatedDetail.precio_venta_alt = multiplyPrecise(toNum(updatedDetail.precio_venta), multiplier);
-    } else if (fieldName === "precio_venta") {
-      updatedDetail.precio_venta = roundTo5Decimals(newValue);
-      const costoNow = toNum(updatedDetail.costo);
-      // inc_p_venta = ((precio_venta - costo) / costo) * 100
-      if (costoNow > 0) {
-        const diff = subtractPrecise(newValue, costoNow);
-        updatedDetail.inc_p_venta = multiplyPrecise(dividePrecise(diff, costoNow), 100);
-      } else {
-        updatedDetail.inc_p_venta = 0;
-      }
-      // precio_venta_alt = precio_venta * (1 + incAlt/100)
-      const multiplierAlt = addPrecise(1, dividePrecise(toNum(updatedDetail.inc_p_venta_alt), 100));
-      updatedDetail.precio_venta_alt = multiplyPrecise(newValue, multiplierAlt);
-    } else if (fieldName === "precio_venta_alt") {
-      updatedDetail.precio_venta_alt = roundTo5Decimals(newValue);
-      const pv = toNum(updatedDetail.precio_venta);
-      // inc_p_venta_alt = ((precio_venta_alt - precio_venta) / precio_venta) * 100
-      if (pv > 0) {
-        const diff = subtractPrecise(newValue, pv);
-        updatedDetail.inc_p_venta_alt = multiplyPrecise(dividePrecise(diff, pv), 100);
-      } else {
-        updatedDetail.inc_p_venta_alt = 0;
-      }
-    } else if (fieldName === "cantidad") {
-      updatedDetail.cantidad = Math.round(newValue);
-    }
-
-    updatedDetail.subtotal = multiplyPrecise(
-      toNum(updatedDetail.costo),
-      Math.round(toNum(updatedDetail.cantidad))
+  // Confirmar eliminación
+  const handleDeleteSuccess = (_data: unknown, detailId: number) => {
+    const deletedItem = details.find(
+      (d) => "id_detalle_compra" in d && d.id_detalle_compra === detailId
     );
-
-    return updatedDetail;
-  };
-
-  // Guardar tipo de cambio en localStorage y notificar al padre
-  useEffect(() => {
-    localStorage.setItem("purchase_exchange_rate", exchangeRate.toString());
-    if (onExchangeRateChange) {
-      onExchangeRateChange(exchangeRate);
+    if (deletedItem) {
+      onRemoveProduct(deletedItem.id_producto);
     }
-  }, [exchangeRate, onExchangeRateChange]);
-
-  // Función para convertir entre monedas
-  const handleConvertCurrency = () => {
-    if (detalles.length === 0) return;
-
-    const updatedDetalles = detalles.map((detalle) => {
-      const normalized = normalizeDetail(detalle);
-      let newCosto: number;
-
-      if (isUSD) {
-        // Convertir de USD a BOB
-        newCosto = multiplyPrecise(normalized.costo, exchangeRate);
-      } else {
-        // Convertir de BOB a USD
-        newCosto = dividePrecise(normalized.costo, exchangeRate);
-      }
-
-      // Recalcular precios con el nuevo costo
-      const updated = calculatePrecise(normalized, "costo", newCosto);
-      // Mantener el tc_compra actualizado
-      return { ...detalle, ...updated, tc_compra: exchangeRate };
-    });
-
-    setDetalles(updatedDetalles);
-    setIsUSD(!isUSD); // Cambiar al estado opuesto
-
     showSuccessToast({
-      title: "Conversión completada",
-      description: `${detalles.length} producto(s) convertido(s) ${isUSD ? "de USD a BOB" : "de BOB a USD"} con tipo de cambio ${exchangeRate}`,
+      title: "Detalle eliminado",
+      description: `El detalle de compra #${detailId} se eliminó exitosamente`,
       duration: 3000,
     });
   };
 
-  const editableColumns: EditableNumericKey[] = [
-    "cantidad",
-    "costo",
-    "inc_p_venta",
-    "precio_venta",
-    "inc_p_venta_alt",
-    "precio_venta_alt",
-  ];
-
-  const saveEdit = () => {
-    if (!editing) return;
-
-    const numValue = parseFloat(tempValue);
-    if (isNaN(numValue) || numValue < 0) {
-      setEditing(null);
-      setTempValue("");
-      return;
-    }
-
-    const fieldName = editing.col as EditableNumericKey;
-    const editingRow = editing.row;
-
-    // Verificar que el detalle existe
-    if (!detalles[editingRow]) {
-      setEditing(null);
-      setTempValue("");
-      return;
-    }
-
-    // Normalizar el detalle actual
-    const currentDetail = normalizeDetail(detalles[editingRow]);
-    currentDetail.subtotal = multiplyPrecise(
-      currentDetail.cantidad,
-      currentDetail.costo
-    );
-
-    // Calcular los valores actualizados
-    const updatedDetail = calculatePrecise(currentDetail, fieldName, numValue);
-
-    // Crear nuevo array con el detalle actualizado
-    const newDetalles = [...detalles];
-    newDetalles[editingRow] = updatedDetail;
-
-    // Guardar temporalmente los detalles actualizados para navegación inmediata
-    pendingDetallesRef.current = newDetalles;
-
-    // Actualizar usando el valor directo en lugar de una función callback
-    setDetalles(newDetalles);
-
-    setEditing(null);
-    setTempValue("");
+  const handleDeleteError = (_error: unknown, detailId: number) => {
+    showErrorToast({
+      title: "Error al eliminar",
+      description: `No se pudo eliminar el detalle #${detailId}`,
+      duration: 3000,
+    });
   };
 
-  const startEdit = (rowIndex: number, fieldName: EditableNumericKey) => {
-    // Función helper para obtener y formatear el valor desde detalles directamente
-    const getFormattedValue = () => {
-      // Usar pendingDetalles si está disponible (recién actualizado), sino usar detalles
-      const currentDetalles = pendingDetallesRef.current || detalles;
-      const rawDetail = currentDetalles[rowIndex];
-      if (!rawDetail) return null;
-
-      // Normalizar para obtener el valor correcto
-      const detail = normalizeDetail(rawDetail);
-      const currentValue = detail[fieldName] as number;
-
-      let formattedValue: string;
-      if (fieldName === "cantidad") {
-        formattedValue = Math.round(currentValue).toString();
-      } else if (fieldName.includes("inc_p_venta")) {
-        formattedValue = roundTo2Decimals(currentValue).toFixed(1);
-      } else {
-        formattedValue = roundTo2Decimals(currentValue).toFixed(2);
-      }
-
-      return formattedValue;
-    };
-
-    // Si ya estamos editando otra celda, guardar primero
-    if (editing && (editing.row !== rowIndex || editing.col !== fieldName)) {
-      saveEdit();
-      // Esperar un poco más para que React actualice el estado
-      setTimeout(() => {
-        const formattedValue = getFormattedValue();
-        // Limpiar el ref después de usarlo
-        pendingDetallesRef.current = null;
-
-        if (!formattedValue) return;
-
-        setEditing({ row: rowIndex, col: fieldName });
-        setTempValue(formattedValue);
-        setSelectedRow(null);
-      }, 50);
-      return;
-    }
-
-    // No estamos editando otra celda, podemos editar directamente
-    const formattedValue = getFormattedValue();
-    // Limpiar el ref después de usarlo
-    pendingDetallesRef.current = null;
-
-    if (!formattedValue) return;
-
-    setEditing({ row: rowIndex, col: fieldName });
-    setTempValue(formattedValue);
-    setSelectedRow(null);
-  };
-
-  const cancelEdit = () => {
-    // Cancelar cualquier guardado pendiente
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-    setEditing(null);
-    setTempValue("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    e.stopPropagation();
-
-    switch (e.key) {
-      case "Enter":
-      case "Tab":
-        e.preventDefault();
-
-        // Cancelar cualquier guardado pendiente del blur
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-          saveTimeoutRef.current = null;
-        }
-
-        // Guardar el estado actual de editing antes de que saveEdit() lo limpie
-        const currentEditing = editing;
-
-        saveEdit();
-
-        if (!currentEditing) return;
-
-        // Navegar a la siguiente celda
-        const currentColIndex = editableColumns.indexOf(
-          currentEditing.col as EditableNumericKey
-        );
-        const isShiftTab = e.shiftKey && e.key === "Tab";
-
-        let nextRow = currentEditing.row;
-        let nextColIndex = currentColIndex;
-
-        if (isShiftTab) {
-          // Navegar hacia atrás
-          nextColIndex--;
-          if (nextColIndex < 0) {
-            nextColIndex = editableColumns.length - 1;
-            nextRow--;
-          }
-        } else {
-          // Navegar hacia adelante
-          nextColIndex++;
-          if (nextColIndex >= editableColumns.length) {
-            nextColIndex = 0;
-            nextRow++;
-          }
-        }
-
-        // Verificar límites de filas
-        if (nextRow >= 0 && nextRow < detalles.length) {
-          // Usar un delay para que React procese la actualización del estado
-          // antes de navegar a la siguiente celda
-          setTimeout(() => {
-            startEdit(nextRow, editableColumns[nextColIndex]);
-          }, 100);
-        }
-        break;
-      case "Escape":
-        e.preventDefault();
-        cancelEdit();
-        break;
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTempValue(e.target.value);
-  };
-
-  const remove = (id: string) => {
-    const updatedDetalles = normalizedDetalles.filter(
-      (d) => d.id_producto !== id
-    );
-    setDetalles(updatedDetalles);
-  };
-
-  useHotkeys(
-    "escape",
-    () => {
-      if (editing) {
-        cancelEdit();
-      } else if (selectedRow !== null) {
-        setSelectedRow(null);
-      }
-    },
-    { enableOnFormTags: true }
+  const {
+    close: handleCloseDeleteAlert,
+    confirm: handleConfirmDeleteAlert,
+    isOpen: showDeleteAlert,
+    open: handleOpenDeleteAlert,
+    variables: detailToDelete,
+  } = useConfirmMutation(
+    onDeleteDetail || (() => {}),
+    handleDeleteSuccess,
+    handleDeleteError
   );
 
-  useHotkeys(
-    "delete, backspace",
-    (e) => {
-      if (!editing && selectedRow !== null) {
-        e.preventDefault();
-        const detail = normalizedDetalles[selectedRow];
-        remove(detail.id_producto!);
-        setSelectedRow(null);
-      }
-    },
-    { enableOnFormTags: true }
-  );
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      // Seleccionar todo el texto para facilitar el reemplazo
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  // Auto-focus en cantidad cuando se agrega un nuevo producto
-  useEffect(() => {
-    const currentLength = detalles.length;
-    const prevLength = prevDetallesLengthRef.current;
-
-    // Si se agregó un producto nuevo (aumentó la longitud)
-    if (currentLength > prevLength && currentLength > 0) {
-      // Cancelar cualquier edición pendiente
-      if (editing) {
-        cancelEdit();
-      }
-
-      // Limpiar pendingDetallesRef para evitar conflictos
-      pendingDetallesRef.current = null;
-
-      // Esperar más tiempo para asegurar que el DOM esté completamente actualizado
-      // y que React haya procesado el nuevo estado
-      setTimeout(() => {
-        // Enfocar en la celda de cantidad del último producto agregado
-        startEdit(currentLength - 1, "cantidad");
-      }, 150);
+  const handleRemoveItem = (item: T) => {
+    if (!isEditMode) {
+      onRemoveProduct(item.id_producto);
+      return;
     }
 
-    // Actualizar la referencia
-    prevDetallesLengthRef.current = currentLength;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detalles.length]);
+    const isNew = !("id_detalle_compra" in item) || !item.id_detalle_compra;
 
-  // Limpiar timeout al desmontar
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const formatValue = (
-    value: number,
-    format: "currency" | "percentage" | "number"
-  ) => {
-    const roundedValue = roundTo2Decimals(value);
-
-    switch (format) {
-      case "currency":
-        return `${roundedValue.toFixed(2)}`;
-      case "percentage":
-        return `${roundedValue.toFixed(1)}%`;
-      default:
-        return Number.isInteger(roundedValue)
-          ? roundedValue.toString()
-          : roundedValue.toFixed(2);
-    }
-  };
-
-  const handleCellBlur = () => {
-    // Guardar después de un pequeño delay para permitir que el click en otra celda se procese primero
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      saveEdit();
-    }, 150);
-  };
-
-  const EditableCell: React.FC<{
-    rowIndex: number;
-    fieldName: EditableNumericKey;
-    value: number;
-    format?: "currency" | "percentage" | "number";
-  }> = ({ rowIndex, fieldName, value, format = "number" }) => {
-    const isActive = editing?.row === rowIndex && editing?.col === fieldName;
-
-    const handleClick = () => {
-      // Cancelar el timeout de blur si existe
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
-      startEdit(rowIndex, fieldName);
-    };
-
-    if (isActive) {
-      return (
-        <Input
-          ref={inputRef}
-          value={tempValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onBlur={handleCellBlur}
-          className="w-full h-8 text-sm text-center border-2 border-primary"
-          autoFocus
-        />
+    if (isNew) {
+      onRemoveProduct(item.id_producto);
+    } else if (onDeleteDetail) {
+      handleOpenDeleteAlert(
+        (item as UIPurchaseDetailUpdate).id_detalle_compra ?? undefined
       );
     }
-
-    return (
-      <div
-        className="w-full h-8 flex items-center justify-between px-3 cursor-pointer hover:bg-accent/50 transition-colors border border-border rounded-lg group"
-        onClick={handleClick}
-      >
-        <span className="text-sm flex-1 text-center">
-          {formatValue(value, format)}
-        </span>
-        <Edit3 className="text-muted-foreground/30 group-hover:text-muted-foreground h-3 w-3 flex-shrink-0 transition-colors ml-1" />
-      </div>
-    );
   };
 
-  const columns = useMemo<ColumnDef<NormalizedPurchaseDetail>[]>(
-    () => [
-      {
-        accessorFn: (row) => row.producto.descripcion,
-        id: "descripcion",
-        header: "Producto",
-        size: 300,
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusFirstQuantityInput: () => {
+        if (firstQuantityInputRef.current) {
+          firstQuantityInputRef.current.focus();
+          firstQuantityInputRef.current.select();
+        }
+      },
+      focusQuantityInputByProductId: (productId: number) => {
+        const input = quantityInputRefs.current.get(productId);
+        if (input) {
+          setTimeout(() => {
+            input.focus();
+            input.select();
+          }, 50);
+        } else if (firstQuantityInputRef.current) {
+          firstQuantityInputRef.current.focus();
+          firstQuantityInputRef.current.select();
+        }
+      },
+    }),
+    []
+  );
+
+  // Calcular totales de cantidad
+  const totalCantidad = useMemo(() => {
+    return details.reduce((sum, detail) => sum + detail.cantidad, 0);
+  }, [details]);
+
+  const columns = useMemo<ColumnDef<T>[]>(() => {
+    const baseColumns: ColumnDef<T>[] = [];
+
+    baseColumns.push({
+      accessorKey: "orden",
+      id: "orden",
+      header: "N°",
+      size: 30,
+      minSize: 20,
+      enableSorting: true,
+    });
+
+    if (isEditMode) {
+      baseColumns.push({
+        accessorKey: "id_detalle_compra",
+        header: "Cód.",
+        size: 50,
         minSize: 30,
-        enableHiding: false,
-        cell: ({ getValue }) => (
-          <div className="flex flex-col space-y-1">
-            <h3 className="font-medium text-foreground truncate text-sm">
-              {getValue<string>()}
-            </h3>
-          </div>
-        ),
+        cell: ({ row, getValue }) => {
+          const value = getValue<number>();
+          const isNew =
+            !("id_detalle_compra" in row.original) ||
+            !row.original.id_detalle_compra;
+          return (
+            <div className="flex items-center justify-center">
+              {isNew ? (
+                <Badge variant={"accent"} className="text-[10px] px-1 py-0">
+                  Nuevo
+                </Badge>
+              ) : (
+                <span>{value}</span>
+              )}
+            </div>
+          );
+        },
+      });
+    }
+
+    baseColumns.push(
+      {
+        accessorFn: (row) => row.product.codigo_interno,
+        id: "codigo_interno",
+        header: "Cód. Int.",
+        size: 60,
+        minSize: 20,
+        cell: ({ getValue }) => <span>{formatCell(getValue<string>())}</span>,
       },
       {
-        accessorKey: "codigo_oem",
+        accessorFn: (row) => row.product.descripcion,
+        id: "descripcion",
+        header: "Descripción",
+        size: 250,
+        minSize: 100,
+        enableHiding: false,
+        cell: ({ getValue }) => <span>{getValue<string>()}</span>,
+      },
+      {
+        accessorFn: (row) => row.product.codigo_oem,
         id: "codigo_oem",
         header: "Cód. OEM",
-        size: 120,
-        minSize: 100,
-        cell: ({ row }) => (
-          <div className="text-sm text-foreground font-mono text-center">
-            {row.original.producto.codigo_oem}
-          </div>
-        ),
+        size: 100,
+        minSize: 70,
+        cell: ({ getValue }) => <span>{formatCell(getValue<string>())}</span>,
       },
       {
         accessorKey: "cantidad",
         id: "cantidad",
         header: "Cantidad",
-        minSize: 110,
-        cell: ({ row }) => (
-          <EditableCell
-            rowIndex={row.index}
-            fieldName="cantidad"
-            value={row.original.cantidad}
-            format="number"
-          />
-        ),
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue, row }) => {
+          const cantidad = getValue<number>();
+          const productId = row.original.id_producto;
+          const refToAssign = row.index === 0 ? firstQuantityInputRef : null;
+          return (
+            <EditableQuantity
+              value={cantidad}
+              className="w-full"
+              buttonClassName="w-full"
+              onSubmit={(value) =>
+                onUpdateCantidad(row.original.id_producto, value as number)
+              }
+              validate={(val) => {
+                const num = parseInt(val);
+                return !isNaN(num) && num > 0;
+              }}
+              inputRef={(el) => {
+                if (refToAssign) {
+                  refToAssign.current = el;
+                }
+                if (el) {
+                  quantityInputRefs.current.set(productId, el);
+                } else {
+                  quantityInputRefs.current.delete(productId);
+                }
+              }}
+              disabled={isReadOnly || isSaving}
+            />
+          );
+        },
       },
       {
         accessorKey: "costo",
         id: "costo",
         header: "Costo",
-        minSize: 110,
-        cell: ({ row }) => (
-          <EditableCell
-            rowIndex={row.index}
-            fieldName="costo"
-            value={row.original.costo}
-            format="currency"
-          />
-        ),
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue, row }) => {
+          const costo = getValue<number>();
+          return (
+            <EditablePrice
+              value={costo}
+              onSubmit={(value) =>
+                onUpdateCosto(row.original.id_producto, value as number)
+              }
+              className="w-full"
+              buttonClassName="w-full"
+              numberProps={{ min: 0, step: 0.01 }}
+              disabled={isReadOnly || isSaving}
+            />
+          );
+        },
       },
       {
         accessorKey: "inc_p_venta",
         id: "inc_p_venta",
         header: "% Inc",
-        minSize: 110,
-        cell: ({ row }) => (
-          <EditableCell
-            rowIndex={row.index}
-            fieldName="inc_p_venta"
-            value={row.original.inc_p_venta}
-            format="percentage"
-          />
-        ),
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue, row }) => {
+          const inc = getValue<number>();
+          return (
+            <EditablePercentage
+              value={inc}
+              onSubmit={(value) =>
+                onUpdateIncPVenta(row.original.id_producto, value as number)
+              }
+              className="w-full"
+              buttonClassName="w-full"
+              numberProps={{ step: 0.1 }}
+              disabled={isReadOnly || isSaving}
+            />
+          );
+        },
       },
       {
         accessorKey: "precio_venta",
         id: "precio_venta",
         header: "P. Venta",
-        minSize: 110,
-        cell: ({ row }) => (
-          <EditableCell
-            rowIndex={row.index}
-            fieldName="precio_venta"
-            value={row.original.precio_venta}
-            format="currency"
-          />
-        ),
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue, row }) => {
+          const precio = getValue<number>();
+          return (
+            <EditablePrice
+              value={precio}
+              onSubmit={(value) =>
+                onUpdatePrecioVenta(row.original.id_producto, value as number)
+              }
+              className="w-full"
+              buttonClassName="w-full"
+              numberProps={{ min: 0, step: 0.01 }}
+              disabled={isReadOnly || isSaving}
+            />
+          );
+        },
       },
       {
         accessorKey: "inc_p_venta_alt",
         id: "inc_p_venta_alt",
         header: "% Alt",
-        minSize: 110,
-        cell: ({ row }) => (
-          <EditableCell
-            rowIndex={row.index}
-            fieldName="inc_p_venta_alt"
-            value={row.original.inc_p_venta_alt}
-            format="percentage"
-          />
-        ),
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue, row }) => {
+          const inc = getValue<number>();
+          return (
+            <EditablePercentage
+              value={inc}
+              onSubmit={(value) =>
+                onUpdateIncPVentaAlt(row.original.id_producto, value as number)
+              }
+              className="w-full"
+              buttonClassName="w-full"
+              numberProps={{ step: 0.1 }}
+              disabled={isReadOnly || isSaving}
+            />
+          );
+        },
       },
       {
         accessorKey: "precio_venta_alt",
         id: "precio_venta_alt",
         header: "P. Venta Alt",
-        minSize: 110,
-        cell: ({ row }) => (
-          <EditableCell
-            rowIndex={row.index}
-            fieldName="precio_venta_alt"
-            value={row.original.precio_venta_alt}
-            format="currency"
-          />
-        ),
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue, row }) => {
+          const precio = getValue<number>();
+          return (
+            <EditablePrice
+              value={precio}
+              onSubmit={(value) =>
+                onUpdatePrecioVentaAlt(
+                  row.original.id_producto,
+                  value as number
+                )
+              }
+              className="w-full"
+              buttonClassName="w-full"
+              numberProps={{ min: 0, step: 0.01 }}
+              disabled={isReadOnly || isSaving}
+            />
+          );
+        },
       },
       {
-        accessorKey: "subtotal",
         id: "subtotal",
         header: "Subtotal",
-        minSize: 110,
-        cell: ({ getValue }) => {
-          const subtotal =
-            typeof getValue() === "string"
-              ? parseFloat(getValue() as string)
-              : getValue<number>();
-          const subtotalRounded = isFinite(subtotal) ? roundTo2Decimals(subtotal) : 0;
+        size: 110,
+        minSize: 80,
+        cell: ({ row }) => {
+          const detail = row.original;
+          const subtotal = detail.costo * detail.cantidad;
           return (
-            <div className="text-sm font-medium text-foreground text-center">
-              {formatCurrency(subtotalRounded, {
+            <div className="font-medium text-end text-sm">
+              {formatCurrency(subtotal, {
                 currency: isUSD ? "USD" : "BOB",
                 locale: isUSD ? "en-US" : "es-BO",
               })}
-              {/* {subtotalRounded.toFixed(2)} */}
             </div>
           );
         },
@@ -802,257 +395,201 @@ const PurchaseDetailsTable: React.FC<Props> = ({
         header: "Acciones",
         size: 60,
         minSize: 40,
-        cell: ({ row }) => (
-          <div className="flex items-center justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onMouseDown={(e) => {
-                e.preventDefault(); // Prevenir que el input pierda focus antes de eliminar
-                // Cancelar cualquier saveEdit pendiente
-                if (saveTimeoutRef.current) {
-                  clearTimeout(saveTimeoutRef.current);
-                  saveTimeoutRef.current = null;
-                }
-                // Limpiar estado de edición
-                setEditing(null);
-                setTempValue("");
-                // Eliminar el detalle
-                remove(row.original.id_producto!);
-              }}
-              className="text-destructive hover:text-destructive size-7"
-            >
-              <Trash2 className="size-3" />
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [normalizedDetalles, editing, tempValue, isUSD]
-  );
+        cell: ({ row }) => {
+          const item = row.original;
+          const isNew =
+            !isEditMode ||
+            !("id_detalle_compra" in item) ||
+            !item.id_detalle_compra;
 
-  const table = useReactTable<NormalizedPurchaseDetail>({
-    data: normalizedDetalles,
+          return (
+            <div className="flex items-center justify-center">
+              <Button
+                disabled={isReadOnly || isSaving || isDeleting}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleRemoveItem(item)}
+                className="w-8 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10 bg-transparent hover:border-destructive/30"
+              >
+                {isNew && isEditMode ? (
+                  <X className="size-3" />
+                ) : (
+                  <Trash2 className="size-3" />
+                )}
+              </Button>
+            </div>
+          );
+        },
+      }
+    );
+
+    return baseColumns;
+  }, [
+    isEditMode,
+    onUpdateCantidad,
+    onUpdateCosto,
+    onUpdateIncPVenta,
+    onUpdatePrecioVenta,
+    onUpdateIncPVentaAlt,
+    onUpdatePrecioVentaAlt,
+    onRemoveProduct,
+    isReadOnly,
+    isSaving,
+    isDeleting,
+    isUSD,
+  ]);
+
+  const { table } = useCustomTable<T>({
+    data: details,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    columnResizeMode: "onChange",
+    enableSorting: true,
     enableColumnResizing: true,
     enableRowSelection: true,
+    enableColumnVisibility: true,
+    enableColumnOrdering: true,
+    columnResizeMode: "onChange",
+    defaultSortBy: [
+      {
+        id: "orden",
+        desc: false,
+      },
+    ],
+    hiddenColumns: isEditMode ? [] : ["id_detalle_compra"],
+    persistenceKey: `purchase-details-table-${user?.name}`,
+    persistColumnOrder: true,
+    persistColumnVisibility: true,
   });
 
-  const totalCosto = normalizedDetalles.reduce(
-    (s, d) => addPrecise(s, multiplyPrecise(d.cantidad, d.costo)),
-    0
-  );
+  // Renderizar fila de totales
+  const renderTotalsRow = () => {
+    const visibleColumns = table.getVisibleLeafColumns();
 
-  const totalGeneral = normalizedDetalles.reduce(
-    (s, d) => addPrecise(s, multiplyPrecise(d.precio_venta, d.cantidad)),
-    0
-  );
+    return (
+      <TableRow className="bg-muted/50 font-bold border-t-2 border-border">
+        {visibleColumns.map((column) => {
+          const columnId = column.id;
 
-  const totalMenor = normalizedDetalles.reduce(
-    (s, d) => addPrecise(s, multiplyPrecise(d.precio_venta_alt, d.cantidad)),
-    0
-  );
+          // Columna de cantidad
+          if (columnId === "cantidad") {
+            return (
+              <TableCell
+                key={columnId}
+                className="p-1 text-center"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-xs text-muted-foreground">
+                  Total Cantidad
+                </div>
+                <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {totalCantidad}
+                </div>
+              </TableCell>
+            );
+          }
+
+          if (columnId === "precio_venta") {
+            return (
+              <TableCell
+                key={columnId}
+                className="p-1 text-center"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-xs text-muted-foreground">
+                  Total P. Venta
+                </div>
+                <div className="text-sm font-bold text-foreground">
+                  {formatCurrency(totalPrecioVenta, {
+                    currency: isUSD ? "USD" : "BOB",
+                    locale: isUSD ? "en-US" : "es-BO",
+                  })}
+                </div>
+              </TableCell>
+            );
+          }
+
+          if (columnId === "precio_venta_alt") {
+            return (
+              <TableCell
+                key={columnId}
+                className="p-1 text-center"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-xs text-muted-foreground">
+                  Total P. Alt
+                </div>
+                <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {formatCurrency(totalPrecioVentaAlt, {
+                    currency: isUSD ? "USD" : "BOB",
+                    locale: isUSD ? "en-US" : "es-BO",
+                  })}
+                </div>
+              </TableCell>
+            );
+          }
+
+          // Columna de subtotal
+          if (columnId === "subtotal") {
+            return (
+              <TableCell
+                key={columnId}
+                className="p-1 text-end"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-xs text-muted-foreground">Total</div>
+                <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(totalCosto, {
+                    currency: isUSD ? "USD" : "BOB",
+                    locale: isUSD ? "en-US" : "es-BO",
+                  })}
+                </div>
+              </TableCell>
+            );
+          }
+
+          // Resto de columnas vacías
+          return (
+            <TableCell
+              key={columnId}
+              className="p-1"
+              style={{ width: column.getSize() }}
+            />
+          );
+        })}
+      </TableRow>
+    );
+  };
 
   return (
-    <Card className="shadow-none flex-1 min-h-0 overflow-hidden flex flex-col bg-background">
-      <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex justify-between items-center gap-3 flex-wrap">
-          <h2 className="text-primary text-base">Detalle de Compra</h2>
-          {/* Controles de conversión de moneda - Centro */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Switch de moneda */}
-            <div className="flex items-center gap-2">
-              <Label
-                htmlFor="currency-switch"
-                className="text-xs font-medium text-muted-foreground"
-              >
-                Moneda:
-              </Label>
-              <div className="flex items-center gap-2 bg-accent/50 rounded-md px-2 py-1 border border-border">
-                <span
-                  className={`text-xs font-medium ${!isUSD ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/50"}`}
-                >
-                  BOB
-                </span>
-                <Switch
-                  id="currency-switch"
-                  checked={isUSD}
-                  onCheckedChange={setIsUSD}
-                />
-                <span
-                  className={`text-xs font-medium ${isUSD ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/50"}`}
-                >
-                  USD
-                </span>
-              </div>
-            </div>
+    <>
+      <CustomizableTable
+        table={table}
+        isLoading={isLoading}
+        enableColumnReordering={true}
+        renderTableFooter={renderTotalsRow}
+      />
 
-            {/* Input de tipo de cambio */}
-            <div className="flex items-center gap-2">
-              <Label
-                htmlFor="exchange-rate"
-                className="text-xs font-medium text-muted-foreground whitespace-nowrap"
-              >
-                T.C:
-              </Label>
-              <Input
-                id="exchange-rate"
-                type="number"
-                step="0.01"
-                min="0"
-                value={exchangeRate}
-                onChange={(e) =>
-                  setExchangeRate(parseFloat(e.target.value) || 0)
-                }
-                onFocus={(e) => e.target.select()}
-                className="w-20 h-8 text-sm text-center"
-                placeholder="6.96"
-              />
-            </div>
-
-            {/* Botón de conversión */}
-            <TooltipButton
-              tooltip={
-                detalles.length === 0
-                  ? "Agrega productos para convertir"
-                  : isUSD
-                    ? `Convertir ${detalles.length} producto(s) de USD a BOB`
-                    : `Convertir ${detalles.length} producto(s) de BOB a USD`
-              }
-              buttonProps={{
-                onClick: handleConvertCurrency,
-                disabled: detalles.length === 0,
-                size: "sm",
-                variant: "default",
-                type: "button",
-                // className: "gap-2 bg-green-600 hover:bg-green-700",
-              }}
-            >
-              <ArrowRightLeft className="h-4 w-4" />
-              {isUSD ? "USD → BOB" : "BOB → USD"}
-            </TooltipButton>
-          </div>
-
-          {/* Botones de acción - Derecha */}
-          <div className="flex items-center gap-2">
-            <TooltipButton
-              tooltip={
-                !canImportOrder
-                  ? "No puedes importar un pedido si ya hay productos agregados manualmente"
-                  : "Importar productos desde un pedido existente"
-              }
-              buttonProps={{
-                type: "button",
-                variant: "outline",
-                size: "sm",
-                onClick: toggleOrderSelector,
-                disabled: !canImportOrder,
-                className: "gap-2",
-              }}
-            >
-              <Maximize2 className="h-4 w-4" />
-              Importar pedido
-            </TooltipButton>
-
-            <TooltipButton
-              tooltip={
-                !canAddProducts
-                  ? "No puedes agregar productos manualmente mientras estás importando un pedido"
-                  : "Agregar productos desde el selector"
-              }
-              buttonProps={{
-                type: "button",
-                variant: "outline",
-                size: "sm",
-                onClick: toggleSelectorMode,
-                disabled: !canAddProducts,
-                className: "gap-2",
-              }}
-            >
-              <Maximize2 className="h-4 w-4" />
-              Agregar producto
-            </TooltipButton>
-          </div>
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="flex-1 min-h-0">
-        <div className="h-full flex flex-col">
-          {detalles.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
-              <p>No hay productos agregados</p>
-              <p className="text-sm">
-                Haz clic en "Seleccionar Productos" para agregar
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Tabla */}
-              <div className="flex-1 min-h-0">
-                <div className="h-full">
-                  <CustomizableTable table={table} isLoading={false} />
-                </div>
-              </div>
-
-              {/* Footer con totales */}
-              {normalizedDetalles.length > 0 && (
-                <div className="bg-accent/30 dark:bg-accent/50 border-t border-border p-4 flex-shrink-0">
-                  <div className="grid grid-cols-4 gap-4 text-sm">
-                    <div className="flex gap-2 justify-end">
-                      <span className="font-semibold text-foreground">Total Costo:</span>
-                      <span className="font-medium text-foreground">
-                        {formatCurrency(totalCosto, {
-                          currency: isUSD ? "USD" : "BOB",
-                          locale: isUSD ? "en-US" : "es-BO",
-                        })}
-                        {/* ${totalCosto.toFixed(2)} */}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <span className="font-semibold text-foreground">Total P. Venta:</span>
-                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(totalGeneral, {
-                          currency: isUSD ? "USD" : "BOB",
-                          locale: isUSD ? "en-US" : "es-BO",
-                        })}
-                        {/* ${totalGeneral.toFixed(2)} */}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <span className="font-semibold text-foreground">Total P. Alt:</span>
-                      <span className="font-medium text-blue-600 dark:text-blue-400">
-                        {formatCurrency(totalMenor, {
-                          currency: isUSD ? "USD" : "BOB",
-                          locale: isUSD ? "en-US" : "es-BO",
-                        })}
-                        {/* ${totalMenor.toFixed(2)} */}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <span className="font-semibold text-foreground">Subtotal:</span>
-                      <span className="font-medium text-foreground">
-                        {formatCurrency(totalCosto, {
-                          currency: isUSD ? "USD" : "BOB",
-                          locale: isUSD ? "en-US" : "es-BO",
-                        })}
-                        {/* ${totalCosto.toFixed(2)} */}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      {isEditMode && onDeleteDetail && (
+        <ConfirmationModal
+          isOpen={showDeleteAlert}
+          onClose={handleCloseDeleteAlert}
+          onConfirm={handleConfirmDeleteAlert}
+          title="Eliminar detalle de compra"
+          message={`¿Estás seguro de eliminar el detalle de compra #${detailToDelete}?`}
+          isLoading={isDeleting}
+        />
+      )}
+    </>
   );
-};
+}
+
+const PurchaseDetailsTable = forwardRef(
+  PurchaseDetailsTableInner
+) as React.ForwardRefExoticComponent<
+  PurchaseDetailsTableProps<PurchaseDetailUnion> &
+    React.RefAttributes<PurchaseDetailsTableRef>
+>;
+
+PurchaseDetailsTable.displayName = "PurchaseDetailsTable";
 
 export default PurchaseDetailsTable;

@@ -25,20 +25,42 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import OrderDetailProductsSection from "../components/orderDetail/OrderDetailProductsSection";
 import { useDeleteOrder } from "../hooks/useDeleteOrder";
 import { useGetOrderById } from "../hooks/useGetOrderById";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const OrderDetailScreen = () => {
   const navigate = useNavigate();
-  const { orderCod } = useParams();
+
+  const { value: orderCod, isValid: isValidOrderCod } = useValidatedRouteParam({
+    paramName: "orderCod",
+    minValidValue: 1,
+  });
 
   const {
     data: orderData,
     isLoading: isLoadingOrder,
     isError: isErrorOrder,
-  } = useGetOrderById(Number(orderCod));
+    refetch: refetchOrder,
+  } = useGetOrderById(orderCod ?? 0);
+
+  const { renderView } = useViewRenderer({
+    queryStates: [
+      {
+        isLoading: isLoadingOrder,
+        isError: isErrorOrder,
+        data: orderData,
+      },
+    ],
+    isValidating: isValidOrderCod, // Pasar la validación externa
+    SkeletonComponent: SaleDetailSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar el pedido.",
+    onRetry: refetchOrder,
+  });
 
   const handleDeleteSuccess = (_data: unknown, orderId: number) => {
     showSuccessToast({
@@ -91,25 +113,8 @@ const OrderDetailScreen = () => {
     enabled: true,
   });
 
-  if (isLoadingOrder) {
-    return <SaleDetailSkeleton />;
-  }
-
-  if (isErrorOrder || !orderData) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar el pedido."
-          showButtonIcon={false}
-          buttonText="Ir a lista de pedidos"
-          onRetry={() => {
-            navigate("/dashboard/orders");
-          }}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main className="h-full flex flex-col items-center overflow-hidden p-2">
@@ -165,7 +170,8 @@ const OrderDetailScreen = () => {
                     variant: "outline",
                     size: "sm",
                     disabled:
-                      isDeleting || orderData.situacion_actual === "Disponible",
+                      isDeleting ||
+                      orderData?.situacion_actual === "Disponible",
                   }}
                 >
                   <Edit className="h-4 w-4" />

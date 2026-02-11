@@ -3,26 +3,25 @@ import { Label } from "@/components/atoms/label";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
-import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { HelpCircle, ShoppingBag } from "lucide-react";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { useProviders } from "../hooks/useProviders";
 import { usePurchaseCommons } from "../hooks/usePurchaseCommons";
-import type { PurchaseCreate } from "../schemas/purchaseCreate.schema";
+import type { PurchaseUpdate } from "../schemas/purchaseUpdate.schema";
+import type { PurchaseDetail } from "../schemas/purchase.schema";
 
 interface Props {
+  purchaseData?: PurchaseDetail;
   onSubmit?: () => void;
 }
 
-const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
+const FormEditPurchase: React.FC<Props> = ({ purchaseData, onSubmit }) => {
   const {
     control,
-    watch,
-    setValue,
     formState: { errors },
-  } = useFormContext<PurchaseCreate>();
+  } = useFormContext<PurchaseUpdate>();
 
   const { data: proveedores = [], isLoading: isLoadingProviders } =
     useProviders();
@@ -44,64 +43,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
     enabled: true,
   });
 
-  // Establecer valores por defecto
-  const formData = watch();
-
-  useEffect(() => {
-    if (!formData.tipo_compra && purchaseTypes.length > 0 && !loading.types) {
-      setValue("tipo_compra", purchaseTypes[0].value as string);
-    }
-
-    if (
-      !formData.forma_compra &&
-      purchaseModalities.length > 0 &&
-      !loading.modalities
-    ) {
-      setValue("forma_compra", purchaseModalities[0].value as string);
-    }
-  }, [
-    purchaseTypes,
-    purchaseModalities,
-    formData.tipo_compra,
-    formData.forma_compra,
-    loading.types,
-    loading.modalities,
-    setValue,
-  ]);
-
-  // Función para convertir string a Date
-  const parseDateFromString = (
-    dateValue: string | Date | null | undefined
-  ): Date | null => {
-    if (!dateValue) return null;
-
-    if (dateValue instanceof Date) {
-      return dateValue;
-    }
-
-    if (typeof dateValue === "string") {
-      const [year, month, day] = dateValue.split("-").map(Number);
-      const date = new Date(year, month - 1, day);
-      return isNaN(date.getTime()) ? null : date;
-    }
-
-    return null;
-  };
-
-  // Manejar cambio de fecha desde PopoverDatePicker
-  const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const dateString = `${year}-${month}-${day}`;
-      setValue("fecha", dateString);
-    } else {
-      setValue("fecha", "");
-    }
-  };
-
-  const inputClass = (fieldName: keyof PurchaseCreate) =>
+  const inputClass = (fieldName: keyof PurchaseUpdate) =>
     errors[fieldName]
       ? "text-sm border-red-500 focus:border-red-500"
       : "text-sm";
@@ -139,10 +81,10 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
                     <ShortcutKey combo={"Enter"} /> Navegación automática
                   </p>
                   <p>
-                    <ShortcutKey combo={"Alt + S"} /> Guardar compra
+                    <ShortcutKey combo={"Alt + S"} /> Guardar cambios
                   </p>
                   <p>
-                    <ShortcutKey combo={"Ctrl + R"} /> Limpiar formulario
+                    <ShortcutKey combo={"Esc"} /> Volver atrás
                   </p>
                 </div>
               </div>
@@ -162,10 +104,18 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
         {/* Fecha */}
         <div className="flex flex-col relative h-full">
           <Label className="mb-1">Fecha *</Label>
-          <PopoverDatePicker
-            value={parseDateFromString(formData.fecha)}
-            onChange={handleDateChange}
-            className={inputClass("fecha")}
+          <Controller
+            name="fecha"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="date"
+                {...field}
+                value={field.value || purchaseData?.fecha?.slice(0, 10) || ""}
+                className={inputClass("fecha")}
+                autoFocus
+              />
+            )}
           />
           {errors.fecha && (
             <p className="text-xs text-destructive absolute -bottom-5 left-0">
@@ -182,7 +132,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
             control={control}
             render={({ field }) => (
               <ComboboxSelect
-                value={field.value || undefined}
+                value={field.value || purchaseData?.proveedor?.id || undefined}
                 onChange={(v) => field.onChange(Number(v))}
                 options={proveedores}
                 optionTag="nombre"
@@ -214,6 +164,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
               <Input
                 type="text"
                 {...field}
+                value={field.value || purchaseData?.comprobante || ""}
                 placeholder="FA-01"
                 className={inputClass("nro_comprobante")}
                 data-field="nro_comprobante"
@@ -239,6 +190,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
               <Input
                 type="text"
                 {...field}
+                value={field.value || purchaseData?.comprobante2 || ""}
                 className={inputClass("nro_comprobante2")}
                 data-field="nro_comprobante2"
                 placeholder="COMP-123"
@@ -260,7 +212,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
             control={control}
             render={({ field }) => (
               <ComboboxSelect
-                value={field.value || undefined}
+                value={field.value || purchaseData?.tipo_compra || undefined}
                 onChange={(v) => field.onChange(v)}
                 options={purchaseTypes.map((pt) => ({
                   id: pt.value,
@@ -290,7 +242,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
             control={control}
             render={({ field }) => (
               <ComboboxSelect
-                value={field.value || undefined}
+                value={field.value || purchaseData?.forma_compra || undefined}
                 onChange={(v) => field.onChange(v)}
                 options={purchaseModalities.map((pm) => ({
                   id: pm.value,
@@ -320,7 +272,9 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
             control={control}
             render={({ field }) => (
               <ComboboxSelect
-                value={field.value || undefined}
+                value={
+                  field.value || purchaseData?.responsable?.id || undefined
+                }
                 onChange={(v) => field.onChange(Number(v))}
                 options={responsibles.map((r) => ({
                   id: r.value,
@@ -357,6 +311,7 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
             render={({ field }) => (
               <textarea
                 {...field}
+                value={field.value || purchaseData?.comentarios || ""}
                 placeholder="Comentarios adicionales"
                 rows={1}
                 className="p-2 text-xs border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-vertical bg-card text-foreground"
@@ -369,4 +324,4 @@ const FormCreatePurchase: React.FC<Props> = ({ onSubmit }) => {
   );
 };
 
-export default FormCreatePurchase;
+export default FormEditPurchase;

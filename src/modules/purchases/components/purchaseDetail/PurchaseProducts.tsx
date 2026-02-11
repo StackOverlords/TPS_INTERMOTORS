@@ -411,7 +411,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
           keyboardNavigationEnabled={true}
           stickyHeader={true}
           renderBottomRow={() => (
-            <TableRow className="bg-accent/30 dark:bg-accent/50 font-semibold sticky bottom-0">
+            <TableRow className="bg-accent/30 dark:bg-accent/30 font-semibold sticky bottom-0">
               {table.getVisibleFlatColumns().map((column) => {
                 if (column.id === "cantidad") {
                   return (
