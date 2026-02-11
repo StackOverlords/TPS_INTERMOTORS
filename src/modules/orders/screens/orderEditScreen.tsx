@@ -40,7 +40,7 @@ import {
   useForm,
   type FieldErrors,
 } from "react-hook-form";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import type { OrderDetailTableRef } from "../components/OrderDetailTable";
 import OrderDetailTable from "../components/OrderDetailTable";
 import OrderEditSkeleton from "../components/orderEditSkeleton";
@@ -76,6 +76,8 @@ import {
 } from "@/utils/decimalUtils";
 import { Switch } from "@/components/atoms/switch";
 import { useTabStore } from "@/states/tabStore";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
 
 const OrderEditScreen = () => {
   const configuraciones = {
@@ -97,12 +99,16 @@ const OrderEditScreen = () => {
   const fromCreate = currentTab?.createdTempData?.fromCreate;
   const originalPath = currentTab?.createdTempData?.originalPath;
 
-  const { orderId } = useParams();
+  const { value: orderId, isValid: isValidOrderId } = useValidatedRouteParam({
+    paramName: "orderId",
+    minValidValue: 1,
+  });
+
   const effectiveOrderId = useMemo(() => {
     if (fromCreate && tempCreatedOrder?.id) {
       return tempCreatedOrder.id;
     }
-    return orderId ? Number(orderId) : null;
+    return orderId;
   }, [fromCreate, tempCreatedOrder?.id, orderId]);
   const [isUsingTempData, setIsUsingTempData] = useState(false);
   const navigate = useNavigate();
@@ -146,7 +152,43 @@ const OrderEditScreen = () => {
     data: orderData,
     isLoading: isLoadingOrder,
     isError: isErrorOrder,
+    refetch: refetchOrder,
   } = useGetOrderById(effectiveOrderId ?? 0);
+
+  const { renderView } = useViewRendererWithTempData({
+    queryState: {
+      isLoading: isLoadingOrder,
+      isError: isErrorOrder,
+      data: orderData,
+    },
+    tempDataConfig: {
+      tempData: tempCreatedOrder,
+      isUsingTempData: fromCreate && !!tempCreatedOrder && !orderData,
+      validateTempData: (data) => !!data?.id && !!data?.detalles,
+    },
+    isParamValid: isValidOrderId,
+    additionalQueryStates: [
+      {
+        isLoading: isLoadingOrderTypes,
+        isError: false,
+        data: orderTypesData,
+      },
+      {
+        isLoading: isLoadingOrderModalities,
+        isError: false,
+        data: orderModalitiesData,
+      },
+      {
+        isLoading: isLoadingOrderResponsibles,
+        isError: false,
+        data: orderResponsiblesData,
+      },
+    ],
+    SkeletonComponent: OrderEditSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar el pedido.",
+    onRetry: refetchOrder,
+  });
 
   const handleGoBack = useGoBack("/dashboard/orders");
   const { handleError } = useErrorHandler();
@@ -558,31 +600,8 @@ const OrderEditScreen = () => {
     handleSubmit(onSubmit, onError)();
   });
 
-  if (
-    (isLoadingOrder ||
-      isLoadingOrderTypes ||
-      isLoadingOrderModalities ||
-      isLoadingOrderResponsibles) &&
-    !isUsingTempData
-  ) {
-    return <OrderEditSkeleton />;
-  }
-
-  if ((isErrorOrder || !orderData) && !isUsingTempData) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar el pedido."
-          showButtonIcon={false}
-          buttonText="Ir a lista de pedidos"
-          onRetry={() => {
-            navigate("/dashboard/orders");
-          }}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main className="p-2 h-full">

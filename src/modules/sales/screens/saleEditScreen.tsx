@@ -1,5 +1,5 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import { useSaleGetById } from "../hooks/useSaleGetById";
 import TooltipButton from "@/components/common/TooltipButton";
 import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
@@ -75,6 +75,8 @@ import { formatDateForUpdate } from "@/utils/dateFormatters";
 import { Badge } from "@/components/atoms/badge";
 import { roundTo5Decimals } from "@/utils/decimalUtils";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
 
 const SaleEditScreen = () => {
   const configuraciones = {
@@ -96,12 +98,18 @@ const SaleEditScreen = () => {
   const fromCreate = currentTab?.createdTempData?.fromCreate;
   const originalPath = currentTab?.createdTempData?.originalPath;
 
-  const { saleId: saleIdParam } = useParams();
+  const { value: saleIdParam, isValid: isValidSaleId } = useValidatedRouteParam(
+    {
+      paramName: "saleId",
+      minValidValue: 1,
+    }
+  );
+
   const effectiveSaleId = useMemo(() => {
     if (fromCreate && tempCreatedSale?.id) {
       return tempCreatedSale.id;
     }
-    return saleIdParam ? Number(saleIdParam) : null;
+    return saleIdParam;
   }, [fromCreate, tempCreatedSale?.id, saleIdParam]);
 
   const [isReadOnly] = useState<boolean>(false);
@@ -145,6 +153,37 @@ const SaleEditScreen = () => {
     isLoading: isLoadingPdf,
     isError: isErrorPdf,
   } = useSalePDF(effectiveSaleId || 0, isDialogOpen && !!effectiveSaleId);
+
+  const { renderView } = useViewRendererWithTempData({
+    queryState: {
+      isLoading: isLoadingSale,
+      isError: isErrorSale,
+      data: saleData,
+    },
+    tempDataConfig: {
+      tempData: tempCreatedSale,
+      isUsingTempData: fromCreate && !!tempCreatedSale && !saleData,
+      validateTempData: (data) => !!data?.id && !!data?.detalles,
+    },
+    isParamValid: isValidSaleId,
+    additionalQueryStates: [
+      { isLoading: isLoadingSaleTypes, isError: false, data: saleTypesData },
+      {
+        isLoading: isLoadingSaleModalities,
+        isError: false,
+        data: saleModalitiesData,
+      },
+      {
+        isLoading: isLoadingSaleResponsibles,
+        isError: false,
+        data: saleResponsiblesData,
+      },
+    ],
+    SkeletonComponent: SaleEditSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar la venta.",
+    onRetry: refetchSale,
+  });
 
   const handleGoBack = useGoBack("/dashboard/sales");
   const { handleError } = useErrorHandler();
@@ -592,31 +631,8 @@ const SaleEditScreen = () => {
     handleSubmit(onSubmit, onError)();
   });
 
-  if (
-    (isLoadingSale ||
-      isLoadingSaleTypes ||
-      isLoadingSaleModalities ||
-      isLoadingSaleResponsibles) &&
-    !isUsingTempData
-  ) {
-    return <SaleEditSkeleton />;
-  }
-
-  if ((isErrorSale || !saleData) && !isUsingTempData && !fromCreate) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar la venta."
-          showButtonIcon={false}
-          buttonText="Ir a lista de ventas"
-          onRetry={() => {
-            navigate("/dashboard/sales");
-          }}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main className="p-2 h-full">

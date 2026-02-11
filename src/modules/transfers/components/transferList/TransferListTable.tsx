@@ -205,7 +205,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                   </DropdownMenuItem>
                   <ProtectedAction
                     permission="tra-edit"
-                    roles={["Super Admin","Administrador","Vendedor"]}
+                    roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
                     <DropdownMenuItem
@@ -406,7 +406,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               {canReceive && (
                 <ProtectedAction
                   permission="tra-receive"
-                  roles={["Super Admin", "Administrador","Vendedor"]}
+                  roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >
                   <TooltipButton
@@ -433,7 +433,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               {canRefuse && (
                 <ProtectedAction
                   permission="tra-receive"
-                  roles={["Super Admin", "Administrador","Vendedor"]}
+                  roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >
                   <TooltipButton
@@ -784,7 +784,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
 
       {/* Pagination - FIJO en la parte inferior */}
       {!isInfiniteScroll && (data?.data?.length ?? 0) > 0 && (
-        <div className="flex-shrink-0 border-t border-border bg-card">
+        <div className="flex-shrink-0 border-t border-border bg-background">
           <Pagination
             currentPage={filters.pagina || 1}
             onPageChange={onPageChange}

@@ -1,5 +1,5 @@
 import ErrorDataComponent from "@/components/common/errorDataComponent";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import TooltipButton from "@/components/common/TooltipButton";
 import { CornerUpLeft, Loader2, Plus, Save, Undo2 } from "lucide-react";
 import { Kbd } from "@/components/atoms/kbd";
@@ -68,6 +68,8 @@ import type { ReturnGetById } from "../types/returnGet.types";
 import { formatDateForUpdate, getTodayDate } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
 
 const ReturnEditScreen = () => {
   const configuraciones = {
@@ -88,12 +90,16 @@ const ReturnEditScreen = () => {
   const fromCreate = currentTab?.createdTempData?.fromCreate;
   const originalPath = currentTab?.createdTempData?.originalPath;
 
-  const { returnId } = useParams();
+  const { value: returnId, isValid: isValidReturnId } = useValidatedRouteParam({
+    paramName: "returnId",
+    minValidValue: 1,
+  });
+
   const effectiveReturnId = useMemo(() => {
     if (fromCreate && tempCreatedReturn?.id) {
       return tempCreatedReturn.id;
     }
-    return returnId ? Number(returnId) : null;
+    return returnId;
   }, [fromCreate, tempCreatedReturn?.id, returnId]);
 
   const [isUsingTempData, setIsUsingTempData] = useState(false);
@@ -108,10 +114,7 @@ const ReturnEditScreen = () => {
   const { data: returnTypesData, isLoading: isLoadingReturnTypes } =
     useReturnTypes();
 
-  const {
-    data: returnResponsiblesData,
-    isLoading: isLoadingReturnResponsibles,
-  } = useReturnResponsibles();
+  const { data: returnResponsiblesData } = useReturnResponsibles();
 
   const { mutate: updateReturn, isPending: isSaving } = useUpdateReturn();
 
@@ -119,7 +122,33 @@ const ReturnEditScreen = () => {
     data: returnData,
     isLoading: isLoadingReturn,
     isError: isErrorReturn,
+    refetch: refetchReturn,
   } = useGetReturnById(effectiveReturnId ?? 0);
+
+  const { renderView } = useViewRendererWithTempData({
+    queryState: {
+      isLoading: isLoadingReturn,
+      isError: isErrorReturn,
+      data: returnData,
+    },
+    tempDataConfig: {
+      tempData: tempCreatedReturn,
+      isUsingTempData: fromCreate && !!tempCreatedReturn && !returnData,
+      validateTempData: (data) => !!data?.id && !!data?.detalles,
+    },
+    isParamValid: isValidReturnId,
+    additionalQueryStates: [
+      {
+        isLoading: isLoadingReturnTypes,
+        isError: false,
+        data: returnTypesData,
+      },
+    ],
+    SkeletonComponent: ReturnEditSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar la devolución.",
+    onRetry: refetchReturn,
+  });
 
   const handleGoBack = useGoBack("/dashboard/returns");
   const { handleError } = useErrorHandler();
@@ -461,26 +490,8 @@ const ReturnEditScreen = () => {
     }
   );
 
-  if (
-    (isLoadingReturn || isLoadingReturnTypes || isLoadingReturnResponsibles) &&
-    !isUsingTempData
-  ) {
-    return <ReturnEditSkeleton />;
-  }
-
-  if ((isErrorReturn || !returnData) && !isUsingTempData) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar la devolución."
-          showButtonIcon={false}
-          buttonText="Ir a lista de devoluciones"
-          onRetry={() => navigate("/dashboard/returns")}
-        />
-      </div>
-    );
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <main className="p-2 h-full">

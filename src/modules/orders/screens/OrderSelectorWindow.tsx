@@ -137,10 +137,10 @@ const OrderSelectorWindowContent = () => {
   };
 
   return (
-    <main className="h-screen flex flex-col">
-      <div className="bg-white rounded-lg shadow-sm flex-1 flex flex-col">
+    <main className="h-screen flex flex-col p-2 bg-secondary">
+      <div className="rounded-lg shadow-sm flex-1 flex flex-col">
         {/* Header */}
-        <header className="p-2 border-b border-border">
+        <header className="p-2 border-b border-border bg-background rounded-tl-lg rounded-tr-lg">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h1 className="text-lg font-bold text-primary">
@@ -166,7 +166,7 @@ const OrderSelectorWindowContent = () => {
         </header>
 
         {/* Filtros */}
-        <div className="p-2 border-b border-gray-200">
+        <div className="p-2 border-b border-border bg-background">
           <OrderSelectorFilters
             filters={filters}
             updateFilter={updateFilter}
@@ -176,9 +176,9 @@ const OrderSelectorWindowContent = () => {
           />
         </div>
 
-        {/* Info y Debug */}
-        <div className="p-2 text-sm border-b border-gray-200 space-y-1">
-          <div className="text-gray-600">
+        {/* Info y Debug
+        <div className="p-2 text-sm border-b border-border space-y-1 bg-background">
+          <div className="text-muted-foreground">
             {isLoading && "Cargando pedidos..."}
             {!isLoading &&
               !isError &&
@@ -192,7 +192,7 @@ const OrderSelectorWindowContent = () => {
               <span className="text-red-600">❌ Error al cargar pedidos</span>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Tabla */}
         <OrderSelectorTable
