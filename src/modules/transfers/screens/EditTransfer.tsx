@@ -14,7 +14,9 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
+import ConfirmationModal from "@/components/common/confirmationModal";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
@@ -31,7 +33,7 @@ import {
   Maximize2,
   Save,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Controller,
   FormProvider,
@@ -46,6 +48,7 @@ import TransferDetailSkeleton from "../components/transferDetail/TransferDetailS
 import { useTransferBranches } from "../hooks/commons/useTransferBranches";
 import { useTransferResponsibles } from "../hooks/commons/useTransferResponsibles";
 import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchById";
+import { useDeleteTransferDetail } from "../hooks/useDeleteTransferDetail";
 import { useTransferById } from "../hooks/useTransferById";
 import { useTransferDetails } from "../hooks/useTransferDetails";
 import { useTransferUpdate } from "../hooks/useTransferUpdate";
@@ -85,6 +88,64 @@ const EditTransfer = () => {
     useTransferUpdate();
 
   const { handleError } = useErrorHandler();
+
+  // Hook para eliminar detalle de transferencia
+  const { mutate: deleteTransferDetail, isPending: isDeletingDetail } =
+    useDeleteTransferDetail();
+
+  const handleDeleteDetailSuccess = (_data: unknown, detailId: number) => {
+    const deletedItem = transferDetailsHook.details.find(
+      (d) => d.id_detalle_transferencia === detailId
+    );
+    if (deletedItem) {
+      transferDetailsHook.removeProduct(deletedItem.producto_id);
+    }
+    showSuccessToast({
+      title: "Detalle eliminado",
+      description: `El detalle de transferencia #${detailId} se eliminó exitosamente`,
+      duration: 5000,
+    });
+  };
+
+  const handleDeleteDetailError = (_error: unknown, detailId: number) => {
+    showErrorToast({
+      title: "Error al eliminar detalle",
+      description: `No se pudo eliminar el detalle de transferencia #${detailId}. Por favor, intenta nuevamente`,
+      duration: 5000,
+    });
+  };
+
+  const {
+    close: handleCloseDeleteAlert,
+    confirm: handleConfirmDeleteAlert,
+    isOpen: showDeleteAlert,
+    open: handleOpenDeleteAlert,
+    variables: detailToDelete,
+  } = useConfirmMutation(
+    deleteTransferDetail,
+    handleDeleteDetailSuccess,
+    handleDeleteDetailError
+  );
+
+  const handleRemoveProduct = useCallback(
+    (producto_id: number, _purchase_id?: number) => {
+      const detail = transferDetailsHook.details.find(
+        (d) => d.producto_id === producto_id
+      );
+      // Si es un detalle nuevo (sin id_detalle_transferencia), eliminarlo solo localmente
+      if (!detail?.id_detalle_transferencia) {
+        transferDetailsHook.removeProduct(producto_id);
+        return;
+      }
+      // Si ya existe en el backend, mostrar confirmación y llamar al API
+      handleOpenDeleteAlert(detail.id_detalle_transferencia);
+    },
+    [
+      transferDetailsHook.details,
+      transferDetailsHook.removeProduct,
+      handleOpenDeleteAlert,
+    ]
+  );
 
   const methods = useForm<TransferCreate>({
     resolver: zodResolver(TransferCreateSchema),
@@ -599,7 +660,7 @@ const EditTransfer = () => {
                       onUpdateIncrementoPrecioEntradaVentaAlt={
                         transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt
                       }
-                      onRemoveProduct={transferDetailsHook.removeProduct}
+                      onRemoveProduct={handleRemoveProduct}
                     />
                   </div>
                   <Separator className="h-[0.5px] flex-shrink-0" />
@@ -655,6 +716,14 @@ const EditTransfer = () => {
           </Card>
         </form>
       </FormProvider>
+      <ConfirmationModal
+        isOpen={showDeleteAlert}
+        title="Eliminar detalle de transferencia"
+        message={`¿Estás seguro de que deseas eliminar el detalle de transferencia #${detailToDelete}?`}
+        onClose={handleCloseDeleteAlert}
+        onConfirm={handleConfirmDeleteAlert}
+        isLoading={isDeletingDetail}
+      />
     </main>
   );
 };

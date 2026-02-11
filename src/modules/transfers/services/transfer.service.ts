@@ -125,6 +125,18 @@ export const transferService = {
     },
 
     /**
+     * Eliminar un detalle de transferencia por ID
+     * @param id - ID del detalle de transferencia
+     */
+    async deleteDetail(id: number): Promise<void> {
+        Logger.info('Deleting transfer detail', { id }, MODULE_NAME);
+
+        await ApiService.delete(TRANSFER_ENDPOINTS.details.delete(id));
+
+        Logger.info('Transfer detail deleted successfully', { id }, MODULE_NAME);
+    },
+
+    /**
      * Actualizar una transferencia por ID
      * @param id - ID de la transferencia
      * @param data - Datos para actualizar la transferencia
