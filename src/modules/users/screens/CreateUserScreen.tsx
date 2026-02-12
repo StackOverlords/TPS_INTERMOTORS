@@ -12,25 +12,29 @@ const CreateUserScreen = () => {
 
   // Validar permisos para crear usuarios
   const { isAuthorized, isLoading } = usePermissionCheck({
-    permission: 'usu-create',
-    roles: ['Super Admin'],
+    permission: "usu-create",
+    roles: ["Super Admin"],
   });
 
   // Redirigir si no está autorizado
   useEffect(() => {
     if (!isLoading && !isAuthorized) {
-      navigate('/dashboard/user');
+      navigate("/dashboard/user");
     }
   }, [isAuthorized, isLoading, navigate]);
 
   // Shortcut para volver atrás
-  useHotkeys('escape', (e) => {
-    e.preventDefault();
-    handleGoBack();
-  }, {
-    scopes: ["esc-key"],
-    enabled: true
-  });
+  useHotkeys(
+    "escape",
+    (e) => {
+      e.preventDefault();
+      handleGoBack();
+    },
+    {
+      scopes: ["esc-key"],
+      enabled: true,
+    }
+  );
 
   // Mostrar loader mientras verifica permisos
   if (isLoading) {
@@ -38,7 +42,9 @@ const CreateUserScreen = () => {
       <div className="flex justify-center items-center h-full">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">Verificando permisos...</p>
+          <p className="text-sm text-muted-foreground">
+            Verificando permisos...
+          </p>
         </div>
       </div>
     );
@@ -50,10 +56,10 @@ const CreateUserScreen = () => {
   }
 
   return (
-    <div className="flex justify-center items-center">
+    <div className="flex justify-center items-center p-2">
       <div className="w-full space-y-2">
         {/* Header */}
-        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-background rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <div>

@@ -256,18 +256,14 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
         size: 40,
         minSize: 30,
         cell: ({ getValue }) => (
-          <span className="font-medium font-mono">
-            #{getValue<number>()}
-          </span>
+          <span className="font-medium font-mono">#{getValue<number>()}</span>
         ),
       },
       {
         accessorKey: "categoria",
         header: "División",
         cell: ({ getValue }) => (
-          <h3 className="font-medium truncate">
-            {getValue<string>()}
-          </h3>
+          <h3 className="font-medium truncate">{getValue<string>()}</h3>
         ),
       },
       {
@@ -305,7 +301,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
 
                 <Badge
                   variant="accent"
-                  className="hover:bg-purple-200 font-normal cursor-pointer"
+                  className="font-normal cursor-pointer"
                   onClick={() =>
                     hasSubcategories && toggleExpanded(row.original.id)
                   }
@@ -331,7 +327,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
                           </span>
                         ))}
                       {hasMore && (
-                        <span className="text-xs font-medium text-purple-600">
+                        <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
                           +{totalItems - previewLimit} más
                         </span>
                       )}
@@ -342,7 +338,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
 
               {/* Lista completa expandida con scroll */}
               {isExpanded && hasSubcategories && (
-                <div className="mt-3 ml-9 border-l-2 border-purple-100 pl-3">
+                <div className="mt-3 ml-9 border-l-2 border-purple-100 dark:border-purple-800 pl-3">
                   <div
                     className={cn(
                       "space-y-1",
@@ -353,9 +349,9 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
                     {subcategories.map((sub) => (
                       <div
                         key={sub.id}
-                        className="flex items-center gap-2 py-1 hover:bg-purple-50 rounded px-2 transition-colors"
+                        className="flex items-center gap-2 py-1 hover:bg-purple-50 dark:hover:bg-purple-900  rounded px-2 transition-colors"
                       >
-                        <span className="font-mono text-xs text-purple-600">
+                        <span className="font-mono text-xs text-purple-600 dark:text-purple-400">
                           #{sub.id}
                         </span>
                         <span className="text-sm text-foreground">
@@ -398,7 +394,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
               </Button>
 
               <Button
-                className="w-8 cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent hover:border-red-200"
+                className="w-8 cursor-pointer text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 bg-transparent hover:border-red-200 dark:hover:border-red-600"
                 variant={"outline"}
                 onClick={() => handleOpenDeleteAlert(id)}
               >
@@ -509,7 +505,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
                     }
                   >
                     <Checkbox
-                      className="border border-gray-400"
+                      className="border border-border"
                       checked={column.getIsVisible()}
                       onCheckedChange={(value) =>
                         column.toggleVisibility(!!value)
@@ -563,7 +559,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
         </div>
 
         {/* Pagination - FIJO en la parte inferior */}
-        <div className="flex-shrink-0 border-t border-border bg-card">
+        <div className="flex-shrink-0 border-t border-border bg-background">
           <Pagination
             className="border-0 px-0 pt-2 pb-0"
             currentPage={page}

@@ -1,28 +1,38 @@
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/select';
-import PopoverDatePicker from '@/components/common/PopoverDatePicker';
-import ShortcutKey from '@/components/common/ShortcutKey';
-import TooltipButton from '@/components/common/TooltipButton';
-import { TooltipWrapper } from '@/components/common/TooltipWrapper';
-import { showSuccessToast } from '@/hooks/use-toast-enhanced';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { useFormEnterNavigation } from '@/hooks/useFormEnterNavigation';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { HelpCircle, Loader2, Save, UserPlus } from 'lucide-react';
-import { useRef } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { useNavigate } from 'react-router';
-import { useCreateUser } from '../hooks/mutations/useCreateUser';
-import { useUpdateUser } from '../hooks/mutations/useUpdateUser';
-import { DNI_TIPO_VALUES, SEXO_VALUES, UserCreateSchema } from '../schemas/userCreate.schema';
-import { UserUpdateSchema } from '../schemas/userUpdate.schema';
-import type { UserCreate } from '../types/UserCreate.types';
-import type { UserUpdate } from '../types/UserUpdate.types';
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import ShortcutKey from "@/components/common/ShortcutKey";
+import TooltipButton from "@/components/common/TooltipButton";
+import { TooltipWrapper } from "@/components/common/TooltipWrapper";
+import { showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { HelpCircle, Loader2, Save, UserPlus } from "lucide-react";
+import { useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useHotkeys } from "react-hotkeys-hook";
+import { useNavigate } from "react-router";
+import { useCreateUser } from "../hooks/mutations/useCreateUser";
+import { useUpdateUser } from "../hooks/mutations/useUpdateUser";
+import {
+  DNI_TIPO_VALUES,
+  SEXO_VALUES,
+  UserCreateSchema,
+} from "../schemas/userCreate.schema";
+import { UserUpdateSchema } from "../schemas/userUpdate.schema";
+import type { UserCreate } from "../types/UserCreate.types";
+import type { UserUpdate } from "../types/UserUpdate.types";
 
 interface FormUserProps {
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   userId?: number;
   defaultValues?: Partial<UserUpdate>;
 }
@@ -30,7 +40,7 @@ interface FormUserProps {
 const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
   const navigate = useNavigate();
   const { handleError } = useErrorHandler();
-  const isCreateMode = mode === 'create';
+  const isCreateMode = mode === "create";
 
   const {
     control,
@@ -40,26 +50,28 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
     formState: { errors, isSubmitting },
   } = useForm<UserCreate | UserUpdate>({
     resolver: zodResolver(isCreateMode ? UserCreateSchema : UserUpdateSchema),
-    defaultValues: isCreateMode ? {
-      nombre: '',
-      apellido_p: '',
-      apellido_m: '',
-      sexo: 'M',
-      dni: 0,
-      dni_comp: '',
-      dni_tipo: 'DNI',
-      telefono: '',
-      celular: '',
-      direccion: '',
-      fecha_ingreso: '',
-      email: '',
-      nombre_usuario: '',
-      clave_acceso: '',
-      clave_acceso_confirmation: '',
-    } : {
-      ...defaultValues,
-    },
-    mode: 'onChange',
+    defaultValues: isCreateMode
+      ? {
+          nombre: "",
+          apellido_p: "",
+          apellido_m: "",
+          sexo: "M",
+          dni: 0,
+          dni_comp: "",
+          dni_tipo: "DNI",
+          telefono: "",
+          celular: "",
+          direccion: "",
+          fecha_ingreso: "",
+          email: "",
+          nombre_usuario: "",
+          clave_acceso: "",
+          clave_acceso_confirmation: "",
+        }
+      : {
+          ...defaultValues,
+        },
+    mode: "onChange",
   });
 
   const { mutate: handleCreateUser, isPending: isCreating } = useCreateUser();
@@ -72,38 +84,44 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       handleCreateUser(data as UserCreate, {
         onSuccess: (res) => {
           showSuccessToast({
-            title: 'Usuario creado',
+            title: "Usuario creado",
             description: `Usuario ${res.nickname} creado exitosamente. ID: #${res.id}`,
             duration: 5000,
           });
           reset();
-          navigate('/dashboard/user');
+          navigate("/dashboard/user");
         },
         onError: (error: unknown) => {
-          handleError({ error, customTitle: 'No se pudo crear el usuario' });
+          handleError({ error, customTitle: "No se pudo crear el usuario" });
         },
       });
     } else {
       if (!userId) return;
-      handleUpdateUser({ id: userId, data: data as UserUpdate }, {
-        onSuccess: (res) => {
-          showSuccessToast({
-            title: 'Usuario actualizado',
-            description: `Usuario ${res.nickname} actualizado exitosamente.`,
-            duration: 5000,
-          });
-          // alert(JSON.stringify(res));
-          navigate(`/dashboard/user/${res.nickname}`);
-        },
-        onError: (error: unknown) => {
-          handleError({ error, customTitle: 'No se pudo actualizar el usuario' });
-        },
-      });
+      handleUpdateUser(
+        { id: userId, data: data as UserUpdate },
+        {
+          onSuccess: (res) => {
+            showSuccessToast({
+              title: "Usuario actualizado",
+              description: `Usuario ${res.nickname} actualizado exitosamente.`,
+              duration: 5000,
+            });
+            // alert(JSON.stringify(res));
+            navigate(`/dashboard/user/${res.nickname}`);
+          },
+          onError: (error: unknown) => {
+            handleError({
+              error,
+              customTitle: "No se pudo actualizar el usuario",
+            });
+          },
+        }
+      );
     }
   };
 
   const getInputClassName = (fieldName: string): string => {
-    const baseClass = '';
+    const baseClass = "";
     const hasError = errors[fieldName as keyof (UserCreate | UserUpdate)];
     return hasError
       ? `${baseClass} border-destructive focus:border-destructive focus:ring-destructive`
@@ -111,9 +129,11 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
   };
 
   // Shortcuts
-  useHotkeys('alt+s', (e) => {
+  useHotkeys("alt+s", (e) => {
     e.preventDefault();
-    const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const submitButton = document.querySelector(
+      'button[type="submit"]'
+    ) as HTMLButtonElement;
     if (submitButton && !isPending && !isSubmitting) {
       submitButton.click();
     }
@@ -123,7 +143,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
   useFormEnterNavigation({
     containerRef: refForm,
     submitOnLastField: false,
-    excludeSelectors: ['.popover-date-picker'],
+    excludeSelectors: [".popover-date-picker"],
   });
 
   return (
@@ -133,14 +153,14 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       ref={refForm}
     >
       {/* Información Personal */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <div className="flex items-center justify-between mb-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-foreground">
             <UserPlus className="w-4 h-4" />
             Información Personal
           </h2>
           <TooltipWrapper
-            tooltipContentProps={{ align: 'end', className: 'max-w-xs' }}
+            tooltipContentProps={{ align: "end", className: "max-w-xs" }}
             tooltip={
               <div className="flex flex-col space-y-3">
                 <div className="text-sm font-semibold text-foreground border-b border-border pb-2">
@@ -151,9 +171,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
                     Navegación
                   </h4>
                   <div className="space-y-1 text-muted-foreground text-xs">
-                    <p><ShortcutKey combo={'Tab'} /> Siguiente campo</p>
-                    <p><ShortcutKey combo={'Shift + Tab'} /> Campo anterior</p>
-                    <p><ShortcutKey combo={'Alt + S'} /> Guardar usuario</p>
+                    <p>
+                      <ShortcutKey combo={"Tab"} /> Siguiente campo
+                    </p>
+                    <p>
+                      <ShortcutKey combo={"Shift + Tab"} /> Campo anterior
+                    </p>
+                    <p>
+                      <ShortcutKey combo={"Alt + S"} /> Guardar usuario
+                    </p>
                   </div>
                 </div>
               </div>
@@ -170,13 +196,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Nombre *</Label>
             <Input
-              {...register('nombre')}
+              {...register("nombre")}
               placeholder="Nombre"
-              className={getInputClassName('nombre')}
+              className={getInputClassName("nombre")}
             />
             <div className="mt-1">
               {errors.nombre && (
-                <p className="text-xs text-destructive truncate">{errors.nombre.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.nombre.message}
+                </p>
               )}
             </div>
           </div>
@@ -185,13 +213,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Apellido Paterno *</Label>
             <Input
-              {...register('apellido_p')}
+              {...register("apellido_p")}
               placeholder="Apellido Paterno"
-              className={getInputClassName('apellido_p')}
+              className={getInputClassName("apellido_p")}
             />
             <div className="mt-1">
               {errors.apellido_p && (
-                <p className="text-xs text-destructive truncate">{errors.apellido_p.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.apellido_p.message}
+                </p>
               )}
             </div>
           </div>
@@ -200,13 +230,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Apellido Materno</Label>
             <Input
-              {...register('apellido_m')}
+              {...register("apellido_m")}
               placeholder="Apellido Materno (Opcional)"
-              className={getInputClassName('apellido_m')}
+              className={getInputClassName("apellido_m")}
             />
             <div className="mt-1">
               {errors.apellido_m && (
-                <p className="text-xs text-destructive truncate">{errors.apellido_m.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.apellido_m.message}
+                </p>
               )}
             </div>
           </div>
@@ -219,13 +251,13 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className={getInputClassName('sexo')}>
+                  <SelectTrigger className={getInputClassName("sexo")}>
                     <SelectValue placeholder="Seleccionar sexo" />
                   </SelectTrigger>
                   <SelectContent>
                     {SEXO_VALUES.map((sexo) => (
                       <SelectItem key={sexo} value={sexo}>
-                        {sexo === 'M' ? 'Masculino' : 'Femenino'}
+                        {sexo === "M" ? "Masculino" : "Femenino"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -234,7 +266,9 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.sexo && (
-                <p className="text-xs text-destructive truncate">{errors.sexo.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.sexo.message}
+                </p>
               )}
             </div>
           </div>
@@ -242,7 +276,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Documentación */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <h2 className="text-base font-bold text-foreground mb-3">
           Documentación
         </h2>
@@ -258,15 +292,19 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
                   type="number"
                   autoSelectOnFocus={true}
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    field.onChange(parseInt(e.target.value) || 0)
+                  }
                   placeholder="12345678"
-                  className={getInputClassName('dni')}
+                  className={getInputClassName("dni")}
                 />
               )}
             />
             <div className="mt-1">
               {errors.dni && (
-                <p className="text-xs text-destructive truncate">{errors.dni.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.dni.message}
+                </p>
               )}
             </div>
           </div>
@@ -279,7 +317,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className={getInputClassName('dni_tipo')}>
+                  <SelectTrigger className={getInputClassName("dni_tipo")}>
                     <SelectValue placeholder="Tipo de DNI" />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,7 +332,9 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.dni_tipo && (
-                <p className="text-xs text-destructive truncate">{errors.dni_tipo.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.dni_tipo.message}
+                </p>
               )}
             </div>
           </div>
@@ -303,13 +343,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Complemento DNI</Label>
             <Input
-              {...register('dni_comp')}
+              {...register("dni_comp")}
               placeholder="Complemento (Opcional)"
-              className={getInputClassName('dni_comp')}
+              className={getInputClassName("dni_comp")}
             />
             <div className="mt-1">
               {errors.dni_comp && (
-                <p className="text-xs text-destructive truncate">{errors.dni_comp.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.dni_comp.message}
+                </p>
               )}
             </div>
           </div>
@@ -325,10 +367,10 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
                   value={field.value ? new Date(field.value) : null}
                   onChange={(date) => {
                     if (date) {
-                      const isoString = date.toISOString().split('T')[0];
+                      const isoString = date.toISOString().split("T")[0];
                       field.onChange(isoString);
                     } else {
-                      field.onChange('');
+                      field.onChange("");
                     }
                   }}
                   placeholder="Seleccionar fecha"
@@ -339,7 +381,9 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             />
             <div className="mt-1">
               {errors.fecha_ingreso && (
-                <p className="text-xs text-destructive truncate">{errors.fecha_ingreso.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.fecha_ingreso.message}
+                </p>
               )}
             </div>
           </div>
@@ -347,7 +391,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Información de Contacto */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <h2 className="text-base font-bold text-foreground mb-3">
           Información de Contacto
         </h2>
@@ -356,13 +400,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Teléfono</Label>
             <Input
-              {...register('telefono')}
+              {...register("telefono")}
               placeholder="Teléfono (Opcional)"
-              className={getInputClassName('telefono')}
+              className={getInputClassName("telefono")}
             />
             <div className="mt-1">
               {errors.telefono && (
-                <p className="text-xs text-destructive truncate">{errors.telefono.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.telefono.message}
+                </p>
               )}
             </div>
           </div>
@@ -371,13 +417,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Celular</Label>
             <Input
-              {...register('celular')}
+              {...register("celular")}
               placeholder="Celular (Opcional)"
-              className={getInputClassName('celular')}
+              className={getInputClassName("celular")}
             />
             <div className="mt-1">
               {errors.celular && (
-                <p className="text-xs text-destructive truncate">{errors.celular.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.celular.message}
+                </p>
               )}
             </div>
           </div>
@@ -386,14 +434,16 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Email *</Label>
             <Input
-              {...register('email')}
+              {...register("email")}
               type="email"
               placeholder="email@ejemplo.com"
-              className={getInputClassName('email')}
+              className={getInputClassName("email")}
             />
             <div className="mt-1">
               {errors.email && (
-                <p className="text-xs text-destructive truncate">{errors.email.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.email.message}
+                </p>
               )}
             </div>
           </div>
@@ -402,13 +452,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div className="sm:col-span-2 md:col-span-3">
             <Label>Dirección</Label>
             <Input
-              {...register('direccion')}
+              {...register("direccion")}
               placeholder="Dirección completa (Opcional)"
-              className={getInputClassName('direccion')}
+              className={getInputClassName("direccion")}
             />
             <div className="mt-1">
               {errors.direccion && (
-                <p className="text-xs text-destructive truncate">{errors.direccion.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.direccion.message}
+                </p>
               )}
             </div>
           </div>
@@ -416,7 +468,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Credenciales de Acceso */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <h2 className="text-base font-bold text-foreground mb-3">
           Credenciales de Acceso
         </h2>
@@ -425,13 +477,15 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           <div>
             <Label>Nombre de Usuario *</Label>
             <Input
-              {...register('nombre_usuario')}
+              {...register("nombre_usuario")}
               placeholder="usuario123"
-              className={getInputClassName('nombre_usuario')}
+              className={getInputClassName("nombre_usuario")}
             />
             <div className="mt-1">
               {errors.nombre_usuario && (
-                <p className="text-xs text-destructive truncate">{errors.nombre_usuario.message}</p>
+                <p className="text-xs text-destructive truncate">
+                  {errors.nombre_usuario.message}
+                </p>
               )}
             </div>
           </div>
@@ -442,14 +496,16 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
               <div>
                 <Label>Contraseña *</Label>
                 <Input
-                  {...register('clave_acceso' as any)}
+                  {...register("clave_acceso" as any)}
                   type="password"
                   placeholder="Mínimo 8 caracteres"
-                  className={getInputClassName('clave_acceso')}
+                  className={getInputClassName("clave_acceso")}
                 />
                 <div className="mt-1">
                   {(errors as any).clave_acceso && (
-                    <p className="text-xs text-destructive truncate">{(errors as any).clave_acceso.message}</p>
+                    <p className="text-xs text-destructive truncate">
+                      {(errors as any).clave_acceso.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -457,10 +513,10 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
               <div>
                 <Label>Confirmar Contraseña *</Label>
                 <Input
-                  {...register('clave_acceso_confirmation' as any)}
+                  {...register("clave_acceso_confirmation" as any)}
                   type="password"
                   placeholder="Repetir contraseña"
-                  className={getInputClassName('clave_acceso_confirmation')}
+                  className={getInputClassName("clave_acceso_confirmation")}
                 />
                 <div className="mt-1">
                   {(errors as any).clave_acceso_confirmation && (
@@ -476,19 +532,22 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
       </div>
 
       {/* Botones de acción */}
-      <div className="p-3 bg-card border border-border rounded-lg">
+      <div className="p-3 bg-background border border-border rounded-lg">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-muted-foreground">* Campos requeridos</span>
+          <span className="text-xs text-muted-foreground">
+            * Campos requeridos
+          </span>
           <TooltipButton
             buttonProps={{
-              type: 'submit',
+              type: "submit",
               disabled: isPending || isSubmitting,
-              variant: 'default',
-              className: 'w-full sm:w-auto',
+              variant: "default",
+              className: "w-full sm:w-auto",
             }}
             tooltip={
               <span className="flex items-center gap-1">
-                {isCreateMode ? 'Crear usuario' : 'Actualizar usuario'} <ShortcutKey combo="alt+s" />
+                {isCreateMode ? "Crear usuario" : "Actualizar usuario"}{" "}
+                <ShortcutKey combo="alt+s" />
               </span>
             }
           >
@@ -500,7 +559,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
             ) : (
               <>
                 <Save className="mr-2 size-4" />
-                {isCreateMode ? 'Crear Usuario' : 'Actualizar Usuario'}
+                {isCreateMode ? "Crear Usuario" : "Actualizar Usuario"}
               </>
             )}
           </TooltipButton>

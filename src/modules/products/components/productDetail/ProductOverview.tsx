@@ -17,6 +17,7 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { Button } from "@/components/atoms/button";
 import { ImageViewer } from "@/components/common/ImageViewer";
+import { Label } from "@/components/atoms/label";
 
 interface ProductOverviewProps {
   productStockData: ProductStock[];
@@ -117,29 +118,25 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
               {/* Compra más reciente - Diseño simple */}
               {compraReciente && (
                 <>
-                  <Card className="bg-card border border-border col-span-3 xl:col-span-4">
+                  <Card className="bg-background border border-border col-span-3 xl:col-span-4">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
-                        <Calendar className="size-4 text-gray-700" />
+                      <CardTitle className="flex items-center gap-3 text-lg font-semibold text-foreground">
+                        <Calendar className="size-4 text-muted-foreground" />
                         Compra Más Reciente (con saldo)
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Cantidad
-                          </label>
-                          <p className="text-lg font-semibold text-gray-900">
+                          <Label>Cantidad</Label>
+                          <p className="text-lg font-semibold text-foreground">
                             {compraReciente.cantidad}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Fecha
-                          </label>
+                          <Label>Fecha</Label>
 
-                          <p className="text-lg font-semibold text-gray-900">
+                          <p className="text-lg font-semibold text-foreground">
                             {compraReciente.fecha_adquisicion
                               ? format(
                                   compraReciente.fecha_adquisicion,
@@ -149,35 +146,27 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Costo
-                          </label>
-                          <p className="text-lg font-semibold text-gray-900">
+                          <Label>Costo</Label>
+                          <p className="text-lg font-semibold text-foreground">
                             {formatCurrency(compraReciente.costo)}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Precio de Venta F.
-                          </label>
-                          <p className="text-lg font-semibold text-gray-900">
+                          <Label>Precio de Venta F.</Label>
+                          <p className="text-lg font-semibold text-foreground">
                             {formatCurrency(compraReciente.precio_venta)}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Precio de Venta S.F.
-                          </label>
-                          <p className="text-lg font-semibold text-gray-900">
+                          <Label>Precio de Venta S.F.</Label>
+                          <p className="text-lg font-semibold text-foreground">
                             {formatCurrency(compraReciente.precio_venta_alt)}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Fecha Actualización
-                          </label>
+                          <Label>Fecha Actualización</Label>
                           <p
-                            className={` ${compraReciente.fecha_actualizacion ? "text-lg font-semibold text-gray-900" : "italic text-sm text-gray-500"}`}
+                            className={` ${compraReciente.fecha_actualizacion ? "text-lg font-semibold text-foreground" : "italic text-sm text-muted-foreground"}`}
                           >
                             {compraReciente.fecha_actualizacion
                               ? format(
@@ -190,7 +179,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                       </div>
                     </CardContent>
                   </Card>
-                  <div className="aspect-square xl:aspect-auto bg-card rounded-xl flex items-center justify-center border border-border h-full col-span-2 xl:col-span-1 overflow-hidden group relative">
+                  <div className="aspect-square xl:aspect-auto bg-background rounded-xl flex items-center justify-center border border-border h-full col-span-2 xl:col-span-1 overflow-hidden group relative">
                     {imagenProducto ? (
                       <>
                         <img
@@ -209,8 +198,8 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                       <div className="flex flex-col items-center justify-center gap-2 p-8">
                         {/* Icono con animación sutil */}
                         <div className="relative">
-                          <div className="size-20 border-2 border-dashed border-zinc-300 rounded-2xl flex items-center justify-center bg-zinc-50/50 transition-all duration-300 hover:border-zinc-400 hover:bg-zinc-100/50">
-                            <Upload className="size-10 text-zinc-400" />
+                          <div className="size-20 border-2 border-dashed border-border rounded-2xl flex items-center justify-center bg-gray-50/50 dark:bg-gray-900/50 transition-all duration-300">
+                            <Upload className="size-10 text-muted-foreground" />
                           </div>
                           {/* Elemento decorativo */}
                           <div className="absolute -top-1 -right-1 size-4 bg-primary/20 rounded-full animate-pulse" />
@@ -218,7 +207,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
 
                         {/* Texto */}
                         <div className="text-center space-y-2">
-                          <p className="text-xs font-medium text-zinc-700">
+                          <p className="text-xs font-medium text-muted-foreground">
                             No hay imagen del producto
                           </p>
                         </div>
@@ -252,15 +241,15 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
           {!compraReciente && (
             <div className="space-y-2">
               {/* Product Image */}
-              <Card className="bg-card border border-border">
+              <Card className="bg-background border border-border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-lg">
-                    <ImageIcon className="size-4 text-gray-700" />
+                    <ImageIcon className="size-4 text-foreground" />
                     Imagen del Producto
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-square bg-card rounded-xl flex items-center justify-center border border-border">
+                  <div className="aspect-square bg-background rounded-xl flex items-center justify-center border border-border">
                     {imagenProducto ? (
                       <>
                         <img
@@ -279,8 +268,8 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                       <div className="flex flex-col items-center justify-center gap-2 p-8">
                         {/* Icono con animación sutil */}
                         <div className="relative">
-                          <div className="size-20 border-2 border-dashed border-zinc-300 rounded-2xl flex items-center justify-center bg-zinc-50/50 transition-all duration-300 hover:border-zinc-400 hover:bg-zinc-100/50">
-                            <Upload className="size-10 text-zinc-400" />
+                          <div className="size-20 border-2 border-dashed border-border rounded-2xl flex items-center justify-center bg-gray-50/50 dark:bg-gray-900/50 transition-all duration-300">
+                            <Upload className="size-10 text-muted-foreground" />
                           </div>
                           {/* Elemento decorativo */}
                           <div className="absolute -top-1 -right-1 size-4 bg-primary/20 rounded-full animate-pulse" />
@@ -288,7 +277,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
 
                         {/* Texto */}
                         <div className="text-center space-y-2">
-                          <p className="text-xs font-medium text-zinc-700">
+                          <p className="text-xs font-medium text-muted-foreground">
                             No hay imagen del producto
                           </p>
                         </div>

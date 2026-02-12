@@ -1,15 +1,14 @@
-import { useUpdateChecker } from '@/hooks/useUpdateChecker';
-import { getVersion } from '@tauri-apps/api/app';
-import { useEffect, useState } from 'react';
-import ReleaseNotes from './ReleaseNotes';
-import { environment } from '@/utils/environment';
+import { useUpdateChecker } from "@/hooks/useUpdateChecker";
+import { getVersion } from "@tauri-apps/api/app";
+import { useEffect, useState } from "react";
+import ReleaseNotes from "./ReleaseNotes";
+import { environment } from "@/utils/environment";
 
 export default function UpdateSettings() {
   const {
     available,
     currentVersion,
     latestVersion,
-    variant,
     isChecking,
     isDownloading,
     isInstalling,
@@ -22,10 +21,12 @@ export default function UpdateSettings() {
     dismissUpdate,
   } = useUpdateChecker();
 
-  const [appVersion, setAppVersion] = useState<string>('');
+  const [appVersion, setAppVersion] = useState<string>("");
 
   useEffect(() => {
-    getVersion().then(setAppVersion).catch(() => setAppVersion('1.0.0'));
+    getVersion()
+      .then(setAppVersion)
+      .catch(() => setAppVersion("1.0.0"));
   }, []);
 
   const displayCurrentVersion = currentVersion || appVersion;
@@ -38,8 +39,8 @@ export default function UpdateSettings() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh] py-2 bg-card rounded-lg border border-border">
-      <div className="flex flex-col items-center gap-6 max-w-4xl w-full px-6">
+    <div className="flex flex-col h-full items-center justify-center min-h-[60vh] p-2 bg-background rounded-lg border border-border">
+      <div className="flex flex-col items-center max-w-5xl w-full px-4 h-full">
         <ReleaseNotes
           currentVersion={displayCurrentVersion}
           latestVersion={latestVersion}

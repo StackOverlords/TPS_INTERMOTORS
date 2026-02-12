@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/atoms/card';
+} from "@/components/atoms/card";
 import {
   // Bell,
   // Code,
@@ -18,21 +18,21 @@ import {
   Settings,
   // Settings as SettingsIcon,
   // Shield,
-} from 'lucide-react';
-import { useState } from 'react';
+} from "lucide-react";
+import { useState } from "react";
 // import AdvancedSettings from '../components/settings/AdvancedSettings';
-import AppearanceSettings from '../components/settings/AppearanceSettings';
-import BackupSettings from '../components/settings/BackupSettings';
+import AppearanceSettings from "../components/settings/AppearanceSettings";
+import BackupSettings from "../components/settings/BackupSettings";
 // import IntegrationSettings from '../components/settings/IntegrationSettings';
-import KeybindingsSettings from '../components/settings/KeybindingsSettings';
-import MasterDataSettings from '../components/settings/MasterDataSettings';
+import KeybindingsSettings from "../components/settings/KeybindingsSettings";
+import MasterDataSettings from "../components/settings/MasterDataSettings";
 // import NotificationSettings from '../components/settings/NotificationSettings';
 // import SecuritySettings from '../components/settings/SecuritySettings';
-import { SettingsNavigation } from '../components/settings/SettingsNavigation';
+import { SettingsNavigation } from "../components/settings/SettingsNavigation";
 // import SystemSettings from '../components/settings/SystemSettings';
-import UpdateSettings from '../components/settings/UpdateSettings';
-import ViewSettings from '../components/settings/ViewSettings';
-import { cn } from '@/lib/utils';
+import UpdateSettings from "../components/settings/UpdateSettings";
+import ViewSettings from "../components/settings/ViewSettings";
+import { cn } from "@/lib/utils";
 
 export type SettingsSection = {
   id: string;
@@ -45,34 +45,34 @@ export type SettingsSection = {
 
 const settingsSections: SettingsSection[] = [
   {
-    id: 'master-data',
-    label: 'Datos Maestros',
+    id: "master-data",
+    label: "Datos Maestros",
     icon: Database,
-    description: 'Gestiona los datos maestros del sistema',
+    description: "Gestiona los datos maestros del sistema",
     component: MasterDataSettings,
     stickyHeader: false,
   },
   {
-    id: 'views',
-    label: 'Vistas',
+    id: "views",
+    label: "Vistas",
     icon: Eye,
-    description: 'Personaliza la funcionalidad de cada vista',
+    description: "Personaliza la funcionalidad de cada vista",
     component: ViewSettings,
     stickyHeader: true,
   },
   {
-    id: 'appearance',
-    label: 'Apariencia',
+    id: "appearance",
+    label: "Apariencia",
     icon: Palette,
-    description: 'Personaliza el tema y colores',
+    description: "Personaliza el tema y colores",
     component: AppearanceSettings,
     stickyHeader: false,
   },
   {
-    id: 'keybindings',
-    label: 'Atajos',
+    id: "keybindings",
+    label: "Atajos",
     icon: Keyboard,
-    description: 'Personaliza los atajos de teclado',
+    description: "Personaliza los atajos de teclado",
     component: KeybindingsSettings,
     stickyHeader: false,
   },
@@ -85,10 +85,10 @@ const settingsSections: SettingsSection[] = [
   //   stickyHeader: false,
   // },
   {
-    id: 'backups',
-    label: 'Respaldos',
+    id: "backups",
+    label: "Respaldos",
     icon: HardDrive,
-    description: 'Gestiona copias de seguridad',
+    description: "Gestiona copias de seguridad",
     component: BackupSettings,
     stickyHeader: false,
   },
@@ -125,20 +125,20 @@ const settingsSections: SettingsSection[] = [
   //   stickyHeader: false,
   // },
   {
-    id: 'updates',
-    label: 'Actualizaciones',
+    id: "updates",
+    label: "Actualizaciones",
     icon: RefreshCw,
-    description: 'Gestiona las actualizaciones de la aplicación',
+    description: "Gestiona las actualizaciones de la aplicación",
     component: UpdateSettings,
-    stickyHeader: false,
+    stickyHeader: true,
   },
 ];
 
 const SettingsScreen = () => {
-  const [activeSection, setActiveSection] = useState('master-data');
+  const [activeSection, setActiveSection] = useState("master-data");
 
   const currentSection = settingsSections.find(
-    section => section.id === activeSection
+    (section) => section.id === activeSection
   );
   const CurrentComponent = currentSection?.component || MasterDataSettings;
 
@@ -165,7 +165,7 @@ const SettingsScreen = () => {
   return (
     <main className="max-w-7xl mx-auto space-y-2 p-2 flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <header className="border-border border bg-card rounded-lg p-2 sm:px-3 sm:py-2 flex-shrink-0">
+      <header className="border-border border bg-background rounded-lg p-2 sm:px-3 sm:py-2 flex-shrink-0">
         <div className="flex flex-wrap gap-2 items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="size-5 lg:size-7 text-foreground" />
@@ -182,7 +182,7 @@ const SettingsScreen = () => {
       </header>
 
       <div className="flex-1 min-h-0">
-        <div className='flex flex-col space-y-2 h-full'>
+        <div className="flex flex-col space-y-2 h-full">
           <SettingsNavigation
             sections={settingsSections}
             activeSection={activeSection}
@@ -191,11 +191,13 @@ const SettingsScreen = () => {
 
           {/* Current Section Content */}
           <Card className="shadow-none min-h-0 flex-1 overflow-auto bg-transparent border-none">
-            <div className='h-full flex flex-col'>
-              <CardHeader className={cn(
-                'space-y-0.5 px-0 pt-0',
-                currentSection?.stickyHeader && 'flex-shrink-0'
-              )}>
+            <div className="h-full flex flex-col">
+              <CardHeader
+                className={cn(
+                  "space-y-0.5 px-0 pt-0",
+                  currentSection?.stickyHeader && "flex-shrink-0"
+                )}
+              >
                 <CardTitle className="flex items-center gap-2 text-base">
                   {currentSection && <currentSection.icon className="size-4" />}
                   {currentSection?.label}
@@ -204,10 +206,12 @@ const SettingsScreen = () => {
                   {currentSection?.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent className={cn(
-                'p-0',
-                currentSection?.stickyHeader && 'flex-1 min-h-0 overflow-auto'
-              )}>
+              <CardContent
+                className={cn(
+                  "p-0",
+                  currentSection?.stickyHeader && "flex-1 min-h-0 overflow-auto"
+                )}
+              >
                 <CurrentComponent />
               </CardContent>
             </div>
