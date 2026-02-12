@@ -242,9 +242,9 @@ const ProductDetailScreen = () => {
 
   return (
     <div className="p-2 h-full">
-      <div className="max-w-7xl mx-auto space-y-4">
+      <div className="max-w-7xl mx-auto space-y-2">
         {/* Header Simple - Solo nombre del producto */}
-        <div className="bg-card border border-border rounded-lg p-3">
+        <header className="bg-background border border-border rounded-lg p-3">
           <div className="flex items-center gap-3">
             <TooltipButton
               tooltipContentProps={{
@@ -268,12 +268,12 @@ const ProductDetailScreen = () => {
               </h1>
             </div>
           </div>
-        </div>
+        </header>
 
         {/* Navigation Tabs */}
-        <Tabs defaultValue="sales" className="space-y-4">
+        <Tabs defaultValue="sales" className="space-y-2">
           <div className="flex flex-wrap-reverse gap-2 justify-between">
-            <TabsList className="bg-card border border-border gap-2 h-10">
+            <TabsList className="bg-background border border-border gap-2 h-10">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-3 py-2 hover:bg-accent transition-colors h-8"
@@ -306,7 +306,7 @@ const ProductDetailScreen = () => {
 
             <div className="flex items-center gap-2">
               {/* Branch Selector */}
-              <div className="flex items-center gap-2 bg-card rounded-md px-1 h-10 border border-border">
+              <div className="flex items-center gap-2 bg-background rounded-md px-1 h-10 border border-border">
                 <MapPin className="h-4 w-4 text-muted-foreground ml-2" />
                 <span className="text-sm font-medium text-foreground">
                   Sucursal:

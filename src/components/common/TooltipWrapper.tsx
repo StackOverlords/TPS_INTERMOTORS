@@ -18,7 +18,7 @@ export const TooltipWrapper: React.FC<TooltipWrapperProps> = ({
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent side={side} {...tooltipContentProps} className="z-[9999]">
-        <div className="flex items-center gap-1 text-xs text-gray-500">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
           {tooltip}
         </div>
       </TooltipContent>

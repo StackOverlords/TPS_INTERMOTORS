@@ -37,7 +37,7 @@ const TooltipButton: React.FC<TooltipButtonProps> = ({
         </Button>
       </TooltipTrigger>
       <TooltipContent {...tooltipContentProps}>
-        <div className="flex items-center gap-1 text-xs text-gray-500">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
           {tooltip}
         </div>
       </TooltipContent>

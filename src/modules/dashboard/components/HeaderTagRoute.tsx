@@ -1,9 +1,15 @@
 import type RouteType from "@/navigation/RouteType";
 import NavItem from "./NavItem";
 import { ChevronRight } from "lucide-react";
-import { useLocation } from "react-router";
+import { useLocation, matchPath } from "react-router";
 import { cn } from "@/lib/utils";
-import { SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/atoms/sidebar";
+import {
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/atoms/sidebar";
 import { useEffect } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { hasRouteAccess } from "@/utils/permissions";
@@ -12,33 +18,46 @@ const HeaderTagRoute = ({
   route,
   expandedHeaders,
   toggleHeader,
-  handleNavigation
+  handleNavigation,
 }: {
   route: RouteType;
-  expandedHeaders: string[]
-  toggleHeader: (headerName: string) => void
-  handleNavigation: () => void
+  expandedHeaders: string[];
+  toggleHeader: (headerName: string) => void;
+  handleNavigation: () => void;
 }) => {
   const location = useLocation();
   const { rol: userRole } = useUserRole();
   const hasSubRoutes = route.subRoutes && route.subRoutes.length > 0;
 
+  // Verificar si está en alguna subruta usando matchPath para manejar parámetros
   const isInSubRoute = hasSubRoutes
     ? (route.subRoutes ?? []).some(
-      (subRoute) => subRoute.path && location.pathname.startsWith(subRoute.path)
-    )
+        (subRoute) =>
+          subRoute.path &&
+          matchPath({ path: subRoute.path, end: false }, location.pathname)
+      )
+    : false;
+
+  // Verificar si está en una subruta que NO se muestra en el sidebar
+  const isInHiddenSubRoute = hasSubRoutes
+    ? (route.subRoutes ?? []).some(
+        (subRoute) =>
+          subRoute.path &&
+          !subRoute.showSidebar &&
+          matchPath({ path: subRoute.path, end: false }, location.pathname)
+      )
     : false;
 
   const isExpanded = expandedHeaders.includes(route.name);
 
-  // Auto-expandir cuando navegas a una subruta, pero permitir colapsarlo manualmente
+  // Auto-expandir cuando navegas a una subruta visible, pero permitir colapsarlo manualmente
   useEffect(() => {
-    if (isInSubRoute && !isExpanded) {
+    if (isInSubRoute && !isExpanded && !isInHiddenSubRoute) {
       toggleHeader(route.name);
     }
-  }, [isInSubRoute]);
+  }, [isInSubRoute, isInHiddenSubRoute]);
 
-  if (!route.showSidebar) return null
+  if (!route.showSidebar) return null;
 
   if (!route.isHeader) {
     return (
@@ -71,34 +90,43 @@ const HeaderTagRoute = ({
           <span className="text-xs font-semibold uppercase tracking-wider">
             {route.name}
           </span>
-          {isInSubRoute && !isExpanded && (
-            <span className="h-2 w-2 rounded-full bg-primary-foreground animate-pulse" title="Ruta activa" />
+          {/* Mostrar el círculo cuando:
+              1. Estás en una subruta del módulo y está contraído
+              2. O cuando estás en una ruta oculta del sidebar (aunque esté expandido) */}
+          {((isInSubRoute && !isExpanded) || isInHiddenSubRoute) && (
+            <span
+              className="h-2 w-2 rounded-full bg-primary-foreground animate-pulse"
+              title={
+                isInHiddenSubRoute ? "En ruta de este módulo" : "Ruta activa"
+              }
+            />
           )}
         </div>
         {hasSubRoutes && (
           <div className="ml-2">
-            <ChevronRight className={cn(
-              "size-4 transition-transform duration-200",
-              isExpanded && "rotate-90"
-            )} />
+            <ChevronRight
+              className={cn(
+                "size-4 transition-transform duration-200",
+                isExpanded && "rotate-90"
+              )}
+            />
           </div>
         )}
       </SidebarMenuButton>
 
       {hasSubRoutes && isExpanded && (
-        <SidebarMenuSub className={cn(
-          "ml-3 mt-1 border-l border-border pl-2 mr-0 pr-0 py-0",
-        )}>
+        <SidebarMenuSub
+          className={cn("ml-3 mt-1 border-l border-border pl-2 mr-0 pr-0 py-0")}
+        >
           {route.subRoutes
-            ?.filter((subRoute) =>
-              subRoute.showSidebar &&
-              subRoute.path &&
-              hasRouteAccess(subRoute, userRole)
+            ?.filter(
+              (subRoute) =>
+                subRoute.showSidebar &&
+                subRoute.path &&
+                hasRouteAccess(subRoute, userRole)
             )
             .map((subRoute, index) => (
-              <SidebarMenuSubItem
-                key={`${subRoute.path}-${index}`}
-              >
+              <SidebarMenuSubItem key={`${subRoute.path}-${index}`}>
                 <SidebarMenuSubButton asChild>
                   <NavItem
                     href={subRoute.path || "#"}

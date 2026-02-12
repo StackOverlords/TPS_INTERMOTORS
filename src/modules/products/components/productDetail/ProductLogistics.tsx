@@ -43,7 +43,8 @@ const ProductLogistics: React.FC<ProductLogisticsProps> = ({
       cell: ({ getValue }) => {
         const rawFecha = getValue() as string;
 
-        if (!rawFecha) return <span className="text-muted-foreground">Sin fecha</span>;
+        if (!rawFecha)
+          return <span className="text-muted-foreground">Sin fecha</span>;
 
         return (
           <div className="flex flex-col gap-1">
@@ -109,16 +110,16 @@ const ProductLogistics: React.FC<ProductLogisticsProps> = ({
 
   return (
     <Card
-      className={cn("bg-card border border-border flex flex-col", className)}
+      className={cn(
+        "bg-background border border-border flex flex-col",
+        className
+      )}
     >
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Truck className="size-4 text-muted-foreground" />
           Productos en Tránsito
-          <Badge
-            variant="secondary"
-            className="ml-auto"
-          >
+          <Badge variant="secondary" className="ml-auto">
             {ProductProviderOrders.length} pedidos activos
           </Badge>
         </CardTitle>

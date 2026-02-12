@@ -118,7 +118,7 @@ const CategoriesScreen = () => {
   return (
     <main className="w-full max-w-5xl mx-auto h-full p-2 gap-2 flex flex-col">
       <div className="space-y-2 flex-shrink-0">
-        <header className="bg-card rounded-lg p-2 border border-border">
+        <header className="bg-background rounded-lg p-2 border border-border">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <TooltipButton
@@ -143,7 +143,9 @@ const CategoriesScreen = () => {
                 <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
                   Divisiónes
                 </h1>
-                <p className="text-sm text-gray-500">Divisiónes principales</p>
+                <p className="text-sm text-muted-foreground">
+                  Divisiónes principales
+                </p>
               </div>
             </div>
           </div>
@@ -152,7 +154,7 @@ const CategoriesScreen = () => {
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-              <Filter className="size-5 text-gray-700" />
+              <Filter className="size-5 text-muted-foreground" />
               Filtros
             </CardTitle>
           </CardHeader>
