@@ -1,31 +1,52 @@
-import { Kbd } from '@/components/atoms/kbd';
-import ErrorDataComponent from '@/components/common/errorDataComponent';
-import TooltipButton from '@/components/common/TooltipButton';
-import { ProtectedAction } from '@/components/common/ProtectedAction';
-import { CornerUpLeft, Edit } from 'lucide-react';
-import { useCallback } from 'react';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { useParams } from 'react-router';
-import DeletePurchaseDialog from '../components/DeletePurchaseDialog';
-import PurchaseDetailSkeleton from '../components/purchaseDetail/PurchaseDetailSkeleton';
-import PurchaseOverview from '../components/purchaseDetail/PurchaseOverview';
-import PurchaseProducts from '../components/purchaseDetail/PurchaseProducts';
-import { usePurchaseById } from '../hooks/usePurchaseById';
-import { usePurchaseDelete } from '../hooks/usePurchaseDelete';
-import { useTabNavigation } from '@/hooks/useTabNavigation';
-import { formatColumnNumber } from '@/utils/formaters';
+import { Kbd } from "@/components/atoms/kbd";
+import ErrorDataComponent from "@/components/common/errorDataComponent";
+import TooltipButton from "@/components/common/TooltipButton";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { CornerUpLeft, Edit } from "lucide-react";
+import { useCallback } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
+import DeletePurchaseDialog from "../components/DeletePurchaseDialog";
+import PurchaseDetailSkeleton from "../components/purchaseDetail/PurchaseDetailSkeleton";
+import PurchaseOverview from "../components/purchaseDetail/PurchaseOverview";
+import PurchaseProducts from "../components/purchaseDetail/PurchaseProducts";
+import { usePurchaseById } from "../hooks/usePurchaseById";
+import { usePurchaseDelete } from "../hooks/usePurchaseDelete";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { formatColumnNumber } from "@/utils/formaters";
+import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
+import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const PurchaseDetailScreen = () => {
   // const navigate = useNavigate();
   const { navigateWithTab } = useTabNavigation();
-  const { purchaseId } = useParams();
+
+  const { value: purchaseId, isValid: isValidPurchaseId } =
+    useValidatedRouteParam({
+      paramName: "purchaseId",
+      minValidValue: 1,
+    });
 
   const {
     data: purchase,
     isLoading: isLoadingPurchase,
     isError: isErrorPurchase,
     refetch: refetchPurchase,
-  } = usePurchaseById(Number(purchaseId) || 0);
+  } = usePurchaseById(purchaseId ?? 0);
+
+  const { renderView } = useViewRenderer({
+    queryStates: [
+      {
+        isLoading: isLoadingPurchase,
+        isError: isErrorPurchase,
+        data: purchase,
+      },
+    ],
+    isValidating: isValidPurchaseId, // Pasar la validación externa
+    SkeletonComponent: PurchaseDetailSkeleton,
+    ErrorComponent: ErrorDataComponent,
+    errorMessage: "No se pudo cargar la compra.",
+    onRetry: refetchPurchase,
+  });
 
   const {
     showDeleteDialog,
@@ -40,15 +61,18 @@ const PurchaseDetailScreen = () => {
   }, [refetchPurchase]);
 
   const handleGoBack = useCallback(() => {
-    navigateWithTab('/dashboard/list-purchases');
+    navigateWithTab("/dashboard/list-purchases");
   }, [navigateWithTab]);
 
-  const handleEdit = useCallback((purchase:any) => {
-    // console.log(alert(JSON.stringify(purchase)))
-    navigateWithTab(`/dashboard/purchases/${purchase.id}/editar`,{
-      displayCode: formatColumnNumber(purchase?.nro,'-')
-    });
-  }, [navigateWithTab, purchaseId]);
+  const handleEdit = useCallback(
+    (purchase: any) => {
+      // console.log(alert(JSON.stringify(purchase)))
+      navigateWithTab(`/dashboard/purchases/${purchase.id}/editar`, {
+        displayCode: formatColumnNumber(purchase?.nro, "-"),
+      });
+    },
+    [navigateWithTab, purchaseId]
+  );
 
   // const handleDelete = useCallback(() => {
   //   initiateDeletion(Number(purchaseId));
@@ -57,96 +81,79 @@ const PurchaseDetailScreen = () => {
   const handleConfirmDelete = useCallback(async () => {
     const success = await confirmDeletion();
     if (success) {
-      navigateWithTab('/dashboard/list-purchases');
+      navigateWithTab("/dashboard/list-purchases");
     }
   }, [confirmDeletion, navigateWithTab]);
 
   // Shortcuts
-  useHotkeys('escape', handleGoBack, {
-    scopes: ['esc-key'],
+  useHotkeys("escape", handleGoBack, {
+    scopes: ["esc-key"],
     enabled: true,
   });
 
-  if (isErrorPurchase || !purchase) {
-    return (
-      <div className="h-full flex items-center justify-center p-2 lg:p-8">
-        <ErrorDataComponent
-          className="h-full w-full"
-          errorMessage="No se pudo cargar la compra."
-          showButtonIcon={false}
-          buttonText="Ir a lista de compras"
-          onRetry={() => {
-            navigateWithTab('/dashboard/list-purchases');
-          }}
-        />
-      </div>
-    )
-  }
+  const view = renderView();
+  if (view) return view;
 
   return (
     <>
-      {isLoadingPurchase ? (
-        <PurchaseDetailSkeleton />
-      ) : (
-        <main className="h-full flex flex-col items-center overflow-hidden p-2">
-          <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
-            {/* Header */}
-            <header className="bg-background border border-border rounded-lg p-3 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <TooltipButton
-                    tooltipContentProps={{
-                      align: 'start',
-                    }}
-                    onClick={handleGoBack}
-                    tooltip={
-                      <p>
-                        Presiona <Kbd>esc</Kbd> para volver a la lista de
-                        compras
-                      </p>
-                    }
-                    buttonProps={{
-                      variant: 'default',
-                    }}
-                  >
-                    <CornerUpLeft />
-                  </TooltipButton>
-                  <div>
-                    <h1 className="text-lg font-bold text-foreground leading-tight">
-                      Compra Nro. {purchase?.nro}
-                    </h1>
-                    {purchase && (
-                      <p className="text-xs text-muted-foreground">
-                        {purchase?.cantidad_detalles ?? 0}{' '}
-                        {(purchase?.cantidad_detalles ?? 0) === 1
-                          ? 'producto'
-                          : 'productos'}
-                      </p>
-                    )}
-                  </div>
+      <main className="h-full flex flex-col items-center overflow-hidden p-2">
+        <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
+          {/* Header */}
+          <header className="bg-background border border-border rounded-lg p-3 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <TooltipButton
+                  tooltipContentProps={{
+                    align: "start",
+                  }}
+                  onClick={handleGoBack}
+                  tooltip={
+                    <p>
+                      Presiona <Kbd>esc</Kbd> para volver a la lista de compras
+                    </p>
+                  }
+                  buttonProps={{
+                    variant: "default",
+                  }}
+                >
+                  <CornerUpLeft />
+                </TooltipButton>
+                <div>
+                  <h1 className="text-lg font-bold text-foreground leading-tight">
+                    Compra Nro. {purchase?.nro}
+                  </h1>
+                  {purchase && (
+                    <p className="text-xs text-muted-foreground">
+                      {purchase?.cantidad_detalles ?? 0}{" "}
+                      {(purchase?.cantidad_detalles ?? 0) === 1
+                        ? "producto"
+                        : "productos"}
+                    </p>
+                  )}
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  <ProtectedAction
-                    permission="com-edit"
-                    roles={["Super Admin", "Administrador","Vendedor"]}
-                    fallback={null}
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <ProtectedAction
+                  permission="com-edit"
+                  roles={["Super Admin", "Administrador", "Vendedor"]}
+                  fallback={null}
+                >
+                  <TooltipButton
+                    onClick={() => handleEdit(purchase)}
+                    tooltip="Editar compra"
+                    buttonProps={{
+                      variant: "outline",
+                      size: "sm",
+                    }}
                   >
-                    <TooltipButton
-                      onClick={()=>handleEdit(purchase)}
-                      tooltip="Editar compra"
-                      buttonProps={{
-                        variant: 'outline',
-                        size: 'sm',
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                      Editar
-                    </TooltipButton>
-                  </ProtectedAction>
+                    <Edit className="h-4 w-4" />
+                    Editar
+                  </TooltipButton>
+                </ProtectedAction>
 
-                  {/* <TooltipButton
+                {/* <TooltipButton
                     onClick={handleDelete}
                     tooltip="Eliminar compra"
                     buttonProps={{
@@ -157,35 +164,34 @@ const PurchaseDetailScreen = () => {
                     <Trash2 className="h-4 w-4" />
                     Eliminar
                   </TooltipButton> */}
-                </div>
               </div>
-            </header>
+            </div>
+          </header>
 
-            {isErrorPurchase ? (
-              <ErrorDataComponent
-                errorMessage="No se pudo cargar la compra. Por favor, inténtalo de nuevo más tarde."
-                onRetry={handleRetry}
+          {isErrorPurchase ? (
+            <ErrorDataComponent
+              errorMessage="No se pudo cargar la compra. Por favor, inténtalo de nuevo más tarde."
+              onRetry={handleRetry}
+            />
+          ) : (
+            <>
+              {/* Overview */}
+              <PurchaseOverview
+                purchase={purchase}
+                isLoading={isLoadingPurchase}
+                isError={isErrorPurchase}
               />
-            ) : (
-              <>
-                {/* Overview */}
-                <PurchaseOverview
-                  purchase={purchase}
-                  isLoading={isLoadingPurchase}
-                  isError={isErrorPurchase}
-                />
 
-                {/* Products */}
-                <PurchaseProducts
-                  purchase={purchase}
-                  isLoading={isLoadingPurchase}
-                  isError={isErrorPurchase}
-                />
-              </>
-            )}
-          </div>
-        </main>
-      )}
+              {/* Products */}
+              <PurchaseProducts
+                purchase={purchase}
+                isLoading={isLoadingPurchase}
+                isError={isErrorPurchase}
+              />
+            </>
+          )}
+        </div>
+      </main>
 
       {/* Delete Confirmation Dialog */}
       <DeletePurchaseDialog

@@ -21,6 +21,7 @@ import { useBranchStore } from "@/states/branchStore";
 import { formatCell } from "@/utils/formatCell";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
+  Clock,
   Edit,
   Eye,
   // FileText,
@@ -49,6 +50,8 @@ import { useCommands } from "@/keybindings";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 import { formatColumnNumber } from "@/utils/formaters";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const PurchaseListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
@@ -320,11 +323,35 @@ const PurchaseListScreen = () => {
         header: "Fecha",
         size: 70,
         minSize: 30,
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <div className="font-medium">{formatDate(getValue<string>())}</div>
-          </div>
-        ),
+        cell: ({ getValue }) => {
+          const dateString = getValue<string>();
+
+          try {
+            const date = new Date(dateString);
+            const isToday =
+              format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+            return (
+              <div className="text-center text-xs">
+                <div
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
+                >
+                  {format(date, "dd/MM/yyyy", { locale: es })}
+                </div>
+                <div className="text-muted-foreground flex items-center justify-center gap-1">
+                  <Clock className="size-3" />
+                  {format(date, "HH:mm", { locale: es })}
+                </div>
+              </div>
+            );
+          } catch {
+            return (
+              <span className="text-xs text-muted-foreground">
+                {dateString}
+              </span>
+            );
+          }
+        },
       },
       {
         accessorKey: "proveedor",

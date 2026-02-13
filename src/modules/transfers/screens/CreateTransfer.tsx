@@ -348,7 +348,7 @@ const CreateTransfer = () => {
             className="h-full flex flex-col gap-2 p-2"
           >
             {/* Header */}
-            <header className="border-border border bg-card rounded-lg p-2 sm:px-3 flex-shrink-0">
+            <header className="border-border border bg-background rounded-lg p-2 sm:px-3 flex-shrink-0">
               <div className="flex flex-wrap gap-2 items-center justify-between">
                 <div className="flex items-center gap-2">
                   <TooltipButton

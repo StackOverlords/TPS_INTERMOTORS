@@ -16,7 +16,7 @@ const ErrorDataComponent: React.FC<ErrorDataProps> = ({
   isRetrying = false,
   buttonText = "Intentar nuevamente",
   showButtonIcon = true,
-  className = "",
+  className = "w-full h-full",
 }) => {
   return (
     <div
@@ -26,10 +26,10 @@ const ErrorDataComponent: React.FC<ErrorDataProps> = ({
       )}
     >
       <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/50">
-        <AlertTriangle className="h-8 w-8 text-destructive" />
+        <AlertTriangle className="h-8 w-8 text-destructive dark:text-red-100" />
       </div>
       <div className="space-y-3 text-center">
-        <h3 className="text-lg font-semibold text-destructive">
+        <h3 className="text-lg font-semibold text-destructive dark:text-red-200">
           ¡Ups! Algo salió mal
         </h3>
         <p className="text-sm text-red-400 leading-relaxed">

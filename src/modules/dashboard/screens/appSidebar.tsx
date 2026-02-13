@@ -17,7 +17,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useTabStore } from "@/states/tabStore";
 import { useThemeStore } from "@/stores/themeStore";
 import { filterRoutesByRole } from "@/utils/permissions";
-import { LogOut, Settings, SquarePlus, SquareMinus, CopyMinus } from "lucide-react";
+import { LogOut, Settings, SquarePlus, CopyMinus } from "lucide-react";
 import { useMemo, useState } from "react";
 import ButtonItem from "../components/ButtonItem";
 import HeaderTagRoute from "../components/HeaderTagRoute";
@@ -71,7 +71,10 @@ const AppSidebar = () => {
     } else {
       // Si no hay headers expandidos, expandir todo
       const allHeaders = filteredRoutes
-        .filter((route) => route.isHeader && route.subRoutes && route.subRoutes.length > 0)
+        .filter(
+          (route) =>
+            route.isHeader && route.subRoutes && route.subRoutes.length > 0
+        )
         .map((route) => route.name);
       setExpandedHeaders(allHeaders);
     }
@@ -105,7 +108,9 @@ const AppSidebar = () => {
               size="icon"
               className="h-6 w-6 hover:bg-accent"
               onClick={toggleExpandCollapse}
-              title={expandedHeaders.length > 0 ? "Colapsar todo" : "Expandir todo"}
+              title={
+                expandedHeaders.length > 0 ? "Colapsar todo" : "Expandir todo"
+              }
             >
               {expandedHeaders.length > 0 ? (
                 <CopyMinus className="h-3.5 w-3.5 transform scale-x-[-1]" />

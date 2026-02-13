@@ -1,25 +1,25 @@
-import { Badge } from '@/components/atoms/badge';
-import { Button } from '@/components/atoms/button';
-import { Checkbox } from '@/components/atoms/checkbox';
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
+import { Checkbox } from "@/components/atoms/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/atoms/dropdown-menu';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import { Switch } from '@/components/atoms/switch';
-import CustomizableTable from '@/components/common/CustomizableTable';
-import Pagination from '@/components/common/pagination';
-import RowsPerPageSelect from '@/components/common/RowsPerPageSelect';
-import TooltipButton from '@/components/common/TooltipButton';
-import { useViewConfig } from '@/hooks/useViewConfig'; // ← CAMBIO PRINCIPAL
-import authSDK from '@/services/sdk-simple-auth';
-import { formatCell } from '@/utils/formatCell';
-import { type ColumnDef } from '@tanstack/react-table';
-import { ProtectedAction } from '@/components/common/ProtectedAction';
-import { useProtectedAction } from '@/hooks/useProtectedAction';
+} from "@/components/atoms/dropdown-menu";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import { Switch } from "@/components/atoms/switch";
+import CustomizableTable from "@/components/common/CustomizableTable";
+import Pagination from "@/components/common/pagination";
+import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
+import TooltipButton from "@/components/common/TooltipButton";
+import { useViewConfig } from "@/hooks/useViewConfig"; // ← CAMBIO PRINCIPAL
+import authSDK from "@/services/sdk-simple-auth";
+import { formatCell } from "@/utils/formatCell";
+import { type ColumnDef } from "@tanstack/react-table";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { useProtectedAction } from "@/hooks/useProtectedAction";
 import {
   CheckCircle,
   Eye,
@@ -32,19 +32,19 @@ import {
   UserCog,
   UserPlus,
   Users,
-  XCircle
-} from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import { useNavigate } from 'react-router';
-import DeleteUserDialog from '../components/DeleteUserDialog';
-import { useUserFilters } from '../hooks/useUserFilters';
-import { useUsersPaginated } from '../hooks/useUsersPaginated';
-import { useDeleteUser } from '../hooks/mutations/useDeleteUser';
-import type { User } from '../types/User';
-import { useCustomTable } from '@/hooks/useCustomTable';
-import { showSuccessToast } from '@/hooks/use-toast-enhanced';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
+  XCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { useNavigate } from "react-router";
+import DeleteUserDialog from "../components/DeleteUserDialog";
+import { useUserFilters } from "../hooks/useUserFilters";
+import { useUsersPaginated } from "../hooks/useUsersPaginated";
+import { useDeleteUser } from "../hooks/mutations/useDeleteUser";
+import type { User } from "../types/User";
+import { useCustomTable } from "@/hooks/useCustomTable";
+import { showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 const UserListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
@@ -55,7 +55,7 @@ const UserListScreen = () => {
   const {
     config: viewConfig,
     //  isLoading: isLoadingConfig
-  } = useViewConfig('users-list');
+  } = useViewConfig("users-list");
 
   const {
     data: userData,
@@ -67,11 +67,12 @@ const UserListScreen = () => {
     isRefetching: isRefetchingUsers,
   } = useUsersPaginated(filters);
 
-  const { mutate: deleteUserMutation, isPending: isDeletingUser } = useDeleteUser();
+  const { mutate: deleteUserMutation, isPending: isDeletingUser } =
+    useDeleteUser();
 
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
-  const [searchKeywords, setSearchKeywords] = useState('');
+  const [searchKeywords, setSearchKeywords] = useState("");
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -81,9 +82,10 @@ const UserListScreen = () => {
     if (!userData?.data || error) return;
 
     if (isInfiniteScroll && filters.pagina && filters.pagina > 1) {
-      setUsers(prev => {
+      setUsers((prev) => {
         const newUsers = userData.data.filter(
-          newUser => !prev.some(existingUser => existingUser.id === newUser.id)
+          (newUser) =>
+            !prev.some((existingUser) => existingUser.id === newUser.id)
         );
         return [...prev, ...newUsers];
       });
@@ -92,9 +94,12 @@ const UserListScreen = () => {
     }
   }, [userData?.data, isInfiniteScroll, filters.pagina, error]);
 
-  const handleUserDetail = useCallback((user: User) => {
-    navigate(`/dashboard/user/${user.nickname}`);
-  }, [navigate]);
+  const handleUserDetail = useCallback(
+    (user: User) => {
+      navigate(`/dashboard/user/${user.nickname}`);
+    },
+    [navigate]
+  );
 
   const handleDeleteUser = useCallback((user: User) => {
     setSelectedUser(user);
@@ -109,7 +114,7 @@ const UserListScreen = () => {
     deleteUserMutation(selectedUser.id, {
       onSuccess: () => {
         showSuccessToast({
-          title: 'Usuario eliminado',
+          title: "Usuario eliminado",
           description: `El usuario ${selectedUser.nickname} ha sido eliminado exitosamente.`,
           duration: 5000,
         });
@@ -121,8 +126,8 @@ const UserListScreen = () => {
       onError: (error: unknown) => {
         handleError({
           error,
-          customTitle: 'No se pudo eliminar el usuario',
-          customDescription: 'Ocurrió un error al intentar eliminar el usuario'
+          customTitle: "No se pudo eliminar el usuario",
+          customDescription: "Ocurrió un error al intentar eliminar el usuario",
         });
         setIsDeleting(false);
       },
@@ -133,23 +138,26 @@ const UserListScreen = () => {
   const handleConfirmDelete = useProtectedAction(
     handleConfirmDeleteUnprotected,
     {
-      permission: 'usu-set_estado',
-      roles: ['Super Admin'],
+      permission: "usu-set_estado",
+      roles: ["Super Admin"],
     }
   );
 
-  const handleManagePermissions = useCallback((user: User) => {
-    navigate(`/dashboard/user/${user.nickname}#permisos`);
-  }, [navigate]);
+  const handleManagePermissions = useCallback(
+    (user: User) => {
+      navigate(`/dashboard/user/${user.nickname}#permisos`);
+    },
+    [navigate]
+  );
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No registrada';
+    if (!dateString) return "No registrada";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+      return date.toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
       });
     } catch {
       return formatCell(dateString);
@@ -159,15 +167,17 @@ const UserListScreen = () => {
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
       {
-        id: 'Select',
+        id: "Select",
         header: ({ table }) => (
           <Checkbox
             className="border border-border"
             checked={
               table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
+              (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
             aria-label="Seleccionar todo"
           />
         ),
@@ -176,7 +186,7 @@ const UserListScreen = () => {
             <Checkbox
               className="border border-border"
               checked={row.getIsSelected()}
-              onCheckedChange={value => row.toggleSelected(!!value)}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
               aria-label="Seleccionar fila"
             />
           </div>
@@ -187,8 +197,8 @@ const UserListScreen = () => {
         minSize: 40,
       },
       {
-        accessorKey: 'nickname',
-        header: 'Usuario',
+        accessorKey: "nickname",
+        header: "Usuario",
         size: 200,
         minSize: 150,
         enableHiding: false,
@@ -201,13 +211,15 @@ const UserListScreen = () => {
                   <Button
                     variant="outline"
                     className="size-6 px-0"
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <MoreVertical className="size-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => handleUserDetail(row.original)}>
+                  <DropdownMenuItem
+                    onClick={() => handleUserDetail(row.original)}
+                  >
                     <Eye className="mr-2 h-4 w-4" />
                     Ver detalles
                   </DropdownMenuItem>
@@ -216,9 +228,11 @@ const UserListScreen = () => {
                     permission="usu-editar"
                     roles={["Super Admin"]}
                     fallback={null}
-                  // bypassForSuperAdmin={true}
+                    // bypassForSuperAdmin={true}
                   >
-                    <DropdownMenuItem onClick={() => handleManagePermissions(row.original)}>
+                    <DropdownMenuItem
+                      onClick={() => handleManagePermissions(row.original)}
+                    >
                       <UserCog className="mr-2 h-4 w-4" />
                       Gestionar permisos
                     </DropdownMenuItem>
@@ -249,8 +263,8 @@ const UserListScreen = () => {
         ),
       },
       {
-        accessorKey: 'empleado.nombre',
-        header: 'Empleado',
+        accessorKey: "empleado.nombre",
+        header: "Empleado",
         size: 200,
         minSize: 180,
         enableSorting: true,
@@ -258,29 +272,31 @@ const UserListScreen = () => {
           const empleado = row.original.empleado;
           return (
             <div className="space-y-1">
-              <div className="font-medium text-foreground">{empleado.nombre}</div>
+              <div className="font-medium text-foreground">
+                {empleado.nombre}
+              </div>
             </div>
           );
         },
       },
       {
-        accessorKey: 'email',
-        header: 'Email',
+        accessorKey: "email",
+        header: "Email",
         size: 200,
         minSize: 150,
         enableSorting: true,
         cell: ({ getValue }) => {
           const email = getValue<string | null>();
           return (
-            <div className={`${!email ? 'italic text-muted-foreground' : ''}`}>
-              {formatCell(email, 'No registrado')}
+            <div className={`${!email ? "italic text-muted-foreground" : ""}`}>
+              {formatCell(email, "No registrado")}
             </div>
           );
         },
       },
       {
-        accessorKey: 'activo',
-        header: 'Estado',
+        accessorKey: "activo",
+        header: "Estado",
         size: 100,
         minSize: 80,
         enableSorting: true,
@@ -288,7 +304,7 @@ const UserListScreen = () => {
           const activo = getValue<boolean>();
           return (
             <Badge
-              variant={activo ? 'success' : 'destructive'}
+              variant={activo ? "success" : "destructive"}
               className="flex items-center gap-1 w-fit rounded-sm"
             >
               {activo ? (
@@ -296,14 +312,14 @@ const UserListScreen = () => {
               ) : (
                 <XCircle className="h-3 w-3" />
               )}
-              {activo ? 'Activo' : 'Inactivo'}
+              {activo ? "Activo" : "Inactivo"}
             </Badge>
           );
         },
       },
       {
-        accessorKey: 'fecha_creacion',
-        header: 'Fecha de Creación',
+        accessorKey: "fecha_creacion",
+        header: "Fecha de Creación",
         size: 150,
         minSize: 120,
         enableSorting: true,
@@ -319,11 +335,7 @@ const UserListScreen = () => {
     [handleUserDetail, handleManagePermissions, handleDeleteUser]
   );
 
-  const {
-    table,
-    rowSelection,
-    resetAll,
-  } = useCustomTable({
+  const { table, rowSelection, resetAll } = useCustomTable({
     data: users,
     columns,
 
@@ -336,7 +348,7 @@ const UserListScreen = () => {
     enablePagination: false,
 
     // Columnas ocultas por defecto
-    hiddenColumns: ['Select'],
+    hiddenColumns: ["Select"],
 
     // Configuración de resize
     columnResizeMode: "onChange",
@@ -351,10 +363,13 @@ const UserListScreen = () => {
   const [isFocused, setIsFocused] = useState(false);
   const tableRef = useRef<HTMLTableElement | null>(null);
 
-  const handleInfiniteScrollChange = useCallback((checked: boolean) => {
-    setIsInfiniteScroll(checked);
-    setPage(1);
-  }, [setPage]);
+  const handleInfiniteScrollChange = useCallback(
+    (checked: boolean) => {
+      setIsInfiniteScroll(checked);
+      setPage(1);
+    },
+    [setPage]
+  );
 
   const handleTableClick = () => {
     setIsFocused(true);
@@ -375,8 +390,8 @@ const UserListScreen = () => {
   };
 
   const onShowRowsChange = (rows: number) => {
-    updateFilter('pagina_registros', rows);
-    updateFilter('pagina', 1);
+    updateFilter("pagina_registros", rows);
+    updateFilter("pagina", 1);
   };
 
   const handleRefetchUsers = () => {
@@ -403,7 +418,7 @@ const UserListScreen = () => {
         roles={["Super Admin"]}
         showUnauthorizedMessage={true}
       >
-        <div className="bg-card rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
+        <div className="bg-background rounded-lg shadow-sm h-full flex flex-col overflow-hidden">
           {/* Header */}
           <header className="p-2 border-b border-border bg-background">
             <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
@@ -423,7 +438,7 @@ const UserListScreen = () => {
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => navigate('/dashboard/user/create')}
+                    onClick={() => navigate("/dashboard/user/create")}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Nuevo Usuario
@@ -438,7 +453,8 @@ const UserListScreen = () => {
                       onCheckedChange={handleInfiniteScrollChange}
                     />
                     <Label htmlFor="infinite-scroll">
-                      {viewConfig?.features?.infiniteScroll?.label || 'Scroll Infinito'}
+                      {viewConfig?.features?.infiniteScroll?.label ||
+                        "Scroll Infinito"}
                     </Label>
                   </div>
                 )}
@@ -447,13 +463,16 @@ const UserListScreen = () => {
                   <TooltipButton
                     onClick={handleRefetchUsers}
                     buttonProps={{
-                      className: 'w-8',
+                      className: "w-8",
                       disabled: isRefetchingUsers || isFetching,
                     }}
-                    tooltip={viewConfig?.features?.refreshButton?.description || "Recargar usuarios"}
+                    tooltip={
+                      viewConfig?.features?.refreshButton?.description ||
+                      "Recargar usuarios"
+                    }
                   >
                     <RefreshCcw
-                      className={`size-4 ${isRefetchingUsers || isFetching ? 'animate-spin' : ''}`}
+                      className={`size-4 ${isRefetchingUsers || isFetching ? "animate-spin" : ""}`}
                     />
                   </TooltipButton>
                 )}
@@ -462,13 +481,17 @@ const UserListScreen = () => {
                   <TooltipButton
                     onClick={handleResetTableConfig}
                     buttonProps={{
-                      variant: 'outline',
-                      size: 'sm',
+                      variant: "outline",
+                      size: "sm",
                     }}
-                    tooltip={viewConfig?.features?.resetTableButton?.description || "Resetear tabla"}
+                    tooltip={
+                      viewConfig?.features?.resetTableButton?.description ||
+                      "Resetear tabla"
+                    }
                   >
                     <Settings className="h-4 w-4" />
-                    {viewConfig?.features?.resetTableButton?.label || 'Resetear Tabla'}
+                    {viewConfig?.features?.resetTableButton?.label ||
+                      "Resetear Tabla"}
                   </TooltipButton>
                 )}
 
@@ -488,7 +511,7 @@ const UserListScreen = () => {
                   <Input
                     placeholder="Buscar usuarios por nickname o nombre..."
                     value={searchKeywords}
-                    onChange={e => setSearchKeywords(e.target.value)}
+                    onChange={(e) => setSearchKeywords(e.target.value)}
                     className="pl-10 w-full"
                   />
                 </div>
@@ -518,7 +541,11 @@ const UserListScreen = () => {
               {viewConfig?.features?.pagination?.enabled && (
                 <div className="flex items-center">
                   <RowsPerPageSelect
-                    value={filters.pagina_registros ?? viewConfig?.behaviors?.defaultRowsPerPage ?? 10}
+                    value={
+                      filters.pagina_registros ??
+                      viewConfig?.behaviors?.defaultRowsPerPage ??
+                      10
+                    }
                     onChange={onShowRowsChange}
                   />
                 </div>
@@ -528,7 +555,8 @@ const UserListScreen = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Settings className="w-4 h-4" />
-                      {viewConfig?.features?.columnSelector?.label || 'Columnas'}
+                      {viewConfig?.features?.columnSelector?.label ||
+                        "Columnas"}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -537,12 +565,12 @@ const UserListScreen = () => {
                   >
                     {table
                       .getAllColumns()
-                      .filter(column => column.getCanHide())
-                      .map(column => (
+                      .filter((column) => column.getCanHide())
+                      .map((column) => (
                         <DropdownMenuItem
                           key={column.id}
                           className="flex items-center space-x-2 cursor-pointer"
-                          onSelect={e => e.preventDefault()}
+                          onSelect={(e) => e.preventDefault()}
                           onClick={() =>
                             column.toggleVisibility(!column.getIsVisible())
                           }
@@ -550,12 +578,12 @@ const UserListScreen = () => {
                           <Checkbox
                             className="border border-border"
                             checked={column.getIsVisible()}
-                            onCheckedChange={value =>
+                            onCheckedChange={(value) =>
                               column.toggleVisibility(!!value)
                             }
                           />
                           <span className="flex-1">
-                            {typeof column.columnDef.header === 'string'
+                            {typeof column.columnDef.header === "string"
                               ? column.columnDef.header
                               : column.id}
                           </span>
@@ -564,17 +592,19 @@ const UserListScreen = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              {viewConfig?.features?.multiSelect?.enabled && table && hasSelectedUsers > 0 && (
-                <Button size={'sm'} className="relative">
-                  Acciones
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-                  >
-                    {hasSelectedUsers}
-                  </Badge>
-                </Button>
-              )}
+              {viewConfig?.features?.multiSelect?.enabled &&
+                table &&
+                hasSelectedUsers > 0 && (
+                  <Button size={"sm"} className="relative">
+                    Acciones
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+                    >
+                      {hasSelectedUsers}
+                    </Badge>
+                  </Button>
+                )}
             </div>
           </div>
 
@@ -627,24 +657,26 @@ const UserListScreen = () => {
                     onRowDoubleClick={handleRowDoubleClick}
                     tableRef={tableRef}
                     focused={isFocused}
-                    keyboardNavigationEnabled={viewConfig?.features?.keyboardNavigation?.enabled ?? true}
+                    keyboardNavigationEnabled={
+                      viewConfig?.features?.keyboardNavigation?.enabled ?? true
+                    }
                     enableColumnReordering={true}
                     enableSorting={true}
                   />
                 </div>
-
-                {viewConfig?.features?.pagination?.enabled && (userData?.data?.length ?? 0) > 0 && (
-                  <Pagination
-                    currentPage={filters.pagina || 1}
-                    onPageChange={onPageChange}
-                    totalData={userData?.meta.total || 1}
-                    onShowRowsChange={onShowRowsChange}
-                    showRows={filters.pagina_registros}
-                  />
-                )}
               </div>
             )}
           </div>
+          {viewConfig?.features?.pagination?.enabled &&
+            (userData?.data?.length ?? 0) > 0 && (
+              <Pagination
+                currentPage={filters.pagina || 1}
+                onPageChange={onPageChange}
+                totalData={userData?.meta.total || 1}
+                onShowRowsChange={onShowRowsChange}
+                showRows={filters.pagina_registros}
+              />
+            )}
         </div>
 
         <DeleteUserDialog

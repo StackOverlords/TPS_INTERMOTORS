@@ -8,7 +8,7 @@ import {
   // Imports comentados - para funcionalidades futuras
   // Palette,
   // Paintbrush,
-  Table,
+  // Table,
   // Zap,
   // Plus,
   // Package,
@@ -53,10 +53,10 @@ const AppearanceSettings = () => {
     setElementSpacing,
     setBorderRadius,
     tableColors,
-    setTableColor
+    setTableColor,
   } = useAppearance();
 
-/* 
+  /* 
  (Para funcionalidades futuras)
 */
 
@@ -118,7 +118,7 @@ const AppearanceSettings = () => {
      ============================================ */
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* 
           SECCIONES COMENTADAS - IMPLEMENTACIÓN FUTURA
           */}
@@ -127,7 +127,7 @@ const AppearanceSettings = () => {
       {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+            <Building2 className="size-4" />
             Logo de la Empresa
           </CardTitle>
           <CardDescription>Actualiza el logo de tu empresa</CardDescription>
@@ -161,7 +161,7 @@ const AppearanceSettings = () => {
       {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
+            <Palette className="size-4" />
             Color de Marca
           </CardTitle>
           <CardDescription>
@@ -191,7 +191,7 @@ const AppearanceSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sun className="h-5 w-5" />
+            <Sun className="size-4" />
             Tema
           </CardTitle>
           <CardDescription>Selecciona el tema de la interfaz</CardDescription>
@@ -204,9 +204,9 @@ const AppearanceSettings = () => {
                 onClick={() => setTheme("light")}
               >
                 <div
-                  className={`w-full h-20 sm:hidden rounded-lg border-2 ${theme === "light" ? "border-primary" : "border-border"} bg-background flex items-center justify-center`}
+                  className={`w-full h-20 sm:hidden rounded-lg border-2 ${theme === "light" ? "border-primary" : "border-border"} bg-gray-50 flex items-center justify-center`}
                 >
-                  <Sun className="h-6 w-6 text-foreground" />
+                  <Sun className="h-6 w-6 text-gray-900" />
                 </div>
                 <div
                   className={`w-full h-50 hidden sm:flex rounded-lg border-2 ${theme === "light" ? "border-primary" : "border-border"} bg-gray-50 justify-center items-end overflow-hidden`}
@@ -259,7 +259,7 @@ const AppearanceSettings = () => {
                 <div
                   className={`w-full sm:hidden h-20 rounded-lg border-2 ${theme === "system" ? "border-primary" : "border-border"} bg-gradient-to-b from-gray-200 to-gray-50 flex items-center justify-center hover:border-primary transition-colors`}
                 >
-                  <Monitor className="h-6 w-6 text-foreground" />
+                  <Monitor className="h-6 w-6 text-gray-900" />
                 </div>
                 <div
                   className={`w-full h-50 hidden sm:flex rounded-lg border-2 ${theme === "system" ? "border-primary" : "border-border"} bg-gradient-to-r from-gray-50 from-50% to-gray-900 to-50% justify-center items-end overflow-hidden`}
@@ -285,7 +285,7 @@ const AppearanceSettings = () => {
       {/* <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Palette className="h-5 w-5" />
+                        <Palette className="size-4" />
                         Esquema de Colores
                     </CardTitle>
                     <CardDescription>
@@ -319,38 +319,44 @@ const AppearanceSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Type className="h-5 w-5" />
+            <Type className="size-4" />
             Tipografía
           </CardTitle>
-          <CardDescription>Ajusta el tamaño y tipo de fuente (usa fuentes del sistema)</CardDescription>
+          <CardDescription>
+            Ajusta el tamaño y tipo de fuente (usa fuentes del sistema)
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm">Tamaño de fuente</span>
               <Badge variant="outline">
-                {fontSize === 'small' ? 'Pequeño' : fontSize === 'medium' ? 'Mediano' : 'Grande'}
+                {fontSize === "small"
+                  ? "Pequeño"
+                  : fontSize === "medium"
+                    ? "Mediano"
+                    : "Grande"}
               </Badge>
             </div>
             <div className="flex gap-2">
               <Button
-                variant={fontSize === 'small' ? 'default' : 'outline'}
+                variant={fontSize === "small" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFontSize('small')}
+                onClick={() => setFontSize("small")}
               >
                 Pequeño
               </Button>
               <Button
-                variant={fontSize === 'medium' ? 'default' : 'outline'}
+                variant={fontSize === "medium" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFontSize('medium')}
+                onClick={() => setFontSize("medium")}
               >
                 Mediano
               </Button>
               <Button
-                variant={fontSize === 'large' ? 'default' : 'outline'}
+                variant={fontSize === "large" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFontSize('large')}
+                onClick={() => setFontSize("large")}
               >
                 Grande
               </Button>
@@ -361,28 +367,32 @@ const AppearanceSettings = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm">Tipo de fuente</span>
               <Badge variant="outline">
-                {fontFamily === 'sans' ? 'Sistema (Default)' : fontFamily === 'mono' ? 'Monospace' : 'Serif'}
+                {fontFamily === "sans"
+                  ? "Sistema (Default)"
+                  : fontFamily === "mono"
+                    ? "Monospace"
+                    : "Serif"}
               </Badge>
             </div>
             <div className="flex gap-2">
               <Button
-                variant={fontFamily === 'sans' ? 'default' : 'outline'}
+                variant={fontFamily === "sans" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFontFamily('sans')}
+                onClick={() => setFontFamily("sans")}
               >
                 Sistema (Default)
               </Button>
               <Button
-                variant={fontFamily === 'mono' ? 'default' : 'outline'}
+                variant={fontFamily === "mono" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFontFamily('mono')}
+                onClick={() => setFontFamily("mono")}
               >
                 Monospace
               </Button>
               <Button
-                variant={fontFamily === 'serif' ? 'default' : 'outline'}
+                variant={fontFamily === "serif" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFontFamily('serif')}
+                onClick={() => setFontFamily("serif")}
               >
                 Serif
               </Button>
@@ -393,54 +403,55 @@ const AppearanceSettings = () => {
 
       {/* Table Colors - PENDIENTE DE IMPLEMENTACIÓN */}
       <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Layout className="h-5 w-5" />
-              Colores de Tablas
-            </CardTitle>
-            <CardDescription>
-              Personaliza los colores de filas, encabezados y estados de las tablas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <ColorPicker
-              label="Fila seleccionada"
-              description="Color cuando una fila está seleccionada"
-              value={tableColors.selectedRow}
-              onChange={(color) => setTableColor('selectedRow', color)}
-            />
-            <Separator />
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layout className="size-4" />
+            Colores de Tablas
+          </CardTitle>
+          <CardDescription>
+            Personaliza los colores de filas, encabezados y estados de las
+            tablas
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <ColorPicker
+            label="Fila seleccionada"
+            description="Color cuando una fila está seleccionada"
+            value={tableColors.selectedRow}
+            onChange={(color) => setTableColor("selectedRow", color)}
+          />
+          <Separator />
 
-            <ColorPicker
-              label="Fila hover"
-              description="Color al pasar el mouse sobre una fila"
-              value={tableColors.hoverRow}
-              onChange={(color) => setTableColor('hoverRow', color)}
-            />
-            <Separator />
+          <ColorPicker
+            label="Fila hover"
+            description="Color al pasar el mouse sobre una fila"
+            value={tableColors.hoverRow}
+            onChange={(color) => setTableColor("hoverRow", color)}
+          />
+          <Separator />
 
-            <ColorPicker
-              label="Encabezado"
-              description="Color de fondo del encabezado de tabla"
-              value={tableColors.header}
-              onChange={(color) => setTableColor('header', color)}
-            />
-            <Separator />
+          <ColorPicker
+            label="Encabezado"
+            description="Color de fondo del encabezado de tabla"
+            value={tableColors.header}
+            onChange={(color) => setTableColor("header", color)}
+          />
+          <Separator />
 
-            <ColorPicker
-              label="Filas alternas"
-              description="Color para filas intercaladas (zebra)"
-              value={tableColors.alternateRows}
-              onChange={(color) => setTableColor('alternateRows', color)}
-            />
-          </CardContent>
-        </Card>
+          <ColorPicker
+            label="Filas alternas"
+            description="Color para filas intercaladas (zebra)"
+            value={tableColors.alternateRows}
+            onChange={(color) => setTableColor("alternateRows", color)}
+          />
+        </CardContent>
+      </Card>
 
       {/* Interactive Elements - PENDIENTE DE IMPLEMENTACIÓN */}
       {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
+            <Zap className="size-4" />
             Elementos Interactivos
           </CardTitle>
           <CardDescription>
@@ -524,7 +535,7 @@ const AppearanceSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
+            <Eye className="size-4" />
             Accesibilidad
           </CardTitle>
           <CardDescription>
@@ -546,7 +557,7 @@ const AppearanceSettings = () => {
                   size="sm"
                   onClick={() => setHighContrast(!highContrast)}
                 >
-                  {highContrast ? 'Activado' : 'Desactivado'}
+                  {highContrast ? "Activado" : "Desactivado"}
                 </Button>
               </div>
               <div className="flex items-center justify-between">
@@ -580,7 +591,7 @@ const AppearanceSettings = () => {
                   size="sm"
                   onClick={() => setReduceAnimations(!reduceAnimations)}
                 >
-                  {reduceAnimations ? 'Activado' : 'Desactivado'}
+                  {reduceAnimations ? "Activado" : "Desactivado"}
                 </Button>
               </div>
             </div>
@@ -593,7 +604,7 @@ const AppearanceSettings = () => {
       {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Paintbrush className="h-5 w-5" />
+            <Paintbrush className="size-4" />
             Colores Personalizados
           </CardTitle>
           <CardDescription>
@@ -644,7 +655,7 @@ const AppearanceSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Layout className="h-5 w-5" />
+            <Layout className="size-4" />
             Diseño y Espaciado
           </CardTitle>
           <CardDescription>
@@ -712,35 +723,41 @@ const AppearanceSettings = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Radio de bordes</span>
                 <Badge variant="outline">
-                  {borderRadius === 'none' ? 'Sin radio' : borderRadius === 'sm' ? 'Pequeño' : borderRadius === 'md' ? 'Mediano' : 'Grande'}
+                  {borderRadius === "none"
+                    ? "Sin radio"
+                    : borderRadius === "sm"
+                      ? "Pequeño"
+                      : borderRadius === "md"
+                        ? "Mediano"
+                        : "Grande"}
                 </Badge>
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant={borderRadius === 'none' ? 'default' : 'outline'}
+                  variant={borderRadius === "none" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setBorderRadius('none')}
+                  onClick={() => setBorderRadius("none")}
                 >
                   Sin radio
                 </Button>
                 <Button
-                  variant={borderRadius === 'sm' ? 'default' : 'outline'}
+                  variant={borderRadius === "sm" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setBorderRadius('sm')}
+                  onClick={() => setBorderRadius("sm")}
                 >
                   Pequeño
                 </Button>
                 <Button
-                  variant={borderRadius === 'md' ? 'default' : 'outline'}
+                  variant={borderRadius === "md" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setBorderRadius('md')}
+                  onClick={() => setBorderRadius("md")}
                 >
                   Mediano
                 </Button>
                 <Button
-                  variant={borderRadius === 'lg' ? 'default' : 'outline'}
+                  variant={borderRadius === "lg" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setBorderRadius('lg')}
+                  onClick={() => setBorderRadius("lg")}
                 >
                   Grande
                 </Button>

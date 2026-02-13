@@ -336,7 +336,7 @@ const TransferListScreen = () => {
           )}
         </header>
 
-        <div className="bg-card rounded-lg border border-border flex-1 overflow-auto">
+        <div className="bg-background rounded-lg border border-border flex-1 overflow-auto">
           <TransferListTable
             data={transfersData || { data: [], meta: null, links: null }}
             filters={filters}

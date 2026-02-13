@@ -127,7 +127,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
             <div className="space-y-0.5">
               <h3
                 title="Descripción"
-                className="text-xs font-medium text-primary leading-tight truncate"
+                className="text-xs font-medium text-foreground leading-tight truncate"
               >
                 {descripcion}
               </h3>
@@ -279,7 +279,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
           const total = subtotal * descuento;
 
           return (
-            <div className="text-right font-bold text-emerald-600">
+            <div className="text-right font-bold text-emerald-600 dark:text-emerald-400">
               {formatCurrency(total, { currency: product.monenda })}
             </div>
           );
@@ -383,7 +383,7 @@ const SaleProductsSection: React.FC<SaleProductsSectionProps> = ({
                       <div className="text-xs text-muted-foreground mb-0.5">
                         Total
                       </div>
-                      <div className="text-sm font-bold text-emerald-600">
+                      <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(finalTotal)}
                       </div>
                     </TableCell>

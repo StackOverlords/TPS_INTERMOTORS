@@ -1,14 +1,14 @@
-import { Badge } from '@/components/atoms/badge';
-import { cn } from '@/lib/utils';
-import React from 'react';
-import { Link, matchPath, useLocation } from 'react-router';
+import { Badge } from "@/components/atoms/badge";
+import { cn } from "@/lib/utils";
+import React from "react";
+import { Link, matchPath, useLocation } from "react-router";
 
 const NavItem = ({
   href,
   icon: Icon,
   children,
   handleNavigation,
-  badge
+  badge,
 }: {
   href: string;
   icon: any;
@@ -17,7 +17,10 @@ const NavItem = ({
   badge?: number | null;
 }) => {
   const { pathname } = useLocation();
-  const match = matchPath({ path: href, end: href === "/dashboard" }, pathname);
+
+  // Para /dashboard usamos coincidencia exacta
+  // Para otras rutas también usamos exacta para evitar conflictos
+  const match = matchPath({ path: href, end: true }, pathname);
   const isActive = Boolean(match);
 
   return (
@@ -31,9 +34,7 @@ const NavItem = ({
           : "text-foreground hover:bg-secondary hover:text-secondary-foreground"
       )}
     >
-      {
-        Icon && <Icon className="size-4 flex-shrink-0" />
-      }
+      {Icon && <Icon className="size-4 flex-shrink-0" />}
       <span className="flex-1">{children}</span>
       {badge !== null && badge !== undefined && badge > 0 && (
         <Badge
@@ -45,6 +46,6 @@ const NavItem = ({
       )}
     </Link>
   );
-}
+};
 
-export default NavItem
+export default NavItem;

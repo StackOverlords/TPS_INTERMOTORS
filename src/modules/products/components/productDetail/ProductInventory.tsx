@@ -54,7 +54,8 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
       cell: ({ getValue }) => {
         const rawFecha = getValue() as string;
 
-        if (!rawFecha) return <span className="text-muted-foreground">Sin fecha</span>;
+        if (!rawFecha)
+          return <span className="text-muted-foreground">Sin fecha</span>;
 
         return (
           <div className="flex flex-col gap-1">
@@ -169,10 +170,13 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
       cell: ({ getValue }) => {
         const rawFecha = getValue() as string;
 
-        if (!rawFecha) return <span className="text-muted-foreground">Sin fecha</span>;
+        if (!rawFecha)
+          return <span className="text-muted-foreground">Sin fecha</span>;
 
         return (
-          <span className="text-muted-foreground">{parseDateForUi(rawFecha)}</span>
+          <span className="text-muted-foreground">
+            {parseDateForUi(rawFecha)}
+          </span>
         );
       },
     },
@@ -220,7 +224,10 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
 
   return (
     <Card
-      className={cn("bg-card border border-border flex flex-col", className)}
+      className={cn(
+        "bg-background border border-border flex flex-col",
+        className
+      )}
     >
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-3 text-base font-semibold text-foreground">

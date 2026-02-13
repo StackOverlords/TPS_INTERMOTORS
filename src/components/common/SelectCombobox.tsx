@@ -7,7 +7,7 @@ import {
   ComboboxOptions,
   Transition,
 } from "@headlessui/react";
-import { Check, ChevronDown, Loader2, X } from "lucide-react";
+import { Check, ChevronDown, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDebounce } from "use-debounce";
@@ -441,9 +441,7 @@ export function ComboboxSelect({
                           className={({ focus }) =>
                             cn(
                               "relative cursor-pointer select-none py-1.5 pl-10 pr-4 transition-colors rounded",
-                              focus
-                                ? "bg-accent text-accent-foreground"
-                                : "text-foreground hover:bg-gray-50"
+                              focus && "bg-accent text-accent-foreground"
                             )
                           }
                         >

@@ -48,15 +48,15 @@ function Calendar({
         button_next: cn(
           buttonVariants({
             variant: "outline",
-            size: "sm",
-            className: "size-8",
+            className:
+              "size-8 [&_.rdp-chevron]:fill-foreground hover:[&_.rdp-chevron]:fill-accent-foreground",
           })
         ),
         button_previous: cn(
           buttonVariants({
             variant: "outline",
-            size: "sm",
-            className: "size-8",
+            className:
+              "size-8 [&_.rdp-chevron]:fill-foreground hover:[&_.rdp-chevron]:fill-accent-foreground",
           })
         ),
         day: cn(

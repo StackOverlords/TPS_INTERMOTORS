@@ -1,5 +1,10 @@
 import { Button } from "@/components/atoms/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/atoms/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/atoms/card";
 import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
@@ -22,9 +27,20 @@ import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { ArrowLeftRight, CornerUpLeft, Loader2, Maximize2, Save } from "lucide-react";
+import {
+  ArrowLeftRight,
+  CornerUpLeft,
+  Loader2,
+  Maximize2,
+  Save,
+} from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
-import { Controller, FormProvider, useForm, type FieldErrors } from "react-hook-form";
+import {
+  Controller,
+  FormProvider,
+  useForm,
+  type FieldErrors,
+} from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
 import type { TransferDetailTableRef } from "../components/TransferDetailTable";
@@ -41,48 +57,42 @@ import { TransferCreateSchema } from "../schemas/transferCreateSchema";
 import type { TransferCreate } from "../types/transferCreate.types";
 
 const EditTransfer = () => {
-    const navigate = useNavigate();
-    const { id: transferId } = useParams();
-    const { closeCurrentTab } = useTabNavigation();
-    const user = authSDK.getCurrentUser();
-    const { selectedBranchId } = useBranchStore();
-    const tableRef = useRef<TransferDetailTableRef>(null);
-    const hasLoadedInitialData = useRef(false);
+  const navigate = useNavigate();
+  const { id: transferId } = useParams();
+  const { closeCurrentTab } = useTabNavigation();
+  const user = authSDK.getCurrentUser();
+  const { selectedBranchId } = useBranchStore();
+  const tableRef = useRef<TransferDetailTableRef>(null);
+  const hasLoadedInitialData = useRef(false);
 
-    // Cargar datos de la transferencia existente
-    const {
-        data: transferData,
-        isLoading: isLoadingTransfer,
-        isError: isErrorTransfer
-    } = useTransferById(Number(transferId));
+  // Cargar datos de la transferencia existente
+  const {
+    data: transferData,
+    isLoading: isLoadingTransfer,
+    isError: isErrorTransfer,
+  } = useTransferById(Number(transferId));
 
-    // Hook de detalles de transferencia
-    const transferDetailsHook = useTransferDetails();
+  // Hook de detalles de transferencia
+  const transferDetailsHook = useTransferDetails();
 
-    const {
-        data: transferResponsiblesData,
-    } = useTransferResponsibles();
+  const { data: transferResponsiblesData } = useTransferResponsibles();
 
-    const {
-        data: transferBranchesData,
-    } = useTransferBranches(transferData?.sucursal_origen_id || Number(selectedBranchId) || 1);
+  const { data: transferBranchesData } = useTransferBranches(
+    transferData?.sucursal_origen_id || Number(selectedBranchId) || 1
+  );
 
-    const {
-        data: originBranchData,
-    } = useGetBranchById(transferData?.sucursal_origen_id || Number(selectedBranchId) || 1);
+  const { data: originBranchData } = useGetBranchById(
+    transferData?.sucursal_origen_id || Number(selectedBranchId) || 1
+  );
 
-    const {
-        mutateAsync: updateTransfer,
-        isPending: isSaving
-    } = useTransferUpdate();
+  const { mutateAsync: updateTransfer, isPending: isSaving } =
+    useTransferUpdate();
 
-    const { handleError } = useErrorHandler();
+  const { handleError } = useErrorHandler();
 
-    // Hook para eliminar detalle de transferencia
-    const {
-        mutate: deleteTransferDetail,
-        isPending: isDeletingDetail
-    } = useDeleteTransferDetail();
+  // Hook para eliminar detalle de transferencia
+  const { mutate: deleteTransferDetail, isPending: isDeletingDetail } =
+    useDeleteTransferDetail();
 
     const handleDeleteDetailSuccess = (_data: unknown, detailId: number) => {
         const deletedItem = transferDetailsHook.details.find(
@@ -636,7 +646,6 @@ const EditTransfer = () => {
                 isLoading={isDeletingDetail}
             />
         </main>
-    );
-};
-
+    ); 
+}
 export default EditTransfer;
