@@ -56,9 +56,9 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded m-4">
+        <div className="p-4 bg-red-50 text-red-800 border border-border rounded m-4">
           <h2 className="text-lg font-bold mb-2">Algo salió mal</h2>
-          <pre className="text-xs overflow-auto p-2 bg-white border border-red-100 rounded">
+          <pre className="text-xs overflow-auto p-2 bg-background border border-red-100 rounded">
             {this.state.error?.toString()}
             {this.state.error?.stack}
           </pre>
@@ -138,7 +138,7 @@ const OrderSelectorWindowContent = () => {
 
   return (
     <main className="h-screen flex flex-col">
-      <div className="bg-white rounded-lg shadow-sm flex-1 flex flex-col">
+      <div className="bg-background rounded-lg shadow-sm flex-1 flex flex-col">
         {/* Header */}
         <header className="p-2 border-b border-border">
           <div className="flex items-center justify-between gap-2">
@@ -166,7 +166,7 @@ const OrderSelectorWindowContent = () => {
         </header>
 
         {/* Filtros */}
-        <div className="p-2 border-b border-gray-200">
+        <div className="p-2 border-b border-border">
           <OrderSelectorFilters
             filters={filters}
             updateFilter={updateFilter}
@@ -177,7 +177,7 @@ const OrderSelectorWindowContent = () => {
         </div>
 
         {/* Info y Debug */}
-        <div className="p-2 text-sm border-b border-gray-200 space-y-1">
+        <div className="p-2 text-sm border-b border-border space-y-1">
           <div className="text-gray-600">
             {isLoading && "Cargando pedidos..."}
             {!isLoading &&

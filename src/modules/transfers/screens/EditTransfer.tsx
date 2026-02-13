@@ -16,6 +16,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { productsService } from "@/modules/products/services/productService";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
@@ -180,6 +181,7 @@ const EditTransfer = () => {
                     precio_entrada_venta_alt: parseFloat(detalle.precio_entrada_venta_alt),
                     incremento_p_entrada_venta: 0,
                     incremento_p_entrada_venta_alt: 0,
+                    tc_transfer: parseFloat(detalle.tc_transfer as string) || 0,
                     product: {
                         id: detalle.producto.id,
                         descripcion: detalle.producto.descripcion,
@@ -283,6 +285,7 @@ const EditTransfer = () => {
                     precio_entrada_venta_alt: Number(detalle.precio_entrada_venta_alt),
                     incremento_p_entrada_venta: Number(detalle.incremento_p_entrada_venta || 0),
                     incremento_p_entrada_venta_alt: Number(detalle.incremento_p_entrada_venta_alt || 0),
+                    tc_transfer: Number(detalle.tc_transfer || 0),
                 };
             });
 
@@ -335,8 +338,24 @@ const EditTransfer = () => {
         navigate(`/dashboard/transfers/${transferId}`);
     };
 
-    const handleAddProductItem = (product: ProductGet) => {
-        transferDetailsHook.addProduct(product);
+    const handleAddProductItem = async (product: ProductGet) => {
+        let tcTransfer = 0;
+        try {
+            const stockData = await productsService.getStock({
+                producto: product.id,
+                sucursal: transferData?.sucursal_origen_id || Number(selectedBranchId) || 1,
+                resto_only: 0,
+            });
+            if (stockData.length > 0) {
+                const sorted = [...stockData].sort(
+                    (a, b) => new Date(b.fecha_adquisicion).getTime() - new Date(a.fecha_adquisicion).getTime()
+                );
+                tcTransfer = sorted[0].tc_compra || 0;
+            }
+        } catch {
+            // Si falla la consulta de stock, tc_transfer queda en 0
+        }
+        transferDetailsHook.addProduct(product, tcTransfer);
         setTimeout(() => {
             tableRef.current?.focusFirstQuantityInput();
         }, 100);
@@ -559,6 +578,7 @@ const EditTransfer = () => {
                                             onUpdatePrecioEntradaVentaAlt={transferDetailsHook.updatePrecioEntradaVentaAlt}
                                             onUpdateIncrementoPrecioEntradaVenta={transferDetailsHook.updateIncrementoPrecioEntradaVenta}
                                             onUpdateIncrementoPrecioEntradaVentaAlt={transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt}
+                                            onUpdateTcTransfer={transferDetailsHook.updateTcTransfer}
                                             onRemoveProduct={handleRemoveProduct}
                                         />
                                     </div>

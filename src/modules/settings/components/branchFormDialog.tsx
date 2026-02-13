@@ -221,7 +221,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                     <DialogTitle>
                         {isEditing ? "Editar" : "Agregar"} Sucursal
                         {isEditing && editingId && (
-                            <span className="text-gray-500 ml-2">
+                            <span className="text-muted-foreground ml-2">
                                 #{editingId}
                             </span>
                         )}
@@ -238,7 +238,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                             <Label htmlFor="nombre">Nombre *</Label>
                             {isEditing && isLoadingBranchById ? (
                                 <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                    <p className="text-sm text-gray-500">Cargando...</p>
+                                    <p className="text-sm text-muted-foreground">Cargando...</p>
                                 </div>
                             ) : (
                                 <>
@@ -262,7 +262,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                             <Label htmlFor="sigla">Sigla *</Label>
                             {isEditing && isLoadingBranchById ? (
                                 <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                    <p className="text-sm text-gray-500">Cargando...</p>
+                                    <p className="text-sm text-muted-foreground">Cargando...</p>
                                 </div>
                             ) : (
                                 <>
@@ -286,7 +286,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                         <Label htmlFor="nombre_comercial">Nombre Comercial *</Label>
                         {isEditing && isLoadingBranchById ? (
                             <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                <p className="text-sm text-gray-500">Cargando...</p>
+                                <p className="text-sm text-muted-foreground">Cargando...</p>
                             </div>
                         ) : (
                             <>
@@ -307,14 +307,14 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
 
                     {/* Información de Contacto */}
                     <div className="pt-2">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-3">Información de Contacto</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-3">Información de Contacto</h3>
 
                         <div className="space-y-4">
                             <div>
                                 <Label htmlFor="direccion">Dirección *</Label>
                                 {isEditing && isLoadingBranchById ? (
                                     <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                        <p className="text-sm text-gray-500">Cargando...</p>
+                                        <p className="text-sm text-muted-foreground">Cargando...</p>
                                     </div>
                                 ) : (
                                     <>
@@ -338,7 +338,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                     <Label htmlFor="telefono">Teléfono *</Label>
                                     {isEditing && isLoadingBranchById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm text-muted-foreground">Cargando...</p>
                                         </div>
                                     ) : (
                                         <>
@@ -361,7 +361,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                     <Label htmlFor="celular">Celular</Label>
                                     {isEditing && isLoadingBranchById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm text-muted-foreground">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -377,7 +377,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                     <Label htmlFor="fax">Fax</Label>
                                     {isEditing && isLoadingBranchById ? (
                                         <div className="flex items-center justify-start px-2 h-10 gap-3 rounded-md animate-pulse bg-accent">
-                                            <p className="text-sm text-gray-500">Cargando...</p>
+                                            <p className="text-sm text-muted-foreground">Cargando...</p>
                                         </div>
                                     ) : (
                                         <Input
@@ -395,7 +395,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                     {/* Imagen */}
                     {(
                         <div className="pt-2">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3">Imagen</h3>
+                            <h3 className="text-sm font-semibold text-foreground mb-3">Imagen</h3>
                             <div className="space-y-3">
                                 <div>
                                     <Label htmlFor="imagen">Imagen de la sucursal (opcional)</Label>
@@ -411,7 +411,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                 </div>
 
                                 {imagePreview ? (
-                                    <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+                                    <div className="relative w-32 h-32 border-2 border-dashed border-border rounded-lg overflow-hidden">
                                         <img
                                             src={imagePreview}
                                             alt="Vista previa de la imagen"
@@ -432,8 +432,8 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg">
-                                        <ImageIcon className="h-8 w-8 text-gray-400" />
+                                    <div className="flex items-center justify-center w-32 h-32 border-2 border-dashed border-border rounded-lg">
+                                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
                                     </div>
                                 )}
                             </div>
@@ -451,7 +451,7 @@ const BranchFormDialog: React.FC<BranchFormDialogProps> = ({
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-black hover:bg-gray-800"
+                            className=""
                             disabled={isLoadingBranchById || isSaving}
                         >
                             {isSaving ? (

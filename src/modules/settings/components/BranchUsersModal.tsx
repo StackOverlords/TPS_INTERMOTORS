@@ -134,7 +134,7 @@ export const BranchUsersModal = ({ branchId, branchName, open, onOpenChange }: B
             header: "ID",
             size: 60,
             cell: ({ getValue }) => (
-                <span className="font-medium font-mono text-gray-700 text-sm">
+                <span className="font-medium font-mono text-sm">
                     #{getValue<number>()}
                 </span>
             )
@@ -144,10 +144,10 @@ export const BranchUsersModal = ({ branchId, branchName, open, onOpenChange }: B
             header: "Nombre",
             cell: ({ row }) => (
                 <div>
-                    <p className="font-medium text-gray-900 text-sm">
+                    <p className="font-medium text-sm">
                         {row?.original?.usuario?.data_empleado?.nombre}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs">
                         @{row?.original?.usuario?.nickname}
                     </p>
                 </div>
@@ -275,7 +275,7 @@ export const BranchUsersModal = ({ branchId, branchName, open, onOpenChange }: B
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="border rounded-lg border-gray-200 min-h-[200px] max-h-[400px] overflow-auto">
+                                <div className="border rounded-lg border-border min-h-[200px] max-h-[400px] overflow-auto">
                                     <CustomizableTable
                                         table={table}
                                         isLoading={isLoadingBranchUsers}

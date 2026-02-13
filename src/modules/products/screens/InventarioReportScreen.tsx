@@ -4,6 +4,7 @@ import { Label } from "@/components/atoms/label";
 import { Slider } from "@/components/atoms/slider";
 import { Checkbox } from "@/components/atoms/checkbox";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
+import Pagination from "@/components/common/pagination";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useBranchStore } from "@/states/branchStore";
@@ -38,6 +39,7 @@ import { format, subMonths } from "date-fns";
 import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
+import { REPORT_ROWS_OPTIONS } from "@/modules/shared/constants/tableOptions";
 
 const InventarioReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -45,6 +47,8 @@ const InventarioReportScreen = () => {
   const [shouldFetch, setShouldFetch] = useState(false);
   const [viewMode, setViewMode] = useState<StockViewMode>("table");
   const [topLimit, setTopLimit] = useState<number>(20);
+  const [pagina, setPagina] = useState(1);
+  const [paginaRegistros, setPaginaRegistros] = useState(100);
 
   // Estados de filtros (UI)
   const [fecha, setFecha] = useState<string>(format(new Date(), "yyyy-MM-dd"));
@@ -133,7 +137,7 @@ const InventarioReportScreen = () => {
         enableHiding: false,
         cell: ({ row }) => (
           <div className="text-center text-xs font-semibold text-muted-foreground">
-            {row.index + 1}
+            {(pagina - 1) * paginaRegistros + row.index + 1}
           </div>
         ),
       },
@@ -229,7 +233,7 @@ const InventarioReportScreen = () => {
         },
       },
     ],
-    []
+    [pagina, paginaRegistros]
   );
 
   const { table } = useCustomTable({
@@ -260,11 +264,15 @@ const InventarioReportScreen = () => {
       return;
     }
 
+    setPagina(1);
+
     const filters: InventarioFilters = {
       fecha: fecha,
       sucursal: Number(selectedBranchId),
       incluir_transito: incluirTransito,
       ver_solo_con_movimiento: verSoloConMovimiento,
+      pagina: 1,
+      pagina_registros: paginaRegistros,
     };
 
     // Solo agregar fechas de costo si están definidas
@@ -284,13 +292,26 @@ const InventarioReportScreen = () => {
 
     if (!shouldFetch) {
       setShouldFetch(true);
-    } else {
-      refetch();
     }
   };
 
   const handleDownload = () => {
     downloadReport(appliedFilters);
+  };
+
+  const onPageChange = (page: number) => {
+    setPagina(page);
+    setAppliedFilters((prev) => ({ ...prev, pagina: page }));
+  };
+
+  const onShowRowsChange = (rows: number) => {
+    setPaginaRegistros(rows);
+    setPagina(1);
+    setAppliedFilters((prev) => ({
+      ...prev,
+      pagina: 1,
+      pagina_registros: rows,
+    }));
   };
 
   return (
@@ -569,7 +590,11 @@ const InventarioReportScreen = () => {
                 ) : data.length > 0 ? (
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">
-                      Mostrando {data.length} productos
+                      {reportData?.meta ? (() => {
+                        const inicio = (pagina - 1) * paginaRegistros + 1;
+                        const fin = Math.min(pagina * paginaRegistros, reportData.meta.total_records);
+                        return `Mostrando ${inicio} - ${fin} de ${reportData.meta.total_records} productos`;
+                      })() : `Mostrando ${data.length} productos`}
                     </span>
                     {selectedBranchId && (
                       <span className="text-xs text-primary">
@@ -589,7 +614,7 @@ const InventarioReportScreen = () => {
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
                   <Package className="size-4 text-primary" />
                   <span className="font-semibold text-primary">
-                    {stats.totalItems}
+                    {reportData?.meta?.total_records ?? stats.totalItems}
                   </span>
                   <span className="text-primary hidden sm:inline">
                     productos
@@ -638,6 +663,18 @@ const InventarioReportScreen = () => {
                 estimatedRowHeight={50}
               />
             </div>
+
+            {/* Pagination */}
+            {data.length > 0 && reportData?.meta && (
+              <Pagination
+                currentPage={pagina}
+                onPageChange={onPageChange}
+                totalData={reportData.meta.total_records}
+                onShowRowsChange={onShowRowsChange}
+                showRows={paginaRegistros}
+                rowsOptions={REPORT_ROWS_OPTIONS}
+              />
+            )}
           </div>
         )}
       </div>

@@ -17,6 +17,7 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { productsService } from "@/modules/products/services/productService";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
@@ -276,8 +277,24 @@ const CreateTransfer = () => {
     }
   }, [transferBranchesData, setValue, sucursalDestino]);
 
-  const handleAddProductItem = (product: ProductGet) => {
-    transferDetailsHook.addProduct(product);
+  const handleAddProductItem = async (product: ProductGet) => {
+    let tcTransfer = 0;
+    try {
+      const stockData = await productsService.getStock({
+        producto: product.id,
+        sucursal: Number(selectedBranchId) || 1,
+        resto_only: 0,
+      });
+      if (stockData.length > 0) {
+        const sorted = [...stockData].sort(
+          (a, b) => new Date(b.fecha_adquisicion).getTime() - new Date(a.fecha_adquisicion).getTime()
+        );
+        tcTransfer = sorted[0].tc_compra || 0;
+      }
+    } catch {
+      // Si falla la consulta de stock, tc_transfer queda en 0
+    }
+    transferDetailsHook.addProduct(product, tcTransfer);
     // Enfocar el primer input de cantidad después de agregar
     setTimeout(() => {
       tableRef.current?.focusFirstQuantityInput();
@@ -555,6 +572,7 @@ const CreateTransfer = () => {
                         onUpdateIncrementoPrecioEntradaVentaAlt={
                           transferDetailsHook.updateIncrementoPrecioEntradaVentaAlt
                         }
+                        onUpdateTcTransfer={transferDetailsHook.updateTcTransfer}
                         onRemoveProduct={transferDetailsHook.removeProduct}
                       />
                     </div>

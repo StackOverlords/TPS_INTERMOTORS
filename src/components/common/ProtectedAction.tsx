@@ -16,7 +16,7 @@ interface ProtectedActionProps {
 
 const DefaultUnauthorizedMessage: React.FC = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-    <div className="rounded-full bg-red-100 dark:bg-red-950/50 p-4 mb-4">
+    <div className="rounded-full p-4 mb-4">
       <ShieldAlert className="h-12 w-12 text-red-600 dark:text-red-400" />
     </div>
     <h2 className="text-xl font-semibold text-primary mb-2">Acceso Denegado</h2>

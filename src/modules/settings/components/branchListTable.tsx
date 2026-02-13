@@ -139,7 +139,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                 const value = getValue<string | null>();
                 return (
                     <span className="text-sm">
-                        {value || <span className="text-gray-400 italic">Sin nombre comercial</span>}
+                        {value || <span className="text-muted-foreground italic">Sin nombre comercial</span>}
                     </span>
                 )
             }
@@ -201,7 +201,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                 const direccion = getValue<string | null>();
                 return (
                     <span className="text-sm truncate">
-                        {direccion || <span className="text-gray-400 italic">Sin dirección</span>}
+                        {direccion || <span className="text-muted-foreground italic">Sin dirección</span>}
                     </span>
                 )
             }
@@ -335,7 +335,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
                                         onClick={() => column.toggleVisibility(!column.getIsVisible())}
                                     >
                                         <Checkbox
-                                            className="border border-gray-400"
+                                            className="border border-border"
                                             checked={column.getIsVisible()}
                                             onCheckedChange={(value) => column.toggleVisibility(!!value)}
                                         />

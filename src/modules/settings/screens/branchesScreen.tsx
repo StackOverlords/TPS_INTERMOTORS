@@ -145,7 +145,7 @@ const BranchesScreen = () => {
                 <Card className="shadow-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                            <Filter className="size-5 text-gray-700" />
+                            <Filter className="size-5 text-muted-foreground" />
                             Filtros
                         </CardTitle>
                     </CardHeader>

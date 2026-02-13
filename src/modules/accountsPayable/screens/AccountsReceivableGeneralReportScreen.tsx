@@ -16,23 +16,29 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   AccountsReceivableGeneralFilters,
   AccountsReceivableItem,
   AccountsReceivableStats,
 } from "../types/AccountsReceivableReport.types";
 import { subMonths, format } from "date-fns";
-import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
 import {
   useAccountsReceivableGeneralReport,
   useDownloadAccountsReceivableGeneralReport,
 } from "../hooks/useAccountsReceivableGeneralReport";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import authSDK from "@/services/sdk-simple-auth";
 
 const AccountsReceivableGeneralReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+
+  const [sucursal, setSucursal] = useState<number | null>(
+    selectedBranchId ? Number(selectedBranchId) : null
+  );
+  const branches = authSDK.getCurrentUser()?.sucursales || [];
 
   const [fechaInicio, setFechaInicio] = useState<string>(
     format(subMonths(new Date(), 1), "yyyy-MM-dd")
@@ -40,13 +46,12 @@ const AccountsReceivableGeneralReportScreen = () => {
   const [fechaFin, setFechaFin] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
-  const [shouldFetch, setShouldFetch] = useState(false);
+  useEffect(() => {
+    setSucursal(selectedBranchId ? Number(selectedBranchId) : null);
+  }, [selectedBranchId]);
 
   const [appliedFilters, setAppliedFilters] =
-    useState<AccountsReceivableGeneralFilters>({
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-    });
+    useState<AccountsReceivableGeneralFilters | null>(null);
 
   const {
     data: reportData,
@@ -55,7 +60,10 @@ const AccountsReceivableGeneralReportScreen = () => {
     isError,
     error,
     refetch,
-  } = useAccountsReceivableGeneralReport(appliedFilters, shouldFetch);
+  } = useAccountsReceivableGeneralReport(
+    appliedFilters ?? { fecha_inicio: "", fecha_fin: "" },
+    appliedFilters !== null
+  );
 
   const { mutate: downloadReport, isPending: isDownloading } =
     useDownloadAccountsReceivableGeneralReport();
@@ -211,51 +219,45 @@ const AccountsReceivableGeneralReportScreen = () => {
     refetch();
   };
 
-  const handleSearch = () => {
-    if (!selectedBranchId) {
-      showErrorToast({
-        title: "Sucursal requerida",
-        description:
-          "Por favor selecciona una sucursal para generar el reporte",
-      });
-      return;
-    }
-
+  const handleSearch = (overrideFechaInicio?: string, overrideFechaFin?: string) => {
     const filters: AccountsReceivableGeneralFilters = {
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-      sucursal: Number(selectedBranchId),
+      fecha_inicio: overrideFechaInicio ?? fechaInicio,
+      fecha_fin: overrideFechaFin ?? fechaFin,
+      sucursal: sucursal ? Number(sucursal) : undefined,
     };
 
     setAppliedFilters(filters);
-
-    if (!shouldFetch) {
-      setShouldFetch(true);
-    } else {
-      refetch();
-    }
   };
 
   const handleDownload = () => {
-    downloadReport(appliedFilters);
+    if (appliedFilters) downloadReport(appliedFilters);
   };
 
   const setLastWeek = () => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 7);
-    setFechaInicio(format(start, "yyyy-MM-dd"));
-    setFechaFin(format(end, "yyyy-MM-dd"));
+    const startStr = format(start, "yyyy-MM-dd");
+    const endStr = format(end, "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const setLastMonth = () => {
-    setFechaInicio(format(subMonths(new Date(), 1), "yyyy-MM-dd"));
-    setFechaFin(format(new Date(), "yyyy-MM-dd"));
+    const startStr = format(subMonths(new Date(), 1), "yyyy-MM-dd");
+    const endStr = format(new Date(), "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const setLast3Months = () => {
-    setFechaInicio(format(subMonths(new Date(), 3), "yyyy-MM-dd"));
-    setFechaFin(format(new Date(), "yyyy-MM-dd"));
+    const startStr = format(subMonths(new Date(), 3), "yyyy-MM-dd");
+    const endStr = format(new Date(), "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   return (
@@ -339,9 +341,24 @@ const AccountsReceivableGeneralReportScreen = () => {
               />
             </div>
 
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Sucursal:</Label>
+              <ComboboxSelect
+                value={sucursal?.toString() || "all"}
+                onChange={(value) => {
+                  const numValue = value === "all" ? null : parseInt(value as string, 10);
+                  setSucursal(numValue);
+                }}
+                options={branches}
+                enableAllOption={true}
+                optionTag="sucursal"
+                allowClear={false}
+              />
+            </div>
+
             <Button
               variant="default"
-              onClick={handleSearch}
+              onClick={() => handleSearch()}
               disabled={isFetching}
             >
               {isFetching ? (
@@ -396,7 +413,7 @@ const AccountsReceivableGeneralReportScreen = () => {
         <div className="h-full bg-background rounded-lg border border-border flex flex-col">
           <div className="flex items-center justify-between gap-2 border-b border-border p-2">
             <div className="text-sm text-muted-foreground">
-              {!shouldFetch
+              {!appliedFilters
                 ? "Presiona 'Buscar' para cargar el reporte"
                 : data.length > 0
                   ? `Mostrando ${data.length} cuentas - ${stats.cuentasPendientes} pendientes, ${stats.cuentasPagadas} pagadas`

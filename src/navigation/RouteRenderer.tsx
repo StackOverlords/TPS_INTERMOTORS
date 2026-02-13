@@ -4,6 +4,7 @@ import { Navigate, useLocation } from "react-router";
 import type RouteType from "./RouteType";
 import { useUserRole } from "@/hooks/useUserRole";
 import { hasRouteAccess } from "@/utils/permissions";
+import { showWarningToast } from "@/hooks/use-toast-enhanced";
 
 interface RouteRendererProps {
   route: RouteType;
@@ -52,6 +53,10 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
     isAuthenticated &&
     !hasRouteAccess(route, userRole)
   ) {
+    showWarningToast({
+      title: "Acceso denegado",
+      description: `No tienes permisos para acceder a "${route.name}"`,
+    });
     return <Navigate to="/dashboard" replace />;
   }
 
