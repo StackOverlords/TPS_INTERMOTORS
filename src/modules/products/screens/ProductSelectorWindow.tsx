@@ -653,6 +653,22 @@ const ProductSelectorWindow: React.FC = () => {
         ),
       },
       {
+        accessorKey: "procedencia",
+        header: "Procedencia",
+        size: 150,
+        minSize: 120,
+        cell: ({ row, getValue }) => (
+          <div className="space-y-1">
+            <span className="text-blue-600 dark:text-blue-400 font-medium">
+              {getValue<string>()}
+            </span>
+            <div className="text-muted-foreground">
+              {row.original.subcategoria}
+            </div>
+          </div>
+        ),
+      },
+      {
         id: "acciones",
         header: "Acción",
         size: 170,

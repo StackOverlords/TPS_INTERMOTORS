@@ -9,6 +9,8 @@ export interface InventarioFilters {
   incluir_transito?: boolean; // Incluir productos en tránsito (opcional, default: false)
   ver_solo_con_movimiento?: boolean; // Ver solo productos con movimiento (opcional, default: false)
   downloadable?: boolean; // Para descarga Excel (opcional, usado internamente)
+  pagina?: number; // Página actual para paginación server-side
+  pagina_registros?: number; // Registros por página
 }
 
 export interface InventarioItem {
@@ -17,11 +19,20 @@ export interface InventarioItem {
   compras: string | number; // Cantidad total comprada
   ventas: string | number; // Cantidad total vendida
   stock: string | number; // Stock actual (saldo)
+  costo_promedio: string | number; // Costo promedio del producto
   valor: string | number; // Valor monetario del stock
+}
+
+export interface InventarioMeta {
+  per_page: number;
+  total_pages: number;
+  current_page: number;
+  total_records: number;
 }
 
 export interface InventarioReportResponse {
   data: InventarioItem[];
+  meta: InventarioMeta;
 }
 
 export interface InventarioStats {

@@ -131,6 +131,7 @@ export const TransferDetailGetByIdSchema = z.object({
     precio_entrada_venta: z.string(),
     precio_entrada_venta_alt: z.string(),
     monenda: z.string(),
+    tc_transfer: z.string().nullable().optional(),
 });
 
 export const TransferGetByIdSchema = z.object({

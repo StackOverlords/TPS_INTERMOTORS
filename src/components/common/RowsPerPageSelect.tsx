@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 interface RowsPerPageSelectProps {
     value: number | string;
     onChange: (rows: number) => void;
+    options?: ReadonlyArray<{ value: string; label: string }>;
     triggerClassname?: string;
     contentClassname?: string;
 }
@@ -19,6 +20,7 @@ interface RowsPerPageSelectProps {
 const RowsPerPageSelect: React.FC<RowsPerPageSelectProps> = ({
     value,
     onChange,
+    options = ROWS_OPTIONS,
     triggerClassname,
     contentClassname,
 }) => {
@@ -37,7 +39,7 @@ const RowsPerPageSelect: React.FC<RowsPerPageSelectProps> = ({
                 "shadow-lg",
                 contentClassname
             )}>
-                {ROWS_OPTIONS.map(({ value, label }) => (
+                {options.map(({ value, label }) => (
                     <SelectItem key={value} value={value}>
                         {label}
                     </SelectItem>

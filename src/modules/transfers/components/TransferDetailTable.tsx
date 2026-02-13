@@ -17,6 +17,7 @@ interface TransferDetailTableProps {
   onUpdatePrecioEntradaVentaAlt?: (producto_id: number, purchase_id: number | undefined, precio: number) => void;
   onUpdateIncrementoPrecioEntradaVenta?: (producto_id: number, purchase_id: number | undefined, incremento: number) => void;
   onUpdateIncrementoPrecioEntradaVentaAlt?: (producto_id: number, purchase_id: number | undefined, incremento: number) => void;
+  onUpdateTcTransfer?: (producto_id: number, tc_transfer: number) => void;
   onRemoveProduct: (producto_id: number, purchase_id?: number) => void;
   isLoading?: boolean;
 }
@@ -32,7 +33,8 @@ type EditableNumericKey =
   | 'precio_entrada_venta'
   | 'precio_entrada_venta_alt'
   | 'incremento_p_entrada_venta'
-  | 'incremento_p_entrada_venta_alt';
+  | 'incremento_p_entrada_venta_alt'
+  | 'tc_transfer';
 
 function TransferDetailTableInner({
   details,
@@ -43,6 +45,7 @@ function TransferDetailTableInner({
   onUpdatePrecioEntradaVentaAlt,
   onUpdateIncrementoPrecioEntradaVenta,
   onUpdateIncrementoPrecioEntradaVentaAlt,
+  onUpdateTcTransfer,
   onRemoveProduct,
   isLoading = false
 }: TransferDetailTableProps, ref: React.Ref<TransferDetailTableRef>) {
@@ -72,6 +75,7 @@ function TransferDetailTableInner({
   const editableColumns: EditableNumericKey[] = [
     'cantidad_entrada_salida',
     'costo_entrada',
+    'tc_transfer',
     'precio_salida',
     'precio_entrada_venta',
     'precio_entrada_venta_alt',
@@ -116,6 +120,8 @@ function TransferDetailTableInner({
 
     if (fieldName === 'costo_entrada') {
       updatedDetail.costo_entrada = roundToTwo(newValue);
+    } else if (fieldName === 'tc_transfer') {
+      updatedDetail.tc_transfer = roundToTwo(newValue);
     } else if (fieldName === 'precio_salida') {
       updatedDetail.precio_salida = roundToTwo(newValue);
     } else if (fieldName === 'precio_entrada_venta') {
@@ -159,6 +165,9 @@ function TransferDetailTableInner({
         break;
       case 'costo_entrada':
         onUpdateCostoEntrada?.(detail.producto_id, detail.purchase_id, updatedDetail.costo_entrada);
+        break;
+      case 'tc_transfer':
+        onUpdateTcTransfer?.(detail.producto_id, updatedDetail.tc_transfer);
         break;
       case 'precio_salida':
         onUpdatePrecioSalida?.(detail.producto_id, detail.purchase_id, updatedDetail.precio_salida);
@@ -255,6 +264,9 @@ function TransferDetailTableInner({
             break;
           case 'costo_entrada':
             onUpdateCostoEntrada?.(detail.producto_id, detail.purchase_id, updatedDetail.costo_entrada);
+            break;
+          case 'tc_transfer':
+            onUpdateTcTransfer?.(detail.producto_id, updatedDetail.tc_transfer);
             break;
           case 'precio_salida':
             onUpdatePrecioSalida?.(detail.producto_id, detail.purchase_id, updatedDetail.precio_salida);
@@ -487,6 +499,21 @@ function TransferDetailTableInner({
         <div className="text-sm font-medium text-foreground text-center">
             {formatCurrency(row.original.costo_entrada)}
           </div>
+      ),
+    },
+    {
+      accessorKey: "tc_transfer",
+      id: 'tc_transfer',
+      header: "T.C.",
+      size: 100,
+      minSize: 80,
+      cell: ({ row }) => (
+        <EditableCell
+          rowIndex={row.index}
+          fieldName="tc_transfer"
+          value={row.original.tc_transfer}
+          format="currency"
+        />
       ),
     },
     {

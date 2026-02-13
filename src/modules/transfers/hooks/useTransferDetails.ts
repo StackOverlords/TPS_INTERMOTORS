@@ -6,7 +6,7 @@ export const useTransferDetails = () => {
     const [details, setDetails] = useState<UITransferDetailCreate[]>([]);
 
     // Añadir un producto al detalle directamente desde ProductGet
-    const addProduct = useCallback((product: ProductGet) => {
+    const addProduct = useCallback((product: ProductGet, tcTransfer: number = 0) => {
         setDetails((prev) => {
             // Verificar si el producto ya existe
             const exists = prev.find((d) => d.producto_id === product.id);
@@ -30,6 +30,7 @@ export const useTransferDetails = () => {
                 precio_entrada_venta_alt: product.precio_venta_alt,
                 incremento_p_entrada_venta: 0,
                 incremento_p_entrada_venta_alt: 0,
+                tc_transfer: tcTransfer,
                 product: {
                     id: product.id,
                     descripcion: product.descripcion,
@@ -132,6 +133,17 @@ export const useTransferDetails = () => {
         );
     }, []);
 
+    // Modificar tipo de cambio de transferencia
+    const updateTcTransfer = useCallback((producto_id: number, tc_transfer: number) => {
+        setDetails((prev) =>
+            prev.map((d) =>
+                d.producto_id === producto_id
+                    ? { ...d, tc_transfer }
+                    : d
+            )
+        );
+    }, []);
+
     /**
      * Obtiene el total de la transferencia sumando los costos de entrada
      */
@@ -170,6 +182,7 @@ export const useTransferDetails = () => {
         updatePrecioEntradaVentaAlt,
         updateIncrementoPrecioEntradaVenta,
         updateIncrementoPrecioEntradaVentaAlt,
+        updateTcTransfer,
         getTransferDetails,
         clearDetails,
         setTransferDetails,

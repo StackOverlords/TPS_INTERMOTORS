@@ -10,6 +10,7 @@ export const TransferDetailCreateSchema = z.object({
     precio_entrada_venta_alt: strictRequiredMoneySchema,
     incremento_p_entrada_venta: z.number(),
     incremento_p_entrada_venta_alt: z.number(),
+    tc_transfer: z.number().nonnegative(),
 });
 
 export const TransferCreateSchema = z.object({
