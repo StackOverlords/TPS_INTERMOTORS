@@ -19,12 +19,22 @@ export const inventarioItemSchema = z.object({
   compras: nullableNumberTransform,
   ventas: nullableNumberTransform,
   stock: nullableNumberTransform,
+  costo_promedio: nullableNumberTransform,
   valor: nullableNumberTransform,
+});
+
+// Schema para la meta de paginación del reporte de inventario
+const inventarioMetaSchema = z.object({
+  per_page: z.number(),
+  total_pages: z.number(),
+  current_page: z.number(),
+  total_records: z.number(),
 });
 
 // Schema para la respuesta completa del reporte
 export const inventarioReportResponseSchema = z.object({
   data: z.array(inventarioItemSchema),
+  meta: inventarioMetaSchema,
 });
 
 export type InventarioItemSchema = z.infer<typeof inventarioItemSchema>;

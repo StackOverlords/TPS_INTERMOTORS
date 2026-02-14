@@ -17,7 +17,7 @@ import {
   AlertCircle,
   TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   AccountsReceivableByCustomerFilters,
   AccountsReceivableItem,
@@ -39,9 +39,16 @@ import {
   useAccountsReceivableByCustomerReport,
   useDownloadAccountsReceivableByCustomerReport,
 } from "../hooks/useAccountsReceivableByCustomerReport";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import authSDK from "@/services/sdk-simple-auth";
 
 const AccountsReceivableByCustomerReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+
+  const [sucursal, setSucursal] = useState<number | null>(
+    selectedBranchId ? Number(selectedBranchId) : null
+  );
+  const branches = authSDK.getCurrentUser()?.sucursales || [];
 
   const [fechaInicio, setFechaInicio] = useState<string>(
     format(subMonths(new Date(), 1), "yyyy-MM-dd")
@@ -50,7 +57,10 @@ const AccountsReceivableByCustomerReportScreen = () => {
     format(new Date(), "yyyy-MM-dd")
   );
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-  const [shouldFetch, setShouldFetch] = useState(false);
+
+  useEffect(() => {
+    setSucursal(selectedBranchId ? Number(selectedBranchId) : null);
+  }, [selectedBranchId]);
 
   // Obtener lista de clientes
   const { data: customersData } = useGetAllCustomers({
@@ -62,11 +72,7 @@ const AccountsReceivableByCustomerReportScreen = () => {
   const customers = customersData?.data ?? [];
 
   const [appliedFilters, setAppliedFilters] =
-    useState<AccountsReceivableByCustomerFilters>({
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-      cliente: 0,
-    });
+    useState<AccountsReceivableByCustomerFilters | null>(null);
 
   const {
     data: reportData,
@@ -75,7 +81,10 @@ const AccountsReceivableByCustomerReportScreen = () => {
     isError,
     error,
     refetch,
-  } = useAccountsReceivableByCustomerReport(appliedFilters, shouldFetch);
+  } = useAccountsReceivableByCustomerReport(
+    appliedFilters ?? { fecha_inicio: "", fecha_fin: "", cliente: 0 },
+    appliedFilters !== null
+  );
 
   const { mutate: downloadReport, isPending: isDownloading } =
     useDownloadAccountsReceivableByCustomerReport();
@@ -231,16 +240,7 @@ const AccountsReceivableByCustomerReportScreen = () => {
     refetch();
   };
 
-  const handleSearch = () => {
-    if (!selectedBranchId) {
-      showErrorToast({
-        title: "Sucursal requerida",
-        description:
-          "Por favor selecciona una sucursal para generar el reporte",
-      });
-      return;
-    }
-
+  const handleSearch = (overrideFechaInicio?: string, overrideFechaFin?: string) => {
     if (!selectedCustomerId) {
       showErrorToast({
         title: "Cliente requerido",
@@ -250,41 +250,44 @@ const AccountsReceivableByCustomerReportScreen = () => {
     }
 
     const filters: AccountsReceivableByCustomerFilters = {
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
+      fecha_inicio: overrideFechaInicio ?? fechaInicio,
+      fecha_fin: overrideFechaFin ?? fechaFin,
       cliente: Number(selectedCustomerId),
-      sucursal: Number(selectedBranchId),
+      sucursal: sucursal ? Number(sucursal) : undefined,
     };
 
     setAppliedFilters(filters);
-
-    if (!shouldFetch) {
-      setShouldFetch(true);
-    } else {
-      refetch();
-    }
   };
 
   const handleDownload = () => {
-    downloadReport(appliedFilters);
+    if (appliedFilters) downloadReport(appliedFilters);
   };
 
   const setLastWeek = () => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 7);
-    setFechaInicio(format(start, "yyyy-MM-dd"));
-    setFechaFin(format(end, "yyyy-MM-dd"));
+    const startStr = format(start, "yyyy-MM-dd");
+    const endStr = format(end, "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const setLastMonth = () => {
-    setFechaInicio(format(subMonths(new Date(), 1), "yyyy-MM-dd"));
-    setFechaFin(format(new Date(), "yyyy-MM-dd"));
+    const startStr = format(subMonths(new Date(), 1), "yyyy-MM-dd");
+    const endStr = format(new Date(), "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const setLast3Months = () => {
-    setFechaInicio(format(subMonths(new Date(), 3), "yyyy-MM-dd"));
-    setFechaFin(format(new Date(), "yyyy-MM-dd"));
+    const startStr = format(subMonths(new Date(), 3), "yyyy-MM-dd");
+    const endStr = format(new Date(), "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const selectedCustomerName = useMemo(() => {
@@ -377,6 +380,21 @@ const AccountsReceivableByCustomerReportScreen = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <Label className="text-sm">Sucursal:</Label>
+              <ComboboxSelect
+                value={sucursal?.toString() || "all"}
+                onChange={(value) => {
+                  const numValue = value === "all" ? null : parseInt(value as string, 10);
+                  setSucursal(numValue);
+                }}
+                options={branches}
+                enableAllOption={true}
+                optionTag="sucursal"
+                allowClear={false}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
               <Label htmlFor="fecha-inicio" className="text-sm">
                 Desde:
               </Label>
@@ -404,7 +422,7 @@ const AccountsReceivableByCustomerReportScreen = () => {
 
             <Button
               variant="default"
-              onClick={handleSearch}
+              onClick={() => handleSearch()}
               disabled={isFetching}
             >
               {isFetching ? (
@@ -459,7 +477,7 @@ const AccountsReceivableByCustomerReportScreen = () => {
         <div className="h-full bg-background rounded-lg border border-border flex flex-col">
           <div className="flex items-center justify-between p-2 border-b border-border flex-shrink-0">
             <div className="text-sm text-muted-foreground">
-              {!shouldFetch
+              {!appliedFilters
                 ? "Selecciona un cliente y presiona 'Buscar' para cargar el reporte"
                 : data.length > 0
                   ? `Mostrando ${data.length} cuentas - ${stats.cuentasPendientes} pendientes, ${stats.cuentasPagadas} pagadas`

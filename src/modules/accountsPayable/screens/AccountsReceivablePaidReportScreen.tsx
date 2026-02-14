@@ -16,23 +16,29 @@ import {
   CheckCircle2,
   CreditCard,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   AccountsReceivablePaidFilters,
   AccountsReceivableItem,
   AccountsReceivableStats,
 } from "../types/AccountsReceivableReport.types";
 import { subMonths, format } from "date-fns";
-import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
 import {
   useAccountsReceivablePaidReport,
   useDownloadAccountsReceivablePaidReport,
 } from "../hooks/useAccountsReceivablePaidReport";
+import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import authSDK from "@/services/sdk-simple-auth";
 
 const AccountsReceivablePaidReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+
+  const [sucursal, setSucursal] = useState<number | null>(
+    selectedBranchId ? Number(selectedBranchId) : null
+  );
+  const branches = authSDK.getCurrentUser()?.sucursales || [];
 
   const [fechaInicio, setFechaInicio] = useState<string>(
     format(subMonths(new Date(), 1), "yyyy-MM-dd")
@@ -40,13 +46,12 @@ const AccountsReceivablePaidReportScreen = () => {
   const [fechaFin, setFechaFin] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
-  const [shouldFetch, setShouldFetch] = useState(false);
+  useEffect(() => {
+    setSucursal(selectedBranchId ? Number(selectedBranchId) : null);
+  }, [selectedBranchId]);
 
   const [appliedFilters, setAppliedFilters] =
-    useState<AccountsReceivablePaidFilters>({
-      pago_fecha_ini: fechaInicio,
-      pago_fecha_fin: fechaFin,
-    });
+    useState<AccountsReceivablePaidFilters | null>(null);
 
   const {
     data: reportData,
@@ -55,7 +60,10 @@ const AccountsReceivablePaidReportScreen = () => {
     isError,
     error,
     refetch,
-  } = useAccountsReceivablePaidReport(appliedFilters, shouldFetch);
+  } = useAccountsReceivablePaidReport(
+    appliedFilters ?? { pago_fecha_ini: "", pago_fecha_fin: "" },
+    appliedFilters !== null
+  );
 
   const { mutate: downloadReport, isPending: isDownloading } =
     useDownloadAccountsReceivablePaidReport();
@@ -212,51 +220,45 @@ const AccountsReceivablePaidReportScreen = () => {
     refetch();
   };
 
-  const handleSearch = () => {
-    if (!selectedBranchId) {
-      showErrorToast({
-        title: "Sucursal requerida",
-        description:
-          "Por favor selecciona una sucursal para generar el reporte",
-      });
-      return;
-    }
-
+  const handleSearch = (overrideFechaInicio?: string, overrideFechaFin?: string) => {
     const filters: AccountsReceivablePaidFilters = {
-      pago_fecha_ini: fechaInicio,
-      pago_fecha_fin: fechaFin,
-      sucursal: Number(selectedBranchId),
+      pago_fecha_ini: overrideFechaInicio ?? fechaInicio,
+      pago_fecha_fin: overrideFechaFin ?? fechaFin,
+      sucursal: sucursal ? Number(sucursal) : undefined,
     };
 
     setAppliedFilters(filters);
-
-    if (!shouldFetch) {
-      setShouldFetch(true);
-    } else {
-      refetch();
-    }
   };
 
   const handleDownload = () => {
-    downloadReport(appliedFilters);
+    if (appliedFilters) downloadReport(appliedFilters);
   };
 
   const setLastWeek = () => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 7);
-    setFechaInicio(format(start, "yyyy-MM-dd"));
-    setFechaFin(format(end, "yyyy-MM-dd"));
+    const startStr = format(start, "yyyy-MM-dd");
+    const endStr = format(end, "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const setLastMonth = () => {
-    setFechaInicio(format(subMonths(new Date(), 1), "yyyy-MM-dd"));
-    setFechaFin(format(new Date(), "yyyy-MM-dd"));
+    const startStr = format(subMonths(new Date(), 1), "yyyy-MM-dd");
+    const endStr = format(new Date(), "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   const setLast3Months = () => {
-    setFechaInicio(format(subMonths(new Date(), 3), "yyyy-MM-dd"));
-    setFechaFin(format(new Date(), "yyyy-MM-dd"));
+    const startStr = format(subMonths(new Date(), 3), "yyyy-MM-dd");
+    const endStr = format(new Date(), "yyyy-MM-dd");
+    setFechaInicio(startStr);
+    setFechaFin(endStr);
+    handleSearch(startStr, endStr);
   };
 
   return (
@@ -341,9 +343,24 @@ const AccountsReceivablePaidReportScreen = () => {
               />
             </div>
 
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Sucursal:</Label>
+              <ComboboxSelect
+                value={sucursal?.toString() || "all"}
+                onChange={(value) => {
+                  const numValue = value === "all" ? null : parseInt(value as string, 10);
+                  setSucursal(numValue);
+                }}
+                options={branches}
+                enableAllOption={true}
+                optionTag="sucursal"
+                allowClear={false}
+              />
+            </div>
+
             <Button
               variant="default"
-              onClick={handleSearch}
+              onClick={() => handleSearch()}
               disabled={isFetching}
             >
               {isFetching ? (
@@ -398,7 +415,7 @@ const AccountsReceivablePaidReportScreen = () => {
         <div className="h-full bg-background rounded-lg border border-border flex flex-col">
           <div className="border-b border-border p-2 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              {!shouldFetch
+              {!appliedFilters
                 ? "Presiona 'Buscar' para cargar el reporte"
                 : data.length > 0
                   ? `Mostrando ${data.length} cuentas pagadas`

@@ -10,6 +10,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   showRows?: number;
   onShowRowsChange?: (rows: number) => void;
+  rowsOptions?: ReadonlyArray<{ value: string; label: string }>;
   className?: string;
 }
 
@@ -19,6 +20,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   showRows = 10,
   onShowRowsChange,
+  rowsOptions,
   className,
 }) => {
   const totalPages = Math.ceil(totalData / showRows);
@@ -87,6 +89,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <RowsPerPageSelect
           value={showRows}
           onChange={(value) => onShowRowsChange?.(Number(value))}
+          options={rowsOptions}
         />
       </div>
 

@@ -1,4 +1,8 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { productsService } from "../../services/productService";
 import type {
   InventarioFilters,
@@ -30,6 +34,7 @@ export function useInventarioReport({
       }) as Promise<InventarioReportResponse>,
     enabled: enabled && !!queryFilters.fecha,
     staleTime: 1000 * 60 * 5, // 5 minutos
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -39,7 +44,9 @@ export function useInventarioReport({
 export function useDownloadInventarioReport() {
   return useMutation({
     mutationFn: async (filters: InventarioFilters) => {
-      const downloadFilters = { ...filters, downloadable: true };
+      // No enviar parámetros de paginación para descarga completa
+      const { pagina, pagina_registros, ...restFilters } = filters;
+      const downloadFilters = { ...restFilters, downloadable: true };
 
       const blob = (await productsService.getInventarioReport({
         filters: downloadFilters,

@@ -35,7 +35,7 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsReceivableGeneralReportScreen,
         isAdmin: true,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        role: ["Super Admin"],
         icon: FileText,
 
         isHeader: false,
@@ -47,7 +47,7 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsReceivablePaidReportScreen,
         isAdmin: true,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        role: ["Super Admin"],
         icon: CheckCircle2,
 
         isHeader: false,
@@ -59,7 +59,7 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsReceivableByCustomerReportScreen,
         isAdmin: true,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        role: ["Super Admin"],
         icon: User,
 
         isHeader: false,

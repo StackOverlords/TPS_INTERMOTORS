@@ -1,6 +1,8 @@
 import protectedRoutes from '@/navigation/Protected.Route';
 import type RouteType from '@/navigation/RouteType';
 import { useTabStore } from '@/states/tabStore';
+import { useUserRole } from '@/hooks/useUserRole';
+import { hasRouteAccess } from '@/utils/permissions';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 
@@ -16,6 +18,9 @@ export const useTabNavigation = () => {
   const activeTabId = useTabStore(state => state.activeTabId);
   const setActiveTab = useTabStore(state => state.setActiveTab);
   // removeTab, addTab, findTabByPath, updateTab se obtienen directamente del store donde se necesitan
+
+  // Rol del usuario para verificar permisos antes de crear tabs
+  const { rol: userRole } = useUserRole();
 
   // Bandera para prevenir recreación de tabs después de cerrar
   const isClosingTabRef = useRef(false);
@@ -83,6 +88,19 @@ export const useTabNavigation = () => {
     const fallback = { name: 'Sin título', icon: undefined };
     if (!displayCode) routeInfoCache.current.set(path, fallback);
     return fallback;
+  }, [flatRoutes]);
+
+
+  // Busca la ruta completa (con roles) para verificar permisos
+  const findRouteByPath = useCallback((path: string): RouteType | undefined => {
+    for (const route of flatRoutes) {
+      if (route.path === path) return route;
+      if (route.path) {
+        const match = matchPath({ path: route.path, end: true }, path);
+        if (match) return route;
+      }
+    }
+    return undefined;
   }, [flatRoutes]);
 
 
@@ -247,6 +265,13 @@ export const useTabNavigation = () => {
     const existingTab = state.findTabByPath(currentPath, undefined);
 
     if (!existingTab) {
+      // Verificar permisos antes de crear tab automáticamente
+      // Si el usuario no tiene acceso, no crear el tab (RouteRenderer se encargará del redirect)
+      const matchedRoute = findRouteByPath(currentPath);
+      if (matchedRoute && !hasRouteAccess(matchedRoute, userRole)) {
+        return;
+      }
+
       // Crear tab automáticamente si no existe (sin instanceId)
       const routeInfo = findRouteInfo(currentPath);
       const tabId = state.addTab(currentPath, routeInfo.name, routeInfo.icon, undefined);
@@ -275,8 +300,8 @@ export const useTabNavigation = () => {
         state.setActiveTab(existingTab.id);
       }
     }
-    // Solo depende de location.pathname y findRouteInfo
-  }, [location.pathname, findRouteInfo]);
+    // Solo depende de location.pathname, findRouteInfo, findRouteByPath y userRole
+  }, [location.pathname, findRouteInfo, findRouteByPath, userRole]);
 
   return {
     navigateWithTab,

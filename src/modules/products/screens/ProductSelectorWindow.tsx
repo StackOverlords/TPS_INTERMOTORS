@@ -550,7 +550,7 @@ const ProductSelectorWindow: React.FC = () => {
         enableHiding: false,
         cell: ({ getValue }) => (
           <div className="flex flex-col">
-            <h3 className="font-medium text-primary leading-tight truncate">
+            <h3 className="font-medium leading-tight truncate">
               {getValue<string>()}
             </h3>
           </div>
@@ -643,12 +643,22 @@ const ProductSelectorWindow: React.FC = () => {
         minSize: 120,
         cell: ({ row, getValue }) => (
           <div className="space-y-1">
-            <span className="text-blue-600 dark:text-blue-400 font-medium">
+            <span className="font-medium">
               {getValue<string>()}
-            </span>
-            <div className="text-muted-foreground">
-              {row.original.subcategoria}
-            </div>
+            </span> 
+          </div>
+        ),
+      },
+      {
+        accessorKey: "procedencia",
+        header: "Procedencia",
+        size: 150,
+        minSize: 120,
+        cell: ({ row, getValue }) => (
+          <div className="space-y-1">
+            <span className="font-medium">
+              {getValue<string>()}
+            </span> 
           </div>
         ),
       },

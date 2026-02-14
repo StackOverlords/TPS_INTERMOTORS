@@ -71,7 +71,7 @@ const productosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: ProductoStockReports,
         isAdmin: true,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        role: ["Super Admin"],
 
         icon: AreaChartIcon,
         isHeader: false,
@@ -84,7 +84,7 @@ const productosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UtilidadesReportScreen,
         isAdmin: true,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        role: ["Super Admin"],
 
         icon: DollarSign,
         isHeader: false,
@@ -97,7 +97,7 @@ const productosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: InventarioReportScreen,
         isAdmin: true,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        role: ["Super Admin"],
 
         icon: Warehouse,
         isHeader: false,
