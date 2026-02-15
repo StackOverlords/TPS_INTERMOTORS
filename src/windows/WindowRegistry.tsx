@@ -4,6 +4,7 @@ import ProductSelectorWindow from "@/modules/products/screens/ProductSelectorWin
 import PurchaseSelectorWindow from "@/modules/purchases/screens/PurchaseSelectorWindow";
 import React from "react";
 import SaleDetailSelectorWindow from "@/modules/sales/screens/SaleDetailSelectorWindow";
+import QuotationSelectorWindow from "@/modules/quotations/screens/quotationSelectorWindow";
 
 // Tipo para componentes que pueden renderizarse en ventanas
 export type WindowComponent = React.ComponentType<any>;
@@ -58,6 +59,7 @@ export function registerDefaultWindowComponents(): void {
   registerWindowComponent("debug-log", DebugLogWindow);
   registerWindowComponent("order-selector", OrderSelectorWindow);
   registerWindowComponent("sale-detail-selector", SaleDetailSelectorWindow);
+  registerWindowComponent("quotation-selector", QuotationSelectorWindow);
   // registerWindowComponent('settings-routes', ViewSettingsWithSuspense);
 }
 

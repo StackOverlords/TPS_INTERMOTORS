@@ -59,7 +59,7 @@ export const createCartStore = (user: string) => {
                   quantity: item.product.stock_actual,
                   customSubtotal: multiplyPrecise(
                     item.customPrice,
-                    item.product.stock_actual
+                    item.product.stock_actual,
                   ),
                 };
                 keptItems.push(adjustedItem);
@@ -82,7 +82,7 @@ export const createCartStore = (user: string) => {
               keptItems,
               message: generateConversionMessage(
                 removedItems.length,
-                adjustedItems.length
+                adjustedItems.length,
               ),
             };
 
@@ -162,7 +162,7 @@ export const createCartStore = (user: string) => {
                     quantity: item.product.stock_actual,
                     customSubtotal: multiplyPrecise(
                       item.customPrice,
-                      item.product.stock_actual
+                      item.product.stock_actual,
                     ),
                   });
                 } else {
@@ -185,7 +185,7 @@ export const createCartStore = (user: string) => {
                   ? generateConversionSummary(
                       removedCount,
                       adjustedCount,
-                      keptCount
+                      keptCount,
                     )
                   : "Todos los productos son válidos para venta estricta",
               };
@@ -204,12 +204,89 @@ export const createCartStore = (user: string) => {
             };
           },
 
+          /**
+           * Previsualiza la importación de items desde una cotización
+           * Similar a previewConversion pero para items que AÚN NO están en el carrito
+           * Valida qué items podrán entrar, cuáles se ajustarán y cuáles se removerán
+           */
+          previewQuotationImport: (
+            itemsToImport: CartItem[],
+            targetMode: CartMode = "sale-strict",
+          ) => {
+            // En modos permissive o quote, todos los items entran sin problema
+            if (targetMode === "sale-permissive" || targetMode === "quote") {
+              return {
+                willHaveChanges: false,
+                removedCount: 0,
+                adjustedCount: 0,
+                keptCount: itemsToImport.length,
+                itemsToRemove: [],
+                itemsToAdjust: [],
+                itemsToKeep: itemsToImport,
+                summary: `Todos los productos se importarán en modo ${getModeLabel(targetMode)}`,
+              };
+            }
+
+            // Modo sale-strict: necesita validación
+            let removedCount = 0;
+            let adjustedCount = 0;
+            const itemsToRemove: CartItem[] = [];
+            const itemsToAdjust: ConversionAdjustment[] = [];
+            const itemsToKeep: CartItem[] = [];
+
+            itemsToImport.forEach((item) => {
+              const hasStock =
+                item.product.stock_actual && item.product.stock_actual > 0;
+
+              if (!hasStock) {
+                removedCount++;
+                itemsToRemove.push(item);
+              } else if (item.quantity > item.product.stock_actual) {
+                adjustedCount++;
+                itemsToAdjust.push({
+                  productId: item.product.id,
+                  productName: item.product.descripcion,
+                  originalQuantity: item.quantity,
+                  adjustedQuantity: item.product.stock_actual,
+                  reason: "QUANTITY_ADJUSTED",
+                });
+                // Item ajustado también va a "kept"
+                itemsToKeep.push({
+                  ...item,
+                  quantity: item.product.stock_actual,
+                  customSubtotal: multiplyPrecise(
+                    item.customPrice,
+                    item.product.stock_actual,
+                  ),
+                });
+              } else {
+                itemsToKeep.push(item);
+              }
+            });
+
+            const keptCount = itemsToKeep.length;
+            const willHaveChanges = removedCount > 0 || adjustedCount > 0;
+
+            return {
+              willHaveChanges,
+              removedCount,
+              adjustedCount,
+              keptCount,
+              itemsToRemove,
+              itemsToAdjust,
+              itemsToKeep,
+              summary: willHaveChanges
+                ? generateImportSummary(removedCount, adjustedCount, keptCount)
+                : "Todos los productos de la cotización se pueden importar sin cambios",
+            };
+          },
+
           // ==================== GESTIÓN DE ITEMS ====================
 
           addItem: (product) => {
             const mode = get().mode;
             const existing = get().items.find(
-              (i) => i.product.id === product.id
+              (i) => i.product.id === product.id,
             );
             const basePrice = product.precio_venta;
 
@@ -241,7 +318,7 @@ export const createCartStore = (user: string) => {
 
               const updatedSubtotal = multiplyPrecise(
                 existing.customPrice ?? basePrice,
-                newQuantity
+                newQuantity,
               );
 
               set({
@@ -252,7 +329,7 @@ export const createCartStore = (user: string) => {
                         quantity: newQuantity,
                         customSubtotal: updatedSubtotal,
                       }
-                    : i
+                    : i,
                 ),
               });
 
@@ -365,10 +442,10 @@ export const createCartStore = (user: string) => {
                       quantity,
                       customSubtotal: multiplyPrecise(
                         i.customPrice ?? i.product.precio_venta,
-                        quantity
+                        quantity,
                       ),
                     }
-                  : i
+                  : i,
               ),
             });
 
@@ -401,7 +478,7 @@ export const createCartStore = (user: string) => {
                       customPrice: price,
                       customSubtotal: multiplyPrecise(price, i.quantity),
                     }
-                  : i
+                  : i,
               ),
             });
             get().recalculateDiscount();
@@ -409,7 +486,13 @@ export const createCartStore = (user: string) => {
 
           updateCustomSubtotal: (productId, subtotal) => {
             const item = get().items.find((i) => i.product.id === productId);
-            if (!item || item.quantity < 1 || subtotal == null || isNaN(subtotal)) return;
+            if (
+              !item ||
+              item.quantity < 1 ||
+              subtotal == null ||
+              isNaN(subtotal)
+            )
+              return;
 
             set({
               items: get().items.map((i) =>
@@ -419,7 +502,7 @@ export const createCartStore = (user: string) => {
                       customSubtotal: subtotal,
                       customPrice: dividePrecise(subtotal, i.quantity),
                     }
-                  : i
+                  : i,
               ),
             });
             get().recalculateDiscount();
@@ -433,7 +516,7 @@ export const createCartStore = (user: string) => {
                       ...i,
                       customDescription: description,
                     }
-                  : i
+                  : i,
               ),
             });
           },
@@ -446,7 +529,7 @@ export const createCartStore = (user: string) => {
                       ...i,
                       customBrand: brand,
                     }
-                  : i
+                  : i,
               ),
             });
           },
@@ -503,7 +586,7 @@ export const createCartStore = (user: string) => {
             if (discountMode === "percent") {
               const newAmount = calculateAmountFromPercent(
                 discountPercent,
-                newSubtotal
+                newSubtotal,
               );
               set({ discountAmount: newAmount });
             } else if (discountMode === "amount") {
@@ -543,7 +626,7 @@ export const createCartStore = (user: string) => {
           getCartCount: () => {
             return get().items.reduce(
               (count, item) => count + item.quantity,
-              0
+              0,
             );
           },
 
@@ -614,7 +697,7 @@ export const createCartStore = (user: string) => {
 
             // En modo sale-strict, validar stock
             const product = get().items.find(
-              (i) => i.product.id === productId
+              (i) => i.product.id === productId,
             )?.product;
             if (!product) return { canAdd: false, reason: "PRODUCT_NOT_FOUND" };
 
@@ -635,6 +718,69 @@ export const createCartStore = (user: string) => {
 
             return { canAdd: true };
           },
+
+          // ==================== IMPORTACIÓN DESDE COTIZACIÓN ====================
+
+          importFromQuotation: (
+            items: CartItem[],
+            discountPercent?: number,
+          ) => {
+            if (!items || items.length === 0) {
+              return {
+                success: false,
+                error: "UNKNOWN_ERROR",
+                message: "No hay items para importar",
+              };
+            }
+
+            const currentMode = get().mode;
+
+            // Esto valida y filtra items según el modo
+            const preview = get().previewQuotationImport(items, currentMode);
+
+            // Limpiar carrito antes de importar
+            set({
+              items: [],
+              discountAmount: 0,
+              discountPercent: 0,
+              discountMode: null,
+            });
+
+            // itemsToKeep ya tiene cantidades ajustadas
+            set({ items: preview.itemsToKeep });
+
+            // Aplicar descuento si existe
+            if (discountPercent && discountPercent > 0) {
+              get().setDiscountPercent(discountPercent);
+            }
+
+            // Mensaje mejorado con detalles
+            const messages: string[] = [];
+
+            if (preview.itemsToKeep.length > 0) {
+              messages.push(
+                `${preview.itemsToKeep.length} productos importados`,
+              );
+            }
+
+            if (preview.removedCount > 0) {
+              messages.push(`${preview.removedCount} sin stock (removidos)`);
+            }
+
+            if (preview.adjustedCount > 0) {
+              messages.push(`${preview.adjustedCount} con cantidad ajustada`);
+            }
+
+            return {
+              success: true,
+              message: messages.join(", "),
+              data: {
+                imported: preview.itemsToKeep.length,
+                removed: preview.removedCount,
+                adjusted: preview.adjustedCount,
+              },
+            };
+          },
         }),
         {
           name: `${CART_CONSTANTS.STORAGE_PREFIX}${user}`,
@@ -647,12 +793,12 @@ export const createCartStore = (user: string) => {
             discountMode: state.discountMode,
             // lastConversion NO se persiste, es temporal
           }),
-        }
+        },
       ),
       {
         name: `cart-storage-${user}`,
-      }
-    )
+      },
+    ),
   );
 };
 
@@ -670,7 +816,7 @@ export const calculateSubtotal = (items: CartItem[]) => {
 
 export const calculateDiscountAmount = (
   subtotal: number,
-  discount: { amount?: number; percent?: number }
+  discount: { amount?: number; percent?: number },
 ): number => {
   if (discount.amount) {
     return minPrecise(discount.amount, subtotal);
@@ -685,7 +831,7 @@ export const calculateDiscountAmount = (
 
 const generateConversionMessage = (
   removedCount: number,
-  adjustedCount: number
+  adjustedCount: number,
 ): string => {
   if (removedCount === 0 && adjustedCount === 0) {
     return "Todos los productos fueron convertidos exitosamente a venta";
@@ -695,13 +841,13 @@ const generateConversionMessage = (
 
   if (removedCount > 0) {
     parts.push(
-      `${removedCount} producto${removedCount > 1 ? "s" : ""} sin stock ${removedCount > 1 ? "fueron removidos" : "fue removido"}`
+      `${removedCount} producto${removedCount > 1 ? "s" : ""} sin stock ${removedCount > 1 ? "fueron removidos" : "fue removido"}`,
     );
   }
 
   if (adjustedCount > 0) {
     parts.push(
-      `${adjustedCount} producto${adjustedCount > 1 ? "s" : ""} ${adjustedCount > 1 ? "tuvieron" : "tuvo"} su cantidad ajustada`
+      `${adjustedCount} producto${adjustedCount > 1 ? "s" : ""} ${adjustedCount > 1 ? "tuvieron" : "tuvo"} su cantidad ajustada`,
     );
   }
 
@@ -711,25 +857,53 @@ const generateConversionMessage = (
 const generateConversionSummary = (
   removedCount: number,
   adjustedCount: number,
-  keptCount: number
+  keptCount: number,
 ): string => {
   const parts: string[] = [];
 
   if (removedCount > 0) {
     parts.push(
-      `${removedCount} producto${removedCount > 1 ? "s serán removidos" : " será removido"}`
+      `${removedCount} producto${removedCount > 1 ? "s serán removidos" : " será removido"}`,
     );
   }
 
   if (adjustedCount > 0) {
     parts.push(
-      `${adjustedCount} producto${adjustedCount > 1 ? "s tendrán" : " tendrá"} cantidad ajustada`
+      `${adjustedCount} producto${adjustedCount > 1 ? "s tendrán" : " tendrá"} cantidad ajustada`,
     );
   }
 
   if (keptCount > 0) {
     parts.push(
-      `${keptCount} producto${keptCount > 1 ? "s se mantendrán" : " se mantendrá"}`
+      `${keptCount} producto${keptCount > 1 ? "s se mantendrán" : " se mantendrá"}`,
+    );
+  }
+
+  return parts.join(", ");
+};
+
+const generateImportSummary = (
+  removedCount: number,
+  adjustedCount: number,
+  keptCount: number,
+): string => {
+  const parts: string[] = [];
+
+  if (removedCount > 0) {
+    parts.push(
+      `${removedCount} producto${removedCount > 1 ? "s no se importarán" : " no se importará"} (sin stock)`,
+    );
+  }
+
+  if (adjustedCount > 0) {
+    parts.push(
+      `${adjustedCount} producto${adjustedCount > 1 ? "s tendrán" : " tendrá"} cantidad ajustada`,
+    );
+  }
+
+  if (keptCount > 0) {
+    parts.push(
+      `${keptCount} producto${keptCount > 1 ? "s se importarán" : " se importará"} correctamente`,
     );
   }
 
