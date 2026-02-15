@@ -17,9 +17,17 @@ import {
 import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import TooltipButton from "@/components/common/TooltipButton";
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import {
+  showErrorToast,
+  showInfoToast,
+  showSuccessToast,
+  showWarningToast,
+} from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import {
+  useProductSelectorWindow,
+  useQuotationSelectorWindow,
+} from "@/hooks/useSecondaryWindow";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import TableShoppingCart, {
   type TableShoppingCartRef,
@@ -29,7 +37,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { parse } from "date-fns";
-import { CornerUpLeft, Plus, ShoppingCart } from "lucide-react";
+import { CornerUpLeft, Dot, FileText, Plus, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Controller,
@@ -66,6 +74,7 @@ import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { convertCartToSaleDetails } from "@/modules/shoppingCart/utils/cartCalculations";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { useQuotationImport } from "@/modules/shoppingCart/hooks/useQuotationImport";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 
 const SCREEN_PATH = "/dashboard/create-sale";
@@ -92,6 +101,13 @@ const CreateSaleScreen = () => {
   const [targetModeForModal, setTargetModeForModal] =
     useState<CartMode>("sale-strict");
   const [lastProcessedMode, setLastProcessedMode] = useState<CartMode | null>(
+    null
+  );
+
+  const [creationMode, setCreationMode] = useState<
+    "manual" | "quotation-import"
+  >("manual");
+  const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(
     null
   );
 
@@ -165,6 +181,23 @@ const CreateSaleScreen = () => {
     previewConversion,
   } = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
 
+  const {
+    showConversionModal: showQuotationConversionModal,
+    previewData,
+    importQuotation,
+    confirmConversion,
+    cancelConversion,
+  } = useQuotationImport({
+    setValue,
+    onImportComplete: () => {
+      showSuccessToast({
+        title: "Cotización importada",
+        description: "Productos y datos cargados correctamente",
+        duration: 2000,
+      });
+    },
+  });
+
   useTabEffect(SCREEN_PATH, () => {
     if (lastProcessedMode === mode) return;
 
@@ -231,6 +264,81 @@ const CreateSaleScreen = () => {
       setLastProcessedMode(mode);
     }
   }, [mode]);
+
+  // Este se ejecuta cuando se viene desde QuotationDetailScreen
+  useEffect(() => {
+    // Verificar si hay datos guardados en sessionStorage
+    const storageKey = `quotation-import-pending-${user?.name}-${selectedBranchId}`;
+    const savedData = sessionStorage.getItem(storageKey);
+
+    if (!savedData) return; // No hay datos, salir
+
+    try {
+      const { quotation, formData } = JSON.parse(savedData);
+
+      // Cargar TODOS los datos al formulario
+      // (Excepto fecha y responsable)
+
+      if (formData.id_cliente) {
+        setValue("id_cliente", formData.id_cliente);
+      }
+
+      if (formData.cliente_nombre) {
+        setValue("cliente_nombre", formData.cliente_nombre);
+      }
+
+      if (formData.cliente_nit) {
+        setValue("cliente_nit", formData.cliente_nit);
+      }
+
+      if (formData.nro_comprobante) {
+        setValue("nro_comprobante", formData.nro_comprobante);
+      }
+
+      if (formData.nro_comprobante2) {
+        setValue("nro_comprobante2", formData.nro_comprobante2);
+      }
+
+      if (formData.tipo_venta) {
+        setValue("tipo_venta", formData.tipo_venta);
+      }
+
+      if (formData.forma_venta) {
+        setValue("forma_venta", formData.forma_venta);
+      }
+
+      if (formData.forma_pago) {
+        setValue("forma_pago", formData.forma_pago);
+      }
+
+      if (formData.plazo_pago) {
+        setValue("plazo_pago", formData.plazo_pago);
+      }
+
+      if (formData.vehiculo) {
+        setValue("vehiculo", formData.vehiculo);
+      }
+
+      if (formData.nro_motor) {
+        setValue("nro_motor", formData.nro_motor);
+      }
+
+      if (formData.comentario) {
+        setValue("comentario", formData.comentario);
+      }
+
+      // Limpiar el sessionStorage después de cargar
+      sessionStorage.removeItem(storageKey);
+
+      // Marcar como importación
+      setCreationMode("quotation-import");
+      setSelectedQuotationId(quotation.nro);
+    } catch (error) {
+      // console.error("Error al cargar datos de cotización:", error);
+      // Limpiar datos corruptos
+      sessionStorage.removeItem(storageKey);
+    }
+  }, [user?.name, selectedBranchId, setValue]);
 
   const subtotal = getCartSubtotal();
   const total = getCartTotal();
@@ -363,6 +471,8 @@ const CreateSaleScreen = () => {
   const handleNewSale = useCallback(
     (canClearCart = true) => {
       setLastProcessedMode(null);
+      setSelectedQuotationId(null);
+      setCreationMode("manual");
       const currentValues = getValues();
       reset({
         fecha: getTodayDate(),
@@ -386,11 +496,15 @@ const CreateSaleScreen = () => {
         clearCart();
       }
     },
-    [getValues, reset]
+    [getValues, reset, clearCart]
   );
 
   // Función para agregar un solo producto
   const handleAddProductItem = (product: ProductGet) => {
+    if (creationMode !== "manual") {
+      setCreationMode("manual");
+      setSelectedQuotationId(null);
+    }
     addItemToCart(product);
     setTimeout(() => {
       // Enfocar el input del producto agregado
@@ -402,6 +516,11 @@ const CreateSaleScreen = () => {
   const handleAddMultipleProducts = (
     products: Array<ProductGet & { quantity?: number }>
   ) => {
+    if (creationMode !== "manual") {
+      setCreationMode("manual");
+      setSelectedQuotationId(null);
+    }
+
     addMultipleItemsWithQuantity(products);
 
     setTimeout(() => {
@@ -551,7 +670,7 @@ const CreateSaleScreen = () => {
     instanceId: "create-sale",
     onProductSelect: handleAddProductItem,
     onMultiSelect: handleAddMultipleProducts,
-    onlyWithStock: true,
+    onlyWithStock: mode === "sale-strict" ? true : false,
     multiSelect: true,
     mode: "create",
     validateStock: true,
@@ -563,6 +682,53 @@ const CreateSaleScreen = () => {
       productWindow.close();
     }
     productWindow.open();
+  };
+
+  // HOOK PARA VENTANA DE SELECTOR DE COTIZACIONES
+  const quotationWindow = useQuotationSelectorWindow({
+    context: "sale",
+    instanceId: "create-sale",
+    onQuotationSelect: (quotation) => {
+      importQuotation(quotation);
+      setCreationMode("quotation-import");
+      setSelectedQuotationId(quotation.nro);
+    },
+  });
+
+  // FUNCIÓN PARA ABRIR SELECTOR DE COTIZACIONES
+  const handleOpenQuotationSelector = () => {
+    if (items.length > 0) {
+      showWarningToast({
+        title: "Carrito no vacío",
+        description:
+          "Debes limpiar el carrito antes de importar una cotización",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (quotationWindow.isOpen) {
+      quotationWindow.close();
+    }
+    quotationWindow.open();
+  };
+
+  // FUNCIÓN PARA CANCELAR IMPORTACIÓN
+  const handleCancelQuotationImport = () => {
+    setCreationMode("manual");
+    setSelectedQuotationId(null);
+    clearCart();
+    showInfoToast({
+      title: "Importación cancelada",
+      description: "Se limpiaron los datos",
+      duration: 2000,
+    });
+  };
+
+  const handleCancelConversion = () => {
+    cancelConversion();
+    setSelectedQuotationId(null);
+    setCreationMode("manual");
   };
 
   // Shortcuts
@@ -634,8 +800,15 @@ const CreateSaleScreen = () => {
                     <CornerUpLeft />
                   </TooltipButton>
                   <div>
-                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight">
+                    <h1 className="text-lg lg:text-xl font-bold text-primary leading-tight flex items-center gap-2">
                       Nueva Venta
+                      {creationMode === "quotation-import" &&
+                        selectedQuotationId && (
+                          <p className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                            <Dot className="size-5" />
+                            Importando desde Cotización #{selectedQuotationId}
+                          </p>
+                        )}
                     </h1>
                     <p className="text-sm text-muted-foreground">
                       Registra una nueva venta en el sistema
@@ -679,7 +852,7 @@ const CreateSaleScreen = () => {
                   "h-full gap-2",
                   configuraciones.formulario === "top" && "flex flex-col",
                   configuraciones.formulario === "left" &&
-                  "flex flex-col md:grid md:grid-cols-3"
+                    "flex flex-col md:grid md:grid-cols-3"
                 )}
               >
                 {/* Formulario de información de venta*/}
@@ -695,8 +868,9 @@ const CreateSaleScreen = () => {
                     className={cn(
                       "shadow-none bg-background",
                       configuraciones.formulario === "top" &&
-                      "h-full flex-shrink-0",
-                      configuraciones.formulario === "left" && "h-auto md:h-full"
+                        "h-full flex-shrink-0",
+                      configuraciones.formulario === "left" &&
+                        "h-auto md:h-full"
                     )}
                   >
                     <CardContent className="p-2 sm:p-3">
@@ -704,7 +878,7 @@ const CreateSaleScreen = () => {
                         className={cn(
                           "grid gap-2",
                           configuraciones.formulario === "top" &&
-                          "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
+                            "grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 xl:gap-x-2 xl:gap-y-2",
                           configuraciones.formulario === "left" && "grid-cols-2"
                         )}
                       >
@@ -976,7 +1150,7 @@ const CreateSaleScreen = () => {
                           className={cn(
                             configuraciones.formulario === "top" && "",
                             configuraciones.formulario === "left" &&
-                            "md:col-span-2"
+                              "md:col-span-2"
                           )}
                         >
                           <Label htmlFor="comentarios">Comentarios</Label>
@@ -997,8 +1171,8 @@ const CreateSaleScreen = () => {
                     "flex-1 min-h-0",
                     configuraciones.formulario === "top" && "",
                     configuraciones.formulario === "top" &&
-                    configuraciones.inputs &&
-                    "",
+                      configuraciones.inputs &&
+                      "",
                     configuraciones.formulario === "left" && "col-span-2"
                   )}
                 >
@@ -1006,7 +1180,7 @@ const CreateSaleScreen = () => {
                     className={cn(
                       "h-full min-h-screen md:min-h-auto flex flex-col gap-2",
                       configuraciones.selector_mode === "embebed" &&
-                      "md:min-h-screen"
+                        "md:min-h-screen"
                     )}
                   >
                     <ResizablePanelGroup
@@ -1036,18 +1210,40 @@ const CreateSaleScreen = () => {
                               <h2 className="text-primary text-base">
                                 Detalle de Productos
                               </h2>
-                              {configuraciones.selector_mode === "window" && (
-                                <Button
-                                  type="button"
-                                  onClick={toggleWindowSelector}
-                                  disabled={isSaving}
+
+                              <div className="flex items-center gap-2">
+                                <TooltipButton
+                                  tooltip={
+                                    items.length > 0
+                                      ? "No puedes importar una cotización si ya hay productos agregados"
+                                      : "Importar productos desde una cotización"
+                                  }
+                                  buttonProps={{
+                                    type: "button",
+                                    variant: "outline",
+                                    size: "sm",
+                                    onClick: handleOpenQuotationSelector,
+                                    disabled: items.length > 0,
+                                    className: "gap-2",
+                                  }}
                                 >
-                                  <Plus className="size-4" />
-                                  <span className="hidden sm:block">
-                                    Seleccionar Productos
-                                  </span>
-                                </Button>
-                              )}
+                                  <FileText className="h-4 w-4" />
+                                  Importar cotización
+                                </TooltipButton>
+
+                                {configuraciones.selector_mode === "window" && (
+                                  <Button
+                                    type="button"
+                                    onClick={toggleWindowSelector}
+                                    disabled={isSaving}
+                                  >
+                                    <Plus className="size-4" />
+                                    <span className="hidden sm:block">
+                                      Seleccionar Productos
+                                    </span>
+                                  </Button>
+                                )}
+                              </div>
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="flex-1 min-h-0">
@@ -1057,12 +1253,20 @@ const CreateSaleScreen = () => {
                                   <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
                                   <p>No hay productos agregados</p>
                                   <p className="text-sm">
-                                    Haz clic en "Seleccionar Productos" para
-                                    agregar
+                                    Haz clic en "Seleccionar Productos" o
+                                    "Importar cotización" para agregar
                                   </p>
                                 </div>
                               ) : (
-                                <TableShoppingCart ref={tableRef} />
+                                <TableShoppingCart
+                                  onDelete={() => {
+                                    if (creationMode !== "manual") {
+                                      setCreationMode("manual");
+                                      setSelectedQuotationId(null);
+                                    }
+                                  }}
+                                  ref={tableRef}
+                                />
                               )}
                             </div>
                           </CardContent>
@@ -1082,6 +1286,8 @@ const CreateSaleScreen = () => {
                       setDiscountAmount={setDiscountAmount}
                       setDiscountPercent={setDiscountPercent}
                       hasProducts={items.length > 0}
+                      creationMode={creationMode}
+                      handleCancelQuotationImport={handleCancelQuotationImport}
                     />
                   </div>
                 </div>
@@ -1096,6 +1302,16 @@ const CreateSaleScreen = () => {
           onClose={handleCloseModal}
           targetMode={targetModeForModal}
           shouldGoBackOnClose={true}
+        />
+
+        <CartModeConversionModal
+          open={showQuotationConversionModal}
+          onClose={handleCancelConversion}
+          targetMode="sale-strict"
+          shouldGoBackOnClose={false}
+          onConfirm={confirmConversion}
+          context="import"
+          previewData={previewData}
         />
       </ProtectedAction>
     </main>

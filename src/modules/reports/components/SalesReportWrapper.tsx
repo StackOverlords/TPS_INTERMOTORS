@@ -16,7 +16,7 @@ import { SaleReportFiltersPanel } from "./saleReportFiltersPanel";
 import { SaleReportTable } from "./saleReportTable";
 import { SaleHorizontalBarChart } from "./charts/saleHorizontalBarChart";
 import type { ColorConfig } from "@/components/charts/Basehorizontalbarchart";
-import type { themeColorPresets } from "@/hooks/charts/useChatThemeColors";
+import type { themeColorPresets } from "@/hooks/charts/useChartThemeColors";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 
 interface SalesReportWrapperProps {

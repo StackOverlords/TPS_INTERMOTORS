@@ -27,6 +27,7 @@
  * ```
  */
 
+import type { QuotationGetById } from '@/modules/quotations/types/quotationGet.types';
 import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
 import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
 import type { UIReturnDetailUpdate } from '@/modules/returns/types/returnUpdate.types';
@@ -505,7 +506,7 @@ export function useViewConfigRoutesWindowConfig(
       'view-selected',
       'window-closed',
     ],
-    onEvent: (eventName, data) => {
+    onEvent: (_eventName, _data) => {
       // Aquí puede manejar eventos específicos si es necesario
     },
   });
@@ -665,3 +666,61 @@ export function useOrderSelectorWindow(
     onEvent: handleEvent, // ✅ Referencia estable
   });
 };
+
+
+// ========= Hook específico para ventana de selector de cotizaciones =========
+export interface UseQuotationSelectorWindowConfig {
+  context: string;
+  instanceId?: string;
+  onQuotationSelect?: (quotation: QuotationGetById) => void;
+}
+
+// Array constante para evitar recreaciones
+const QUOTATION_SELECTOR_EVENTS = [
+  'quotation-selected',
+  'window-closed',
+] as const;
+
+export function useQuotationSelectorWindow(
+  config: UseQuotationSelectorWindowConfig
+): UseSecondaryWindowResult {
+  const {
+    context,
+    instanceId,
+    onQuotationSelect,
+  } = config;
+
+  // Generar windowId único
+  const windowId = instanceId
+    ? `quotation-selector-${context}-${instanceId}`
+    : `quotation-selector-${context}`;
+
+  // Ref para mantener callback actualizado sin causar re-renders
+  const onQuotationSelectRef = useRef(onQuotationSelect);
+  useEffect(() => {
+    onQuotationSelectRef.current = onQuotationSelect;
+  }, [onQuotationSelect]);
+
+  // Callback estable que usa la ref
+  const handleEvent = useCallback((eventName: string, data: any) => {
+    if (eventName === 'quotation-selected' && onQuotationSelectRef.current) {
+      onQuotationSelectRef.current(data);
+    }
+  }, []);
+
+  // Usar hook genérico para crear ventana de selector de cotizaciones
+  return useSecondaryWindow({
+    windowId,
+    route: '/window.html',
+    title: 'Seleccionar Cotización',
+    width: 1400,
+    height: 900,
+    queryParams: {
+      component: 'quotation-selector',
+      context,
+      windowId,
+    },
+    listenToEvents: QUOTATION_SELECTOR_EVENTS as unknown as string[],
+    onEvent: handleEvent,
+  });
+}

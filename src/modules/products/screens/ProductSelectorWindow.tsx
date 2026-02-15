@@ -641,11 +641,9 @@ const ProductSelectorWindow: React.FC = () => {
         header: "División",
         size: 150,
         minSize: 120,
-        cell: ({ row, getValue }) => (
+        cell: ({ getValue }) => (
           <div className="space-y-1">
-            <span className="font-medium">
-              {getValue<string>()}
-            </span> 
+            <span className="font-medium">{getValue<string>()}</span>
           </div>
         ),
       },
@@ -654,11 +652,9 @@ const ProductSelectorWindow: React.FC = () => {
         header: "Procedencia",
         size: 150,
         minSize: 120,
-        cell: ({ row, getValue }) => (
+        cell: ({ getValue }) => (
           <div className="space-y-1">
-            <span className="font-medium">
-              {getValue<string>()}
-            </span> 
+            <span className="font-medium">{getValue<string>()}</span>
           </div>
         ),
       },

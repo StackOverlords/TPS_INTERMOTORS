@@ -97,7 +97,7 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
               }
             >
               <div className="space-y-1 flex flex-col justify-center align-center">
-                <span className="font-bold text-blue-600">
+                <span className="font-bold text-blue-600 dark:text-blue-400">
                   {formatColumnNumber(getValue<string>(), "-")}
                 </span>
                 {/* <span className="text-xs text-muted-foreground">ID: {row.original.id}</span> */}
@@ -122,7 +122,7 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
                     locale: es,
@@ -160,7 +160,7 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
                     locale: es,
@@ -194,7 +194,7 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
             return (
               <div className="text-center text-xs">
                 <div
-                  className={`font-medium ${isToday ? "text-blue-600" : "text-foreground"}`}
+                  className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
                   {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
                     locale: es,
@@ -246,7 +246,13 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
         minSize: 150,
         cell: ({ row }) => {
           const resp = row.original.responsable;
-          const nombreCompleto = `${resp ? `${resp.nombre} ${resp.apellido_paterno}${resp.apellido_materno ? ` ${resp.apellido_materno}` : ""}` : "Sin responsable"}`;
+          const nombreCompleto = resp
+            ? [resp.nombre, resp.apellido_paterno, resp.apellido_materno]
+                .filter(
+                  (item) => item && item !== "null" && item !== "undefined"
+                )
+                .join(" ")
+            : "Sin responsable";
           return (
             <div className="space-y-1 flex flex-col">
               <span
@@ -254,11 +260,6 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
               >
                 {nombreCompleto}
               </span>
-              {resp && (
-                <span className="text-xs text-muted-foreground">
-                  DNI: {resp.dni}
-                </span>
-              )}
             </div>
           );
         },
@@ -272,7 +273,7 @@ const OrderSelectorTable: React.FC<OrderSelectorTableProps> = ({
           const items = row.original.numero_items;
           return (
             <div className="flex flex-col space-y-0.5 items-end">
-              <span className=" font-medium text-green-600">
+              <span className=" font-medium text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </span>
               <span className="text-muted-foreground">{items} items</span>

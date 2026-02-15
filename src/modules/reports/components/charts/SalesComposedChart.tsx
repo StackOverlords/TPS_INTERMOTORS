@@ -8,7 +8,7 @@ import {
 import {
   themeColorPresets,
   useChartThemeColors,
-} from "@/hooks/charts/useChatThemeColors";
+} from "@/hooks/charts/useChartThemeColors";
 import { formatCurrency } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
 

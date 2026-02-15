@@ -1,11 +1,13 @@
 import { useCartStore } from "./useCartStore";
-import type { CartMode, CartProduct, CartSummary, ConversionResult } from "../types/cart.types";
+import type { CartMode, CartProduct, CartSummary, ConversionResult, CartItem } from "../types/cart.types";
 import { useStore } from "zustand";
 import { showErrorToast, showInfoToast, showSuccessToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { CartProductSchema } from "../schemas/cartProduct.schema";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import { useCallback } from "react";
 import { getModeLabel } from "../store/cartStore";
+import type { QuotationGetById } from "@/modules/quotations/types/quotationGet.types";
+import { extractDiscountFromQuotation, quotationItemToCartItem } from "../utils/cartImportHelpers";
 
 export interface CartOperationResult {
     success: boolean;
@@ -94,6 +96,80 @@ export const useCartWithUtils = (user: string, branch: string) => {
         });
     }, [state.convertToQuote]);
 
+    // ==================== IMPORTACIÓN DESDE COTIZACIÓN ====================
+
+    /**
+     * Importa productos desde una cotización al carrito
+     * Convierte automáticamente los detalles de cotización a CartItems
+     * y aplica el descuento global si existe
+     */
+    const importFromQuotation = useCallback((quotation: QuotationGetById): CartOperationResult => {
+        if (!quotation?.detalles || quotation.detalles.length === 0) {
+            const result = {
+                success: false,
+                error: 'NO_ITEMS',
+                message: 'La cotización no tiene productos para importar'
+            };
+
+            showErrorToast({
+                title: "Error al importar",
+                description: result.message,
+                duration: 2000
+            });
+
+            return result;
+        }
+
+        try {
+            // Convertir detalles de cotización a CartItems
+            const cartItems: CartItem[] = quotation.detalles.map(quotationItemToCartItem);
+
+            // Extraer porcentaje de descuento global
+            const discountInfo = extractDiscountFromQuotation(quotation);
+
+            // Importar al carrito (esto limpia el carrito primero y aplica descuento)
+            const result = state.importFromQuotation(
+                cartItems, 
+                discountInfo.discountPercent
+            );
+
+            if (result.success) {
+                const messages: string[] = [
+                    `Se importaron ${result.data?.imported} productos de la cotización #${quotation.nro}`
+                ];
+
+                if (discountInfo.hasDiscount) {
+                    messages.push(
+                        `Con descuento del ${discountInfo.discountPercent.toFixed(2)}% aplicado`
+                    );
+                }
+
+                showSuccessToast({
+                    title: "Cotización importada",
+                    description: messages.join('\n'),
+                    duration: 3000
+                });
+            }
+
+            return result;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            const result = {
+                success: false,
+                error: 'IMPORT_ERROR',
+                message: `Error al importar cotización: ${errorMessage}`
+            };
+
+            showErrorToast({
+                title: "Error al importar",
+                description: result.message,
+                duration: 2000
+            });
+
+            return result;
+        }
+    }, [state.importFromQuotation]);
+
     // ==================== GESTIÓN DE ITEMS ====================
 
     const incrementQuantity = useCallback((productId: number) => {
@@ -132,7 +208,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
         if (result.success) {
             if (result.warning) {
-                // Es cotización con warning de stock
                 showWarningToast({
                     title: "Producto agregado con advertencia",
                     description: result.message,
@@ -219,7 +294,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
             message: `Se agregaron ${totalAdded} productos. ${totalFailed > 0 ? `${totalFailed} fallaron.` : ''}`
         };
 
-        // Toast con resumen
         if (totalAdded > 0) {
             if (hasWarnings && state.mode === 'quote') {
                 showWarningToast({
@@ -236,7 +310,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
             }
         }
 
-        // Toast con errores específicos si los hay
         if (totalFailed > 0) {
             const errorMessage = failedProducts.length === 1
                 ? failedProducts[0].message
@@ -257,7 +330,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
         const existingQuantity = state.getItemQuantity(product.id);
         const totalQuantity = existingQuantity + quantity;
 
-        // Validar stock solo en modo sale-strict
         if (state.mode === 'sale-strict') {
             if (!product.stock_actual || product.stock_actual <= 0) {
                 const result = {
@@ -338,11 +410,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
         return result;
     }, [state.getItemQuantity, state.addItem, state.mode]);
 
-    /**
- * Agrega múltiples productos al carrito, cada uno con su cantidad específica
- * @param products Array de productos con cantidad opcional (default: 1)
- * @returns Resultado detallado de la operación bulk
- */
     const addMultipleItemsWithQuantity = useCallback((
         products: Array<ProductGet & { quantity?: number }>
     ): BulkAddResult => {
@@ -358,7 +425,6 @@ export const useCartWithUtils = (user: string, branch: string) => {
             const existingQuantity = state.getItemQuantity(product.id);
             const totalQuantity = existingQuantity + requestedQuantity;
 
-            // Validar stock solo en modo sale-strict
             if (state.mode === 'sale-strict') {
                 if (!product.stock_actual || product.stock_actual <= 0) {
                     totalFailed++;
@@ -557,6 +623,10 @@ export const useCartWithUtils = (user: string, branch: string) => {
         return state.previewConversion(targetMode);
     }, [state.previewConversion]);
 
+    const previewQuotationImport = useCallback((itemsToImport: CartItem[], targetMode: CartMode = "sale-strict") => {
+        return state.previewQuotationImport(itemsToImport, targetMode);
+    }, [state.previewQuotationImport]);
+
     const getStockWarnings = useCallback(() => {
         if (state.mode !== 'quote') return [];
 
@@ -587,7 +657,11 @@ export const useCartWithUtils = (user: string, branch: string) => {
         convertToSalePermissiveWithToast,
         convertToQuoteWithToast,
         previewConversion,
+        previewQuotationImport, 
         getStockWarnings,
+
+        // Importación
+        importFromQuotation,
 
         // Gestión de items
         incrementQuantity,

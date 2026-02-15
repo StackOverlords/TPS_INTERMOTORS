@@ -23,6 +23,7 @@ import {
   Loader2,
   Printer,
   Trash2,
+  ShoppingCart,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -34,9 +35,17 @@ import { useQuotationGetById } from "../hooks/useQuotationGetById";
 import { useQuotationPDF } from "../hooks/useQuotationPDF";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRenderer } from "@/hooks/useViewRenderer";
+import { useTabNavigation } from "@/hooks/useTabNavigation";
+import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeConversionModal";
+import { useQuotationImport } from "@/modules/shoppingCart/hooks/useQuotationImport";
+import authSDK from "@/services/sdk-simple-auth";
+import { useBranchStore } from "@/states/branchStore";
+import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 
 const QuotationDetailScreen = () => {
   const navigate = useNavigate();
+  const user = authSDK.getCurrentUser();
+  const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
 
   const { value: quotationId, isValid: isValidQuotationId } =
     useValidatedRouteParam({
@@ -45,6 +54,7 @@ const QuotationDetailScreen = () => {
     });
 
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const { navigateWithTab } = useTabNavigation();
 
   const {
     data: quotationData,
@@ -59,6 +69,23 @@ const QuotationDetailScreen = () => {
     isError: isErrorPdf,
   } = useQuotationPDF(quotationId ?? 0, isDialogOpen && !!quotationId);
 
+  const cartUtils = useCartWithUtils(user?.name ?? "", selectedBranchId ?? "");
+
+  const {
+    isImporting,
+    showConversionModal,
+    importQuotation,
+    confirmConversion,
+    cancelConversion,
+    previewData,
+  } = useQuotationImport({
+    onImportComplete: () => {
+      navigateWithTab("/dashboard/create-sale", {
+        displayCode: "Nueva Venta",
+      });
+    },
+  });
+
   const { renderView } = useViewRenderer({
     queryStates: [
       {
@@ -67,7 +94,7 @@ const QuotationDetailScreen = () => {
         data: quotationData,
       },
     ],
-    isValidating: isValidQuotationId, // Pasar la validación externa
+    isValidating: isValidQuotationId,
     SkeletonComponent: SaleDetailSkeleton,
     ErrorComponent: ErrorDataComponent,
     errorMessage: "No se pudo cargar la cotización.",
@@ -107,8 +134,8 @@ const QuotationDetailScreen = () => {
   );
 
   const getContextColor = (tipo: string) => {
-    if (tipo === "VC") return "warning"; // Credito
-    if (tipo === "V") return "success"; // Pagado
+    if (tipo === "VC") return "warning";
+    if (tipo === "V") return "success";
     return "secondary";
   };
 
@@ -142,7 +169,24 @@ const QuotationDetailScreen = () => {
     setIsDialogOpen(false);
   };
 
-  // Shortcuts
+  const handleConvertToSale = () => {
+    if (!quotationData) {
+      showErrorToast({
+        title: "Error",
+        description: "No hay datos de cotización para convertir",
+        duration: 2000,
+      });
+      return;
+    }
+
+    // - Cambiar modo a sale-strict
+    // - Convertir items
+    // - Guardar en sessionStorage
+    // - Mostrar modal si hay cambios
+    // - Navegar después de confirmar
+    importQuotation(quotationData);
+  };
+
   useHotkeys("escape", handleGoBack, {
     scopes: ["esc-key"],
     enabled: true,
@@ -206,6 +250,39 @@ const QuotationDetailScreen = () => {
                 >
                   <Edit className="h-4 w-4" />
                   Editar
+                </TooltipButton>
+              </ProtectedAction>
+
+              <ProtectedAction
+                permission="ven-create"
+                roles={["Super Admin", "Administrador", "Vendedor"]}
+                fallback={null}
+              >
+                <TooltipButton
+                  onClick={handleConvertToSale}
+                  tooltip={
+                    cartUtils.getCartCount() > 0
+                      ? "Solo se puede convertir a venta cuando el carrito está vacio"
+                      : "Crear una venta a partir de esta cotización"
+                  }
+                  buttonProps={{
+                    variant: "outline",
+                    size: "sm",
+                    className: "gap-2",
+                    disabled: isImporting || cartUtils.getCartCount() > 0,
+                  }}
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Importando...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4" />
+                      Convertir a Venta
+                    </>
+                  )}
                 </TooltipButton>
               </ProtectedAction>
 
@@ -311,13 +388,6 @@ const QuotationDetailScreen = () => {
                   {quotationData?.cliente?.cliente}
                 </p>
               </div>
-              {/* <div>
-                                <Label className="text-xs text-muted-foreground">Productos</Label>
-                                <p className="text-sm">
-                                    {quotationData?.cantidad_detalles}{' '}
-                                    {quotationData?.cantidad_detalles === 1 ? 'producto' : 'productos'}
-                                </p>
-                            </div> */}
               {quotationData?.responsable_cotizacion && (
                 <div>
                   <Label className="text-xs text-muted-foreground">
@@ -338,84 +408,6 @@ const QuotationDetailScreen = () => {
           </CardContent>
         </Card>
 
-        {/* Información detallada de cliente y responsable - Comentado por si se necesita más adelante */}
-        {/* <div className="grid md:grid-cols-2 gap-2">
-                    <Card className="bg-card border border-border shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <Building2 className="h-5 w-5 text-muted-foreground" />
-                                Información del cliente
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-primary space-y-4">
-                                <div>
-                                    <Label>Cliente</Label>
-                                    <p className="text-base text-blue-600 dark:text-blue-400 font-semibold">{quotationData?.cliente?.cliente}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label>Contacto</Label>
-                                        <p>{formatCell(quotationData?.cliente?.contacto)}</p>
-                                    </div>
-                                    <div>
-                                        <Label>NIT</Label>
-                                        <p>{formatCell(quotationData?.cliente?.nit)}</p>
-                                    </div>
-                                </div>
-                                {
-                                    quotationData?.cliente_telefono && (
-                                        <div className="flex items-center gap-2">
-                                            <Phone className="size-3.5 text-muted-foreground/70" />
-                                            <p>{formatCell(quotationData?.cliente_telefono)}</p>
-                                        </div>
-                                    )
-                                }
-                                <div className="flex items-center gap-2">
-                                    <MapPin className="size-3.5 text-muted-foreground/70" />
-                                    <p>{formatCell(quotationData?.cliente?.direccion)}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-card border border-border shadow-none">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-primary">
-                                <User className="h-5 w-5 text-muted-foreground" />
-                                Responsable de cotizacion
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-xs text-primary space-y-4">
-                                <div>
-                                    <Label>Nombre</Label>
-                                    <p className="text-base font-semibold">
-                                        {[
-                                            quotationData?.responsable_cotizacion?.nombre,
-                                            quotationData?.responsable_cotizacion?.apellido_paterno,
-                                            quotationData?.responsable_cotizacion?.apellido_materno
-                                        ]
-                                            .filter(Boolean)
-                                            .join(" ")}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <Label>DNI</Label>
-                                        <p>{formatCell(quotationData?.responsable_cotizacion?.dni)}</p>
-                                    </div>
-                                    <div>
-                                        <Label>Celular</Label>
-                                        <p>{formatCell(quotationData?.responsable_cotizacion?.celular)}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div> */}
-
         <QuotationProductsSection
           products={quotationData?.detalles ?? []}
           isLoading={isLoadingQuotation}
@@ -431,7 +423,7 @@ const QuotationDetailScreen = () => {
         onConfirm={handleConfirmDeleteAlert}
         isLoading={isDeleting}
       />
-      {/* Modal PDF Viewer */}
+
       {isDialogOpen && (
         <PDFViewer
           id={quotationId ?? 0}
@@ -444,6 +436,17 @@ const QuotationDetailScreen = () => {
           title={`Cotización Nro. ${quotationData?.id}`}
         />
       )}
+
+      <CartModeConversionModal
+        open={showConversionModal}
+        onClose={cancelConversion}
+        targetMode="sale-strict"
+        shouldGoBackOnClose={false}
+        onConfirm={confirmConversion}
+        context="import"
+        previewData={previewData}
+        executeCloseOnConfirm={false}
+      />
     </main>
   );
 };

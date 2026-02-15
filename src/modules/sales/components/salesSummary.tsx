@@ -1,7 +1,7 @@
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
 import { Label } from "@/components/atoms/label";
-import { Edit, Loader2, Save } from "lucide-react";
+import { Edit, Loader2, PackageX, Save } from "lucide-react";
 import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import { EditablePercentage } from "@/modules/shoppingCart/components/EditablePercentage";
 import TooltipButton from "@/components/common/TooltipButton";
@@ -25,6 +25,8 @@ interface SalesSummaryProps {
   total: number;
   hasProducts?: boolean;
   secondaryButtonText?: string;
+  creationMode?: string;
+  handleCancelQuotationImport?: () => void;
 }
 const SalesSummary: React.FC<SalesSummaryProps> = ({
   isReadOnly = false,
@@ -41,6 +43,8 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
   total,
   hasProducts = false,
   secondaryButtonText,
+  creationMode,
+  handleCancelQuotationImport,
 }) => {
   const handleSecondaryAction = () => {
     clearCart?.();
@@ -132,6 +136,20 @@ const SalesSummary: React.FC<SalesSummaryProps> = ({
           </div>
 
           <div className="grid grid-cols-2 w-full md:w-auto md:flex gap-2">
+            {!isEditMode && creationMode === "quotation-import" && (
+              <TooltipButton
+                buttonProps={{
+                  onClick: handleCancelQuotationImport,
+                  disabled: isPending,
+                  variant: "destructive",
+                  size: "sm",
+                }}
+                tooltip="Cancelar importación de cotización y limpiar carrito"
+              >
+                <PackageX className="mr-2 h-4 w-4" />
+                Cancelar Importación
+              </TooltipButton>
+            )}
             <Button
               type="button"
               variant="outline"
