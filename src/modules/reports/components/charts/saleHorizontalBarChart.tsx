@@ -28,6 +28,8 @@ export interface SaleHorizontalBarChartProps {
   height?: number;
   limit?: number;
   maxNameLength?: number;
+  /** Modo compacto para dashboard - reduce tamaños de fuente y ajusta espaciado */
+  compactMode?: boolean;
 }
 
 const truncateText = (text: string, maxLength: number = 30): string => {
@@ -41,16 +43,38 @@ const formatValue = (value: number, dataKey: "cantidad" | "total"): string => {
   return value.toLocaleString("es-BO", { maximumFractionDigits: 0 });
 };
 
-const ProductTooltip = ({ active, payload }: any) => {
+const ProductTooltip = ({ active, payload, coordinate }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as ProductChartData;
+
+    // Posicionamiento inteligente basado en la coordenada
+    let offsetX = 16;
+    let transformX = "0";
+
+    // Si estamos en el lado derecho de la pantalla, mover el tooltip a la izquierda
+    if (coordinate && coordinate.x > window.innerWidth * 0.65) {
+      offsetX = -16;
+      transformX = "-100%";
+    }
+
     return (
-      <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-80">
+      <div
+        className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs"
+        style={{
+          zIndex: 10000,
+          position: "relative",
+          transform: `translateX(${transformX})`,
+          marginLeft: `${offsetX}px`,
+          minWidth: "320px",
+          maxWidth: "380px",
+          pointerEvents: "none",
+        }}
+      >
         <div className="flex items-center gap-2 mb-1.5">
           <span className="font-bold text-foreground">#{data.ranking}</span>
           <span className="font-mono text-muted-foreground">{data.codigo}</span>
         </div>
-        <p className="text-foreground font-medium mb-2 max-w-96 leading-snug text-sm">
+        <p className="text-foreground font-medium mb-2 leading-snug text-sm line-clamp-2">
           {data.fullName}
         </p>
         <div className="space-y-1 border-t border-border/50 pt-2">
@@ -89,6 +113,7 @@ export function SaleHorizontalBarChart({
   height = 400,
   limit = 15,
   maxNameLength = 30,
+  compactMode = false,
 }: SaleHorizontalBarChartProps) {
   // Obtener colores según el tema
   const themeColors = useChartThemeColors(themeColorPresets[colorPreset]);
@@ -102,8 +127,11 @@ export function SaleHorizontalBarChart({
 
   // Transformar datos para el gráfico
   const chartData: ProductChartData[] = useMemo(() => {
+    // Ajustar longitud máxima del nombre según el modo
+    const effectiveMaxLength = compactMode ? 18 : maxNameLength;
+
     return data.slice(0, limit).map((item, index) => ({
-      name: truncateText(item.producto, maxNameLength),
+      name: truncateText(item.producto, effectiveMaxLength),
       fullName: item.producto,
       codigo: item.codigo,
       value: parseFloat(item[dataKey].toString()),
@@ -112,7 +140,14 @@ export function SaleHorizontalBarChart({
       total: parseFloat(item.total.toString()),
       ranking: index + 1,
     }));
-  }, [data, dataKey, limit, maxNameLength]);
+  }, [data, dataKey, limit, maxNameLength, compactMode]);
+
+  // Configuraciones para modo compacto
+  const axisFontSize = compactMode ? 9 : 12;
+  const yAxisWidth = compactMode ? 140 : 180; // Aumentado de 120 a 140 para evitar cortes
+  const margin = compactMode
+    ? { top: 5, right: 30, left: 2, bottom: 5 } // Más margen a la derecha, menos a la izquierda
+    : { top: 5, right: 30, left: 40, bottom: 5 };
 
   return (
     <BaseHorizontalBarChart
@@ -123,6 +158,10 @@ export function SaleHorizontalBarChart({
       limit={limit}
       customTooltip={ProductTooltip}
       valueFormatter={(value) => formatValue(value, dataKey)}
+      axisFontSize={axisFontSize}
+      yAxisWidth={yAxisWidth}
+      autoAdjustYAxisWidth={compactMode}
+      margin={margin}
     />
   );
 }

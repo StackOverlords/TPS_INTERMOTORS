@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -77,6 +78,10 @@ export interface BaseHorizontalBarChartProps {
   legendName?: string;
   /** Configuración del label de valor al final de cada barra */
   labelConfig?: LabelConfig;
+  /** Tamaño de fuente para los ejes (por defecto 12) */
+  axisFontSize?: number;
+  /** Ajustar automáticamente el ancho del eje Y según el tamaño de fuente */
+  autoAdjustYAxisWidth?: boolean;
 }
 
 export function BaseHorizontalBarChart({
@@ -100,15 +105,26 @@ export function BaseHorizontalBarChart({
   showLegend = false,
   legendName,
   labelConfig,
+  axisFontSize = 12,
+  autoAdjustYAxisWidth = false,
 }: BaseHorizontalBarChartProps) {
+  // Generar un ID único para esta instancia del gráfico
+  const instanceId = useMemo(() => Math.random().toString(36).substr(2, 9), []);
+
   const chartData = data.slice(0, limit);
 
   const dynamicHeight = useDynamicHeight
     ? height || Math.max(minHeight, chartData.length * barHeight)
     : "100%";
 
-  const gradientPositiveId = `gradient-pos-${dataKey}`;
-  const gradientNegativeId = `gradient-neg-${dataKey}`;
+  // Ajustar el ancho del eje Y basado en el tamaño de fuente si está habilitado
+  const effectiveYAxisWidth = autoAdjustYAxisWidth
+    ? Math.max(Math.round(yAxisWidth * (axisFontSize / 12)), axisFontSize * 10) // Mínimo 10 caracteres
+    : yAxisWidth;
+
+  // IDs únicos para los gradientes de esta instancia
+  const gradientPositiveId = `gradient-pos-${instanceId}`;
+  const gradientNegativeId = `gradient-neg-${instanceId}`;
 
   const getBarFill = (value: number) => {
     if (colorConfig.type === "gradient") {
@@ -176,111 +192,120 @@ export function BaseHorizontalBarChart({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={dynamicHeight}>
-      <BarChart data={chartData} layout="vertical" margin={margin}>
-        <defs>
-          {colorConfig.type === "gradient" && gradientColors && (
-            <>
-              {/* Positivos: oscuro hacia la derecha */}
-              <linearGradient
-                id={gradientPositiveId}
-                x1="0"
-                y1="0"
-                x2="1"
-                y2="0"
-              >
-                <stop
-                  offset="0%"
-                  stopColor={gradientColors.end}
-                  stopOpacity={0.5}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={gradientColors.start}
-                  stopOpacity={1}
-                />
-              </linearGradient>
-              {/* Negativos: oscuro hacia la izquierda (mismos colores, dirección invertida) */}
-              <linearGradient
-                id={gradientNegativeId}
-                x1="1"
-                y1="0"
-                x2="0"
-                y2="0"
-              >
-                <stop
-                  offset="0%"
-                  stopColor={gradientColors.end}
-                  stopOpacity={0.5}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={gradientColors.start}
-                  stopOpacity={1}
-                />
-              </linearGradient>
-            </>
+    <div
+      style={{ width: "100%", height: dynamicHeight, padding: "0 8px 0 2px" }}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} layout="vertical" margin={margin}>
+          <defs>
+            {colorConfig.type === "gradient" && gradientColors && (
+              <>
+                {/* Positivos: oscuro hacia la derecha */}
+                <linearGradient
+                  id={gradientPositiveId}
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={gradientColors.end}
+                    stopOpacity={0.5}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={gradientColors.start}
+                    stopOpacity={1}
+                  />
+                </linearGradient>
+                {/* Negativos: oscuro hacia la izquierda (mismos colores, dirección invertida) */}
+                <linearGradient
+                  id={gradientNegativeId}
+                  x1="1"
+                  y1="0"
+                  x2="0"
+                  y2="0"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={gradientColors.end}
+                    stopOpacity={0.5}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={gradientColors.start}
+                    stopOpacity={1}
+                  />
+                </linearGradient>
+              </>
+            )}
+          </defs>
+
+          {showGrid && (
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={true}
+              vertical={true}
+              stroke="hsl(var(--border))"
+              opacity={gridOpacity}
+              strokeWidth={0.6}
+              syncWithTicks={true}
+            />
           )}
-        </defs>
 
-        {showGrid && (
-          <CartesianGrid
-            strokeDasharray="3 3"
-            horizontal={true}
-            vertical={true}
-            stroke="hsl(var(--border))"
-            opacity={gridOpacity}
-            strokeWidth={0.6}
-            syncWithTicks={true}
+          <XAxis
+            type="number"
+            tickFormatter={valueFormatter}
+            fontSize={axisFontSize}
+            stroke="hsl(var(--muted-foreground))"
+            tickLine={false}
+            axisLine={{ strokeWidth: 0.5, stroke: "hsl(var(--border))" }}
           />
-        )}
 
-        <XAxis
-          type="number"
-          tickFormatter={valueFormatter}
-          fontSize={12}
-          stroke="hsl(var(--muted-foreground))"
-          tickLine={false}
-          axisLine={{ strokeWidth: 0.5, stroke: "hsl(var(--border))" }}
-        />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={effectiveYAxisWidth}
+            fontSize={axisFontSize}
+            tickLine={false}
+            axisLine={{ strokeWidth: 0.5, stroke: "hsl(var(--border))" }}
+            stroke="hsl(var(--muted-foreground))"
+            interval={0}
+            tick={{ fontSize: axisFontSize }}
+          />
 
-        <YAxis
-          type="category"
-          dataKey="name"
-          width={yAxisWidth}
-          fontSize={12}
-          tickLine={false}
-          axisLine={{ strokeWidth: 0.5, stroke: "hsl(var(--border))" }}
-          stroke="hsl(var(--muted-foreground))"
-        />
+          <Tooltip
+            content={customTooltip || undefined}
+            cursor={{ fill: "hsl(var(--muted))", opacity: 0.8 }}
+            wrapperStyle={{ zIndex: 10000 }}
+            allowEscapeViewBox={{ x: true, y: true }}
+            position={{ x: undefined, y: undefined }}
+          />
 
-        <Tooltip
-          content={customTooltip || undefined}
-          cursor={{ fill: "hsl(var(--muted))", opacity: 0.8 }}
-        />
+          {showLegend && <Legend formatter={() => legendName || dataKey} />}
 
-        {showLegend && <Legend formatter={() => legendName || dataKey} />}
-
-        <Bar
-          dataKey={dataKey}
-          name={legendName || dataKey}
-          radius={barRadius}
-          fill={getBarFill(0)}
-          className="drop-shadow-sm"
-          label={isLabelVisible ? renderLabel : false}
-        >
-          {showBrightness &&
-            chartData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={getBarFill(entry[dataKey])}
-                style={{
-                  filter: `brightness(${1 - (index / chartData.length) * brightnessIntensity})`,
-                }}
-              />
-            ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+          <Bar
+            dataKey={dataKey}
+            name={legendName || dataKey}
+            radius={barRadius}
+            fill={getBarFill(0)}
+            className="drop-shadow-sm"
+            label={isLabelVisible ? renderLabel : false}
+          >
+            {showBrightness &&
+              chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={getBarFill(entry[dataKey])}
+                  style={{
+                    filter: `brightness(${1 - (index / chartData.length) * brightnessIntensity})`,
+                  }}
+                />
+              ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
