@@ -23,46 +23,34 @@ export function BentoMetricCard({
   return (
     <Card
       className={cn(
-        "h-full border-border/40 bg-card/80 backdrop-blur-sm transition-all",
+        "h-full border-border/40 bg-background transition-all",
         onClick && "cursor-pointer hover:shadow-md hover:border-border/60"
       )}
       onClick={onClick}
     >
-      <CardContent className="p-3 flex flex-col justify-between h-full">
-        <div className="flex items-center justify-between gap-2 mb-2">
+      <CardContent className="p-4 flex flex-col justify-between h-full">
+        <div className="flex items-center justify-between gap-2">
           <div className={cn("rounded-lg p-1.5 shrink-0", accent)}>
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="size-4" />
           </div>
-          {trend && (
-            <div
+          <div className="flex flex-col items-end">
+            <p
               className={cn(
-                "flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
-                trend.positive
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                "text-base font-bold tracking-tight leading-none mb-0.5",
+                accent
               )}
             >
-              {trend.positive ? (
-                <TrendingUp className="h-2.5 w-2.5" />
-              ) : (
-                <TrendingDown className="h-2.5 w-2.5" />
-              )}
-              {trend.value}
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="text-base font-bold tracking-tight leading-none mb-0.5">
-            {value}
-          </p>
-          <p className="text-[10px] font-medium text-muted-foreground">
-            {title}
-          </p>
-          {subtitle && (
-            <p className="text-[9px] text-muted-foreground/70 mt-0.5">
-              {subtitle}
+              {value}
             </p>
-          )}
+            <p className="text-sm font-semibold text-muted-foreground">
+              {title}
+            </p>
+            {/* {subtitle && (
+              <p className="text-xs text-muted-foreground/70 mt-0.5">
+                {subtitle}
+              </p>
+            )} */}
+          </div>
         </div>
       </CardContent>
     </Card>

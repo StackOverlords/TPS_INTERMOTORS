@@ -8,6 +8,7 @@ import { DebtDistributionCard } from "../components/dashboard/DebtDistributionCa
 import { ReceivablesCard } from "../components/dashboard/ReceivablesCard";
 import { RecentSalesCard } from "../components/dashboard/RecentSalesCard";
 import { QuickActionsCardWrapper } from "../components/dashboard/QuickActionsCardWrapper";
+import { DateRangeFilter } from "../components/dashboard/DateRangeFilter";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -39,20 +40,22 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col gap-2.5 p-3 overflow-hidden">
+    <div className="h-full flex flex-col gap-2 p-2 overflow-hidden">
       {/* ─── Header ────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold tracking-tight">Dashboard</h1>
-          <p className="text-[10px] text-muted-foreground">
+          <h1 className="text-lg lg:text-xl font-bold tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
             Resumen general del negocio
           </p>
         </div>
-        {/* <DateRangeFilter
+        <DateRangeFilter
           from={globalRange.from}
           to={globalRange.to}
           onChange={(f, t) => setGlobalRange(f, t)}
-        /> */}
+        />
       </div>
 
       {/* ─── Bento Grid ───────────────────────────────────────────────────── */}
