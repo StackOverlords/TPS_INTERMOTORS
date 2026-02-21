@@ -16,7 +16,7 @@ import { SaleReportFiltersPanel } from "./saleReportFiltersPanel";
 import { SaleReportTable } from "./saleReportTable";
 import { SaleHorizontalBarChart } from "./charts/saleHorizontalBarChart";
 import type { ColorConfig } from "@/components/charts/Basehorizontalbarchart";
-import type { themeColorPresets } from "@/hooks/charts/useChatThemeColors";
+import type { themeColorPresets } from "@/hooks/charts/useChartThemeColors";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 
 interface SalesReportWrapperProps {
@@ -135,7 +135,8 @@ export function SalesReportWrapper({
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto">
         <div className="h-full">
-          <Card className="flex flex-col h-full overflow-hidden">
+          {/* CAMBIO CRÍTICO: Removido overflow-hidden, agregado relative y overflow-visible */}
+          <Card className="flex flex-col h-full relative overflow-visible">
             <CardHeader className="flex flex-col flex-shrink-0 items-center p-2 border-border border-b">
               <CardTitle className="text-base flex flex-row justify-between items-center gap-2 w-full">
                 <div className="flex items-center">
@@ -243,7 +244,11 @@ export function SalesReportWrapper({
               )}
             </CardHeader>
 
-            <CardContent className="min-h-0 flex-1 p-0">
+            {/* CAMBIO: overflow-hidden solo en la tabla, overflow-visible en el gráfico */}
+            <CardContent
+              className="min-h-0 flex-1 p-0"
+              style={{ overflow: viewMode === "table" ? "hidden" : "visible" }}
+            >
               {viewMode === "table" ? (
                 <SaleReportTable
                   data={data}
@@ -254,7 +259,7 @@ export function SalesReportWrapper({
                   isError={isError}
                 />
               ) : (
-                <div className="h-full pt-2">
+                <div className="h-full pt-2" style={{ overflow: "visible" }}>
                   <SaleHorizontalBarChart
                     data={data}
                     dataKey={chartDataKey}

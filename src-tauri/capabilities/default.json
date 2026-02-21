@@ -9,7 +9,8 @@
     "settings-routes-*",
     "debug-log-window",
     "order-selector-*",
-    "sale-detail-selector-*"
+    "sale-detail-selector-*",
+    "quotation-selector-*"
   ],
   "permissions": [
     "core:default",

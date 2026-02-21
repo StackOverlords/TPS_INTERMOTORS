@@ -22,7 +22,7 @@ import {
 import {
   themeColorPresets,
   useChartThemeColors,
-} from "@/hooks/charts/useChatThemeColors";
+} from "@/hooks/charts/useChartThemeColors";
 
 // ─────────────────────────────────────────────
 // Tipos

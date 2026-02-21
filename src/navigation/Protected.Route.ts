@@ -1,4 +1,3 @@
-import Content from "@/modules/dashboard/screens/content";
 import { LayoutDashboardIcon } from "lucide-react";
 import accountsPayable from "./AccountPayable.Route";
 import ordersProtectedRoutes from "./Order.Route";
@@ -11,13 +10,14 @@ import salesProtectedRoutes from "./Sales.Route";
 import settingsProtectedRoutes from "./Settings.Route";
 import transfersProtectedRoutes from "./Transfers.Route";
 import usersProtectedRoutes from "./Users.Route";
+import Dashboard from "@/modules/dashboard/screens/dashboard";
 
 const protectedRoutes: RouteType[] = [
   {
     path: "/dashboard",
     name: "Dashboard",
     type: "protected",
-    element: Content,
+    element: Dashboard,
     isAdmin: false,
     role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
     icon: LayoutDashboardIcon,

@@ -29,34 +29,64 @@
     /*
        FUENTES DEL SISTEMA (System Font Stacks)
  Fuente Sans-Serif moderna (DEFAULT - Font stack original de Tailwind CSS) */
-    --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-                 "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
-                 sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-                 "Segoe UI Symbol", "Noto Color Emoji";
+    --font-sans:
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+      "Noto Color Emoji";
 
     /* Fuente Monospace (estilo técnico/código) */
-    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco,
-                 Consolas, "Liberation Mono", "Courier New", monospace;
+    --font-mono:
+      ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", monospace;
 
     /* Fuente Serif (estilo formal/clásico) */
     --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 
     /* Tamaños de fuente */
-    --font-size-small: 0.875rem;   /* 14px */
-    --font-size-medium: 1rem;       /* 16px - default    este usaremos por defecto, es el que teniamos antes */
-    --font-size-large: 1.125rem;    /* 18px */
+    --font-size-small: 0.875rem; /* 14px */
+    --font-size-medium: 1rem; /* 16px - default    este usaremos por defecto, es el que teniamos antes */
+    --font-size-large: 1.125rem; /* 18px */
 
     /* Fuente activa - Se cambia dinámicamente desde el Store */
     --font-family-active: var(--font-sans);
 
     /* Diseño y espaciado - Valores por defecto */
-    --element-spacing: 16px;       /* Espaciado entre elementos */
-    --border-radius-base: 0.5rem;  /* Radio de bordes Mediano */
+    --element-spacing: 16px; /* Espaciado entre elementos */
+    --border-radius-base: 0.5rem; /* Radio de bordes Mediano */
+
+    /* Toast Info - Light */
+    --toast-info-foreground: 220 13% 18%;
+    --toast-info-border: 214 32% 91%;
+    --toast-info-icon: 214 84% 56%;
+    --toast-info-icon-bg: 214 100% 97%;
+
+    /* Toast Success - Light */
+    --toast-success-foreground: 220 13% 18%;
+    --toast-success-border: 142 34% 85%;
+    --toast-success-icon: 142 71% 45%;
+    --toast-success-icon-bg: 142 68% 95%;
+
+    /* Toast Warning - Light */
+    --toast-warning-foreground: 220 13% 18%;
+    --toast-warning-border: 48 95% 76%;
+    --toast-warning-icon: 25 95% 53%;
+    --toast-warning-icon-bg: 48 100% 93%;
+
+    /* Toast Error - Light */
+    --toast-error-foreground: 220 13% 18%;
+    --toast-error-border: 0 93% 94%;
+    --toast-error-icon: 0 84% 60%;
+    --toast-error-icon-bg: 0 100% 97%;
   }
 
   /* Aplicar fuente activa a todo el documento */
   * {
     font-family: var(--font-family-active);
+  }
+
+  .rdp-chevron {
+    fill: hsl(var(--foreground));
   }
 
   /* Modo de contraste alto - Mejora la accesibilidad visual */
@@ -239,6 +269,30 @@
     --popover-foreground: 0 0% 100%;
     --card: 220 13% 18%;
     --card-foreground: 0 0% 100%;
+
+    /* Toast Info - Dark */
+    --toast-info-foreground: 214 100% 85%;
+    --toast-info-border: 214 28% 28%;
+    --toast-info-icon: 214 90% 70%;
+    --toast-info-icon-bg: 214 35% 22%;
+
+    /* Toast Success - Dark */
+    --toast-success-foreground: 142 70% 85%;
+    --toast-success-border: 142 28% 28%;
+    --toast-success-icon: 142 65% 65%;
+    --toast-success-icon-bg: 142 30% 22%;
+
+    /* Toast Warning - Dark */
+    --toast-warning-foreground: 48 95% 85%;
+    --toast-warning-border: 38 30% 28%;
+    --toast-warning-icon: 38 92% 65%;
+    --toast-warning-icon-bg: 38 35% 22%;
+
+    /* Toast Error - Dark */
+    --toast-error-foreground: 0 85% 85%;
+    --toast-error-border: 0 28% 28%;
+    --toast-error-icon: 0 75% 65%;
+    --toast-error-icon-bg: 0 30% 22%;
   }
 }
 
@@ -264,40 +318,32 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  /* Toast Info - Light */
-  --color-toast-info-bg: radial-gradient(ellipse at left, hsl(214 100% 97%) 0%, hsl(214 50% 98%) 50%, hsl(0 0% 100%) 100%);
-  --color-toast-info-foreground: hsl(220 13% 18%);
-  --color-toast-info-border: hsl(214 32% 91%);
-  --color-toast-info-icon: hsl(214 84% 56%);
-  --color-toast-info-icon-bg: hsl(214 100% 97%);
+  /* Toast Colors  */
+  --color-toast-info-foreground: hsl(var(--toast-info-foreground));
+  --color-toast-info-border: hsl(var(--toast-info-border));
+  --color-toast-info-icon: hsl(var(--toast-info-icon));
+  --color-toast-info-icon-bg: hsl(var(--toast-info-icon-bg));
 
-  /* Toast Success - Light */
-  --color-toast-success-bg: radial-gradient(ellipse at left, hsl(142 70% 96%) 0%, hsl(142 30% 98%) 50%, hsl(0 0% 100%) 100%);
-  --color-toast-success-foreground: hsl(220 13% 18%);
-  --color-toast-success-border: hsl(142 34% 85%);
-  --color-toast-success-icon: hsl(142 71% 45%);
-  --color-toast-success-icon-bg: hsl(142 68% 95%);
+  --color-toast-success-foreground: hsl(var(--toast-success-foreground));
+  --color-toast-success-border: hsl(var(--toast-success-border));
+  --color-toast-success-icon: hsl(var(--toast-success-icon));
+  --color-toast-success-icon-bg: hsl(var(--toast-success-icon-bg));
 
-  /* Toast Warning - Light */
-  --color-toast-warning-bg: radial-gradient(ellipse at left, hsl(48 100% 95%) 0%, hsl(48 50% 97%) 50%, hsl(0 0% 100%) 100%);
-  --color-toast-warning-foreground: hsl(220 13% 18%);
-  --color-toast-warning-border: hsl(48 95% 76%);
-  --color-toast-warning-icon: hsl(25 95% 53%);
-  --color-toast-warning-icon-bg: hsl(48 100% 93%);
+  --color-toast-warning-foreground: hsl(var(--toast-warning-foreground));
+  --color-toast-warning-border: hsl(var(--toast-warning-border));
+  --color-toast-warning-icon: hsl(var(--toast-warning-icon));
+  --color-toast-warning-icon-bg: hsl(var(--toast-warning-icon-bg));
 
-  /* Toast Error - Light */
-  --color-toast-error-bg: radial-gradient(ellipse at left, hsl(0 100% 97%) 0%, hsl(0 50% 98%) 50%, hsl(0 0% 100%) 100%);
-  --color-toast-error-foreground: hsl(220 13% 18%);
-  --color-toast-error-border: hsl(0 93% 94%);
-  --color-toast-error-icon: hsl(0 84% 60%);
-  --color-toast-error-icon-bg: hsl(0 100% 97%);
+  --color-toast-error-foreground: hsl(var(--toast-error-foreground));
+  --color-toast-error-border: hsl(var(--toast-error-border));
+  --color-toast-error-icon: hsl(var(--toast-error-icon));
+  --color-toast-error-icon-bg: hsl(var(--toast-error-icon-bg));
 
   /* Radius personalizado */
   --radius-lg: 0.5rem;
   --radius-md: calc(0.5rem - 2px);
   --radius-sm: calc(0.5rem - 4px);
 }
-
 
 /* Animaciones personalizadas */
 @keyframes fade-in {
@@ -371,13 +417,14 @@
 
 /* Estilos para evitar los botones de incremento/descremento en inputs de tipo number */
 input[type="number"].no-spinners::-webkit-inner-spin-button,
-  input[type="number"].no-spinners::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-input[type="number"].no-spinners { -moz-appearance: textfield; }
+input[type="number"].no-spinners::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spinners {
+  -moz-appearance: textfield;
+}
 
- 
 /* Fila seleccionada - Solo si está personalizada */
 table tbody tr[data-state="selected"] {
   background-color: var(--table-selected-row-custom) !important;
@@ -400,4 +447,50 @@ table thead th {
 /* Filas alternas - Solo si está personalizado */
 table tbody tr:nth-child(even):not(:hover):not([data-state="selected"]) {
   background-color: var(--table-alternate-rows-custom) !important;
+}
+
+/**
+ * Estilos globales para tooltips de Recharts
+ * 
+ * Estos estilos aseguran que los tooltips de los gráficos
+ * siempre sean visibles por encima de cualquier contenedor.
+ */
+
+/* Asegurar que el contenedor de tooltips de Recharts esté siempre visible */
+.recharts-tooltip-wrapper {
+  z-index: 10000 !important;
+  pointer-events: none !important;
+}
+
+/* El contenido del tooltip sí debe poder recibir eventos */
+.recharts-tooltip-wrapper > * {
+  pointer-events: auto;
+}
+
+/* Asegurar que los portales de tooltips sean visibles */
+body > .recharts-tooltip-portal {
+  z-index: 10000 !important;
+}
+
+/* Forzar que el wrapper del gráfico no corte el tooltip */
+.recharts-wrapper {
+  overflow: visible !important;
+}
+
+.recharts-surface {
+  overflow: visible !important;
+}
+
+/* Prevenir que el tooltip cause scroll horizontal */
+.recharts-tooltip-wrapper {
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Asegurar que el tooltip se renderice correctamente en contenedores pequeños */
+@media (max-width: 640px) {
+  .recharts-tooltip-wrapper > div {
+    max-width: calc(100vw - 32px) !important;
+    min-width: 280px !important;
+  }
 }
