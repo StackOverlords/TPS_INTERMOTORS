@@ -5,7 +5,6 @@ import {
   CardTitle,
 } from "@/components/atoms/card";
 import { TabsContent } from "@/components/atoms/tabs";
-import { format } from "date-fns";
 import { Calendar, ImageIcon, Upload } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
@@ -18,6 +17,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { Button } from "@/components/atoms/button";
 import { ImageViewer } from "@/components/common/ImageViewer";
 import { Label } from "@/components/atoms/label";
+import { parseDateForUi } from "@/utils/dateFormatters";
 
 interface ProductOverviewProps {
   productStockData: ProductStock[];
@@ -138,10 +138,7 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
 
                           <p className="text-lg font-semibold text-foreground">
                             {compraReciente.fecha_adquisicion
-                              ? format(
-                                  compraReciente.fecha_adquisicion,
-                                  "dd-MM-yyyy"
-                                )
+                              ? parseDateForUi(compraReciente.fecha_adquisicion)
                               : "Sin fecha"}
                           </p>
                         </div>
@@ -169,9 +166,8 @@ const ProductOverview: React.FC<ProductOverviewProps> = ({
                             className={` ${compraReciente.fecha_actualizacion ? "text-lg font-semibold text-foreground" : "italic text-sm text-muted-foreground"}`}
                           >
                             {compraReciente.fecha_actualizacion
-                              ? format(
-                                  compraReciente.fecha_actualizacion,
-                                  "dd-MM-yyyy"
+                              ? parseDateForUi(
+                                  compraReciente.fecha_actualizacion
                                 )
                               : "Sin fecha"}
                           </p>

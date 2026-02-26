@@ -192,7 +192,8 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
 
     baseColumns.push(
       {
-        accessorKey: "id_producto",
+        accessorFn: (row) => row.product.codigo_interno,
+        id: "codigo_interno",
         header: "Cód. Int.",
         size: 50,
         minSize: 40,

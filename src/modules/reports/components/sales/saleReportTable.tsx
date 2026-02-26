@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { type ColumnDef, type SortingState } from "@tanstack/react-table";
-import type { ReportItem } from "../types/report.types";
+import type { ReportItem } from "../../types/report.types";
 import { cn } from "@/lib/utils";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";

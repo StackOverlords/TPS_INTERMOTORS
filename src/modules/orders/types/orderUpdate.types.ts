@@ -6,6 +6,7 @@ export type OrderDetailUpdate = z.infer<typeof OrderDetailUpdateSchema>;
 export interface UIOrderDetailUpdate extends OrderDetailUpdate {
     product: {
         id: number
+        codigo_interno: number,
         descripcion: string
         codigo_oem: string | null,
         codigo_upc: string | null,

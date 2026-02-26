@@ -13,7 +13,7 @@ import { useState, useRef } from "react";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
-import type { ReportGeneralFilters } from "../types/report.types";
+import type { ReportGeneralFilters } from "../../types/report.types";
 import authSDK from "@/services/sdk-simple-auth";
 
 interface GeneralReportFiltersPanelProps {

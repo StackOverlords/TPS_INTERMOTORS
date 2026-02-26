@@ -26,14 +26,14 @@ export const useOrderDetails = <
   T extends OrderDetailUnion = UIOrderDetailCreate,
 >(
   isEditMode: boolean = false,
-  exchangeRate: number = 6.96
+  exchangeRate: number = 6.96,
 ) => {
   const [details, setDetails] = useState<T[]>([]);
 
   // Calcular precio desde incremento con precisión
   const calcularPrecioDesdeIncremento = (
     costo: number,
-    incremento: number
+    incremento: number,
   ): number => {
     const porcentajeTotal = addPrecise(100, incremento);
     return multiplyPrecise(costo, dividePrecise(porcentajeTotal, 100));
@@ -42,7 +42,7 @@ export const useOrderDetails = <
   // Calcular incremento desde precios con precisión
   const calcularIncrementoDesdePrecios = (
     base: number,
-    precio: number
+    precio: number,
   ): number => {
     if (base === 0) return 0;
     const diferencia = subtractPrecise(precio, base);
@@ -58,7 +58,7 @@ export const useOrderDetails = <
           return prev.map((d) =>
             d.id_producto === product.id
               ? { ...d, cantidad: d.cantidad + 1 }
-              : d
+              : d,
           );
         }
 
@@ -66,11 +66,11 @@ export const useOrderDetails = <
         const costo = roundTo5Decimals(product.precio_venta || 0);
         const precio_venta = calcularPrecioDesdeIncremento(
           costo,
-          DEFAULT_INC_P_VENTA
+          DEFAULT_INC_P_VENTA,
         );
         const precio_venta_alt = calcularPrecioDesdeIncremento(
           precio_venta,
-          DEFAULT_INC_P_VENTA_ALT
+          DEFAULT_INC_P_VENTA_ALT,
         );
 
         const newDetail: any = {
@@ -85,6 +85,7 @@ export const useOrderDetails = <
           tc_compra: exchangeRate,
           product: {
             id: product.id,
+            codigo_interno: product.codigo_interno,
             descripcion: product.descripcion,
             codigo_oem: product.codigo_oem,
             codigo_upc: product.codigo_upc,
@@ -101,7 +102,7 @@ export const useOrderDetails = <
         return [...prev, newDetail as T];
       });
     },
-    [isEditMode, exchangeRate]
+    [isEditMode, exchangeRate],
   );
 
   // ==================== AÑADIR MÚLTIPLES PRODUCTOS ====================
@@ -114,25 +115,25 @@ export const useOrderDetails = <
 
         products.forEach((product) => {
           const existingIndex = newDetails.findIndex(
-            (d) => d.id_producto === product.id
+            (d) => d.id_producto === product.id,
           );
 
           if (existingIndex !== -1) {
             newDetails = newDetails.map((d, idx) =>
               idx === existingIndex
                 ? { ...d, cantidad: d.cantidad + (product.quantity ?? 1) }
-                : d
+                : d,
             );
           } else {
             // Calcular precios con funciones precisas
             const costo = roundTo5Decimals(product.precio_venta || 0);
             const precio_venta = calcularPrecioDesdeIncremento(
               costo,
-              DEFAULT_INC_P_VENTA
+              DEFAULT_INC_P_VENTA,
             );
             const precio_venta_alt = calcularPrecioDesdeIncremento(
               precio_venta,
-              DEFAULT_INC_P_VENTA_ALT
+              DEFAULT_INC_P_VENTA_ALT,
             );
 
             const newDetail: any = {
@@ -147,6 +148,7 @@ export const useOrderDetails = <
               tc_compra: exchangeRate,
               product: {
                 id: product.id,
+                codigo_interno: product.codigo_interno,
                 descripcion: product.descripcion,
                 codigo_oem: product.codigo_oem,
                 codigo_upc: product.codigo_upc,
@@ -170,7 +172,7 @@ export const useOrderDetails = <
 
       return addedProductIds;
     },
-    [isEditMode, exchangeRate]
+    [isEditMode, exchangeRate],
   );
 
   // ==================== ELIMINAR PRODUCTO ====================
@@ -188,11 +190,11 @@ export const useOrderDetails = <
       if (cantidadNum <= 0 || isNaN(cantidadNum)) return;
       setDetails((prev) =>
         prev.map((d) =>
-          d.id_producto === id_producto ? { ...d, cantidad: cantidadNum } : d
-        )
+          d.id_producto === id_producto ? { ...d, cantidad: cantidadNum } : d,
+        ),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR COSTO ====================
@@ -207,11 +209,11 @@ export const useOrderDetails = <
         // Recalcular con funciones precisas
         const precio_venta = calcularPrecioDesdeIncremento(
           costoNum,
-          d.inc_p_venta
+          d.inc_p_venta,
         );
         const precio_venta_alt = calcularPrecioDesdeIncremento(
           precio_venta,
-          d.inc_p_venta_alt
+          d.inc_p_venta_alt,
         );
 
         return {
@@ -220,7 +222,7 @@ export const useOrderDetails = <
           precio_venta,
           precio_venta_alt,
         };
-      })
+      }),
     );
   }, []);
 
@@ -238,7 +240,7 @@ export const useOrderDetails = <
           const precio_venta = calcularPrecioDesdeIncremento(d.costo, incNum);
           const precio_venta_alt = calcularPrecioDesdeIncremento(
             precio_venta,
-            d.inc_p_venta_alt
+            d.inc_p_venta_alt,
           );
 
           return {
@@ -247,10 +249,10 @@ export const useOrderDetails = <
             precio_venta,
             precio_venta_alt,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR PRECIO VENTA ====================
@@ -266,11 +268,11 @@ export const useOrderDetails = <
           // Recalcular con funciones precisas
           const inc_p_venta = calcularIncrementoDesdePrecios(
             d.costo,
-            precioNum
+            precioNum,
           );
           const precio_venta_alt = calcularPrecioDesdeIncremento(
             precioNum,
-            d.inc_p_venta_alt
+            d.inc_p_venta_alt,
           );
 
           return {
@@ -279,10 +281,10 @@ export const useOrderDetails = <
             precio_venta: precioNum,
             precio_venta_alt,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR INCREMENTO ALTERNATIVO ====================
@@ -298,7 +300,7 @@ export const useOrderDetails = <
           // Recalcular con funciones precisas
           const precio_venta_alt = calcularPrecioDesdeIncremento(
             d.precio_venta,
-            incAltNum
+            incAltNum,
           );
 
           return {
@@ -306,10 +308,10 @@ export const useOrderDetails = <
             inc_p_venta_alt: incAltNum,
             precio_venta_alt,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR PRECIO VENTA ALTERNATIVO ====================
@@ -325,7 +327,7 @@ export const useOrderDetails = <
           // Recalcular con funciones precisas
           const inc_p_venta_alt = calcularIncrementoDesdePrecios(
             d.precio_venta,
-            precioAltNum
+            precioAltNum,
           );
 
           return {
@@ -333,10 +335,10 @@ export const useOrderDetails = <
             inc_p_venta_alt,
             precio_venta_alt: precioAltNum,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== OBTENER TOTAL COSTO ====================
@@ -354,7 +356,7 @@ export const useOrderDetails = <
       // Usar funciones precisas
       const itemTotal = multiplyPrecise(
         detail.cantidad,
-        detail.precio_venta_alt
+        detail.precio_venta_alt,
       );
       return addPrecise(sum, itemTotal);
     }, 0);

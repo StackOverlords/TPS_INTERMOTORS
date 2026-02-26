@@ -531,7 +531,7 @@ const ProductSelectorWindow: React.FC = () => {
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
       {
-        accessorKey: "id",
+        accessorKey: "codigo_interno",
         header: "Cód.",
         enableSorting: true,
         enableHiding: true,

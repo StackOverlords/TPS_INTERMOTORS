@@ -118,17 +118,11 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
         const value = getValue<number>();
         return (
           <div className="text-end">
-            {value > 0 ? (
-              <>
-                {formatCurrency(value, {
-                  currency: "USD",
-                  locale: "en-US",
-                  usdFormat: "symbol",
-                })}
-              </>
-            ) : (
-              <span className="font-medium">-</span>
-            )}
+            {formatCurrency(value, {
+              currency: "USD",
+              locale: "en-US",
+              usdFormat: "symbol",
+            })}
           </div>
         );
       },

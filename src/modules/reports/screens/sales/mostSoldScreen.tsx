@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { DollarSign } from "lucide-react";
-import { SalesReportWrapper } from "../components/SalesReportWrapper";
-import { useSalesReportFilters } from "../hooks/useSalesReportFilters";
+import { Trophy } from "lucide-react";
+import { SalesReportWrapper } from "../../components/sales/SalesReportWrapper";
+import { useSalesReportFilters } from "../../hooks/sales/useSalesReportFilters";
 import {
-  useReportMayorIngreso,
-  useDownloadReportMayorIngreso,
-} from "../hooks/useReportMayorIngreso";
+  useReportMasVendido,
+  useDownloadReportMasVendido,
+} from "../../hooks/sales/useReportMasVendido";
 import { useBranchStore } from "@/states/branchStore";
 
-const TopRevenueScreen = () => {
+const MostSoldScreen = () => {
   const [searchMode, setSearchMode] = useState<"realtime" | "manual">("manual");
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
@@ -22,17 +22,19 @@ const TopRevenueScreen = () => {
     setChartVisualLimit,
   } = useSalesReportFilters(Number(selectedBranchId));
 
+  // Determinar qué filtros usar según el modo
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
 
-  const { data, isLoading, isFetching, isError, refetch } =
-    useReportMayorIngreso({
+  const { data, isLoading, isFetching, isError, refetch } = useReportMasVendido(
+    {
       filters: activeFilters,
       enabled: !!activeFilters.fecha_inicio && !!activeFilters.ranking,
-    });
+    }
+  );
 
   const { mutate: downloadReport, isPending: isDownloading } =
-    useDownloadReportMayorIngreso();
+    useDownloadReportMasVendido();
 
   const handleExport = () => {
     downloadReport(activeFilters);
@@ -51,11 +53,11 @@ const TopRevenueScreen = () => {
   return (
     <SalesReportWrapper
       // Título e ícono
-      title="Productos con Mayor Ingreso"
-      description="Ranking de productos por total generado en ventas"
-      icon={DollarSign}
-      iconBgColor="bg-emerald-500/10 dark:bg-emerald-400/10"
-      iconColor="text-emerald-600 dark:text-emerald-400"
+      title="Productos Más Vendidos"
+      description="Ranking de productos por cantidad vendida"
+      icon={Trophy}
+      iconBgColor="bg-blue-500/10 dark:bg-blue-400/10"
+      iconColor="text-blue-600 dark:text-blue-400"
       // Datos
       data={data?.data || []}
       isLoading={isLoading}
@@ -72,17 +74,17 @@ const TopRevenueScreen = () => {
       onSearchModeToggle={toggleSearchMode}
       onSearch={handleManualSearch}
       isDownloading={isDownloading}
-      // Configuración del gráfico (por TOTAL en vez de cantidad)
-      chartDataKey="total"
-      chartTitle="Ranking por Ingresos Generados"
-      tableTitle="Detalle de Ingresos"
-      highlightTotalColumn={true}
-      reportType="XIngreso"
-      colorPreset="green"
+      // Configuración del gráfico
+      chartDataKey="cantidad"
+      chartTitle="Ranking por Cantidad Vendida"
+      tableTitle="Detalle del Ranking"
+      highlightTotalColumn={false}
+      reportType="XCantidad"
+      colorPreset="blue"
       chartVisualLimit={chartVisualLimit}
       onChartVisualLimitChange={setChartVisualLimit}
     />
   );
 };
 
-export default TopRevenueScreen;
+export default MostSoldScreen;

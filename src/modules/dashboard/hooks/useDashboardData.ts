@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { useReportMasVendido } from '@/modules/reports/hooks/useReportMasVendido';
-import { useReportMayorIngreso } from '@/modules/reports/hooks/useReportMayorIngreso';
+import { useReportMasVendido } from '@/modules/reports/hooks/sales/useReportMasVendido';
+import { useReportMayorIngreso } from '@/modules/reports/hooks/sales/useReportMayorIngreso';
 import type { DateRange } from './useDateFilters';
 import { useAccountsReceivableGeneralReport } from '@/modules/accountsPayable/hooks/useAccountsReceivableGeneralReport';
 

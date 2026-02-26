@@ -3,15 +3,15 @@ import type {
   ReportItemSchema,
   ReportGeneralResponseSchema,
   ReportGeneralFiltersSchema,
-} from '../schemas/reportGeneral.schema';
+} from '../schemas/sales/reportGeneral.schema';
 import type {
   ReportMasVendidoResponseSchema,
   ReportMasVendidoFiltersSchema,
-} from '../schemas/reportMasVendido.schema';
+} from '../schemas/sales/reportMasVendido.schema';
 import type {
   ReportMayorIngresoResponseSchema,
   ReportMayorIngresoFiltersSchema,
-} from '../schemas/reportMayorIngreso.schema';
+} from '../schemas/sales/reportMayorIngreso.schema';
 
 export type ReportItem = z.infer<typeof ReportItemSchema>;
 

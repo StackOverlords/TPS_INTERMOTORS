@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import type RouteType from "./RouteType";
 import { salesListViewConfig } from "@/modules/sales/config/sale.config";
-import MostSoldScreen from "@/modules/reports/screens/mostSoldScreen";
-import TopRevenueScreen from "@/modules/reports/screens/TopRevenueScreen";
-import GeneralReportScreen from "@/modules/reports/screens/GeneralSaleReportScreen";
+import MostSoldScreen from "@/modules/reports/screens/sales/mostSoldScreen";
+import TopRevenueScreen from "@/modules/reports/screens/sales/TopRevenueScreen";
+import GeneralReportScreen from "@/modules/reports/screens/sales/GeneralSaleReportScreen";
 
 const salesProtectedRoutes: RouteType[] = [
   {

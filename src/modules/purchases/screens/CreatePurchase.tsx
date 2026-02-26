@@ -37,13 +37,13 @@ import {
 import FormCreatePurchase from "../components/FormCreatePurchase";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import type { SelectedItem } from "@/types/windowSelectedItems";
-import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
 import { CardHeader, CardTitle } from "@/components/atoms/card";
 import type { PurchaseDetailsTableRef } from "../components/PurchaseDetailsTable";
 import { usePurchaseDetails } from "../hooks/usePurchaseDetails";
 import PurchaseDetailsTable from "../components/PurchaseDetailsTable";
+import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 
 type CreationMode = "manual" | "order-import";
 
@@ -409,19 +409,26 @@ const CreatePurchase: React.FC = () => {
                                 >
                                   T.C:
                                 </Label>
-                                <Input
-                                  id="exchange-rate"
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
+                                <EditableQuantity
                                   value={exchangeRate}
-                                  onChange={(e) =>
+                                  className="w-20"
+                                  buttonClassName="w-20"
+                                  inputClassName="text-center"
+                                  showEditIcon={false}
+                                  onSubmit={(value) =>
                                     setExchangeRate(
-                                      parseFloat(e.target.value) || 0
+                                      parseFloat(value.toString()) || 0
                                     )
                                   }
-                                  onFocus={(e) => e.target.select()}
-                                  className="w-20 h-8 text-sm text-center"
+                                  validate={(val) => {
+                                    const num = parseFloat(val);
+                                    return !isNaN(num) && num >= 0;
+                                  }}
+                                  disabled={isSaving}
+                                  numberProps={{
+                                    step: 0.01,
+                                    min: 0,
+                                  }}
                                   placeholder="6.96"
                                 />
                               </div>

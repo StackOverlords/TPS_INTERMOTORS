@@ -9,18 +9,18 @@ import {
 import { Label } from "@/components/atoms/label";
 import { Button } from "@/components/atoms/button";
 import { Slider } from "@/components/atoms/slider";
-import { ViewToggle } from "../components/ViewToggle";
-import type { ViewMode } from "../types/report.types";
-import { GeneralReportFiltersPanel } from "../components/GeneralReportFiltersPanel";
-import { SaleReportTable } from "../components/saleReportTable";
+import { ViewToggle } from "../../components/ViewToggle";
+import type { ViewMode } from "../../types/report.types";
+import { GeneralReportFiltersPanel } from "../../components/sales/GeneralReportFiltersPanel";
+import { SaleReportTable } from "../../components/sales/saleReportTable";
 import {
   useReportGeneral,
   useDownloadReportGeneral,
-} from "../hooks/useReportGeneral";
+} from "../../hooks/sales/useReportGeneral";
 import { useBranchStore } from "@/states/branchStore";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
-import { useGeneralSaleReportFilters } from "../hooks/useGeneralSaleReportFilters";
-import { SalesComposedChart } from "../components/charts/SalesComposedChart";
+import { useGeneralSaleReportFilters } from "../../hooks/sales/useGeneralSaleReportFilters";
+import { SalesComposedChart } from "../../components/charts/SalesComposedChart";
 
 const CHART_LIMIT = 100;
 

@@ -4,4 +4,7 @@ export const REPORT_ENDPOINTS = {
     masVendido: '/sales/reports/masvendido',
     mayorIngreso: '/sales/reports/mayoringreso',
   },
+  products:{
+    kardex: '/products/reports/kardex',
+  }
 } as const;
