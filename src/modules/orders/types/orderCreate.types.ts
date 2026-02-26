@@ -6,6 +6,7 @@ export type OrderDetailCreate = z.infer<typeof OrderDetailCreateSchema>;
 export interface UIOrderDetailCreate extends OrderDetailCreate {
     product: {
         id: number
+        codigo_interno: number,
         descripcion: string
         codigo_oem: string | null,
         codigo_upc: string | null,

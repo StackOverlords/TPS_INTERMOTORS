@@ -13,7 +13,7 @@ import { useState, useRef } from "react";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
-import type { ReportMasVendidoFilters } from "../types/report.types";
+import type { ReportMasVendidoFilters } from "../../types/report.types";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 import authSDK from "@/services/sdk-simple-auth";
 

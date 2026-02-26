@@ -1,15 +1,15 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import type { ReportGeneralFilters } from "../types/report.types";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
+import type { ReportMasVendidoFilters } from "../../types/report.types";
 
-const cleanFilters = (filters: ReportGeneralFilters): ReportGeneralFilters => ({
+const cleanFilters = (filters: ReportMasVendidoFilters): ReportMasVendidoFilters => ({
   ...filters,
   fecha_fin: filters.fecha_fin || undefined,
   sucursal: filters.sucursal ?? undefined,
   downloadable: filters.downloadable ?? false,
 });
 
-export const useGeneralSaleReportFilters = (defaultSucursal: number | null = null) => {
+export const useSalesReportFilters = (defaultSucursal: number | null = null) => {
   const defaultDates = useMemo(() => {
     const today = new Date();
     const lastMonth = new Date(today);
@@ -22,16 +22,17 @@ export const useGeneralSaleReportFilters = (defaultSucursal: number | null = nul
   }, []);
 
   // ═══ FILTRO DE DATOS (backend) ═══
-  const [filters, setFilters] = useState<ReportGeneralFilters>({
+  const [filters, setFilters] = useState<ReportMasVendidoFilters>({
     fecha_inicio: defaultDates.lastMonth,
     fecha_fin: defaultDates.today,
+    ranking: 50, // Cuántos registros traer del servidor
     sucursal: defaultSucursal,
     downloadable: false,
   });
 
   const [chartVisualLimit, setChartVisualLimit] = useState(20);
 
-  const [appliedFilters, setAppliedFilters] = useState<ReportGeneralFilters>(filters);
+  const [appliedFilters, setAppliedFilters] = useState<ReportMasVendidoFilters>(filters);
   const [debouncedFilters] = useDebounce(filters, 500);
 
   const cleanedDebouncedFilters = useMemo(
@@ -51,9 +52,9 @@ export const useGeneralSaleReportFilters = (defaultSucursal: number | null = nul
   }, [defaultSucursal]);
 
   const updateFilter = useCallback(
-    <K extends keyof ReportGeneralFilters>(
+    <K extends keyof ReportMasVendidoFilters>(
       key: K,
-      value: ReportGeneralFilters[K]
+      value: ReportMasVendidoFilters[K]
     ) => {
       setFilters((prev) => ({
         ...prev,
@@ -64,9 +65,10 @@ export const useGeneralSaleReportFilters = (defaultSucursal: number | null = nul
   );
 
   const resetFilters = useCallback(() => {
-    const emptyFilters: ReportGeneralFilters = {
+    const emptyFilters: ReportMasVendidoFilters = {
       fecha_inicio: defaultDates.lastMonth,
       fecha_fin: defaultDates.today,
+      ranking: 50,
       sucursal: defaultSucursal,
       downloadable: false,
     };

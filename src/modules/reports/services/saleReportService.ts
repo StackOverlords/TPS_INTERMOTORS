@@ -3,15 +3,15 @@ import { Logger } from '@/lib/logger';
 import {
   ReportGeneralResponseSchema,
   ReportGeneralFiltersSchema,
-} from '../schemas/reportGeneral.schema';
+} from '../schemas/sales/reportGeneral.schema';
 import {
   ReportMasVendidoResponseSchema,
   ReportMasVendidoFiltersSchema,
-} from '../schemas/reportMasVendido.schema';
+} from '../schemas/sales/reportMasVendido.schema';
 import {
   ReportMayorIngresoResponseSchema,
   ReportMayorIngresoFiltersSchema,
-} from '../schemas/reportMayorIngreso.schema';
+} from '../schemas/sales/reportMayorIngreso.schema';
 import type {
   ReportGeneralResponse,
   ReportGeneralFilters,
@@ -28,7 +28,7 @@ const MODULE_NAME = 'SALE_REPORT_SERVICE';
 /**
  * Crear FormData desde filtros
  */
-const createFormData = (filters: Record<string, any>): FormData => {
+const createFormData = (filters: Record<string, unknown>): FormData => {
   const formData = new FormData();
 
   Object.entries(filters).forEach(([key, value]) => {

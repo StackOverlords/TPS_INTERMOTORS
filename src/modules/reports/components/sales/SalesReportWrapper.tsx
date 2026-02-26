@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Loader2, BarChart3, type LucideIcon } from "lucide-react";
-import type { ViewMode } from "../types/report.types";
-import { ViewToggle } from "../components/ViewToggle";
+import type { ViewMode } from "../../types/report.types";
+import { ViewToggle } from "../ViewToggle";
 import {
   Card,
   CardContent,
@@ -11,10 +11,10 @@ import {
 import { Label } from "@/components/atoms/label";
 import { Button } from "@/components/atoms/button";
 import { Slider } from "@/components/atoms/slider";
-import type { ReportItem } from "../types/report.types";
+import type { ReportItem } from "../../types/report.types";
 import { SaleReportFiltersPanel } from "./saleReportFiltersPanel";
 import { SaleReportTable } from "./saleReportTable";
-import { SaleHorizontalBarChart } from "./charts/saleHorizontalBarChart";
+import { SaleHorizontalBarChart } from "../charts/saleHorizontalBarChart";
 import type { ColorConfig } from "@/components/charts/Basehorizontalbarchart";
 import type { themeColorPresets } from "@/hooks/charts/useChartThemeColors";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";

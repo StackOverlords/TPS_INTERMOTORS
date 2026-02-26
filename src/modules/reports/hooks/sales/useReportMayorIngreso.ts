@@ -1,9 +1,9 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { reportService } from '../services/saleReportService';
+import { reportService } from '../../services/saleReportService';
 import type {
   ReportMayorIngresoFilters,
   ReportMayorIngresoResponse,
-} from '../types/report.types';
+} from '../../types/report.types';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast-enhanced';
 import { generateExcelFilename, saveExcelFile } from '@/lib/excelUtils';
 

@@ -1124,7 +1124,7 @@ const SaleEditScreen = () => {
                           </CardHeader>
                           <CardContent className="flex-1 min-h-0">
                             <div className="h-full overflow-auto">
-                              {saleData?.detalles.length === 0 ? (
+                              {detalles.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                   <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
                                   <p>No hay productos agregados</p>

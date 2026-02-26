@@ -276,3 +276,10 @@ export const formatDateForUpdate = (
   // Si cambió, usar la lógica de formatDateForSubmission
   return formatDateForSubmission(newDateString, tz);
 };
+
+export const formatDateOnly = (dateString: string): string => {
+  if (!dateString) return "";
+
+  const parsed = parse(dateString, "yyyy-MM-dd", new Date());
+  return format(parsed, "dd/MM/yyyy");
+};

@@ -13,7 +13,7 @@ import { formatCurrency } from "@/utils/formaters";
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { cn } from "@/lib/utils";
-import { parseDateForUi } from "@/utils/dateFormatters";
+import { formatDateOnly } from "@/utils/dateFormatters";
 
 interface ProductLogisticsProps {
   ProductProviderOrders: ProductProviderOrder[];
@@ -48,7 +48,7 @@ const ProductLogistics: React.FC<ProductLogisticsProps> = ({
 
         return (
           <div className="flex flex-col gap-1">
-            <span className="font-medium">{parseDateForUi(rawFecha)}</span>
+            <span className="font-medium">{formatDateOnly(rawFecha)}</span>
           </div>
         );
       },

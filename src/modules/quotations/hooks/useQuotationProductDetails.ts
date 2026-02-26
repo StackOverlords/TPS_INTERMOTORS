@@ -276,14 +276,14 @@ const useQuotationProductDetails = (): UseSaleProductDetailsReturn => {
   // ==================== QUITAR PRODUCTO ====================
   const removeProduct = useCallback((productId: number) => {
     setDetails((prevDetails) => {
-      if (prevDetails.length <= 1) {
-        showErrorToast({
-          title: "No se puede eliminar",
-          description: "Debe haber al menos un producto en la cotización",
-          duration: 2000,
-        });
-        return prevDetails;
-      }
+      // if (prevDetails.length <= 1) {
+      //   showErrorToast({
+      //     title: "No se puede eliminar",
+      //     description: "Debe haber al menos un producto en la cotización",
+      //     duration: 2000,
+      //   });
+      //   return prevDetails;
+      // }
 
       const updated = prevDetails.filter(
         (detail) => detail.id_producto !== productId

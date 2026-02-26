@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/atoms/card";
-import { Input } from "@/components/atoms/input";
 import { Kbd } from "@/components/atoms/kbd";
 import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
@@ -57,6 +56,7 @@ import PurchaseDetailsTable from "../components/PurchaseDetailsTable";
 import { useDeletePurchaseDetail } from "./useDeletePurchaseDetail";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
+import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 
 const EditPurchase: React.FC = () => {
   // Obtener funciones de tabstore
@@ -622,16 +622,26 @@ const EditPurchase: React.FC = () => {
                             >
                               T.C:
                             </Label>
-                            <Input
-                              id="exchange-rate"
-                              type="number"
-                              step="0.01"
-                              min="0"
+                            <EditableQuantity
                               value={exchangeRate}
-                              onChange={(e) =>
-                                setExchangeRate(parseFloat(e.target.value) || 0)
+                              className="w-20"
+                              buttonClassName="w-20"
+                              inputClassName="text-center"
+                              showEditIcon={false}
+                              onSubmit={(value) =>
+                                setExchangeRate(
+                                  parseFloat(value.toString()) || 0
+                                )
                               }
-                              className="w-20 h-8 text-sm"
+                              validate={(val) => {
+                                const num = parseFloat(val);
+                                return !isNaN(num) && num >= 0;
+                              }}
+                              disabled={isSaving}
+                              numberProps={{
+                                step: 0.01,
+                                min: 0,
+                              }}
                               placeholder="6.96"
                             />
                           </div>

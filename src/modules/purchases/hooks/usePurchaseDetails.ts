@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import {
   multiplyPrecise,
@@ -80,9 +80,18 @@ export const usePurchaseDetails = <
   T extends PurchaseDetailUnion = UIPurchaseDetail,
 >(
   isEditMode: boolean = false,
-  exchangeRate: number = 6.96
+  exchangeRate: number = 6.96,
 ) => {
   const [details, setDetails] = useState<T[]>([]);
+
+  useEffect(() => {
+    setDetails((prev) =>
+      prev.map((d) => ({
+        ...d,
+        tc_compra: roundTo5Decimals(exchangeRate),
+      })),
+    );
+  }, [exchangeRate]);
 
   // ==================== FUNCIONES DE CÁLCULO ====================
   /**
@@ -90,7 +99,7 @@ export const usePurchaseDetails = <
    */
   const calcularPrecioDesdeIncremento = (
     costo: number,
-    incremento: number
+    incremento: number,
   ): number => {
     const porcentajeTotal = addPrecise(100, incremento);
     return multiplyPrecise(costo, dividePrecise(porcentajeTotal, 100));
@@ -101,7 +110,7 @@ export const usePurchaseDetails = <
    */
   const calcularIncrementoDesdePrecios = (
     base: number,
-    precio: number
+    precio: number,
   ): number => {
     if (base === 0) return 0;
     const diferencia = subtractPrecise(precio, base);
@@ -118,7 +127,7 @@ export const usePurchaseDetails = <
       setDetails((prev) => {
         // Verificar si el producto ya existe
         const existingIndex = prev.findIndex(
-          (d) => d.id_producto === product.id
+          (d) => d.id_producto === product.id,
         );
 
         // Si existe, solo incrementar cantidad
@@ -126,7 +135,7 @@ export const usePurchaseDetails = <
           return prev.map((d, idx) =>
             idx === existingIndex
               ? { ...d, cantidad: d.cantidad + (customQuantity || 1) }
-              : d
+              : d,
           );
         }
 
@@ -134,11 +143,11 @@ export const usePurchaseDetails = <
         const costo = roundTo5Decimals(product.costo_referencia || 0);
         const precio_venta = calcularPrecioDesdeIncremento(
           costo,
-          DEFAULT_INC_P_VENTA
+          DEFAULT_INC_P_VENTA,
         );
         const precio_venta_alt = calcularPrecioDesdeIncremento(
           precio_venta,
-          DEFAULT_INC_P_VENTA_ALT
+          DEFAULT_INC_P_VENTA_ALT,
         );
 
         const newDetail: any = {
@@ -150,7 +159,7 @@ export const usePurchaseDetails = <
           inc_p_venta_alt: DEFAULT_INC_P_VENTA_ALT,
           precio_venta_alt,
           tc_compra: roundTo5Decimals(exchangeRate),
-        //   moneda: DEFAULT_MONEDA,
+          //   moneda: DEFAULT_MONEDA,
           orden: prev.length + 1,
           product: {
             id: product.id,
@@ -171,7 +180,7 @@ export const usePurchaseDetails = <
         return [...prev, newDetail as T];
       });
     },
-    [isEditMode, exchangeRate]
+    [isEditMode, exchangeRate],
   );
 
   // ==================== AÑADIR MÚLTIPLES PRODUCTOS ====================
@@ -188,7 +197,7 @@ export const usePurchaseDetails = <
 
         products.forEach((product) => {
           const existingIndex = newDetails.findIndex(
-            (d) => d.id_producto === product.id
+            (d) => d.id_producto === product.id,
           );
 
           if (existingIndex !== -1) {
@@ -196,18 +205,18 @@ export const usePurchaseDetails = <
             newDetails = newDetails.map((d, idx) =>
               idx === existingIndex
                 ? { ...d, cantidad: d.cantidad + (product.quantity ?? 1) }
-                : d
+                : d,
             );
           } else {
             // Producto nuevo, calcular valores
             const costo = roundTo5Decimals(product.costo_referencia || 0);
             const precio_venta = calcularPrecioDesdeIncremento(
               costo,
-              DEFAULT_INC_P_VENTA
+              DEFAULT_INC_P_VENTA,
             );
             const precio_venta_alt = calcularPrecioDesdeIncremento(
               precio_venta,
-              DEFAULT_INC_P_VENTA_ALT
+              DEFAULT_INC_P_VENTA_ALT,
             );
 
             const newDetail: any = {
@@ -219,7 +228,7 @@ export const usePurchaseDetails = <
               inc_p_venta_alt: DEFAULT_INC_P_VENTA_ALT,
               precio_venta_alt,
               tc_compra: roundTo5Decimals(exchangeRate),
-            //   moneda: DEFAULT_MONEDA,
+              //   moneda: DEFAULT_MONEDA,
               orden: newDetails.length + 1,
               product: {
                 id: product.id,
@@ -247,7 +256,7 @@ export const usePurchaseDetails = <
 
       return addedProductIds;
     },
-    [isEditMode, exchangeRate]
+    [isEditMode, exchangeRate],
   );
 
   // ==================== ELIMINAR PRODUCTO ====================
@@ -273,11 +282,11 @@ export const usePurchaseDetails = <
 
       setDetails((prev) =>
         prev.map((d) =>
-          d.id_producto === id_producto ? { ...d, cantidad: cantidadNum } : d
-        )
+          d.id_producto === id_producto ? { ...d, cantidad: cantidadNum } : d,
+        ),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR COSTO ====================
@@ -295,11 +304,11 @@ export const usePurchaseDetails = <
 
         const precio_venta = calcularPrecioDesdeIncremento(
           costoNum,
-          d.inc_p_venta
+          d.inc_p_venta,
         );
         const precio_venta_alt = calcularPrecioDesdeIncremento(
           precio_venta,
-          d.inc_p_venta_alt
+          d.inc_p_venta_alt,
         );
 
         return {
@@ -308,7 +317,7 @@ export const usePurchaseDetails = <
           precio_venta,
           precio_venta_alt,
         };
-      })
+      }),
     );
   }, []);
 
@@ -329,7 +338,7 @@ export const usePurchaseDetails = <
           const precio_venta = calcularPrecioDesdeIncremento(d.costo, incNum);
           const precio_venta_alt = calcularPrecioDesdeIncremento(
             precio_venta,
-            d.inc_p_venta_alt
+            d.inc_p_venta_alt,
           );
 
           return {
@@ -338,10 +347,10 @@ export const usePurchaseDetails = <
             precio_venta,
             precio_venta_alt,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR PRECIO VENTA ====================
@@ -360,11 +369,11 @@ export const usePurchaseDetails = <
 
           const inc_p_venta = calcularIncrementoDesdePrecios(
             d.costo,
-            precioNum
+            precioNum,
           );
           const precio_venta_alt = calcularPrecioDesdeIncremento(
             precioNum,
-            d.inc_p_venta_alt
+            d.inc_p_venta_alt,
           );
 
           return {
@@ -373,10 +382,10 @@ export const usePurchaseDetails = <
             precio_venta: precioNum,
             precio_venta_alt,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR INC PRECIO VENTA ALT ====================
@@ -395,7 +404,7 @@ export const usePurchaseDetails = <
 
           const precio_venta_alt = calcularPrecioDesdeIncremento(
             d.precio_venta,
-            incAltNum
+            incAltNum,
           );
 
           return {
@@ -403,10 +412,10 @@ export const usePurchaseDetails = <
             inc_p_venta_alt: incAltNum,
             precio_venta_alt,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== ACTUALIZAR PRECIO VENTA ALT ====================
@@ -425,7 +434,7 @@ export const usePurchaseDetails = <
 
           const inc_p_venta_alt = calcularIncrementoDesdePrecios(
             d.precio_venta,
-            precioAltNum
+            precioAltNum,
           );
 
           return {
@@ -433,10 +442,10 @@ export const usePurchaseDetails = <
             inc_p_venta_alt,
             precio_venta_alt: precioAltNum,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // ==================== CARGAR DESDE PEDIDO ====================
@@ -447,22 +456,19 @@ export const usePurchaseDetails = <
     (orderDetails: any[], orderProducts?: any[]) => {
       const mappedDetails = orderDetails.map((detalle: any, index: number) => {
         // Buscar el producto completo si existe
-        const product = orderProducts?.find(
-          (p) => p.id === detalle.producto?.id
-        ) || detalle.producto;
+        const product =
+          orderProducts?.find((p) => p.id === detalle.producto?.id) ||
+          detalle.producto;
 
         const cantidad = parseInt(detalle.cantidad) || 1;
         const costo = roundTo5Decimals(parseFloat(detalle.costo || "0") || 0);
         const inc_p_venta = DEFAULT_INC_P_VENTA;
         const inc_p_venta_alt = DEFAULT_INC_P_VENTA_ALT;
 
-        const precio_venta = calcularPrecioDesdeIncremento(
-          costo,
-          inc_p_venta
-        );
+        const precio_venta = calcularPrecioDesdeIncremento(costo, inc_p_venta);
         const precio_venta_alt = calcularPrecioDesdeIncremento(
           precio_venta,
-          inc_p_venta_alt
+          inc_p_venta_alt,
         );
 
         const newDetail: any = {
@@ -474,7 +480,7 @@ export const usePurchaseDetails = <
           inc_p_venta_alt,
           precio_venta_alt,
           tc_compra: roundTo5Decimals(exchangeRate),
-        //   moneda: DEFAULT_MONEDA,
+          //   moneda: DEFAULT_MONEDA,
           orden: index + 1,
           product: {
             id: product.id,
@@ -496,7 +502,7 @@ export const usePurchaseDetails = <
 
       setDetails(mappedDetails);
     },
-    [isEditMode, exchangeRate]
+    [isEditMode, exchangeRate],
   );
 
   // ==================== OBTENER TOTALES ====================
@@ -527,7 +533,7 @@ export const usePurchaseDetails = <
     return details.reduce((sum, detail) => {
       const itemTotal = multiplyPrecise(
         detail.cantidad,
-        detail.precio_venta_alt
+        detail.precio_venta_alt,
       );
       return addPrecise(sum, itemTotal);
     }, 0);

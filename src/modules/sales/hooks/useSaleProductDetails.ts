@@ -509,14 +509,14 @@ const useSaleProductDetailsWithForm = ({
     (productId: number) => {
       const currentProducts = getValues("detalles") || [];
 
-      if (currentProducts.length <= 1) {
-        showErrorToast({
-          title: "No se puede eliminar",
-          description: "Debe haber al menos un producto en la venta",
-          duration: 2000,
-        });
-        return;
-      }
+      // if (currentProducts.length <= 1) {
+      //   showErrorToast({
+      //     title: "No se puede eliminar",
+      //     description: "Debe haber al menos un producto en la venta",
+      //     duration: 2000,
+      //   });
+      //   return;
+      // }
 
       const updated = currentProducts.filter(
         (detail) => detail.producto?.id !== productId
