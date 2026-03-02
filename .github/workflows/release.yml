@@ -55,7 +55,6 @@ jobs:
               tag_name: `v${{ steps.get_version.outputs.VERSION }}`,
               name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }} [${{ steps.extract_variant.outputs.VARIANT_LABEL }}]`,
               body: `
-
 ## 🚀 Nueva versión v${{ steps.get_version.outputs.VERSION }}
 
 > ⚠️ **Dashboard en fase beta** — Algunas secciones aún están en desarrollo.
@@ -105,7 +104,6 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
 
 - **Windows MSI**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
 - **Windows NSIS**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
-
 `,
               draft: false,
               prerelease: false
@@ -220,7 +218,7 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: false
-          
+
   generate-update-manifest:
     needs: [create-release, build-tauri]
     runs-on: ubuntu-latest
@@ -312,16 +310,9 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
             const fs = require('fs');
             const assets = ${{ steps.get_assets.outputs.result }};
 
-            // Obtener las release notes del release
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: context.ref.replace('refs/tags/', '')
-            });
-
             const manifest = {
               version: "v${{ steps.get_version.outputs.VERSION }}",
-              notes: release.data.body || "Ver changelog completo en GitHub Releases",
+              notes: "v${{ steps.get_version.outputs.VERSION }} — Reporte de Kardex, columnas Procedencia y Marca en compras. Ver changelog completo en GitHub.",
               pub_date: new Date().toISOString(),
               platforms: {}
             };
@@ -453,5 +444,3 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
               name: 'latest.json',
               data: fs.readFileSync(currentFilename)
             });
-
-## Configuracion de actualizaciones automaticas con Tauri
