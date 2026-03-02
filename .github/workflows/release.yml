@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -47,64 +47,72 @@ jobs:
       - name: Create Release
         id: create-release
         uses: actions/github-script@v7
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+          VARIANT_LABEL: ${{ steps.extract_variant.outputs.VARIANT_LABEL }}
         with:
           script: |
+            const version = process.env.VERSION;
+            const variantLabel = process.env.VARIANT_LABEL;
+
+            const body = [
+              `## 🚀 Nueva versión v${version}`,
+              ``,
+              `> ⚠️ **Dashboard en fase beta** — Algunas secciones aún están en desarrollo.`,
+              ``,
+              `---`,
+              ``,
+              `## ✨ Novedades`,
+              ``,
+              `### 📊 Reporte de Kardex *(nuevo)*`,
+              `Reporte detallado de movimientos de inventario por producto, accesible desde [/dashboard/kardex-report](/dashboard/kardex-report).`,
+              ``,
+              `**Vista Tabla**`,
+              `![Kardex - Vista Tabla](https://i.ibb.co/84KH83Xt/Captura-desde-2026-03-02-07-05-09.png)`,
+              ``,
+              `- Columnas: fecha, tipo de transacción, N° transacción, proveedor/cliente, cantidad, costo unitario, entrada total, precio unitario, salida total y saldo`,
+              `- Fila de totales al pie: cantidad total, total entradas, total salidas y saldo final`,
+              `- Ordenamiento, redimensionado y persistencia de columnas por usuario`,
+              ``,
+              `**Vista Gráficos**`,
+              `![Kardex - Vista Gráficos](https://i.ibb.co/zhPjr8fB/Captura-desde-2026-03-02-07-05-28.png)`,
+              ``,
+              `- 📈 Evolución del saldo a lo largo del tiempo`,
+              `- 🔄 Comparativa de entradas vs salidas en Bs`,
+              `- Control deslizante para limitar registros visualizados (máx. 100)`,
+              ``,
+              `---`,
+              ``,
+              `### 🛒 Compras — Detalle de ítems`,
+              `Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una compra:`,
+              ``,
+              `- 🌍 **Procedencia** — origen del producto`,
+              `- 🏷️ **Marca** — marca del producto`,
+              ``,
+              `---`,
+              ``,
+              `## 🐛 Errores corregidos`,
+              ``,
+              `<details><summary>Ver lista completa de correcciones</summary>`,
+              `<ul>`,
+              `  <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li>`,
+              `</ul>`,
+              `</details>`,
+              ``,
+              `---`,
+              ``,
+              `### 📦 Instalación`,
+              ``,
+              `- **Windows MSI**: \`TPS-Intermotors_${version}_x64_en-US.msi\``,
+              `- **Windows NSIS**: \`TPS-Intermotors_${version}_x64-setup.exe\``,
+            ].join('\n');
+
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `v${{ steps.get_version.outputs.VERSION }}`,
-              name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }} [${{ steps.extract_variant.outputs.VARIANT_LABEL }}]`,
-              body: `
-## 🚀 Nueva versión v${{ steps.get_version.outputs.VERSION }}
-
-> ⚠️ **Dashboard en fase beta** — Algunas secciones aún están en desarrollo.
-
----
-
-## ✨ Novedades
-
-### 📊 Reporte de Kardex *(nuevo)*
-Reporte detallado de movimientos de inventario por producto, accesible desde [/dashboard/kardex-report](/dashboard/kardex-report).
-
-**Vista Tabla**
-![Kardex - Vista Tabla](https://i.ibb.co/84KH83Xt/Captura-desde-2026-03-02-07-05-09.png)
-
-- Columnas: fecha, tipo de transacción, N° transacción, proveedor/cliente, cantidad, costo unitario, entrada total, precio unitario, salida total y saldo
-- Fila de totales al pie: cantidad total, total entradas, total salidas y saldo final
-- Ordenamiento, redimensionado y persistencia de columnas por usuario
-
-**Vista Gráficos**
-![Kardex - Vista Gráficos](https://i.ibb.co/zhPjr8fB/Captura-desde-2026-03-02-07-05-28.png)
-
-- 📈 Evolución del saldo a lo largo del tiempo
-- 🔄 Comparativa de entradas vs salidas en Bs
-- Control deslizante para limitar registros visualizados (máx. 100)
-
----
-
-### 🛒 Compras — Detalle de ítems
-Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una compra:
-
-- 🌍 **Procedencia** — origen del producto
-- 🏷️ **Marca** — marca del producto
-
----
-
-## 🐛 Errores corregidos
-
-<details><summary>Ver lista completa de correcciones</summary>
-<ul>
-  <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li>
-</ul>
-</details>
-
----
-
-### 📦 Instalación
-
-- **Windows MSI**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
-- **Windows NSIS**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
-`,
+              tag_name: `v${version}`,
+              name: `TPS Intermotors v${version} [${variantLabel}]`,
+              body: body,
               draft: false,
               prerelease: false
             });
@@ -131,7 +139,7 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -141,7 +149,7 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install dependencies (Linux)
         if: matrix.platform == 'ubuntu-22.04'
@@ -213,8 +221,8 @@ Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           tagName: ${{ github.ref_name }}
-          releaseName: 'TPS Intermotors __VERSION__'
-          releaseBody: 'Ver release notes arriba'
+          releaseName: "TPS Intermotors __VERSION__"
+          releaseBody: "Ver release notes arriba"
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: false
