@@ -16,6 +16,7 @@ interface TopRevenueCardProps {
   onNavigate?: () => void;
   period?: DatePeriod | null;
   onPeriodChange?: (period: DatePeriod | null) => void;
+  isLoading?: boolean;
 }
 
 export function TopRevenueCard({
@@ -23,6 +24,7 @@ export function TopRevenueCard({
   onNavigate,
   period,
   onPeriodChange,
+  isLoading = false,
 }: TopRevenueCardProps) {
   return (
     <div className="col-span-5 min-h-0">
@@ -56,6 +58,7 @@ export function TopRevenueCard({
               limit={10}
               colorPreset="green"
               compactMode={true}
+              isLoading={isLoading}
             />
           </div>
         </CardContent>

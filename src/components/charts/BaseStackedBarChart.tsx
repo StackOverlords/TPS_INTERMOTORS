@@ -10,6 +10,7 @@ import {
   Legend,
   Cell,
 } from "recharts";
+import { StackedBarChartSkeleton } from "./ChartSkeletons";
 
 export interface BaseStackedBarData {
   name: string;
@@ -46,6 +47,7 @@ export interface BaseStackedBarChartProps {
   showBrightness?: boolean;
   brightnessIntensity?: number;
   barRadius?: [number, number, number, number];
+  isLoading?: boolean;
 }
 
 const truncateText = (text: string, maxLength: number): string => {
@@ -69,6 +71,7 @@ export function BaseStackedBarChart({
   showBrightness = false,
   brightnessIntensity = 0.1,
   barRadius = [2, 2, 0, 0],
+  isLoading = false,
 }: BaseStackedBarChartProps) {
   // Truncar nombres largos
   const chartData = data.map((item) => ({
@@ -94,7 +97,9 @@ export function BaseStackedBarChart({
     </div>
   );
 
-  if (chartData.length === 0) {
+  if (isLoading) return <StackedBarChartSkeleton bars={6} />;
+
+  if (!chartData) {
     return (
       <div className="flex items-center justify-center h-[400px] text-muted-foreground">
         <p>No hay datos para mostrar en el gráfico</p>
@@ -160,7 +165,7 @@ export function BaseStackedBarChart({
           tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v)}
+          tickFormatter={(v) => valueFormatter(v)}
         />
 
         <Tooltip

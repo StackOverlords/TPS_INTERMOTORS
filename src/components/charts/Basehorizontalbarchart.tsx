@@ -11,6 +11,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import { HorizontalBarChartSkeleton } from "./ChartSkeletons";
 
 export interface BaseChartData {
   name: string;
@@ -82,6 +83,7 @@ export interface BaseHorizontalBarChartProps {
   axisFontSize?: number;
   /** Ajustar automáticamente el ancho del eje Y según el tamaño de fuente */
   autoAdjustYAxisWidth?: boolean;
+  isLoading?: boolean;
 }
 
 export function BaseHorizontalBarChart({
@@ -107,6 +109,7 @@ export function BaseHorizontalBarChart({
   labelConfig,
   axisFontSize = 12,
   autoAdjustYAxisWidth = false,
+  isLoading = false,
 }: BaseHorizontalBarChartProps) {
   // Generar un ID único para esta instancia del gráfico
   const instanceId = useMemo(() => Math.random().toString(36).substr(2, 9), []);
@@ -183,7 +186,9 @@ export function BaseHorizontalBarChart({
     );
   };
 
-  if (chartData.length === 0) {
+  if (isLoading) return <HorizontalBarChartSkeleton rows={10} />;
+
+  if (!chartData) {
     return (
       <div className="flex items-center justify-center h-[400px] text-muted-foreground">
         <p>No hay datos para mostrar en el gráfico</p>

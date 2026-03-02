@@ -16,6 +16,7 @@ interface ReceivablesCardProps {
   onNavigate?: () => void;
   period?: DatePeriod | null;
   onPeriodChange?: (period: DatePeriod | null) => void;
+  isLoading?: boolean;
 }
 
 export function ReceivablesCard({

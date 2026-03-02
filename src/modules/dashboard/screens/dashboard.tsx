@@ -73,24 +73,28 @@ export default function Dashboard() {
         {/* Top Más Vendidos (4 cols) */}
         <TopSoldCard
           data={topSoldData.topSold}
-          onNavigate={() => navigate("/reportes/ventas/mas-vendidos")}
+          onNavigate={() => navigate("/dashboard/reports/most-sold")}
           period={null}
           onPeriodChange={(period) => setCardPeriod(CARD_IDS.TOP_SOLD, period)}
+          isLoading={topSoldData.isLoading}
         />
 
         {/* Top Mayor Ingreso (5 cols) */}
         <TopRevenueCard
           data={topRevenueData.topRevenue}
-          onNavigate={() => navigate("/reportes/ventas/mayor-ingreso")}
+          onNavigate={() => navigate("/dashboard/reports/top-revenue")}
           period={null}
           onPeriodChange={(period) =>
             setCardPeriod(CARD_IDS.TOP_REVENUE, period)
           }
+          isLoading={topRevenueData.isLoading}
         />
 
         {/* Deuda por Cliente - Donut (3 cols) */}
         <DebtDistributionCard
           receivableMetrics={dashboardData.receivableMetrics}
+          isError={dashboardData.isError}
+          isLoading={dashboardData.isLoading}
         />
 
         {/* ─── Row 3: Bottom Row ──────────────────────────────────────────── */}

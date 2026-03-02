@@ -2,12 +2,21 @@ import CreateProduct from "@/modules/products/screens/CreateProduct";
 import ProductDetailScreen from "@/modules/products/screens/ProductDetailScreen";
 import ProductEditScreen from "@/modules/products/screens/ProductEditScreen";
 import ProductListScreen from "@/modules/products/screens/ProductListScreen";
-import { AreaChartIcon, BoxIcon, Package, Table2Icon, DollarSign, Warehouse } from "lucide-react";
+import {
+  AreaChartIcon,
+  BoxIcon,
+  Package,
+  Table2Icon,
+  DollarSign,
+  Warehouse,
+  List,
+} from "lucide-react";
 import type RouteType from "./RouteType";
 import { productsListViewConfig } from "@/modules/products/config/product.config";
 import ProductoStockReports from "@/modules/products/screens/ProductoStockReports";
 import UtilidadesReportScreen from "@/modules/products/screens/UtilidadesReportScreen";
 import InventarioReportScreen from "@/modules/products/screens/InventarioReportScreen";
+import KardexReportScreen from "@/modules/reports/screens/products/KardexReportScreen";
 
 const productosProtectedRoutes: RouteType[] = [
   {
@@ -28,7 +37,7 @@ const productosProtectedRoutes: RouteType[] = [
         icon: BoxIcon,
 
         isHeader: false,
-        showSidebar: true
+        showSidebar: true,
       },
       {
         path: "/dashboard/productos",
@@ -40,7 +49,7 @@ const productosProtectedRoutes: RouteType[] = [
         icon: Table2Icon,
         isHeader: false,
         showSidebar: true,
-        viewConfig: productsListViewConfig
+        viewConfig: productsListViewConfig,
       },
       {
         path: "/dashboard/productos/:productId",
@@ -52,7 +61,7 @@ const productosProtectedRoutes: RouteType[] = [
         icon: Package,
         isHeader: false,
         showSidebar: false,
-        showInCommandPalette: false
+        showInCommandPalette: false,
       },
       {
         path: "/dashboard/productos/:updateProductId/update",
@@ -63,7 +72,7 @@ const productosProtectedRoutes: RouteType[] = [
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         isHeader: false,
         showSidebar: false,
-        showInCommandPalette: false
+        showInCommandPalette: false,
       },
       {
         path: "/dashboard/stock-minimo",
@@ -71,12 +80,12 @@ const productosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: ProductoStockReports,
         isAdmin: true,
-        role: ["Super Admin"],
+        role: ["Administrador", "Vendedor", "Super Admin"],
 
         icon: AreaChartIcon,
         isHeader: false,
         showSidebar: true,
-        showInCommandPalette: true
+        showInCommandPalette: true,
       },
       {
         path: "/dashboard/utilidades-reporte",
@@ -84,12 +93,12 @@ const productosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: UtilidadesReportScreen,
         isAdmin: true,
-        role: ["Super Admin"],
+        role: ["Administrador", "Vendedor", "Super Admin"],
 
         icon: DollarSign,
         isHeader: false,
         showSidebar: true,
-        showInCommandPalette: true
+        showInCommandPalette: true,
       },
       {
         path: "/dashboard/inventario-reporte",
@@ -97,14 +106,27 @@ const productosProtectedRoutes: RouteType[] = [
         type: "protected",
         element: InventarioReportScreen,
         isAdmin: true,
-        role: ["Super Admin"],
+        role: ["Administrador", "Vendedor", "Super Admin"],
 
         icon: Warehouse,
         isHeader: false,
         showSidebar: true,
-        showInCommandPalette: true
-      }
-    ]
+        showInCommandPalette: true,
+      },
+      {
+        path: "/dashboard/kardex-report",
+        name: "Reporte de Kardex",
+        type: "protected",
+        element: KardexReportScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin"],
+
+        icon: List,
+        isHeader: false,
+        showSidebar: true,
+        showInCommandPalette: true,
+      },
+    ],
   },
 ];
 

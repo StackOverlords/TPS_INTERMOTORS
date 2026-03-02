@@ -79,6 +79,7 @@ interface Props<T> {
   isError?: boolean;
   rows?: number;
   errorMessage?: string;
+  noDataDescription?: string;
   noDataMessage?: string;
   selectedRowIndex?: number;
   onRowClick?: (index: number) => void;
@@ -222,6 +223,7 @@ const VirtualizedCustomizableTable = <T,>({
   isError,
   rows,
   errorMessage,
+  noDataDescription,
   noDataMessage,
   selectedRowIndex,
   onRowClick,
@@ -306,7 +308,8 @@ const VirtualizedCustomizableTable = <T,>({
         >
           <TableHeader
             className={cn(
-              stickyHeader && "sticky top-0 z-20 bg-background shadow-md border-b"
+              stickyHeader &&
+                "sticky top-0 z-20 bg-background shadow-md border-b"
             )}
           >
             {table.getHeaderGroups().map((headerGroup) => (
@@ -407,13 +410,20 @@ const VirtualizedCustomizableTable = <T,>({
                   colSpan={table.getVisibleFlatColumns().length}
                   className="text-center"
                 >
-                  <NoDataComponent message={noDataMessage} />
+                  <NoDataComponent
+                    message={noDataMessage}
+                    description={noDataDescription}
+                  />
                 </TableCell>
               </TableRow>
             ) : (
               <>
                 {/* Espaciador superior para simular las filas no renderizadas arriba */}
-                <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px` }} />
+                <tr
+                  style={{
+                    height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px`,
+                  }}
+                />
 
                 {/* Solo renderizar las filas virtuales visibles */}
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -425,11 +435,14 @@ const VirtualizedCustomizableTable = <T,>({
                       key={row.id}
                       data-index={virtualRow.index}
                       data-row-index={virtualRow.index}
-                      className={`${isSelected && focused
+                      className={`${
+                        isSelected && focused
                           ? "bg-blue-100 hover:bg-blue-100"
                           : ""
-                        }`}
-                      data-state={isSelected && focused ? "selected" : undefined}
+                      }`}
+                      data-state={
+                        isSelected && focused ? "selected" : undefined
+                      }
                       onClick={() => {
                         if (!isDragging) {
                           onRowClick?.(virtualRow.index);
@@ -462,9 +475,12 @@ const VirtualizedCustomizableTable = <T,>({
                 {/* Espaciador inferior para simular las filas no renderizadas abajo */}
                 <tr
                   style={{
-                    height: `${rowVirtualizer.getTotalSize() -
-                      (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0)
-                      }px`
+                    height: `${
+                      rowVirtualizer.getTotalSize() -
+                      (rowVirtualizer.getVirtualItems()[
+                        rowVirtualizer.getVirtualItems().length - 1
+                      ]?.end ?? 0)
+                    }px`,
                   }}
                 />
 
@@ -480,7 +496,7 @@ const VirtualizedCustomizableTable = <T,>({
               <TableFooter
                 className={cn(
                   stickyFooter &&
-                  "sticky bottom-0 z-10 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
+                    "sticky bottom-0 z-10 bg-background shadow-[0_-2px_4px_rgba(0,0,0,0.1)]"
                 )}
               >
                 {renderTableFooter()}

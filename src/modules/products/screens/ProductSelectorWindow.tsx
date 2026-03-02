@@ -59,6 +59,7 @@ interface WindowConfig {
   validateStock: boolean; // Nueva propiedad
   selectedItems: SelectedItem[];
   initialFilters?: Record<string, any>;
+  simpleMode: boolean;
 }
 
 const ProductSelectorWindow: React.FC = () => {
@@ -85,6 +86,7 @@ const ProductSelectorWindow: React.FC = () => {
       multiSelect: params.get("multiSelect") === "true",
       mode: (params.get("mode") as "create" | "edit") || "create",
       validateStock: params.get("validateStock") !== "false", // Por defecto true
+      simpleMode: params.get("simpleMode") === "true",
       selectedItems,
     };
   }, []);
@@ -859,9 +861,13 @@ const ProductSelectorWindow: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-primary">{contextTitle}</h1>
               {/* Badges de modo y validación */}
-              <Badge variant={config.mode === "edit" ? "default" : "secondary"}>
-                {config.mode === "edit" ? "Editando" : "Nuevo"}
-              </Badge>
+              {!config.simpleMode && (
+                <Badge
+                  variant={config.mode === "edit" ? "default" : "secondary"}
+                >
+                  {config.mode === "edit" ? "Editando" : "Nuevo"}
+                </Badge>
+              )}
             </div>
           </div>
 

@@ -56,32 +56,57 @@ jobs:
               name: `TPS Intermotors v${{ steps.get_version.outputs.VERSION }} [${{ steps.extract_variant.outputs.VARIANT_LABEL }}]`,
               body: `
 
-              ## 🚀 Nueva version v${{ steps.get_version.outputs.VERSION }}
+## 🚀 Nueva versión v${{ steps.get_version.outputs.VERSION }}
 
-              ![image](https://i.ibb.co/Z1RYJ3Jd/Captura-de-pantalla-20251118-003142.png) 
+> ⚠️ **Dashboard en fase beta** — Algunas secciones aún están en desarrollo.
 
-              ## 🚀 Novedades
-              
-              - 🪟 Ventanas múltiples optimizadas
-              - 💰 Cuentas por pagar: [click aquí](/dashboard/list-accounts-payable)
-              - 🖼️ Visualizador de imagene del producto: [click aquí](/dashboard/productos)
+---
 
-              ## 🐛 Errores corregidos
+## ✨ Novedades
 
-              <details><summary>Ver lista completa de correcciones</summary> 
-              <ul>
-                  <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li> 
-              </ul>
-              </details>
+### 📊 Reporte de Kardex *(nuevo)*
+Reporte detallado de movimientos de inventario por producto, accesible desde [/dashboard/kardex-report](/dashboard/kardex-report).
 
-              ---
+**Vista Tabla**
+![Kardex - Vista Tabla](https://i.ibb.co/84KH83Xt/Captura-desde-2026-03-02-07-05-09.png)
 
-              ### 📦 Instalación
+- Columnas: fecha, tipo de transacción, N° transacción, proveedor/cliente, cantidad, costo unitario, entrada total, precio unitario, salida total y saldo
+- Fila de totales al pie: cantidad total, total entradas, total salidas y saldo final
+- Ordenamiento, redimensionado y persistencia de columnas por usuario
 
-              - **Windows MSI**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
-              - **Windows NSIS**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
-              
-              `,
+**Vista Gráficos**
+![Kardex - Vista Gráficos](https://i.ibb.co/zhPjr8fB/Captura-desde-2026-03-02-07-05-28.png)
+
+- 📈 Evolución del saldo a lo largo del tiempo
+- 🔄 Comparativa de entradas vs salidas en Bs
+- Control deslizante para limitar registros visualizados (máx. 100)
+
+---
+
+### 🛒 Compras — Detalle de ítems
+Se agregaron dos nuevas columnas en la tabla de ítems al **crear y editar** una compra:
+
+- 🌍 **Procedencia** — origen del producto
+- 🏷️ **Marca** — marca del producto
+
+---
+
+## 🐛 Errores corregidos
+
+<details><summary>Ver lista completa de correcciones</summary>
+<ul>
+  <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li>
+</ul>
+</details>
+
+---
+
+### 📦 Instalación
+
+- **Windows MSI**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64_en-US.msi\`
+- **Windows NSIS**: \`TPS-Intermotors_${{ steps.get_version.outputs.VERSION }}_x64-setup.exe\`
+
+`,
               draft: false,
               prerelease: false
             });
