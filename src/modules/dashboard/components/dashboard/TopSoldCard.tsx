@@ -16,6 +16,7 @@ interface TopSoldCardProps {
   onNavigate?: () => void;
   period?: DatePeriod | null;
   onPeriodChange?: (period: DatePeriod | null) => void;
+  isLoading?: boolean;
 }
 
 export function TopSoldCard({
@@ -23,6 +24,7 @@ export function TopSoldCard({
   onNavigate,
   period,
   onPeriodChange,
+  isLoading = false,
 }: TopSoldCardProps) {
   return (
     <div className="col-span-4 min-h-0">
@@ -56,6 +58,7 @@ export function TopSoldCard({
               limit={10}
               colorPreset="blue"
               compactMode={true}
+              isLoading={isLoading}
             />
           </div>
         </CardContent>

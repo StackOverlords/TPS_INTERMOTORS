@@ -198,6 +198,7 @@ const EditPurchase: React.FC = () => {
           codigo_upc: detalle.producto.codigo_upc ?? undefined,
           marca: detalle.producto.marca?.marca,
           categoria: detalle.producto.categoria?.categoria,
+          procedencia: detalle.producto.procedencia?.procedencia ?? undefined,
         },
       })
     );

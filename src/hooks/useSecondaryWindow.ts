@@ -27,11 +27,11 @@
  * ```
  */
 
-import type { QuotationGetById } from '@/modules/quotations/types/quotationGet.types';
-import type { ProductChange } from '@/modules/returns/hooks/useReturnDetails';
-import type { UIReturnDetailCreate } from '@/modules/returns/types/returnCreate.types';
-import type { UIReturnDetailUpdate } from '@/modules/returns/types/returnUpdate.types';
-import type { SelectedItem } from '@/types/windowSelectedItems';
+import type { QuotationGetById } from "@/modules/quotations/types/quotationGet.types";
+import type { ProductChange } from "@/modules/returns/hooks/useReturnDetails";
+import type { UIReturnDetailCreate } from "@/modules/returns/types/returnCreate.types";
+import type { UIReturnDetailUpdate } from "@/modules/returns/types/returnUpdate.types";
+import type { SelectedItem } from "@/types/windowSelectedItems";
 import {
   closeSecondaryWindow,
   createSecondaryWindow,
@@ -39,15 +39,17 @@ import {
   isWindowOpen,
   listenToWindowEvent,
   type SecondaryWindowConfig,
-} from '@/utils/tauriWindows';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { useCallback, useEffect, useRef, useState } from 'react';
+} from "@/utils/tauriWindows";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Configuración del hook useSecondaryWindow
  */
-export interface UseSecondaryWindowConfig
-  extends Omit<SecondaryWindowConfig, 'windowId'> {
+export interface UseSecondaryWindowConfig extends Omit<
+  SecondaryWindowConfig,
+  "windowId"
+> {
   /** ID único de la ventana */
   windowId: string;
   /**
@@ -105,7 +107,7 @@ export interface UseSecondaryWindowResult {
  * @returns Objeto con estado y métodos para controlar la ventana
  */
 export function useSecondaryWindow(
-  config: UseSecondaryWindowConfig
+  config: UseSecondaryWindowConfig,
 ): UseSecondaryWindowResult {
   const {
     windowId,
@@ -118,7 +120,7 @@ export function useSecondaryWindow(
   } = config;
 
   // Si no se especifican eventos, usar solo 'window-closed' por defecto
-  const eventsToListen = listenToEvents || ['window-closed'];
+  const eventsToListen = listenToEvents || ["window-closed"];
 
   // Debug: detectar cambios en eventsToListen
   const eventsToListenRef = useRef(eventsToListen);
@@ -155,7 +157,10 @@ export function useSecondaryWindow(
         try {
           await closeSecondaryWindow(windowId);
         } catch (err) {
-          console.error(`[useSecondaryWindow] Error limpiando ventana huérfana:`, err);
+          console.error(
+            `[useSecondaryWindow] Error limpiando ventana huérfana:`,
+            err,
+          );
         }
       }
     };
@@ -194,7 +199,7 @@ export function useSecondaryWindow(
       const error = err instanceof Error ? err : new Error(String(err));
       console.error(
         `[useSecondaryWindow] Error abriendo ventana "${windowId}":`,
-        error
+        error,
       );
       setError(error);
       setIsLoading(false);
@@ -218,7 +223,7 @@ export function useSecondaryWindow(
       const error = err instanceof Error ? err : new Error(String(err));
       console.error(
         `[useSecondaryWindow] Error cerrando ventana "${windowId}":`,
-        error
+        error,
       );
       setError(error);
     }
@@ -270,16 +275,16 @@ export function useSecondaryWindow(
           const unlisten = await listenToWindowEvent(
             windowId,
             eventName,
-            data => {
+            (data) => {
               // console.log(`[useSecondaryWindow] ${windowId}: 🔔 Listener disparado para "${eventName}"`);
               onEventRef.current?.(eventName, data);
-            }
+            },
           );
           unlisteners.push(unlisten);
         } catch (err) {
           console.error(
             `[useSecondaryWindow] Error escuchando evento "${eventName}":`,
-            err
+            err,
           );
         }
       }
@@ -292,7 +297,7 @@ export function useSecondaryWindow(
     return () => {
       mounted = false;
       // console.log(`[useSecondaryWindow] ${windowId}: 🧹 Limpiando ${unlisteners.length} listeners`);
-      unlisteners.forEach(unlisten => {
+      unlisteners.forEach((unlisten) => {
         try {
           unlisten();
         } catch (err) {
@@ -308,7 +313,7 @@ export function useSecondaryWindow(
     return () => {
       if (autoCloseOnUnmount) {
         // Cerrar ventana de forma asíncrona en cleanup
-        isWindowOpen(windowId).then(isOpen => {
+        isWindowOpen(windowId).then((isOpen) => {
           if (isOpen) {
             closeSecondaryWindow(windowId);
           }
@@ -337,21 +342,22 @@ export interface UseProductSelectorWindowConfig {
   onlyWithStock?: boolean;
   initialFilters?: Record<string, any>;
   multiSelect?: boolean;
-  mode?: 'create' | 'edit';
+  mode?: "create" | "edit";
   validateStock?: boolean; // Si debe validar stock (false para cotizaciones/compras...)
   selectedItems?: SelectedItem[];
+  simpleMode?: boolean;
 }
 
 // Array constante para evitar recreaciones
 const PRODUCT_SELECTOR_EVENTS = [
-  'product-selected',
-  'product-multi-selected',
-  'window-closed',
+  "product-selected",
+  "product-multi-selected",
+  "window-closed",
 ] as const;
 
 // ====== Hook específico para ventana de selector de productos ======
 export function useProductSelectorWindow(
-  config: UseProductSelectorWindowConfig
+  config: UseProductSelectorWindowConfig,
 ): UseSecondaryWindowResult {
   const {
     context,
@@ -361,8 +367,9 @@ export function useProductSelectorWindow(
     onlyWithStock,
     initialFilters,
     multiSelect = false,
-    mode = 'create',
-    validateStock = false, // Por defecto no valida stock
+    mode = "create",
+    validateStock = false,
+    simpleMode = false,
     selectedItems = [],
   } = config;
 
@@ -381,24 +388,28 @@ export function useProductSelectorWindow(
   // Callback estable que usa las refs
   // ✅ Sin dependencias, siempre estable
   const handleEvent = useCallback((eventName: string, data: any) => {
-    if (eventName === 'product-selected' && onProductSelectRef.current) {
+    if (eventName === "product-selected" && onProductSelectRef.current) {
       onProductSelectRef.current(data);
-    } else if (eventName === 'product-multi-selected' && onMultiSelectRef.current) {
+    } else if (
+      eventName === "product-multi-selected" &&
+      onMultiSelectRef.current
+    ) {
       onMultiSelectRef.current(data);
     }
   }, []);
 
   return useSecondaryWindow({
     windowId,
-    route: '/window.html', // HTML genérico
-    title: 'Seleccionar Productos',
+    route: "/window.html", // HTML genérico
+    title: "Seleccionar Productos",
     width: 1400,
     height: 750,
     queryParams: {
-      component: 'product-selector', // ID del componente a renderizar
+      component: "product-selector", // ID del componente a renderizar
       context,
       mode,
       validateStock: String(validateStock),
+      simpleMode: String(simpleMode ?? false),
       onlyWithStock: String(onlyWithStock ?? false),
       selectedItems: JSON.stringify(selectedItems),
       ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
@@ -408,7 +419,6 @@ export function useProductSelectorWindow(
     onEvent: handleEvent, // ✅ Referencia estable
   });
 }
-
 
 // ========= Hook específico para ventana de selector de compras =========
 export interface UsePurchaseSelectorWindowConfig {
@@ -420,25 +430,19 @@ export interface UsePurchaseSelectorWindowConfig {
 
 // Array constante para evitar recreaciones
 const PURCHASE_SELECTOR_EVENTS = [
-  'purchase-selected',
-  'window-closed',
+  "purchase-selected",
+  "window-closed",
 ] as const;
 
 export function usePurchaseSelectorWindow(
-  config: UsePurchaseSelectorWindowConfig
+  config: UsePurchaseSelectorWindowConfig,
 ): UseSecondaryWindowResult {
-  const {
-    context,
-    instanceId,
-    onPurchaseSelect,
-    onlyWithStock,
-  } = config;
+  const { context, instanceId, onPurchaseSelect, onlyWithStock } = config;
 
   // Generar windowId único
   const windowId = instanceId
     ? `purchase-selector-${context}-${instanceId}`
     : `purchase-selector-${context}`;
-
 
   // Ref para mantener callback actualizado sin causar re-renders
   const onPurchaseSelectRef = useRef(onPurchaseSelect);
@@ -448,21 +452,20 @@ export function usePurchaseSelectorWindow(
   // Callback estable que usa la ref
   // ✅ Sin dependencias, siempre estable
   const handleEvent = useCallback((eventName: string, data: any) => {
-    if (eventName === 'purchase-selected' && onPurchaseSelectRef.current) {
+    if (eventName === "purchase-selected" && onPurchaseSelectRef.current) {
       onPurchaseSelectRef.current(data);
     }
   }, []);
 
-
   // Usar hook genérico para crear ventana de selector de compras
   return useSecondaryWindow({
     windowId,
-    route: '/window.html',
-    title: 'Seleccionar Compra',
+    route: "/window.html",
+    title: "Seleccionar Compra",
     width: 1400,
     height: 900,
     queryParams: {
-      component: 'purchase-selector',
+      component: "purchase-selector",
       context,
       onlyWithStock: String(onlyWithStock ?? false),
       windowId,
@@ -470,8 +473,7 @@ export function usePurchaseSelectorWindow(
     listenToEvents: PURCHASE_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
     onEvent: handleEvent, // ✅ Referencia estable
   });
-};
-
+}
 
 // Hook para views window
 export interface UseViewConfigRoutesWindowConfig {
@@ -479,12 +481,9 @@ export interface UseViewConfigRoutesWindowConfig {
   instanceId?: string;
 }
 export function useViewConfigRoutesWindowConfig(
-  config: UseViewConfigRoutesWindowConfig
+  config: UseViewConfigRoutesWindowConfig,
 ): UseSecondaryWindowResult {
-  const {
-    context,
-    instanceId,
-  } = config;
+  const { context, instanceId } = config;
 
   // Generar windowId único
   // El prefijo 'view-config' es más descriptivo que 'settings-routes'
@@ -494,40 +493,35 @@ export function useViewConfigRoutesWindowConfig(
 
   return useSecondaryWindow({
     windowId,
-    route: '/window.html', // HTML genérico
-    title: 'Configuración de Vistas',
+    route: "/window.html", // HTML genérico
+    title: "Configuración de Vistas",
     width: 1200,
     height: 800,
     queryParams: {
-      component: 'settings-routes', // ID del componente a renderizar
+      component: "settings-routes", // ID del componente a renderizar
       context,
     },
-    listenToEvents: [
-      'view-selected',
-      'window-closed',
-    ],
+    listenToEvents: ["view-selected", "window-closed"],
     onEvent: (_eventName, _data) => {
       // Aquí puede manejar eventos específicos si es necesario
     },
   });
 }
 
-
-
 // ========= Hook específico para ventana de debug logs =========
-const DEBUG_LOG_EVENTS = ['window-closed'] as const;
+const DEBUG_LOG_EVENTS = ["window-closed"] as const;
 
 export function useDebugLogWindow(): UseSecondaryWindowResult {
-  const windowId = 'debug-log-window';
+  const windowId = "debug-log-window";
 
   return useSecondaryWindow({
     windowId,
-    route: '/window.html',
-    title: 'Panel de Debug - TPS Intermotors',
+    route: "/window.html",
+    title: "Panel de Debug - TPS Intermotors",
     width: 800,
     height: 600,
     queryParams: {
-      component: 'debug-log',
+      component: "debug-log",
     },
     listenToEvents: DEBUG_LOG_EVENTS as unknown as string[],
     autoCloseOnUnmount: false, // Permitir que persista
@@ -540,14 +534,14 @@ export interface UseSaleDetailSelectorWindowConfig {
   instanceId?: string;
   onChangesApplied?: (changes: ProductChange[]) => void;
   initialFilters?: Record<string, any>;
-  mode?: 'create' | 'edit';
+  mode?: "create" | "edit";
   selectedItems?: UIReturnDetailCreate[] | UIReturnDetailUpdate[];
 }
 
 // Array constante para evitar recreaciones
 const SALE_DETAIL_SELECTOR_EVENTS = [
-  'sale-details-changes-applied',
-  'window-closed',
+  "sale-details-changes-applied",
+  "window-closed",
 ] as const;
 
 /**
@@ -555,14 +549,14 @@ const SALE_DETAIL_SELECTOR_EVENTS = [
  * Permite seleccionar múltiples productos de diferentes ventas
  */
 export function useSaleDetailSelectorWindow(
-  config: UseSaleDetailSelectorWindowConfig
+  config: UseSaleDetailSelectorWindowConfig,
 ): UseSecondaryWindowResult {
   const {
     context,
     instanceId,
     onChangesApplied,
     initialFilters,
-    mode = 'create',
+    mode = "create",
     selectedItems = [],
   } = config;
 
@@ -581,7 +575,10 @@ export function useSaleDetailSelectorWindow(
   // Callback estable que usa las refs
   const handleEvent = useCallback((eventName: string, data: any) => {
     // Nuevo evento con solo cambios (recomendado)
-    if (eventName === 'sale-details-changes-applied' && onChangesAppliedRef.current) {
+    if (
+      eventName === "sale-details-changes-applied" &&
+      onChangesAppliedRef.current
+    ) {
       onChangesAppliedRef.current(data as ProductChange[]);
       return;
     }
@@ -589,12 +586,12 @@ export function useSaleDetailSelectorWindow(
 
   return useSecondaryWindow({
     windowId,
-    route: '/window.html',
-    title: 'Seleccionar Items de Venta',
+    route: "/window.html",
+    title: "Seleccionar Items de Venta",
     width: 1400,
     height: 750,
     queryParams: {
-      component: 'sale-detail-selector',
+      component: "sale-detail-selector",
       context,
       mode,
       selectedItems: JSON.stringify(selectedItems),
@@ -610,30 +607,26 @@ export interface UseOrderSelectorWindow {
   context: string;
   instanceId?: string;
   onOrderSelect?: (order: any) => void;
-  estado?: 'P' | 'C' | 'T' | 'A' | 'D'; // P=Preparación, C=Cotización, T=Tránsito, A=Almacén, D=Disponible
+  estado?: "P" | "C" | "T" | "A" | "D"; // P=Preparación, C=Cotización, T=Tránsito, A=Almacén, D=Disponible
 }
 
 // Array constante para evitar recreaciones
-const ORDER_SELECTOR_EVENTS = [
-  'order-selected',
-  'window-closed',
-] as const;
+const ORDER_SELECTOR_EVENTS = ["order-selected", "window-closed"] as const;
 
 export function useOrderSelectorWindow(
-  config: UseOrderSelectorWindow
+  config: UseOrderSelectorWindow,
 ): UseSecondaryWindowResult {
   const {
     context,
     instanceId,
     onOrderSelect,
-    estado = 'A', // Por defecto Almacén
+    estado = "A", // Por defecto Almacén
   } = config;
 
   // Generar windowId único
   const windowId = instanceId
     ? `order-selector-${context}-${instanceId}`
     : `order-selector-${context}`;
-
 
   // Ref para mantener callback actualizado sin causar re-renders
   const onOrderSelectRef = useRef(onOrderSelect);
@@ -643,21 +636,20 @@ export function useOrderSelectorWindow(
   // Callback estable que usa la ref
   // ✅ Sin dependencias, siempre estable
   const handleEvent = useCallback((eventName: string, data: any) => {
-    if (eventName === 'order-selected' && onOrderSelectRef.current) {
+    if (eventName === "order-selected" && onOrderSelectRef.current) {
       onOrderSelectRef.current(data);
     }
   }, []);
 
-
   // Usar hook genérico para crear ventana de selector de pedidos
   return useSecondaryWindow({
     windowId,
-    route: '/window.html',
-    title: 'Seleccionar Pedido',
+    route: "/window.html",
+    title: "Seleccionar Pedido",
     width: 1400,
     height: 900,
     queryParams: {
-      component: 'order-selector',
+      component: "order-selector",
       context,
       estado, // Pasar el estado para filtrar
       windowId,
@@ -665,8 +657,7 @@ export function useOrderSelectorWindow(
     listenToEvents: ORDER_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante
     onEvent: handleEvent, // ✅ Referencia estable
   });
-};
-
+}
 
 // ========= Hook específico para ventana de selector de cotizaciones =========
 export interface UseQuotationSelectorWindowConfig {
@@ -677,18 +668,14 @@ export interface UseQuotationSelectorWindowConfig {
 
 // Array constante para evitar recreaciones
 const QUOTATION_SELECTOR_EVENTS = [
-  'quotation-selected',
-  'window-closed',
+  "quotation-selected",
+  "window-closed",
 ] as const;
 
 export function useQuotationSelectorWindow(
-  config: UseQuotationSelectorWindowConfig
+  config: UseQuotationSelectorWindowConfig,
 ): UseSecondaryWindowResult {
-  const {
-    context,
-    instanceId,
-    onQuotationSelect,
-  } = config;
+  const { context, instanceId, onQuotationSelect } = config;
 
   // Generar windowId único
   const windowId = instanceId
@@ -703,7 +690,7 @@ export function useQuotationSelectorWindow(
 
   // Callback estable que usa la ref
   const handleEvent = useCallback((eventName: string, data: any) => {
-    if (eventName === 'quotation-selected' && onQuotationSelectRef.current) {
+    if (eventName === "quotation-selected" && onQuotationSelectRef.current) {
       onQuotationSelectRef.current(data);
     }
   }, []);
@@ -711,12 +698,12 @@ export function useQuotationSelectorWindow(
   // Usar hook genérico para crear ventana de selector de cotizaciones
   return useSecondaryWindow({
     windowId,
-    route: '/window.html',
-    title: 'Seleccionar Cotización',
+    route: "/window.html",
+    title: "Seleccionar Cotización",
     width: 1400,
     height: 900,
     queryParams: {
-      component: 'quotation-selector',
+      component: "quotation-selector",
       context,
       windowId,
     },

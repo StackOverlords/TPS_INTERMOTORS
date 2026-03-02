@@ -11,10 +11,14 @@ import { ReceivablesDonutChart } from "./ReceivablesDonutChart";
 
 interface DebtDistributionCardProps {
   receivableMetrics: ReceivableMetrics;
+  isLoading?: boolean;
+  isError?: boolean;
 }
 
 export function DebtDistributionCard({
   receivableMetrics,
+  isLoading = false,
+  isError = false,
 }: DebtDistributionCardProps) {
   return (
     <div className="col-span-3 min-h-0">
@@ -30,6 +34,8 @@ export function DebtDistributionCard({
           <ReceivablesDonutChart
             topDeudores={receivableMetrics.topDeudores}
             totalDeuda={receivableMetrics.totalDeuda}
+            isError={isError}
+            isLoading={isLoading}
           />
         </CardContent>
       </Card>

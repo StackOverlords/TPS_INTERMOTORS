@@ -30,6 +30,7 @@ export interface SaleHorizontalBarChartProps {
   maxNameLength?: number;
   /** Modo compacto para dashboard - reduce tamaños de fuente y ajusta espaciado */
   compactMode?: boolean;
+  isLoading?: boolean;
 }
 
 const truncateText = (text: string, maxLength: number = 30): string => {
@@ -114,6 +115,7 @@ export function SaleHorizontalBarChart({
   limit = 15,
   maxNameLength = 30,
   compactMode = false,
+  isLoading = false,
 }: SaleHorizontalBarChartProps) {
   // Obtener colores según el tema
   const themeColors = useChartThemeColors(themeColorPresets[colorPreset]);
@@ -162,6 +164,7 @@ export function SaleHorizontalBarChart({
       yAxisWidth={yAxisWidth}
       autoAdjustYAxisWidth={compactMode}
       margin={margin}
+      isLoading={isLoading}
     />
   );
 }

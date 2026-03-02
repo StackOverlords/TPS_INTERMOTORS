@@ -31,6 +31,7 @@ export interface UIPurchaseDetail {
     codigo_upc?: string;
     marca?: string;
     categoria?: string;
+    procedencia?: string;
   };
 }
 
@@ -169,6 +170,7 @@ export const usePurchaseDetails = <
             codigo_upc: product.codigo_upc,
             marca: product.marca,
             categoria: product.categoria,
+            procedencia: product.procedencia,
           },
         };
 
@@ -238,6 +240,7 @@ export const usePurchaseDetails = <
                 codigo_upc: product.codigo_upc,
                 marca: product.marca,
                 categoria: product.categoria,
+                procedencia: product.procedencia,
               },
             };
 
