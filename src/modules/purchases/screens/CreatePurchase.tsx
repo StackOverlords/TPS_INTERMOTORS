@@ -44,6 +44,8 @@ import type { PurchaseDetailsTableRef } from "../components/PurchaseDetailsTable
 import { usePurchaseDetails } from "../hooks/usePurchaseDetails";
 import PurchaseDetailsTable from "../components/PurchaseDetailsTable";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
+import type { OrderDetailGetById } from "@/modules/orders/types/orderGet.types";
+import type { PurchaseDetailUpdate } from "../schemas/purchaseUpdate.schema";
 
 type CreationMode = "manual" | "order-import";
 
@@ -106,7 +108,7 @@ const CreatePurchase: React.FC = () => {
     const details = purchaseDetailsHook.details;
     if (details.length > 0) {
       const detailsForForm = purchaseDetailsHook.getDetailsForBackend();
-      setValue("detalles", detailsForForm as any);
+      setValue("detalles", detailsForForm as PurchaseDetailUpdate[]);
     }
   }, [purchaseDetailsHook.details, setValue]);
 
@@ -147,7 +149,7 @@ const CreatePurchase: React.FC = () => {
     if (orderData && selectedOrderId) {
       purchaseDetailsHook.loadFromOrder(
         orderData.detalles,
-        orderData.detalles.map((d: any) => d.producto)
+        orderData.detalles.map((d: OrderDetailGetById) => d.producto)
       );
 
       setValue("id_pedido", selectedOrderId);
