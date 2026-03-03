@@ -95,7 +95,8 @@ jobs:
               ``,
               `<details><summary>Ver lista completa de correcciones</summary>`,
               `<ul>`,
-              `  <li><input type="checkbox" checked> Crasheo al abrir vistas con tablas</li>`,
+              `  <li><input type="checkbox" checked> Crasheo al renderizar la tabla de detalles de compra cuando propiedades como marca o procedencia eran objetos en lugar de strings</li>`,
+              `  <li><input type="checkbox" checked> Validación del campo stock mínimo permitía enviar el formulario con valores incorrectos</li>`,
               `</ul>`,
               `</details>`,
               ``,
@@ -195,9 +196,7 @@ jobs:
         shell: bash
         run: |
           VARIANT="${{ steps.extract_variant.outputs.VARIANT }}"
-          # Replace latest-t1.json or latest-t2.json with the correct variant
           sed -i 's|latest-t[12]\.json|latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
-          # Also replace latest.json if it exists (fallback case)
           sed -i 's|/latest\.json|/latest-'"${VARIANT}"'.json|g' src-tauri/tauri.conf.json
           echo "Updated updater endpoint to: latest-${VARIANT}.json"
           grep -A 5 '"updater"' src-tauri/tauri.conf.json || true
@@ -260,8 +259,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const crypto = require('crypto');
-
             const release = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -285,7 +282,6 @@ jobs:
               rpmSig: null
             };
 
-            // Download signature contents if they exist
             if (msiSigAsset) {
               try {
                 const msiSigResponse = await fetch(msiSigAsset.browser_download_url);
@@ -318,15 +314,20 @@ jobs:
             const fs = require('fs');
             const assets = ${{ steps.get_assets.outputs.result }};
 
+            // Obtener el body del release desde GitHub
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: context.ref.replace('refs/tags/', '')
+            });
+
             const manifest = {
               version: "v${{ steps.get_version.outputs.VERSION }}",
-              notes: "v${{ steps.get_version.outputs.VERSION }} — Reporte de Kardex, columnas Procedencia y Marca en compras. Ver changelog completo en GitHub.",
+              notes: release.data.body || "Ver changelog completo en GitHub Releases",
               pub_date: new Date().toISOString(),
               platforms: {}
             };
 
-            // Only add platforms that have valid URLs
-            // Note: Signatures are required by Tauri updater
             if (assets.msiUrl && assets.msiSig) {
               manifest.platforms["windows-x86_64"] = {
                 url: assets.msiUrl,
@@ -365,20 +366,17 @@ jobs:
             const otherVariant = variant === 't1' ? 't2' : 't1';
 
             try {
-              // Get all releases
               const releases = await github.rest.repos.listReleases({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 per_page: 100
               });
 
-              // Find the most recent release for the other variant
               const otherVariantRelease = releases.data.find(r => r.tag_name.endsWith(`-${otherVariant}`));
 
               if (otherVariantRelease) {
                 console.log(`Found other variant release: ${otherVariantRelease.tag_name}`);
 
-                // Find the latest-{otherVariant}.json asset
                 const asset = otherVariantRelease.assets.find(a => a.name === `latest-${otherVariant}.json`);
 
                 if (asset) {
@@ -413,7 +411,7 @@ jobs:
               tag: context.ref.replace('refs/tags/', '')
             });
 
-            // 1. Upload current variant file (latest-t1.json or latest-t2.json)
+            // 1. Upload current variant file
             console.log(`Uploading ${currentFilename}...`);
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,

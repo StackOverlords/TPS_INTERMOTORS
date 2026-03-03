@@ -1,12 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Input } from '@/components/atoms/input';
-import { Edit3 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState, useRef, useEffect } from "react";
+import { Input } from "@/components/atoms/input";
+import { Edit3 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface EditableFieldProps {
   value: string | number;
   onSubmit: (value: string | number) => void;
-  type?: 'text' | 'number' | 'email' | 'tel';
+  type?: "text" | "number" | "email" | "tel";
   numberProps?: {
     min?: number;
     max?: number;
@@ -21,6 +21,7 @@ export interface EditableFieldProps {
   inputClassName?: string;
   disabled?: boolean;
   showEditIcon?: boolean;
+  showError?: boolean;
   onEditStart?: () => void;
   onEditCancel?: () => void;
   onEditConfirm?: (value: string | number) => void;
@@ -31,12 +32,13 @@ export interface EditableFieldProps {
   editOnFocus?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
   focusNextOnEnter?: boolean;
+  errorMessage?: string;
 }
 
 export const EditableField: React.FC<EditableFieldProps> = ({
   value,
   onSubmit,
-  type = 'text',
+  type = "text",
   numberProps,
   validate,
   formatter,
@@ -47,6 +49,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   inputClassName,
   disabled = false,
   showEditIcon = true,
+  showError = true,
   onEditStart,
   onEditCancel,
   onEditConfirm,
@@ -57,20 +60,23 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   editOnFocus = true,
   inputRef: externalInputRef,
   focusNextOnEnter = false,
+  errorMessage,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [tempValue, setTempValue] = useState('');
-  const [error, setError] = useState('');
+  const [tempValue, setTempValue] = useState("");
+  const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Función para asignar ambos refs al input
   const setRefs = (el: HTMLInputElement | null) => {
     inputRef.current = el;
 
-    if (typeof externalInputRef === 'function') {
+    if (typeof externalInputRef === "function") {
       externalInputRef(el);
-    } else if (externalInputRef && typeof externalInputRef === 'object') {
-      (externalInputRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
+    } else if (externalInputRef && typeof externalInputRef === "object") {
+      (
+        externalInputRef as React.MutableRefObject<HTMLInputElement | null>
+      ).current = el;
     }
   };
 
@@ -79,7 +85,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
       return formatter(val);
     }
 
-    if (type === 'number' && typeof val === 'number') {
+    if (type === "number" && typeof val === "number") {
       return val.toFixed(numberProps?.step ? 2 : 0);
     }
 
@@ -91,7 +97,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
       return parser(val);
     }
 
-    if (type === 'number') {
+    if (type === "number") {
       const parsed = parseFloat(val);
       return isNaN(parsed) ? value : parsed;
     }
@@ -104,12 +110,14 @@ export const EditableField: React.FC<EditableFieldProps> = ({
       return validate(val);
     }
 
-    if (type === 'number') {
+    if (type === "number") {
       const parsed = parseFloat(val);
       if (isNaN(parsed)) return false;
 
-      if (numberProps?.min !== undefined && parsed < numberProps.min) return false;
-      if (numberProps?.max !== undefined && parsed > numberProps.max) return false;
+      if (numberProps?.min !== undefined && parsed < numberProps.min)
+        return false;
+      if (numberProps?.max !== undefined && parsed > numberProps.max)
+        return false;
     }
 
     return true;
@@ -120,26 +128,26 @@ export const EditableField: React.FC<EditableFieldProps> = ({
 
     setIsEditing(true);
     setTempValue(value.toString());
-    setError('');
+    setError("");
     onEditStart?.();
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
-    setTempValue('');
-    setError('');
+    setTempValue("");
+    setError("");
     onEditCancel?.();
   };
 
   const confirmEditing = (shouldFocusNext = false) => {
     if (!validateValue(tempValue)) {
-      setError('Valor inválido');
+      setError("Valor inválido");
       return;
     }
 
     const parsedValue = parseValue(tempValue);
     setIsEditing(false);
-    setError('');
+    setError("");
     onEditConfirm?.(parsedValue);
     onSubmit(parsedValue);
 
@@ -181,15 +189,15 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   }, [isEditing, autoSelect]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (confirmOnEnter && e.key === 'Enter') {
+    if (confirmOnEnter && e.key === "Enter") {
       e.preventDefault();
       confirmEditing(true);
     }
 
-    if (cancelOnEscape && e.key === 'Escape') {
+    if (cancelOnEscape && e.key === "Escape") {
       e.preventDefault();
       cancelEditing();
-      inputRef.current?.blur()
+      inputRef.current?.blur();
     }
   };
 
@@ -201,7 +209,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTempValue(e.target.value);
-    setError(''); // Limpiar error al escribir
+    setError(""); // Limpiar error al escribir
   };
 
   const handleInputClick = () => {
@@ -219,7 +227,7 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   const displayValue = getDisplayValue(value);
 
   return (
-    <div className={cn('relative w-full', className, buttonClassName)}>
+    <div className={cn("relative w-full", className, buttonClassName)}>
       <Input
         ref={setRefs}
         type={type}
@@ -233,20 +241,20 @@ export const EditableField: React.FC<EditableFieldProps> = ({
         disabled={disabled}
         readOnly={!isEditing}
         className={cn(
-          'cursor-pointer',
-          !isEditing && 'hover:bg-accent',
-          isEditing && 'cursor-text',
-          error && 'border-red-500 focus:border-red-500 ring-red-500',
+          "cursor-pointer",
+          !isEditing && "hover:bg-accent",
+          isEditing && "cursor-text",
+          error && "border-red-500 focus:border-red-500 ring-red-500",
           inputClassName
         )}
-        {...(type === 'number' && numberProps)}
+        {...(type === "number" && numberProps)}
       />
       {showEditIcon && !disabled && !isEditing && (
         <Edit3 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
       )}
-      {error && (
+      {showError && error && (
         <div className="mt-1 text-[10px] text-red-500">
-          {error}
+          {errorMessage || error}
         </div>
       )}
     </div>

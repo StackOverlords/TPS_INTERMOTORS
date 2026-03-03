@@ -8,6 +8,10 @@ import {
   roundTo5Decimals,
   calculatePercent,
 } from "@/utils/decimalUtils";
+import type { OrderDetailGetById } from "@/modules/orders/types/orderGet.types";
+import type { ProductDetail } from "@/modules/products/types/productDetail";
+import type { PurchaseDetailUpdate } from "../schemas/purchaseUpdate.schema";
+import type { PurchaseDetailCreate } from "../schemas/purchaseCreate.schema";
 
 // ==================== TIPOS ====================
 /**
@@ -33,27 +37,6 @@ export interface UIPurchaseDetail {
     categoria?: string;
     procedencia?: string;
   };
-}
-
-/**
- * Detalle para crear compra (sin ID de detalle)
- */
-export interface PurchaseDetailCreate {
-  id_producto: number;
-  cantidad: number;
-  costo: number;
-  inc_p_venta: number;
-  precio_venta: number;
-  inc_p_venta_alt: number;
-  precio_venta_alt: number;
-  tc_compra: number;
-}
-
-/**
- * Detalle para actualizar compra (con ID de detalle opcional para nuevos)
- */
-export interface PurchaseDetailUpdate extends PurchaseDetailCreate {
-  id_detalle_compra?: number | null;
 }
 
 /**
@@ -456,15 +439,15 @@ export const usePurchaseDetails = <
    * Cargar detalles desde un pedido existente
    */
   const loadFromOrder = useCallback(
-    (orderDetails: any[], orderProducts?: any[]) => {
-      const mappedDetails = orderDetails.map((detalle: any, index: number) => {
+    (orderDetails: OrderDetailGetById[], orderProducts?: ProductDetail[]) => {
+      const mappedDetails = orderDetails.map((detalle: OrderDetailGetById, index: number) => {
         // Buscar el producto completo si existe
         const product =
           orderProducts?.find((p) => p.id === detalle.producto?.id) ||
           detalle.producto;
 
-        const cantidad = parseInt(detalle.cantidad) || 1;
-        const costo = roundTo5Decimals(parseFloat(detalle.costo || "0") || 0);
+        const cantidad = Number(detalle.cantidad) || 1;
+        const costo = roundTo5Decimals(parseFloat(String(detalle.costo || "0")) || 0);
         const inc_p_venta = DEFAULT_INC_P_VENTA;
         const inc_p_venta_alt = DEFAULT_INC_P_VENTA_ALT;
 
@@ -491,8 +474,9 @@ export const usePurchaseDetails = <
             codigo_oem: product.codigo_oem,
             codigo_interno: product.codigo_interno,
             codigo_upc: product.codigo_upc,
-            marca: product.marca,
-            categoria: product.categoria,
+            marca: product.marca?.marca,
+            categoria: product.categoria?.categoria,
+            procedencia: product.procedencia?.procedencia,
           },
         };
 

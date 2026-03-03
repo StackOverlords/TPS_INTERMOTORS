@@ -119,6 +119,7 @@ const LoginScreen = ({
                       className={`pl-10 h-10 ${errors.usuario ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}`}
                       disabled={isPending || isSubmitting}
                       {...register("usuario")}
+                      autoFocus
                     />
                   </div>
                   {errors.usuario && (
