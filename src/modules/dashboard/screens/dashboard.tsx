@@ -106,6 +106,7 @@ export default function Dashboard() {
           onPeriodChange={(period) =>
             setCardPeriod(CARD_IDS.RECEIVABLES, period)
           }
+          isLoading={receivablesData.isLoading}
         />
 
         {/* Últimas Ventas (3 cols) */}

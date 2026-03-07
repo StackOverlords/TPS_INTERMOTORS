@@ -7,6 +7,7 @@ import { queryClient } from "@/lib/reactQueryConfig";
 import authSDK from "@/services/sdk-simple-auth";
 import { QueryClientProvider } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
+import { HotkeysProvider } from "react-hotkeys-hook";
 
 interface WindowLayoutProps {
   children: React.ReactNode;
@@ -55,13 +56,13 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
   return (
     <WebSocketProvider>
       <QueryClientProvider client={queryClient}>
-        {/* <HotkeysProvider initiallyActiveScopes={['default', 'esc-key']}> */}
-        <TooltipProvider>
-          <Toaster />
-          <ZoomManager />
-          <div className="h-screen w-screen overflow-hidden">{children}</div>
-        </TooltipProvider>
-        {/* </HotkeysProvider> */}
+        <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
+          <TooltipProvider>
+            <Toaster />
+            <ZoomManager />
+            <div className="h-screen w-screen overflow-hidden">{children}</div>
+          </TooltipProvider>
+        </HotkeysProvider>
       </QueryClientProvider>
     </WebSocketProvider>
   );

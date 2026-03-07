@@ -78,6 +78,12 @@
     --toast-error-border: 0 93% 94%;
     --toast-error-icon: 0 84% 60%;
     --toast-error-icon-bg: 0 100% 97%;
+
+     --toast-bg-success: radial-gradient(ellipse at left, hsl(142 70% 92%) 0%, hsl(142 40% 96%) 50%, hsl(0 0% 100%) 100%);
+  --toast-bg-warning: radial-gradient(ellipse at left, hsl(48 100% 95%) 0%, hsl(48 50% 97%) 50%, hsl(0 0% 100%) 100%);
+  --toast-bg-error:   radial-gradient(ellipse at left, hsl(0 100% 97%) 0%, hsl(0 50% 98%) 50%, hsl(0 0% 100%) 100%);
+  --toast-bg-info:    radial-gradient(ellipse at left, hsl(214 100% 97%) 0%, hsl(214 55% 98%) 50%, hsl(0 0% 100%) 100%);
+
   }
 
   /* Aplicar fuente activa a todo el documento */
@@ -293,6 +299,12 @@
     --toast-error-border: 0 28% 28%;
     --toast-error-icon: 0 75% 65%;
     --toast-error-icon-bg: 0 30% 22%;
+
+     --toast-bg-success: radial-gradient(ellipse at left, hsl(142 25% 20%) 0%, hsl(142 20% 18%) 50%, hsl(220 13% 16%) 100%);
+  --toast-bg-warning: radial-gradient(ellipse at left, hsl(38 25% 20%) 0%, hsl(38 20% 18%) 50%, hsl(220 13% 16%) 100%);
+  --toast-bg-error:   radial-gradient(ellipse at left, hsl(0 25% 20%) 0%, hsl(0 20% 18%) 50%, hsl(220 13% 16%) 100%);
+  --toast-bg-info:    radial-gradient(ellipse at left, hsl(214 25% 20%) 0%, hsl(214 20% 18%) 50%, hsl(220 13% 16%) 100%);
+
   }
 }
 

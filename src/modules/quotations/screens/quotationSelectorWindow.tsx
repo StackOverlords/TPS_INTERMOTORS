@@ -423,10 +423,15 @@ const QuotationSelectorWindow: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  useCommands({
-    "searchFilters.focusSearch": handleManualSearch,
-    "forms.reset": handleResetFilters,
-  });
+  useCommands(
+    {
+      "searchFilters.focusSearch": handleManualSearch,
+      "forms.reset": handleResetFilters,
+    },
+    {
+      enableOnFormTags: true,
+    }
+  );
 
   return (
     <main className="h-full p-2 flex flex-col bg-secondary gap-2">

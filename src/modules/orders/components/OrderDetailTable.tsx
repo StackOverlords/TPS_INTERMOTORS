@@ -271,6 +271,9 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
                 }
               }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="cantidad"
             />
           );
         },
@@ -293,6 +296,9 @@ function OrderDetailTableInner<T extends OrderDetailUnion>(
               buttonClassName="w-full"
               numberProps={{ min: 0, step: 0.01 }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="costo"
             />
           );
         },

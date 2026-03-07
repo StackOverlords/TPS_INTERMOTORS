@@ -7,28 +7,28 @@ import KeybindingRecorderModal from "./KeybindingRecorderModal";
 // Formatea las teclas para display
 const formatKeys = (keys: string): string => {
   return keys
-    .split('+')
-    .map(k => {
+    .split("+")
+    .map((k) => {
       const lower = k.toLowerCase();
-      if (lower === 'ctrl') return 'Ctrl';
-      if (lower === 'alt') return 'Alt';
-      if (lower === 'shift') return 'Shift';
-      if (lower === 'meta') return 'Meta';
-      if (lower === 'escape') return 'Esc';
-      if (lower === 'enter') return 'Enter';
-      if (lower === 'tab') return 'Tab';
-      if (lower === 'backspace') return 'Backspace';
-      if (lower === 'delete') return 'Del';
-      if (lower === 'space') return 'Space';
-      if (lower === 'arrowup' || lower === 'up') return '↑';
-      if (lower === 'arrowdown' || lower === 'down') return '↓';
-      if (lower === 'arrowleft' || lower === 'left') return '←';
-      if (lower === 'arrowright' || lower === 'right') return '→';
-      if (lower === 'home') return 'Home';
-      if (lower === 'end') return 'End';
+      if (lower === "ctrl") return "Ctrl";
+      if (lower === "alt") return "Alt";
+      if (lower === "shift") return "Shift";
+      if (lower === "meta") return "Meta";
+      if (lower === "escape") return "Esc";
+      if (lower === "enter") return "Enter";
+      if (lower === "tab") return "Tab";
+      if (lower === "backspace") return "Backspace";
+      if (lower === "delete") return "Del";
+      if (lower === "space") return "Space";
+      if (lower === "arrowup" || lower === "up") return "↑";
+      if (lower === "arrowdown" || lower === "down") return "↓";
+      if (lower === "arrowleft" || lower === "left") return "←";
+      if (lower === "arrowright" || lower === "right") return "→";
+      if (lower === "home") return "Home";
+      if (lower === "end") return "End";
       return k.toUpperCase();
     })
-    .join('+');
+    .join("+");
 };
 
 const KeybindingRow = ({
@@ -39,7 +39,7 @@ const KeybindingRow = ({
   hasConflict,
   conflictsWith = [],
   onEdit,
-  onReset
+  onReset,
 }: {
   id: string;
   currentKeys: string;
@@ -51,7 +51,6 @@ const KeybindingRow = ({
   onReset: (id: string) => void;
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const handleConfirm = (keys: string) => {
     onEdit(id, keys);
@@ -62,46 +61,47 @@ const KeybindingRow = ({
     <>
       <div
         className={cn(
-          "group grid grid-cols-[2fr_1.5fr_200px_80px] gap-4 items-center px-3 py-1.5 hover:bg-accent/30 border-b border-border/30 last:border-b-0 transition-colors text-sm",
+          "group grid grid-cols-[2fr_1.5fr_200px_80px] gap-4 items-center px-3 py-1.5 hover:bg-accent/30 border-b border-border/30 transition-colors text-sm",
           hasConflict && "bg-destructive/10 dark:bg-destructive/20"
         )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Descripción/Acción */}
         <div className="min-w-0">
-          <p className="text-[13px] font-medium truncate">{description}</p>
+          <p className="text-sm font-medium truncate">{description}</p>
         </div>
 
         {/* Comando/ID */}
         <div className="min-w-0">
-          <p className="text-[11px] text-muted-foreground font-mono truncate">{id}</p>
+          <p className="text-xs text-muted-foreground font-mono truncate">
+            {id}
+          </p>
         </div>
 
         {/* Keybinding */}
         <div className="flex items-center justify-end gap-1">
-          <kbd className={cn(
-            "px-1.5 py-0.5 text-[11px] font-mono bg-muted/40 border border-border/50 rounded select-none",
-            hasConflict && "border-destructive/60 text-destructive bg-destructive/15 dark:border-destructive/70 dark:bg-destructive/25"
-          )}>
+          <kbd
+            className={cn(
+              "px-1.5 py-0.5 text-xs font-mono bg-muted/40 border border-border/50 rounded select-none",
+              hasConflict &&
+                "border-destructive/60 text-destructive bg-destructive/15 dark:border-destructive/70 dark:bg-destructive/25"
+            )}
+          >
             {formatKeys(currentKeys)}
           </kbd>
         </div>
 
         {/* Acciones - Solo visible en hover */}
         <div className="flex items-center justify-end gap-0.5">
-          {isHovered && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setModalOpen(true)}
-              className="h-6 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-              title="Editar"
-            >
-              <Edit2 className="w-3 h-3" />
-            </Button>
-          )}
-          {isCustom && isHovered && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setModalOpen(true)}
+            className="h-6 px-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Editar"
+          >
+            <Edit2 className="w-3 h-3" />
+          </Button>
+          {isCustom && (
             <Button
               variant="ghost"
               size="sm"

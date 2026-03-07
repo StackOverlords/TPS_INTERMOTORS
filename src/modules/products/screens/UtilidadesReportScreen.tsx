@@ -316,7 +316,7 @@ const UtilidadesReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="com-module"
+        permission="inv-report_utilidades"
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header Compacto */}

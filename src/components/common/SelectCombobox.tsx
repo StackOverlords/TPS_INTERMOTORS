@@ -36,6 +36,7 @@ interface ComboboxSelectProps {
   searchDebounceMs?: number; // Tiempo de debounce para la búsqueda (por defecto 300ms)
   enableExternalSearch?: boolean; // Habilitar/deshabilitar búsqueda externa
   name?: string; // Nombre del input para formularios
+  valueKey?: string; // Propiedad a usar como valor en lugar de "id" (por defecto: "id")
 }
 
 export function ComboboxSelect({
@@ -56,6 +57,7 @@ export function ComboboxSelect({
   searchDebounceMs = 500,
   enableExternalSearch = false,
   name,
+  valueKey = "id", // Por defecto usa "id" para mantener retrocompatibilidad
 }: ComboboxSelectProps) {
   const internalValue = !value ? (enableAllOption ? "all" : "") : value;
 
@@ -211,11 +213,12 @@ export function ComboboxSelect({
 
   const selectedOption = useMemo(() => {
     return (
+      // Busca por valueKey si está definido, con fallback a "id" para retrocompatibilidad
       baseOptions.find(
-        (opt) => opt.id.toString() === internalValue.toString()
+        (opt) => String(opt[valueKey] ?? opt.id) === internalValue.toString()
       ) ?? null
     );
-  }, [internalValue, baseOptions]);
+  }, [internalValue, baseOptions, valueKey]);
 
   // Validación temprana
   if (!optionTag) {
@@ -436,8 +439,8 @@ export function ComboboxSelect({
                     ) : (
                       filteredOptions.map((option: Option) => (
                         <ComboboxOption
-                          key={option.id}
-                          value={option.id.toString()}
+                          key={String(option.id)}
+                          value={String(option[valueKey] ?? option.id)}
                           className={({ focus }) =>
                             cn(
                               "relative cursor-pointer select-none py-1.5 pl-10 pr-4 transition-colors rounded",

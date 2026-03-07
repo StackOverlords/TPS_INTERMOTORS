@@ -10,6 +10,7 @@ import OrderSelectorTable from "../components/orderSelector/OrderSelectorTable";
 import { useOrdersFilters } from "../hooks/useOrdersFilters";
 import { useOrdersGetAll } from "../hooks/useOrdersGetAll";
 import type { OrderGetAll } from "../types/orderGet.types";
+import { useCommands } from "@/keybindings";
 
 const getStatusBadge = (estado: string) => {
   switch (estado) {
@@ -135,6 +136,16 @@ const OrderSelectorWindowContent = () => {
   const toggleSearchMode = () => {
     setSearchMode((prev) => (prev === "realtime" ? "manual" : "realtime"));
   };
+
+  useCommands(
+    {
+      "searchFilters.focusSearch": handleManualSearch,
+      "forms.reset": resetFilters,
+    },
+    {
+      enableOnFormTags: true,
+    }
+  );
 
   return (
     <main className="h-screen flex flex-col p-2 bg-secondary">

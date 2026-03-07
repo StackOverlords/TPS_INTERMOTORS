@@ -51,6 +51,7 @@ import {
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 const MEASUREMENTS_DIALOG_CONFIG: DialogConfig = {
   title: "Medida",
@@ -61,6 +62,7 @@ const MEASUREMENTS_DIALOG_CONFIG: DialogConfig = {
     placeholder: "Ingresa el nombre de la medida...",
     required: true,
   },
+  screen_path: "/dashboard/settings/measurements",
 };
 
 const MeasurementsScreen = () => {
@@ -165,12 +167,16 @@ const MeasurementsScreen = () => {
     [isRefetchingMeasurementsData, isFetchingMeasurementsData]
   );
 
-  useEffect(() => {
-    if (location.state?.openModal) {
-      handleAddMeasurement();
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  useTabEffect(
+    MEASUREMENTS_DIALOG_CONFIG.screen_path,
+    () => {
+      if (location.state?.openModal) {
+        handleAddMeasurement();
+        navigate(location.pathname, { replace: true });
+      }
+    },
+    [location, navigate]
+  );
 
   useEffect(() => {
     if (measurementById && isEditing) {

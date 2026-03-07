@@ -43,7 +43,7 @@ const variantConfig = {
     alertBg:
       "bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-900/20",
     confirmButton:
-      "bg-amber-500 hover:bg-amber-500/90 text-white dark:bg-amber-400 dark:hover:bg-amber-400/90",
+      "bg-amber-500 hover:bg-amber-500/90 text-white dark:bg-amber-600 dark:hover:bg-amber-600/90",
     title: "text-amber-500 dark:text-amber-400",
   },
   info: {
@@ -59,7 +59,7 @@ const variantConfig = {
     alertBg:
       "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/10 dark:border-emerald-900/20",
     confirmButton:
-      "bg-emerald-500 hover:bg-emerald-500/90 text-white dark:bg-emerald-400 dark:hover:bg-emerald-400/90",
+      "bg-emerald-500 hover:bg-emerald-500/90 text-white dark:bg-emerald-600 dark:hover:bg-emerald-600/90",
     title: "text-emerald-500 dark:text-emerald-400",
   },
 };

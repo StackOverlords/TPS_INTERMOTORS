@@ -51,6 +51,7 @@ import {
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 const VEHICLE_BRANDS_DIALOG_CONFIG: DialogConfig = {
   title: "Marca de Vehículo",
@@ -61,6 +62,7 @@ const VEHICLE_BRANDS_DIALOG_CONFIG: DialogConfig = {
     placeholder: "Ingresa el nombre de la marca de vehículo...",
     required: true,
   },
+  screen_path: "/dashboard/settings/vehicle-brands",
 };
 
 const VehicleBrandsScreen = () => {
@@ -168,12 +170,16 @@ const VehicleBrandsScreen = () => {
     [isRefetchingVehicleBrandsData, isFetchingVehicleBrandsData]
   );
 
-  useEffect(() => {
-    if (location.state?.openModal) {
-      handleAddVehicleBrand();
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  useTabEffect(
+    VEHICLE_BRANDS_DIALOG_CONFIG.screen_path,
+    () => {
+      if (location.state?.openModal) {
+        handleAddVehicleBrand();
+        navigate(location.pathname, { replace: true });
+      }
+    },
+    [location, navigate]
+  );
 
   useEffect(() => {
     if (vehicleBrandById && isEditing) {

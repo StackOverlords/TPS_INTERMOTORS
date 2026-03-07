@@ -1,9 +1,9 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface InputProps extends React.ComponentProps<"input"> {
-  autoSelectOnFocus?: boolean
+  autoSelectOnFocus?: boolean;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -19,16 +19,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         onFocus={(e) => {
           if (autoSelectOnFocus) {
             setTimeout(() => {
-              e.target.select()
-            }, 0)
+              e.target.select();
+            }, 0);
           }
-          onFocus?.(e) // por si el usuario pasa otro handler
+          onFocus?.(e); // por si el usuario pasa otro handler
         }}
         {...props}
       />
-    )
+    );
   }
-)
-Input.displayName = "Input"
+);
+Input.displayName = "Input";
 
-export { Input }
+export { Input };

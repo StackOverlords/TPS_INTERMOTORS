@@ -1,25 +1,25 @@
-import { Badge } from '@/components/atoms/badge';
-import { Button } from '@/components/atoms/button';
+import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/atoms/card';
-import { Checkbox } from '@/components/atoms/checkbox';
+} from "@/components/atoms/card";
+import { Checkbox } from "@/components/atoms/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/atoms/collapsible';
-import { Input } from '@/components/atoms/input';
-import { ScrollArea } from '@/components/atoms/scroll-area';
-import { Separator } from '@/components/atoms/separator';
-import { Skeleton } from '@/components/atoms/skeleton';
-import { useToast } from '@/components/atoms/use-toast';
-import { ProtectedAction } from '@/components/common/ProtectedAction';
-import { useRouteViewConfigWithSync } from '@/hooks/useRouteViewConfig';
+} from "@/components/atoms/collapsible";
+import { Input } from "@/components/atoms/input";
+import { ScrollArea } from "@/components/atoms/scroll-area";
+import { Separator } from "@/components/atoms/separator";
+import { Skeleton } from "@/components/atoms/skeleton";
+import { useToast } from "@/components/atoms/use-toast";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { useRouteViewConfigWithSync } from "@/hooks/useRouteViewConfig";
 import {
   ArrowLeft,
   Calendar,
@@ -35,14 +35,14 @@ import {
   User2,
   UserMinus2,
   XCircle,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
-import { usePermissions } from '../hooks/usePermissions';
-import { useUpdateUserPermissions } from '../hooks/useUpdateUserPermissions';
-import { useUserByNickName } from '../hooks/useUserById';
-import { useUserPermissions } from '../hooks/useUserPermissions';
-import type { Permission, PermissionGroup } from '../types/User';
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
+import { usePermissions } from "../hooks/usePermissions";
+import { useUpdateUserPermissions } from "../hooks/useUpdateUserPermissions";
+import { useUserByNickName } from "../hooks/useUserById";
+import { useUserPermissions } from "../hooks/useUserPermissions";
+import type { Permission, PermissionGroup } from "../types/User";
 
 const UserDetailScreen = () => {
   const { nickname } = useParams<{ nickname: string }>();
@@ -53,7 +53,7 @@ const UserDetailScreen = () => {
   const { toast } = useToast();
 
   // Estados para gestión de permisos
-  const [searchPermissions, setSearchPermissions] = useState('');
+  const [searchPermissions, setSearchPermissions] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(
     new Set()
@@ -102,7 +102,7 @@ const UserDetailScreen = () => {
 
     const grouped: PermissionGroup = {};
 
-    Object.keys(allPermissions).forEach(category => {
+    Object.keys(allPermissions).forEach((category) => {
       if (Array.isArray(allPermissions[category])) {
         grouped[category] = allPermissions[category];
       }
@@ -117,9 +117,9 @@ const UserDetailScreen = () => {
 
     const filtered: PermissionGroup = {};
 
-    Object.keys(processedPermissions).forEach(category => {
+    Object.keys(processedPermissions).forEach((category) => {
       const categoryPermissions = processedPermissions[category].filter(
-        permission =>
+        (permission) =>
           permission.name
             .toLowerCase()
             .includes(searchPermissions.toLowerCase()) ||
@@ -140,7 +140,7 @@ const UserDetailScreen = () => {
   // Efecto para actualizar permisos seleccionados cuando cambian los permisos del usuario
   useEffect(() => {
     if (userPermissions) {
-      const userPermissionNames = new Set(userPermissions.map(p => p.name));
+      const userPermissionNames = new Set(userPermissions.map((p) => p.name));
       setSelectedPermissions(userPermissionNames);
     }
   }, [userPermissions]);
@@ -153,18 +153,18 @@ const UserDetailScreen = () => {
   }, [searchPermissions, filteredPermissions]);
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No registrada';
+    if (!dateString) return "No registrada";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+      return date.toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch {
-      return 'Fecha inválida';
+      return "Fecha inválida";
     }
   };
 
@@ -190,9 +190,9 @@ const UserDetailScreen = () => {
   //groupName
   const toggleAllInGroup = (__: string, permissions: Permission[]) => {
     const newSelected = new Set(selectedPermissions);
-    const allSelected = permissions.every(p => newSelected.has(p.name));
+    const allSelected = permissions.every((p) => newSelected.has(p.name));
 
-    permissions.forEach(permission => {
+    permissions.forEach((permission) => {
       if (allSelected) {
         newSelected.delete(permission.name);
       } else {
@@ -208,11 +208,11 @@ const UserDetailScreen = () => {
 
     setIsSaving(true);
     try {
-      const permissionsToSend = Array.from(selectedPermissions).map(name => {
+      const permissionsToSend = Array.from(selectedPermissions).map((name) => {
         // Buscar el permiso completo en todos los grupos
         for (const category of Object.keys(processedPermissions)) {
           const permission = processedPermissions[category].find(
-            p => p.name === name
+            (p) => p.name === name
           );
           if (permission) {
             return {
@@ -235,55 +235,81 @@ const UserDetailScreen = () => {
       });
 
       toast({
-        title: 'Permisos actualizados',
+        title: "Permisos actualizados",
         description: `Se han actualizado correctamente los permisos de ${user.empleado.nombre}`,
-        variant: 'default',
+        variant: "default",
       });
 
       // Refrescar permisos del usuario
       refetchUserPermissions();
     } catch (error) {
-      console.error('Error al guardar permisos:', error);
+      console.error("Error al guardar permisos:", error);
       toast({
-        title: 'Error al guardar permisos',
+        title: "Error al guardar permisos",
         description:
-          'Ocurrió un error al intentar guardar los permisos del usuario',
-        variant: 'destructive',
+          "Ocurrió un error al intentar guardar los permisos del usuario",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
+
   useEffect(() => {
-    if (location.hash === '#permisos' && permisosRef.current) {
-      setTimeout(() => {
-        permisosRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }, 100); // Pequeño delay para asegurar que el componente esté renderizado
-    }
-  }, [location.hash, user]); // Dependemos de user para asegurar que los datos estén cargados
+    if (location.hash !== "#permisos") return;
+    if (!user) return;
+    if (!viewConfig?.features?.permissions?.enabled) return;
+
+    const tryScroll = (attemptsLeft: number) => {
+      const element = document.getElementById("seccion-permisos");
+      const scrollContainer = document.getElementById(
+        "user-detail-scroll-container"
+      );
+
+      if (!element || !scrollContainer) {
+        // El elemento aún no está en el DOM, reintentar
+        if (attemptsLeft > 0) {
+          setTimeout(() => tryScroll(attemptsLeft - 1), 100);
+        }
+        return;
+      }
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+
+      const scrollAmount = elementRect.top - containerRect.top - 16; // 16px de padding
+      scrollContainer.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    };
+
+    tryScroll(10); // hasta 10 intentos x 100ms = 1 segundo máximo
+  }, [location.hash, user, viewConfig]);
+
   const getGroupStats = (permissions: Permission[]) => {
-    const selected = permissions.filter(p =>
+    const selected = permissions.filter((p) =>
       selectedPermissions.has(p.name)
     ).length;
     const total = permissions.length;
     return { selected, total };
   };
   // console.log(viewConfig?.features?.permissions?.enabled )
-  if (isLoading) {
+  if (
+    isLoading ||
+    (location.hash === "#permisos" &&
+      (isLoadingPermissions || isLoadingUserPermissions))
+  ) {
     return (
-      <div className="min-h-screen max-w-4xl mx-auto p-6">
+      <div className="h-full max-w-5xl mx-auto p-6">
         <div className="space-y-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 p-3 bg-background rounded-md">
             <Skeleton className="h-10 w-10 rounded" />
             <div className="space-y-2">
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-32" />
             </div>
           </div>
-          <Skeleton className="h-96 w-full" />
+          <div className="bg-background rounded-md p-3 h-full">
+            <Skeleton className="h-96 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -291,15 +317,15 @@ const UserDetailScreen = () => {
 
   if (isError || !user) {
     return (
-      <div className="min-h-screen max-w-4xl mx-auto p-6">
+      <div className="h-full max-w-5xl mx-auto p-6">
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-foreground mb-2">
             Error al cargar usuario
           </h2>
           <p className="text-muted-foreground mb-4">
-            {error?.message || 'No se pudo encontrar el usuario solicitado'}
+            {error?.message || "No se pudo encontrar el usuario solicitado"}
           </p>
-          <Button onClick={() => navigate('/dashboard/user')}>
+          <Button onClick={() => navigate("/dashboard/user")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a la lista
           </Button>
@@ -309,13 +335,16 @@ const UserDetailScreen = () => {
   }
 
   return (
-    <div className="min-h-screen max-w-4xl mx-auto p-6">
+    <div
+      id="user-detail-scroll-container"
+      className="h-full overflow-y-auto max-w-5xl mx-auto p-2"
+    >
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
           <Button
             variant="default"
-            onClick={() => navigate('/dashboard/user')}
+            onClick={() => navigate("/dashboard/user")}
             // className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -334,7 +363,7 @@ const UserDetailScreen = () => {
               </h1>
               <p className="text-lg text-muted-foreground">@{user.nickname}</p>
               <Badge
-                variant={user.activo ? 'success' : 'destructive'}
+                variant={user.activo ? "success" : "destructive"}
                 className="flex items-center gap-1 w-fit mt-2"
               >
                 {user.activo ? (
@@ -342,7 +371,7 @@ const UserDetailScreen = () => {
                 ) : (
                   <XCircle className="h-3 w-3" />
                 )}
-                {user.activo ? 'Usuario Activo' : 'Usuario Inactivo'}
+                {user.activo ? "Usuario Activo" : "Usuario Inactivo"}
               </Badge>
             </div>
           </div>
@@ -358,13 +387,10 @@ const UserDetailScreen = () => {
               <UserCog className="h-4 w-4" />
               Gestionar Permisos
             </Button> */}
-            <ProtectedAction
-              permission="usu-editar"
-              roles={["Super Admin"]}
-            >
+            <ProtectedAction permission="usu-editar" roles={["Super Admin"]}>
               <Button
                 variant="destructive"
-                size={'sm'}
+                size={"sm"}
                 disabled={true}
                 // className="flex items-center gap-1"
               >
@@ -372,13 +398,10 @@ const UserDetailScreen = () => {
                 Eliminar usuario
               </Button>
             </ProtectedAction>
-            <ProtectedAction
-              permission="usu-editar"
-              roles={["Super Admin"]}
-            >
+            <ProtectedAction permission="usu-editar" roles={["Super Admin"]}>
               <Button
                 variant="default"
-                size={'sm'}
+                size={"sm"}
                 onClick={() => navigate(`/dashboard/user/edit/${user.id}`)}
               >
                 <Edit className="h-4 w-4" />
@@ -409,7 +432,9 @@ const UserDetailScreen = () => {
                     <label className="text-sm font-semibold text-foreground">
                       ID de Usuario
                     </label>
-                    <p className="text-lg font-mono text-foreground">{user.id}</p>
+                    <p className="text-lg font-mono text-foreground">
+                      {user.id}
+                    </p>
                   </div>
 
                   <div>
@@ -459,7 +484,7 @@ const UserDetailScreen = () => {
                     </label>
                     <div className="mt-1">
                       <Badge
-                        variant={user.activo ? 'success' : 'destructive'}
+                        variant={user.activo ? "success" : "destructive"}
                         className="flex items-center gap-1 w-fit"
                       >
                         {user.activo ? (
@@ -467,7 +492,7 @@ const UserDetailScreen = () => {
                         ) : (
                           <XCircle className="h-3 w-3" />
                         )}
-                        {user.activo ? 'Activo' : 'Inactivo'}
+                        {user.activo ? "Activo" : "Inactivo"}
                       </Badge>
                     </div>
                   </div>
@@ -543,7 +568,11 @@ const UserDetailScreen = () => {
 
         {/* Sección de Gestión de Permisos */}
         {viewConfig?.features?.permissions?.enabled && (
-          <div className="lg:col-span-3 mt-6" ref={permisosRef}>
+          <div
+            id="seccion-permisos"
+            className="lg:col-span-3 mt-6"
+            ref={permisosRef}
+          >
             <Card className="border border-border">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
@@ -572,14 +601,14 @@ const UserDetailScreen = () => {
                           ) : (
                             <Save className="h-4 w-4" />
                           )}
-                          {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                          {isSaving ? "Guardando..." : "Guardar Cambios"}
                         </Button>
                       </ProtectedAction>
                     )}
                   </div>
                 </div>
                 <CardDescription>
-                  Gestiona los permisos y accesos del usuario{' '}
+                  Gestiona los permisos y accesos del usuario{" "}
                   {user.empleado.nombre}
                 </CardDescription>
               </CardHeader>
@@ -608,7 +637,7 @@ const UserDetailScreen = () => {
                       <Input
                         placeholder="Buscar permisos por nombre, descripción o categoría..."
                         value={searchPermissions}
-                        onChange={e => setSearchPermissions(e.target.value)}
+                        onChange={(e) => setSearchPermissions(e.target.value)}
                         className="pl-10"
                       />
                     </div>
@@ -620,7 +649,7 @@ const UserDetailScreen = () => {
                           Permisos seleccionados: {selectedPermissions.size}
                         </span>
                         <span className="text-primary">
-                          Total disponible:{' '}
+                          Total disponible:{" "}
                           {Object.values(processedPermissions).flat().length}
                         </span>
                       </div>
@@ -636,7 +665,7 @@ const UserDetailScreen = () => {
                             processedPermissions
                           )
                             .flat()
-                            .map(p => p.name);
+                            .map((p) => p.name);
                           setSelectedPermissions(new Set(allPermissionNames));
                         }}
                         disabled={isSaving}
@@ -686,7 +715,7 @@ const UserDetailScreen = () => {
                                 {searchPermissions}"
                               </>
                             ) : (
-                              'No hay permisos disponibles'
+                              "No hay permisos disponibles"
                             )}
                           </div>
                         ) : (
@@ -694,10 +723,10 @@ const UserDetailScreen = () => {
                             ([groupName, permissions]) => {
                               const stats = getGroupStats(permissions);
                               const isExpanded = expandedGroups.has(groupName);
-                              const allSelected = permissions.every(p =>
+                              const allSelected = permissions.every((p) =>
                                 selectedPermissions.has(p.name)
                               );
-                              const someSelected = permissions.some(p =>
+                              const someSelected = permissions.some((p) =>
                                 selectedPermissions.has(p.name)
                               );
 
@@ -721,8 +750,8 @@ const UserDetailScreen = () => {
                                               allSelected
                                                 ? true
                                                 : someSelected
-                                                ? 'indeterminate'
-                                                : false
+                                                  ? "indeterminate"
+                                                  : false
                                             }
                                             onCheckedChange={() =>
                                               toggleAllInGroup(
@@ -730,7 +759,7 @@ const UserDetailScreen = () => {
                                                 permissions
                                               )
                                             }
-                                            onClick={e => e.stopPropagation()}
+                                            onClick={(e) => e.stopPropagation()}
                                           />
                                         </div>
                                         <div>
@@ -738,7 +767,7 @@ const UserDetailScreen = () => {
                                             {groupName}
                                           </h3>
                                           <p className="text-sm text-muted-foreground">
-                                            {stats.selected}/{stats.total}{' '}
+                                            {stats.selected}/{stats.total}{" "}
                                             permisos seleccionados
                                           </p>
                                         </div>
@@ -746,8 +775,8 @@ const UserDetailScreen = () => {
                                       <Badge
                                         variant={
                                           stats.selected > 0
-                                            ? 'default'
-                                            : 'secondary'
+                                            ? "default"
+                                            : "secondary"
                                         }
                                       >
                                         {stats.selected}/{stats.total}
@@ -757,7 +786,7 @@ const UserDetailScreen = () => {
 
                                   <CollapsibleContent>
                                     <div className="ml-10 mt-2 space-y-2">
-                                      {permissions.map(permission => (
+                                      {permissions.map((permission) => (
                                         <div
                                           key={permission.name}
                                           className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
@@ -791,15 +820,15 @@ const UserDetailScreen = () => {
                                             selectedPermissions.has(
                                               permission.name
                                             )
-                                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400'
-                                              : 'bg-transparent text-muted-foreground border-border hover:border-muted-foreground/50'
+                                              ? "bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 hover:bg-emerald-500 dark:hover:bg-emerald-400"
+                                              : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground/50"
                                           }`}
                                           >
                                             {selectedPermissions.has(
                                               permission.name
                                             )
-                                              ? 'Asignado'
-                                              : 'No asignado'}
+                                              ? "Asignado"
+                                              : "No asignado"}
                                           </Badge>
                                         </div>
                                       ))}

@@ -50,6 +50,7 @@ import {
 import { Checkbox } from "@/components/atoms/checkbox";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 const CATEGORIES_DIALOG_CONFIG: DialogConfig = {
   title: "División",
@@ -60,6 +61,7 @@ const CATEGORIES_DIALOG_CONFIG: DialogConfig = {
     placeholder: "Ingresa el nombre de la división...",
     required: true,
   },
+  screen_path: "/dashboard/settings/categories",
 };
 
 interface CategoryListTableProps {
@@ -135,12 +137,16 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
     [isCreating, isUpdating]
   );
 
-  useEffect(() => {
-    if (location.state?.openModal) {
-      handleAddCategory();
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  useTabEffect(
+    CATEGORIES_DIALOG_CONFIG.screen_path,
+    () => {
+      if (location.state?.openModal) {
+        handleAddCategory();
+        navigate(location.pathname, { replace: true });
+      }
+    },
+    [location, navigate]
+  );
 
   useEffect(() => {
     if (categoryById && isEditing) {

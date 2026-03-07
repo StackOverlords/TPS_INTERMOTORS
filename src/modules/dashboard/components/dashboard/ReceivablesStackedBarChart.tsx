@@ -18,6 +18,7 @@ export interface ReceivablesStackedBarProps {
   data: AccountReceivableItem[];
   height?: number | string;
   maxClients?: number;
+  isLoading?: boolean;
 }
 
 const ReceivablesTooltip = ({ active, payload, label }: any) => {
@@ -75,6 +76,7 @@ export function ReceivablesStackedBar({
   data,
   height = "100%",
   maxClients = 10,
+  isLoading = false,
 }: ReceivablesStackedBarProps) {
   const { chartData, stacks } = useMemo(() => {
     // Agrupar por cliente
@@ -140,6 +142,7 @@ export function ReceivablesStackedBar({
       maxNameLength={12}
       valueFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`)}
       barRadius={[4, 4, 0, 0]}
+      isLoading={isLoading}
     />
   );
 }

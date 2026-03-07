@@ -230,7 +230,7 @@ const ProductoStockReports = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="com-module"
+        permission="pro-report-stock"
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header Compacto */}

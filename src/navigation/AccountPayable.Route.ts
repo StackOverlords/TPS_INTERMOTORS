@@ -2,7 +2,13 @@ import AccountsPayableListScreen from "@/modules/accountsPayable/screens/Account
 import AccountsReceivableGeneralReportScreen from "@/modules/accountsPayable/screens/AccountsReceivableGeneralReportScreen";
 import AccountsReceivablePaidReportScreen from "@/modules/accountsPayable/screens/AccountsReceivablePaidReportScreen";
 import AccountsReceivableByCustomerReportScreen from "@/modules/accountsPayable/screens/AccountsReceivableByCustomerReportScreen";
-import { FolderOpen, TableCellsMerge, FileText, CheckCircle2, User } from "lucide-react";
+import {
+  FolderOpen,
+  TableCellsMerge,
+  FileText,
+  CheckCircle2,
+  User,
+} from "lucide-react";
 import type RouteType from "./RouteType";
 
 const accountsPayable: RouteType[] = [
@@ -27,7 +33,7 @@ const accountsPayable: RouteType[] = [
         icon: TableCellsMerge,
 
         isHeader: false,
-        showSidebar: true
+        showSidebar: true,
       },
       {
         path: "/dashboard/reports/accounts-receivable-general",
@@ -35,11 +41,11 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsReceivableGeneralReportScreen,
         isAdmin: true,
-        role: ["Super Admin"],
+        role: ["Administrador", "Vendedor", "Super Admin"],
         icon: FileText,
 
         isHeader: false,
-        showSidebar: true
+        showSidebar: true,
       },
       {
         path: "/dashboard/reports/accounts-receivable-paid",
@@ -47,11 +53,11 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsReceivablePaidReportScreen,
         isAdmin: true,
-        role: ["Super Admin"],
+        role: ["Administrador", "Vendedor", "Super Admin"],
         icon: CheckCircle2,
 
         isHeader: false,
-        showSidebar: true
+        showSidebar: true,
       },
       {
         path: "/dashboard/reports/accounts-receivable-by-customer",
@@ -59,14 +65,14 @@ const accountsPayable: RouteType[] = [
         type: "protected",
         element: AccountsReceivableByCustomerReportScreen,
         isAdmin: true,
-        role: ["Super Admin"],
+        role: ["Administrador", "Vendedor", "Super Admin"],
         icon: User,
 
         isHeader: false,
-        showSidebar: true
-      }
-    ]
-  }
+        showSidebar: true,
+      },
+    ],
+  },
 ];
 
 export default accountsPayable;
