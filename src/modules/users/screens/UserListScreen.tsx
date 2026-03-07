@@ -12,7 +12,6 @@ import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
-import RowsPerPageSelect from "@/components/common/RowsPerPageSelect";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useViewConfig } from "@/hooks/useViewConfig"; // ← CAMBIO PRINCIPAL
 import authSDK from "@/services/sdk-simple-auth";
@@ -45,6 +44,7 @@ import type { User } from "../types/User";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { ColumnVisibilityDropdown } from "@/components/common/ColumnVisibilityDropdown";
 
 const UserListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
@@ -255,7 +255,7 @@ const UserListScreen = () => {
               </DropdownMenu>
             </div>
             <div className="flex flex-col">
-              <h3 className="font-medium text-foreground leading-tight hover:underline truncate">
+              <h3 className="font-medium text-foreground leading-tight hover:underline truncate text-sm">
                 {getValue<string>()}
               </h3>
             </div>
@@ -263,17 +263,17 @@ const UserListScreen = () => {
         ),
       },
       {
-        accessorKey: "empleado.nombre",
+        accessorFn: (row) => row.empleado.nombre,
+        id: "empleado",
         header: "Empleado",
         size: 200,
         minSize: 180,
         enableSorting: true,
-        cell: ({ row }) => {
-          const empleado = row.original.empleado;
+        cell: ({ getValue }) => {
           return (
             <div className="space-y-1">
-              <div className="font-medium text-foreground">
-                {empleado.nombre}
+              <div className="font-medium text-foreground text-sm">
+                {getValue<string>()}
               </div>
             </div>
           );
@@ -288,7 +288,9 @@ const UserListScreen = () => {
         cell: ({ getValue }) => {
           const email = getValue<string | null>();
           return (
-            <div className={`${!email ? "italic text-muted-foreground" : ""}`}>
+            <div
+              className={`text-sm ${!email ? "italic text-muted-foreground" : ""}`}
+            >
               {formatCell(email, "No registrado")}
             </div>
           );
@@ -538,59 +540,8 @@ const UserListScreen = () => {
             )}
 
             <div className="flex items-center gap-2 flex-wrap">
-              {viewConfig?.features?.pagination?.enabled && (
-                <div className="flex items-center">
-                  <RowsPerPageSelect
-                    value={
-                      filters.pagina_registros ??
-                      viewConfig?.behaviors?.defaultRowsPerPage ??
-                      10
-                    }
-                    onChange={onShowRowsChange}
-                  />
-                </div>
-              )}
               {viewConfig?.features?.columnSelector?.enabled && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Settings className="w-4 h-4" />
-                      {viewConfig?.features?.columnSelector?.label ||
-                        "Columnas"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-56 max-h-96 overflow-y-auto"
-                  >
-                    {table
-                      .getAllColumns()
-                      .filter((column) => column.getCanHide())
-                      .map((column) => (
-                        <DropdownMenuItem
-                          key={column.id}
-                          className="flex items-center space-x-2 cursor-pointer"
-                          onSelect={(e) => e.preventDefault()}
-                          onClick={() =>
-                            column.toggleVisibility(!column.getIsVisible())
-                          }
-                        >
-                          <Checkbox
-                            className="border border-border"
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(value) =>
-                              column.toggleVisibility(!!value)
-                            }
-                          />
-                          <span className="flex-1">
-                            {typeof column.columnDef.header === "string"
-                              ? column.columnDef.header
-                              : column.id}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <ColumnVisibilityDropdown table={table} />
               )}
               {viewConfig?.features?.multiSelect?.enabled &&
                 table &&

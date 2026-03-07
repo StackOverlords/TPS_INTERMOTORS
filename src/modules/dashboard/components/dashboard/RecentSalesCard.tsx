@@ -17,7 +17,7 @@ export function RecentSalesCard() {
             Últimas Ventas
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 p-1.5 pt-1 min-h-0">
+        <CardContent className="flex-1 p-2 pt-1 min-h-0">
           <RecentSalesFeed />
         </CardContent>
       </Card>

@@ -30,11 +30,12 @@ import {
   Smartphone,
   Users,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { Branch } from "../types/branch.types";
 import BranchFormDialog from "./branchFormDialog";
 import { BranchUsersModal } from "./BranchUsersModal";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 interface BranchListTableProps {
   branches: Branch[];
@@ -48,6 +49,8 @@ interface BranchListTableProps {
   handleRowsChange: (rows: number) => void;
   onPageChange: (page: number) => void;
 }
+
+const SCREEN_PATH = "/dashboard/settings/branches";
 
 const BranchListTable: React.FC<BranchListTableProps> = ({
   branches,
@@ -76,7 +79,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
 
-  useEffect(() => {
+  useTabEffect(SCREEN_PATH, () => {
     if (location.state?.openModal) {
       handleAddBranch();
       navigate(location.pathname, { replace: true });

@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/atoms/table";
 import CustomizableTable from "@/components/common/CustomizableTable";
+import { formatCurrency } from "@/utils/formaters";
 
 interface PurchaseProductsProps {
   purchase: PurchaseDetail | undefined;
@@ -53,13 +54,6 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
   isLoading,
   isError,
 }) => {
-  // Helpers
-  const formatCurrency = (value: string | number) => {
-    const num = typeof value === "string" ? parseFloat(value) : value;
-    if (Number.isNaN(num)) return "$0.00";
-    return `$${num.toFixed(2)}`;
-  };
-
   // Preparar filas de tabla
   const rows = useMemo<ProductRow[]>(() => {
     if (!purchase?.detalles) return [];
@@ -256,7 +250,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         size: 90,
         minSize: 80,
         cell: ({ row }) => (
-          <div className="text-left">
+          <div className="text-center">
             <div className="text-sm font-medium">
               {row.original.cantidad.toFixed(0)}
             </div>
@@ -301,7 +295,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         size: 80,
         minSize: 30,
         cell: ({ getValue }) => (
-          <div className="text-left font-medium">
+          <div className="text-right font-medium">
             {formatCurrency(getValue<number>())}
           </div>
         ),
@@ -313,7 +307,7 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         size: 70,
         minSize: 30,
         cell: ({ getValue }) => (
-          <div className="text-left font-medium">
+          <div className="text-right font-medium">
             ${Number(getValue<number>()).toFixed(2)}
           </div>
         ),
@@ -325,13 +319,10 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
         size: 80,
         minSize: 30,
         cell: ({ getValue, row }) => (
-          <div className="text-center font-semibold text-emerald-600 dark:text-emerald-400">
-            {formatCurrency(getValue<number>())}
-            {row.original.moneda && (
-              <span className="ml-1 text-[10px] text-muted-foreground">
-                {row.original.moneda}
-              </span>
-            )}
+          <div className="text-right font-semibold text-emerald-600 dark:text-emerald-400">
+            {formatCurrency(getValue<number>(), {
+              currency: row.original.moneda ?? undefined,
+            })}
           </div>
         ),
         sortingFn: "alphanumeric",
@@ -415,9 +406,9 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
               {table.getVisibleFlatColumns().map((column) => {
                 if (column.id === "cantidad") {
                   return (
-                    <TableCell key={column.id} className="text-left">
+                    <TableCell key={column.id} className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">
-                        Total Cantidad
+                        Total Cant.
                       </div>
                       <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
                         {totalCantidad.toFixed(0)}
@@ -427,8 +418,8 @@ const PurchaseProducts: React.FC<PurchaseProductsProps> = ({
                 }
                 if (column.id === "subtotal") {
                   return (
-                    <TableCell key={column.id} className="text-center">
-                      <div className="text-xs text-muted-foreground mb-0.5">
+                    <TableCell key={column.id} className="text-right">
+                      <div className="text-xs text-muted-foreground mb-0.5 text-right w-full">
                         Total
                       </div>
                       <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">

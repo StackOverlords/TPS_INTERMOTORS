@@ -47,6 +47,7 @@ import useConfirmMutation from "@/hooks/useConfirmMutation";
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 const ORIGINS_DIALOG_CONFIG: DialogConfig = {
   title: "Procedencia",
@@ -57,6 +58,7 @@ const ORIGINS_DIALOG_CONFIG: DialogConfig = {
     placeholder: "Ingresa el nombre de la procedencia...",
     required: true,
   },
+  screen_path: "/dashboard/settings/origins",
 };
 
 const OriginsScreen = () => {
@@ -153,12 +155,16 @@ const OriginsScreen = () => {
     [isRefetchingOriginsData, isFetchingOriginsData]
   );
 
-  useEffect(() => {
-    if (location.state?.openModal) {
-      handleAddOrigin();
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  useTabEffect(
+    ORIGINS_DIALOG_CONFIG.screen_path,
+    () => {
+      if (location.state?.openModal) {
+        handleAddOrigin();
+        navigate(location.pathname, { replace: true });
+      }
+    },
+    [location, navigate]
+  );
 
   useEffect(() => {
     if (originById && isEditing) {

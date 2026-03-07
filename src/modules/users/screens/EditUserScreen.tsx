@@ -16,14 +16,14 @@ const EditUserScreen = () => {
 
   // Validar permisos para editar usuarios
   const { isAuthorized, isLoading: isLoadingPermissions } = usePermissionCheck({
-    permission: 'usu-editar',
-    roles: ['Super Admin'],
+    permission: "usu-editar",
+    roles: ["Super Admin"],
   });
 
   // Redirigir si no está autorizado
   useEffect(() => {
     if (!isLoadingPermissions && !isAuthorized) {
-      navigate('/dashboard/user');
+      navigate("/dashboard/user");
     }
   }, [isAuthorized, isLoadingPermissions, navigate]);
 
@@ -31,17 +31,21 @@ const EditUserScreen = () => {
     data: user,
     isLoading,
     isError,
-    error
+    error,
   } = useUserByIdForEdit(Number(id));
 
   // Shortcut para volver atrás
-  useHotkeys('escape', (e) => {
-    e.preventDefault();
-    handleGoBack();
-  }, {
-    scopes: ["esc-key"],
-    enabled: true
-  });
+  useHotkeys(
+    "escape",
+    (e) => {
+      e.preventDefault();
+      handleGoBack();
+    },
+    {
+      scopes: ["esc-key"],
+      enabled: true,
+    }
+  );
 
   // Mostrar loader mientras verifica permisos
   if (isLoadingPermissions) {
@@ -49,7 +53,9 @@ const EditUserScreen = () => {
       <div className="flex justify-center items-center h-full">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">Verificando permisos...</p>
+          <p className="text-sm text-muted-foreground">
+            Verificando permisos...
+          </p>
         </div>
       </div>
     );
@@ -79,9 +85,9 @@ const EditUserScreen = () => {
             Error al cargar usuario
           </h2>
           <p className="text-muted-foreground mb-4">
-            {error?.message || 'No se pudo encontrar el usuario solicitado'}
+            {error?.message || "No se pudo encontrar el usuario solicitado"}
           </p>
-          <Button onClick={() => navigate('/dashboard/user')}>
+          <Button onClick={() => navigate("/dashboard/user")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a la lista
           </Button>
@@ -96,34 +102,34 @@ const EditUserScreen = () => {
 
   // Extraer fecha sin timestamp
   const fechaIngreso = (user as any).fecha_ingreso
-    ? (user as any).fecha_ingreso.split(' ')[0]
-    : '';
+    ? (user as any).fecha_ingreso.split(" ")[0]
+    : "";
 
   const defaultValues = {
-    nombre: persona.nombre || '',
-    apellido_p: persona.apellido_paterno || '',
-    apellido_m: persona.apellido_materno || '',
-    sexo: (persona.sexo || 'M') as 'M' | 'F',
+    nombre: persona.nombre || "",
+    apellido_p: persona.apellido_paterno || "",
+    apellido_m: persona.apellido_materno || "",
+    sexo: (persona.sexo || "M") as "M" | "F",
     dni: persona.dni || 0,
-    dni_comp: persona.dni_comp || '',
-    dni_tipo: (persona.dni_tipo || 'DNI') as 'DNI' | 'PASS' | 'DNIE',
-    telefono: persona.telefono || '',
-    celular: persona.celular || '',
-    direccion: persona.direccion || '',
+    dni_comp: persona.dni_comp || "",
+    dni_tipo: (persona.dni_tipo || "DNI") as "DNI" | "PASS" | "DNIE",
+    telefono: persona.telefono || "",
+    celular: persona.celular || "",
+    direccion: persona.direccion || "",
     fecha_ingreso: fechaIngreso,
-    email: user.email || '',
-    nombre_usuario: user.nickname || '',
+    email: user.email || "",
+    nombre_usuario: user.nickname || "",
   };
 
-  console.log('📝 Usuario cargado para edición:', user);
-  console.log('📝 Persona:', persona);
-  console.log('📝 Valores por defecto mapeados:', defaultValues);
+  console.log("📝 Usuario cargado para edición:", user);
+  console.log("📝 Persona:", persona);
+  console.log("📝 Valores por defecto mapeados:", defaultValues);
 
   return (
-    <div className="flex justify-center items-center">
+    <div className="flex justify-center items-center p-2">
       <div className="w-full space-y-2">
         {/* Header */}
-        <header className="border-border border bg-card rounded-lg p-2 sm:p-3">
+        <header className="border-border border bg-background rounded-lg p-2 sm:p-3">
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
@@ -131,7 +137,8 @@ const EditUserScreen = () => {
                   Editar Usuario: {user.nickname}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {persona.nombre || 'Sin nombre'} - Modifica la información del usuario
+                  {persona.nombre || "Sin nombre"} - Modifica la información del
+                  usuario
                 </p>
               </div>
             </div>
@@ -139,11 +146,7 @@ const EditUserScreen = () => {
         </header>
 
         {/* Formulario */}
-        <FormUser
-          mode="edit"
-          userId={user.id}
-          defaultValues={defaultValues}
-        />
+        <FormUser mode="edit" userId={user.id} defaultValues={defaultValues} />
       </div>
     </div>
   );

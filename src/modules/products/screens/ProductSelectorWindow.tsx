@@ -1,11 +1,17 @@
 /**
  * ProductSelectorWindow - Ventana Standalone para Selección de Productos
  * Con validación de stock configurable y cálculo interno
+ * Layout: ResizablePanelGroup vertical — tabla productos (70%) + tabla seleccionados (30%)
  */
 
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Label } from "@/components/atoms/label";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/atoms/resizable";
 import { Switch } from "@/components/atoms/switch";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
@@ -31,6 +37,7 @@ import {
   Zap,
   Trash2,
   PackageSearch,
+  ShoppingCart,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductSelection } from "../hooks/useProductSelection";
@@ -42,6 +49,7 @@ import {
 } from "@/hooks/use-toast-enhanced";
 import { ColumnVisibilityDropdown } from "@/components/common/ColumnVisibilityDropdown";
 import { useCommands } from "@/keybindings";
+import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 
 type ProductSelectorContext =
   | "purchase"
@@ -56,7 +64,7 @@ interface WindowConfig {
   context: ProductSelectorContext;
   multiSelect: boolean;
   mode: "create" | "edit";
-  validateStock: boolean; // Nueva propiedad
+  validateStock: boolean;
   selectedItems: SelectedItem[];
   initialFilters?: Record<string, any>;
   simpleMode: boolean;
@@ -85,7 +93,7 @@ const ProductSelectorWindow: React.FC = () => {
       context: params.get("context") || "default",
       multiSelect: params.get("multiSelect") === "true",
       mode: (params.get("mode") as "create" | "edit") || "create",
-      validateStock: params.get("validateStock") !== "false", // Por defecto true
+      validateStock: params.get("validateStock") !== "false",
       simpleMode: params.get("simpleMode") === "true",
       selectedItems,
     };
@@ -94,7 +102,6 @@ const ProductSelectorWindow: React.FC = () => {
   const STORAGE_KEY = config.windowId + "-product-filters";
   const FILTER_EXPIRATION_HOURS = 2;
   const [isMultiSelect, setIsMultiSelect] = useState<boolean>(false);
-  const [showSelectionPanel, setShowSelectionPanel] = useState(false);
   const [searchMode, setSearchMode] = useState<"realtime" | "manual">("manual");
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const hasLoadedFilters = useRef(false);
@@ -123,7 +130,7 @@ const ProductSelectorWindow: React.FC = () => {
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
 
-  // 🔥 Cargar filtros persistidos al montar
+  // Cargar filtros persistidos al montar
   useEffect(() => {
     const loadFilters = async () => {
       try {
@@ -131,18 +138,14 @@ const ProductSelectorWindow: React.FC = () => {
         if (saved && !hasLoadedFilters.current) {
           const { filters: parsed, timestamp } = JSON.parse(saved);
 
-          // Verificar si los filtros han expirado
           const now = Date.now();
-          const expirationTime = FILTER_EXPIRATION_HOURS * 60 * 60 * 1000; // en milisegundos
+          const expirationTime = FILTER_EXPIRATION_HOURS * 60 * 60 * 1000;
 
           if (now - timestamp > expirationTime) {
-            // Filtros expirados, limpiar
             localStorage.removeItem(STORAGE_KEY);
-            console.log("Filtros expirados, se han limpiado");
             return;
           }
 
-          // Aplicar filtros guardados
           setFilters({
             pagina: parsed.pagina ?? 1,
             pagina_registros: parsed.pagina_registros ?? 10,
@@ -177,7 +180,6 @@ const ProductSelectorWindow: React.FC = () => {
     }
   }, [hasLoadedFilters.current]);
 
-  // 🔥 Guardar filtros cuando cambien
   const saveFilters = useCallback(() => {
     try {
       const dataToSave = {
@@ -202,44 +204,24 @@ const ProductSelectorWindow: React.FC = () => {
 
   /**
    * Calcula el stock disponible INTERNAMENTE
-   * - Si validateStock = false: Infinity (cotizaciones, compras)
-   * - Si mode = 'create': stock_actual
-   * - Si mode = 'edit': stock_actual + cantidad_original
    */
   const getAvailableStock = useCallback(
     (product: ProductGet): number => {
       if (!config.validateStock) {
-        return Infinity; // Sin validación de stock
+        return Infinity;
       }
 
       const stockActual = product.stock_actual ?? 0;
       const selectedItem = selectedItemsMap.get(product.id);
 
       if (config.mode === "edit" && selectedItem) {
-        // EDICIÓN: stock_actual + cantidad que ya estaba en la venta
         return stockActual + selectedItem.quantity;
       }
 
-      // CREACIÓN: solo stock_actual
       return stockActual;
     },
     [config.mode, config.validateStock, selectedItemsMap]
   );
-
-  /**
-   * Verifica si un producto está completamente agotado
-   */
-  // const isProductFullySelected = useCallback((product: ProductGet): boolean => {
-  //   if (!config.validateStock) return false;
-
-  //   const selectedItem = selectedItemsMap.get(product.id);
-  //   if (!selectedItem) return false;
-
-  //   const availableStock = getAvailableStock(product);
-  //   if (availableStock === Infinity) return false;
-
-  //   return selectedItem.quantity >= availableStock;
-  // }, [config.validateStock, selectedItemsMap, getAvailableStock]);
 
   /**
    * Valida si se puede agregar un producto
@@ -312,6 +294,11 @@ const ProductSelectorWindow: React.FC = () => {
 
   const [quantities, setQuantities] = useState<Map<number, number>>(new Map());
 
+  // Mapa de productos seleccionados para no depender de la pagina paginada actual
+  const [selectedProductsMap, setSelectedProductsMap] = useState<
+    Map<number, ProductGet>
+  >(new Map());
+
   const handleProductSelect = useCallback(
     async (product: ProductGet) => {
       const validation = canAddProduct(product);
@@ -330,10 +317,9 @@ const ProductSelectorWindow: React.FC = () => {
 
         if (!quantities.has(product.id)) {
           setQuantities((prev) => new Map(prev).set(product.id, 1));
-        }
-
-        if (!showSelectionPanel) {
-          setShowSelectionPanel(true);
+          setSelectedProductsMap((prev) =>
+            new Map(prev).set(product.id, product)
+          );
         }
 
         const selectedItem = selectedItemsMap.get(product.id);
@@ -367,7 +353,6 @@ const ProductSelectorWindow: React.FC = () => {
       quantities,
       config.windowId,
       currentWindow,
-      showSelectionPanel,
       canAddProduct,
       selectedItemsMap,
     ]
@@ -377,6 +362,11 @@ const ProductSelectorWindow: React.FC = () => {
     (product: ProductGet) => {
       toggleProductSelection(product);
       setQuantities((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(product.id);
+        return newMap;
+      });
+      setSelectedProductsMap((prev) => {
         const newMap = new Map(prev);
         newMap.delete(product.id);
         return newMap;
@@ -393,20 +383,17 @@ const ProductSelectorWindow: React.FC = () => {
 
   const handleQuantityChange = useCallback(
     (productId: number, newQuantity: number) => {
-      const product = products.find((p) => p.id === productId);
+      // Buscar en el mapa de seleccionados (no depende de la pagina actual)
+      const product =
+        selectedProductsMap.get(productId) ??
+        products.find((p) => p.id === productId);
       if (!product) return;
 
       if (newQuantity <= 0) {
         handleRemoveFromSelection(product);
-        showWarningToast({
-          title: "Producto removido",
-          description: product.descripcion,
-          duration: 2000,
-        });
         return;
       }
 
-      // Si NO valida stock, permitir cualquier cantidad
       if (!config.validateStock) {
         setQuantities((prev) => new Map(prev).set(productId, newQuantity));
         return;
@@ -424,8 +411,8 @@ const ProductSelectorWindow: React.FC = () => {
           title: "Stock insuficiente",
           description:
             config.mode === "edit"
-              ? `Solo puedes agregar ${maxCanAdd} más (máximo total: ${availableStock})`
-              : `Solo puedes agregar ${maxCanAdd} más (stock actual: ${product.stock_actual})`,
+              ? `Solo puedes agregar ${maxCanAdd} mas (maximo total: ${availableStock})`
+              : `Solo puedes agregar ${maxCanAdd} mas (stock actual: ${product.stock_actual})`,
           duration: 4000,
         });
         return;
@@ -433,8 +420,8 @@ const ProductSelectorWindow: React.FC = () => {
 
       if (maxCanAdd !== Infinity && newQuantity === maxCanAdd) {
         showWarningToast({
-          title: "Máximo alcanzado",
-          description: `Has alcanzado el límite para este producto`,
+          title: "Maximo alcanzado",
+          description: `Has alcanzado el limite para este producto`,
           duration: 3000,
         });
       }
@@ -443,6 +430,7 @@ const ProductSelectorWindow: React.FC = () => {
     },
     [
       products,
+      selectedProductsMap,
       getAvailableStock,
       selectedItemsMap,
       handleRemoveFromSelection,
@@ -457,6 +445,7 @@ const ProductSelectorWindow: React.FC = () => {
 
     clearAllSelections();
     setQuantities(new Map());
+    setSelectedProductsMap(new Map());
 
     showWarningToast({
       title: "Selección limpiada",
@@ -477,7 +466,6 @@ const ProductSelectorWindow: React.FC = () => {
       return;
     }
 
-    // Validar cada producto antes de confirmar
     const invalidProducts: string[] = [];
     const productsWithQuantities = selectedProducts.map((product) => {
       const quantity = quantities.get(product.id) || 1;
@@ -530,6 +518,7 @@ const ProductSelectorWindow: React.FC = () => {
     return "success";
   };
 
+  // ─── Columnas tabla de productos ───────────────────────────────────────────
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
       {
@@ -539,10 +528,9 @@ const ProductSelectorWindow: React.FC = () => {
         enableHiding: true,
         size: 60,
         minSize: 40,
-        cell: ({ getValue }) => {
-          const id = getValue<number>();
-          return <div className="text-center font-medium">{id}</div>;
-        },
+        cell: ({ getValue }) => (
+          <div className="text-center font-medium">{getValue<number>()}</div>
+        ),
       },
       {
         accessorKey: "descripcion",
@@ -686,7 +674,6 @@ const ProductSelectorWindow: React.FC = () => {
             buttonText = `En carrito (${selectedItem.quantity})`;
             buttonVariant = "default";
             icon = <Check className="h-4 w-4" />;
-
             if (validation.availableToAdd !== undefined) {
               tooltipText = `Puedes agregar ${validation.availableToAdd} más`;
             }
@@ -711,7 +698,6 @@ const ProductSelectorWindow: React.FC = () => {
                 <span className="truncate">{buttonText}</span>
               </TooltipButton>
 
-              {/* Info de stock */}
               {validation.showStockInfo &&
                 selectedItem &&
                 validation.availableToAdd !== undefined && (
@@ -743,6 +729,197 @@ const ProductSelectorWindow: React.FC = () => {
     ]
   );
 
+  // ─── Columnas tabla de seleccionados ───────────────────────────────────────
+  const selectedColumns = useMemo<ColumnDef<ProductGet>[]>(
+    () => [
+      {
+        id: "nro",
+        header: "N°",
+        size: 36,
+        minSize: 30,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="text-center block text-xs text-muted-foreground">
+            {row.index + 1}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "descripcion",
+        header: "Descripción",
+        size: 260,
+        minSize: 120,
+        enableHiding: false,
+        cell: ({ row, getValue }) => {
+          const selectedItem = selectedItemsMap.get(row.original.id);
+          return (
+            <div className="flex flex-col min-w-0">
+              <span className="font-medium text-sm truncate">
+                {getValue<string>()}
+              </span>
+              {selectedItem && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] py-0 w-fit mt-0.5"
+                >
+                  {selectedItem.quantity} en carrito
+                </Badge>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "codigo_upc",
+        header: "Cód. UPC",
+        size: 110,
+        minSize: 80,
+        cell: ({ getValue }) => (
+          <div className="text-xs text-center">
+            {formatCell(getValue<string>())}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "marca",
+        header: "Marca",
+        size: 90,
+        minSize: 70,
+        cell: ({ getValue }) => (
+          <div className="text-xs">{formatCell(getValue<string>())}</div>
+        ),
+      },
+      {
+        accessorKey: "precio_venta",
+        header: "Precio",
+        size: 100,
+        minSize: 80,
+        cell: ({ getValue }) => (
+          <div className="font-bold text-green-600 dark:text-green-400 text-right text-sm">
+            {formatCurrency(getValue<number>())}
+          </div>
+        ),
+      },
+      {
+        id: "cantidad",
+        header: "Cantidad",
+        size: 140,
+        minSize: 130,
+        cell: ({ row }) => {
+          const product = row.original;
+          const quantity = quantities.get(product.id) || 1;
+          // const validation = canAddProduct(product);
+          // const maxCanAdd = validation.availableToAdd ?? Infinity;
+          // const isAtLimit =
+          //   config.validateStock &&
+          //   maxCanAdd !== Infinity &&
+          //   quantity >= maxCanAdd;
+
+          return (
+            <EditableQuantity
+              value={quantity}
+              className="w-full"
+              buttonClassName="w-full"
+              onSubmit={(value) =>
+                handleQuantityChange(product.id, value as number)
+              }
+              validate={(val) => {
+                const num = parseInt(String(val));
+                return !isNaN(num) && num > 0;
+              }}
+              disabled={false}
+              disableWheel
+              disableArrowKeys
+              columnKey="cantidad-selected"
+            />
+          );
+        },
+      },
+      {
+        id: "subtotal",
+        header: "Subtotal",
+        size: 105,
+        minSize: 85,
+        cell: ({ row }) => {
+          const quantity = quantities.get(row.original.id) || 1;
+          const subtotal = row.original.precio_venta * quantity;
+          return (
+            <div className="font-semibold text-right text-sm text-green-600 dark:text-green-400">
+              {formatCurrency(subtotal)}
+            </div>
+          );
+        },
+      },
+      {
+        id: "estado",
+        header: "Stock",
+        size: 75,
+        minSize: 60,
+        cell: ({ row }) => {
+          const product = row.original;
+          const validation = canAddProduct(product);
+          const quantity = quantities.get(product.id) || 1;
+          const maxCanAdd = validation.availableToAdd ?? Infinity;
+          const isAtLimit =
+            config.validateStock &&
+            maxCanAdd !== Infinity &&
+            quantity >= maxCanAdd;
+
+          if (!config.validateStock)
+            return (
+              <span className="text-[10px] text-muted-foreground text-center block">
+                —
+              </span>
+            );
+
+          return (
+            <div className="text-center">
+              {isAtLimit ? (
+                <Badge variant="danger" className="text-[10px]">
+                  Máx
+                </Badge>
+              ) : validation.availableToAdd !== undefined ? (
+                <span className="text-[10px] text-muted-foreground">
+                  +{validation.availableToAdd} disp.
+                </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">—</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "quitar",
+        header: "",
+        size: 44,
+        minSize: 44,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <TooltipButton
+            onClick={() => handleRemoveFromSelection(row.original)}
+            buttonProps={{
+              variant: "ghost",
+              className:
+                "size-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/40",
+            }}
+            tooltip="Quitar producto"
+          >
+            <Trash2 className="h-4 w-4" />
+          </TooltipButton>
+        ),
+      },
+    ],
+    [
+      quantities,
+      canAddProduct,
+      config.validateStock,
+      selectedItemsMap,
+      handleQuantityChange,
+      handleRemoveFromSelection,
+    ]
+  );
+
   const { table } = useCustomTable({
     data: products,
     columns,
@@ -756,6 +933,20 @@ const ProductSelectorWindow: React.FC = () => {
     persistenceKey: `product-selector-${config.context}`,
     persistColumnVisibility: true,
     persistColumnOrder: true,
+  });
+
+  const selectedProducts = getAllSelectedProducts();
+
+  const { table: selectedTable } = useCustomTable({
+    data: selectedProducts,
+    columns: selectedColumns,
+    enableSorting: false,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    enableRowSelection: false,
+    enableColumnVisibility: false,
+    enableColumnOrdering: false,
+    enablePagination: false,
   });
 
   const { selectedIndex, setSelectedIndex, isFocused } = useKeyboardNavigation<
@@ -785,26 +976,13 @@ const ProductSelectorWindow: React.FC = () => {
     await currentWindow.close();
   };
 
-  const onPageChange = (page: number) => {
-    setPage(page);
-  };
-
-  const onShowRowsChange = (rows: number) => {
-    setPageSize(rows);
-  };
-
-  const handleRefetchProducts = () => {
-    refetchProducts();
-  };
-
-  const toggleShowFilters = () => {
-    setShowFilters(!showFilters);
-  };
+  const onPageChange = (page: number) => setPage(page);
+  const onShowRowsChange = (rows: number) => setPageSize(rows);
+  const handleRefetchProducts = () => refetchProducts();
+  const toggleShowFilters = () => setShowFilters(!showFilters);
 
   const handleManualSearch = () => {
-    if (searchMode === "manual") {
-      applyFilters();
-    }
+    if (searchMode === "manual") applyFilters();
     saveFilters();
   };
 
@@ -819,17 +997,19 @@ const ProductSelectorWindow: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      }
+      if (e.key === "Escape") handleClose();
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const totalSelectedProducts = getAllSelectedProducts().reduce(
+  const totalSelectedUnits = selectedProducts.reduce(
     (sum, p) => sum + (quantities.get(p.id) || 1),
+    0
+  );
+
+  const totalSelectedAmount = selectedProducts.reduce(
+    (sum, p) => sum + p.precio_venta * (quantities.get(p.id) || 1),
     0
   );
 
@@ -841,15 +1021,16 @@ const ProductSelectorWindow: React.FC = () => {
       transfer: "Agregar a Transferencia",
       inventory: "Seleccionar Productos",
     };
-
-    const title = titles[config.context] || "Seleccionar Productos";
-    return title;
+    return titles[config.context] || "Seleccionar Productos";
   }, [config.context]);
 
-  useCommands({
-    "searchFilters.focusSearch": handleManualSearch,
-    "forms.reset": handleResetFilters,
-  });
+  useCommands(
+    {
+      "searchFilters.focusSearch": handleManualSearch,
+      "forms.reset": handleResetFilters,
+    },
+    { enableOnFormTags: true }
+  );
 
   return (
     <main className="h-full p-2 flex flex-col bg-secondary gap-2">
@@ -860,7 +1041,6 @@ const ProductSelectorWindow: React.FC = () => {
             <Package className="h-5 w-5 text-primary" />
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-bold text-primary">{contextTitle}</h1>
-              {/* Badges de modo y validación */}
               {!config.simpleMode && (
                 <Badge
                   variant={config.mode === "edit" ? "default" : "secondary"}
@@ -873,9 +1053,7 @@ const ProductSelectorWindow: React.FC = () => {
 
           <div className="flex items-center gap-2 flex-wrap">
             {isMultiSelect && getSelectedCount() > 0 && (
-              <Badge variant="accent">
-                {totalSelectedProducts} seleccionados
-              </Badge>
+              <Badge variant="accent">{totalSelectedUnits} seleccionados</Badge>
             )}
 
             <Button
@@ -900,10 +1078,7 @@ const ProductSelectorWindow: React.FC = () => {
 
             <TooltipButton
               onClick={handleRefetchProducts}
-              buttonProps={{
-                className: "w-8",
-                disabled: isFetching,
-              }}
+              buttonProps={{ className: "w-8", disabled: isFetching }}
               tooltip="Recargar productos"
             >
               <RefreshCcw
@@ -928,6 +1103,7 @@ const ProductSelectorWindow: React.FC = () => {
             )}
           </div>
         </section>
+
         {showFilters && (
           <ProductFilters
             filters={filters}
@@ -939,233 +1115,185 @@ const ProductSelectorWindow: React.FC = () => {
         )}
       </header>
 
-      <div className="bg-background rounded-lg border border-border flex-1 min-h-0">
-        <div className="h-full flex flex-col">
-          {/* Results Info */}
-          <div className="p-2 text-sm text-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
-            {products.length > 0 ? (
-              (() => {
-                const pagina = filters.pagina ?? 1;
-                const porPagina = filters.pagina_registros ?? 1;
-                const inicio = (pagina - 1) * porPagina + 1;
-                const fin = pagina * porPagina;
-                return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
-              })()
-            ) : (
-              <span>Cargando...</span>
+      {/* Body — ResizablePanelGroup */}
+      <ResizablePanelGroup
+        direction="vertical"
+        className="flex-1 min-h-0 gap-1"
+      >
+        {/* Panel superior — Tabla de productos */}
+        <ResizablePanel
+          id="product-selector-products"
+          order={1}
+          defaultSize={isMultiSelect ? 65 : 100}
+          minSize={30}
+          className="bg-background rounded-lg border border-border flex flex-col"
+        >
+          <div className="h-full flex flex-col">
+            {/* Info + controles */}
+            <div className="p-2 text-sm text-foreground border-b border-border flex-shrink-0 flex items-center justify-between">
+              {products.length > 0 ? (
+                (() => {
+                  const pagina = filters.pagina ?? 1;
+                  const porPagina = filters.pagina_registros ?? 1;
+                  const inicio = (pagina - 1) * porPagina + 1;
+                  const fin = pagina * porPagina;
+                  return `Mostrando ${inicio} - ${fin} de ${productData?.meta.total} productos`;
+                })()
+              ) : (
+                <span>Cargando...</span>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {config.multiSelect && (
+                  <div className="border border-border rounded-sm gap-2 flex items-center px-2 h-8">
+                    <Switch
+                      id="multi-select"
+                      checked={isMultiSelect}
+                      onCheckedChange={setIsMultiSelect}
+                    />
+                    <Label htmlFor="multi-select">Selección múltiple</Label>
+                  </div>
+                )}
+                <ColumnVisibilityDropdown table={table} />
+              </div>
+            </div>
+
+            {/* Tabla */}
+            <div className="flex-1 min-h-0">
+              <CustomizableTable
+                table={table}
+                isError={isError}
+                isFetching={isFetching}
+                isLoading={isLoading}
+                errorMessage="Ocurrió un error al cargar los productos"
+                rows={filters.pagina_registros}
+                noDataMessage="No se encontraron productos"
+                keyboardNavigationEnabled={true}
+                enableColumnReordering={true}
+                tableRef={tableRef}
+                enableSorting={false}
+                selectedRowIndex={selectedIndex}
+                onRowClick={handleRowClick}
+                onRowDoubleClick={handleRowDoubleClick}
+                focused={isFocused}
+              />
+            </div>
+
+            {/* Paginación */}
+            {(productData?.data?.length ?? 0) > 0 && (
+              <Pagination
+                currentPage={filters.pagina || 1}
+                onPageChange={onPageChange}
+                totalData={productData?.meta.total || 1}
+                onShowRowsChange={onShowRowsChange}
+                showRows={filters.pagina_registros}
+              />
             )}
+          </div>
+        </ResizablePanel>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {config.multiSelect && (
-                <div className="border border-border rounded-sm gap-2 flex items-center px-2 h-8">
-                  <Switch
-                    id="multi-select"
-                    checked={isMultiSelect}
-                    onCheckedChange={setIsMultiSelect}
-                  />
-                  <Label htmlFor="multi-select">Selección múltiple</Label>
+        {/* Panel inferior — Tabla de seleccionados (solo en multiSelect) */}
+        {isMultiSelect && (
+          <>
+            <ResizableHandle withHandle />
+
+            <ResizablePanel
+              id="product-selector-selected"
+              order={2}
+              defaultSize={35}
+              minSize={20}
+              className="bg-background rounded-lg border border-border flex flex-col"
+            >
+              {/* Header del panel */}
+              <div className="bg-primary/10 px-3 py-2 border-b border-border flex-shrink-0 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-primary" />
+                  <h3 className="font-semibold text-sm text-primary">
+                    Productos seleccionados
+                  </h3>
+                  {getSelectedCount() > 0 && (
+                    <Badge variant="accent" className="text-xs">
+                      {getSelectedCount()} producto
+                      {getSelectedCount() !== 1 ? "s" : ""}
+                    </Badge>
+                  )}
                 </div>
-              )}
-              <ColumnVisibilityDropdown table={table} />
-            </div>
-          </div>
 
-          {/* Tabla con scroll */}
-          <div className="flex-1 min-h-0">
-            <CustomizableTable
-              table={table}
-              isError={isError}
-              isFetching={isFetching}
-              isLoading={isLoading}
-              errorMessage="Ocurrió un error al cargar los productos"
-              rows={filters.pagina_registros}
-              noDataMessage="No se encontraron productos"
-              keyboardNavigationEnabled={true}
-              enableColumnReordering={true}
-              tableRef={tableRef}
-              enableSorting={false}
-              selectedRowIndex={selectedIndex}
-              onRowClick={handleRowClick}
-              onRowDoubleClick={handleRowDoubleClick}
-              focused={isFocused}
-            />
-          </div>
-
-          {/* Paginación */}
-          {(productData?.data?.length ?? 0) > 0 && (
-            <Pagination
-              currentPage={filters.pagina || 1}
-              onPageChange={onPageChange}
-              totalData={productData?.meta.total || 1}
-              onShowRowsChange={onShowRowsChange}
-              showRows={filters.pagina_registros}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Panel lateral mejorado */}
-      {isMultiSelect && showSelectionPanel && getSelectedCount() > 0 && (
-        <div className="fixed right-4 bottom-4 w-80 sm:w-96 max-h-[32rem] bg-card rounded-lg shadow-2xl border-2 border-border overflow-hidden z-50">
-          <div className="bg-primary/10 px-4 py-3 border-b border-border flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-sm text-primary">
-                Productos para Agregar ({getSelectedCount()})
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Total unidades: {totalSelectedProducts}
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              {getSelectedCount() > 1 && (
-                <TooltipButton
-                  onClick={handleClearSelection}
-                  buttonProps={{
-                    variant: "ghost",
-                    className:
-                      "size-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/50",
-                  }}
-                  tooltip="Limpiar selección"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </TooltipButton>
-              )}
-              <Button
-                variant="ghost"
-                onClick={() => setShowSelectionPanel(false)}
-                className="size-7 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="overflow-y-auto max-h-80 divide-y divide-border">
-            {getAllSelectedProducts().map((product) => {
-              const quantity = quantities.get(product.id) || 1;
-              const selectedItem = selectedItemsMap.get(product.id);
-              const validation = canAddProduct(product);
-              const maxCanAdd = validation.availableToAdd ?? Infinity;
-
-              const hasWarning =
-                maxCanAdd !== Infinity && quantity >= maxCanAdd;
-              const isAtLimit = quantity === maxCanAdd;
-
-              return (
-                <div
-                  key={product.id}
-                  className={`p-2 hover:bg-muted ${hasWarning ? "bg-orange-50/50 dark:bg-amber-700/50" : ""}`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-primary truncate">
-                        {product.descripcion}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-muted-foreground font-mono">
-                          {product.codigo_oem || "Sin código"}
-                        </p>
-                        {selectedItem && (
-                          <Badge variant="secondary" className="text-xs py-0">
-                            {selectedItem.quantity} en carrito
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Advertencias */}
-                      {config.validateStock && hasWarning && (
-                        <p
-                          className={`text-xs mt-1 font-medium ${
-                            isAtLimit
-                              ? "text-red-600 dark:text-red-300"
-                              : "text-orange-600 dark:text-amber-300"
-                          }`}
-                        >
-                          {isAtLimit
-                            ? "⚠️ Máximo alcanzado"
-                            : `⚠️ Cerca del límite (máx: ${maxCanAdd})`}
-                        </p>
-                      )}
-
-                      {config.validateStock &&
-                        config.mode === "edit" &&
-                        validation.availableToAdd !== undefined && (
-                          <p className="text-xs text-foreground mt-1">
-                            Disponible para agregar: {validation.availableToAdd}
-                          </p>
-                        )}
-                    </div>
-
-                    {/* Control de cantidad */}
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        className="size-7 p-0"
-                        onClick={() =>
-                          handleQuantityChange(product.id, quantity - 1)
-                        }
-                      >
-                        -
-                      </Button>
-                      <span className="text-sm font-semibold w-10 text-center">
-                        {quantity}
+                <div className="flex items-center gap-2">
+                  {/* Totales */}
+                  {getSelectedCount() > 0 && (
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground border-r border-border pr-2 mr-1">
+                      <span>
+                        Unidades:{" "}
+                        <span className="font-semibold text-foreground">
+                          {totalSelectedUnits}
+                        </span>
                       </span>
-                      <Button
-                        variant="outline"
-                        className={`size-7 p-0 ${
-                          config.validateStock && isAtLimit
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          handleQuantityChange(product.id, quantity + 1)
-                        }
-                        disabled={config.validateStock && isAtLimit}
-                        title={
-                          config.validateStock && isAtLimit
-                            ? "Máximo alcanzado"
-                            : "Agregar más"
-                        }
-                      >
-                        +
-                      </Button>
+                      <span>
+                        Total:{" "}
+                        <span className="font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(totalSelectedAmount)}
+                        </span>
+                      </span>
                     </div>
+                  )}
 
-                    {/* Botón eliminar */}
+                  {getSelectedCount() > 1 && (
                     <TooltipButton
-                      onClick={() => handleRemoveFromSelection(product)}
+                      onClick={handleClearSelection}
                       buttonProps={{
                         variant: "ghost",
                         className:
-                          "size-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/50",
+                          "size-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/50",
                       }}
-                      tooltip="Remover producto"
+                      tooltip="Limpiar selección"
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </TooltipButton>
-                  </div>
+                  )}
+
+                  {getSelectedCount() > 0 && (
+                    <Button
+                      onClick={handleConfirmMultiSelect}
+                      size="sm"
+                      className="gap-1.5 h-7 text-xs"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Confirmar
+                    </Button>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
 
-          {/* Footer */}
-          <div className="bg-muted px-4 py-3 border-t border-border space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-foreground">Total a agregar:</span>
-              <span className="font-bold text-primary">
-                {totalSelectedProducts} unidad
-                {totalSelectedProducts !== 1 ? "es" : ""}
-              </span>
-            </div>
-
-            <Button onClick={handleConfirmMultiSelect} className="w-full gap-2">
-              <Check className="h-4 w-4" />
-              Confirmar Selección
-            </Button>
-          </div>
-        </div>
-      )}
+              {/* Tabla de seleccionados o estado vacío */}
+              <div className="flex-1 min-h-0">
+                {selectedProducts.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
+                    <ShoppingCart className="h-8 w-8 opacity-30" />
+                    <p className="text-sm">Ningún producto seleccionado aún</p>
+                    <p className="text-xs">
+                      Haz clic en "Seleccionar" o doble clic en una fila
+                    </p>
+                  </div>
+                ) : (
+                  <CustomizableTable
+                    table={selectedTable}
+                    isError={false}
+                    isFetching={false}
+                    isLoading={false}
+                    errorMessage=""
+                    rows={selectedProducts.length}
+                    noDataMessage="Sin productos seleccionados"
+                    keyboardNavigationEnabled={false}
+                    enableColumnReordering={false}
+                    enableSorting={false}
+                  />
+                )}
+              </div>
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
     </main>
   );
 };

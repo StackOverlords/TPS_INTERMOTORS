@@ -9,8 +9,21 @@ import ProvidersScreen from "@/modules/settings/screens/providersScreen";
 import SettingsScreen from "@/modules/settings/screens/settingsScreen";
 import SubcategoriesScreen from "@/modules/settings/screens/subcategoriesScreen";
 import VehicleBrandsScreen from "@/modules/settings/screens/vehicleBrandScreen";
-import { Car, FolderOpen, GitBranchIcon, Layers, MapPin, RefreshCw, Ruler, Settings, Tag, Truck, Users } from "lucide-react";
+import {
+  Car,
+  FolderOpen,
+  GitBranchIcon,
+  Layers,
+  MapPin,
+  RefreshCw,
+  Ruler,
+  Settings,
+  Tag,
+  Truck,
+  Users,
+} from "lucide-react";
 import type RouteType from "./RouteType";
+import EmployeesScreen from "@/modules/settings/screens/employeesScreen";
 
 const settingsProtectedRoutes: RouteType[] = [
   {
@@ -35,7 +48,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: MapPin
+        icon: MapPin,
       },
       {
         path: "/dashboard/settings/brands",
@@ -47,7 +60,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: Tag
+        icon: Tag,
       },
       {
         path: "/dashboard/settings/vehicle-brands",
@@ -59,7 +72,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: Car
+        icon: Car,
       },
       {
         path: "/dashboard/settings/measurements",
@@ -71,7 +84,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: Ruler
+        icon: Ruler,
       },
       {
         path: "/dashboard/settings/subcategories",
@@ -83,7 +96,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: Layers
+        icon: Layers,
       },
       {
         path: "/dashboard/settings/categories",
@@ -95,7 +108,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: FolderOpen
+        icon: FolderOpen,
       },
       {
         path: "/dashboard/settings/updates",
@@ -107,7 +120,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: RefreshCw
+        icon: RefreshCw,
       },
       {
         path: "/dashboard/settings/branches",
@@ -119,7 +132,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: GitBranchIcon
+        icon: GitBranchIcon,
       },
       {
         path: "/dashboard/settings/providers",
@@ -131,7 +144,7 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: Truck
+        icon: Truck,
       },
       {
         path: "/dashboard/settings/customers",
@@ -143,9 +156,21 @@ const settingsProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
-        icon: Users
+        icon: Users,
       },
-    ]
+      {
+        path: "/dashboard/settings/responsibles",
+        name: "Responsables",
+        type: "protected",
+        element: EmployeesScreen,
+        isAdmin: true,
+        role: ["Administrador", "Super Admin"],
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+        icon: Users,
+      },
+    ],
   },
 ];
 

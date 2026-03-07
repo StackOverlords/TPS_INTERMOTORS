@@ -20,13 +20,14 @@ import { ProtectedAction } from "@/components/common/ProtectedAction";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, Settings, Trash2, Truck } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { Provider } from "../types/provider.types";
 import ProviderFormDialog from "./providerFormDialog";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useProtectedAction } from "@/hooks/useProtectedAction";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 interface ProviderListTableProps {
   providers: Provider[];
@@ -40,6 +41,8 @@ interface ProviderListTableProps {
   handleRowsChange: (rows: number) => void;
   onPageChange: (page: number) => void;
 }
+
+const SCREEN_PATH = "/dashboard/settings/providers";
 
 const ProviderListTable: React.FC<ProviderListTableProps> = ({
   providers,
@@ -63,7 +66,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
 
-  useEffect(() => {
+  useTabEffect(SCREEN_PATH, () => {
     if (location.state?.openModal) {
       handleAddProvider();
       navigate(location.pathname, { replace: true });

@@ -174,7 +174,11 @@ function SaleDetailsEditingTableInner(
           const cantidadDev = row.original.cantidad_dev ?? 0;
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
-            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
+            <div
+              className={
+                isFullyReturned ? "text-muted-foreground/70 italic" : ""
+              }
+            >
               {getValue<number>()}
             </div>
           );
@@ -188,7 +192,11 @@ function SaleDetailsEditingTableInner(
           const cantidadDev = row.original.cantidad_dev ?? 0;
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
-            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
+            <div
+              className={
+                isFullyReturned ? "text-muted-foreground/70 italic" : ""
+              }
+            >
               {formatCell(getValue<string>())}
             </div>
           );
@@ -243,7 +251,10 @@ function SaleDetailsEditingTableInner(
             >
               <EditableQuantity
                 value={cantidadReal}
-                className={cn("w-full", hasReturns && "text-muted-foreground/70 italic")}
+                className={cn(
+                  "w-full",
+                  hasReturns && "text-muted-foreground/70 italic"
+                )}
                 buttonClassName="w-full"
                 onSubmit={(value) => updateQuantity(productId, value as number)}
                 validate={(val) => {
@@ -261,6 +272,9 @@ function SaleDetailsEditingTableInner(
                   }
                 }}
                 disabled={isReadOnly || hasReturns}
+                disableWheel
+                disableArrowKeys
+                columnKey="cantidad"
               />
 
               {hasReturns && (
@@ -308,7 +322,11 @@ function SaleDetailsEditingTableInner(
           const isFullyReturned = cantidadDev === row.original.cantidad;
 
           return (
-            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
+            <div
+              className={
+                isFullyReturned ? "text-muted-foreground/70 italic" : ""
+              }
+            >
               <EditablePrice
                 value={basePrice}
                 onSubmit={(value) => updatePrice(product.id, value as number)}
@@ -316,6 +334,9 @@ function SaleDetailsEditingTableInner(
                 buttonClassName="w-full"
                 numberProps={{ min: 0, step: 0.01 }}
                 disabled={isReadOnly || isFullyReturned}
+                disableWheel
+                disableArrowKeys
+                columnKey="precio"
               />
             </div>
           );
@@ -334,7 +355,11 @@ function SaleDetailsEditingTableInner(
           const isFullyReturned = cantidadDev === item.cantidad;
 
           return (
-            <div className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
+            <div
+              className={
+                isFullyReturned ? "text-muted-foreground/70 italic" : ""
+              }
+            >
               <EditablePrice
                 value={subtotal}
                 onSubmit={(value) =>
@@ -344,6 +369,9 @@ function SaleDetailsEditingTableInner(
                 inputClassName="hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                 numberProps={{ min: 0, step: 0.01 }}
                 disabled={isReadOnly || isFullyReturned}
+                disableWheel
+                disableArrowKeys
+                columnKey="subtotal"
               />
             </div>
           );
@@ -358,7 +386,11 @@ function SaleDetailsEditingTableInner(
           const cantidadDev = row.original.cantidad_dev ?? 0;
           const isFullyReturned = cantidadDev === row.original.cantidad;
           return (
-            <span className={isFullyReturned ? "text-muted-foreground/70 italic" : ""}>
+            <span
+              className={
+                isFullyReturned ? "text-muted-foreground/70 italic" : ""
+              }
+            >
               {marca}
             </span>
           );

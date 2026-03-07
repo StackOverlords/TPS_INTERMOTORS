@@ -24,6 +24,7 @@ export function ReceivablesCard({
   onNavigate,
   period,
   onPeriodChange,
+  isLoading = false,
 }: ReceivablesCardProps) {
   return (
     <div className="col-span-6 min-h-0">
@@ -44,7 +45,7 @@ export function ReceivablesCard({
         </CardHeader>
         <CardContent className="flex-1 p-2 pt-1 min-h-0">
           <div id="chart-stacked" className="h-full">
-            <ReceivablesStackedBar data={data} />
+            <ReceivablesStackedBar data={data} isLoading={isLoading} />
           </div>
         </CardContent>
       </Card>

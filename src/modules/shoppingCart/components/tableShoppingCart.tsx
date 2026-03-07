@@ -152,6 +152,9 @@ function TableShoppingCartInner(
                 }
               }}
               disabled={isReadOnly}
+              disableWheel
+              disableArrowKeys
+              columnKey="cantidad"
             />
           );
         },
@@ -174,6 +177,9 @@ function TableShoppingCartInner(
               buttonClassName="w-full"
               numberProps={{ min: 0, step: 0.01 }}
               disabled={isReadOnly}
+              disableWheel
+              disableArrowKeys
+              columnKey="precio"
             />
           );
         },
@@ -196,6 +202,9 @@ function TableShoppingCartInner(
               inputClassName="hover:bg-emerald-50 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-emerald-200 dark:border-emerald-500/30"
               numberProps={{ min: 0, step: 0.01 }}
               disabled={isReadOnly}
+              disableWheel
+              disableArrowKeys
+              columnKey="subtotal"
             />
           );
         },

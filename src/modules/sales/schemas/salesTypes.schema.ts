@@ -1,7 +1,6 @@
 import z from "zod";
 
 export const SaleCodeSchema = z.string()
-// export const SaleDescriptionSchema = z.string().startsWith('VENTA_'); // descripciones que empiecen con VENTA_
 export const SaleDescriptionSchema = z.string();
 
 export const SaleTypesResponseSchema = z.record(SaleCodeSchema, SaleDescriptionSchema);

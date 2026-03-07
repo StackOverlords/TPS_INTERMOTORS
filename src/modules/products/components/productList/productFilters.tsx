@@ -142,6 +142,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
               optionTag={"marca"}
               enableAllOption={false}
               clearOnEmpty={true}
+              valueKey="marca"
             />
           </div>
         )}

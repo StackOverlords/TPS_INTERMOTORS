@@ -2,7 +2,12 @@ import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import type { ImportValidationResult } from "@/database/schemas/keybindings.schema";
 import type { ImportMode } from "@/keybindings";
-import { CATEGORIES, detectConflicts, getUsedKeys, useKeybindingStore } from "@/keybindings";
+import {
+  CATEGORIES,
+  detectConflicts,
+  getUsedKeys,
+  useKeybindingStore,
+} from "@/keybindings";
 import { cn } from "@/lib/utils";
 import { FileDown, FileUp, RotateCcw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -13,20 +18,21 @@ import KeybindingRow from "../keyBindingRow";
 const KeybindingsSettings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [importValidation, setImportValidation] = useState<ImportValidationResult | null>(null);
+  const [importValidation, setImportValidation] =
+    useState<ImportValidationResult | null>(null);
   const [importFileContent, setImportFileContent] = useState<string>("");
   const [importFileName, setImportFileName] = useState<string>("");
 
   // ✨ Obtener datos del store reactivo
-  const keybindings = useKeybindingStore(state => state.keybindings);
-  const loading = useKeybindingStore(state => state.loading);
-  const initialized = useKeybindingStore(state => state.initialized);
-  const load = useKeybindingStore(state => state.load);
-  const save = useKeybindingStore(state => state.save);
-  const reset = useKeybindingStore(state => state.reset);
-  const resetAll = useKeybindingStore(state => state.resetAll);
-  const exportKeybindings = useKeybindingStore(state => state.export);
-  const importKeybindings = useKeybindingStore(state => state.import);
+  const keybindings = useKeybindingStore((state) => state.keybindings);
+  const loading = useKeybindingStore((state) => state.loading);
+  const initialized = useKeybindingStore((state) => state.initialized);
+  const load = useKeybindingStore((state) => state.load);
+  const save = useKeybindingStore((state) => state.save);
+  const reset = useKeybindingStore((state) => state.reset);
+  const resetAll = useKeybindingStore((state) => state.resetAll);
+  const exportKeybindings = useKeybindingStore((state) => state.export);
+  const importKeybindings = useKeybindingStore((state) => state.import);
 
   // ✨ Cargar keybindings al montar el componente
   useEffect(() => {
@@ -53,48 +59,55 @@ const KeybindingsSettings = () => {
   });
 
   // Agrupar por categoría
-  const groupedByCategory = filteredKeybindings.reduce((acc, kb) => {
-    if (!acc[kb.category]) {
-      acc[kb.category] = [];
-    }
-    acc[kb.category].push(kb);
-    return acc;
-  }, {} as Record<string, typeof allKeybindings>);
+  const groupedByCategory = filteredKeybindings.reduce(
+    (acc, kb) => {
+      if (!acc[kb.category]) {
+        acc[kb.category] = [];
+      }
+      acc[kb.category].push(kb);
+      return acc;
+    },
+    {} as Record<string, typeof allKeybindings>
+  );
 
   // Contar keybindings personalizados
-  const customCount = allKeybindings.filter(kb => kb.isCustom).length;
+  const customCount = allKeybindings.filter((kb) => kb.isCustom).length;
 
   const handleEdit = async (id: string, keys: string) => {
     try {
       await save(id, keys);
-      toast.success('Atajo actualizado correctamente');
+      toast.success("Atajo actualizado correctamente");
     } catch (error) {
-      toast.error('Error al guardar el atajo');
-      console.error('Error saving keybinding:', error);
+      toast.error("Error al guardar el atajo");
+      console.error("Error saving keybinding:", error);
     }
   };
 
   const handleReset = async (id: string) => {
     try {
       await reset(id);
-      toast.success('Atajo restablecido');
+      toast.success("Atajo restablecido");
     } catch (error) {
-      toast.error('Error al restablecer el atajo');
-      console.error('Error resetting keybinding:', error);
+      toast.error("Error al restablecer el atajo");
+      console.error("Error resetting keybinding:", error);
     }
   };
 
   const handleResetAll = async () => {
-    if (!confirm('¿Estás seguro de restablecer todos los atajos a sus valores predeterminados?')) {
+    if (
+      !confirm(
+        "¿Estás seguro de restablecer todos los atajos a sus valores predeterminados?"
+      )
+    ) {
       return;
     }
 
     try {
       await resetAll();
-      toast.success('Todos los atajos han sido restablecidos');
+      toast.success("Todos los atajos han sido restablecidos");
     } catch (error) {
-      toast.error('Error al restablecer los atajos');
-      console.error('Error resetting all keybindings:', error);
+      toast.error("Error al restablecer los atajos");
+      console.error("Error resetting all keybindings:", error);
     }
   };
 
@@ -103,31 +116,34 @@ const KeybindingsSettings = () => {
       const json = await exportKeybindings();
 
       // Usar la API de Tauri para guardar archivos
-      const { save } = await import('@tauri-apps/plugin-dialog');
-      const { writeTextFile } = await import('@tauri-apps/plugin-fs');
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const { writeTextFile } = await import("@tauri-apps/plugin-fs");
 
-      const fileName = `keybindings-${new Date().toISOString().split('T')[0]}.json`;
+      const fileName = `keybindings-${new Date().toISOString().split("T")[0]}.json`;
 
       // Mostrar diálogo para guardar archivo
       const filePath = await save({
         defaultPath: fileName,
-        filters: [{
-          name: 'JSON',
-          extensions: ['json']
-        }]
+        filters: [
+          {
+            name: "JSON",
+            extensions: ["json"],
+          },
+        ],
       });
 
       if (filePath) {
         await writeTextFile(filePath, json);
 
-        toast.success('Atajos exportados correctamente', {
-          description: `Archivo guardado en: ${filePath}`
+        toast.success("Atajos exportados correctamente", {
+          description: `Archivo guardado en: ${filePath}`,
         });
       }
     } catch (error) {
-      console.error('Error en exportación:', error);
-      toast.error('Error al exportar', {
-        description: error instanceof Error ? error.message : 'Error desconocido'
+      console.error("Error en exportación:", error);
+      toast.error("Error al exportar", {
+        description:
+          error instanceof Error ? error.message : "Error desconocido",
       });
     }
   };
@@ -135,16 +151,18 @@ const KeybindingsSettings = () => {
   const handleImportFileSelect = async () => {
     try {
       // Usar la API de Tauri para abrir archivos
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const { readTextFile } = await import('@tauri-apps/plugin-fs');
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const { readTextFile } = await import("@tauri-apps/plugin-fs");
 
       // Mostrar diálogo para abrir archivo
       const filePath = await open({
         multiple: false,
-        filters: [{
-          name: 'JSON',
-          extensions: ['json']
-        }]
+        filters: [
+          {
+            name: "JSON",
+            extensions: ["json"],
+          },
+        ],
       });
 
       if (!filePath) return;
@@ -157,32 +175,37 @@ const KeybindingsSettings = () => {
         const data = JSON.parse(text);
         const validation: ImportValidationResult = {
           valid: !!data.keybindings,
-          errors: data.keybindings ? [] : ['Archivo inválido'],
+          errors: data.keybindings ? [] : ["Archivo inválido"],
           warnings: [],
           conflicts: [],
           summary: {
             total: data.keybindings ? Object.keys(data.keybindings).length : 0,
             new: 0,
             modified: 0,
-            unchanged: 0
-          }
+            unchanged: 0,
+          },
         };
 
         // Guardar para usar después
         setImportFileContent(text);
-        setImportFileName(typeof filePath === 'string' ? filePath.split(/[\\/]/).pop() || 'archivo.json' : 'archivo.json');
+        setImportFileName(
+          typeof filePath === "string"
+            ? filePath.split(/[\\/]/).pop() || "archivo.json"
+            : "archivo.json"
+        );
         setImportValidation(validation);
 
         // Mostrar modal de vista previa
         setImportModalOpen(true);
       } catch (parseError) {
-        toast.error('Error al leer el archivo', {
-          description: 'El archivo no contiene un JSON válido'
+        toast.error("Error al leer el archivo", {
+          description: "El archivo no contiene un JSON válido",
         });
       }
     } catch (error) {
-      toast.error('Error al leer el archivo', {
-        description: error instanceof Error ? error.message : 'El archivo no es válido'
+      toast.error("Error al leer el archivo", {
+        description:
+          error instanceof Error ? error.message : "El archivo no es válido",
       });
     }
   };
@@ -194,16 +217,19 @@ const KeybindingsSettings = () => {
       setImportModalOpen(false);
 
       const modeText =
-        mode === 'replace' ? 'reemplazados' :
-        mode === 'add-only' ? 'agregados' :
-        'combinados';
+        mode === "replace"
+          ? "reemplazados"
+          : mode === "add-only"
+            ? "agregados"
+            : "combinados";
 
-      toast.success('Atajos importados correctamente', {
-        description: `Los atajos han sido ${modeText} exitosamente`
+      toast.success("Atajos importados correctamente", {
+        description: `Los atajos han sido ${modeText} exitosamente`,
       });
     } catch (error) {
-      toast.error('Error al importar', {
-        description: error instanceof Error ? error.message : 'Error desconocido'
+      toast.error("Error al importar", {
+        description:
+          error instanceof Error ? error.message : "Error desconocido",
       });
     }
   };
@@ -211,13 +237,15 @@ const KeybindingsSettings = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-muted-foreground">Cargando atajos de teclado...</div>
+        <div className="text-sm text-muted-foreground">
+          Cargando atajos de teclado...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 bg-card p-2 rounded-lg border border-border">
+    <div className="space-y-4 bg-background p-2 rounded-lg border border-border">
       {/* Toolbar compacto */}
       <div className="flex items-center gap-2 pb-2">
         {/* Búsqueda */}
@@ -238,7 +266,9 @@ const KeybindingsSettings = () => {
             <span className="text-primary">{customCount} personalizados</span>
           )}
           {conflictsMap.size > 0 && (
-            <span className="text-destructive">{conflictsMap.size} conflictos</span>
+            <span className="text-destructive">
+              {conflictsMap.size} conflictos
+            </span>
           )}
         </div>
 
@@ -276,38 +306,40 @@ const KeybindingsSettings = () => {
 
       {/* Lista estilo tabla VSCode */}
       <div className="overflow-hidden">
-        {Object.entries(groupedByCategory).map(([category, items], categoryIndex) => (
-          <div key={category} className={cn(categoryIndex > 0 && "mt-0")}>
-            {/* Header de categoría */}
-            <div className="bg-muted/100 px-3 py-1.5 border-b border-border/50">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {CATEGORIES[category as keyof typeof CATEGORIES] || category}
-              </h3>
-            </div>
+        {Object.entries(groupedByCategory).map(
+          ([category, items], categoryIndex) => (
+            <div key={category} className={cn(categoryIndex > 0 && "mt-0")}>
+              {/* Header de categoría */}
+              <div className="bg-muted/100 px-3 py-1.5 border-b border-border/50">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {CATEGORIES[category as keyof typeof CATEGORIES] || category}
+                </h3>
+              </div>
 
-            {/* Rows */}
-            <div>
-              {items.map((kb) => {
-                const hasConflict = conflictsMap.has(kb.id);
-                const usedKeys = getUsedKeys(keybindings, kb.id);
+              {/* Rows */}
+              <div>
+                {items.map((kb) => {
+                  const hasConflict = conflictsMap.has(kb.id);
+                  const usedKeys = getUsedKeys(keybindings, kb.id);
 
-                return (
-                  <KeybindingRow
-                    key={kb.id}
-                    id={kb.id}
-                    currentKeys={kb.keys}
-                    description={kb.description}
-                    isCustom={kb.isCustom}
-                    hasConflict={hasConflict}
-                    conflictsWith={usedKeys}
-                    onEdit={handleEdit}
-                    onReset={handleReset}
-                  />
-                );
-              })}
+                  return (
+                    <KeybindingRow
+                      key={kb.id}
+                      id={kb.id}
+                      currentKeys={kb.keys}
+                      description={kb.description}
+                      isCustom={kb.isCustom}
+                      hasConflict={hasConflict}
+                      conflictsWith={usedKeys}
+                      onEdit={handleEdit}
+                      onReset={handleReset}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
 
         {filteredKeybindings.length === 0 && (
           <div className="py-12 text-center text-sm text-muted-foreground">

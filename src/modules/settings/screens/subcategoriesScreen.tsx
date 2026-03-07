@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/atoms/card";
 import { Button } from "@/components/atoms/button";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
@@ -41,6 +41,9 @@ import { formatCell } from "@/utils/formatCell";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
+
+const SCREEN_PATH = "/dashboard/settings/subcategories";
 
 const SubcategoriesScreen = () => {
   const navigate = useNavigate();
@@ -118,7 +121,7 @@ const SubcategoriesScreen = () => {
     [isRefetchingSubcategoriesData, isFetchingSubcategoriesData]
   );
 
-  useEffect(() => {
+  useTabEffect(SCREEN_PATH, () => {
     if (location.state?.openModal) {
       handleAddSubcategory();
       navigate(location.pathname, { replace: true });

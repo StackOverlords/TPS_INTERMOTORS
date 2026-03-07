@@ -271,6 +271,9 @@ function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
                 }
               }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="cantidad"
             />
           );
         },
@@ -293,6 +296,9 @@ function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
               buttonClassName="w-full"
               numberProps={{ min: 0, step: 0.01 }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="costo"
             />
           );
         },
@@ -315,6 +321,9 @@ function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
               buttonClassName="w-full"
               numberProps={{ step: 0.1 }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="inc_p_venta"
             />
           );
         },
@@ -337,6 +346,9 @@ function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
               buttonClassName="w-full"
               numberProps={{ min: 0, step: 0.01 }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="precio_venta"
             />
           );
         },
@@ -359,6 +371,9 @@ function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
               buttonClassName="w-full"
               numberProps={{ step: 0.1 }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="inc_p_venta_alt"
             />
           );
         },
@@ -384,6 +399,9 @@ function PurchaseDetailsTableInner<T extends PurchaseDetailUnion>(
               buttonClassName="w-full"
               numberProps={{ min: 0, step: 0.01 }}
               disabled={isReadOnly || isSaving}
+              disableWheel
+              disableArrowKeys
+              columnKey="precio_venta_alt"
             />
           );
         },

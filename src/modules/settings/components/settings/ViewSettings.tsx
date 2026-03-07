@@ -1,22 +1,34 @@
-import { Button } from '@/components/atoms/button';
-import { Input } from '@/components/atoms/input';
-import { Label } from '@/components/atoms/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/atoms/select';
-import { Switch } from '@/components/atoms/switch';
-import type { ViewBehaviorsConfig, ViewConfiguration, ViewFeaturesConfig } from '@/config/viewConfigTypes';
-import { useAllRouteConfigs } from '@/hooks/useAllRouteConfigs';
-import { useViewConfig } from '@/hooks/useViewConfig'; // ← CAMBIO PRINCIPAL
-import { cn } from '@/lib/utils';
-import { ChevronRight, Loader2, RotateCcw, Search } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { Button } from "@/components/atoms/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
+import { Switch } from "@/components/atoms/switch";
+import type {
+  ViewBehaviorsConfig,
+  ViewConfiguration,
+  ViewFeaturesConfig,
+} from "@/config/viewConfigTypes";
+import { useAllRouteConfigs } from "@/hooks/useAllRouteConfigs";
+import { useViewConfig } from "@/hooks/useViewConfig"; // ← CAMBIO PRINCIPAL
+import { cn } from "@/lib/utils";
+import { ChevronRight, Loader2, RotateCcw, Search } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 const ViewSettings = () => {
   const routeConfigs = useAllRouteConfigs();
   const [selectedViewId, setSelectedViewId] = useState<string | null>(
     routeConfigs[0]?.id || null
   );
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(
+    new Set()
+  );
+  const [searchQuery, setSearchQuery] = useState("");
 
   // ✅ NUEVO: Hook unificado de configuración
   const {
@@ -27,16 +39,19 @@ const ViewSettings = () => {
     updateBehavior,
     resetConfig,
     resetAllConfigs,
-  } = useViewConfig(selectedViewId || '');
+  } = useViewConfig(selectedViewId || "");
 
   // Agrupar vistas por módulo
   const viewsByModule = useMemo(() => {
-    return routeConfigs.reduce((acc, config) => {
-      const module = config.module || 'Otros';
-      if (!acc[module]) acc[module] = [];
-      acc[module].push(config);
-      return acc;
-    }, {} as Record<string, ViewConfiguration[]>);
+    return routeConfigs.reduce(
+      (acc, config) => {
+        const module = config.module || "Otros";
+        if (!acc[module]) acc[module] = [];
+        acc[module].push(config);
+        return acc;
+      },
+      {} as Record<string, ViewConfiguration[]>
+    );
   }, [routeConfigs]);
 
   // Filtrar por búsqueda
@@ -45,7 +60,7 @@ const ViewSettings = () => {
 
     const filtered: Record<string, ViewConfiguration[]> = {};
     Object.entries(viewsByModule).forEach(([module, views]) => {
-      const matchingViews = views.filter(v =>
+      const matchingViews = views.filter((v) =>
         v.name?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       if (matchingViews.length > 0) {
@@ -55,42 +70,46 @@ const ViewSettings = () => {
     return filtered;
   }, [viewsByModule, searchQuery]);
 
-  const selectedView = routeConfigs.find(v => v.id === selectedViewId);
+  const selectedView = routeConfigs.find((v) => v.id === selectedViewId);
 
   const toggleModule = (moduleName: string) => {
-    setExpandedModules(prev => {
+    setExpandedModules((prev) => {
       const newSet = new Set(prev);
-      newSet.has(moduleName) ? newSet.delete(moduleName) : newSet.add(moduleName);
+      newSet.has(moduleName)
+        ? newSet.delete(moduleName)
+        : newSet.add(moduleName);
       return newSet;
     });
   };
 
-  const handleFeatureToggle = useCallback(async (
-    featureName: keyof ViewFeaturesConfig
-  ) => {
-    if (!selectedViewId || !viewConfig) return;
+  const handleFeatureToggle = useCallback(
+    async (featureName: keyof ViewFeaturesConfig) => {
+      if (!selectedViewId || !viewConfig) return;
 
-    const currentEnabled = viewConfig.features?.[featureName]?.enabled ?? false;
-    
-    try {
-      await updateFeature(featureName, !currentEnabled);
-    } catch (error) {
-      console.error('Error updating feature:', error);
-    }
-  }, [selectedViewId, viewConfig, updateFeature]);
+      const currentEnabled =
+        viewConfig.features?.[featureName]?.enabled ?? false;
 
-  const handleBehaviorChange = useCallback(async (
-    behaviorName: keyof ViewBehaviorsConfig,
-    value: any
-  ) => {
-    if (!selectedViewId) return;
+      try {
+        await updateFeature(featureName, !currentEnabled);
+      } catch (error) {
+        console.error("Error updating feature:", error);
+      }
+    },
+    [selectedViewId, viewConfig, updateFeature]
+  );
 
-    try {
-      await updateBehavior(behaviorName, value);
-    } catch (error) {
-      console.error('Error updating behavior:', error);
-    }
-  }, [selectedViewId, updateBehavior]);
+  const handleBehaviorChange = useCallback(
+    async (behaviorName: keyof ViewBehaviorsConfig, value: any) => {
+      if (!selectedViewId) return;
+
+      try {
+        await updateBehavior(behaviorName, value);
+      } catch (error) {
+        console.error("Error updating behavior:", error);
+      }
+    },
+    [selectedViewId, updateBehavior]
+  );
 
   const handleResetView = useCallback(async () => {
     if (!selectedViewId) return;
@@ -98,7 +117,7 @@ const ViewSettings = () => {
     try {
       await resetConfig();
     } catch (error) {
-      console.error('Error resetting config:', error);
+      console.error("Error resetting config:", error);
     }
   }, [selectedViewId, resetConfig]);
 
@@ -106,22 +125,28 @@ const ViewSettings = () => {
     try {
       await resetAllConfigs();
     } catch (error) {
-      console.error('Error resetting all configs:', error);
+      console.error("Error resetting all configs:", error);
     }
   }, [resetAllConfigs]);
 
-  const getFeatureEnabled = useCallback((featureName: keyof ViewFeaturesConfig): boolean => {
-    return viewConfig?.features?.[featureName]?.enabled ?? false;
-  }, [viewConfig]);
+  const getFeatureEnabled = useCallback(
+    (featureName: keyof ViewFeaturesConfig): boolean => {
+      return viewConfig?.features?.[featureName]?.enabled ?? false;
+    },
+    [viewConfig]
+  );
 
-  const getBehaviorValue = useCallback((behaviorName: keyof ViewBehaviorsConfig): any => {
-    return viewConfig?.behaviors?.[behaviorName];
-  }, [viewConfig]);
+  const getBehaviorValue = useCallback(
+    (behaviorName: keyof ViewBehaviorsConfig): any => {
+      return viewConfig?.behaviors?.[behaviorName];
+    },
+    [viewConfig]
+  );
 
   return (
     <div className="flex gap-2 h-full rounded-lg">
       {/* LEFT SIDEBAR */}
-      <div className="w-64 flex border border-border flex-col rounded-lg bg-card overflow-hidden shadow-sm">
+      <div className="w-64 flex border border-border flex-col rounded-lg bg-background overflow-hidden shadow-sm">
         {/* Search */}
         <div className="p-2">
           <div className="relative">
@@ -150,7 +175,9 @@ const ViewSettings = () => {
                   )}
                 />
                 <span className="flex-1 text-left">{moduleName}</span>
-                <span className="text-[10px] text-muted-foreground">{views.length}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {views.length}
+                </span>
               </button>
 
               {expandedModules.has(moduleName) && (
@@ -184,14 +211,16 @@ const ViewSettings = () => {
             disabled={isUpdating}
             className="w-full h-7 text-xs gap-1.5"
           >
-            <RotateCcw className={cn("h-3 w-3", isUpdating && "animate-spin")} />
+            <RotateCcw
+              className={cn("h-3 w-3", isUpdating && "animate-spin")}
+            />
             Resetear Todo
           </Button>
         </div>
       </div>
 
       {/* RIGHT PANEL */}
-      <div className="flex-1 border border-border rounded-lg bg-card overflow-hidden flex flex-col">
+      <div className="flex-1 border border-border rounded-lg bg-background overflow-hidden flex flex-col">
         {selectedView ? (
           <>
             {/* Header */}
@@ -200,10 +229,14 @@ const ViewSettings = () => {
                 <h3 className="font-semibold text-sm">{selectedView.name}</h3>
                 {viewConfig?._sources && (
                   <p className="text-xs text-muted-foreground">
-                    {Object.values(viewConfig._sources.features || {}).some(s => s === 'user') ||
-                     Object.values(viewConfig._sources.behaviors || {}).some(s => s === 'user')
-                      ? 'Configuración personalizada'
-                      : 'Configuración por defecto'}
+                    {Object.values(viewConfig._sources.features || {}).some(
+                      (s) => s === "user"
+                    ) ||
+                    Object.values(viewConfig._sources.behaviors || {}).some(
+                      (s) => s === "user"
+                    )
+                      ? "Configuración personalizada"
+                      : "Configuración por defecto"}
                   </p>
                 )}
               </div>
@@ -214,7 +247,9 @@ const ViewSettings = () => {
                 disabled={isUpdating || isLoadingConfig}
                 className="h-7 text-xs"
               >
-                <RotateCcw className={cn("size-3", isUpdating && "animate-spin")} />
+                <RotateCcw
+                  className={cn("size-3", isUpdating && "animate-spin")}
+                />
                 Resetear
               </Button>
             </div>
@@ -228,169 +263,218 @@ const ViewSettings = () => {
               ) : (
                 <>
                   {/* Features */}
-                  {selectedView.features && Object.keys(selectedView.features).length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Funcionalidades
-                      </h4>
+                  {selectedView.features &&
+                    Object.keys(selectedView.features).length > 0 && (
                       <div className="space-y-2">
-                        {Object.entries(selectedView.features).map(([key, feature]) => {
-                          if (!feature) return null;
-                          const featureKey = key as keyof ViewFeaturesConfig;
-                          const isEnabled = getFeatureEnabled(featureKey);
-                          const source = viewConfig?._sources?.features?.[key];
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Funcionalidades
+                        </h4>
+                        <div className="space-y-2">
+                          {Object.entries(selectedView.features).map(
+                            ([key, feature]) => {
+                              if (!feature) return null;
+                              const featureKey =
+                                key as keyof ViewFeaturesConfig;
+                              const isEnabled = getFeatureEnabled(featureKey);
+                              const source =
+                                viewConfig?._sources?.features?.[key];
 
-                          return (
-                            <div
-                              key={key}
-                              className="flex items-center justify-between p-2 rounded hover:bg-accent transition-colors border border-transparent hover:border-border"
-                            >
-                              <div className="flex-1 pr-3">
-                                <div className="flex items-center gap-2">
-                                  <Label
-                                    htmlFor={`${selectedView.id}-${key}`}
-                                    className="text-sm font-semibold cursor-pointer text-foreground"
-                                  >
-                                    {feature.label}
-                                  </Label>
-                                  {source === 'user' && (
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded">
-                                      Personalizado
-                                    </span>
-                                  )}
+                              return (
+                                <div
+                                  key={key}
+                                  className="flex items-center justify-between p-2 rounded hover:bg-accent transition-colors border border-transparent hover:border-border"
+                                >
+                                  <div className="flex-1 pr-3">
+                                    <div className="flex items-center gap-2">
+                                      <Label
+                                        htmlFor={`${selectedView.id}-${key}`}
+                                        className="text-sm font-semibold cursor-pointer text-foreground"
+                                      >
+                                        {feature.label}
+                                      </Label>
+                                      {source === "user" && (
+                                        <span className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded">
+                                          Personalizado
+                                        </span>
+                                      )}
+                                    </div>
+                                    {feature.description && (
+                                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                                        {feature.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Switch
+                                    id={`${selectedView.id}-${key}`}
+                                    checked={isEnabled}
+                                    disabled={isUpdating}
+                                    onCheckedChange={() =>
+                                      handleFeatureToggle(featureKey)
+                                    }
+                                  />
                                 </div>
-                                {feature.description && (
-                                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                                    {feature.description}
-                                  </p>
-                                )}
-                              </div>
-                              <Switch
-                                id={`${selectedView.id}-${key}`}
-                                checked={isEnabled}
-                                disabled={isUpdating}
-                                onCheckedChange={() => handleFeatureToggle(featureKey)}
-                              />
-                            </div>
-                          );
-                        })}
+                              );
+                            }
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Behaviors */}
-                  {selectedView.behaviors && Object.keys(selectedView.behaviors).length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Comportamientos
-                      </h4>
+                  {selectedView.behaviors &&
+                    Object.keys(selectedView.behaviors).length > 0 && (
                       <div className="space-y-2">
-                        {selectedView.behaviors.productSelectorMode !== undefined && (
-                          <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-semibold text-foreground">Modo Selector de Productos</Label>
-                            <Select
-                              value={getBehaviorValue('productSelectorMode')}
-                              onValueChange={(value) =>
-                                handleBehaviorChange('productSelectorMode', value)
-                              }
-                              disabled={isUpdating}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="embedded">Integrado</SelectItem>
-                                <SelectItem value="modal">Modal</SelectItem>
-                                <SelectItem value="window">Ventana</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Comportamientos
+                        </h4>
+                        <div className="space-y-2">
+                          {selectedView.behaviors.productSelectorMode !==
+                            undefined && (
+                            <div className="space-y-1.5 p-2 border border-border rounded">
+                              <Label className="text-xs font-semibold text-foreground">
+                                Modo Selector de Productos
+                              </Label>
+                              <Select
+                                value={getBehaviorValue("productSelectorMode")}
+                                onValueChange={(value) =>
+                                  handleBehaviorChange(
+                                    "productSelectorMode",
+                                    value
+                                  )
+                                }
+                                disabled={isUpdating}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="embedded">
+                                    Integrado
+                                  </SelectItem>
+                                  <SelectItem value="modal">Modal</SelectItem>
+                                  <SelectItem value="window">
+                                    Ventana
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
-                        {selectedView.behaviors.openDetailsIn !== undefined && (
-                          <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-semibold text-foreground">Abrir Detalles En</Label>
-                            <Select
-                              value={getBehaviorValue('openDetailsIn')}
-                              onValueChange={(value) =>
-                                handleBehaviorChange('openDetailsIn', value)
-                              }
-                              disabled={isUpdating}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="same-page">Misma Página</SelectItem>
-                                <SelectItem value="new-tab">Nueva Pestaña</SelectItem>
-                                <SelectItem value="modal">Modal</SelectItem>
-                                <SelectItem value="window">Ventana</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                          {selectedView.behaviors.openDetailsIn !==
+                            undefined && (
+                            <div className="space-y-1.5 p-2 border border-border rounded">
+                              <Label className="text-xs font-semibold text-foreground">
+                                Abrir Detalles En
+                              </Label>
+                              <Select
+                                value={getBehaviorValue("openDetailsIn")}
+                                onValueChange={(value) =>
+                                  handleBehaviorChange("openDetailsIn", value)
+                                }
+                                disabled={isUpdating}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="same-page">
+                                    Misma Página
+                                  </SelectItem>
+                                  <SelectItem value="new-tab">
+                                    Nueva Pestaña
+                                  </SelectItem>
+                                  <SelectItem value="modal">Modal</SelectItem>
+                                  <SelectItem value="window">
+                                    Ventana
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
-                        {selectedView.behaviors.persistFilters !== undefined && (
-                          <div className="flex items-center justify-between p-2 border border-border rounded">
-                            <Label className="text-xs font-semibold text-foreground">Guardar Filtros</Label>
-                            <Switch
-                              checked={getBehaviorValue('persistFilters')}
-                              disabled={isUpdating}
-                              onCheckedChange={(checked) =>
-                                handleBehaviorChange('persistFilters', checked)
-                              }
-                            />
-                          </div>
-                        )}
+                          {selectedView.behaviors.persistFilters !==
+                            undefined && (
+                            <div className="flex items-center justify-between p-2 border border-border rounded">
+                              <Label className="text-xs font-semibold text-foreground">
+                                Guardar Filtros
+                              </Label>
+                              <Switch
+                                checked={getBehaviorValue("persistFilters")}
+                                disabled={isUpdating}
+                                onCheckedChange={(checked) =>
+                                  handleBehaviorChange(
+                                    "persistFilters",
+                                    checked
+                                  )
+                                }
+                              />
+                            </div>
+                          )}
 
-                        {selectedView.behaviors.defaultRowsPerPage !== undefined && (
-                          <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-semibold text-foreground">Filas por Página</Label>
-                            <Select
-                              value={String(getBehaviorValue('defaultRowsPerPage'))}
-                              onValueChange={(value) =>
-                                handleBehaviorChange('defaultRowsPerPage', Number(value))
-                              }
-                              disabled={isUpdating}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="10">10</SelectItem>
-                                <SelectItem value="15">15</SelectItem>
-                                <SelectItem value="20">20</SelectItem>
-                                <SelectItem value="25">25</SelectItem>
-                                <SelectItem value="50">50</SelectItem>
-                                <SelectItem value="100">100</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                          {selectedView.behaviors.defaultRowsPerPage !==
+                            undefined && (
+                            <div className="space-y-1.5 p-2 border border-border rounded">
+                              <Label className="text-xs font-semibold text-foreground">
+                                Filas por Página
+                              </Label>
+                              <Select
+                                value={String(
+                                  getBehaviorValue("defaultRowsPerPage")
+                                )}
+                                onValueChange={(value) =>
+                                  handleBehaviorChange(
+                                    "defaultRowsPerPage",
+                                    Number(value)
+                                  )
+                                }
+                                disabled={isUpdating}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="10">10</SelectItem>
+                                  <SelectItem value="15">15</SelectItem>
+                                  <SelectItem value="20">20</SelectItem>
+                                  <SelectItem value="25">25</SelectItem>
+                                  <SelectItem value="50">50</SelectItem>
+                                  <SelectItem value="100">100</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
-                        {selectedView.behaviors.defaultSearchMode !== undefined && (
-                          <div className="space-y-1.5 p-2 border border-border rounded">
-                            <Label className="text-xs font-semibold text-foreground">Modo de Búsqueda</Label>
-                            <Select
-                              value={getBehaviorValue('defaultSearchMode')}
-                              onValueChange={(value) =>
-                                handleBehaviorChange('defaultSearchMode', value)
-                              }
-                              disabled={isUpdating}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="realtime">Tiempo Real</SelectItem>
-                                <SelectItem value="manual">Manual</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                          {selectedView.behaviors.defaultSearchMode !==
+                            undefined && (
+                            <div className="space-y-1.5 p-2 border border-border rounded">
+                              <Label className="text-xs font-semibold text-foreground">
+                                Modo de Búsqueda
+                              </Label>
+                              <Select
+                                value={getBehaviorValue("defaultSearchMode")}
+                                onValueChange={(value) =>
+                                  handleBehaviorChange(
+                                    "defaultSearchMode",
+                                    value
+                                  )
+                                }
+                                disabled={isUpdating}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="realtime">
+                                    Tiempo Real
+                                  </SelectItem>
+                                  <SelectItem value="manual">Manual</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </>
               )}
             </div>

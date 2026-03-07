@@ -85,6 +85,14 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
     }
   };
 
+  // Handler para cuando el year/month picker actualiza la fecha seleccionada
+  const handleSelectDate = (date: Date) => {
+    date.setHours(0, 0, 0, 0);
+    onChange(date);
+    // Sync the display month to the new date
+    setDisplayMonth(date);
+  };
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -96,7 +104,8 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
           className={cn(
             "w-full justify-between text-left font-normal px-2",
             !value && "text-muted-foreground",
-            hasError && "border-destructive focus:border-destructive focus:ring-destructive",
+            hasError &&
+              "border-destructive focus:border-destructive focus:ring-destructive",
             className
           )}
         >
@@ -133,6 +142,7 @@ const PopoverDatePicker: React.FC<PopoverDatePickerProps> = ({
             setIsOpen(false);
           }}
           onTodayClick={selectToday}
+          onSelectDate={handleSelectDate}
           month={displayMonth}
           onMonthChange={setDisplayMonth}
           disabled={disabled}

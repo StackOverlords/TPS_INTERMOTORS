@@ -44,6 +44,7 @@ import { useBrandFilters } from "../hooks/brand/useBrandFilters";
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
+import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 
 const BRANDS_DIALOG_CONFIG: DialogConfig = {
   title: "Marca",
@@ -54,6 +55,7 @@ const BRANDS_DIALOG_CONFIG: DialogConfig = {
     placeholder: "Ingresa el nombre de la marca...",
     required: true,
   },
+  screen_path: "/dashboard/settings/brands",
 };
 
 const BrandsScreen = () => {
@@ -151,12 +153,16 @@ const BrandsScreen = () => {
     [isRefetchingBrandsData, isFetchingBrandsData]
   );
 
-  useEffect(() => {
-    if (location.state?.openModal) {
-      handleAddBrand();
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location, navigate]);
+  useTabEffect(
+    BRANDS_DIALOG_CONFIG.screen_path,
+    () => {
+      if (location.state?.openModal) {
+        handleAddBrand();
+        navigate(location.pathname, { replace: true });
+      }
+    },
+    [location, navigate]
+  );
 
   useEffect(() => {
     if (brandById && isEditing) {
