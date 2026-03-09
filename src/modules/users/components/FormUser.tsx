@@ -56,7 +56,7 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
           apellido_p: "",
           apellido_m: "",
           sexo: "M",
-          dni: 0,
+          dni: undefined as unknown as number,
           dni_comp: "",
           dni_tipo: "DNI",
           telefono: "",
@@ -289,13 +289,16 @@ const FormUser: React.FC<FormUserProps> = ({ mode, userId, defaultValues }) => {
               control={control}
               render={({ field }) => (
                 <Input
+                  id="dni"
                   type="number"
                   autoSelectOnFocus={true}
-                  {...field}
+                  value={field.value === undefined ? "" : field.value}
                   onChange={(e) =>
-                    field.onChange(parseInt(e.target.value) || 0)
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
                   }
-                  placeholder="12345678"
+                  placeholder="Número de documento"
                   className={getInputClassName("dni")}
                 />
               )}

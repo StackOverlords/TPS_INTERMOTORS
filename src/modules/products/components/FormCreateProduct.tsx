@@ -43,10 +43,10 @@ const FormCreateProduct: React.FC = () => {
       modelo: "",
       medida: "",
       nro_motor: "",
-      costo_referencia: 0,
-      stock_minimo: 0,
-      precio_venta: 0,
-      precio_venta_alt: 0,
+      costo_referencia: undefined as unknown as number,
+      stock_minimo: undefined as unknown as number,
+      precio_venta: undefined as unknown as number,
+      precio_venta_alt: undefined as unknown as number,
       id_marca: 0,
       id_procedencia: 0,
       id_marca_vehiculo: 0,
@@ -426,12 +426,14 @@ const FormCreateProduct: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <Input
+                  id="stock_minimo"
                   type="number"
                   autoSelectOnFocus={true}
-                  min={0}
-                  {...field}
+                  value={field.value === undefined ? "" : field.value}
                   onChange={(e) =>
-                    field.onChange(parseInt(e.target.value) || 0)
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
                   }
                   placeholder="0"
                   className={getInputClassName("stock_minimo")}
@@ -454,12 +456,15 @@ const FormCreateProduct: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <Input
+                  id="costo_referencia"
                   type="number"
                   autoSelectOnFocus={true}
                   step="0.01"
-                  {...field}
+                  value={field.value === undefined ? "" : field.value}
                   onChange={(e) =>
-                    field.onChange(parseFloat(e.target.value) || 0)
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
                   }
                   placeholder="0.00"
                   className={getInputClassName("costo_referencia")}
@@ -482,13 +487,15 @@ const FormCreateProduct: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <Input
+                  id="precio_venta"
                   type="number"
                   autoSelectOnFocus={true}
                   step="0.01"
-                  min={0}
-                  {...field}
+                  value={field.value === undefined ? "" : field.value}
                   onChange={(e) =>
-                    field.onChange(parseFloat(e.target.value) || 0)
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
                   }
                   placeholder="0.00"
                   className={getInputClassName("precio_venta")}
@@ -512,11 +519,14 @@ const FormCreateProduct: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <Input
+                  id="precio_venta_alt"
                   type="number"
                   autoSelectOnFocus={true}
-                  {...field}
+                  value={field.value === undefined ? "" : field.value}
                   onChange={(e) =>
-                    field.onChange(parseFloat(e.target.value) || 0)
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
                   }
                   placeholder="0"
                   className={getInputClassName("precio_venta_alt")}
