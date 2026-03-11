@@ -34,6 +34,9 @@ type Model struct {
 	newVersion version.Version
 	bumpCursor int // 0=patch, 1=minor, 2=major
 
+	// Modo
+	bumpOnlyMode bool // true = solo bump + commit + push branch, sin tags
+
 	// Ejecución
 	executing     bool
 	steps         []StepState
@@ -232,6 +235,10 @@ func (m Model) updateDashboard(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
 		case "n":
+			m.bumpOnlyMode = false
+			m.state = StateBumpSelect
+		case "b":
+			m.bumpOnlyMode = true
 			m.state = StateBumpSelect
 		case "q", "ctrl+c":
 			return m, tea.Quit
@@ -270,6 +277,15 @@ func (m Model) updateBumpSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.steps[6].Label = fmt.Sprintf("git tag %s", t2)
 			m.steps[8].Label = fmt.Sprintf("git push origin %s", t1)
 			m.steps[9].Label = fmt.Sprintf("git push origin %s", t2)
+			// en bump-only: marcar pasos de tags como skipped
+			if m.bumpOnlyMode {
+				for i := range m.steps {
+					switch m.steps[i].Step {
+					case StepGitTagT1, StepGitTagT2, StepGitPushT1, StepGitPushT2:
+						m.steps[i].Status = StepSkipped
+					}
+				}
+			}
 			m.state = StateConfirm
 		case "esc", "q":
 			m.state = StateDashboard

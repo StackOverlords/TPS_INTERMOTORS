@@ -60,7 +60,7 @@ func viewDashboard(m Model) string {
 	}
 
 	// Keybindings
-	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[q]") + " Salir\n")
+	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[q]") + " Salir\n")
 
 	return b.String()
 }
@@ -118,12 +118,14 @@ func viewBumpSelect(m Model) string {
 
 func viewConfirm(m Model) string {
 	newVer := m.newVersion
-	t1 := newVer.Tag("t1")
-	t2 := newVer.Tag("t2")
 
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("  Preview del release %s\n", StyleKey.Render("v"+newVer.String())))
+	if m.bumpOnlyMode {
+		b.WriteString(fmt.Sprintf("  Preview del bump %s\n", StyleKey.Render("v"+newVer.String())))
+	} else {
+		b.WriteString(fmt.Sprintf("  Preview del release %s\n", StyleKey.Render("v"+newVer.String())))
+	}
 	b.WriteString("  " + strings.Repeat("─", 44) + "\n\n")
 
 	b.WriteString("  Archivos que se modificarán:\n")
@@ -137,9 +139,15 @@ func viewConfirm(m Model) string {
 	b.WriteString("\n  Commit:\n")
 	b.WriteString(fmt.Sprintf("    %s\n", StyleKey.Render(fmt.Sprintf("chore(release): bump version to %s", newVer.String()))))
 
-	b.WriteString("\n  Tags:\n")
-	b.WriteString(fmt.Sprintf("    %s\n", StyleSuccess.Render(t1)))
-	b.WriteString(fmt.Sprintf("    %s\n", StyleSuccess.Render(t2)))
+	if !m.bumpOnlyMode {
+		t1 := newVer.Tag("t1")
+		t2 := newVer.Tag("t2")
+		b.WriteString("\n  Tags:\n")
+		b.WriteString(fmt.Sprintf("    %s\n", StyleSuccess.Render(t1)))
+		b.WriteString(fmt.Sprintf("    %s\n", StyleSuccess.Render(t2)))
+	} else {
+		b.WriteString("\n  " + StyleWarning.Render("Tags NO se crearán — solo bump y push del branch.") + "\n")
+	}
 
 	b.WriteString("\n")
 	b.WriteString("  " + StyleKey.Render("[y]") + " Confirmar    " + StyleKey.Render("[n / Esc]") + " Cancelar\n")
@@ -202,18 +210,29 @@ func viewSuccess(m Model) string {
 	var b strings.Builder
 	b.WriteString("\n")
 
+	label := fmt.Sprintf("✓  Release v%s completado", m.newVersion.String())
+	if m.bumpOnlyMode {
+		label = fmt.Sprintf("✓  Bump v%s completado", m.newVersion.String())
+	}
+
 	successBox := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(ColorSuccess).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(ColorSuccess).
 		Padding(0, 2).
-		Render(fmt.Sprintf("✓  Release v%s completado", m.newVersion.String()))
+		Render(label)
 
 	b.WriteString("  " + successBox + "\n\n")
-	b.WriteString(fmt.Sprintf("  Tags pusheados: %s / %s\n",
-		StyleSuccess.Render(m.newVersion.Tag("t1")),
-		StyleSuccess.Render(m.newVersion.Tag("t2"))))
+
+	if m.bumpOnlyMode {
+		b.WriteString("  " + StyleWarning.Render("Tags pendientes — cuando estés listo, corré tps-release [n] para crear los tags.") + "\n")
+	} else {
+		b.WriteString(fmt.Sprintf("  Tags pusheados: %s / %s\n",
+			StyleSuccess.Render(m.newVersion.Tag("t1")),
+			StyleSuccess.Render(m.newVersion.Tag("t2"))))
+	}
+
 	b.WriteString(fmt.Sprintf("  Commit: %s\n",
 		StyleKey.Render(fmt.Sprintf("chore(release): bump version to %s", m.newVersion.String()))))
 	if m.commitSHA != "" {
