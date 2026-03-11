@@ -36,6 +36,7 @@ type Model struct {
 
 	// Modo
 	bumpOnlyMode bool // true = solo bump + commit + push branch, sin tags
+	noBump       bool // true = no bump adicional, solo crear tags de la versión actual
 
 	// Ejecución
 	executing     bool
@@ -258,6 +259,13 @@ func (m Model) updateOutOfSync(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateBumpSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// En modo release completo hay 4 opciones (0=actual, 1=patch, 2=minor, 3=major)
+	// En modo bump-only hay 3 opciones (0=patch, 1=minor, 2=major)
+	maxCursor := 2
+	if !m.bumpOnlyMode {
+		maxCursor = 3
+	}
+
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
 		case "up", "k":
@@ -265,29 +273,53 @@ func (m Model) updateBumpSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.bumpCursor--
 			}
 		case "down", "j":
-			if m.bumpCursor < 2 {
+			if m.bumpCursor < maxCursor {
 				m.bumpCursor++
 			}
 		case "enter":
-			m.newVersion = m.versions.Current.Bump(version.BumpType(m.bumpCursor))
-			// actualizar labels de steps con versión concreta
+			// Resetear steps al estado inicial antes de aplicar flags
+			m.steps = initSteps()
+
+			if !m.bumpOnlyMode && m.bumpCursor == 0 {
+				// Opción "sin bump adicional" — release de la versión actual
+				m.noBump = true
+				m.newVersion = m.versions.Current
+				for i := range m.steps {
+					switch m.steps[i].Step {
+					case StepWritePackageJSON, StepWriteTauriConf, StepWriteCargoToml, StepGitAdd, StepGitCommit:
+						m.steps[i].Status = StepSkipped
+					}
+				}
+			} else {
+				m.noBump = false
+				// Mapear cursor a BumpType
+				var bt version.BumpType
+				if m.bumpOnlyMode {
+					bt = version.BumpType(m.bumpCursor) // 0=patch, 1=minor, 2=major
+				} else {
+					bt = version.BumpType(m.bumpCursor - 1) // 1=patch, 2=minor, 3=major
+				}
+				m.newVersion = m.versions.Current.Bump(bt)
+				if m.bumpOnlyMode {
+					for i := range m.steps {
+						switch m.steps[i].Step {
+						case StepGitTagT1, StepGitTagT2, StepGitPushT1, StepGitPushT2:
+							m.steps[i].Status = StepSkipped
+						}
+					}
+				}
+			}
+
+			// Actualizar labels con la versión concreta
 			t1 := m.newVersion.Tag("t1")
 			t2 := m.newVersion.Tag("t2")
 			m.steps[5].Label = fmt.Sprintf("git tag %s", t1)
 			m.steps[6].Label = fmt.Sprintf("git tag %s", t2)
 			m.steps[8].Label = fmt.Sprintf("git push origin %s", t1)
 			m.steps[9].Label = fmt.Sprintf("git push origin %s", t2)
-			// en bump-only: marcar pasos de tags como skipped
-			if m.bumpOnlyMode {
-				for i := range m.steps {
-					switch m.steps[i].Step {
-					case StepGitTagT1, StepGitTagT2, StepGitPushT1, StepGitPushT2:
-						m.steps[i].Status = StepSkipped
-					}
-				}
-			}
 			m.state = StateConfirm
 		case "esc", "q":
+			m.bumpCursor = 0
 			m.state = StateDashboard
 		}
 	}
