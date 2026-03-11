@@ -298,6 +298,11 @@ func (m Model) updateConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
 		case "y":
+			if m.bumpOnlyMode {
+				m.state = StateProgress
+				m.executing = true
+				return m, startExecutionCmd(m)
+			}
 			m.state = StateReleaseNotes
 		case "n", "esc", "q":
 			return m, tea.Quit
