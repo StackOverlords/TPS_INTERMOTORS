@@ -18,4 +18,5 @@ export default interface RouteType {
     showInCommandPalette?: boolean;
 
     viewConfig?: ViewConfiguration;
+    keepAlive?: boolean;
 }

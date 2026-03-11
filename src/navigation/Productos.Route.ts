@@ -35,7 +35,7 @@ const productosProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: BoxIcon,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: true,
       },
@@ -70,6 +70,7 @@ const productosProtectedRoutes: RouteType[] = [
         element: ProductEditScreen,
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        keepAlive: true,
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false,
