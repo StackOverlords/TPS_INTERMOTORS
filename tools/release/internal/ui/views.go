@@ -80,13 +80,25 @@ func viewOutOfSync(m Model) string {
 
 func viewBumpSelect(m Model) string {
 	current := m.versions.Current
-	options := []struct {
-		label, desc string
-		bump        version.BumpType
-	}{
-		{"patch", "bug fixes, hotfixes", version.BumpPatch},
-		{"minor", "features nuevas, no breaking", version.BumpMinor},
-		{"major", "breaking changes", version.BumpMajor},
+
+	type option struct {
+		label, ver, desc string
+	}
+
+	var options []option
+	if !m.bumpOnlyMode {
+		options = []option{
+			{"actual", current.String(), "release sin bump adicional"},
+			{"patch", current.Bump(version.BumpPatch).String(), "bug fixes, hotfixes"},
+			{"minor", current.Bump(version.BumpMinor).String(), "features nuevas, no breaking"},
+			{"major", current.Bump(version.BumpMajor).String(), "breaking changes"},
+		}
+	} else {
+		options = []option{
+			{"patch", current.Bump(version.BumpPatch).String(), "bug fixes, hotfixes"},
+			{"minor", current.Bump(version.BumpMinor).String(), "features nuevas, no breaking"},
+			{"major", current.Bump(version.BumpMajor).String(), "breaking changes"},
+		}
 	}
 
 	var b strings.Builder
@@ -95,15 +107,14 @@ func viewBumpSelect(m Model) string {
 	b.WriteString("  Seleccioná el tipo de bump:\n\n")
 
 	for i, opt := range options {
-		newVer := current.Bump(opt.bump)
 		cursor := "  "
 		line := ""
 		if i == m.bumpCursor {
 			cursor = StyleSelected.Render("> ")
-			line = StyleSelected.Render(fmt.Sprintf("[●] %-7s → %s", opt.label, newVer.String())) +
+			line = StyleSelected.Render(fmt.Sprintf("[●] %-7s → %s", opt.label, opt.ver)) +
 				"  " + StyleMuted.Render("("+opt.desc+")")
 		} else {
-			line = fmt.Sprintf("    [○] %-7s → %s", opt.label, newVer.String()) +
+			line = fmt.Sprintf("    [○] %-7s → %s", opt.label, opt.ver) +
 				"  " + StyleMuted.Render("("+opt.desc+")")
 		}
 		b.WriteString(cursor + line + "\n")
@@ -128,16 +139,19 @@ func viewConfirm(m Model) string {
 	}
 	b.WriteString("  " + strings.Repeat("─", 44) + "\n\n")
 
-	b.WriteString("  Archivos que se modificarán:\n")
-	b.WriteString(fmt.Sprintf("    package.json               %s → %s\n",
-		StyleMuted.Render(m.versions.Current.String()), StyleSuccess.Render(newVer.String())))
-	b.WriteString(fmt.Sprintf("    src-tauri/tauri.conf.json  %s → %s\n",
-		StyleMuted.Render(m.versions.Current.String()), StyleSuccess.Render(newVer.String())))
-	b.WriteString(fmt.Sprintf("    src-tauri/Cargo.toml       %s → %s\n",
-		StyleMuted.Render(m.versions.Current.String()), StyleSuccess.Render(newVer.String())))
-
-	b.WriteString("\n  Commit:\n")
-	b.WriteString(fmt.Sprintf("    %s\n", StyleKey.Render(fmt.Sprintf("chore(release): bump version to %s", newVer.String()))))
+	if m.noBump {
+		b.WriteString("  " + StyleWarning.Render("Sin bump adicional — se usan los archivos tal como están.") + "\n")
+	} else {
+		b.WriteString("  Archivos que se modificarán:\n")
+		b.WriteString(fmt.Sprintf("    package.json               %s → %s\n",
+			StyleMuted.Render(m.versions.Current.String()), StyleSuccess.Render(newVer.String())))
+		b.WriteString(fmt.Sprintf("    src-tauri/tauri.conf.json  %s → %s\n",
+			StyleMuted.Render(m.versions.Current.String()), StyleSuccess.Render(newVer.String())))
+		b.WriteString(fmt.Sprintf("    src-tauri/Cargo.toml       %s → %s\n",
+			StyleMuted.Render(m.versions.Current.String()), StyleSuccess.Render(newVer.String())))
+		b.WriteString("\n  Commit:\n")
+		b.WriteString(fmt.Sprintf("    %s\n", StyleKey.Render(fmt.Sprintf("chore(release): bump version to %s", newVer.String()))))
+	}
 
 	if !m.bumpOnlyMode {
 		t1 := newVer.Tag("t1")
