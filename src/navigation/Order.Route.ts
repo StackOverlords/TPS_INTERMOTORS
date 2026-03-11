@@ -24,7 +24,7 @@ const ordersProtectedRoutes: RouteType[] = [
                 isAdmin: true,
                 role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
                 icon: ShoppingBag,
-
+                keepAlive: true,
                 isHeader: false,
                 showSidebar: true
             },
@@ -59,6 +59,7 @@ const ordersProtectedRoutes: RouteType[] = [
                 element: OrderEditScreen,
                 isAdmin: true,
                 role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+                keepAlive: true,
                 isHeader: false,
                 showSidebar: false,
                 showInCommandPalette: false

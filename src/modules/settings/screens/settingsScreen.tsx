@@ -7,7 +7,7 @@ import {
 } from "@/components/atoms/card";
 import {
   // Bell,
-  // Code,
+  Code,
   Database,
   Eye,
   HardDrive,
@@ -20,7 +20,7 @@ import {
   // Shield,
 } from "lucide-react";
 import { useState } from "react";
-// import AdvancedSettings from '../components/settings/AdvancedSettings';
+import AdvancedSettings from '../components/settings/AdvancedSettings';
 import AppearanceSettings from "../components/settings/AppearanceSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 // import IntegrationSettings from '../components/settings/IntegrationSettings';
@@ -116,14 +116,14 @@ const settingsSections: SettingsSection[] = [
   //   component: NotificationSettings,
   //   stickyHeader: false,
   // },
-  // {
-  //   id: 'advanced',
-  //   label: 'Avanzado',
-  //   icon: Code,
-  //   description: 'Configuraciones avanzadas',
-  //   component: AdvancedSettings,
-  //   stickyHeader: false,
-  // },
+  {
+    id: 'advanced',
+    label: 'Avanzado',
+    icon: Code,
+    description: 'Configuraciones avanzadas del sistema',
+    component: AdvancedSettings,
+    stickyHeader: false,
+  },
   {
     id: "updates",
     label: "Actualizaciones",

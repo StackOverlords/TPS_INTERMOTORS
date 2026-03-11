@@ -24,7 +24,7 @@ const returnsProtectedRoutes: RouteType[] = [
                 isAdmin: true,
                 role: ["Administrador", "Vendedor", "Super Admin","Invitado"],
                 icon: CirclePlus,
-
+                keepAlive: true,
                 isHeader: false,
                 showSidebar: true
             },
@@ -59,6 +59,7 @@ const returnsProtectedRoutes: RouteType[] = [
                 element: ReturnEditScreen,
                 isAdmin: true,
                 role: ["Administrador", "Vendedor", "Super Admin","Invitado"],
+                keepAlive: true,
                 isHeader: false,
                 showSidebar: false,
                 showInCommandPalette: false

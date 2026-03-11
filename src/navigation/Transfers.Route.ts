@@ -39,7 +39,7 @@ const transfersProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Super Admin", "Invitado"],
         icon: Shuffle,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: true
       },
@@ -63,6 +63,7 @@ const transfersProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Super Admin", "Invitado"],
         icon: Pencil,
+        keepAlive: true,
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false

@@ -1,8 +1,8 @@
-import { TABS_CONFIG } from "@/config/tabsConfig";
 import NotFound from "@/modules/shared/screens/NotFound";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import { useTabStore } from "@/states/tabStore";
+import { useTabsConfigStore } from "@/stores/tabsConfigStore";
 import React, { useMemo, useRef } from "react";
 import { matchPath } from "react-router";
 import TabContent from "./TabContent";
@@ -63,8 +63,8 @@ const TabContainer: React.FC = () => {
   }, [flatRoutes]);
 
   // KEEP-ALIVE INTELIGENTE: Mantener tabs visitadas en memoria
-  // Límite de tabs en memoria (configurable en src/config/tabsConfig.ts)
-  const MAX_MOUNTED_TABS = TABS_CONFIG.MAX_MOUNTED_TABS;
+  // Límite configurable desde Settings > Avanzado
+  const MAX_MOUNTED_TABS = useTabsConfigStore((state) => state.maxMountedTabs);
 
   // Agregar tab activo a las montadas
   if (activeTabId && !mountedTabsRef.current.has(activeTabId)) {
@@ -80,13 +80,17 @@ const TabContainer: React.FC = () => {
   });
 
   // Si excedemos el límite, remover las tabs más antiguas (LRU - Least Recently Used)
+  // Las tabs keepAlive (formularios) nunca se desmontan — son inmunes al LRU
   if (mountedTabsRef.current.size > MAX_MOUNTED_TABS) {
     const mountedArray = Array.from(mountedTabsRef.current);
-    const toRemove = mountedArray.slice(
-      0,
-      mountedArray.length - MAX_MOUNTED_TABS
-    );
-    toRemove.forEach((tabId) => mountedTabsRef.current.delete(tabId));
+    const evictable = mountedArray.filter((tabId) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab) return true;
+      const route = findMatchingRoute(tab.path);
+      return !route?.keepAlive;
+    });
+    const excess = mountedTabsRef.current.size - MAX_MOUNTED_TABS;
+    evictable.slice(0, excess).forEach((tabId) => mountedTabsRef.current.delete(tabId));
   }
 
   // Obtener componentes de todas las tabs que deben estar montadas

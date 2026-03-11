@@ -34,7 +34,7 @@ const salesProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: ShoppingBag,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: true,
       },
@@ -101,6 +101,7 @@ const salesProtectedRoutes: RouteType[] = [
         element: SaleEditScreen,
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        keepAlive: true,
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false,

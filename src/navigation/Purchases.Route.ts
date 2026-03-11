@@ -24,7 +24,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: ShoppingBag,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: true
       },
@@ -61,7 +61,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador","Vendedor","Super Admin","Invitado"],
         icon: Package,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: false
       },
