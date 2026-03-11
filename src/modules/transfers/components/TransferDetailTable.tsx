@@ -114,11 +114,18 @@ function TransferDetailTableInner(
   // Exponer método focusFirstQuantityInput
   useImperativeHandle(ref, () => ({
     focusFirstQuantityInput: () => {
-      // Iniciar edición en la primera celda de cantidad del último producto agregado
       if (details.length > 0) {
-        const lastRowIndex = details.length - 1;
         setTimeout(() => {
-          startEdit(lastRowIndex, "cantidad_entrada_salida");
+          const inputs = Array.from(
+            document.querySelectorAll<HTMLInputElement>(
+              'input[data-column="cantidad_entrada_salida"]'
+            )
+          ).filter((el) => el.offsetParent !== null);
+          const lastInput = inputs[inputs.length - 1];
+          if (lastInput) {
+            lastInput.focus();
+            lastInput.select();
+          }
         }, 0);
       }
     },
