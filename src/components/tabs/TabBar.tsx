@@ -3,6 +3,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/atoms/context-menu";
 import {
@@ -36,21 +37,105 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import * as Tabs from "@radix-ui/react-tabs";
-import { X, ChevronDown, Check, Plus } from "lucide-react";
-import React, { useCallback, useState } from "react";
+import { X, ChevronDown, Check, Plus, Pin, PinOff } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCommand } from "@/keybindings";
 
 interface TabBarProps {
   className?: string;
   onCloseTab?: (tabId: string) => void;
-  /**
-   * Si es true, muestra estado vacío cuando no hay tabs
-   * Si es false, se oculta completamente cuando tabs.length === 0
-   * @default false
-   */
   alwaysVisible?: boolean;
 }
+
+// ─── Pinned Tab Item ──────────────────────────────────────────────────────────
+
+const PinnedTabItem = React.memo(
+  ({
+    tab,
+    isActive,
+    onTabClick,
+    onUnpin,
+    onCloseOthers,
+    onCloseAll,
+  }: {
+    tab: Tab;
+    isActive: boolean;
+    onTabClick: (tab: Tab) => void;
+    onUnpin: (tabId: string) => void;
+    onCloseOthers: (tabId: string) => void;
+    onCloseAll: () => void;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: tab.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style}>
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              onClick={() => onTabClick(tab)}
+              {...attributes}
+              {...listeners}
+              title={tab.title}
+              className={cn(
+                "group relative flex items-center justify-center px-0 rounded-md transition-colors",
+                "hover:bg-accent",
+                "w-8 h-7 flex-shrink-0",
+                "cursor-grab active:cursor-grabbing",
+                isDragging && "shadow-lg ring-2 ring-primary/20",
+                isActive
+                  ? "bg-accent text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.icon ? (
+                <tab.icon className="size-3.5 flex-shrink-0" />
+              ) : (
+                <span className="text-xs font-semibold leading-none">
+                  {(tab.title || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
+              {isActive && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </Button>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="border-none">
+            <ContextMenuItem onClick={() => onUnpin(tab.id)}>
+              <PinOff className="size-3 mr-2" />
+              Desanclar pestaña
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={() => onCloseOthers(tab.id)}>
+              Cerrar otras pestañas
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => onCloseAll()}>
+              Cerrar todas las pestañas
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      </div>
+    );
+  }
+);
+
+PinnedTabItem.displayName = "PinnedTabItem";
+
+// ─── Regular Tab Item ─────────────────────────────────────────────────────────
 
 const TabItem = React.memo(
   ({
@@ -58,6 +143,7 @@ const TabItem = React.memo(
     isActive,
     onTabClick,
     onCloseTab,
+    onPin,
     onCloseOthers,
     onCloseAll,
     canClose,
@@ -66,6 +152,7 @@ const TabItem = React.memo(
     isActive: boolean;
     onTabClick: (tab: Tab) => void;
     onCloseTab: (e: React.MouseEvent, tabId: string) => void;
+    onPin: (tabId: string) => void;
     onCloseOthers: (tabId: string) => void;
     onCloseAll: () => void;
     canClose: boolean;
@@ -134,6 +221,11 @@ const TabItem = React.memo(
             </Button>
           </ContextMenuTrigger>
           <ContextMenuContent className="border-none">
+            <ContextMenuItem onClick={() => onPin(tab.id)}>
+              <Pin className="size-3 mr-2" />
+              Anclar pestaña
+            </ContextMenuItem>
+            <ContextMenuSeparator />
             <ContextMenuItem onClick={() => onCloseOthers(tab.id)}>
               Cerrar otras pestañas
             </ContextMenuItem>
@@ -149,9 +241,8 @@ const TabItem = React.memo(
 
 TabItem.displayName = "TabItem";
 
-/**
- * Componente de estado vacío cuando no hay tabs
- */
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
 const EmptyTabBar = React.memo(({ onNewTab }: { onNewTab: () => void }) => {
   return (
     <div className="flex items-center h-8 px-2 gap-2">
@@ -173,6 +264,8 @@ const EmptyTabBar = React.memo(({ onNewTab }: { onNewTab: () => void }) => {
 
 EmptyTabBar.displayName = "EmptyTabBar";
 
+// ─── TabBar ───────────────────────────────────────────────────────────────────
+
 const TabBar: React.FC<TabBarProps> = ({
   className,
   onCloseTab: externalOnCloseTab,
@@ -187,6 +280,11 @@ const TabBar: React.FC<TabBarProps> = ({
   const reorderTabs = useTabStore((state) => state.reorderTabs);
   const closeOtherTabs = useTabStore((state) => state.closeOtherTabs);
   const closeAllTabs = useTabStore((state) => state.closeAllTabs);
+  const pinTab = useTabStore((state) => state.pinTab);
+  const unpinTab = useTabStore((state) => state.unpinTab);
+
+  const pinnedTabs = useMemo(() => tabs.filter((t) => t.pinned), [tabs]);
+  const regularTabs = useMemo(() => tabs.filter((t) => !t.pinned), [tabs]);
 
   useCommand(
     "tabs.toggleMenu",
@@ -213,14 +311,20 @@ const TabBar: React.FC<TabBarProps> = ({
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
+      if (!over || active.id === over.id) return;
 
-      if (over && active.id !== over.id) {
-        const oldIndex = tabs.findIndex((tab) => tab.id === active.id);
-        const newIndex = tabs.findIndex((tab) => tab.id === over.id);
+      const activeTab = tabs.find((t) => t.id === active.id);
+      const overTab = tabs.find((t) => t.id === over.id);
 
-        if (oldIndex !== -1 && newIndex !== -1) {
-          reorderTabs(oldIndex, newIndex);
-        }
+      // No permitir mover tabs entre grupos (pinned ↔ regular)
+      if (!activeTab || !overTab) return;
+      if (!!activeTab.pinned !== !!overTab.pinned) return;
+
+      const oldIndex = tabs.findIndex((tab) => tab.id === active.id);
+      const newIndex = tabs.findIndex((tab) => tab.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderTabs(oldIndex, newIndex);
       }
     },
     [tabs, reorderTabs]
@@ -237,7 +341,6 @@ const TabBar: React.FC<TabBarProps> = ({
   const handleCloseTab = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       e.stopPropagation();
-
       if (externalOnCloseTab) {
         externalOnCloseTab(tabId);
       }
@@ -281,23 +384,52 @@ const TabBar: React.FC<TabBarProps> = ({
         onValueChange={setActiveTab}
         className={cn("flex items-center bg-background w-full", className)}
       >
-        <div data-drag-container-tabbar className="flex-1 overflow-hidden">
+        {/* ── Pinned tabs (siempre visibles, sin scroll) ── */}
+        {pinnedTabs.length > 0 && (
+          <div className="flex items-center flex-shrink-0 pl-2">
+            <SortableContext
+              items={pinnedTabs.map((t) => t.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              <Tabs.List className="flex items-center gap-1 py-1">
+                {pinnedTabs.map((tab) => (
+                  <Tabs.Trigger key={tab.id} value={tab.id} asChild>
+                    <PinnedTabItem
+                      tab={tab}
+                      isActive={tab.id === activeTabId}
+                      onTabClick={handleTabClick}
+                      onUnpin={unpinTab}
+                      onCloseOthers={handleCloseOthers}
+                      onCloseAll={handleCloseAll}
+                    />
+                  </Tabs.Trigger>
+                ))}
+              </Tabs.List>
+            </SortableContext>
+            {/* Separador visual entre pinned y regular */}
+            <div className="w-px h-4 bg-border mx-2 flex-shrink-0" />
+          </div>
+        )}
+
+        {/* ── Regular tabs (scrollables) ── */}
+        <div data-drag-container-tabbar className="flex-1 overflow-hidden min-w-0">
           <ScrollArea className="w-max max-w-full">
             <SortableContext
-              items={tabs.map((tab) => tab.id)}
+              items={regularTabs.map((tab) => tab.id)}
               strategy={horizontalListSortingStrategy}
             >
               <Tabs.List className="flex items-center gap-1 px-2 py-1">
-                {tabs.map((tab) => (
+                {regularTabs.map((tab) => (
                   <Tabs.Trigger key={tab.id} value={tab.id} asChild>
                     <TabItem
                       tab={tab}
                       isActive={tab.id === activeTabId}
                       onTabClick={handleTabClick}
                       onCloseTab={handleCloseTab}
+                      onPin={pinTab}
                       onCloseOthers={handleCloseOthers}
                       onCloseAll={handleCloseAll}
-                      canClose={tabs.length > 1}
+                      canClose={regularTabs.length > 1 || pinnedTabs.length > 0}
                     />
                   </Tabs.Trigger>
                 ))}
@@ -307,6 +439,7 @@ const TabBar: React.FC<TabBarProps> = ({
           </ScrollArea>
         </div>
 
+        {/* ── Overflow dropdown ── */}
         <div className="flex-shrink-0 border-l border-border px-2">
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -322,11 +455,48 @@ const TabBar: React.FC<TabBarProps> = ({
               align="end"
               className="w-64 max-h-96 overflow-y-auto"
             >
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                Pestañas abiertas ({tabs.length})
-              </div>
-              <DropdownMenuSeparator />
-              {tabs.map((tab) => (
+              {pinnedTabs.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <Pin className="size-3" />
+                    Ancladas ({pinnedTabs.length})
+                  </div>
+                  {pinnedTabs.map((tab) => (
+                    <DropdownMenuItem
+                      key={tab.id}
+                      onClick={() => handleTabClick(tab)}
+                      className={cn(
+                        "flex items-center gap-2 cursor-pointer",
+                        "hover:bg-accent focus:bg-accent",
+                        tab.id === activeTabId &&
+                          "bg-primary/10 text-primary hover:bg-primary/15 focus:bg-primary/20"
+                      )}
+                    >
+                      {tab.icon ? (
+                        <tab.icon className="size-3 flex-shrink-0" />
+                      ) : (
+                        <span className="size-3 flex-shrink-0 text-center text-xs font-semibold leading-none">
+                          {(tab.title || "?").charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                      <span className="flex-1 truncate text-xs">{tab.title}</span>
+                      {tab.id === activeTabId && (
+                        <Check className="size-3 text-primary flex-shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                    Pestañas ({regularTabs.length})
+                  </div>
+                </>
+              )}
+              {!pinnedTabs.length && (
+                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  Pestañas abiertas ({regularTabs.length})
+                </div>
+              )}
+              {regularTabs.map((tab) => (
                 <DropdownMenuItem
                   key={tab.id}
                   onClick={() => handleTabClick(tab)}
