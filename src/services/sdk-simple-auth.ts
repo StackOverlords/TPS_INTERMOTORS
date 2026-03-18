@@ -18,6 +18,10 @@ const authSDK = new AuthSDK({
     tokenKey: "tps-intermotors_auth_token",
     userKey: "tps-intermotors_auth_user",
     refreshTokenKey: "tps-intermotors_auth_refresh_token",
+    encryption: {
+      enabled: true,
+      secret: "tps-intermotors", // Use a secure, random secret in production
+    }
   },
   tokenRefresh: {
     enabled: true,
