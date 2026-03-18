@@ -285,6 +285,33 @@ func viewError(m Model) string {
 	return b.String()
 }
 
+func viewCleanupProgress(m Model) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  Limpiando tags de %s\n\n", StyleKey.Render("v"+m.versions.Current.String())))
+
+	for _, step := range m.cleanupSteps {
+		icon := StatusIcon(step.Status)
+		label := step.Label
+		if step.Status == StepRunning {
+			label = StyleWarning.Render(label)
+		} else if step.Status == StepDone {
+			label = StyleSuccess.Render(label)
+		} else if step.Status == StepFailed {
+			label = StyleError.Render(label)
+		} else {
+			label = StyleMuted.Render(label)
+		}
+		b.WriteString(fmt.Sprintf("    %s  %s\n", icon, label))
+		if step.Status == StepFailed && step.Err != nil {
+			b.WriteString(fmt.Sprintf("       %s\n", StyleError.Render(step.Err.Error())))
+		}
+	}
+
+	b.WriteString("\n  " + StyleMuted.Render("Por favor esperá...") + "\n")
+	return b.String()
+}
+
 func viewCleanupDetect(m Model) string {
 	return "\n  " + StyleMuted.Render(fmt.Sprintf("🔍 Detectando tags de v%s...", m.versions.Current.String())) + "\n"
 }

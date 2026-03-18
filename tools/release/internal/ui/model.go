@@ -442,7 +442,7 @@ func (m Model) View() string {
 	case StateCleanupConfirm:
 		return viewCleanupConfirm(m)
 	case StateCleanupProgress:
-		return viewProgress(m)
+		return viewCleanupProgress(m)
 	case StateCleanupDone:
 		return viewCleanupDone(m)
 	default:
