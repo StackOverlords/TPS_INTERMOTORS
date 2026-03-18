@@ -338,14 +338,19 @@ func viewCleanupConfirm(m Model) string {
 	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t1), found(m.cleanupTags.T1Remote)))
 	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t2), found(m.cleanupTags.T2Remote)))
 
-	if m.cleanupTags.GHAvailable {
-		b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", StyleSuccess.Render("disponible (gh)")))
-	} else {
-		b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", StyleMuted.Render("gh no instalado")))
+	var ghLabel string
+	switch {
+	case !m.cleanupTags.GHAvailable:
+		ghLabel = StyleMuted.Render("gh no instalado")
+	case !m.cleanupTags.GHReleaseExists:
+		ghLabel = StyleMuted.Render("gh instalado — release no encontrado")
+	default:
+		ghLabel = StyleSuccess.Render("encontrado — se eliminará")
 	}
+	b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", ghLabel))
 
 	nothingFound := !m.cleanupTags.T1Local && !m.cleanupTags.T2Local &&
-		!m.cleanupTags.T1Remote && !m.cleanupTags.T2Remote && !m.cleanupTags.GHAvailable
+		!m.cleanupTags.T1Remote && !m.cleanupTags.T2Remote && !m.cleanupTags.GHReleaseExists
 	if nothingFound {
 		b.WriteString("\n  " + StyleWarning.Render("No se encontraron tags para limpiar.") + "\n")
 	}

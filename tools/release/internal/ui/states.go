@@ -70,9 +70,10 @@ const (
 
 // CleanupTagStatus — resultado de la detección de tags existentes
 type CleanupTagStatus struct {
-	T1Local     bool
-	T1Remote    bool
-	T2Local     bool
-	T2Remote    bool
-	GHAvailable bool
+	T1Local        bool
+	T1Remote       bool
+	T2Local        bool
+	T2Remote       bool
+	GHAvailable    bool // gh CLI instalado
+	GHReleaseExists bool // GitHub Release existe para t1
 }
