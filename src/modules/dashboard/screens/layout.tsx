@@ -4,6 +4,7 @@ import TabContainer from "@/components/tabs/TabContainer";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 // import { useCommands } from "@/keybindings";
 import CartSidebar from "@/modules/shoppingCart/components/CartSidebar";
+import ChatPanel from "@/modules/chat/components/ChatPanel";
 import { useCartUiStore } from "@/modules/shoppingCart/store/cartUiStore";
 import { useEffect, useState } from "react";
 import AppSidebar from "./appSidebar";
@@ -70,6 +71,7 @@ export default function Layout() {
         </div>
       </SidebarInset>
       <CartSidebar open={isOpen} onOpenChange={close} />
+      <ChatPanel />
     </SidebarProvider>
   );
 }
