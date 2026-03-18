@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -47,6 +48,9 @@ type Model struct {
 	// Cleanup mode
 	cleanupSteps []StepState
 	cleanupTags  CleanupTagStatus
+
+	// Sistema
+	ghInstalled bool // gh CLI disponible en el sistema
 
 	// Contenidos originales para rollback
 	originalPkgJSON  []byte
@@ -107,12 +111,14 @@ func loadGitInfoCmd(g *git.Runner) tea.Cmd {
 			commits = []string{}
 		}
 		isDirty, _ := g.IsCleanWorkingTree()
+		_, ghErr := exec.LookPath("gh")
 
 		return MsgGitInfoLoaded{
 			Branch:        branch,
 			LatestTag:     latestTag,
 			RecentCommits: commits,
 			IsDirty:       !isDirty,
+			GHInstalled:   ghErr == nil,
 		}
 	}
 }
@@ -210,6 +216,7 @@ func (m Model) updateLoading(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.latestTag = msg.LatestTag
 		m.recentCommits = msg.RecentCommits
 		m.isDirty = msg.IsDirty
+		m.ghInstalled = msg.GHInstalled
 	case MsgVersionsLoaded:
 		if msg.Err != nil {
 			m.finalErr = msg.Err

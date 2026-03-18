@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -62,7 +63,33 @@ func viewDashboard(m Model) string {
 	// Keybindings
 	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[c]") + " Cleanup release    " + StyleKey.Render("[q]") + " Salir\n")
 
+	// gh hint si no está instalado
+	if !m.ghInstalled {
+		b.WriteString("\n  " + StyleWarning.Render("⚠  gh CLI no detectado — instalalo para gestionar GitHub Releases:") + "\n")
+		b.WriteString("  " + StyleKey.Render(ghInstallCmd()) + "\n")
+	}
+
 	return b.String()
+}
+
+// ghInstallCmd detecta el package manager disponible y retorna el comando de instalación de gh.
+func ghInstallCmd() string {
+	managers := []struct {
+		bin string
+		cmd string
+	}{
+		{"dnf", "sudo dnf install gh"},
+		{"apt", "sudo apt install gh"},
+		{"brew", "brew install gh"},
+		{"pacman", "sudo pacman -S github-cli"},
+		{"zypper", "sudo zypper install gh"},
+	}
+	for _, m := range managers {
+		if _, err := exec.LookPath(m.bin); err == nil {
+			return m.cmd
+		}
+	}
+	return "https://github.com/cli/cli#installation"
 }
 
 func viewOutOfSync(m Model) string {
