@@ -123,7 +123,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               <Badge
                 variant={variant}
                 className={cn(
-                  "fle items-center gap-3 p-1.5 rounded-md border w-full justify-center",
+                  "fle items-center gap-3 p-1.5 rounded-md border w-full justify-center pointer-events-none",
                   config.alertBg
                 )}
               >
