@@ -54,6 +54,8 @@ const QuotationDetailScreen = () => {
     });
 
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [showClearCartConfirm, setShowClearCartConfirm] =
+    useState<boolean>(false);
   const { navigateWithTab } = useTabNavigation();
 
   const {
@@ -187,6 +189,19 @@ const QuotationDetailScreen = () => {
     importQuotation(quotationData);
   };
 
+  const handleOpenCartClearAlert = () => {
+    setShowClearCartConfirm(true);
+  };
+
+  const handleCloseCartClearAlert = () => {
+    setShowClearCartConfirm(false);
+  };
+
+  const handleConfirmCartClear = () => {
+    handleConvertToSale();
+    setShowClearCartConfirm(false);
+  };
+
   useHotkeys("escape", handleGoBack, {
     scopes: ["esc-key"],
     enabled: true,
@@ -259,17 +274,17 @@ const QuotationDetailScreen = () => {
                 fallback={null}
               >
                 <TooltipButton
-                  onClick={handleConvertToSale}
-                  tooltip={
+                  onClick={
                     cartUtils.getCartCount() > 0
-                      ? "Solo se puede convertir a venta cuando el carrito está vacio"
-                      : "Crear una venta a partir de esta cotización"
+                      ? handleOpenCartClearAlert
+                      : handleConvertToSale
                   }
+                  tooltip="Crear una venta a partir de esta cotización"
                   buttonProps={{
                     variant: "outline",
                     size: "sm",
                     className: "gap-2",
-                    disabled: isImporting || cartUtils.getCartCount() > 0,
+                    disabled: isImporting,
                   }}
                 >
                   {isImporting ? (
@@ -422,6 +437,17 @@ const QuotationDetailScreen = () => {
         onClose={handleCloseDeleteAlert}
         onConfirm={handleConfirmDeleteAlert}
         isLoading={isDeleting}
+      />
+
+      <ConfirmationModal
+        isOpen={showClearCartConfirm}
+        onClose={handleCloseCartClearAlert}
+        onConfirm={handleConfirmCartClear}
+        title="¿Convertir a venta?"
+        message="El carrito actual tiene productos. Al continuar, se vaciará el carrito y se cargarán los productos de esta cotización."
+        alertMessage="Esta acción vaciará el carrito actual."
+        confirmText="Continuar"
+        variant="warning"
       />
 
       {isDialogOpen && (
