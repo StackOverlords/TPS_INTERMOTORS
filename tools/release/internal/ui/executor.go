@@ -206,7 +206,7 @@ func initCleanupSteps(tags CleanupTagStatus, ver string) []StepState {
 	if tags.GHAvailable && tags.T1Remote {
 		steps = append(steps, StepState{
 			Step:   CleanupStepDeleteGHRelease,
-			Label:  fmt.Sprintf("gh release delete %s --yes --cleanup-tag", t1),
+			Label:  fmt.Sprintf("gh release delete %s --yes", t1),
 			Status: StepPending,
 		})
 	}
@@ -237,6 +237,12 @@ func detectCleanupTagsCmd(m Model) tea.Cmd {
 			return MsgCleanupDetected{Err: fmt.Errorf("verificando tag remoto %s: %w", t2, err)}
 		}
 		_, ghErr := exec.LookPath("gh")
+		ghReleaseExists := false
+		if ghErr == nil {
+			// Verificar que realmente existe un GitHub Release para t1
+			chk := exec.Command("gh", "release", "view", t1)
+			ghReleaseExists = chk.Run() == nil
+		}
 
 		return MsgCleanupDetected{
 			Tags: CleanupTagStatus{
@@ -244,7 +250,7 @@ func detectCleanupTagsCmd(m Model) tea.Cmd {
 				T1Remote:    t1Remote,
 				T2Local:     t2Local,
 				T2Remote:    t2Remote,
-				GHAvailable: ghErr == nil,
+				GHAvailable: ghReleaseExists,
 			},
 		}
 	}
@@ -267,7 +273,8 @@ func runCleanupStepCmd(m Model, step Step) tea.Cmd {
 		case CleanupStepDeleteRemoteT2:
 			err = m.git.DeleteTagRemote("origin", t2)
 		case CleanupStepDeleteGHRelease:
-			err = exec.Command("gh", "release", "delete", t1, "--yes", "--cleanup-tag").Run()
+			// --cleanup-tag omitido: los tags remotos ya fueron eliminados en pasos anteriores
+			err = exec.Command("gh", "release", "delete", t1, "--yes").Run()
 		}
 
 		return MsgCleanupStepUpdate{
