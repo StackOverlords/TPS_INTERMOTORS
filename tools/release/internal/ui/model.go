@@ -44,6 +44,10 @@ type Model struct {
 	commitSHA     string
 	rollbackSteps []string
 
+	// Cleanup mode
+	cleanupSteps []StepState
+	cleanupTags  CleanupTagStatus
+
 	// Contenidos originales para rollback
 	originalPkgJSON  []byte
 	originalTauriConf []byte
