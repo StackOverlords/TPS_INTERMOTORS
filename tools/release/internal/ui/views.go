@@ -60,14 +60,30 @@ func viewDashboard(m Model) string {
 		b.WriteString("  " + StyleWarning.Render(fmt.Sprintf("⚠ Estás en '%s', no en 'development'. Los releases se hacen desde 'development'.", m.branch)) + "\n\n")
 	}
 
+	// Sección de dependencias
+	b.WriteString("  Dependencias:\n\n")
+
+	// git — siempre presente si la tool corre, pero mostramos versión
+	gitLabel := StyleMuted.Render("detectando...")
+	if m.gitVersion != "" {
+		gitLabel = StyleSuccess.Render("✓") + "  " + StyleMuted.Render("git") + "  " + m.gitVersion
+	}
+	b.WriteString("    " + gitLabel + "\n")
+
+	// gh CLI
+	var ghLabel string
+	if m.ghInstalled {
+		ghLabel = StyleSuccess.Render("✓") + "  " + StyleMuted.Render("gh ") + "  " + m.ghVersion + "  " + StyleMuted.Render("(GitHub CLI)")
+	} else {
+		ghLabel = StyleError.Render("✗") + "  " + StyleMuted.Render("gh ") + "  " + StyleWarning.Render("no instalado") +
+			"  →  " + StyleKey.Render(ghInstallCmd())
+	}
+	b.WriteString("    " + ghLabel + "\n")
+
+	b.WriteString("\n")
+
 	// Keybindings
 	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[c]") + " Cleanup release    " + StyleKey.Render("[q]") + " Salir\n")
-
-	// gh hint si no está instalado
-	if !m.ghInstalled {
-		b.WriteString("\n  " + StyleWarning.Render("⚠  gh CLI no detectado — instalalo para gestionar GitHub Releases:") + "\n")
-		b.WriteString("  " + StyleKey.Render(ghInstallCmd()) + "\n")
-	}
 
 	return b.String()
 }
