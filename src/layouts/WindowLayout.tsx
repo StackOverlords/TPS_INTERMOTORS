@@ -17,27 +17,7 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    const checkAuthReady = async () => {
-      try {
-        // Intentar obtener el token desde IndexedDB
-        const token = await authSDK.getAccessToken();
-        if (token) {
-          setIsAuthReady(true);
-        } else {
-          // Si no hay token, esperar un poco más y reintentar
-          setTimeout(async () => {
-            const retryToken = await authSDK.getAccessToken();
-            setIsAuthReady(!!retryToken);
-          }, 300);
-        }
-      } catch (error) {
-        console.error("[WindowLayout] Error checking auth:", error);
-        // Marcar como ready de todos modos después de un timeout
-        setTimeout(() => setIsAuthReady(true), 500);
-      }
-    };
-
-    checkAuthReady();
+    authSDK.ready.then(() => setIsAuthReady(true));
   }, []);
 
   // Mostrar un loading mientras espera el auth

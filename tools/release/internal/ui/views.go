@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -59,10 +60,52 @@ func viewDashboard(m Model) string {
 		b.WriteString("  " + StyleWarning.Render(fmt.Sprintf("⚠ Estás en '%s', no en 'development'. Los releases se hacen desde 'development'.", m.branch)) + "\n\n")
 	}
 
+	// Sección de dependencias
+	b.WriteString("  Dependencias:\n\n")
+
+	// git — siempre presente si la tool corre, pero mostramos versión
+	gitLabel := StyleMuted.Render("detectando...")
+	if m.gitVersion != "" {
+		gitLabel = StyleSuccess.Render("✓") + "  " + StyleMuted.Render("git") + "  " + m.gitVersion
+	}
+	b.WriteString("    " + gitLabel + "\n")
+
+	// gh CLI
+	var ghLabel string
+	if m.ghInstalled {
+		ghLabel = StyleSuccess.Render("✓") + "  " + StyleMuted.Render("gh ") + "  " + m.ghVersion + "  " + StyleMuted.Render("(GitHub CLI)")
+	} else {
+		ghLabel = StyleError.Render("✗") + "  " + StyleMuted.Render("gh ") + "  " + StyleWarning.Render("no instalado") +
+			"  →  " + StyleKey.Render(ghInstallCmd())
+	}
+	b.WriteString("    " + ghLabel + "\n")
+
+	b.WriteString("\n")
+
 	// Keybindings
-	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[q]") + " Salir\n")
+	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[c]") + " Cleanup release    " + StyleKey.Render("[q]") + " Salir\n")
 
 	return b.String()
+}
+
+// ghInstallCmd detecta el package manager disponible y retorna el comando de instalación de gh.
+func ghInstallCmd() string {
+	managers := []struct {
+		bin string
+		cmd string
+	}{
+		{"dnf", "sudo dnf install gh"},
+		{"apt", "sudo apt install gh"},
+		{"brew", "brew install gh"},
+		{"pacman", "sudo pacman -S github-cli"},
+		{"zypper", "sudo zypper install gh"},
+	}
+	for _, m := range managers {
+		if _, err := exec.LookPath(m.bin); err == nil {
+			return m.cmd
+		}
+	}
+	return "https://github.com/cli/cli#installation"
 }
 
 func viewOutOfSync(m Model) string {
@@ -282,5 +325,104 @@ func viewError(m Model) string {
 	}
 
 	b.WriteString("\n  " + StyleKey.Render("[q / Enter]") + " Salir\n")
+	return b.String()
+}
+
+func viewCleanupProgress(m Model) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  Limpiando tags de %s\n\n", StyleKey.Render("v"+m.versions.Current.String())))
+
+	for _, step := range m.cleanupSteps {
+		icon := StatusIcon(step.Status)
+		label := step.Label
+		if step.Status == StepRunning {
+			label = StyleWarning.Render(label)
+		} else if step.Status == StepDone {
+			label = StyleSuccess.Render(label)
+		} else if step.Status == StepFailed {
+			label = StyleError.Render(label)
+		} else {
+			label = StyleMuted.Render(label)
+		}
+		b.WriteString(fmt.Sprintf("    %s  %s\n", icon, label))
+		if step.Status == StepFailed && step.Err != nil {
+			b.WriteString(fmt.Sprintf("       %s\n", StyleError.Render(step.Err.Error())))
+		}
+	}
+
+	b.WriteString("\n  " + StyleMuted.Render("Por favor esperá...") + "\n")
+	return b.String()
+}
+
+func viewCleanupDetect(m Model) string {
+	return "\n  " + StyleMuted.Render(fmt.Sprintf("🔍 Detectando tags de v%s...", m.versions.Current.String())) + "\n"
+}
+
+func viewCleanupConfirm(m Model) string {
+	ver := m.versions.Current.String()
+	t1 := m.versions.Current.Tag("t1")
+	t2 := m.versions.Current.Tag("t2")
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  🧹 Cleanup — %s\n", StyleKey.Render("v"+ver)))
+	b.WriteString("  " + strings.Repeat("─", 44) + "\n\n")
+
+	found := func(v bool) string {
+		if v {
+			return StyleSuccess.Render("encontrado")
+		}
+		return StyleMuted.Render("no encontrado")
+	}
+
+	b.WriteString(fmt.Sprintf("    Tag local  %s   %s\n", StyleKey.Render(t1), found(m.cleanupTags.T1Local)))
+	b.WriteString(fmt.Sprintf("    Tag local  %s   %s\n", StyleKey.Render(t2), found(m.cleanupTags.T2Local)))
+	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t1), found(m.cleanupTags.T1Remote)))
+	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t2), found(m.cleanupTags.T2Remote)))
+
+	var ghLabel string
+	switch {
+	case !m.cleanupTags.GHAvailable:
+		ghLabel = StyleMuted.Render("gh no instalado")
+	case !m.cleanupTags.GHReleaseExists:
+		ghLabel = StyleMuted.Render("gh instalado — release no encontrado")
+	default:
+		ghLabel = StyleSuccess.Render("encontrado — se eliminará")
+	}
+	b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", ghLabel))
+
+	nothingFound := !m.cleanupTags.T1Local && !m.cleanupTags.T2Local &&
+		!m.cleanupTags.T1Remote && !m.cleanupTags.T2Remote && !m.cleanupTags.GHReleaseExists
+	if nothingFound {
+		b.WriteString("\n  " + StyleWarning.Render("No se encontraron tags para limpiar.") + "\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString("  " + StyleKey.Render("[y]") + " Confirmar    " + StyleKey.Render("[n / Esc]") + " Cancelar\n")
+	return b.String()
+}
+
+func viewCleanupDone(m Model) string {
+	var b strings.Builder
+	b.WriteString("\n")
+
+	doneBox := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(ColorSuccess).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(ColorSuccess).
+		Padding(0, 2).
+		Render("✅ Cleanup completado")
+
+	b.WriteString("  " + doneBox + "\n\n")
+
+	for _, step := range m.cleanupSteps {
+		if step.Status == StepDone {
+			b.WriteString(fmt.Sprintf("    %s  %s\n", StyleSuccess.Render("✓"), StyleSuccess.Render(step.Label)))
+		}
+	}
+
+	b.WriteString("\n  " + StyleKey.Render("[r]") + " Nueva release    " + StyleKey.Render("[q]") + " Salir\n")
 	return b.String()
 }

@@ -13,6 +13,7 @@ export interface Tab {
   metadata?: Record<string, any>;
   // ID de instancia para permitir múltiples tabs con la misma ruta
   instanceId?: string;
+  pinned?: boolean;
   createdTempData?: {
     createdEntity?: any;
     fromCreate?: boolean;
@@ -35,6 +36,8 @@ interface TabState {
   getTab: (tabId: string) => Tab | undefined;
   findTabByPath: (path: string, instanceId?: string) => Tab | undefined;
   reorderTabs: (fromIndex: number, toIndex: number) => void;
+  pinTab: (tabId: string) => void;
+  unpinTab: (tabId: string) => void;
 }
 
 // Debounced setItem para evitar thrashing de localStorage durante drag & drop
@@ -224,7 +227,26 @@ export const useTabStore = create<TabState>()(
           newTabs.splice(toIndex, 0, movedTab);
           return { tabs: newTabs };
         });
-      }
+      },
+
+      pinTab: (tabId: string) => {
+        set(state => {
+          const tab = state.tabs.find(t => t.id === tabId);
+          if (!tab || tab.pinned) return state;
+          // Mover al frente del grupo pinned (antes de las no-pinned)
+          const withoutTab = state.tabs.filter(t => t.id !== tabId);
+          const lastPinnedIndex = withoutTab.reduce((acc, t, i) => t.pinned ? i : acc, -1);
+          const newTabs = [...withoutTab];
+          newTabs.splice(lastPinnedIndex + 1, 0, { ...tab, pinned: true });
+          return { tabs: newTabs };
+        });
+      },
+
+      unpinTab: (tabId: string) => {
+        set(state => ({
+          tabs: state.tabs.map(t => t.id === tabId ? { ...t, pinned: false } : t)
+        }));
+      },
     }),
     {
       name: 'tab-storage',
@@ -239,6 +261,7 @@ export const useTabStore = create<TabState>()(
           scrollPosition: tab.scrollPosition,
           metadata: tab.metadata,
           instanceId: tab.instanceId,
+          pinned: tab.pinned,
           // Omitir icon intencionalmente
         })),
       }),

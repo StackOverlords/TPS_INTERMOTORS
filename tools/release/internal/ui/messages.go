@@ -8,6 +8,9 @@ type MsgGitInfoLoaded struct {
 	LatestTag     string
 	RecentCommits []string
 	IsDirty       bool
+	GHInstalled   bool
+	GHVersion     string // vacío si no está instalado
+	GitVersion    string
 	Err           error
 }
 
@@ -43,3 +46,26 @@ var _ tea.Msg = MsgGitInfoLoaded{}
 var _ tea.Msg = MsgVersionsLoaded{}
 var _ tea.Msg = MsgStepUpdate{}
 var _ tea.Msg = MsgExecutionDone{}
+
+// MsgCleanupDetected — resultado de detectar qué tags/release existen para limpiar
+type MsgCleanupDetected struct {
+	Tags CleanupTagStatus
+	Err  error
+}
+
+// MsgCleanupStepUpdate — actualización de un paso del cleanup
+type MsgCleanupStepUpdate struct {
+	Step   Step
+	Status StepStatus
+	Err    error
+}
+
+// MsgCleanupDone — limpieza completada (éxito o error)
+type MsgCleanupDone struct {
+	Success bool
+	Err     error
+}
+
+var _ tea.Msg = MsgCleanupDetected{}
+var _ tea.Msg = MsgCleanupStepUpdate{}
+var _ tea.Msg = MsgCleanupDone{}
