@@ -44,6 +44,10 @@ type Model struct {
 	commitSHA     string
 	rollbackSteps []string
 
+	// Cleanup mode
+	cleanupSteps []StepState
+	cleanupTags  CleanupTagStatus
+
 	// Contenidos originales para rollback
 	originalPkgJSON  []byte
 	originalTauriConf []byte
@@ -187,6 +191,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateProgress(msg)
 	case StateSuccess, StateError:
 		return m.updateResult(msg)
+	case StateCleanupDetect, StateCleanupConfirm, StateCleanupProgress, StateCleanupDone:
+		return m.updateCleanup(msg)
 	}
 	return m, nil
 }
@@ -241,6 +247,9 @@ func (m Model) updateDashboard(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "b":
 			m.bumpOnlyMode = true
 			m.state = StateBumpSelect
+		case "c":
+			m.state = StateCleanupDetect
+			return m, detectCleanupTagsCmd(m)
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
@@ -428,9 +437,105 @@ func (m Model) View() string {
 		return viewSuccess(m)
 	case StateError:
 		return viewError(m)
+	case StateCleanupDetect:
+		return viewCleanupDetect(m)
+	case StateCleanupConfirm:
+		return viewCleanupConfirm(m)
+	case StateCleanupProgress:
+		return viewCleanupProgress(m)
+	case StateCleanupDone:
+		return viewCleanupDone(m)
 	default:
 		return "..."
 	}
+}
+
+// updateCleanup — dispatcher principal del modo cleanup
+func (m Model) updateCleanup(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m.state {
+	case StateCleanupDetect:
+		return m.updateCleanupDetect(msg)
+	case StateCleanupConfirm:
+		return m.updateCleanupConfirm(msg)
+	case StateCleanupProgress:
+		return m.updateCleanupProgress(msg)
+	case StateCleanupDone:
+		return m.updateCleanupDone(msg)
+	}
+	return m, nil
+}
+
+// updateCleanupDetect — espera MsgCleanupDetected y transiciona a StateCleanupConfirm
+func (m Model) updateCleanupDetect(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if detected, ok := msg.(MsgCleanupDetected); ok {
+		if detected.Err != nil {
+			m.finalErr = detected.Err
+			m.state = StateError
+			return m, nil
+		}
+		m.cleanupTags = detected.Tags
+		m.cleanupSteps = initCleanupSteps(m.cleanupTags, m.versions.Current.String())
+		m.state = StateCleanupConfirm
+	}
+	return m, nil
+}
+
+// updateCleanupConfirm — espera confirmación del usuario (y/n)
+func (m Model) updateCleanupConfirm(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		switch key.String() {
+		case "y":
+			m.executing = true
+			m.state = StateCleanupProgress
+			return m, cleanupNextStepCmd(m)
+		case "n", "esc", "q":
+			m.state = StateDashboard
+		}
+	}
+	return m, nil
+}
+
+// updateCleanupProgress — procesa MsgCleanupStepUpdate y MsgCleanupDone
+func (m Model) updateCleanupProgress(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case MsgCleanupStepUpdate:
+		for i := range m.cleanupSteps {
+			if m.cleanupSteps[i].Step == msg.Step {
+				m.cleanupSteps[i].Status = msg.Status
+				m.cleanupSteps[i].Err = msg.Err
+				break
+			}
+		}
+		if msg.Status == StepFailed {
+			m.executing = false
+			m.finalErr = msg.Err
+			m.state = StateError
+			return m, nil
+		}
+		// Paso exitoso → siguiente
+		return m, cleanupNextStepCmd(m)
+
+	case MsgCleanupDone:
+		if msg.Success {
+			m.executing = false
+			m.state = StateCleanupDone
+		}
+	}
+	return m, nil
+}
+
+// updateCleanupDone — pantalla final del cleanup; q/enter para salir, r para re-release
+func (m Model) updateCleanupDone(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		switch key.String() {
+		case "q", "enter":
+			return m, tea.Quit
+		case "r":
+			m.state = StateBumpSelect
+			m.bumpCursor = 0
+		}
+	}
+	return m, nil
 }
 
 // startExecutionCmd — lanza el primer paso de la ejecución

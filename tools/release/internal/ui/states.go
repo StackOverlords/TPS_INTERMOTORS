@@ -45,3 +45,34 @@ type StepState struct {
 	Status StepStatus
 	Err    error
 }
+
+// Cleanup mode — States
+
+const (
+	StateCleanupDetect   State = iota + 10
+	StateCleanupConfirm
+	StateCleanupProgress
+	StateCleanupDone
+)
+
+// Cleanup mode — Steps (base offset 100 to avoid collision with release steps)
+
+type CleanupStep = Step
+
+const (
+	cleanupStepBase        = Step(100)
+	CleanupStepDeleteLocalT1  CleanupStep = cleanupStepBase + 0
+	CleanupStepDeleteLocalT2  CleanupStep = cleanupStepBase + 1
+	CleanupStepDeleteRemoteT1 CleanupStep = cleanupStepBase + 2
+	CleanupStepDeleteRemoteT2 CleanupStep = cleanupStepBase + 3
+	CleanupStepDeleteGHRelease CleanupStep = cleanupStepBase + 4
+)
+
+// CleanupTagStatus — resultado de la detección de tags existentes
+type CleanupTagStatus struct {
+	T1Local     bool
+	T1Remote    bool
+	T2Local     bool
+	T2Remote    bool
+	GHAvailable bool
+}

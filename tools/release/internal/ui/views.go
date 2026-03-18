@@ -60,7 +60,7 @@ func viewDashboard(m Model) string {
 	}
 
 	// Keybindings
-	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[q]") + " Salir\n")
+	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[c]") + " Cleanup release    " + StyleKey.Render("[q]") + " Salir\n")
 
 	return b.String()
 }
@@ -282,5 +282,99 @@ func viewError(m Model) string {
 	}
 
 	b.WriteString("\n  " + StyleKey.Render("[q / Enter]") + " Salir\n")
+	return b.String()
+}
+
+func viewCleanupProgress(m Model) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  Limpiando tags de %s\n\n", StyleKey.Render("v"+m.versions.Current.String())))
+
+	for _, step := range m.cleanupSteps {
+		icon := StatusIcon(step.Status)
+		label := step.Label
+		if step.Status == StepRunning {
+			label = StyleWarning.Render(label)
+		} else if step.Status == StepDone {
+			label = StyleSuccess.Render(label)
+		} else if step.Status == StepFailed {
+			label = StyleError.Render(label)
+		} else {
+			label = StyleMuted.Render(label)
+		}
+		b.WriteString(fmt.Sprintf("    %s  %s\n", icon, label))
+		if step.Status == StepFailed && step.Err != nil {
+			b.WriteString(fmt.Sprintf("       %s\n", StyleError.Render(step.Err.Error())))
+		}
+	}
+
+	b.WriteString("\n  " + StyleMuted.Render("Por favor esperá...") + "\n")
+	return b.String()
+}
+
+func viewCleanupDetect(m Model) string {
+	return "\n  " + StyleMuted.Render(fmt.Sprintf("🔍 Detectando tags de v%s...", m.versions.Current.String())) + "\n"
+}
+
+func viewCleanupConfirm(m Model) string {
+	ver := m.versions.Current.String()
+	t1 := m.versions.Current.Tag("t1")
+	t2 := m.versions.Current.Tag("t2")
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  🧹 Cleanup — %s\n", StyleKey.Render("v"+ver)))
+	b.WriteString("  " + strings.Repeat("─", 44) + "\n\n")
+
+	found := func(v bool) string {
+		if v {
+			return StyleSuccess.Render("encontrado")
+		}
+		return StyleMuted.Render("no encontrado")
+	}
+
+	b.WriteString(fmt.Sprintf("    Tag local  %s   %s\n", StyleKey.Render(t1), found(m.cleanupTags.T1Local)))
+	b.WriteString(fmt.Sprintf("    Tag local  %s   %s\n", StyleKey.Render(t2), found(m.cleanupTags.T2Local)))
+	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t1), found(m.cleanupTags.T1Remote)))
+	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t2), found(m.cleanupTags.T2Remote)))
+
+	if m.cleanupTags.GHAvailable {
+		b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", StyleSuccess.Render("disponible (gh)")))
+	} else {
+		b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", StyleMuted.Render("gh no instalado")))
+	}
+
+	nothingFound := !m.cleanupTags.T1Local && !m.cleanupTags.T2Local &&
+		!m.cleanupTags.T1Remote && !m.cleanupTags.T2Remote && !m.cleanupTags.GHAvailable
+	if nothingFound {
+		b.WriteString("\n  " + StyleWarning.Render("No se encontraron tags para limpiar.") + "\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString("  " + StyleKey.Render("[y]") + " Confirmar    " + StyleKey.Render("[n / Esc]") + " Cancelar\n")
+	return b.String()
+}
+
+func viewCleanupDone(m Model) string {
+	var b strings.Builder
+	b.WriteString("\n")
+
+	doneBox := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(ColorSuccess).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(ColorSuccess).
+		Padding(0, 2).
+		Render("✅ Cleanup completado")
+
+	b.WriteString("  " + doneBox + "\n\n")
+
+	for _, step := range m.cleanupSteps {
+		if step.Status == StepDone {
+			b.WriteString(fmt.Sprintf("    %s  %s\n", StyleSuccess.Render("✓"), StyleSuccess.Render(step.Label)))
+		}
+	}
+
+	b.WriteString("\n  " + StyleKey.Render("[r]") + " Nueva release    " + StyleKey.Render("[q]") + " Salir\n")
 	return b.String()
 }
