@@ -438,13 +438,13 @@ func (m Model) View() string {
 	case StateError:
 		return viewError(m)
 	case StateCleanupDetect:
-		return "Detectando tags..."
+		return viewCleanupDetect(m)
 	case StateCleanupConfirm:
-		return "Confirmar limpieza (y/n)..."
+		return viewCleanupConfirm(m)
 	case StateCleanupProgress:
 		return viewProgress(m)
 	case StateCleanupDone:
-		return "Cleanup completado."
+		return viewCleanupDone(m)
 	default:
 		return "..."
 	}
