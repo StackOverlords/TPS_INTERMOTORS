@@ -8,6 +8,9 @@ type MsgGitInfoLoaded struct {
 	LatestTag     string
 	RecentCommits []string
 	IsDirty       bool
+	GHInstalled   bool
+	GHVersion     string // vacío si no está instalado
+	GitVersion    string
 	Err           error
 }
 

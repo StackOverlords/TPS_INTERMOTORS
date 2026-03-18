@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -59,10 +60,52 @@ func viewDashboard(m Model) string {
 		b.WriteString("  " + StyleWarning.Render(fmt.Sprintf("⚠ Estás en '%s', no en 'development'. Los releases se hacen desde 'development'.", m.branch)) + "\n\n")
 	}
 
+	// Sección de dependencias
+	b.WriteString("  Dependencias:\n\n")
+
+	// git — siempre presente si la tool corre, pero mostramos versión
+	gitLabel := StyleMuted.Render("detectando...")
+	if m.gitVersion != "" {
+		gitLabel = StyleSuccess.Render("✓") + "  " + StyleMuted.Render("git") + "  " + m.gitVersion
+	}
+	b.WriteString("    " + gitLabel + "\n")
+
+	// gh CLI
+	var ghLabel string
+	if m.ghInstalled {
+		ghLabel = StyleSuccess.Render("✓") + "  " + StyleMuted.Render("gh ") + "  " + m.ghVersion + "  " + StyleMuted.Render("(GitHub CLI)")
+	} else {
+		ghLabel = StyleError.Render("✗") + "  " + StyleMuted.Render("gh ") + "  " + StyleWarning.Render("no instalado") +
+			"  →  " + StyleKey.Render(ghInstallCmd())
+	}
+	b.WriteString("    " + ghLabel + "\n")
+
+	b.WriteString("\n")
+
 	// Keybindings
 	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[c]") + " Cleanup release    " + StyleKey.Render("[q]") + " Salir\n")
 
 	return b.String()
+}
+
+// ghInstallCmd detecta el package manager disponible y retorna el comando de instalación de gh.
+func ghInstallCmd() string {
+	managers := []struct {
+		bin string
+		cmd string
+	}{
+		{"dnf", "sudo dnf install gh"},
+		{"apt", "sudo apt install gh"},
+		{"brew", "brew install gh"},
+		{"pacman", "sudo pacman -S github-cli"},
+		{"zypper", "sudo zypper install gh"},
+	}
+	for _, m := range managers {
+		if _, err := exec.LookPath(m.bin); err == nil {
+			return m.cmd
+		}
+	}
+	return "https://github.com/cli/cli#installation"
 }
 
 func viewOutOfSync(m Model) string {
@@ -338,14 +381,19 @@ func viewCleanupConfirm(m Model) string {
 	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t1), found(m.cleanupTags.T1Remote)))
 	b.WriteString(fmt.Sprintf("    Tag remote %s   %s\n", StyleKey.Render(t2), found(m.cleanupTags.T2Remote)))
 
-	if m.cleanupTags.GHAvailable {
-		b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", StyleSuccess.Render("disponible (gh)")))
-	} else {
-		b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", StyleMuted.Render("gh no instalado")))
+	var ghLabel string
+	switch {
+	case !m.cleanupTags.GHAvailable:
+		ghLabel = StyleMuted.Render("gh no instalado")
+	case !m.cleanupTags.GHReleaseExists:
+		ghLabel = StyleMuted.Render("gh instalado — release no encontrado")
+	default:
+		ghLabel = StyleSuccess.Render("encontrado — se eliminará")
 	}
+	b.WriteString(fmt.Sprintf("    GitHub Release          %s\n", ghLabel))
 
 	nothingFound := !m.cleanupTags.T1Local && !m.cleanupTags.T2Local &&
-		!m.cleanupTags.T1Remote && !m.cleanupTags.T2Remote && !m.cleanupTags.GHAvailable
+		!m.cleanupTags.T1Remote && !m.cleanupTags.T2Remote && !m.cleanupTags.GHReleaseExists
 	if nothingFound {
 		b.WriteString("\n  " + StyleWarning.Render("No se encontraron tags para limpiar.") + "\n")
 	}

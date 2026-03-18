@@ -3,7 +3,9 @@ package ui
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -47,6 +49,11 @@ type Model struct {
 	// Cleanup mode
 	cleanupSteps []StepState
 	cleanupTags  CleanupTagStatus
+
+	// Dependencias del sistema
+	ghInstalled bool
+	ghVersion   string
+	gitVersion  string
 
 	// Contenidos originales para rollback
 	originalPkgJSON  []byte
@@ -108,11 +115,36 @@ func loadGitInfoCmd(g *git.Runner) tea.Cmd {
 		}
 		isDirty, _ := g.IsCleanWorkingTree()
 
+		_, ghErr := exec.LookPath("gh")
+		ghVersion := ""
+		if ghErr == nil {
+			if out, err := exec.Command("gh", "--version").Output(); err == nil {
+				// "gh version 2.87.3 (2026-02-23)\n..." → extraer "2.87.3"
+				line := strings.SplitN(string(out), "\n", 2)[0]
+				parts := strings.Fields(line)
+				if len(parts) >= 3 {
+					ghVersion = parts[2]
+				}
+			}
+		}
+
+		gitVersion := ""
+		if out, err := exec.Command("git", "--version").Output(); err == nil {
+			// "git version 2.48.1\n" → extraer "2.48.1"
+			parts := strings.Fields(strings.TrimSpace(string(out)))
+			if len(parts) >= 3 {
+				gitVersion = parts[2]
+			}
+		}
+
 		return MsgGitInfoLoaded{
 			Branch:        branch,
 			LatestTag:     latestTag,
 			RecentCommits: commits,
 			IsDirty:       !isDirty,
+			GHInstalled:   ghErr == nil,
+			GHVersion:     ghVersion,
+			GitVersion:    gitVersion,
 		}
 	}
 }
@@ -210,6 +242,9 @@ func (m Model) updateLoading(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.latestTag = msg.LatestTag
 		m.recentCommits = msg.RecentCommits
 		m.isDirty = msg.IsDirty
+		m.ghInstalled = msg.GHInstalled
+		m.ghVersion = msg.GHVersion
+		m.gitVersion = msg.GitVersion
 	case MsgVersionsLoaded:
 		if msg.Err != nil {
 			m.finalErr = msg.Err
