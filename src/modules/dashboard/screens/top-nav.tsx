@@ -8,7 +8,7 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useTaskNotificationsContext } from "@/contexts/TaskNotificationsContext";
 import { COMMANDS, useCommand, useKeybindingKeys } from "@/keybindings";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
-import { useChatUiStore } from "@/modules/chat/store/chatUiStore";
+// import { useChatUiStore } from "@/modules/chat/store/chatUiStore";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
@@ -102,7 +102,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
   const currentRoute = matchRoute(routes, location.pathname);
   const parentRoute = findParentRoute(routes, location.pathname);
   const cart = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
-  const { toggle: toggleChat, isOpen: chatOpen } = useChatUiStore();
+  // const { toggle: toggleChat, isOpen: chatOpen } = useChatUiStore();
 
   // Context de notificaciones
   const { tasks, removeTask, clearTasks } = useTaskNotificationsContext();
@@ -208,8 +208,8 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
         <div className="flex items-center gap-4 w-full">
           <Button
             variant="outline"
-            className={cn("relative size-8", chatOpen && "bg-accent text-primary")}
-            onClick={toggleChat}
+            className={cn("relative size-8")}
+            // onClick={toggleChat}
           >
             <MessageSquare className="h-4 w-4" />
           </Button>
