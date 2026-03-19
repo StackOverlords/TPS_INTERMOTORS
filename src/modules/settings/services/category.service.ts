@@ -1,8 +1,8 @@
 import { Logger } from "@/lib/logger";
 import { ApiService } from "@/lib/apiService";
-import type { CategoryFilters, CreateCategory, GetAllCategories, GetByIdCategory, UpdateCategory } from "../types/category.types";
+import type { CategoryFilters, CreateCategory, GetAllCategories, GetByIdCategory, SyncPreviewCategory, UpdateCategory } from "../types/category.types";
 import { CATEGORY_ENDPOINTS } from "./endpoints/categoryEndpoints.service";
-import { GetAllCategoriesSchema, GetByIdCategorySchema } from "../schemas/category.schema";
+import { GetAllCategoriesSchema, GetByIdCategorySchema, SyncPreviewCategorySchema } from "../schemas/category.schema";
 
 const MODULE_NAME = 'CATEGORY_SERVICE';
 
@@ -89,6 +89,24 @@ export const categoriesService = {
         Logger.info('Category updated successfully', {
             id
         }, MODULE_NAME);
+        return response;
+    },
+
+    /**
+     * Preview de cuántos productos se verían afectados al sincronizar el nombre de la categoría
+     * @param id - ID de la categoría
+     * @param patron_descripcion - Patrón a buscar en las descripciones de productos
+     */
+    async syncPreview(id: number, patron_descripcion: string): Promise<SyncPreviewCategory> {
+        Logger.info('Fetching Category sync preview', { id, patron_descripcion }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            CATEGORY_ENDPOINTS.syncPreview(id),
+            SyncPreviewCategorySchema,
+            { params: { patron_descripcion } }
+        );
+
+        Logger.info('Category sync preview fetched', { id }, MODULE_NAME);
         return response;
     },
 

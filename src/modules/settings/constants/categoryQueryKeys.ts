@@ -9,4 +9,7 @@ export const CATEGORY_QUERY_KEYS = {
     details: () => [...CATEGORY_QUERY_KEYS.all, "detail"] as const,
     detail: (id: string | number) =>
         [...CATEGORY_QUERY_KEYS.details(), id] as const,
+
+    syncPreview: (id: string | number, patron: string) =>
+        [...CATEGORY_QUERY_KEYS.all, "sync-preview", id, patron] as const,
 };  

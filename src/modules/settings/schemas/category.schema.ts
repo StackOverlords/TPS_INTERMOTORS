@@ -23,6 +23,14 @@ export const CreateCategorySchema = CategorySchema.omit({
 export const UpdateCategorySchema = CategorySchema.omit({
     id: true,
     subcategorias: true
+}).extend({
+    patron_descripcion: z.string().max(500).optional()
+})
+
+export const SyncPreviewCategorySchema = z.object({
+    total_categoria: z.number(),
+    productos_afectados: z.number(),
+    sin_match: z.number(),
 })
 
 export const GetByIdCategorySchema = CategorySchema.omit({
