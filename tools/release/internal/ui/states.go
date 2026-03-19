@@ -46,6 +46,14 @@ type StepState struct {
 	Err    error
 }
 
+// Update notes mode — States
+
+const (
+	StateUpdateNotes         State = iota + 20
+	StateUpdateNotesProgress
+	StateUpdateNotesDone
+)
+
 // Cleanup mode — States
 
 const (
