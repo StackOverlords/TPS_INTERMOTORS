@@ -1,5 +1,5 @@
 import WindowLayout from "@/layouts/WindowLayout";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { createRoot } from "react-dom/client";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
