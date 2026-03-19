@@ -16,6 +16,7 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/atoms/scroll-area";
 import { cn } from "@/lib/utils";
 import { useTabStore, type Tab } from "@/states/tabStore";
+import { useTabsConfigStore } from "@/stores/tabsConfigStore";
 import {
   closestCenter,
   DndContext,
@@ -147,6 +148,7 @@ const TabItem = React.memo(
     onCloseOthers,
     onCloseAll,
     canClose,
+    overflowMode = 'compress',
   }: {
     tab: Tab;
     isActive: boolean;
@@ -156,6 +158,7 @@ const TabItem = React.memo(
     onCloseOthers: (tabId: string) => void;
     onCloseAll: () => void;
     canClose: boolean;
+    overflowMode?: 'compress' | 'scroll';
   }) => {
     const {
       attributes,
@@ -173,7 +176,11 @@ const TabItem = React.memo(
     };
 
     return (
-      <div ref={setNodeRef} style={style}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={overflowMode === 'compress' ? "flex-1 min-w-[40px] max-w-[200px]" : undefined}
+      >
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <Button
@@ -184,7 +191,7 @@ const TabItem = React.memo(
               className={cn(
                 "group relative flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium transition-colors",
                 "hover:bg-accent",
-                "min-w-[120px] max-w-[200px] h-7",
+                overflowMode === 'compress' ? "w-full h-7" : "min-w-[120px] max-w-[200px] h-7",
                 "cursor-grab active:cursor-grabbing",
                 isDragging && "shadow-lg ring-2 ring-primary/20",
                 isActive
@@ -281,6 +288,7 @@ const TabBar: React.FC<TabBarProps> = ({
   const closeOtherTabs = useTabStore((state) => state.closeOtherTabs);
   const closeAllTabs = useTabStore((state) => state.closeAllTabs);
   const pinTab = useTabStore((state) => state.pinTab);
+  const tabOverflowMode = useTabsConfigStore((state) => state.tabOverflowMode);
   const unpinTab = useTabStore((state) => state.unpinTab);
 
   const pinnedTabs = useMemo(() => tabs.filter((t) => t.pinned), [tabs]);
@@ -413,12 +421,12 @@ const TabBar: React.FC<TabBarProps> = ({
 
         {/* ── Regular tabs (scrollables) ── */}
         <div data-drag-container-tabbar className="flex-1 overflow-hidden min-w-0">
-          <ScrollArea className="w-max max-w-full">
-            <SortableContext
-              items={regularTabs.map((tab) => tab.id)}
-              strategy={horizontalListSortingStrategy}
-            >
-              <Tabs.List className="flex items-center gap-1 px-2 py-1">
+          <SortableContext
+            items={regularTabs.map((tab) => tab.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {tabOverflowMode === 'compress' ? (
+              <Tabs.List className="flex w-full items-center gap-1 px-2 py-1">
                 {regularTabs.map((tab) => (
                   <Tabs.Trigger key={tab.id} value={tab.id} asChild>
                     <TabItem
@@ -430,13 +438,34 @@ const TabBar: React.FC<TabBarProps> = ({
                       onCloseOthers={handleCloseOthers}
                       onCloseAll={handleCloseAll}
                       canClose={regularTabs.length > 1 || pinnedTabs.length > 0}
+                      overflowMode="compress"
                     />
                   </Tabs.Trigger>
                 ))}
               </Tabs.List>
-            </SortableContext>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+            ) : (
+              <ScrollArea className="w-max max-w-full">
+                <Tabs.List className="flex items-center gap-1 px-2 py-1">
+                  {regularTabs.map((tab) => (
+                    <Tabs.Trigger key={tab.id} value={tab.id} asChild>
+                      <TabItem
+                        tab={tab}
+                        isActive={tab.id === activeTabId}
+                        onTabClick={handleTabClick}
+                        onCloseTab={handleCloseTab}
+                        onPin={pinTab}
+                        onCloseOthers={handleCloseOthers}
+                        onCloseAll={handleCloseAll}
+                        canClose={regularTabs.length > 1 || pinnedTabs.length > 0}
+                        overflowMode="scroll"
+                      />
+                    </Tabs.Trigger>
+                  ))}
+                </Tabs.List>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            )}
+          </SortableContext>
         </div>
 
         {/* ── Overflow dropdown ── */}
