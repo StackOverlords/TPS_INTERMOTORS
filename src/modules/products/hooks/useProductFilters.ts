@@ -13,10 +13,10 @@ const cleanFilters = (filters: ProductFilters): ProductFilters => ({
   marca: filters.marca || undefined,
 });
 
-export const useProductFilters = (defaultSucursal: number) => {
+export const useProductFilters = (defaultSucursal: number, defaultPageSize = 25) => {
   const [filters, setFilters] = useState<ProductFilters>({
     pagina: 1,
-    pagina_registros: 25,
+    pagina_registros: defaultPageSize,
     sucursal: defaultSucursal,
     descripcion: "",
     codigo_oem: "",
@@ -79,7 +79,7 @@ export const useProductFilters = (defaultSucursal: number) => {
   const resetFilters = useCallback(() => {
     const emptyFilters: ProductFilters = {
       pagina: 1,
-      pagina_registros: 25,
+      pagina_registros: defaultPageSize,
       sucursal: defaultSucursal,
       descripcion: "",
       codigo_oem: "",

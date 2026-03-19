@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/atoms/toaster";
 import { TooltipProvider } from "@/components/atoms/tooltip";
+import SecondaryTitleBar from "@/components/common/SecondaryTitleBar";
 import { ZoomManager } from "@/components/common/ZoomManager";
 // import { KeybindingProvider } from '@/contexts/KeybindingContext'; // ⚠️ DEPRECATED: Reemplazado por el nuevo sistema de keybindings con Zustand
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
@@ -40,7 +41,10 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
           <TooltipProvider>
             <Toaster />
             <ZoomManager />
-            <div className="h-screen w-screen overflow-hidden">{children}</div>
+            <div className="h-screen w-screen overflow-hidden flex flex-col ring-1 ring-border">
+              <SecondaryTitleBar />
+              <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+            </div>
           </TooltipProvider>
         </HotkeysProvider>
       </QueryClientProvider>
