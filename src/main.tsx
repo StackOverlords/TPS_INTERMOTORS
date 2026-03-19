@@ -19,6 +19,7 @@ import { queryClient } from "./lib/reactQueryConfig.ts";
 import logger from "./utils/logger.ts";
 // import { useAppearanceStore } from "./stores/appearanceStore.ts";
 import { flushTabStorage } from "./states/tabStore.ts";
+import { emit } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 
 // try {
@@ -63,6 +64,15 @@ function App() {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Heartbeat para ventanas secundarias: emite cada 2s para que puedan detectar
+  // si la ventana principal fue cerrada o recargada y auto-cerrarse (anti-zombie).
+  useEffect(() => {
+    const interval = setInterval(() => {
+      emit("main:heartbeat").catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

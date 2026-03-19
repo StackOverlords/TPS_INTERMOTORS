@@ -1,4 +1,6 @@
 import WindowLayout from "@/layouts/WindowLayout";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { createRoot } from "react-dom/client";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
 import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
@@ -17,6 +19,26 @@ try {
 } catch (error) {
   console.error("[WindowEntry] ❌ Error inicializando tema y apariencia:", error);
 }
+
+// Guard anti-zombie: si el heartbeat de la ventana principal se detiene por más de
+// 5 segundos (reload, crash, o cierre), esta ventana secundaria se auto-cierra.
+(async () => {
+  const TIMEOUT_MS = 5000;
+  let lastHeartbeat = Date.now();
+
+  const unlisten = await listen("main:heartbeat", () => {
+    lastHeartbeat = Date.now();
+  });
+
+  const interval = setInterval(async () => {
+    if (Date.now() - lastHeartbeat > TIMEOUT_MS) {
+      clearInterval(interval);
+      unlisten();
+      console.log("[WindowEntry] Main window heartbeat lost — closing orphan window");
+      await getCurrentWebviewWindow().close();
+    }
+  }, 1000);
+})();
 
 // ✨ Inicializar keybindings de forma asíncrona en ventanas secundarias
 // NO bloqueamos el renderizado si falla
