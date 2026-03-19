@@ -12,4 +12,12 @@ export const QUOTATION_ENDPOINTS = {
     details: {
         delete: (detalle: string | number) => `${BASE_PATH}-detail/${detalle}`,
     },
+    reports: {
+        general: `${BASE_PATH}/reports/general`,
+        conversion: `${BASE_PATH}/reports/conversion`,
+        topClientes: `${BASE_PATH}/reports/top-clientes`,
+        productosCotizados: `${BASE_PATH}/reports/productos-cotizados`,
+        abiertas: `${BASE_PATH}/reports/abiertas`,
+        desempeno: `${BASE_PATH}/reports/desempeno`,
+    },
 } as const;
