@@ -134,7 +134,7 @@ const ProductSelectorWindow: React.FC = () => {
     setPageSize,
     setFilters,
     resetFilters,
-  } = useProductFilters(Number(selectedBranchId) || 1);
+  } = useProductFilters(Number(selectedBranchId) || 1, 10);
 
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
