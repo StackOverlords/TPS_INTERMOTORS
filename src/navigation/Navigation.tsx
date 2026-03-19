@@ -33,17 +33,32 @@ const Navigation = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Garantía de inicialización: espera que IndexedDB resuelva antes de leer estado
+    authSDK.ready.then(() => {
+      const state = authSDK.getState();
+      if (state.user) {
+        setAuthState({
+          user: state.user,
+          selectedBranch: localStorage.getItem(environment.branch_selected_key),
+        });
+      } else {
+        setAuthState({ user: null, selectedBranch: null });
+      }
+      setIsLoading(false);
+      setIsInitialized(true);
+    });
+
+    // Cambios subsiguientes (login, logout, expiración)
     const unsubscribe = authSDK.onAuthStateChanged((possible: AuthState) => {
-      setIsLoading(true);
       if (!possible.user) {
         // Limpiar todas las tabs cuando el usuario cierra sesión o la sesión expira
         closeAllTabs();
         setAuthState({ user: null, selectedBranch: null });
       } else {
-        setAuthState(() => ({
+        setAuthState({
           user: possible.user,
           selectedBranch: localStorage.getItem(environment.branch_selected_key),
-        }));
+        });
       }
       setIsLoading(false);
       setIsInitialized(true);
