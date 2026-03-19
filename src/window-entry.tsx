@@ -30,9 +30,12 @@ try {
   // Cuando el OS dispara X o se llama window.close() desde cualquier lado,
   // este handler (en el contexto propio de la ventana) emite el evento y deja
   // que Tauri cierre la ventana normalmente (sin preventDefault).
-  selfWindow.onCloseRequested(async () => {
+  // Handler SÍNCRONO — en Tauri v2 un handler async bloquea el cierre hasta
+  // que el Promise resuelve. El emit va fire-and-forget; Tauri cierra la
+  // ventana de inmediato al retornar el handler sin preventDefault().
+  selfWindow.onCloseRequested(() => {
     if (windowId) {
-      await emit(`${windowId}:window-closed`, { canceled: false }).catch(() => {});
+      emit(`${windowId}:window-closed`, { canceled: false }).catch(() => {});
     }
   });
 })();
