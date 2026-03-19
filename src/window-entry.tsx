@@ -20,6 +20,23 @@ try {
   console.error("[WindowEntry] ❌ Error inicializando tema y apariencia:", error);
 }
 
+// Cada ventana secundaria maneja su propio cierre desde su propio contexto.
+// Esto evita que un onCloseRequested registrado desde el main quede "muerto"
+// en Tauri esperando una respuesta que nunca llega (root cause del zombie).
+(async () => {
+  const selfWindow = getCurrentWebviewWindow();
+  const windowId = new URLSearchParams(window.location.search).get("windowId");
+
+  // Cuando el OS dispara X o se llama window.close() desde cualquier lado,
+  // este handler (en el contexto propio de la ventana) emite el evento y deja
+  // que Tauri cierre la ventana normalmente (sin preventDefault).
+  selfWindow.onCloseRequested(async () => {
+    if (windowId) {
+      await emit(`${windowId}:window-closed`, { canceled: false }).catch(() => {});
+    }
+  });
+})();
+
 // Guard anti-zombie: si el heartbeat de la ventana principal se detiene por más de
 // 5 segundos (reload, crash, o cierre), esta ventana secundaria se auto-cierra.
 (async () => {
