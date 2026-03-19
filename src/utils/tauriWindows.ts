@@ -53,33 +53,22 @@ export async function createSecondaryWindow(
     queryParams = {},
   } = config;
 
-  // Verificar si ya existe una ventana con este ID
-  // Esto puede pasar cuando:
-  // 1. Hot-reload durante desarrollo (ventana queda abierta pero React reinicia)
-  // 2. Usuario recarga la página pero la ventana secundaria sigue abierta
-  // 3. Error en cierre anterior dejó la ventana en estado inconsistente
-  let existingWindow = await WebviewWindow.getByLabel(windowId);
+  // Siempre destruir la ventana existente antes de crear una nueva.
+  // Reutilizar via setFocus() preserva el WebView con su cache de React Query,
+  // lo que puede dejar errores cacheados sin posibilidad de recuperación.
+  // La estrategia correcta es: destruir → esperar → recrear (fresh context).
+  const existingWindow = await WebviewWindow.getByLabel(windowId);
   if (existingWindow) {
+    console.log(`[TauriWindows] Ventana "${windowId}" existe, destruyéndola para recrear con contexto fresco`);
     try {
-      // Intentar enfocar la ventana existente
-      await existingWindow.setFocus();
-      console.log(`[TauriWindows] Ventana "${windowId}" ya existe, enfocándola`);
-      return existingWindow;
-    } catch (err) {
-      // Si falla el focus, la ventana podría estar en mal estado (zombie)
-      console.warn(`[TauriWindows] Ventana "${windowId}" existe pero no responde, cerrándola...`, err);
-      try {
-        await existingWindow.close();
-        // Esperar para que se cierre completamente y libere el label
-        await new Promise(resolve => setTimeout(resolve, 300));
-      } catch (closeErr) {
-        console.error(`[TauriWindows] No se pudo cerrar ventana zombie "${windowId}":`, closeErr);
-      }
-      // Verificar que se cerró correctamente
-      existingWindow = await WebviewWindow.getByLabel(windowId);
-      if (existingWindow) {
-        throw new Error(`La ventana "${windowId}" no se pudo cerrar correctamente. Por favor ciérrala manualmente.`);
-      }
+      await existingWindow.close();
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (closeErr) {
+      console.error(`[TauriWindows] No se pudo cerrar ventana "${windowId}":`, closeErr);
+    }
+    const stillOpen = await WebviewWindow.getByLabel(windowId);
+    if (stillOpen) {
+      throw new Error(`La ventana "${windowId}" no se pudo cerrar correctamente. Por favor ciérrala manualmente.`);
     }
   }
 

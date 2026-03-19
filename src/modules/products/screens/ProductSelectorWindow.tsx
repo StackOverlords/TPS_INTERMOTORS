@@ -39,6 +39,7 @@ import {
   PackageSearch,
   ShoppingCart,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductSelection } from "../hooks/useProductSelection";
 import type { SelectedItem } from "@/types/windowSelectedItems";
@@ -73,6 +74,14 @@ interface WindowConfig {
 const ProductSelectorWindow: React.FC = () => {
   const currentWindow = getCurrentWebviewWindow();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+  const queryClient = useQueryClient();
+
+  // Siempre invalidar cache de productos al montar la ventana.
+  // Esto evita que un error cacheado de React Query (staleTime: 5min) persista
+  // cuando la ventana es reutilizada por Tauri sin destruir el WebView.
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+  }, []);
   const tableRef = useRef<HTMLTableElement>(null);
 
   const config: WindowConfig = useMemo(() => {
