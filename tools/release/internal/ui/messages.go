@@ -69,3 +69,11 @@ type MsgCleanupDone struct {
 var _ tea.Msg = MsgCleanupDetected{}
 var _ tea.Msg = MsgCleanupStepUpdate{}
 var _ tea.Msg = MsgCleanupDone{}
+
+// MsgUpdateNotesDone — resultado de actualizar las release notes en GitHub
+type MsgUpdateNotesDone struct {
+	Success bool
+	Err     error
+}
+
+var _ tea.Msg = MsgUpdateNotesDone{}

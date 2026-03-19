@@ -50,6 +50,10 @@ type Model struct {
 	cleanupSteps []StepState
 	cleanupTags  CleanupTagStatus
 
+	// Update notes mode
+	releaseNotesContent string // contenido leído de RELEASE_NOTES.md
+	updateNotesErr      error
+
 	// Dependencias del sistema
 	ghInstalled bool
 	ghVersion   string
@@ -223,6 +227,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateProgress(msg)
 	case StateSuccess, StateError:
 		return m.updateResult(msg)
+	case StateUpdateNotes, StateUpdateNotesProgress, StateUpdateNotesDone:
+		return m.updateUpdateNotes(msg)
 	case StateCleanupDetect, StateCleanupConfirm, StateCleanupProgress, StateCleanupDone:
 		return m.updateCleanup(msg)
 	}
@@ -282,6 +288,11 @@ func (m Model) updateDashboard(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "b":
 			m.bumpOnlyMode = true
 			m.state = StateBumpSelect
+		case "u":
+			if m.ghInstalled {
+				m.state = StateUpdateNotes
+				m.releaseNotesContent = readReleaseNotes(m.paths.RepoRoot)
+			}
 		case "c":
 			m.state = StateCleanupDetect
 			return m, detectCleanupTagsCmd(m)
@@ -472,6 +483,12 @@ func (m Model) View() string {
 		return viewSuccess(m)
 	case StateError:
 		return viewError(m)
+	case StateUpdateNotes:
+		return viewUpdateNotes(m)
+	case StateUpdateNotesProgress:
+		return viewUpdateNotesProgress(m)
+	case StateUpdateNotesDone:
+		return viewUpdateNotesDone(m)
 	case StateCleanupDetect:
 		return viewCleanupDetect(m)
 	case StateCleanupConfirm:
@@ -483,6 +500,48 @@ func (m Model) View() string {
 	default:
 		return "..."
 	}
+}
+
+// updateUpdateNotes — dispatcher del modo update notes
+func (m Model) updateUpdateNotes(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m.state {
+	case StateUpdateNotes:
+		if key, ok := msg.(tea.KeyMsg); ok {
+			switch key.String() {
+			case "y":
+				m.state = StateUpdateNotesProgress
+				return m, runUpdateNotesCmd(m)
+			case "n", "esc", "q":
+				m.state = StateDashboard
+			}
+		}
+	case StateUpdateNotesProgress:
+		if done, ok := msg.(MsgUpdateNotesDone); ok {
+			m.updateNotesErr = done.Err
+			m.state = StateUpdateNotesDone
+		}
+	case StateUpdateNotesDone:
+		if key, ok := msg.(tea.KeyMsg); ok {
+			switch key.String() {
+			case "q", "enter":
+				return m, tea.Quit
+			case "r":
+				m.state = StateDashboard
+			}
+		}
+	}
+	return m, nil
+}
+
+// readReleaseNotes lee RELEASE_NOTES.md desde el root del repo.
+// Retorna el contenido o un mensaje de error legible.
+func readReleaseNotes(repoRoot string) string {
+	path := filepath.Join(repoRoot, "RELEASE_NOTES.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 // updateCleanup — dispatcher principal del modo cleanup
