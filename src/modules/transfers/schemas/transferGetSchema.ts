@@ -118,8 +118,8 @@ const ProductoDetalleSchema = z.object({
     stock_minimo: z.string().nullable(),
     precio_venta: z.string(),
     precio_venta_alt: z.string(),
-    id_marca_vehiculo: z.number(),
-    marca_vehiculo: MarcaVehiculoSchema,
+    id_marca_vehiculo: z.number().nullable(),
+    marca_vehiculo: MarcaVehiculoSchema.nullable(),
 });
 
 export const TransferDetailGetByIdSchema = z.object({

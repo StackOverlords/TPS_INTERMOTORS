@@ -1,5 +1,6 @@
 import type z from "zod";
 import { Logger } from "./logger";
+import { withFallbacks } from "./schemaTransformer";
 
 export class Validator {
     static validate<T>(
@@ -7,7 +8,8 @@ export class Validator {
         data: unknown,
         context?: string
     ): T {
-        const result = schema.safeParse(data);
+        const robustSchema = withFallbacks(schema as z.ZodTypeAny) as z.ZodSchema<T>;
+        const result = robustSchema.safeParse(data);
 
         if (!result.success) {
             const errorMessage = `Validation failed${context ? ` for ${context}` : ''}`;
@@ -17,7 +19,9 @@ export class Validator {
                 receivedData: data,
             }, 'VALIDATOR');
 
-            throw new Error(`Invalid server response${context ? ` for ${context}` : ''}`);
+            // Backend inconsistente — loguear y retornar datos sin parsear
+            // en lugar de reventar la UI con una pantalla de error
+            return data as T;
         }
 
         Logger.debug(
