@@ -352,7 +352,7 @@ const ProductSelectorWindow: React.FC = () => {
           duration: 1500,
         });
 
-        await emitToWindow(config.windowId, "product-selected", product);
+        await emitToWindow(config.windowId, "product-selected", product).catch(() => {});
         await currentWindow.close();
       }
     },
@@ -515,7 +515,7 @@ const ProductSelectorWindow: React.FC = () => {
       config.windowId,
       "product-multi-selected",
       productsWithQuantities
-    );
+    ).catch(() => {});
 
     await currentWindow.close();
   };
@@ -981,7 +981,7 @@ const ProductSelectorWindow: React.FC = () => {
   };
 
   const handleClose = async () => {
-    await emitToWindow(config.windowId, "window-closed", { canceled: true });
+    await emitToWindow(config.windowId, "window-closed", { canceled: true }).catch(() => {});
     await currentWindow.close();
   };
 
