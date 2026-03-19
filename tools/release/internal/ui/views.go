@@ -84,6 +84,9 @@ func viewDashboard(m Model) string {
 
 	// Keybindings
 	b.WriteString("  " + StyleKey.Render("[n]") + " Nuevo release    " + StyleKey.Render("[b]") + " Solo bump    " + StyleKey.Render("[c]") + " Cleanup release    " + StyleKey.Render("[q]") + " Salir\n")
+	if m.ghInstalled {
+		b.WriteString("  " + StyleKey.Render("[u]") + " Actualizar release notes\n")
+	}
 
 	return b.String()
 }
@@ -352,6 +355,85 @@ func viewCleanupProgress(m Model) string {
 	}
 
 	b.WriteString("\n  " + StyleMuted.Render("Por favor esperá...") + "\n")
+	return b.String()
+}
+
+func viewUpdateNotes(m Model) string {
+	tag := m.versions.Current.Tag("t1")
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  Actualizar Release Notes — %s\n", StyleKey.Render(tag)))
+	b.WriteString("  " + strings.Repeat("─", 44) + "\n\n")
+
+	if m.releaseNotesContent == "" {
+		b.WriteString("  " + StyleWarning.Render("⚠ RELEASE_NOTES.md no encontrado o vacío.") + "\n")
+		b.WriteString("  Creá el archivo en la raíz del repo antes de continuar.\n\n")
+		b.WriteString("  " + StyleKey.Render("[n / Esc]") + " Volver\n")
+		return b.String()
+	}
+
+	// Preview — primeras 8 líneas
+	lines := strings.Split(strings.TrimSpace(m.releaseNotesContent), "\n")
+	preview := lines
+	truncated := false
+	if len(lines) > 8 {
+		preview = lines[:8]
+		truncated = true
+	}
+	for _, line := range preview {
+		b.WriteString("  " + StyleMuted.Render(line) + "\n")
+	}
+	if truncated {
+		b.WriteString("  " + StyleMuted.Render(fmt.Sprintf("  ... (%d líneas en total)", len(lines))) + "\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(fmt.Sprintf("  Se ejecutará: %s\n\n",
+		StyleKey.Render(fmt.Sprintf("gh release edit %s --notes-file RELEASE_NOTES.md", tag))))
+	b.WriteString("  " + StyleWarning.Render("⚠ El GitHub Release debe existir (CI completada).") + "\n\n")
+	b.WriteString("  " + StyleKey.Render("[y]") + " Confirmar    " + StyleKey.Render("[n / Esc]") + " Cancelar\n")
+	return b.String()
+}
+
+func viewUpdateNotesProgress(m Model) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString("  " + StyleMuted.Render("Actualizando release notes en GitHub...") + "\n")
+	return b.String()
+}
+
+func viewUpdateNotesDone(m Model) string {
+	tag := m.versions.Current.Tag("t1")
+	var b strings.Builder
+	b.WriteString("\n")
+
+	if m.updateNotesErr != nil {
+		errBox := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ColorError).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(ColorError).
+			Padding(0, 2).
+			Render("✗  Error al actualizar release notes")
+		b.WriteString("  " + errBox + "\n\n")
+		b.WriteString(fmt.Sprintf("  %s\n\n", StyleError.Render(m.updateNotesErr.Error())))
+		b.WriteString("  " + StyleMuted.Render("Verificá que la CI haya terminado y el release exista.") + "\n\n")
+	} else {
+		doneBox := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ColorSuccess).
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(ColorSuccess).
+			Padding(0, 2).
+			Render("✓  Release notes actualizadas")
+		b.WriteString("  " + doneBox + "\n\n")
+		b.WriteString(fmt.Sprintf("  Tag: %s\n", StyleSuccess.Render(tag)))
+		b.WriteString(fmt.Sprintf("  El frontend leerá el markdown actualizado desde la API de GitHub.\n"))
+		b.WriteString("\n")
+	}
+
+	b.WriteString("  " + StyleKey.Render("[r]") + " Volver al dashboard    " + StyleKey.Render("[q / Enter]") + " Salir\n")
 	return b.String()
 }
 

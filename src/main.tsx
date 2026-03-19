@@ -19,6 +19,8 @@ import { queryClient } from "./lib/reactQueryConfig.ts";
 import logger from "./utils/logger.ts";
 // import { useAppearanceStore } from "./stores/appearanceStore.ts";
 import { flushTabStorage } from "./states/tabStore.ts";
+import { emit } from "@tauri-apps/api/event";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useEffect } from "react";
 
 // try {
@@ -63,6 +65,34 @@ function App() {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Al montar (incluyendo reloads), cerrar todas las ventanas secundarias huérfanas.
+  // Es la defensa principal contra zombies: cuando el main recarga, el primer efecto
+  // que corre destruye cualquier ventana secundaria que quedó abierta.
+  useEffect(() => {
+    const killOrphanWindows = async () => {
+      try {
+        const allWindows = await WebviewWindow.getAll();
+        for (const win of allWindows) {
+          if (win.label !== "main") {
+            win.close().catch(() => {});
+          }
+        }
+      } catch {
+        // no-op: si falla el listado, no hay nada que limpiar
+      }
+    };
+    killOrphanWindows();
+  }, []);
+
+  // Heartbeat como capa secundaria: cubre el caso de crash del main (no reload).
+  // Las ventanas secundarias se auto-cierran si no reciben pulso por 5s.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      emit("main:heartbeat").catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

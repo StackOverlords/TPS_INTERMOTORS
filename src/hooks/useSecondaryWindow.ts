@@ -189,12 +189,11 @@ export function useSecondaryWindow(
       // Callback de creación
       onWindowCreatedRef.current?.(newWindow);
 
-      // Escuchar cuando la ventana se cierre
-      await newWindow.onCloseRequested(() => {
-        setIsOpen(false);
-        setWindow(null);
-        onWindowClosedRef.current?.();
-      });
+      // NO registrar onCloseRequested desde el main — ese handler vive en el
+      // contexto del main y cuando el main recarga, el IPC bridge del handler
+      // muere pero Tauri sigue esperando su respuesta: la ventana queda bloqueada.
+      // El cierre se detecta vía el evento "window-closed" que emite la propia
+      // ventana secundaria desde su propio contexto (ver window-entry.tsx).
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       console.error(
@@ -276,7 +275,13 @@ export function useSecondaryWindow(
             windowId,
             eventName,
             (data) => {
-              // console.log(`[useSecondaryWindow] ${windowId}: 🔔 Listener disparado para "${eventName}"`);
+              // "window-closed" actualiza el estado interno del hook sin depender
+              // de onCloseRequested registrado desde el main.
+              if (eventName === "window-closed") {
+                setIsOpen(false);
+                setWindow(null);
+                onWindowClosedRef.current?.();
+              }
               onEventRef.current?.(eventName, data);
             },
           );

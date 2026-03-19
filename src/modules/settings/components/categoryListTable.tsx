@@ -1,5 +1,6 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useDebounce from "@/modules/categories/hooks/useDebounce";
 import type {
   Category,
   CreateCategory,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   Edit,
   FolderOpen,
+  Loader2,
   Settings,
   Trash2,
 } from "lucide-react";
@@ -33,6 +35,7 @@ import { useLocation, useNavigate } from "react-router";
 import { useGetCategoryById } from "../hooks/category/useGetCategoryById";
 import { useCreateCategory } from "../hooks/category/useCreateCategory";
 import { useUpdateCategory } from "../hooks/category/useUpdateCategory";
+import { usePreviewSyncCategory } from "../hooks/category/usePreviewSyncCategory";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useForm } from "react-hook-form";
@@ -48,6 +51,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { Checkbox } from "@/components/atoms/checkbox";
+import { Label } from "@/components/atoms/label";
+import { Input } from "@/components/atoms/input";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
@@ -124,8 +129,17 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
     resolver: zodResolver(UpdateCategorySchema),
     defaultValues: {
       categoria: "",
+      patron_descripcion: "",
     },
   });
+
+  const patronDescripcionValue = updateForm.watch("patron_descripcion") ?? "";
+  const debouncedPatron = useDebounce(patronDescripcionValue, 600);
+
+  const {
+    data: syncPreview,
+    isFetching: isFetchingPreview,
+  } = usePreviewSyncCategory(editingId ?? 0, debouncedPatron);
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
   const currentForm = useMemo(
@@ -152,6 +166,7 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
     if (categoryById && isEditing) {
       updateForm.reset({
         categoria: categoryById.categoria,
+        patron_descripcion: categoryById.categoria,
       });
     }
   }, [categoryById, isEditing, updateForm]);
@@ -219,8 +234,8 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
           onSuccess: () => {
             showSuccessToast({
               title: "Categoría Modificada",
-              description: "Categoría modificada exitosamente",
-              duration: 5000,
+              description: "Categoría modificada exitosamente. La actualización de descripciones se procesará en segundo plano y puede tardar dependiendo de la cantidad de productos.",
+              duration: 8000,
             });
             handleDialogToggle(false);
           },
@@ -537,7 +552,63 @@ const CategoryListTable: React.FC<CategoryListTableProps> = ({
             isEditing={isEditing}
             editingId={editingId}
             isSaving={isSaving}
-          />
+          >
+            {isEditing && (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="patron_descripcion">
+                    Patrón de búsqueda en descripciones
+                  </Label>
+                  <Input
+                    id="patron_descripcion"
+                    {...updateForm.register("patron_descripcion")}
+                    placeholder="Texto a reemplazar en descripciones de productos..."
+                    disabled={isLoadingCategoryById}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Opcional. Si se cambia el nombre, reemplaza este patrón en las descripciones de productos.
+                  </p>
+                  {updateForm.formState.errors.patron_descripcion && (
+                    <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                      {updateForm.formState.errors.patron_descripcion.message}
+                    </p>
+                  )}
+                </div>
+
+                {debouncedPatron.trim().length > 0 && (
+                  <div className={cn(
+                    "rounded-md border border-border p-3 text-xs space-y-1",
+                    isFetchingPreview && "opacity-60"
+                  )}>
+                    <div className="flex items-center gap-1.5 font-medium text-muted-foreground mb-2">
+                      {isFetchingPreview && <Loader2 className="size-3 animate-spin" />}
+                      Vista previa del impacto
+                    </div>
+                    {syncPreview ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Total productos en la categoría</span>
+                          <span className="font-mono font-medium">{syncPreview.total_categoria}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-600 dark:text-green-400">Se actualizarán</span>
+                          <span className="font-mono font-medium text-green-600 dark:text-green-400">{syncPreview.productos_afectados}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Sin coincidencia</span>
+                          <span className="font-mono font-medium">{syncPreview.sin_match}</span>
+                        </div>
+                      </>
+                    ) : (
+                      !isFetchingPreview && (
+                        <p className="text-muted-foreground">No se pudo cargar el preview.</p>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </ConfigFormDialog>
         </div>
       </CardHeader>
       <CardContent className="h-full flex flex-col overflow-hidden">

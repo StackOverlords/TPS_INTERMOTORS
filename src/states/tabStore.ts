@@ -195,7 +195,12 @@ export const useTabStore = create<TabState>()(
       },
 
       closeAllTabs: () => {
-        set({ tabs: [], activeTabId: null });
+        const state = get();
+        const pinnedTabs = state.tabs.filter(t => t.pinned);
+        const newActiveTabId = pinnedTabs.length > 0
+          ? (pinnedTabs.find(t => t.id === state.activeTabId)?.id ?? pinnedTabs[0].id)
+          : null;
+        set({ tabs: pinnedTabs, activeTabId: newActiveTabId });
       },
 
       closeOtherTabs: (tabId: string) => {
@@ -203,8 +208,10 @@ export const useTabStore = create<TabState>()(
         const tab = state.tabs.find(t => t.id === tabId);
 
         if (tab) {
+          const pinnedTabs = state.tabs.filter(t => t.pinned && t.id !== tabId);
+          const tabsToKeep = [...pinnedTabs, tab];
           set({
-            tabs: [tab],
+            tabs: tabsToKeep,
             activeTabId: tabId
           });
         }

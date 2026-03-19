@@ -39,6 +39,7 @@ import {
   PackageSearch,
   ShoppingCart,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductSelection } from "../hooks/useProductSelection";
 import type { SelectedItem } from "@/types/windowSelectedItems";
@@ -73,6 +74,14 @@ interface WindowConfig {
 const ProductSelectorWindow: React.FC = () => {
   const currentWindow = getCurrentWebviewWindow();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+  const queryClient = useQueryClient();
+
+  // Siempre invalidar cache de productos al montar la ventana.
+  // Esto evita que un error cacheado de React Query (staleTime: 5min) persista
+  // cuando la ventana es reutilizada por Tauri sin destruir el WebView.
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+  }, []);
   const tableRef = useRef<HTMLTableElement>(null);
 
   const config: WindowConfig = useMemo(() => {
@@ -125,7 +134,7 @@ const ProductSelectorWindow: React.FC = () => {
     setPageSize,
     setFilters,
     resetFilters,
-  } = useProductFilters(Number(selectedBranchId) || 1);
+  } = useProductFilters(Number(selectedBranchId) || 1, 10);
 
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
@@ -343,7 +352,7 @@ const ProductSelectorWindow: React.FC = () => {
           duration: 1500,
         });
 
-        await emitToWindow(config.windowId, "product-selected", product);
+        await emitToWindow(config.windowId, "product-selected", product).catch(() => {});
         await currentWindow.close();
       }
     },
@@ -506,7 +515,7 @@ const ProductSelectorWindow: React.FC = () => {
       config.windowId,
       "product-multi-selected",
       productsWithQuantities
-    );
+    ).catch(() => {});
 
     await currentWindow.close();
   };
@@ -972,7 +981,7 @@ const ProductSelectorWindow: React.FC = () => {
   };
 
   const handleClose = async () => {
-    await emitToWindow(config.windowId, "window-closed", { canceled: true });
+    await emitToWindow(config.windowId, "window-closed", { canceled: true }).catch(() => {});
     await currentWindow.close();
   };
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"tps-release/internal/version"
@@ -283,6 +284,25 @@ func runCleanupStepCmd(m Model, step Step) tea.Cmd {
 			Status: statusFromErr(err),
 			Err:    err,
 		}
+	}
+}
+
+// runUpdateNotesCmd corre `gh release edit <tag-t1> --notes-file RELEASE_NOTES.md`
+// y emite MsgUpdateNotesDone con el resultado.
+func runUpdateNotesCmd(m Model) tea.Cmd {
+	return func() tea.Msg {
+		tag := m.versions.Current.Tag("t1")
+		notesPath := fmt.Sprintf("%s/RELEASE_NOTES.md", m.paths.RepoRoot)
+
+		if _, err := os.Stat(notesPath); err != nil {
+			return MsgUpdateNotesDone{Err: fmt.Errorf("RELEASE_NOTES.md no encontrado en %s", notesPath)}
+		}
+
+		out, err := exec.Command("gh", "release", "edit", tag, "--notes-file", notesPath).CombinedOutput()
+		if err != nil {
+			return MsgUpdateNotesDone{Err: fmt.Errorf("%s: %s", err.Error(), strings.TrimSpace(string(out)))}
+		}
+		return MsgUpdateNotesDone{Success: true}
 	}
 }
 
