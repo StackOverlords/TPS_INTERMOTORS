@@ -44,34 +44,44 @@ const SecondaryTitleBar = () => {
   return (
     <div
       onMouseDown={handleMouseDown}
-      className="bg-background border-b border-border flex items-center justify-between flex-shrink-0 select-none z-50 py-1 px-2"
+      className="bg-primary text-primary-foreground flex items-center justify-between flex-shrink-0 select-none z-50 py-1 px-2"
     >
       <div className="flex items-center gap-2 h-8">
         <span className="font-black uppercase text-xs">Intermotors</span>
         {title && (
           <>
-            <Separator orientation="vertical" />
-            <span className="text-xs text-muted-foreground">{title}</span>
+            <Separator orientation="vertical" className="bg-primary-foreground/30" />
+            <span className="text-xs text-primary-foreground/70">{title}</span>
           </>
         )}
       </div>
 
       <div className="flex items-center gap-1">
-        <Button type="button" variant="ghost" className="size-8" onClick={handleMinimize}>
-          <Minus className="size-3 text-foreground" />
+        <Button
+          type="button"
+          variant="ghost"
+          className="size-8 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+          onClick={handleMinimize}
+        >
+          <Minus className="size-3" />
         </Button>
 
-        <Button type="button" variant="ghost" className="size-8" onClick={handleMaximize}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="size-8 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+          onClick={handleMaximize}
+        >
           {isMaximized
-            ? <Copy className="size-3 text-foreground rotate-270" />
-            : <Square className="size-3 text-foreground" />
+            ? <Copy className="size-3 rotate-270" />
+            : <Square className="size-3" />
           }
         </Button>
 
         <Button
           type="button"
           variant="ghost"
-          className="size-8 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+          className="size-8 text-primary-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
           onClick={handleClose}
         >
           <X className="size-3" />

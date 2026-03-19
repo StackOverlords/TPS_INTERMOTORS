@@ -41,7 +41,7 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
           <TooltipProvider>
             <Toaster />
             <ZoomManager />
-            <div className="h-screen w-screen overflow-hidden flex flex-col">
+            <div className="h-screen w-screen overflow-hidden flex flex-col ring-1 ring-border">
               <SecondaryTitleBar />
               <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
             </div>
