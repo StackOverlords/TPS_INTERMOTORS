@@ -30,6 +30,7 @@ interface ConfigFormDialogProps<T extends FieldValues> {
   isEditing?: boolean;
   editingId?: string | number | null;
   isSaving?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ConfigFormDialog<T extends FieldValues>({
@@ -44,6 +45,7 @@ export function ConfigFormDialog<T extends FieldValues>({
   isEditing = false,
   editingId,
   isSaving = false,
+  children,
 }: ConfigFormDialogProps<T>) {
   const defaultTrigger = (
     <Button className="w-full sm:w-auto">
@@ -98,6 +100,8 @@ export function ConfigFormDialog<T extends FieldValues>({
               </>
             )}
           </div>
+
+          {children}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button

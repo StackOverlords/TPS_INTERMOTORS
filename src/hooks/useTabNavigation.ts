@@ -188,6 +188,12 @@ export const useTabNavigation = () => {
       return;
     }
 
+    // No permitir cerrar tabs pinneadas
+    const targetTab = state.tabs.find(tab => tab.id === targetTabId);
+    if (targetTab?.pinned) {
+      return;
+    }
+
     // Activar bandera para prevenir recreación de tab
     isClosingTabRef.current = true;
 
