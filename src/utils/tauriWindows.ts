@@ -48,7 +48,7 @@ export async function createSecondaryWindow(
     y,
     fullscreen = false,
     alwaysOnTop = false,
-    decorations = true,
+    decorations = false,
     transparent = false,
     queryParams = {},
   } = config;
@@ -75,6 +75,7 @@ export async function createSecondaryWindow(
   // Construir URL con query params
   const queryString = new URLSearchParams({
     windowId,
+    windowTitle: title,
     ...queryParams,
   }).toString();
 
