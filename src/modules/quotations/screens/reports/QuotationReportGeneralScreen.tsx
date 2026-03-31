@@ -187,6 +187,28 @@ const columns: ColumnDef<QuotationReportGeneralItem>[] = [
   },
 ];
 
+const GeneralTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-48">
+      <p className="font-semibold text-foreground mb-2">{d.name}</p>
+      <div className="space-y-1">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Cantidad:</span>
+          <span className="font-medium tabular-nums">{d.barValue?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Subtotal:</span>
+          <span className="font-medium tabular-nums text-purple-600 dark:text-purple-400">
+            {d.lineValue?.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuotationReportGeneralScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
@@ -457,6 +479,7 @@ const QuotationReportGeneralScreen = () => {
                   barGradientEnd: "#d8b4fe",
                   lineColor: "#f59e0b",
                 }}
+                customTooltip={GeneralTooltip}
                 barLabel="Cantidad"
                 lineLabel="Subtotal"
                 height={380}

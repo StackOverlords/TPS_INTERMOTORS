@@ -5,7 +5,7 @@ import { ZoomManager } from "@/components/common/ZoomManager";
 // import { KeybindingProvider } from '@/contexts/KeybindingContext'; // ⚠️ DEPRECATED: Reemplazado por el nuevo sistema de keybindings con Zustand
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { queryClient } from "@/lib/reactQueryConfig";
-import authSDK from "@/services/sdk-simple-auth";
+import { useAuthSDK } from "@/contexts/AuthSDKContext";
 import { QueryClientProvider } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { HotkeysProvider } from "react-hotkeys-hook";
@@ -15,6 +15,7 @@ interface WindowLayoutProps {
 }
 
 const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
+  const authSDK = useAuthSDK();
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
