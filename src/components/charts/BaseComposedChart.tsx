@@ -194,8 +194,21 @@ export function BaseComposedChart({
         />
 
         <Tooltip
-          content={customTooltip || undefined}
+          {...(customTooltip ? { content: customTooltip } : {})}
           cursor={{ fill: "hsl(var(--muted))", opacity: 0.2 }}
+          contentStyle={{
+            backgroundColor: "hsl(var(--popover))",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: "6px",
+            color: "hsl(var(--popover-foreground))",
+            fontSize: "0.75rem",
+          }}
+          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+          labelStyle={{
+            color: "hsl(var(--popover-foreground))",
+            fontWeight: 600,
+            marginBottom: "4px",
+          }}
         />
 
         {showLegend && (
