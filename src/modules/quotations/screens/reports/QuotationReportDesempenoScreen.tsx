@@ -114,6 +114,34 @@ const columns: ColumnDef<QuotationReportDesempenoItem>[] = [
   },
 ];
 
+const DesempenoTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-56">
+      <p className="font-semibold text-foreground mb-2">{d.name}</p>
+      <div className="space-y-1">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Total cotizaciones:</span>
+          <span className="font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">{d.total_cotizaciones?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Convertidas:</span>
+          <span className="font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">{d.convertidas?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Tasa conversión:</span>
+          <span className="font-medium tabular-nums">{d.tasa_conversion?.toLocaleString("es-BO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Monto promedio:</span>
+          <span className="font-medium tabular-nums">{d.monto_promedio_cotizacion?.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuotationReportDesempenoScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
@@ -175,6 +203,8 @@ const QuotationReportDesempenoScreen = () => {
     name: item.responsable,
     total_cotizaciones: item.total_cotizaciones,
     convertidas: item.convertidas,
+    tasa_conversion: item.tasa_conversion,
+    monto_promedio_cotizacion: item.monto_promedio_cotizacion,
   }));
 
   return (
@@ -345,6 +375,7 @@ const QuotationReportDesempenoScreen = () => {
             <div className="p-4" style={{ height: 420 }}>
               <BaseBarChart
                 data={chartData}
+                customTooltip={DesempenoTooltip}
                 series={[
                   {
                     dataKey: "total_cotizaciones",

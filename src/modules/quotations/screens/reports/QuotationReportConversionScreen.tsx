@@ -105,6 +105,22 @@ const columns: ColumnDef<QuotationReportConversionItem>[] = [
   },
 ];
 
+const ConversionTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-44">
+      <p className="font-semibold text-foreground mb-2">{d.name}</p>
+      <div className="flex justify-between gap-4">
+        <span className="text-muted-foreground">Tasa de conversión:</span>
+        <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+          {d.value?.toLocaleString("es-BO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const QuotationReportConversionScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
@@ -406,6 +422,7 @@ const QuotationReportConversionScreen = () => {
             <div className="p-4" style={{ height: 420 }}>
               <BaseAreaChart
                 data={chartData}
+                customTooltip={ConversionTooltip}
                 colorConfig={{
                   type: "gradient",
                   strokeColor: "#10b981",

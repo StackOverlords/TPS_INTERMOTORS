@@ -115,6 +115,31 @@ const columns: ColumnDef<QuotationReportTopClientesItem>[] = [
   },
 ];
 
+const TopClientesTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-56">
+      <p className="font-medium text-foreground mb-1 max-w-64 leading-snug">{d.name}</p>
+      {d.cliente_nit && <p className="font-mono text-muted-foreground mb-2">{d.cliente_nit}</p>}
+      <div className="space-y-1">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Total cotizaciones:</span>
+          <span className="font-bold text-yellow-600 dark:text-yellow-400 tabular-nums">{d.value?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Convertidas:</span>
+          <span className="font-medium text-emerald-600 dark:text-emerald-400 tabular-nums">{d.convertidas?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Tasa conversión:</span>
+          <span className="font-medium tabular-nums">{d.tasa_conversion?.toLocaleString("es-BO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuotationReportTopClientesScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
@@ -175,9 +200,12 @@ const QuotationReportTopClientesScreen = () => {
   };
 
   // Preparar datos para el gráfico horizontal: cliente vs total_cotizaciones
-  const chartData: BaseChartData[] = data.map((item) => ({
+  const chartData = data.map((item) => ({
     name: item.cliente_nombre,
     value: item.total_cotizaciones,
+    cliente_nit: item.cliente_nit,
+    convertidas: item.convertidas,
+    tasa_conversion: item.tasa_conversion,
   }));
 
   return (
@@ -365,6 +393,7 @@ const QuotationReportTopClientesScreen = () => {
             <div className="p-4">
               <BaseHorizontalBarChart
                 data={chartData}
+                customTooltip={TopClientesTooltip}
                 colorConfig={{
                   type: "gradient",
                   gradientStart: "#eab308",
