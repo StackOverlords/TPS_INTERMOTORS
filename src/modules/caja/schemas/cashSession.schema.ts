@@ -18,7 +18,7 @@ export const CashSessionSchema = z.object({
     estado_label: z.string(),
     sucursal: BranchRefSchema,
     usuario_apertura: UserRefSchema,
-    usuario_cierre: UserRefSchema.nullable(),
+    usuario_cierre: UserRefSchema.nullish().transform(v => v ?? null),
     fecha_apertura: z.string(),
     fecha_cierre: z.string().nullable(),
     monto_apertura: z.coerce.number(),

@@ -4,7 +4,24 @@ import z from "zod";
 export const CashMovementSchema = z.object({
     id: z.number().int(),
     tipo_movimiento: z.enum(['INGRESO', 'EGRESO']),
-    concepto: z.enum(['VENTA', 'COBRO_CUENTA', 'INGRESO_MANUAL', 'EGRESO_MANUAL', 'GASTO', 'GASTO_NO_DEDUCIBLE']),
+    concepto: z.enum([
+        // Ingresos
+        'VENTA_CONTADO',
+        'VENTA_RAPIDA',
+        'VENTA_LOCAL',
+        'VENTA_MULTIPLE',
+        'COBRANZA_CREDITO',
+        'ANTICIPO_COTIZACION',
+        'INGRESO_MANUAL',
+        'ANULACION_DEVOLUCION',
+        // Egresos
+        'GASTO_NO_DEDUCIBLE',
+        'RETIRO_EFECTIVO',
+        'DEVOLUCION_CLIENTE',
+        'VUELTO',
+        'ANULACION_VENTA',
+        'ANULACION_COBRANZA',
+    ]),
     concepto_label: z.string(),
     origen: z.enum(['AUTOMATICO', 'MANUAL']),
     forma_pago: z.enum(['EFECTIVO', 'TRANSFERENCIA', 'QR', 'TARJETA']),

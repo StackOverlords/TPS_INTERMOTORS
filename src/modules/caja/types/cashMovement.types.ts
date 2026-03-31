@@ -1,4 +1,20 @@
-export type CashMovementConcept = 'VENTA' | 'COBRO_CUENTA' | 'INGRESO_MANUAL' | 'EGRESO_MANUAL' | 'GASTO' | 'GASTO_NO_DEDUCIBLE';
+export type CashMovementConcept =
+    // Ingresos
+    | 'VENTA_CONTADO'
+    | 'VENTA_RAPIDA'
+    | 'VENTA_LOCAL'
+    | 'VENTA_MULTIPLE'
+    | 'COBRANZA_CREDITO'
+    | 'ANTICIPO_COTIZACION'
+    | 'INGRESO_MANUAL'
+    | 'ANULACION_DEVOLUCION'
+    // Egresos
+    | 'GASTO_NO_DEDUCIBLE'
+    | 'RETIRO_EFECTIVO'
+    | 'DEVOLUCION_CLIENTE'
+    | 'VUELTO'
+    | 'ANULACION_VENTA'
+    | 'ANULACION_COBRANZA';
 
 export type PaymentType = 'EFECTIVO' | 'TRANSFERENCIA' | 'QR' | 'TARJETA';
 
