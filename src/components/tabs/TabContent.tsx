@@ -49,7 +49,7 @@ const TabContentComponent: React.FC<TabContentProps> = ({
           display: isActive ? "block" : "none",
           opacity: isActive ? 1 : 0,
         }}
-        {...(!isActive && { inert: "" as any })}
+        inert={!isActive || undefined}
       >
         {children}
       </div>

@@ -2,16 +2,32 @@ import WindowLayout from "@/layouts/WindowLayout";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { createRoot } from "react-dom/client";
+import { AuthSDKContext } from "./contexts/AuthSDKContext.tsx";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
 import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
 import "./index.css";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
+import authSDK, { createAuthSDK } from "./services/sdk-simple-auth.ts";
 import {
   registerDefaultWindowComponents,
   WindowComponentRenderer,
 } from "./windows/WindowRegistry";
 import { useThemeStore } from "./stores/themeStore.ts";
 import { useAppearanceStore } from "./stores/appearanceStore.ts";
+
+// Detect if this entry point is running in a secondary window.
+// All secondary windows are opened with ?windowId=... in the URL by tauriWindows.ts.
+const isSecondaryWindow =
+  new URLSearchParams(window.location.search).get("windowId") !== null;
+
+// Create a secondary-window-specific auth SDK instance when needed.
+// isSecondary=true disables validateOnStartup to avoid redundant session checks
+// while keeping tabSync enabled so auth state flows in via BroadcastChannel.
+// This instance is injected via AuthSDKContext.Provider below so WindowLayout
+// picks up the correct SDK instance instead of the main-window singleton.
+export const windowAuthSDK = isSecondaryWindow
+  ? createAuthSDK(true)
+  : undefined;
 
 try {
   useThemeStore.getState().initializeTheme();
@@ -84,13 +100,15 @@ const requiresAuth = componentId
 if (rootElement) {
   createRoot(rootElement).render(
     requiresAuth ? (
-      <TaskNotificationsProvider>
-        <WebSocketProvider>
-          <WindowLayout>
-            <WindowComponentRenderer />
-          </WindowLayout>
-        </WebSocketProvider>
-      </TaskNotificationsProvider>
+      <AuthSDKContext.Provider value={windowAuthSDK ?? authSDK}>
+        <TaskNotificationsProvider>
+          <WebSocketProvider>
+            <WindowLayout>
+              <WindowComponentRenderer />
+            </WindowLayout>
+          </WebSocketProvider>
+        </TaskNotificationsProvider>
+      </AuthSDKContext.Provider>
     ) : (
       <WindowComponentRenderer />
     )

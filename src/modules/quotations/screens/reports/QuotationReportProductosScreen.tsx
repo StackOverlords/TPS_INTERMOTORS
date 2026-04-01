@@ -117,6 +117,35 @@ const columns: ColumnDef<QuotationReportProductosItem>[] = [
   },
 ];
 
+const ProductosTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-background/75 backdrop-blur-md border border-border/50 rounded-lg shadow-xl p-3 text-xs min-w-56">
+      <p className="font-medium text-foreground mb-1 max-w-64 leading-snug">{d.name}</p>
+      {d.codigo && <p className="font-mono text-muted-foreground mb-2">{d.codigo}</p>}
+      <div className="space-y-1">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Veces cotizado:</span>
+          <span className="font-bold text-blue-600 dark:text-blue-400 tabular-nums">{d.value?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Cant. cotizada:</span>
+          <span className="font-medium tabular-nums">{d.cantidad_cotizada?.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Precio promedio:</span>
+          <span className="font-medium tabular-nums">{d.precio_promedio?.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Monto total:</span>
+          <span className="font-medium tabular-nums text-primary">{d.monto_total?.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuotationReportProductosScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
@@ -176,9 +205,13 @@ const QuotationReportProductosScreen = () => {
     }
   };
 
-  const chartData: BaseChartData[] = data.map((item) => ({
+  const chartData = data.map((item) => ({
     name: item.producto ?? "Sin nombre",
     value: item.veces_cotizado ?? 0,
+    codigo: item.codigo,
+    cantidad_cotizada: item.cantidad_cotizada ?? 0,
+    precio_promedio: item.precio_promedio ?? 0,
+    monto_total: item.monto_total ?? 0,
   }));
 
   return (
@@ -366,6 +399,7 @@ const QuotationReportProductosScreen = () => {
             <div className="p-4">
               <BaseHorizontalBarChart
                 data={chartData}
+                customTooltip={ProductosTooltip}
                 colorConfig={{
                   type: "gradient",
                   gradientStart: "#3b82f6",
