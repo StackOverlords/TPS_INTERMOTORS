@@ -52,7 +52,7 @@ const salesProtectedRoutes: RouteType[] = [
       },
       {
         path: "/dashboard/reports/general",
-        name: "Reporte general",
+        name: "Reporte general de ventas",
         type: "protected",
         element: GeneralReportScreen,
         isAdmin: true,

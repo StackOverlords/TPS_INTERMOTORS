@@ -128,6 +128,7 @@ export const reportService = {
       undefined,
       ExcelRequestConfig()
     );
+    
       Logger.info('Most sold report blob fetched successfully', {}, MODULE_NAME);
       return blob as Blob;
     }
