@@ -6,16 +6,16 @@ import { Badge } from "@/components/atoms/badge";
 import { TableCell, TableRow } from "@/components/atoms/table";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import { formatCurrency } from "@/utils/formaters";
-import { Award } from "lucide-react";
-import type { PurchaseReportMayorCostoItem } from "../../types/purchaseReport.types";
+import type { OrderReportGeneralItem } from "../../types/orderReport.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface PurchaseMayorCostoReportTableProps {
-  data: PurchaseReportMayorCostoItem[];
+interface OrderGeneralReportTableProps {
+  data: OrderReportGeneralItem[];
   isLoading?: boolean;
   isFetching?: boolean;
   isError?: boolean;
+  showRowNumbers?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -26,64 +26,149 @@ const formatNumber = (value: number, decimals = 2) =>
     maximumFractionDigits: decimals,
   });
 
-const getRankingCell = (rank: number) => {
-  if (rank === 1)
-    return (
-      <span className="flex gap-2 font-semibold px-2">
-        <Award className="size-4 text-yellow-500 hover:text-yellow-600" /> 1°
-      </span>
-    );
-  if (rank === 2)
-    return (
-      <span className="flex gap-2 font-semibold px-2">
-        <Award className="size-4 text-gray-400 hover:text-gray-500" /> 2°
-      </span>
-    );
-  if (rank === 3)
-    return (
-      <span className="flex gap-2 font-semibold px-2">
-        <Award className="size-4 text-orange-600 hover:text-orange-700" /> 3°
-      </span>
-    );
-  return <span className="font-medium px-2">{rank}°</span>;
+// Badges para estado_pedido
+const ESTADO_CONFIG: Record<
+  string,
+  {
+    label: string;
+    variant:
+      | "default"
+      | "success"
+      | "warning"
+      | "accent"
+      | "info"
+      | "secondary"
+      | "outline"
+      | "danger";
+  }
+> = {
+  D: { label: "Recibido", variant: "success" },
+  T: { label: "En tránsito", variant: "info" },
+  P: { label: "Pendiente", variant: "warning" },
+  A: { label: "Anulado", variant: "danger" },
+};
+
+const getEstadoBadge = (estado: string) => {
+  const cfg = ESTADO_CONFIG[estado] ?? {
+    label: estado,
+    variant: "outline" as const,
+  };
+  return (
+    <Badge
+      variant={cfg.variant}
+      className="text-[10px] px-1.5 py-0 whitespace-nowrap"
+    >
+      {cfg.label}
+    </Badge>
+  );
+};
+
+// Badge tipo_pedido
+const TIPO_PEDIDO_CONFIG: Record<
+  string,
+  { label: string; variant: "default" | "secondary" | "outline" }
+> = {
+  MY: { label: "Mayor", variant: "secondary" },
+  ME: { label: "Menor", variant: "outline" },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PurchaseMayorCostoReportTable({
+export function OrderGeneralReportTable({
   data,
   isLoading = false,
   isFetching = false,
   isError = false,
-}: PurchaseMayorCostoReportTableProps) {
+  showRowNumbers = false,
+}: OrderGeneralReportTableProps) {
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null);
 
-  const maxSubtotal = useMemo(
-    () => Math.max(...data.map((d) => d.subtotal), 1),
-    [data]
-  );
-
-  const columns = useMemo<ColumnDef<PurchaseReportMayorCostoItem>[]>(
+  const columns = useMemo<ColumnDef<OrderReportGeneralItem>[]>(
     () => [
+      ...(showRowNumbers
+        ? [
+            {
+              id: "ranking",
+              header: "#",
+              cell: ({ row }) => (
+                <span className="font-medium px-2 text-muted-foreground">
+                  {row.index + 1}
+                </span>
+              ),
+              enableSorting: false,
+              size: 50,
+              minSize: 50,
+            } satisfies ColumnDef<OrderReportGeneralItem>,
+          ]
+        : []),
+
       {
-        id: "ranking",
-        header: "# Ranking",
-        cell: ({ row }) => (
-          <div className="flex items-center">
-            {getRankingCell(row.index + 1)}
-          </div>
+        accessorKey: "nro",
+        header: "N° Pedido",
+        cell: ({ getValue }) => (
+          <span className="font-mono text-xs font-semibold text-foreground">
+            {getValue<number>()}
+          </span>
         ),
-        enableSorting: false,
-        size: 60,
-        minSize: 55,
+        size: 70,
+        minSize: 50,
+      },
+
+      {
+        accessorKey: "fecha_pedido",
+        header: "Fecha Pedido",
+        cell: ({ getValue }) => (
+          <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+            {getValue<string>()}
+          </span>
+        ),
+        size: 100,
+        minSize: 50,
+      },
+
+      {
+        accessorKey: "fecha_llegada",
+        header: "Fecha Llegada",
+        cell: ({ getValue }) => (
+          <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+            {getValue<string | null>() ?? (
+              <span className="text-muted-foreground/50 italic">—</span>
+            )}
+          </span>
+        ),
+        size: 100,
+        minSize: 50,
+      },
+
+      {
+        accessorKey: "estado_pedido",
+        header: "Estado",
+        cell: ({ getValue }) => getEstadoBadge(getValue<string>()),
+        size: 110,
+        minSize: 90,
+      },
+
+      {
+        accessorKey: "proveedor",
+        header: "Proveedor",
+        cell: ({ getValue }) => (
+          <span
+            className="text-xs font-medium line-clamp-1 block max-w-[200px]"
+            title={getValue<string>()}
+          >
+            {getValue<string>()}
+          </span>
+        ),
+        size: 220,
+        minSize: 150,
       },
 
       {
         accessorKey: "codigo",
         header: "Código",
         cell: ({ getValue }) => (
-          <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+          <span className="font-mono text-[10px] text-muted-foreground whitespace-nowrap">
             {getValue<string>()}
           </span>
         ),
@@ -107,8 +192,8 @@ export function PurchaseMayorCostoReportTable({
       },
 
       {
-        accessorKey: "grupo",
-        header: "Grupo",
+        accessorKey: "marca",
+        header: "Marca",
         cell: ({ getValue }) => (
           <Badge
             variant="outline"
@@ -117,18 +202,26 @@ export function PurchaseMayorCostoReportTable({
             {getValue<string>()}
           </Badge>
         ),
-        size: 180,
-        minSize: 130,
+        size: 100,
+        minSize: 80,
       },
 
       {
-        accessorKey: "linea",
-        header: "Línea",
-        cell: ({ getValue }) => (
-          <span className="text-xs font-medium">{getValue<string>()}</span>
-        ),
-        size: 110,
-        minSize: 80,
+        accessorKey: "tipo_pedido",
+        header: "Tipo",
+        cell: ({ getValue }) => {
+          const cfg = TIPO_PEDIDO_CONFIG[getValue<string>()] ?? {
+            label: getValue<string>(),
+            variant: "outline" as const,
+          };
+          return (
+            <Badge variant={cfg.variant} className="text-[10px] px-1.5 py-0">
+              {cfg.label}
+            </Badge>
+          );
+        },
+        size: 80,
+        minSize: 70,
       },
 
       {
@@ -144,10 +237,10 @@ export function PurchaseMayorCostoReportTable({
       },
 
       {
-        accessorKey: "costo_medio",
-        header: "Costo Medio",
+        accessorKey: "costo",
+        header: "Costo Unit.",
         cell: ({ getValue }) => (
-          <div className="text-right text-xs font-semibold tabular-nums text-amber-600 dark:text-amber-400">
+          <div className="text-right text-xs tabular-nums">
             {formatCurrency(getValue<number>())}
           </div>
         ),
@@ -158,28 +251,16 @@ export function PurchaseMayorCostoReportTable({
       {
         accessorKey: "subtotal",
         header: "Subtotal",
-        cell: ({ getValue }) => {
-          const val = getValue() as number;
-          const pct = Math.round((val / maxSubtotal) * 100);
-          return (
-            <div className="flex items-center gap-2 pr-2">
-              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-12">
-                <div
-                  className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <span className="text-xs font-bold tabular-nums text-blue-700 dark:text-blue-400 w-24 text-right shrink-0">
-                {formatCurrency(val)}
-              </span>
-            </div>
-          );
-        },
-        size: 200,
-        minSize: 160,
+        cell: ({ getValue }) => (
+          <div className="text-right text-xs font-bold tabular-nums text-violet-600 dark:text-violet-400 mr-2">
+            {formatCurrency(getValue<number>())}
+          </div>
+        ),
+        size: 130,
+        minSize: 110,
       },
     ],
-    [maxSubtotal]
+    [showRowNumbers]
   );
 
   const { table } = useCustomTable({
@@ -193,7 +274,7 @@ export function PurchaseMayorCostoReportTable({
     enablePagination: false,
     hiddenColumns: [],
     columnResizeMode: "onChange",
-    persistenceKey: `purchase-mayor-costo-report-table-${user?.name}`,
+    persistenceKey: `order-general-report-table-${user?.name}`,
     persistColumnVisibility: true,
     persistColumnOrder: true,
     persistColumnSizing: true,
@@ -222,9 +303,7 @@ export function PurchaseMayorCostoReportTable({
                 className="p-2 text-right"
                 style={{ width: column.getSize() }}
               >
-                <div className="text-xs text-muted-foreground">
-                  Total unidades
-                </div>
+                <div className="text-xs text-muted-foreground">Total Cant.</div>
                 <div className="text-xs font-bold">
                   {formatNumber(totals.cantidad, 0)}
                 </div>
@@ -242,7 +321,7 @@ export function PurchaseMayorCostoReportTable({
                 <div className="text-xs text-muted-foreground">
                   Total invertido
                 </div>
-                <div className="text-xs font-bold text-blue-600 dark:text-blue-400 text-right pr-2">
+                <div className="text-xs font-bold text-violet-600 dark:text-violet-400">
                   {formatCurrency(totals.subtotal)}
                 </div>
               </TableCell>
@@ -267,9 +346,9 @@ export function PurchaseMayorCostoReportTable({
       isLoading={isLoading}
       isFetching={isFetching}
       isError={isError}
-      errorMessage="Error al cargar el ranking de mayor costo"
-      noDataMessage="Sin datos de ranking"
-      noDataDescription="Ajusta el rango de fechas, el ranking o la sucursal."
+      errorMessage="Error al cargar el reporte de pedidos"
+      noDataMessage="No hay pedidos registrados"
+      noDataDescription="Ajusta el rango de fechas o la sucursal seleccionada."
       tableRef={tableRef}
       enableColumnReordering={true}
       stickyHeader={true}

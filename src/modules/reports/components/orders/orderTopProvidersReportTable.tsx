@@ -2,17 +2,16 @@ import { useMemo, useRef } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
-import { Badge } from "@/components/atoms/badge";
 import { TableCell, TableRow } from "@/components/atoms/table";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import { formatCurrency } from "@/utils/formaters";
 import { Award } from "lucide-react";
-import type { PurchaseReportMayorCostoItem } from "../../types/purchaseReport.types";
+import type { OrderReportTopProveedoresItem } from "../../types/orderReport.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface PurchaseMayorCostoReportTableProps {
-  data: PurchaseReportMayorCostoItem[];
+interface OrderTopProveedoresReportTableProps {
+  data: OrderReportTopProveedoresItem[];
   isLoading?: boolean;
   isFetching?: boolean;
   isError?: boolean;
@@ -20,7 +19,7 @@ interface PurchaseMayorCostoReportTableProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const formatNumber = (value: number, decimals = 2) =>
+const formatNumber = (value: number, decimals = 0) =>
   value.toLocaleString("es-BO", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -50,27 +49,32 @@ const getRankingCell = (rank: number) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PurchaseMayorCostoReportTable({
+export function OrderTopProveedoresReportTable({
   data,
   isLoading = false,
   isFetching = false,
   isError = false,
-}: PurchaseMayorCostoReportTableProps) {
+}: OrderTopProveedoresReportTableProps) {
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null);
 
-  const maxSubtotal = useMemo(
-    () => Math.max(...data.map((d) => d.subtotal), 1),
+  const maxApariciones = useMemo(
+    () => Math.max(...data.map((d) => d.apariciones), 1),
     [data]
   );
 
-  const columns = useMemo<ColumnDef<PurchaseReportMayorCostoItem>[]>(
+  const maxMonto = useMemo(
+    () => Math.max(...data.map((d) => d.monto_total), 1),
+    [data]
+  );
+
+  const columns = useMemo<ColumnDef<OrderReportTopProveedoresItem>[]>(
     () => [
       {
         id: "ranking",
         header: "# Ranking",
         cell: ({ row }) => (
-          <div className="flex items-center">
+          <div className="flex items-center px-2">
             {getRankingCell(row.index + 1)}
           </div>
         ),
@@ -80,23 +84,11 @@ export function PurchaseMayorCostoReportTable({
       },
 
       {
-        accessorKey: "codigo",
-        header: "Código",
-        cell: ({ getValue }) => (
-          <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
-            {getValue<string>()}
-          </span>
-        ),
-        size: 150,
-        minSize: 110,
-      },
-
-      {
-        accessorKey: "producto",
-        header: "Producto",
+        accessorKey: "proveedor",
+        header: "Proveedor",
         cell: ({ getValue }) => (
           <span
-            className="text-xs font-medium line-clamp-2 block max-w-[280px]"
+            className="text-xs font-semibold line-clamp-1 block max-w-[280px]"
             title={getValue<string>()}
           >
             {getValue<string>()}
@@ -107,36 +99,35 @@ export function PurchaseMayorCostoReportTable({
       },
 
       {
-        accessorKey: "grupo",
-        header: "Grupo",
-        cell: ({ getValue }) => (
-          <Badge
-            variant="outline"
-            className="text-[10px] px-1.5 py-0 whitespace-nowrap"
-          >
-            {getValue<string>()}
-          </Badge>
-        ),
-        size: 180,
+        accessorKey: "apariciones",
+        header: "Apariciones",
+        cell: ({ getValue }) => {
+          const val = getValue() as number;
+          const pct = Math.round((val / maxApariciones) * 100);
+          return (
+            <div className="flex items-center gap-2 pr-2">
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-12">
+                <div
+                  className="h-full bg-violet-500 dark:bg-violet-400 rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-xs font-bold tabular-nums text-violet-700 dark:text-violet-400 w-12 text-right shrink-0">
+                {formatNumber(val)}
+              </span>
+            </div>
+          );
+        },
+        size: 160,
         minSize: 130,
       },
 
       {
-        accessorKey: "linea",
-        header: "Línea",
+        accessorKey: "ordenes",
+        header: "Órdenes",
         cell: ({ getValue }) => (
-          <span className="text-xs font-medium">{getValue<string>()}</span>
-        ),
-        size: 110,
-        minSize: 80,
-      },
-
-      {
-        accessorKey: "cantidad",
-        header: "Cantidad",
-        cell: ({ getValue }) => (
-          <div className="text-right text-xs font-semibold tabular-nums">
-            {formatNumber(getValue<number>(), 0)}
+          <div className="text-center text-xs font-semibold tabular-nums">
+            {getValue<number>()}
           </div>
         ),
         size: 90,
@@ -144,42 +135,30 @@ export function PurchaseMayorCostoReportTable({
       },
 
       {
-        accessorKey: "costo_medio",
-        header: "Costo Medio",
-        cell: ({ getValue }) => (
-          <div className="text-right text-xs font-semibold tabular-nums text-amber-600 dark:text-amber-400">
-            {formatCurrency(getValue<number>())}
-          </div>
-        ),
-        size: 120,
-        minSize: 100,
-      },
-
-      {
-        accessorKey: "subtotal",
-        header: "Subtotal",
+        accessorKey: "monto_total",
+        header: "Monto Total",
         cell: ({ getValue }) => {
           const val = getValue() as number;
-          const pct = Math.round((val / maxSubtotal) * 100);
+          const pct = Math.round((val / maxMonto) * 100);
           return (
             <div className="flex items-center gap-2 pr-2">
               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-12">
                 <div
-                  className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all"
+                  className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all"
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-xs font-bold tabular-nums text-blue-700 dark:text-blue-400 w-24 text-right shrink-0">
+              <span className="text-xs font-bold tabular-nums text-emerald-700 dark:text-emerald-400 w-28 text-right shrink-0">
                 {formatCurrency(val)}
               </span>
             </div>
           );
         },
-        size: 200,
-        minSize: 160,
+        size: 220,
+        minSize: 180,
       },
     ],
-    [maxSubtotal]
+    [maxApariciones, maxMonto]
   );
 
   const { table } = useCustomTable({
@@ -193,7 +172,7 @@ export function PurchaseMayorCostoReportTable({
     enablePagination: false,
     hiddenColumns: [],
     columnResizeMode: "onChange",
-    persistenceKey: `purchase-mayor-costo-report-table-${user?.name}`,
+    persistenceKey: `order-top-proveedores-report-table-${user?.name}`,
     persistColumnVisibility: true,
     persistColumnOrder: true,
     persistColumnSizing: true,
@@ -201,8 +180,9 @@ export function PurchaseMayorCostoReportTable({
 
   const totals = useMemo(
     () => ({
-      cantidad: data.reduce((sum, item) => sum + item.cantidad, 0),
-      subtotal: data.reduce((sum, item) => sum + item.subtotal, 0),
+      apariciones: data.reduce((sum, item) => sum + item.apariciones, 0),
+      ordenes: data.reduce((sum, item) => sum + item.ordenes, 0),
+      monto_total: data.reduce((sum, item) => sum + item.monto_total, 0),
     }),
     [data]
   );
@@ -215,7 +195,7 @@ export function PurchaseMayorCostoReportTable({
         {visibleColumns.map((column) => {
           const id = column.id;
 
-          if (id === "cantidad") {
+          if (id === "apariciones") {
             return (
               <TableCell
                 key={id}
@@ -223,16 +203,31 @@ export function PurchaseMayorCostoReportTable({
                 style={{ width: column.getSize() }}
               >
                 <div className="text-xs text-muted-foreground">
-                  Total unidades
+                  Total apariciones
                 </div>
-                <div className="text-xs font-bold">
-                  {formatNumber(totals.cantidad, 0)}
+                <div className="text-xs font-bold text-violet-600 dark:text-violet-400 pr-2">
+                  {formatNumber(totals.apariciones)}
                 </div>
               </TableCell>
             );
           }
 
-          if (id === "subtotal") {
+          if (id === "ordenes") {
+            return (
+              <TableCell
+                key={id}
+                className="p-2 text-center"
+                style={{ width: column.getSize() }}
+              >
+                <div className="text-xs text-muted-foreground">
+                  Total órdenes
+                </div>
+                <div className="text-xs font-bold">{totals.ordenes}</div>
+              </TableCell>
+            );
+          }
+
+          if (id === "monto_total") {
             return (
               <TableCell
                 key={id}
@@ -242,8 +237,8 @@ export function PurchaseMayorCostoReportTable({
                 <div className="text-xs text-muted-foreground">
                   Total invertido
                 </div>
-                <div className="text-xs font-bold text-blue-600 dark:text-blue-400 text-right pr-2">
-                  {formatCurrency(totals.subtotal)}
+                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 pr-2">
+                  {formatCurrency(totals.monto_total)}
                 </div>
               </TableCell>
             );
@@ -267,9 +262,9 @@ export function PurchaseMayorCostoReportTable({
       isLoading={isLoading}
       isFetching={isFetching}
       isError={isError}
-      errorMessage="Error al cargar el ranking de mayor costo"
+      errorMessage="Error al cargar el ranking de proveedores"
       noDataMessage="Sin datos de ranking"
-      noDataDescription="Ajusta el rango de fechas, el ranking o la sucursal."
+      noDataDescription="Ajusta el rango de fechas, el top_n o la sucursal."
       tableRef={tableRef}
       enableColumnReordering={true}
       stickyHeader={true}

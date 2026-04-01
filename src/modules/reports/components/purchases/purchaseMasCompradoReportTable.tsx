@@ -6,7 +6,7 @@ import { Badge } from "@/components/atoms/badge";
 import { TableCell, TableRow } from "@/components/atoms/table";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import { formatCurrency } from "@/utils/formaters";
-import { Trophy } from "lucide-react";
+import { Award } from "lucide-react";
 import type { PurchaseReportMasCompradoItem } from "../../types/purchaseReport.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,35 +26,26 @@ const formatNumber = (value: number, decimals = 2) =>
     maximumFractionDigits: decimals,
   });
 
-const getRankingCell = (index: number) => {
-  if (index === 0)
+const getRankingCell = (rank: number) => {
+  if (rank === 1)
     return (
-      <div className="flex items-center justify-center gap-1">
-        <Trophy className="size-3.5 text-yellow-500" />
-        <span className="font-bold text-yellow-600 dark:text-yellow-400">
-          1
-        </span>
-      </div>
+      <span className="flex gap-2 font-semibold px-2">
+        <Award className="size-4 text-yellow-500 hover:text-yellow-600" /> 1°
+      </span>
     );
-  if (index === 1)
+  if (rank === 2)
     return (
-      <div className="flex items-center justify-center gap-1">
-        <Trophy className="size-3.5 text-slate-400" />
-        <span className="font-bold text-slate-500 dark:text-slate-400">2</span>
-      </div>
+      <span className="flex gap-2 font-semibold px-2">
+        <Award className="size-4 text-gray-400 hover:text-gray-500" /> 2°
+      </span>
     );
-  if (index === 2)
+  if (rank === 3)
     return (
-      <div className="flex items-center justify-center gap-1">
-        <Trophy className="size-3.5 text-amber-700" />
-        <span className="font-bold text-amber-700 dark:text-amber-600">3</span>
-      </div>
+      <span className="flex gap-2 font-semibold px-2">
+        <Award className="size-4 text-orange-600 hover:text-orange-700" /> 3°
+      </span>
     );
-  return (
-    <span className="text-xs font-medium text-muted-foreground px-2">
-      {index + 1}
-    </span>
-  );
+  return <span className="font-medium px-2">{rank}°</span>;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -77,10 +68,10 @@ export function PurchaseMasCompradoReportTable({
     () => [
       {
         id: "ranking",
-        header: "Pos.",
-        cell: ({ row }: any) => (
-          <div className="flex items-center justify-center">
-            {getRankingCell(row.index)}
+        header: "# Ranking",
+        cell: ({ row }) => (
+          <div className="flex items-center">
+            {getRankingCell(row.index + 1)}
           </div>
         ),
         enableSorting: false,
