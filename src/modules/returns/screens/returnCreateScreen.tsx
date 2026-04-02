@@ -38,6 +38,7 @@ import { Textarea } from "@/components/atoms/textarea";
 import { Button } from "@/components/atoms/button";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { formatCurrency } from "@/utils/formaters";
+import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
 import type { ReturnDetailTableRef } from "../components/returnDetailTable";
 import {
   useReturnDetails,
@@ -104,6 +105,8 @@ const ReturnCreateScreen = () => {
       comentarios: "",
       sucursal: Number(selectedBranchId) || 1,
       responsable: Number(user?._id) || undefined,
+      monto_dev: 0,
+      forma_pago_dev: null,
       detalles: [],
     },
   });
@@ -115,6 +118,7 @@ const ReturnCreateScreen = () => {
     handleSubmit,
     setValue,
     getValues,
+    watch,
     setError,
     clearErrors,
     formState: { errors },
@@ -197,6 +201,8 @@ const ReturnCreateScreen = () => {
       sucursal: currentValues.sucursal,
       responsable:
         returnResponsiblesData?.data?.[0]?.id || currentValues.responsable,
+      monto_dev: 0,
+      forma_pago_dev: null,
       detalles: canClearDetails ? [] : currentValues.detalles,
     });
 
@@ -687,6 +693,61 @@ const ReturnCreateScreen = () => {
 
                     <Card className="border border-border shadow-none pt-3">
                       <CardContent className="space-y-2">
+                        <div className="flex gap-3 items-end">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Reintegro (Bs)</Label>
+                            <Controller
+                              name="monto_dev"
+                              control={control}
+                              render={({ field }) => (
+                                <EditablePrice
+                                  value={field.value || 0}
+                                  onSubmit={(value) => {
+                                    field.onChange(value as number);
+                                    if ((value as number) > 0 && !getValues("forma_pago_dev")) {
+                                      setValue("forma_pago_dev", "EFECTIVO");
+                                    }
+                                  }}
+                                  className="w-36"
+                                  buttonClassName="w-36"
+                                  numberProps={{ min: 0, step: 0.01 }}
+                                />
+                              )}
+                            />
+                          </div>
+                          {(watch("monto_dev") ?? 0) > 0 && (
+                            <div className="space-y-1">
+                              <Label className="text-xs">Forma de pago</Label>
+                              <Controller
+                                name="forma_pago_dev"
+                                control={control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value ?? ""}
+                                    onValueChange={(val) => field.onChange(val || null)}
+                                  >
+                                    <SelectTrigger className="w-40 h-8 text-xs">
+                                      <SelectValue placeholder="Forma de pago..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {[
+                                        { value: "EFECTIVO", label: "Efectivo" },
+                                        { value: "CHEQUE", label: "Cheque" },
+                                        { value: "TRASNF", label: "Transferencia" },
+                                        { value: "QR", label: "QR" },
+                                        { value: "QR-EFECT", label: "QR y Efectivo" },
+                                      ].map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                          {opt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+                          )}
+                        </div>
                         <footer className="flex gap-2 items-center justify-between">
                           <span className="text-xs text-muted-foreground">
                             * Campos requeridos
