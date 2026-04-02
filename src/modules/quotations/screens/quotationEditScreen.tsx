@@ -211,6 +211,7 @@ const QuotationEditScreen = () => {
       cliente_contacto: "",
       cliente_telefono: "",
       anticipo: 0,
+      forma_pago_anticipo: null,
       pedido: false,
     },
   });
@@ -264,6 +265,7 @@ const QuotationEditScreen = () => {
       cliente_contacto: quotation.cliente_contacto ?? "",
       cliente_telefono: quotation.cliente_telefono ?? "",
       anticipo: quotation.anticipo ?? 0,
+      forma_pago_anticipo: null,
       pedido: quotation.es_pedido,
     };
     reset(resetData);

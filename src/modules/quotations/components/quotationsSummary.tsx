@@ -10,6 +10,21 @@ import { formatCurrency } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
 import { Controller, useFormContext } from "react-hook-form";
 import { Switch } from "@/components/atoms/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
+
+const PAYMENT_TYPE_OPTIONS = [
+  { value: "EFECTIVO", label: "Efectivo" },
+  { value: "CHEQUE", label: "Cheque" },
+  { value: "TRASNF", label: "Transferencia" },
+  { value: "QR", label: "QR" },
+  { value: "QR-EFECT", label: "QR y Efectivo" },
+];
 
 type DiscountType = "amount" | "percentage";
 
@@ -46,7 +61,8 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
   hasProducts = false,
   secondaryButtonText,
 }) => {
-  const { control } = useFormContext();
+  const { control, watch, setValue, getValues } = useFormContext();
+  const anticipo = watch("anticipo") ?? 0;
 
   const handleSecondaryAction = () => {
     clearCart?.();
@@ -71,7 +87,7 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
     <Card className="border border-border shadow-none md:flex-shrink-0">
       <CardContent className="space-y-2 p-2 sm:p-3">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
-          <div>
+          <div className="space-y-1">
             <Label className="text-xs" htmlFor="anticipo">
               Anticipo
             </Label>
@@ -81,7 +97,12 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
               render={({ field }) => (
                 <EditablePrice
                   value={field.value || 0}
-                  onSubmit={(value) => field.onChange(value as number)}
+                  onSubmit={(value) => {
+                    field.onChange(value as number);
+                    if ((value as number) > 0 && !getValues("forma_pago_anticipo")) {
+                      setValue("forma_pago_anticipo", PAYMENT_TYPE_OPTIONS[0].value);
+                    }
+                  }}
                   className="w-full"
                   buttonClassName="w-full"
                   numberProps={{ min: 0, step: 0.01 }}
@@ -89,6 +110,30 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
                 />
               )}
             />
+            {anticipo > 0 && (
+              <Controller
+                name="forma_pago_anticipo"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(val) => field.onChange(val || null)}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Forma de pago..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            )}
           </div>
 
           <div className="space-y-1">

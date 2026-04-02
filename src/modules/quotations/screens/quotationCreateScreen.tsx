@@ -120,6 +120,7 @@ const QuotationCreateScreen = () => {
       cliente_contacto: "",
       cliente_telefono: "",
       anticipo: 0,
+      forma_pago_anticipo: null,
       pedido: false,
     },
   });
@@ -310,6 +311,7 @@ const QuotationCreateScreen = () => {
         cliente_contacto: "",
         cliente_telefono: "",
         anticipo: 0,
+        forma_pago_anticipo: null,
         pedido: false,
       });
 
