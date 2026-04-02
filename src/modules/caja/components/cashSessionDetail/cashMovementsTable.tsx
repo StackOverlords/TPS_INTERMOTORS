@@ -1,18 +1,22 @@
 import { Badge } from "@/components/atoms/badge";
+import { Button } from "@/components/atoms/button";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { cn } from "@/lib/utils";
 import { type ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { Undo2 } from "lucide-react";
 import { useMemo } from "react";
-import type { CashMovement } from "../../types/cashMovement.types";
+import { ANULABLE_CONCEPTS, type CashMovement } from "../../types/cashMovement.types";
 
 interface CashMovementsTableProps {
   data: CashMovement[];
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
+  canAnular?: boolean;
+  onAnular?: (movement: CashMovement) => void;
 }
 
 const formatDateSafe = (dateString: string): string => {
@@ -28,6 +32,8 @@ export const CashMovementsTable: React.FC<CashMovementsTableProps> = ({
   isLoading,
   isFetching,
   isError,
+  canAnular = false,
+  onAnular,
 }) => {
   const columns = useMemo<ColumnDef<CashMovement>[]>(
     () => [
@@ -148,8 +154,33 @@ export const CashMovementsTable: React.FC<CashMovementsTableProps> = ({
           </span>
         ),
       },
+      ...(canAnular && onAnular
+        ? [{
+            id: "acciones",
+            header: "",
+            size: 80,
+            enableHiding: false,
+            cell: ({ row }: { row: { original: CashMovement } }) => {
+              const m = row.original;
+              const esAnulable = ANULABLE_CONCEPTS.includes(m.concepto);
+              const yaAnulado = m.referencia_tipo === 'caja_movimientos';
+              if (!esAnulable || yaAnulado) return null;
+              return (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 px-2"
+                  onClick={() => onAnular(m)}
+                >
+                  <Undo2 className="size-3.5" />
+                  <span className="sr-only">Anular</span>
+                </Button>
+              );
+            },
+          } satisfies ColumnDef<CashMovement>]
+        : []),
     ],
-    []
+    [canAnular, onAnular]
   );
 
   const { table } = useCustomTable({

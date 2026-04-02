@@ -8,15 +8,24 @@ export type CashMovementConcept =
     | 'ANTICIPO_COTIZACION'
     | 'INGRESO_MANUAL'
     | 'ANULACION_DEVOLUCION'
+    | 'ANULACION_INGRESO_MANUAL'
     // Egresos
     | 'GASTO_NO_DEDUCIBLE'
     | 'RETIRO_EFECTIVO'
     | 'DEVOLUCION_CLIENTE'
     | 'VUELTO'
     | 'ANULACION_VENTA'
-    | 'ANULACION_COBRANZA';
+    | 'ANULACION_COBRANZA'
+    | 'ANULACION_GASTO'
+    | 'ANULACION_RETIRO';
 
-export type PaymentType = 'EFECTIVO' | 'TRANSFERENCIA' | 'QR' | 'TARJETA';
+export type PaymentType = 'EFECTIVO' | 'CHEQUE' | 'TRASNF' | 'QR' | 'QR-EFECT';
+
+export const ANULABLE_CONCEPTS: CashMovementConcept[] = [
+    'INGRESO_MANUAL',
+    'GASTO_NO_DEDUCIBLE',
+    'RETIRO_EFECTIVO',
+];
 
 export interface CashMovement {
     id: number;

@@ -10,6 +10,8 @@ export const CASH_QUERY_KEYS = {
         [...CASH_QUERY_KEYS.sessions(), 'active', sucursalId] as const,
     sessionDetail: (id: number) =>
         [...CASH_QUERY_KEYS.sessions(), 'detail', id] as const,
+    sessionArqueo: (id: number) =>
+        [...CASH_QUERY_KEYS.sessions(), 'arqueo', id] as const,
 
     movements: () => [...CASH_QUERY_KEYS.all, 'movements'] as const,
     movementList: (filters?: Partial<CashMovementFilters>) =>

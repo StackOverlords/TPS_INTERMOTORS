@@ -29,6 +29,7 @@ import CommandPalette from "./CommandPalette/CommandPalette";
 import SearchButton from "./CommandPalette/SearchButton";
 import ProfilePanel from "@/components/common/ProfilePanel";
 import ThemeToggle from "@/components/common/ThemeToggle";
+import DownloadsPanel from "@/components/common/DownloadsPanel";
 import { getUserAvatarGradient } from "@/utils/userColors";
 
 interface TopNavProps {
@@ -230,6 +231,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             </Badge>
           )}
         </Button>
+        <DownloadsPanel />
         <NotificationsPanel
           tasks={tasks}
           onDismiss={removeTask}

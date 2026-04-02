@@ -2,6 +2,24 @@ import { paginatedResponseSchema } from "@/modules/shared/schemas/paginatedRespo
 import z from "zod";
 import { CashMovementSchema } from "./cashMovement.schema";
 
+const ArqueoFormaPagoSchema = z.object({
+    forma_pago: z.string(),
+    forma_pago_label: z.string(),
+    total_ingresos: z.coerce.number(),
+    total_egresos: z.coerce.number(),
+    saldo: z.coerce.number(),
+});
+
+export const CashSessionArqueoSchema = z.object({
+    sesion_id: z.number().int(),
+    estado: z.enum(['ABIERTA', 'CERRADA']),
+    estado_label: z.string(),
+    desglose: z.array(ArqueoFormaPagoSchema),
+    total_ingresos: z.coerce.number(),
+    total_egresos: z.coerce.number(),
+    saldo_sistema: z.coerce.number(),
+});
+
 const BranchRefSchema = z.object({
     id: z.number().int(),
     nombre: z.string(),
@@ -30,6 +48,7 @@ export const CashSessionSchema = z.object({
     saldo_sistema: z.coerce.number(),
     observaciones_apertura: z.string().nullable(),
     observaciones_cierre: z.string().nullable(),
+    arqueo_por_forma_pago: z.array(ArqueoFormaPagoSchema).optional(),
     movimientos: z.array(CashMovementSchema).optional().default([]),
     fecha_reg: z.string(),
 });

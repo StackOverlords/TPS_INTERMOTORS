@@ -16,24 +16,28 @@ export const generateExcelFilename = (baseName: string): string => {
  * Abre diálogo nativo de guardado y escribe el archivo Excel.
  * Retorna true si se guardó correctamente, false si el usuario canceló.
  */
-export const saveExcelFile = async (blob: Blob, filename: string): Promise<boolean> => {
+export const saveExcelFile = async (blob: Blob, filename: string): Promise<string | null> => {
   try {
+    const { downloadDir } = await import('@tauri-apps/api/path');
+    const dir = await downloadDir();
+    const sep = dir.endsWith('/') || dir.endsWith('\\') ? '' : '/';
+
     const filePath = await save({
-      defaultPath: filename,
+      defaultPath: `${dir}${sep}${filename}`,
       filters: [{ name: 'Excel', extensions: ['xlsx'] }],
     });
 
     // Usuario canceló el diálogo
     if (!filePath) {
       Logger.info('User cancelled save dialog', {}, MODULE_NAME);
-      return false;
+      return null;
     }
 
     const arrayBuffer = await blob.arrayBuffer();
     await writeFile(filePath, new Uint8Array(arrayBuffer));
 
     Logger.info('Excel saved successfully', { path: filePath }, MODULE_NAME);
-    return true;
+    return filePath;
   } catch (error) {
     Logger.error('Error saving Excel file', { error, filename }, MODULE_NAME);
     throw error;

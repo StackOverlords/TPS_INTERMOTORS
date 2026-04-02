@@ -1,5 +1,23 @@
 import type { CashMovement } from "./cashMovement.types";
 
+export interface ArqueoFormaPago {
+    forma_pago: string;
+    forma_pago_label: string;
+    total_ingresos: number;
+    total_egresos: number;
+    saldo: number;
+}
+
+export interface CashSessionArqueo {
+    sesion_id: number;
+    estado: 'ABIERTA' | 'CERRADA';
+    estado_label: string;
+    desglose: ArqueoFormaPago[];
+    total_ingresos: number;
+    total_egresos: number;
+    saldo_sistema: number;
+}
+
 export interface BranchRef {
     id: number;
     nombre: string;
@@ -28,8 +46,9 @@ export interface CashSession {
     saldo_sistema: number;
     observaciones_apertura: string | null;
     observaciones_cierre: string | null;
+    arqueo_por_forma_pago?: ArqueoFormaPago[];
     movimientos?: CashMovement[];
-    fecha_reg: string; 
+    fecha_reg: string;
 }
 
 export interface OpenSessionPayload {
