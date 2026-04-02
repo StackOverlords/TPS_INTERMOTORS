@@ -17,5 +17,7 @@ export const ReturnCreateSchema = z.object({
     responsable: z.number(),
     comentarios: z.string().nullable(),
     sucursal: z.number(),
+    monto_dev: z.number().nonnegative().nullable(),
+    forma_pago_dev: z.enum(['EFECTIVO', 'CHEQUE', 'TRASNF', 'QR', 'QR-EFECT']).nullable(),
     detalles: z.array(ReturnDetailCreateSchema).min(1),
 });

@@ -27,6 +27,7 @@ export const QuotationCreateSchema = z.object({
     vehiculo: z.string().nullable(),
     nro_motor: z.string().nullable(),
     anticipo: z.number().nonnegative().transform((val) => parseFloat(val.toFixed(5))).nullable(),
+    forma_pago_anticipo: z.enum(['EFECTIVO', 'CHEQUE', 'TRASNF', 'QR', 'QR-EFECT']).nullable(),
     pedido: z.boolean(),
     sucursal: z.number(),
     id_responsable: z.number(),
