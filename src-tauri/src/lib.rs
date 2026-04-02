@@ -22,6 +22,8 @@ pub fn run() {
             commands::image::compress_image_to_webp,
             commands::image::get_image_info,
             commands::image::check_is_webp,
+            // Comandos de sistema de archivos
+            commands::fs::reveal_in_folder,
             // Comandos de logging
             logging::log_info,
             logging::log_error,

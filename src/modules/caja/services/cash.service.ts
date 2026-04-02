@@ -1,9 +1,12 @@
 import { ApiService } from "@/lib/apiService";
+import apiClient from "@/services/axios";
+import { downloadPDF } from "@/lib/pdfUtils";
+import { useDownloadStore } from "@/states/downloadStore";
 import { Logger } from "@/lib/logger";
 import { CashMovementSchema, CashMovementListResponseSchema } from "../schemas/cashMovement.schema";
-import { CashSessionSchema, CashSessionListResponseSchema } from "../schemas/cashSession.schema";
+import { CashSessionSchema, CashSessionListResponseSchema, CashSessionArqueoSchema } from "../schemas/cashSession.schema";
 import { ExpenseTypeSchema, ExpenseTypeListSchema } from "../schemas/expenseType.schema";
-import type { CloseSessionPayload, OpenSessionPayload, CashSession } from "../types/cashSession.types";
+import type { CloseSessionPayload, OpenSessionPayload, CashSession, CashSessionArqueo } from "../types/cashSession.types";
 import type { ExpenseType, CreateExpenseTypePayload, UpdateExpenseTypePayload } from "../types/expenseType.types";
 import type { CashMovement, IncomePayload, WithdrawalPayload, ExpensePayload } from "../types/cashMovement.types";
 import type { CashSessionFilters, CashMovementFilters } from "../types/cashFilters.types";
@@ -116,6 +119,75 @@ export const cashService = {
         Logger.info('Cash session closed successfully', { id }, MODULE_NAME);
 
         return response as CashSession;
+    },
+
+    /**
+     * Obtener el arqueo de una sesión por forma de pago
+     * @param id - ID de la sesión
+     */
+    async getSessionArqueo(id: number): Promise<CashSessionArqueo> {
+        Logger.info('Fetching cash session arqueo', { id }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            CASH_ENDPOINTS.sessions.arqueo(id),
+            CashSessionArqueoSchema,
+            undefined,
+            { unwrapData: true }
+        );
+
+        Logger.info('Cash session arqueo fetched successfully', { id }, MODULE_NAME);
+
+        return response as CashSessionArqueo;
+    },
+
+    /**
+     * Descargar el PDF de reporte de una sesión de caja
+     * @param id - ID de la sesión
+     */
+    async downloadSessionPdf(id: number): Promise<void> {
+        Logger.info('Downloading cash session PDF', { id }, MODULE_NAME);
+
+        const response = await apiClient.get(
+            CASH_ENDPOINTS.sessions.pdf(id),
+            { responseType: 'blob' }
+        );
+
+        const filename = `sesion-caja-${id}.pdf`;
+        const { addDownload, updateDownload } = useDownloadStore.getState();
+        const downloadId = addDownload({ filename, path: null, status: 'downloading', type: 'pdf' });
+
+        try {
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const savedPath = await downloadPDF(blob, filename);
+            updateDownload(downloadId, {
+                status: savedPath ? 'success' : 'cancelled',
+                path: savedPath,
+            });
+        } catch (err) {
+            updateDownload(downloadId, { status: 'error', error: (err as Error).message });
+            throw err;
+        }
+
+        Logger.info('Cash session PDF downloaded', { id }, MODULE_NAME);
+    },
+
+    /**
+     * Anular un movimiento manual de caja
+     * @param id - ID del movimiento a anular
+     */
+    async deleteMovement(id: number): Promise<CashMovement> {
+        Logger.info('Deleting cash movement', { id }, MODULE_NAME);
+
+        const response = await ApiService.delete(
+            CASH_ENDPOINTS.movements.byId(id),
+            CashMovementSchema,
+            undefined,
+            { unwrapData: true }
+        );
+
+        Logger.info('Cash movement deleted successfully', { id }, MODULE_NAME);
+
+        return response as CashMovement;
     },
 
     /**

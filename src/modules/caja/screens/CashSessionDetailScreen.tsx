@@ -1,9 +1,11 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import ConfirmationModal from "@/components/common/confirmationModal";
 import { useBranchStore } from "@/states/branchStore";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Minus, Plus, Receipt } from "lucide-react";
+import { showSuccessToast, showErrorToast } from "@/hooks/use-toast-enhanced";
+import { ArrowLeft, FileDown, Minus, Plus, Receipt } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CashExpenseModal } from "../components/modals/CashExpenseModal";
@@ -12,7 +14,10 @@ import { CashWithdrawalModal } from "../components/modals/CashWithdrawalModal";
 import { CloseSessionModal } from "../components/modals/CloseSessionModal";
 import { CashMovementsTable } from "../components/cashSessionDetail/cashMovementsTable";
 import { useCashSessionDetail } from "../hooks/useCashSessionDetail";
+import { useDeleteCashMovement } from "../hooks/useDeleteCashMovement";
+import { cashService } from "../services/cash.service";
 import type { CashMovement } from "../types/cashMovement.types";
+import type { ArqueoFormaPago } from "../types/cashSession.types";
 
 // ─── Summary Card ──────────────────────────────────────────────────────────────
 
@@ -36,6 +41,53 @@ function SummaryCard({ label, value, color }: SummaryCardProps) {
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+// ─── Arqueo por forma de pago ─────────────────────────────────────────────────
+
+function ArqueoSection({ desglose }: { desglose: ArqueoFormaPago[] }) {
+  if (!desglose.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-background p-3 flex-shrink-0">
+      <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+        Arqueo por forma de pago
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-muted-foreground border-b border-border">
+              <th className="text-left pb-1 font-medium">Forma de pago</th>
+              <th className="text-right pb-1 font-medium">Ingresos</th>
+              <th className="text-right pb-1 font-medium">Egresos</th>
+              <th className="text-right pb-1 font-medium">Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {desglose.map((row) => (
+              <tr key={row.forma_pago} className="border-b border-border/50 last:border-0">
+                <td className="py-1 text-foreground">{row.forma_pago_label}</td>
+                <td className="py-1 text-right text-emerald-600 dark:text-emerald-400">
+                  Bs {row.total_ingresos.toFixed(2)}
+                </td>
+                <td className="py-1 text-right text-destructive">
+                  Bs {row.total_egresos.toFixed(2)}
+                </td>
+                <td
+                  className={cn("py-1 text-right font-semibold", {
+                    "text-emerald-600 dark:text-emerald-400": row.saldo > 0,
+                    "text-destructive": row.saldo < 0,
+                    "text-foreground": row.saldo === 0,
+                  })}
+                >
+                  Bs {row.saldo.toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -90,8 +142,11 @@ const CashSessionDetailScreen = () => {
   const [expenseModal, setExpenseModal] = useState(false);
   const [closeModal, setCloseModal] = useState(false);
   const [filters, setFilters] = useState<MovementFilters>(DEFAULT_FILTERS);
+  const [movementToAnular, setMovementToAnular] = useState<CashMovement | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   const { data: session, isLoading, isFetching, isError } = useCashSessionDetail(sessionId);
+  const { mutate: deleteMovement, isPending: isAnulando } = useDeleteCashMovement(sessionId);
 
   const filteredMovements = useMemo<CashMovement[]>(() => {
     const movements: CashMovement[] = session?.movimientos ?? [];
@@ -106,6 +161,37 @@ const CashSessionDetailScreen = () => {
 
   const isClosed = session?.estado === "CERRADA";
   const diferencia = session?.diferencia ?? 0;
+
+  const handleDownloadPdf = async () => {
+    setIsDownloadingPdf(true);
+    try {
+      await cashService.downloadSessionPdf(sessionId);
+    } catch {
+      showErrorToast({ title: "Error", description: "No se pudo descargar el PDF." });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const handleConfirmAnular = () => {
+    if (!movementToAnular) return;
+    deleteMovement(movementToAnular.id, {
+      onSuccess: () => {
+        showSuccessToast({
+          title: "Movimiento anulado",
+          description: "Se registró la anulación correctamente.",
+        });
+        setMovementToAnular(null);
+      },
+      onError: (error) => {
+        showErrorToast({
+          title: "Error al anular",
+          description: error.message || "No se pudo anular el movimiento.",
+        });
+        setMovementToAnular(null);
+      },
+    });
+  };
 
   return (
     <main className="h-full p-2 gap-2 flex flex-col overflow-auto">
@@ -132,15 +218,27 @@ const CashSessionDetailScreen = () => {
             )}
           </div>
 
-          {session?.estado === "ABIERTA" && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={() => setCloseModal(true)}
+              className="gap-1"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
             >
-              Cerrar Sesión
+              <FileDown className="size-4" />
+              PDF
             </Button>
-          )}
+            {session?.estado === "ABIERTA" && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setCloseModal(true)}
+              >
+                Cerrar Sesión
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -194,6 +292,11 @@ const CashSessionDetailScreen = () => {
             </>
           )}
         </div>
+      )}
+
+      {/* Arqueo por forma de pago */}
+      {session?.arqueo_por_forma_pago && session.arqueo_por_forma_pago.length > 0 && (
+        <ArqueoSection desglose={session.arqueo_por_forma_pago} />
       )}
 
       {/* Actions toolbar */}
@@ -273,6 +376,8 @@ const CashSessionDetailScreen = () => {
           isLoading={isLoading}
           isFetching={isFetching}
           isError={isError}
+          canAnular={!isClosed}
+          onAnular={setMovementToAnular}
         />
       </div>
 
@@ -303,6 +408,20 @@ const CashSessionDetailScreen = () => {
           saldoSistema={session.saldo_sistema}
         />
       )}
+      <ConfirmationModal
+        isOpen={!!movementToAnular}
+        onClose={() => setMovementToAnular(null)}
+        onConfirm={handleConfirmAnular}
+        isLoading={isAnulando}
+        variant="danger"
+        title="Anular movimiento"
+        description={
+          movementToAnular
+            ? `¿Confirmas anular el movimiento #${movementToAnular.id} — ${movementToAnular.concepto_label} por Bs ${movementToAnular.monto.toFixed(2)}? Se creará un movimiento de anulación en la sesión activa.`
+            : ""
+        }
+        confirmText="Anular"
+      />
     </main>
   );
 };

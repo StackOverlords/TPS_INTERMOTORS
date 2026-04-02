@@ -22,26 +22,31 @@ export const revokeObjectURL = (url: string): void => {
  * @param blob - Blob del PDF
  * @param filename - Nombre del archivo
  */
-export const downloadPDF = async (blob: Blob, filename: string): Promise<void> => {
+export const downloadPDF = async (blob: Blob, filename: string): Promise<string | null> => {
     try {
         if (isTauriEnvironment()) {
             // En Tauri: Usar diálogo nativo de guardado
             const { save } = await import('@tauri-apps/plugin-dialog');
             const { writeFile } = await import('@tauri-apps/plugin-fs');
-            
+
+            const { downloadDir } = await import('@tauri-apps/api/path');
+            const dir = await downloadDir();
+            const sep = dir.endsWith('/') || dir.endsWith('\\') ? '' : '/';
+
             const filePath = await save({
-                defaultPath: filename,
+                defaultPath: `${dir}${sep}${filename}`,
                 filters: [{ name: 'PDF', extensions: ['pdf'] }]
             });
-            
+
             if (!filePath) {
                 Logger.info('User cancelled save dialog', {}, MODULE_NAME);
-                return;
+                return null;
             }
-            
+
             const arrayBuffer = await blob.arrayBuffer();
             await writeFile(filePath, new Uint8Array(arrayBuffer));
             Logger.info('PDF saved successfully', { path: filePath }, MODULE_NAME);
+            return filePath;
         } else {
             // En navegador: Descarga automática
             const url = createObjectURL(blob);
@@ -52,8 +57,9 @@ export const downloadPDF = async (blob: Blob, filename: string): Promise<void> =
             link.click();
             document.body.removeChild(link);
             revokeObjectURL(url);
-            
+
             Logger.info('PDF downloaded successfully', { filename }, MODULE_NAME);
+            return filename;
         }
     } catch (error) {
         Logger.error('Error downloading PDF', { error, filename }, MODULE_NAME);
