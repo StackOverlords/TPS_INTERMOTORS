@@ -93,7 +93,7 @@ interface Props<T> {
   stickyFooter?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
-  estimatedRowHeight?: number; // Nueva prop para virtualización
+  estimatedRowHeight?: number;
 }
 
 const DraggableTableHeader = <T,>({
@@ -237,7 +237,7 @@ const VirtualizedCustomizableTable = <T,>({
   stickyFooter = true,
   onDragStart,
   onDragEnd,
-  estimatedRowHeight = 45, // Altura estimada de cada fila en px
+  estimatedRowHeight = 45,
 }: Props<T>) => {
   const [isDragging, setIsDragging] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -274,13 +274,26 @@ const VirtualizedCustomizableTable = <T,>({
     onDragEnd?.();
   };
 
-  // Virtualización: Solo renderiza las filas visibles
+  const tableRows = table.getRowModel().rows;
+
+  // measureElement hace que el virtualizer mida la altura real de cada fila
+  // tras el primer render, corrigiendo el espaciador inferior que causaba
+  // que la última fila quedara cortada cuando estimatedRowHeight no coincidía.
   const rowVirtualizer = useVirtualizer({
-    count: table.getRowModel().rows.length,
+    count: tableRows.length,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => estimatedRowHeight,
-    overscan: 10, // Renderiza 10 filas extra arriba y abajo del viewport
+    overscan: 10,
+    measureElement: (el) => el.getBoundingClientRect().height,
   });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualItems[0]?.start ?? 0;
+  const paddingBottom =
+    totalSize - (virtualItems[virtualItems.length - 1]?.end ?? 0);
+
+  const showLoading = isLoading || isFetching;
 
   return (
     <DndContext
@@ -381,7 +394,7 @@ const VirtualizedCustomizableTable = <T,>({
             ))}
           </TableHeader>
           <TableBody className="divide-y divide-border">
-            {isLoading || isFetching ? (
+            {showLoading ? (
               [...Array(rows || 10)].map((_, rowIndex) => (
                 <TableRow key={`skeleton-row-${rowIndex}`}>
                   {table.getVisibleFlatColumns().map((column, colIndex) => (
@@ -404,7 +417,7 @@ const VirtualizedCustomizableTable = <T,>({
                   <ErrorDataComponent errorMessage={errorMessage} />
                 </TableCell>
               </TableRow>
-            ) : table.getRowModel().rows.length === 0 ? (
+            ) : tableRows.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={table.getVisibleFlatColumns().length}
@@ -418,28 +431,22 @@ const VirtualizedCustomizableTable = <T,>({
               </TableRow>
             ) : (
               <>
-                {/* Espaciador superior para simular las filas no renderizadas arriba */}
-                <tr
-                  style={{
-                    height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px`,
-                  }}
-                />
+                {paddingTop > 0 && <tr style={{ height: `${paddingTop}px` }} />}
 
-                {/* Solo renderizar las filas virtuales visibles */}
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                  const row = table.getRowModel().rows[virtualRow.index];
+                {virtualItems.map((virtualRow) => {
+                  const row = tableRows[virtualRow.index];
                   const isSelected = selectedRowIndex === virtualRow.index;
 
                   return (
                     <TableRow
                       key={row.id}
+                      // ref necesario para que measureElement tome la altura real
+                      ref={rowVirtualizer.measureElement}
                       data-index={virtualRow.index}
                       data-row-index={virtualRow.index}
-                      className={`${
-                        isSelected && focused
-                          ? "bg-blue-100 hover:bg-blue-100"
-                          : ""
-                      }`}
+                      className={cn(
+                        isSelected && focused && "bg-blue-100 hover:bg-blue-100"
+                      )}
                       data-state={
                         isSelected && focused ? "selected" : undefined
                       }
@@ -454,45 +461,47 @@ const VirtualizedCustomizableTable = <T,>({
                         }
                       }}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className="p-1 overflow-hidden flex-shrink-0"
-                          style={{ width: cell.column.getSize() }}
+                      {enableColumnReordering ? (
+                        <SortableContext
+                          items={columnOrder}
+                          strategy={horizontalListSortingStrategy}
                         >
-                          <div className="flex-1 flex-shrink-0 truncate">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </div>
-                        </TableCell>
-                      ))}
+                          {row.getVisibleCells().map((cell) => (
+                            <DragAlongCell key={cell.id} cell={cell} />
+                          ))}
+                        </SortableContext>
+                      ) : (
+                        row.getVisibleCells().map((cell) => (
+                          <TableCell
+                            key={cell.id}
+                            className="p-1 overflow-hidden flex-shrink-0"
+                            style={{ width: cell.column.getSize() }}
+                          >
+                            <div className="flex-1 flex-shrink-0 truncate">
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </div>
+                          </TableCell>
+                        ))
+                      )}
                     </TableRow>
                   );
                 })}
 
-                {/* Espaciador inferior para simular las filas no renderizadas abajo */}
-                <tr
-                  style={{
-                    height: `${
-                      rowVirtualizer.getTotalSize() -
-                      (rowVirtualizer.getVirtualItems()[
-                        rowVirtualizer.getVirtualItems().length - 1
-                      ]?.end ?? 0)
-                    }px`,
-                  }}
-                />
+                {paddingBottom > 0 && (
+                  <tr style={{ height: `${paddingBottom}px` }} />
+                )}
 
-                {renderBottomRow && renderBottomRow()}
+                {renderBottomRow?.()}
               </>
             )}
           </TableBody>
           {renderTableFooter &&
-            !isLoading &&
-            !isFetching &&
+            !showLoading &&
             !isError &&
-            table.getRowModel().rows.length > 0 && (
+            tableRows.length > 0 && (
               <TableFooter
                 className={cn(
                   stickyFooter &&
