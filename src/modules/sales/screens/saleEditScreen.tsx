@@ -2,7 +2,7 @@ import ErrorDataComponent from "@/components/common/errorDataComponent";
 import { useNavigate } from "react-router";
 import { useSaleGetById } from "../hooks/useSaleGetById";
 import TooltipButton from "@/components/common/TooltipButton";
-import { CornerUpLeft, Plus, Printer, ShoppingCart } from "lucide-react";
+import { CornerUpLeft, Plus, Printer, ShoppingCart, Trash2 } from "lucide-react";
 import { Kbd } from "@/components/atoms/kbd";
 import {
   Controller,
@@ -16,6 +16,7 @@ import type {
   SaleUpdateDetailUI,
   SaleUpdateForm,
 } from "../types/saleUpdate.type";
+import type { SalePaymentMethod } from "../types/sale";
 import {
   Card,
   CardContent,
@@ -113,6 +114,7 @@ const SaleEditScreen = () => {
   }, [fromCreate, tempCreatedSale?.id, saleIdParam]);
 
   const [isReadOnly] = useState<boolean>(false);
+  const [formasPago, setFormasPago] = useState<SalePaymentMethod[]>([]);
   const navigate = useNavigate();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
@@ -410,6 +412,8 @@ const SaleEditScreen = () => {
   const formValues = watch();
   const { tipo_venta, plazo_pago, detalles } = formValues;
 
+  const isContado = tipo_venta !== "VC" && tipo_venta !== "";
+
   // VALIDACIÓN DE FECHA DE PLAZO
   useEffect(() => {
     if (!hasInitialized) return;
@@ -449,6 +453,10 @@ const SaleEditScreen = () => {
     clearErrors,
     hasInitialized,
   ]);
+
+  useEffect(() => {
+    if (!isContado) setFormasPago([]);
+  }, [isContado]);
 
   const {
     addProduct,
@@ -517,6 +525,7 @@ const SaleEditScreen = () => {
     const dataToSend = {
       ...transformedData,
       fecha: fechaFormateada,
+      ...(isContado && formasPago.length > 0 ? { formas_pago: formasPago } : {}),
     };
 
     updateSale(
@@ -1062,6 +1071,168 @@ const SaleEditScreen = () => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Formas de pago dividido — solo para ventas contado */}
+                  {isContado && (
+                    <Card className="shadow-none bg-background flex-shrink-0">
+                      <CardHeader className="p-2 sm:p-3 pb-0">
+                        <CardTitle className="text-primary text-base">
+                          Formas de pago
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-2 sm:p-3">
+                        <div className="flex flex-col gap-2">
+                          {formasPago.length === 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              Sin pago dividido — se usará la forma de pago principal
+                            </p>
+                          )}
+
+                          {formasPago.map((fp, index) => (
+                            <div
+                              key={index}
+                              className="flex flex-wrap gap-2 items-end"
+                            >
+                              <div className="flex-1 min-w-[120px]">
+                                <Label className="text-xs">Forma de pago</Label>
+                                <Select
+                                  value={fp.forma_pago}
+                                  onValueChange={(value) => {
+                                    setFormasPago((prev) =>
+                                      prev.map((item, i) =>
+                                        i === index
+                                          ? {
+                                              ...item,
+                                              forma_pago: value,
+                                              monto_recibido:
+                                                value !== "EF"
+                                                  ? null
+                                                  : item.monto_recibido,
+                                            }
+                                          : item
+                                      )
+                                    );
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecciona" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {salePaymentTypesData &&
+                                      salePaymentTypesData.map((pt) => (
+                                        <SelectItem key={pt.code} value={pt.code}>
+                                          {pt.label}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex-1 min-w-[100px]">
+                                <Label className="text-xs">Monto</Label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={fp.monto === 0 ? "" : fp.monto}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value) || 0;
+                                    setFormasPago((prev) =>
+                                      prev.map((item, i) =>
+                                        i === index ? { ...item, monto: value } : item
+                                      )
+                                    );
+                                  }}
+                                  placeholder="0.00"
+                                />
+                              </div>
+
+                              {fp.forma_pago === "EF" && (
+                                <div className="flex-1 min-w-[100px]">
+                                  <Label className="text-xs">Monto recibido</Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    step="0.01"
+                                    value={fp.monto_recibido ?? ""}
+                                    onChange={(e) => {
+                                      const value =
+                                        e.target.value === ""
+                                          ? null
+                                          : parseFloat(e.target.value) || 0;
+                                      setFormasPago((prev) =>
+                                        prev.map((item, i) =>
+                                          i === index
+                                            ? { ...item, monto_recibido: value }
+                                            : item
+                                        )
+                                      );
+                                    }}
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              )}
+
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() =>
+                                  setFormasPago((prev) =>
+                                    prev
+                                      .filter((_, i) => i !== index)
+                                      .map((item, i) => ({ ...item, orden: i + 1 }))
+                                  )
+                                }
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </div>
+                          ))}
+
+                          <div className="flex items-center justify-between pt-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() =>
+                                setFormasPago((prev) => [
+                                  ...prev,
+                                  {
+                                    forma_pago:
+                                      salePaymentTypesData?.[0]?.code ?? "",
+                                    monto: 0,
+                                    monto_recibido: null,
+                                    orden: prev.length + 1,
+                                  },
+                                ])
+                              }
+                            >
+                              <Plus className="size-4" />
+                              Agregar forma de pago
+                            </Button>
+
+                            {formasPago.length > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                Total asignado:{" "}
+                                <span className="font-medium text-foreground">
+                                  {formasPago
+                                    .reduce((sum, fp) => sum + (fp.monto || 0), 0)
+                                    .toFixed(2)}
+                                </span>{" "}
+                                / Total venta:{" "}
+                                <span className="font-medium text-foreground">
+                                  {calculateTotal().toFixed(2)}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
                 <div
