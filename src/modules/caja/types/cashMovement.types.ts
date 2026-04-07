@@ -1,6 +1,8 @@
 export type CashMovementConcept =
     // Sesión
     | 'APERTURA_CAJA'
+    | 'SOBRANTE_CAJA'
+    | 'FALTANTE_CAJA'
     // Ingresos
     | 'VENTA_CONTADO'
     | 'VENTA_RAPIDA'

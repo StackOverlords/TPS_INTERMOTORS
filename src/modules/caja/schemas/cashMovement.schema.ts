@@ -7,6 +7,8 @@ export const CashMovementSchema = z.object({
     concepto: z.enum([
         // Sesión
         'APERTURA_CAJA',
+        'SOBRANTE_CAJA',
+        'FALTANTE_CAJA',
         // Ingresos
         'VENTA_CONTADO',
         'VENTA_RAPIDA',
@@ -39,7 +41,7 @@ export const CashMovementSchema = z.object({
     tipo_gasto: z.object({
         id: z.number().int(),
         nombre: z.string(),
-    }).nullable(),
+    }).nullish().transform(v => v ?? null),
     descripcion: z.string().nullable(),
     fecha_reg: z.string(),
 });
