@@ -5,6 +5,8 @@ export const CashMovementSchema = z.object({
     id: z.number().int(),
     tipo_movimiento: z.enum(['INGRESO', 'EGRESO']),
     concepto: z.enum([
+        // Sesión
+        'APERTURA_CAJA',
         // Ingresos
         'VENTA_CONTADO',
         'VENTA_RAPIDA',
@@ -18,9 +20,11 @@ export const CashMovementSchema = z.object({
         // Egresos
         'GASTO_NO_DEDUCIBLE',
         'RETIRO_EFECTIVO',
+        'PAGO_SERVICIO',
         'DEVOLUCION_CLIENTE',
         'VUELTO',
         'ANULACION_VENTA',
+        'ANULACION_VUELTO',
         'ANULACION_COBRANZA',
         'ANULACION_GASTO',
         'ANULACION_RETIRO',
