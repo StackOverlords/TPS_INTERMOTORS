@@ -15,8 +15,9 @@ export const useUpdateQuotation = () => {
         onSuccess: (updatedQuotation, { quotationId }) => {
             queryClient.invalidateQueries({ queryKey: ["quotations"] });
             queryClient.invalidateQueries({ queryKey: ["details", quotationId] });
+            queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+            queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
             queryClient.setQueryData(["quotation-detail", quotationId], updatedQuotation);
-
         }
     });
 };
