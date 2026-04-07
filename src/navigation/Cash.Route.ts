@@ -1,7 +1,8 @@
-import { ClipboardList, Landmark, List, Tags } from "lucide-react";
+import { ClipboardList, Landmark, List, Tags, TrendingUp } from "lucide-react";
 import CashSessionDetailScreen from "@/modules/caja/screens/CashSessionDetailScreen";
 import CashSessionListScreen from "@/modules/caja/screens/CashSessionListScreen";
 import ExpenseTypesScreen from "@/modules/caja/screens/ExpenseTypesScreen";
+import CashFlowReportScreen from "@/modules/caja/screens/CashFlowReportScreen";
 import type RouteType from "./RouteType";
 
 const cashProtectedRoutes: RouteType[] = [
@@ -45,6 +46,17 @@ const cashProtectedRoutes: RouteType[] = [
         isAdmin: false,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: Tags,
+        isHeader: false,
+        showSidebar: true,
+      },
+      {
+        path: "/dashboard/caja/reportes/flujo",
+        name: "Flujo de Caja",
+        type: "protected",
+        element: CashFlowReportScreen,
+        isAdmin: false,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        icon: TrendingUp,
         isHeader: false,
         showSidebar: true,
       },

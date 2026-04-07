@@ -20,4 +20,8 @@ export const CASH_QUERY_KEYS = {
     expenseTypes: () => [...CASH_QUERY_KEYS.all, 'expense-types'] as const,
     expenseTypeList: (sucursalId: number) =>
         [...CASH_QUERY_KEYS.expenseTypes(), sucursalId] as const,
+
+    reports: () => [...CASH_QUERY_KEYS.all, 'reports'] as const,
+    flowReport: (sucursalId: number, fechaInicio: string, fechaFin: string) =>
+        [...CASH_QUERY_KEYS.reports(), 'flow', { sucursalId, fechaInicio, fechaFin }] as const,
 } as const;
