@@ -5,7 +5,7 @@ import ConfirmationModal from "@/components/common/confirmationModal";
 import { useBranchStore } from "@/states/branchStore";
 import { cn } from "@/lib/utils";
 import { showSuccessToast, showErrorToast } from "@/hooks/use-toast-enhanced";
-import { ArrowLeft, FileDown, Minus, Plus, Receipt } from "lucide-react";
+import { ArrowLeft, FileDown, Minus, Plus, Receipt, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CashExpenseModal } from "../components/modals/CashExpenseModal";
@@ -145,7 +145,7 @@ const CashSessionDetailScreen = () => {
   const [movementToAnular, setMovementToAnular] = useState<CashMovement | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
-  const { data: session, isLoading, isFetching, isError } = useCashSessionDetail(sessionId);
+  const { data: session, isLoading, isFetching, isError, refetch } = useCashSessionDetail(sessionId);
   const { mutate: deleteMovement, isPending: isAnulando } = useDeleteCashMovement(sessionId);
 
   const filteredMovements = useMemo<CashMovement[]>(() => {
@@ -219,6 +219,16 @@ const CashSessionDetailScreen = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
+              Actualizar
+            </Button>
             <Button
               variant="outline"
               size="sm"
