@@ -38,6 +38,9 @@ export const useDeleteReturn = () => {
       queryClient.invalidateQueries({
         queryKey: ["accounts-receivable-by-customer-report"],
       });
+      // Invalidar caja (anular devolución genera ANULACION_DEVOLUCION)
+      queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
     },
     retry: false,
     networkMode: "offlineFirst",

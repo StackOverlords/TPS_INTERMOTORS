@@ -39,6 +39,9 @@ export const useUpdateSale = () => {
       queryClient.invalidateQueries({
         queryKey: ["accounts-receivable-by-customer-report"],
       });
+      // Invalidar caja (la edición puede regenerar movimientos de efectivo)
+      queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
     },
   });
 };

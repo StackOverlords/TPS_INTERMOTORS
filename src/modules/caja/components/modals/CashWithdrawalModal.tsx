@@ -82,10 +82,12 @@ export function CashWithdrawalModal({
           resetForm();
           onClose();
         },
-        onError: (error) => {
+        onError: (error: any) => {
+          const validationMsg = error?.response?.data?.errors?.monto?.[0]
+            ?? error?.response?.data?.message;
           showErrorToast({
             title: "Error al registrar retiro",
-            description: error.message || "Ocurrió un error al registrar el retiro.",
+            description: validationMsg || "Ocurrió un error al registrar el retiro.",
           });
         },
       }

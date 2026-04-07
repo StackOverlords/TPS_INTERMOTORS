@@ -6,6 +6,8 @@ import { Logger } from "@/lib/logger";
 import { CashMovementSchema, CashMovementListResponseSchema } from "../schemas/cashMovement.schema";
 import { CashSessionSchema, CashSessionListResponseSchema, CashSessionArqueoSchema } from "../schemas/cashSession.schema";
 import { ExpenseTypeSchema, ExpenseTypeListSchema } from "../schemas/expenseType.schema";
+import { CashFlowReportSchema } from "../schemas/cashFlowReport.schema";
+import type { CashFlowReport } from "../types/cashFlowReport.types";
 import type { CloseSessionPayload, OpenSessionPayload, CashSession, CashSessionArqueo } from "../types/cashSession.types";
 import type { ExpenseType, CreateExpenseTypePayload, UpdateExpenseTypePayload } from "../types/expenseType.types";
 import type { CashMovement, IncomePayload, WithdrawalPayload, ExpensePayload } from "../types/cashMovement.types";
@@ -347,6 +349,27 @@ export const cashService = {
         Logger.info('Expense type updated successfully', { id }, MODULE_NAME);
 
         return response as ExpenseType;
+    },
+
+    /**
+     * Obtener el reporte de flujo de caja para una sucursal y rango de fechas
+     * @param sucursalId - ID de la sucursal
+     * @param fechaInicio - Fecha de inicio (YYYY-MM-DD)
+     * @param fechaFin - Fecha de fin (YYYY-MM-DD)
+     */
+    async getFlowReport(sucursalId: number, fechaInicio: string, fechaFin: string): Promise<CashFlowReport> {
+        Logger.info('Fetching cash flow report', { sucursalId, fechaInicio, fechaFin }, MODULE_NAME);
+
+        const response = await ApiService.get(
+            CASH_ENDPOINTS.reports.flow,
+            CashFlowReportSchema,
+            { params: { sucursal: sucursalId, fecha_inicio: fechaInicio, fecha_fin: fechaFin } },
+            { unwrapData: true }
+        );
+
+        Logger.info('Cash flow report fetched successfully', { sucursalId }, MODULE_NAME);
+
+        return response as CashFlowReport;
     },
 
     /**

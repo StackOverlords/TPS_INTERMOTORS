@@ -21,4 +21,7 @@ export const CASH_ENDPOINTS = {
         all: `${BASE_PATH}/expense-types`,
         byId: (id: number) => `${BASE_PATH}/expense-types/${id}`,
     },
+    reports: {
+        flow: `${BASE_PATH}/reports/flow`,
+    },
 } as const;

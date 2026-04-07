@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export const SalePaymentMethodSchema = z.object({
+  forma_pago: z.string().min(1),
+  monto: z.number().positive(),
+  monto_recibido: z.number().nonnegative().nullable().optional(),
+  orden: z.number().int(),
+});
+
 export const SaleDetailSchema = z.object({
   id_producto: z.number(),
   cantidad: z.number().positive(),
@@ -26,5 +33,6 @@ export const SaleSchema = z.object({
   sucursal: z.number(),
   id_responsable: z.number(),
   detalles: z.array(SaleDetailSchema).nonempty('La venta debe tener al menos un detalle de producto'),
+  formas_pago: z.array(SalePaymentMethodSchema).optional(),
 });
 export const SaleDetailListSchema = z.array(SaleDetailSchema).nonempty()

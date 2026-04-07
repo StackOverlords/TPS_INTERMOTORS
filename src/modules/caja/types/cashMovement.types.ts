@@ -1,4 +1,8 @@
 export type CashMovementConcept =
+    // Sesión
+    | 'APERTURA_CAJA'
+    | 'SOBRANTE_CAJA'
+    | 'FALTANTE_CAJA'
     // Ingresos
     | 'VENTA_CONTADO'
     | 'VENTA_RAPIDA'
@@ -12,9 +16,11 @@ export type CashMovementConcept =
     // Egresos
     | 'GASTO_NO_DEDUCIBLE'
     | 'RETIRO_EFECTIVO'
+    | 'PAGO_SERVICIO'
     | 'DEVOLUCION_CLIENTE'
     | 'VUELTO'
     | 'ANULACION_VENTA'
+    | 'ANULACION_VUELTO'
     | 'ANULACION_COBRANZA'
     | 'ANULACION_GASTO'
     | 'ANULACION_RETIRO';

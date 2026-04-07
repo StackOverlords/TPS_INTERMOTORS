@@ -9,6 +9,8 @@ export const useCreateQuotation = () => {
         mutationFn: (data: QuotationCreate) => quotationService.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["quotations"] });
+            queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+            queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
         }
     });
 };

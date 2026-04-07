@@ -26,6 +26,9 @@ export const useCreatePayment = () => {
             queryClient.invalidateQueries({
                 queryKey: ["accounts-receivable-by-customer-report"],
             });
+            // Invalidar caja (los cobros generan COBRANZA_CREDITO)
+            queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+            queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
         },
     });
 };

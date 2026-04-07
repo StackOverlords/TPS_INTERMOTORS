@@ -89,10 +89,12 @@ export function CashExpenseModal({
           resetForm();
           onClose();
         },
-        onError: (error) => {
+        onError: (error: any) => {
+          const validationMsg = error?.response?.data?.errors?.monto?.[0]
+            ?? error?.response?.data?.message;
           showErrorToast({
             title: "Error al registrar gasto",
-            description: error.message || "Ocurrió un error al registrar el gasto.",
+            description: validationMsg || "Ocurrió un error al registrar el gasto.",
           });
         },
       }

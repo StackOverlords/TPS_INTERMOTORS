@@ -43,6 +43,11 @@ export const SaleGetByIdSchema = z.object({
     forma_pago: z.string().nullable(),
     cliente: SaleCustomerGetSchema.nullable(),
     responsable_venta: SaleResponsibleSchema.nullable(),
+    caja_sesion_id: z.number().int().nullable().optional(),
+    caja_sesion: z.object({
+        id: z.number().int(),
+        estado: z.string(),
+    }).nullable().optional(),
     cantidad_detalles: z.number().int(),
     detalles: z.array(SaleItemSchema),
     comprobante: z.string().nullable(),
@@ -53,4 +58,14 @@ export const SaleGetByIdSchema = z.object({
     nmotor: z.string().nullable(),
     cliente_nit: z.string().nullable(),
     cliente_nombre: z.string().nullable(),
+    movimientos_caja: z.array(z.object({
+        id: z.number().int(),
+        tipo_movimiento: z.enum(['INGRESO', 'EGRESO']),
+        concepto: z.string(),
+        concepto_label: z.string(),
+        monto: z.coerce.number(),
+        forma_pago: z.string(),
+        forma_pago_label: z.string(),
+        fecha_reg: z.string(),
+    })).optional().default([]),
 })
