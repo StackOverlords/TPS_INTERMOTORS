@@ -39,6 +39,9 @@ export const useCreateReturn = () => {
       queryClient.invalidateQueries({
         queryKey: ["accounts-receivable-by-customer-report"],
       });
+      // Invalidar caja (las devoluciones generan DEVOLUCION_CLIENTE)
+      queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
     },
   });
 };
