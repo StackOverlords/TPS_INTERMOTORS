@@ -31,6 +31,9 @@ export const useCreateSale = () => {
       queryClient.invalidateQueries({
         queryKey: ["accounts-receivable-by-customer-report"],
       });
+      // Invalidar caja (movimientos de efectivo generados por la venta)
+      queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
     },
   });
 };
