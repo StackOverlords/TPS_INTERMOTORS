@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { useReportMasVendido } from '@/modules/reports/hooks/sales/useReportMasVendido';
 import { useReportMayorIngreso } from '@/modules/reports/hooks/sales/useReportMayorIngreso';
 import type { DateRange } from './useDateFilters';
-// import { useAccountsReceivableGeneralReport } from '@/modules/accountsReceivable/hooks/useAccountsReceivableGeneralReport'; // WIP: backend not ready
+import { useAccountsReceivableGeneralReport } from '@/modules/accountsReceivable/hooks/useAccountsReceivableGeneralReport';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -71,8 +71,15 @@ export function useDashboardData(dateRange: DateRange) {
     enabled: true,
   });
 
-  // WIP: cuentas por cobrar deshabilitado hasta que el backend esté listo
-  const receivablesQuery = { data: undefined, isLoading: false, isError: false };
+  // Query para cuentas por cobrar
+  const receivablesQuery = useAccountsReceivableGeneralReport(
+    {
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin,
+      sucursal: undefined,
+    },
+    true
+  );
 
   // Calcular métricas generales desde los datos de ventas
   const metrics = useMemo(() => {
