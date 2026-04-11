@@ -19,11 +19,13 @@ const HeaderTagRoute = ({
   expandedHeaders,
   toggleHeader,
   handleNavigation,
+  badgeMap,
 }: {
   route: RouteType;
   expandedHeaders: string[];
   toggleHeader: (headerName: string) => void;
   handleNavigation: () => void;
+  badgeMap?: Record<string, number>;
 }) => {
   const location = useLocation();
   const { rol: userRole } = useUserRole();
@@ -132,6 +134,7 @@ const HeaderTagRoute = ({
                     href={subRoute.path || "#"}
                     icon={subRoute.icon}
                     handleNavigation={handleNavigation}
+                    badge={subRoute.path ? (badgeMap?.[subRoute.path] ?? null) : null}
                   >
                     {subRoute.name}
                   </NavItem>

@@ -3,6 +3,7 @@ import { SaleCustomerGetSchema } from "./saleCustomer.schema";
 import { SaleResponsibleSchema } from "./saleResponsibles.schema";
 import { ProductDetailSchema } from "@/modules/products/schemas/ProductDetail.schema";
 import { toNumberOrZero, toNumberOrZeroStrict } from "@/modules/shared/schemas/numberSchemas";
+import { SalePaymentMethodSchema } from "./sales.schema";
 
 export const SaleItemSchema = z.object({
     id: z.number().int(),
@@ -68,4 +69,5 @@ export const SaleGetByIdSchema = z.object({
         forma_pago_label: z.string(),
         fecha_reg: z.string(),
     })).optional().default([]),
+    formas_pago_detalle: z.array(SalePaymentMethodSchema).nullable().optional(),
 })

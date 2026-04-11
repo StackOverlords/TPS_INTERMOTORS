@@ -259,6 +259,13 @@ const SaleEditScreen = () => {
     // Guardar los detalles originales
     setOriginalDetails(detallesTransformados);
 
+    // Pre-cargar formas de pago solo si la venta participó en el sistema de caja
+    if (sale.caja_sesion_id != null && sale.formas_pago_detalle?.length) {
+      setFormasPago(sale.formas_pago_detalle);
+    } else {
+      setFormasPago([]);
+    }
+
     const resetData: SaleUpdateForm = {
       fecha: sale.fecha?.slice(0, 10) ?? "",
       nro_comprobante2: sale.comprobante2 ?? "",
@@ -454,9 +461,7 @@ const SaleEditScreen = () => {
     hasInitialized,
   ]);
 
-  useEffect(() => {
-    if (!isContado) setFormasPago([]);
-  }, [isContado]);
+  // formasPago se inicializa en loadFormData según caja_sesion_id
 
   const {
     addProduct,
@@ -522,10 +527,13 @@ const SaleEditScreen = () => {
       fechaOriginal
     );
 
+    const activeSale = saleData ?? tempCreatedSale;
+    const hasCaja = activeSale?.caja_sesion_id != null;
+
     const dataToSend = {
       ...transformedData,
       fecha: fechaFormateada,
-      ...(isContado && formasPago.length > 0 ? { formas_pago: formasPago } : {}),
+      ...(hasCaja && formasPago.length > 0 ? { formas_pago: formasPago } : {}),
     };
 
     updateSale(

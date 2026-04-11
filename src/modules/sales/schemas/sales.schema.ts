@@ -4,6 +4,7 @@ export const SalePaymentMethodSchema = z.object({
   forma_pago: z.string().min(1),
   monto: z.number().positive(),
   monto_recibido: z.number().nonnegative().nullable().optional(),
+  vuelto: z.number().nonnegative().nullable().optional(),
   orden: z.number().int(),
 });
 
