@@ -8,6 +8,7 @@ import TooltipButton from "@/components/common/TooltipButton";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { formatCurrency } from "@/utils/formaters";
 import { Badge } from "@/components/atoms/badge";
+import { useEffect } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Switch } from "@/components/atoms/switch";
 import {
@@ -64,6 +65,15 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
   const { control, watch, setValue, getValues } = useFormContext();
   const anticipo = watch("anticipo") ?? 0;
 
+  // Ensure forma_pago_anticipo is always set when anticipo > 0.
+  // Using useEffect instead of EditablePrice's onSubmit callback to avoid
+  // timing issues where the form submits before the Controller re-renders.
+  useEffect(() => {
+    if (anticipo > 0 && !getValues("forma_pago_anticipo")) {
+      setValue("forma_pago_anticipo", PAYMENT_TYPE_OPTIONS[0].value);
+    }
+  }, [anticipo]);
+
   const handleSecondaryAction = () => {
     clearCart?.();
     callback();
@@ -99,9 +109,6 @@ const QuotationsSummary: React.FC<QuotationSummaryProps> = ({
                   value={field.value || 0}
                   onSubmit={(value) => {
                     field.onChange(value as number);
-                    if ((value as number) > 0 && !getValues("forma_pago_anticipo")) {
-                      setValue("forma_pago_anticipo", PAYMENT_TYPE_OPTIONS[0].value);
-                    }
                   }}
                   className="w-full"
                   buttonClassName="w-full"
