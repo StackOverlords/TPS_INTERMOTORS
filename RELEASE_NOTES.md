@@ -1,3 +1,37 @@
+# Novedades — v1.4.2
+
+---
+
+## Correcciones
+
+<details>
+<summary><strong>Cotizaciones — error 422 al editar el anticipo</strong></summary>
+
+Se corrigieron dos escenarios que generaban un error al guardar una cotización editada:
+
+- **Cotización con anticipo existente** — el campo `forma_pago_anticipo` no se cargaba desde el backend al abrir el formulario de edición, por lo que siempre se enviaba vacío. Ahora se carga correctamente, y las cotizaciones antiguas sin ese dato reciben `Efectivo` como valor por defecto.
+- **Agregar anticipo a una cotización sin anticipo** — al ingresar un anticipo por primera vez en la edición, el valor de forma de pago se sincronizaba con un timing incorrecto y podía enviarse vacío. Se reemplazó la lógica por un `useEffect` declarativo que garantiza la sincronización antes del envío.
+
+</details>
+
+<details>
+<summary><strong>Ventanas secundarias — errores 401 al buscar productos</strong></summary>
+
+Las ventanas secundarias (selector de productos en Devoluciones y otras) volvían a generar errores 401 en algunas operaciones. La causa era que el interceptor de Axios importaba una instancia del SDK de autenticación configurada siempre como ventana principal (`validateOnStartup: true`), sin importar en qué ventana se ejecutaba. El singleton ahora se auto-configura al iniciarse según el tipo de ventana.
+
+</details>
+
+<details>
+<summary><strong>Caja — conceptos y sincronización de movimientos</strong></summary>
+
+- Se agregaron los conceptos `SOBRANTE_CAJA` y `FALTANTE_CAJA` al schema de movimientos, evitando errores de validación al realizar arqueos con diferencias.
+- Al editar una venta, ahora se invalidan correctamente las queries de caja para reflejar los movimientos actualizados en tiempo real.
+- Se agrega botón de actualización manual en el detalle de sesión de caja.
+
+</details>
+
+---
+
 # Novedades — v1.4.0
 
 ---
