@@ -39,6 +39,18 @@ export const PurchaseUpdateSchema = z.object({
 });
 
 /**
+ * Campos informativos del proveedor relacionados a crédito.
+ * Solo se muestran en el formulario — no se envían en el payload de actualización.
+ */
+export const ProveedorCreditInfoSchema = z.object({
+  dias_plazo: z.number().int().min(0, "Los días de plazo deben ser >= 0").nullable().optional(),
+  limite_credito: z.coerce.number().nullable().optional(),
+  dias_alerta: z.number().int().min(0, "Los días de alerta deben ser >= 0").nullable().optional(),
+});
+
+export type ProveedorCreditInfo = z.infer<typeof ProveedorCreditInfoSchema>;
+
+/**
  * Schema para el formulario de actualización (incluye datos del UI)
  */
 export const PurchaseUpdateFormSchema = PurchaseUpdateSchema.extend({

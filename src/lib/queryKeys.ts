@@ -533,41 +533,41 @@ export const PERMISSIONS_QUERY_KEYS = {
 // ========================================
 
 /**
- * Query keys para el módulo de Cuentas por Pagar
+ * Query keys para el módulo de Cuentas por Cobrar
  *
  * Incluye:
- * - Listados de cuentas por pagar
+ * - Listados de cuentas por cobrar
  * - Pagos realizados
  * - Tipos de pago y vencimiento
  */
-export const ACCOUNTS_PAYABLE_QUERY_KEYS = {
-  /** Key base para todas las queries de cuentas por pagar */
-  all: ["accountsPayable"] as const,
+export const ACCOUNTS_RECEIVABLE_QUERY_KEYS = {
+  /** Key base para todas las queries de cuentas por cobrar */
+  all: ["accountsReceivable"] as const,
 
-  /** Key para todos los listados de cuentas por pagar */
-  lists: () => [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "list"] as const,
+  /** Key para todos los listados de cuentas por cobrar */
+  lists: () => [...ACCOUNTS_RECEIVABLE_QUERY_KEYS.all, "list"] as const,
 
   /**
-   * Key para listado de cuentas por pagar con filtros
+   * Key para listado de cuentas por cobrar con filtros
    * @param filters - Filtros de búsqueda
-   * @example ACCOUNTS_PAYABLE_QUERY_KEYS.list({ estado: 'pendiente' })
+   * @example ACCOUNTS_RECEIVABLE_QUERY_KEYS.list({ estado: 'pendiente' })
    */
-  list: (filters?: any) => [...ACCOUNTS_PAYABLE_QUERY_KEYS.lists(), { filters }] as const,
+  list: (filters?: any) => [...ACCOUNTS_RECEIVABLE_QUERY_KEYS.lists(), { filters }] as const,
 
   /**
    * Key para pagos de una venta específica
    * @param saleId - ID de la venta
    * @param filters - Filtros adicionales
-   * @example ACCOUNTS_PAYABLE_QUERY_KEYS.payments(123, {})
+   * @example ACCOUNTS_RECEIVABLE_QUERY_KEYS.payments(123, {})
    */
   payments: (saleId: number, filters?: any) =>
-    [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "payments", saleId, { filters }] as const,
+    [...ACCOUNTS_RECEIVABLE_QUERY_KEYS.all, "payments", saleId, { filters }] as const,
 
   /** Key para tipos de pago (staleTime: 1 hora) */
-  paymentTypes: () => [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "paymentTypes"] as const,
+  paymentTypes: () => [...ACCOUNTS_RECEIVABLE_QUERY_KEYS.all, "paymentTypes"] as const,
 
   /** Key para tipos de vencimiento (staleTime: 1 hora) */
-  termTypes: () => [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "termTypes"] as const,
+  termTypes: () => [...ACCOUNTS_RECEIVABLE_QUERY_KEYS.all, "termTypes"] as const,
 } as const;
 
 // ========================================
@@ -966,6 +966,163 @@ export const VIEW_CONFIG_QUERY_KEYS = {
 export const AUTH_QUERY_KEYS = {
   /** Key para datos de autenticación del usuario actual */
   auth: ["auth"] as const,
+} as const;
+
+// ========================================
+// ACCOUNTS PAYABLE MODULE (Cuentas por Pagar - CxP)
+// ========================================
+
+/**
+ * Query keys para el módulo de Cuentas por Pagar
+ *
+ * Incluye:
+ * - Listados de cuentas por pagar con filtros
+ * - Pagos realizados contra una compra
+ * - Notas de crédito contra una compra
+ * - Tipos de pago y plazo
+ */
+export const ACCOUNTS_PAYABLE_QUERY_KEYS = {
+  /** Key base para todas las queries de cuentas por pagar */
+  all: ["accountsPayable"] as const,
+
+  /** Key para todos los listados de CxP */
+  lists: () => [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "list"] as const,
+
+  /**
+   * Key para listado de CxP con filtros
+   * @param filters - Filtros de búsqueda (sucursal, proveedor, estado, etc.)
+   * @example ACCOUNTS_PAYABLE_QUERY_KEYS.list({ sucursal: 1 })
+   */
+  list: (filters?: unknown) =>
+    [...ACCOUNTS_PAYABLE_QUERY_KEYS.lists(), { filters }] as const,
+
+  /**
+   * Key para pagos de una compra específica
+   * @param purchaseId - ID de la compra
+   * @param filters - Filtros adicionales
+   * @example ACCOUNTS_PAYABLE_QUERY_KEYS.payments(42, {})
+   */
+  payments: (purchaseId: number, filters?: unknown) =>
+    [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "payments", purchaseId, { filters }] as const,
+
+  /** Key para tipos de pago (staleTime: 1 hora) */
+  paymentTypes: () => [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "paymentTypes"] as const,
+
+  /** Key para tipos de plazo (staleTime: 1 hora) */
+  termTypes: () => [...ACCOUNTS_PAYABLE_QUERY_KEYS.all, "termTypes"] as const,
+} as const;
+
+/**
+ * Query keys para el sub-módulo CxP — Notas de Crédito
+ *
+ * Separado de ACCOUNTS_PAYABLE_QUERY_KEYS para permitir invalidaciones
+ * quirúrgicas sin afectar las listas principales.
+ */
+export const CXP_QUERY_KEYS = {
+  /** Key base para todas las queries del sub-módulo CxP */
+  all: ["cxp"] as const,
+
+  /**
+   * Key para notas de crédito de una compra específica
+   * @param purchaseId - ID de la compra
+   * @example CXP_QUERY_KEYS.creditNotes(42)
+   */
+  creditNotes: (purchaseId: number) =>
+    [...CXP_QUERY_KEYS.all, "creditNotes", purchaseId] as const,
+
+  /** Key para todos los listados de notas de crédito */
+  creditNoteLists: () => [...CXP_QUERY_KEYS.all, "creditNotes"] as const,
+
+  /** Key para reportes CxP (base) */
+  reports: () => [...CXP_QUERY_KEYS.all, "reports"] as const,
+
+  /**
+   * Key para reporte general CxP con filtros
+   * @param filters - Filtros (sucursal, fecha_inicio, fecha_fin)
+   * @example CXP_QUERY_KEYS.reportGeneral({ sucursal: 1 })
+   */
+  reportGeneral: (filters?: unknown) =>
+    [...CXP_QUERY_KEYS.reports(), "general", { filters }] as const,
+
+  /**
+   * Key para reporte por proveedor con filtros
+   * @param filters - Filtros (sucursal, proveedor, fecha_inicio, fecha_fin)
+   */
+  reportBySupplier: (filters?: unknown) =>
+    [...CXP_QUERY_KEYS.reports(), "by-supplier", { filters }] as const,
+
+  /**
+   * Key para reporte de proyección con sucursal
+   * @param sucursal - ID de la sucursal
+   */
+  reportProjection: (sucursal?: number) =>
+    [...CXP_QUERY_KEYS.reports(), "projection", sucursal ?? "all"] as const,
+
+  /**
+   * Key para reporte de ranking de proveedores
+   * @param filters - Filtros (sucursal, fecha_inicio, fecha_fin)
+   */
+  reportRanking: (filters?: unknown) =>
+    [...CXP_QUERY_KEYS.reports(), "ranking", { filters }] as const,
+} as const;
+
+// ========================================
+// ALERTS MODULE (Alertas de Mora)
+// ========================================
+
+/**
+ * Query keys para el módulo de Alertas de Mora (CxP + CxC)
+ *
+ * Incluye:
+ * - Conteo de alertas no leídas (para badge en nav)
+ * - Listados paginados de alertas filtradas por tipo_documento
+ */
+export const ALERTS_QUERY_KEYS = {
+  /** Key base para todas las queries de alertas */
+  all: ["alerts"] as const,
+
+  /**
+   * Key para el conteo de alertas no leídas
+   * Usado con refetchInterval: 60_000 para badge de nav
+   * @param sucursal - ID de la sucursal
+   * @example ALERTS_QUERY_KEYS.counts(1)
+   */
+  counts: (sucursal?: number) =>
+    [...ALERTS_QUERY_KEYS.all, "counts", sucursal ?? "all"] as const,
+
+  /** Key para todos los listados de alertas */
+  lists: () => [...ALERTS_QUERY_KEYS.all, "list"] as const,
+
+  /**
+   * Key para listado de alertas con filtros
+   * @param filters - Filtros (tipo_documento: 'CxP'|'CxC', sucursal, tipo_alerta, contraparte)
+   * @example ALERTS_QUERY_KEYS.list({ tipo_documento: 'CxP', sucursal: 1 })
+   */
+  list: (filters?: unknown) =>
+    [...ALERTS_QUERY_KEYS.lists(), { filters }] as const,
+} as const;
+
+// ========================================
+// TREASURY MODULE (Tesorería)
+// ========================================
+
+/**
+ * Query keys para el módulo de Tesorería
+ *
+ * Incluye:
+ * - Dashboard de posición neta con proyecciones CxP + CxC
+ */
+export const TREASURY_QUERY_KEYS = {
+  /** Key base para todas las queries de tesorería */
+  all: ["treasury"] as const,
+
+  /**
+   * Key para el dashboard de tesorería por sucursal
+   * @param sucursal - ID de la sucursal
+   * @example TREASURY_QUERY_KEYS.dashboard(1)
+   */
+  dashboard: (sucursal?: number) =>
+    [...TREASURY_QUERY_KEYS.all, "dashboard", sucursal ?? "all"] as const,
 } as const;
 
 // ========================================

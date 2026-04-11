@@ -29,11 +29,11 @@ export const useUpdateReturn = () => {
 
       // Invalidar la lista de pagos para esa venta
       queryClient.invalidateQueries({
-        queryKey: ["accountsPayable", "payments"],
+        queryKey: ["accountsReceivable", "payments"],
       });
       // Invalidar la lista de cuentas por cobrar para refrescar saldos
       queryClient.invalidateQueries({
-        queryKey: ["accountsPayable"],
+        queryKey: ["accountsReceivable"],
       });
       // Invalidar los reportes de cuentas por cobrar también
       queryClient.invalidateQueries({

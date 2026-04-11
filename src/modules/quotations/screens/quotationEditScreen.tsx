@@ -265,7 +265,7 @@ const QuotationEditScreen = () => {
       cliente_contacto: quotation.cliente_contacto ?? "",
       cliente_telefono: quotation.cliente_telefono ?? "",
       anticipo: quotation.anticipo ?? 0,
-      forma_pago_anticipo: null,
+      forma_pago_anticipo: quotation.forma_pago_anticipo ?? ((quotation.anticipo ?? 0) > 0 ? 'EFECTIVO' : null),
       pedido: quotation.es_pedido,
     };
     reset(resetData);
@@ -365,6 +365,18 @@ const QuotationEditScreen = () => {
       setError("forma_cotizacion", {
         type: "manual",
         message: "Debes seleccionar una forma de cotización",
+      });
+      isValid = false;
+    }
+
+    if (formData.anticipo && formData.anticipo > 0 && !formData.forma_pago_anticipo) {
+      setError("forma_pago_anticipo", {
+        type: "manual",
+        message: "Debes seleccionar la forma de pago del anticipo",
+      });
+      showErrorToast({
+        title: "Forma de pago requerida",
+        description: "Seleccioná la forma de pago para el anticipo",
       });
       isValid = false;
     }

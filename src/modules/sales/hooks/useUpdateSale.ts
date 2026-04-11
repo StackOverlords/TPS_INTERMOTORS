@@ -27,7 +27,7 @@ export const useUpdateSale = () => {
       });
       // Invalidar cuentas por cobrar (si la venta es a crédito)
       queryClient.invalidateQueries({
-        queryKey: ["accountsPayable"],
+        queryKey: ["accountsReceivable"],
       });
       // Invalidar reportes de cuentas por cobrar
       queryClient.invalidateQueries({

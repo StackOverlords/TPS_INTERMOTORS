@@ -77,6 +77,19 @@ apiClient.interceptors.request.use(
       );
     }
 
+    // Limpiar null/undefined del body en POST/PUT/PATCH
+    // Evita que DTOs del backend fallen al recibir null en campos opcionales
+    const method = config.method?.toLowerCase();
+    if (
+      (method === "post" || method === "put" || method === "patch") &&
+      config.data &&
+      typeof config.data === "object" &&
+      !(config.data instanceof FormData) &&
+      !(config.data instanceof Blob)
+    ) {
+      config.data = cleanFilters(config.data as Record<string, unknown>);
+    }
+
     // Log de request (solo en desarrollo o para debugging)
     if (environment.env === "development") {
       const context = extractRequestContext(config);
@@ -222,8 +235,54 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Extraer mensaje legible del cuerpo de error del backend
+    if (error.response?.data) {
+      const humanMessage = extractBackendMessage(error.response.data);
+      if (humanMessage) {
+        error.message = humanMessage;
+      }
+    }
+
     return Promise.reject(error);
   },
 );
+
+/**
+ * Extrae el mensaje más útil de la respuesta de error del backend.
+ *
+ * Soporta los siguientes formatos:
+ *   { error: { message, validation_errors: [{ field, message }] } }
+ *   { message: "..." }
+ *   [{ message: "..." }]
+ */
+function extractBackendMessage(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+
+  const root = data as Record<string, unknown>;
+
+  // Formato estándar: { error: { ... } }
+  const errorObj = root.error as Record<string, unknown> | undefined;
+  if (errorObj && typeof errorObj === "object") {
+    const validationErrors = errorObj.validation_errors;
+    if (Array.isArray(validationErrors) && validationErrors.length > 0) {
+      const messages = validationErrors
+        .map((e) => (typeof e === "object" && e !== null ? (e as Record<string, unknown>).message : null))
+        .filter(Boolean) as string[];
+      if (messages.length > 0) return messages.join(" | ");
+    }
+    if (typeof errorObj.message === "string") return errorObj.message;
+  }
+
+  // Formato plano: { message: "..." }
+  if (typeof root.message === "string") return root.message;
+
+  // Formato array: [{ message: "..." }]
+  if (Array.isArray(data) && data.length > 0) {
+    const first = data[0] as Record<string, unknown>;
+    if (typeof first?.message === "string") return first.message;
+  }
+
+  return null;
+}
 
 export default apiClient;

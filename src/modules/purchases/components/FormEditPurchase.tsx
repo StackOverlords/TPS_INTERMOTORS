@@ -9,15 +9,17 @@ import { Controller, useFormContext } from "react-hook-form";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { useProviders } from "../hooks/useProviders";
 import { usePurchaseCommons } from "../hooks/usePurchaseCommons";
-import type { PurchaseUpdate } from "../schemas/purchaseUpdate.schema";
+import type { PurchaseUpdate, ProveedorCreditInfo } from "../schemas/purchaseUpdate.schema";
 import type { PurchaseDetail } from "../schemas/purchase.schema";
+import { formatCurrency } from "@/utils/formaters";
 
 interface Props {
   purchaseData?: PurchaseDetail;
+  proveedorCreditInfo?: ProveedorCreditInfo;
   onSubmit?: () => void;
 }
 
-const FormEditPurchase: React.FC<Props> = ({ purchaseData, onSubmit }) => {
+const FormEditPurchase: React.FC<Props> = ({ purchaseData, proveedorCreditInfo, onSubmit }) => {
   const {
     control,
     formState: { errors },
@@ -320,6 +322,41 @@ const FormEditPurchase: React.FC<Props> = ({ purchaseData, onSubmit }) => {
           />
         </div>
       </div>
+
+      {/* Crédito Proveedor — solo informativo, no se envía al backend */}
+      {proveedorCreditInfo && (
+        <div className="rounded-lg border border-border bg-card/50 p-3 mt-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Crédito Proveedor
+          </h3>
+          <div className="grid grid-cols-3 gap-4 text-xs">
+            <div>
+              <span className="text-muted-foreground block mb-0.5">Días de Plazo</span>
+              <span className="font-medium">
+                {proveedorCreditInfo.dias_plazo != null
+                  ? `${proveedorCreditInfo.dias_plazo} días`
+                  : "-"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block mb-0.5">Límite de Crédito</span>
+              <span className="font-medium">
+                {proveedorCreditInfo.limite_credito != null
+                  ? formatCurrency(proveedorCreditInfo.limite_credito)
+                  : "-"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block mb-0.5">Días de Alerta</span>
+              <span className="font-medium">
+                {proveedorCreditInfo.dias_alerta != null
+                  ? `${proveedorCreditInfo.dias_alerta} días`
+                  : "-"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

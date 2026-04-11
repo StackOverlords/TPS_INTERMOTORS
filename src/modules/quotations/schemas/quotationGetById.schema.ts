@@ -29,6 +29,7 @@ export const QuotationGetByIdSchema = z.object({
     comentarios: z.string().nullable(),
     anticipo: moneySchema,
     anticipo_pagado: z.boolean().optional().default(false),
+    forma_pago_anticipo: z.enum(['EFECTIVO', 'CHEQUE', 'TRASNF', 'QR', 'QR-EFECT']).nullable().optional().default(null),
     es_pedido: toBoolean,
     plazo_pago: z.string().nullable(),
     vehiculo: z.string().nullable(),

@@ -11,6 +11,7 @@ import {
 } from "@/components/atoms/sidebar";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
 import { useUserRole } from "@/hooks/useUserRole";
+// import useTreasuryDashboard from "@/modules/treasury/hooks/useTreasuryDashboard"; // WIP: backend not ready
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import authSDK from "@/services/sdk-simple-auth";
@@ -31,6 +32,8 @@ const AppSidebar = () => {
   const { setOpenMobile, isMobile } = useSidebar();
   const { available } = useUpdateChecker();
   const { rol: userRole } = useUserRole();
+  // WIP: treasury/alerts deshabilitado hasta que el backend esté listo
+  const badgeMap: Record<string, number> = {};
   const closeAllTabs = useTabStore((state) => state.closeAllTabs);
   const { resolvedTheme } = useThemeStore();
 
@@ -128,6 +131,7 @@ const AppSidebar = () => {
                   expandedHeaders={expandedHeaders}
                   key={`${route.name}-${index}`}
                   route={route}
+                  badgeMap={badgeMap}
                 />
               ))}
             </SidebarMenu>
