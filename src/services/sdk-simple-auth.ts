@@ -52,6 +52,13 @@ export function createAuthSDK(isSecondary: boolean): AuthSDK {
   });
 }
 
-const authSDK = createAuthSDK(false);
+// Detect secondary window at module level so the singleton is correctly configured
+// for BOTH the AuthSDKContext (window-entry.tsx) AND the axios interceptor (axios.ts),
+// which imports this module directly and cannot use React context.
+const isSecondaryWindow =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("windowId") !== null;
+
+const authSDK = createAuthSDK(isSecondaryWindow);
 
 export default authSDK;

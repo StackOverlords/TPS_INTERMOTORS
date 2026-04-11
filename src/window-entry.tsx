@@ -7,7 +7,7 @@ import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.t
 import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
 import "./index.css";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
-import authSDK, { createAuthSDK } from "./services/sdk-simple-auth.ts";
+import authSDK from "./services/sdk-simple-auth.ts";
 import {
   registerDefaultWindowComponents,
   WindowComponentRenderer,
@@ -20,14 +20,10 @@ import { useAppearanceStore } from "./stores/appearanceStore.ts";
 const isSecondaryWindow =
   new URLSearchParams(window.location.search).get("windowId") !== null;
 
-// Create a secondary-window-specific auth SDK instance when needed.
-// isSecondary=true disables validateOnStartup to avoid redundant session checks
-// while keeping tabSync enabled so auth state flows in via BroadcastChannel.
-// This instance is injected via AuthSDKContext.Provider below so WindowLayout
-// picks up the correct SDK instance instead of the main-window singleton.
-export const windowAuthSDK = isSecondaryWindow
-  ? createAuthSDK(true)
-  : undefined;
+// The module-level authSDK singleton auto-detects isSecondary via URLSearchParams,
+// so it's already correctly configured for secondary windows (validateOnStartup: false).
+// We re-export it here for the AuthSDKContext.Provider — no need to create a second instance.
+export const windowAuthSDK = isSecondaryWindow ? authSDK : undefined;
 
 try {
   useThemeStore.getState().initializeTheme();
