@@ -4,7 +4,7 @@ import { Button } from "@/components/atoms/button";
 import Pagination from "@/components/common/pagination";
 import { useBranchStore } from "@/states/branchStore";
 import { Info } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CloseSessionModal } from "../components/modals/CloseSessionModal";
 import { OpenSessionModal } from "../components/modals/OpenSessionModal";
@@ -34,6 +34,12 @@ const CashSessionListScreen = () => {
     pagina: 1,
     pagina_registros: DEFAULT_PAGE_SIZE,
   });
+
+  useEffect(() => {
+    if (!branchId) return;
+    setFilters((prev) => ({ ...prev, sucursal: branchId, pagina: 1 }));
+    setAppliedFilters((prev) => ({ ...prev, sucursal: branchId, pagina: 1 }));
+  }, [branchId]);
 
   const [openSessionModal, setOpenSessionModal] = useState(false);
   const [closeSessionModal, setCloseSessionModal] = useState<{
