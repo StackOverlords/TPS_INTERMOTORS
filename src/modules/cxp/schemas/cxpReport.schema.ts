@@ -57,6 +57,9 @@ export const CxPGeneralReportFilterSchema = z.object({
   sucursal: z.number().int(),
   fecha_inicio: z.string().min(1, "La fecha de inicio es requerida"),
   fecha_fin: z.string().min(1, "La fecha de fin es requerida"),
+  proveedor: z.number().int().optional(),
+  fecha_plazo_inicio: z.string().optional(),
+  fecha_plazo_fin: z.string().optional(),
 });
 
 export const CxPGeneralReportResponseSchema = z.array(CxPReportItemSchema);
@@ -72,7 +75,7 @@ export type CxPGeneralReportResponse = z.infer<typeof CxPGeneralReportResponseSc
 
 export const CxPBySupplierReportFilterSchema = z.object({
   sucursal: z.number().int(),
-  proveedor: z.number().int(),
+  proveedor: z.number().int().optional(),
   fecha_inicio: z.string().optional(),
   fecha_fin: z.string().optional(),
 });
@@ -105,7 +108,18 @@ export type CxPProjectionReportResponse = z.infer<typeof CxPProjectionReportResp
 // ─────────────────────────────────────────────
 // Reporte Ranking de Proveedores CxP
 // POST /api/v1/accounts-payable/reports/supplier-ranking
+// Shape: array agregado por proveedor (una fila por proveedor)
 // ─────────────────────────────────────────────
+
+export const CxPRankingItemSchema = z.object({
+  proveedor_id: z.number().int(),
+  proveedor: z.string(),
+  nit: z.string().nullable(),
+  total_compras: z.coerce.number(),
+  volumen_compra: z.coerce.number(),
+  total_pagado: z.coerce.number(),
+  deuda_pendiente: z.coerce.number(),
+});
 
 export const CxPRankingReportFilterSchema = z.object({
   sucursal: z.number().int(),
@@ -113,9 +127,8 @@ export const CxPRankingReportFilterSchema = z.object({
   fecha_fin: z.string().optional(),
 });
 
-export const CxPRankingReportResponseSchema = z.object({
-  data: z.array(CxPListItemSchema),
-});
+export const CxPRankingReportResponseSchema = z.array(CxPRankingItemSchema);
 
+export type CxPRankingItem = z.infer<typeof CxPRankingItemSchema>;
 export type CxPRankingReportFilter = z.infer<typeof CxPRankingReportFilterSchema>;
 export type CxPRankingReportResponse = z.infer<typeof CxPRankingReportResponseSchema>;

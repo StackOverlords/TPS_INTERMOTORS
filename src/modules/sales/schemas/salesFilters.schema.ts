@@ -9,4 +9,5 @@ export const salesFiltersSchema = baseFilterSchema.extend({
     fecha_inicio: z.preprocess(toDateOrUndefined, z.date().optional()),
     fecha_fin: z.preprocess(toDateOrUndefined, z.date().optional()),
     codigo_oem_producto: z.preprocess(toUndefinedIfEmpty, z.string().optional()),
+    sin_convertir: z.boolean().optional(),
 })

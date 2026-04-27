@@ -86,8 +86,10 @@ const QuotationSelectorWindow: React.FC = () => {
     resetFilters,
   } = useSalesFilters(Number(selectedBranchId) || 1);
 
-  const activeFilters =
-    searchMode === "realtime" ? debouncedFilters : appliedFilters;
+  const activeFilters = {
+    ...(searchMode === "realtime" ? debouncedFilters : appliedFilters),
+    sin_convertir: true as const,
+  };
 
   const {
     data: quotationData,

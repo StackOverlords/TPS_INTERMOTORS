@@ -1,19 +1,16 @@
 import CxPListScreen from "@/modules/cxp/screens/CxPListScreen";
-import CxPProjectionScreen from "@/modules/cxp/screens/CxPProjectionScreen";
+// import CxPProjectionScreen from "@/modules/cxp/screens/CxPProjectionScreen"; // backend sin datos aún
 import CxPGeneralReportScreen from "@/modules/cxp/screens/CxPGeneralReportScreen";
 import CxPBySupplierReportScreen from "@/modules/cxp/screens/CxPBySupplierReportScreen";
 import CxPRankingReportScreen from "@/modules/cxp/screens/CxPRankingReportScreen";
-import AlertsScreen from "@/modules/alerts/screens/AlertsScreen";
-import TreasuryDashboardScreen from "@/modules/treasury/screens/TreasuryDashboardScreen";
+// import AlertsScreen from "@/modules/alerts/screens/AlertsScreen"; // backend WIP
+// import TreasuryDashboardScreen from "@/modules/treasury/screens/TreasuryDashboardScreen"; // backend WIP
 import {
   Landmark,
   TableCellsMerge,
-  TrendingDown,
   FileText,
   Users,
   Trophy,
-  Bell,
-  Vault,
 } from "lucide-react";
 import type RouteType from "./RouteType";
 
@@ -38,17 +35,11 @@ const financeRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: true,
       },
-      {
-        path: "/dashboard/cxp/projection",
-        name: "Proyección de Pagos",
-        type: "protected",
-        element: CxPProjectionScreen,
-        isAdmin: false,
-        role: ["Administrador", "Super Admin"],
-        icon: TrendingDown,
-        isHeader: false,
-        showSidebar: true,
-      },
+      // {
+      //   path: "/dashboard/cxp/projection",
+      //   name: "Proyección de Pagos",
+      //   element: CxPProjectionScreen,  // backend sin datos — comentado temporalmente
+      // },
       {
         path: "/dashboard/cxp/reports/general",
         name: "Reporte General CxP",
@@ -82,28 +73,8 @@ const financeRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: true,
       },
-      {
-        path: "/dashboard/alerts",
-        name: "Alertas de Mora",
-        type: "protected",
-        element: AlertsScreen,
-        isAdmin: false,
-        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
-        icon: Bell,
-        isHeader: false,
-        showSidebar: true,
-      },
-      {
-        path: "/dashboard/treasury",
-        name: "Tesorería",
-        type: "protected",
-        element: TreasuryDashboardScreen,
-        isAdmin: false,
-        role: ["Administrador", "Super Admin"],
-        icon: Vault,
-        isHeader: false,
-        showSidebar: true,
-      },
+      // Alerts: backend WIP
+      // Treasury: backend WIP
     ],
   },
 ];

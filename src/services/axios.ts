@@ -1,5 +1,9 @@
 import authSDK from "@/services/sdk-simple-auth";
 import { useTabStore } from "@/states/tabStore";
+
+const isSecondaryWindow =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("windowId") !== null;
 import { cleanFilters } from "@/utils/cleanFilters";
 import { environment } from "@/utils/environment";
 import {
@@ -63,7 +67,7 @@ apiClient.interceptors.request.use(
     config.startTime = Date.now();
 
     // Autenticación
-    const token = await authSDK.getAccessToken();
+    const token = await authSDK.getValidAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -206,12 +210,17 @@ apiClient.interceptors.response.use(
             requestId,
             status,
             url: formattedError.fullUrl,
+            isSecondaryWindow,
           }),
         );
 
-        // Limpiar todas las tabs
-        useTabStore.getState().closeAllTabs();
-        await authSDK.clearLocalSession();
+        // Secondary windows never own auth state — clearing the shared IndexedDB here
+        // would destroy the main window's session via tabSync broadcast.
+        // Auth cleanup is the main window's responsibility exclusively.
+        if (!isSecondaryWindow) {
+          useTabStore.getState().closeAllTabs();
+          await authSDK.clearLocalSession();
+        }
       }
     }
 

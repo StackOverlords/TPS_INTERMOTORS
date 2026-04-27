@@ -41,14 +41,13 @@ export const cxpReportService = {
     async getGeneralReport(
         filters: CxPGeneralReportFilter & { downloadable?: boolean },
     ): Promise<CxPGeneralReportResponse | Blob> {
-        Logger.info("Fetching CxP general report", { filters }, MODULE_NAME);
+        const { downloadable, ...backendFilters } = filters;
+        Logger.info("Fetching CxP general report", { filters: backendFilters }, MODULE_NAME);
 
-        const isDownloadable = filters.downloadable ?? false;
-
-        if (isDownloadable) {
+        if (downloadable) {
             const blob = await ApiService.post(
                 CXP_ENDPOINTS.reports.general,
-                filters,
+                backendFilters,
                 undefined,
                 ExcelRequestConfig(180000),
             );
@@ -58,7 +57,7 @@ export const cxpReportService = {
 
         const response = await ApiService.post(
             CXP_ENDPOINTS.reports.general,
-            filters,
+            backendFilters,
             CxPGeneralReportResponseSchema,
             { timeout: 120000 },
         );
@@ -75,14 +74,13 @@ export const cxpReportService = {
     async getBySupplierReport(
         filters: CxPBySupplierReportFilter & { downloadable?: boolean },
     ): Promise<CxPBySupplierReportResponse | Blob> {
-        Logger.info("Fetching CxP by-supplier report", { filters }, MODULE_NAME);
+        const { downloadable, ...backendFilters } = filters;
+        Logger.info("Fetching CxP by-supplier report", { filters: backendFilters }, MODULE_NAME);
 
-        const isDownloadable = filters.downloadable ?? false;
-
-        if (isDownloadable) {
+        if (downloadable) {
             const blob = await ApiService.post(
                 CXP_ENDPOINTS.reports.bySupplier,
-                filters,
+                backendFilters,
                 undefined,
                 ExcelRequestConfig(180000),
             );
@@ -92,7 +90,7 @@ export const cxpReportService = {
 
         const response = await ApiService.post(
             CXP_ENDPOINTS.reports.bySupplier,
-            filters,
+            backendFilters,
             CxPBySupplierReportResponseSchema,
             { timeout: 120000 },
         );
@@ -126,14 +124,13 @@ export const cxpReportService = {
     async getSupplierRankingReport(
         filters: CxPRankingReportFilter & { downloadable?: boolean },
     ): Promise<CxPRankingReportResponse | Blob> {
-        Logger.info("Fetching CxP supplier ranking report", { filters }, MODULE_NAME);
+        const { downloadable, ...backendFilters } = filters;
+        Logger.info("Fetching CxP supplier ranking report", { filters: backendFilters }, MODULE_NAME);
 
-        const isDownloadable = filters.downloadable ?? false;
-
-        if (isDownloadable) {
+        if (downloadable) {
             const blob = await ApiService.post(
                 CXP_ENDPOINTS.reports.supplierRanking,
-                filters,
+                backendFilters,
                 undefined,
                 ExcelRequestConfig(180000),
             );
@@ -143,11 +140,11 @@ export const cxpReportService = {
 
         const response = await ApiService.post(
             CXP_ENDPOINTS.reports.supplierRanking,
-            filters,
+            backendFilters,
             CxPRankingReportResponseSchema,
             { timeout: 120000 },
         );
-        Logger.info("CxP supplier ranking fetched successfully", { count: response.data.length }, MODULE_NAME);
+        Logger.info("CxP supplier ranking fetched successfully", { count: (response as CxPRankingReportResponse).length }, MODULE_NAME);
         return response as CxPRankingReportResponse;
     },
 };

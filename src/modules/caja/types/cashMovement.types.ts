@@ -23,7 +23,9 @@ export type CashMovementConcept =
     | 'ANULACION_VUELTO'
     | 'ANULACION_COBRANZA'
     | 'ANULACION_GASTO'
-    | 'ANULACION_RETIRO';
+    | 'ANULACION_RETIRO'
+    | 'PAGO_PROVEEDOR'
+    | 'ANULACION_PAGO_PROVEEDOR';
 
 export type PaymentType = 'EFECTIVO' | 'CHEQUE' | 'TRASNF' | 'QR' | 'QR-EFECT';
 
@@ -44,6 +46,7 @@ export interface CashMovement {
     monto: number;
     referencia_tipo: string | null;
     referencia_id: number | null;
+    grupo_cobro: string | null;
     tipo_gasto: { id: number; nombre: string } | null;
     descripcion: string | null;
     fecha_reg: string;

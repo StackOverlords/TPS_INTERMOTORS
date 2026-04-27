@@ -73,23 +73,7 @@ export const fetchUserPermissions = async (userId: number): Promise<Permission[]
 };
 
 export const updateUserPermissions = async (userPermissionsData: UserPermissionsRequest): Promise<void> => {
-  try {
-    // console.log('🚀 Enviando permisos de usuario al servidor:', userPermissionsData);
-    const response = await apiClient.put(USER_ENDPOINTS.updatePermissions, userPermissionsData);
-    // console.log('✅ Respuesta del servidor (permisos):', response.data);
-  } catch (error: any) {
-    console.error("❌ Error al actualizar permisos de usuario:", error);
-
-    if (error.response?.status === 422 && error.response?.data?.error?.validation_errors) {
-      // console.group('🔍 Errores de validación:');
-      // error.response.data.error.validation_errors.forEach((validationError: any, index: number) => {
-      //   console.log(`${index + 1}. Campo: ${validationError.field} - ${validationError.message}`);
-      // });
-      // console.groupEnd();
-    }
-
-    throw new Error("Error al actualizar los permisos del usuario");
-  }
+  await apiClient.put(USER_ENDPOINTS.updatePermissions, userPermissionsData);
 };
 
 /**

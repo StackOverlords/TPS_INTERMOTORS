@@ -181,6 +181,8 @@ const CreateSaleScreen = () => {
     mode,
     setCartMode,
     previewConversion,
+    sourceQuotation,
+    setSourceQuotation,
   } = useCartWithUtils(user?.name || "", selectedBranchId ?? "");
 
   const {
@@ -552,6 +554,7 @@ const CreateSaleScreen = () => {
       ...data,
       fecha: formatDateForSubmission(data.fecha),
       ...(isContado && formasPago.length > 0 ? { formas_pago: formasPago } : {}),
+      cotizacion_id: sourceQuotation?.id ?? null,
     };
 
     createSale(dataToSend, {
@@ -561,6 +564,8 @@ const CreateSaleScreen = () => {
           description: `Venta #${createdSale.nro || createdSale.id} creada exitosamente`,
           duration: 2000,
         });
+
+        setSourceQuotation(null);
 
         // editar tab con la venta creada
         const currentTab = tabs.find((t) => t.id === activeTabId);
@@ -665,6 +670,13 @@ const CreateSaleScreen = () => {
     getValues,
     setValue,
   ]);
+
+  useEffect(() => {
+    if (!sourceQuotation && creationMode === "quotation-import") {
+      setCreationMode("manual");
+      setSelectedQuotationId(null);
+    }
+  }, [sourceQuotation, creationMode]);
 
   const selectedItems = useMemo<SelectedItem[]>(() => {
     return detalles.map((detail) => ({
