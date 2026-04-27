@@ -32,13 +32,12 @@ export function createAuthSDK(isSecondary: boolean): AuthSDK {
     },
     tokenRefresh: {
       enabled: true,
-      bufferTime: 900 // 15 min before expiry (access token TTL = 60 min)
+      bufferTime: 900_000 // 15 min in ms before expiry (access token TTL = 60 min)
     },
     sessionValidation: {
-      enabled: true,
+      enabled: false,            // no focus/visibility/inactivity events
       validateOnStartup: !isSecondary,
       autoLogoutOnInvalid: true,
-      maxInactivityTime: 3600 // 60 minutes
     },
     tabSync: {
       enabled: true,
