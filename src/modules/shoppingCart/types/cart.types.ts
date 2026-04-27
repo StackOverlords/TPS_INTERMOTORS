@@ -11,6 +11,11 @@ export interface ConversionAdjustment {
   reason: "QUANTITY_ADJUSTED" | "REMOVED_NO_STOCK";
 }
 
+export interface SourceQuotation {
+  id: number;
+  nro: string;
+}
+
 export interface ConversionResult {
   success: boolean;
   removedItems: CartItem[];
@@ -85,9 +90,11 @@ export type CartState = {
   discountPercent: number;
   discountMode: DiscountMode;
   lastConversion: ConversionResult | null;
+  sourceQuotation: SourceQuotation | null;
 
   // Gestión de modo
   setMode: (mode: CartMode) => void;
+  setSourceQuotation: (q: SourceQuotation | null) => void;
   convertToSaleStrict: () => ConversionResult;
   convertToSalePermissive: () => void;
   convertToQuote: () => void;

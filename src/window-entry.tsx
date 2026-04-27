@@ -94,23 +94,36 @@ const requiresAuth = componentId
   : true;
 
 if (rootElement) {
-  createRoot(rootElement).render(
-    requiresAuth ? (
-      <AuthSDKContext.Provider value={windowAuthSDK ?? authSDK}>
-        <TaskNotificationsProvider>
-          <WebSocketProvider>
-            <WindowLayout>
-              <WindowComponentRenderer />
-            </WindowLayout>
-          </WebSocketProvider>
-        </TaskNotificationsProvider>
-      </AuthSDKContext.Provider>
-    ) : (
-      <WindowComponentRenderer />
-    )
-  );
+  const mount = () => {
+    createRoot(rootElement).render(
+      requiresAuth ? (
+        <AuthSDKContext.Provider value={windowAuthSDK ?? authSDK}>
+          <TaskNotificationsProvider>
+            <WebSocketProvider>
+              <WindowLayout>
+                <WindowComponentRenderer />
+              </WindowLayout>
+            </WebSocketProvider>
+          </TaskNotificationsProvider>
+        </AuthSDKContext.Provider>
+      ) : (
+        <WindowComponentRenderer />
+      )
+    );
+  };
 
-  console.log("[WindowEntry] ✅ Aplicación renderizada");
+  if (isSecondaryWindow && requiresAuth) {
+    authSDK.ready
+      .then(() => {
+        mount();
+      })
+      .catch((error) => {
+        console.error("[WindowEntry] ❌ SDK ready failed:", error);
+        mount();
+      });
+  } else {
+    mount();
+  }
 } else {
   console.error("[WindowEntry] ❌ No se encontró el elemento #window-root");
 }

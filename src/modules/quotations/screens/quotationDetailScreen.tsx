@@ -279,12 +279,16 @@ const QuotationDetailScreen = () => {
                       ? handleOpenCartClearAlert
                       : handleConvertToSale
                   }
-                  tooltip="Crear una venta a partir de esta cotización"
+                  tooltip={
+                    quotationData?.convertida
+                      ? "Esta cotización ya fue convertida a venta"
+                      : "Crear una venta a partir de esta cotización"
+                  }
                   buttonProps={{
-                    variant: "outline",
+                    variant: quotationData?.convertida ? "secondary" : "outline",
                     size: "sm",
                     className: "gap-2",
-                    disabled: isImporting,
+                    disabled: isImporting || quotationData?.convertida === true,
                   }}
                 >
                   {isImporting ? (
@@ -295,7 +299,7 @@ const QuotationDetailScreen = () => {
                   ) : (
                     <>
                       <ShoppingCart className="h-4 w-4" />
-                      Convertir a Venta
+                      {quotationData?.convertida ? "Ya convertida" : "Convertir a Venta"}
                     </>
                   )}
                 </TooltipButton>

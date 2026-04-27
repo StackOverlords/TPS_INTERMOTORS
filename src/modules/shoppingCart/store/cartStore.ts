@@ -34,11 +34,16 @@ export const createCartStore = (user: string) => {
           discountPercent: 0,
           discountMode: null,
           lastConversion: null,
+          sourceQuotation: null,
 
           // ==================== GESTIÓN DE MODO ====================
 
           setMode: (mode) => {
             set({ mode });
+          },
+
+          setSourceQuotation: (q) => {
+            set({ sourceQuotation: q });
           },
 
           convertToSaleStrict: () => {
@@ -541,6 +546,7 @@ export const createCartStore = (user: string) => {
               discountPercent: 0,
               discountMode: null,
               lastConversion: null,
+              sourceQuotation: null,
             }),
 
           // ==================== GESTIÓN DE DESCUENTOS ====================

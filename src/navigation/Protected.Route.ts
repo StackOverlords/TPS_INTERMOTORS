@@ -1,7 +1,7 @@
 import { LayoutDashboardIcon } from "lucide-react";
 import accountsReceivable from "./AccountReceivable.Route";
 import cashProtectedRoutes from "./Cash.Route";
-// import financeRoutes from "./Finance.Route"; // WIP: cxp/alerts/treasury backend not ready
+import financeRoutes from "./Finance.Route";
 import ordersProtectedRoutes from "./Order.Route";
 import productosProtectedRoutes from "./Productos.Route";
 import purchasesProtectedRoutes from "./Purchases.Route";
@@ -37,7 +37,7 @@ const protectedRoutes: RouteType[] = [
   ...settingsProtectedRoutes,
   ...transfersProtectedRoutes,
   ...accountsReceivable,
-  // ...financeRoutes, // WIP: cxp/alerts/treasury backend not ready
+  ...financeRoutes,
 ];
 
 export default protectedRoutes;

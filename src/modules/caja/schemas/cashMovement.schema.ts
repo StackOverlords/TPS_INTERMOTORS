@@ -31,6 +31,7 @@ export const CashMovementSchema = z.object({
         'ANULACION_GASTO',
         'ANULACION_RETIRO',
         'PAGO_PROVEEDOR',
+        'ANULACION_PAGO_PROVEEDOR',
     ]),
     concepto_label: z.string(),
     origen: z.enum(['AUTOMATICO', 'MANUAL']),
@@ -39,6 +40,7 @@ export const CashMovementSchema = z.object({
     monto: z.coerce.number(),
     referencia_tipo: z.string().nullable(),
     referencia_id: z.number().int().nullable(),
+    grupo_cobro: z.string().nullable().optional(),
     tipo_gasto: z.object({
         id: z.number().int(),
         nombre: z.string(),

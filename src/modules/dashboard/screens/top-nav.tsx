@@ -1,6 +1,11 @@
 import { Badge } from "@/components/atoms/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
 import { SidebarTrigger } from "@/components/atoms/sidebar";
 import NotificationsPanel from "@/components/common/NotificationsPanel";
 import ShortcutKey from "@/components/common/ShortcutKey";
@@ -17,6 +22,7 @@ import {
   Bell,
   ChevronDown,
   ChevronUp,
+  FileText,
   HelpCircle,
   MessageSquare,
   ShoppingCart,
@@ -215,6 +221,30 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
             <MessageSquare className="h-4 w-4" />
           </Button>
         </div>
+        {cart.sourceQuotation && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="relative size-8">
+                <FileText className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-amber-400 dark:bg-amber-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">Cotización pendiente</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                La cotización <span className="font-medium text-foreground">#{cart.sourceQuotation.nro}</span> está siendo convertida a venta. Cancelá si querés empezar desde cero.
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full text-xs h-7"
+                onClick={() => cart.clearCart()}
+              >
+                Cancelar conversión
+              </Button>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <Button
           variant="outline"
           className="relative size-8 cursor-pointer"
