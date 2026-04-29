@@ -137,10 +137,10 @@ export class WebSocketService {
    * @param eventName - Nombre del evento (ej: 'public.notification', 'OrderCreated', '.OrderUpdated')
    * @param callback - Función a ejecutar cuando se reciba el evento
    */
-  listen(channelName: string, eventName: string, callback: Function): void {
+  listen(channelName: string, eventName: string, callback: Function): () => void {
     if (!this.echo) {
       wsLogger.warn('Echo no está conectado. Llama a connect() primero.', { channelName, eventName });
-      return;
+      return () => {};
     }
 
     wsLogger.debug('Intentando suscribirse a canal', { channelName, eventName });
@@ -165,7 +165,6 @@ export class WebSocketService {
 
       this.channels.set(channelName, channel);
 
-      // Escuchar eventos de suscripción
       channel.on('pusher:subscription_succeeded', () => {
         wsLogger.info('CANAL SUSCRITO', {
           channel: channelName,
@@ -183,9 +182,6 @@ export class WebSocketService {
       });
     }
 
-    // Formatear el nombre del evento correctamente
-    // Si el evento ya tiene un punto al inicio, no agregar otro
-    // Si no, agregarlo para que Laravel Echo lo maneje correctamente
     const formattedEvent = eventName.startsWith('.') ? eventName : `.${eventName}`;
 
     channel.listen(formattedEvent, (data: any) => {
@@ -205,6 +201,11 @@ export class WebSocketService {
       event: formattedEvent,
       status: 'listening'
     });
+
+    return () => {
+      wsLogger.debug('Desuscribiendo evento', { channelName, formattedEvent });
+      this.channels.get(channelName)?.stopListening(formattedEvent, callback);
+    };
   }
 
   /**

@@ -9,9 +9,8 @@ const wsContextLogger = logger.withModule('WS_CONTEXT');
 // 1. Actualizamos la interfaz para que coincida con la realidad
 interface WebSocketContextType {
   isConnected: boolean;
-  send: (type: string, data: any) => void; 
-  // Actualizamos subscribe para requerir 'channel' y 'event'
-  subscribe: (channel: string, event: string, callback: (data: any) => void) => void;
+  send: (type: string, data: any) => void;
+  subscribe: (channel: string, event: string, callback: (data: any) => void) => () => void;
   leave: (channel: string) => void;
   service: WebSocketService;
 }
@@ -33,12 +32,15 @@ export const WebSocketProvider = ({ children, autoConnect = true }: WebSocketPro
   useEffect(() => {
     let checkConnection: NodeJS.Timeout;
     let reconnectTimeout: NodeJS.Timeout;
+    let retryCount = 0;
+    const MAX_RETRIES = 10;
 
     if (autoConnect) {
       const initSocket = async () => {
         try {
           wsContextLogger.info('Iniciando conexión a Reverb...');
           await websocketService.connect();
+          retryCount = 0;
           setIsConnected(true);
           wsContextLogger.info('WebSocket conectado y listo para suscripciones');
 
@@ -94,11 +96,13 @@ export const WebSocketProvider = ({ children, autoConnect = true }: WebSocketPro
           wsContextLogger.error('Falló la conexión al WebSocket', { error });
           setIsConnected(false);
 
-          // Intentar reconectar después de 5 segundos
-          wsContextLogger.info('Reintentando conexión en 5 segundos...');
-          reconnectTimeout = setTimeout(() => {
-            initSocket();
-          }, 5000);
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            wsContextLogger.info(`Reintentando conexión en 5s (intento ${retryCount}/${MAX_RETRIES})...`);
+            reconnectTimeout = setTimeout(initSocket, 5000);
+          } else {
+            wsContextLogger.error('Máximo de reintentos alcanzado, deteniendo reconexión automática');
+          }
         }
       };
 
@@ -129,10 +133,9 @@ export const WebSocketProvider = ({ children, autoConnect = true }: WebSocketPro
     wsContextLogger.warn('WebSocket via Echo is read-only. Use your HTTP API to broadcast events.', { type, data });
   };
 
-  // 4. Nueva función subscribe genérica
-  const subscribe = (channel: string, event: string, callback: (data: any) => void) => {
+  const subscribe = (channel: string, event: string, callback: (data: any) => void): () => void => {
     wsContextLogger.debug('Subscribiendo a canal desde context', { channel, event });
-    websocketService.listen(channel, event, callback);
+    return websocketService.listen(channel, event, callback);
   };
 
   const leave = (channel: string) => {
