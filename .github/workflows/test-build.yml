@@ -1,0 +1,70 @@
+name: Test Build (Windows MSI)
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Tenant variant'
+        required: true
+        type: choice
+        options:
+          - t1
+          - t2
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Disable updater artifacts
+        shell: bash
+        run: |
+          sed -i 's/"createUpdaterArtifacts": true/"createUpdaterArtifacts": false/g' src-tauri/tauri.conf.json
+
+      - name: Build Tauri app (MSI only)
+        env:
+          VITE_API_URL: ${{ inputs.variant == 't1' && secrets.VITE_API_URL_T1 || secrets.VITE_API_URL_T2 }}
+          VITE_WS_URL: ${{ inputs.variant == 't1' && secrets.VITE_WS_URL_T1 || secrets.VITE_WS_URL_T2 }}
+          VITE_SOCKET_KEY: ${{ inputs.variant == 't1' && secrets.VITE_SOCKET_KEY_T1 || secrets.VITE_SOCKET_KEY_T2 }}
+          VITE_REVERB_HOST: ${{ inputs.variant == 't1' && secrets.VITE_REVERB_HOST_T1 || secrets.VITE_REVERB_HOST_T2 }}
+          VITE_REVERB_PORT: ${{ inputs.variant == 't1' && secrets.VITE_REVERB_PORT_T1 || secrets.VITE_REVERB_PORT_T2 }}
+          VITE_REVERB_APP_KEY: ${{ inputs.variant == 't1' && secrets.VITE_REVERB_APP_KEY_T1 || secrets.VITE_REVERB_APP_KEY_T2 }}
+          VITE_REVERB_SCHEME: ${{ inputs.variant == 't1' && secrets.VITE_REVERB_SCHEME_T1 || secrets.VITE_REVERB_SCHEME_T2 }}
+          VITE_APP_ENV: ${{ vars.VITE_APP_ENV || 'production' }}
+          VITE_APP_VARIANT: ${{ inputs.variant }}
+          BRANCH_STORAGE_KEY: ${{ vars.BRANCH_STORAGE_KEY || 'selectedBranchId' }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build -- --bundles msi
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-windows-msi-${{ inputs.variant }}
+          path: src-tauri/target/release/bundle/msi/*.msi
+          retention-days: 3

@@ -2,6 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { useWebSocket } from '../contexts/WebSocketContext';
 
 export const useWebSocketEvent = <T = any>(
+  channel: string,
   event: string,
   callback: (data: T) => void,
   dependencies: any[] = []
@@ -11,9 +12,9 @@ export const useWebSocketEvent = <T = any>(
   const memoizedCallback = useCallback(callback, dependencies);
 
   useEffect(() => {
-    const unsubscribe = subscribe(event, memoizedCallback);
+    const unsubscribe = subscribe(channel, event, memoizedCallback);
     return unsubscribe;
-  }, [event, memoizedCallback, subscribe]);
+  }, [channel, event, memoizedCallback, subscribe]);
 };
 
 export const useWebSocketSend = () => {

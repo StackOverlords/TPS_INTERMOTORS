@@ -90,7 +90,7 @@
     "react-router-dom": "7.6.3",
     "react-syntax-highlighter": "^16.1.0",
     "recharts": "3.0.2",
-    "sdk-simple-auth": "^2.3.0",
+    "sdk-simple-auth": "^2.3.1",
     "socket.io-client": "^4.8.1",
     "sonner": "2.0.6",
     "tailwind-merge": "3.3.1",
