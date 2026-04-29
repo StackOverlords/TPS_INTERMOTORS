@@ -16,5 +16,7 @@ export interface UITransferDetailCreate extends TransferDetailCreate {
         precio_venta_alt: number;
     };
     purchase_id: number;
+    lot_fecha?: string;
+    lot_saldo?: number;
     id_detalle_transferencia?: number;
 }

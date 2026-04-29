@@ -278,7 +278,6 @@ const CreateTransfer = () => {
   }, [transferBranchesData, setValue, sucursalDestino]);
 
   const handleAddProductItem = async (product: ProductGet) => {
-    let tcTransfer = 0;
     try {
       const stockData = await productsService.getStock({
         producto: product.id,
@@ -286,15 +285,17 @@ const CreateTransfer = () => {
         resto_only: 0,
       });
       if (stockData.length > 0) {
-        const sorted = [...stockData].sort(
-          (a, b) => new Date(b.fecha_adquisicion).getTime() - new Date(a.fecha_adquisicion).getTime()
+        // Ordenar FIFO: más antiguo primero para reflejar el costo real por lote
+        const lotsAsc = [...stockData].sort(
+          (a, b) => new Date(a.fecha_adquisicion).getTime() - new Date(b.fecha_adquisicion).getTime()
         );
-        tcTransfer = sorted[0].tc_compra || 0;
+        transferDetailsHook.addProduct(product, 0, lotsAsc);
+      } else {
+        transferDetailsHook.addProduct(product, 0);
       }
     } catch {
-      // Si falla la consulta de stock, tc_transfer queda en 0
+      transferDetailsHook.addProduct(product, 0);
     }
-    transferDetailsHook.addProduct(product, tcTransfer);
     // Enfocar el primer input de cantidad después de agregar
     setTimeout(() => {
       tableRef.current?.focusFirstQuantityInput();

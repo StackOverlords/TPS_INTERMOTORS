@@ -598,11 +598,21 @@ function TransferDetailTableInner(
         size: 250,
         minSize: 200,
         enableHiding: false,
-        cell: ({ getValue }) => (
-          <div className="flex flex-col space-y-1">
+        cell: ({ row }) => (
+          <div className="flex flex-col space-y-0.5">
             <h3 className="font-medium truncate text-sm">
-              {getValue<string>()}
+              {row.original.product.descripcion}
             </h3>
+            {row.original.lot_fecha && (
+              <span className="text-xs text-muted-foreground">
+                Lote: {new Date(row.original.lot_fecha).toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                {row.original.lot_saldo !== undefined && (
+                  <span className="ml-1 text-amber-600 dark:text-amber-400">
+                    (disp: {row.original.lot_saldo})
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         ),
       },
