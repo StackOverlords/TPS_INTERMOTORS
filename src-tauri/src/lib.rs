@@ -31,6 +31,12 @@ pub fn run() {
             logging::log_debug,
         ])
         .setup(|app| {
+            if option_env!("TAURI_DEV_TOOLS").is_some() {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.open_devtools();
+                }
+            }
+
             // Habilitar logging tanto en desarrollo como en producción
             let log_level = if cfg!(debug_assertions) {
                 log::LevelFilter::Debug
