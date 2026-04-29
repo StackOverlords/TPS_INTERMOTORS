@@ -204,20 +204,23 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 || status === 403) {
+        // Only treat this as a session expiry if the request was sent WITH an auth token.
+        // A 401 on a request with no Authorization header (e.g. a pre-login request that
+        // resolves after the user has already logged in) must not clear the new session.
+        const hadAuthHeader = !!(error.config?.headers as Record<string, string> | undefined)?.Authorization;
+
         logger.warn(
-          "[AUTH ERROR] Unauthorized access, clearing session",
+          "[AUTH ERROR] Unauthorized access",
           JSON.stringify({
             requestId,
             status,
             url: formattedError.fullUrl,
             isSecondaryWindow,
+            hadAuthHeader,
           }),
         );
 
-        // Secondary windows never own auth state — clearing the shared IndexedDB here
-        // would destroy the main window's session via tabSync broadcast.
-        // Auth cleanup is the main window's responsibility exclusively.
-        if (!isSecondaryWindow) {
+        if (!isSecondaryWindow && hadAuthHeader) {
           useTabStore.getState().closeAllTabs();
           await authSDK.clearLocalSession();
         }
