@@ -36,8 +36,8 @@ export function createAuthSDK(isSecondary: boolean): AuthSDK {
       // Default fallbacks (900*1000 for scheduler, 900 for check) are internally consistent = 15 min both.
     },
     sessionValidation: {
-      enabled: false,            // no focus/visibility/inactivity events
-      validateOnStartup: !isSecondary,
+      enabled: false,
+      validateOnStartup: false,
       autoLogoutOnInvalid: true,
     },
     tabSync: {
