@@ -23,6 +23,7 @@ declare module "axios" {
   export interface InternalAxiosRequestConfig {
     requestId?: string;
     startTime?: number;
+    _retry?: boolean;
   }
 }
 
@@ -204,10 +205,8 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 || status === 403) {
-        // Only treat this as a session expiry if the request was sent WITH an auth token.
-        // A 401 on a request with no Authorization header (e.g. a pre-login request that
-        // resolves after the user has already logged in) must not clear the new session.
         const hadAuthHeader = !!(error.config?.headers as Record<string, string> | undefined)?.Authorization;
+        const alreadyRetried = !!config?._retry;
 
         logger.warn(
           "[AUTH ERROR] Unauthorized access",
@@ -217,8 +216,25 @@ apiClient.interceptors.response.use(
             url: formattedError.fullUrl,
             isSecondaryWindow,
             hadAuthHeader,
+            alreadyRetried,
           }),
         );
+
+        // Retry once after forcing a token refresh.
+        // Covers the race where two parallel requests fire while the SDK mutex
+        // holds a refresh — one gets the new token, the other gets the stale one → 401.
+        if (hadAuthHeader && !alreadyRetried && config) {
+          config._retry = true;
+          try {
+            const newToken = await authSDK.getValidAccessToken();
+            if (newToken) {
+              config.headers.Authorization = `Bearer ${newToken}`;
+              return apiClient(config);
+            }
+          } catch {
+            // refresh failed — fall through to clearSession
+          }
+        }
 
         if (!isSecondaryWindow && hadAuthHeader) {
           useTabStore.getState().closeAllTabs();
