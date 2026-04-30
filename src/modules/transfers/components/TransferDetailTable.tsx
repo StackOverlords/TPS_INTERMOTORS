@@ -603,14 +603,15 @@ function TransferDetailTableInner(
             <h3 className="font-medium truncate text-sm">
               {row.original.product.descripcion}
             </h3>
-            {row.original.lot_fecha && (
+            {row.original.total_saldo !== undefined && (
               <span className="text-xs text-muted-foreground">
-                Lote: {new Date(row.original.lot_fecha).toLocaleDateString("es-BO", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                {row.original.lot_saldo !== undefined && (
-                  <span className="ml-1 text-amber-600 dark:text-amber-400">
-                    (disp: {row.original.lot_saldo})
-                  </span>
-                )}
+                {row.original.lots && row.original.lots.length > 1
+                  ? `${row.original.lots.length} lotes · `
+                  : ""}
+                disp:{" "}
+                <span className="text-amber-600 dark:text-amber-400">
+                  {row.original.total_saldo}
+                </span>
               </span>
             )}
           </div>
@@ -656,7 +657,9 @@ function TransferDetailTableInner(
             }
             validate={(val) => {
               const num = parseInt(val);
-              if (isNaN(num) || num <= 0) return false;
+              if (isNaN(num) || num <= 0) return "Cantidad inválida";
+              if (row.original.total_saldo !== undefined && num > row.original.total_saldo)
+                return `Máx. disponible: ${row.original.total_saldo}`;
               return true;
             }}
             disableWheel

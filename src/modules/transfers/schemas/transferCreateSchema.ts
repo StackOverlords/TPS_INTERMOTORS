@@ -11,6 +11,7 @@ export const TransferDetailCreateSchema = z.object({
     incremento_p_entrada_venta: z.number(),
     incremento_p_entrada_venta_alt: z.number(),
     tc_transfer: z.number().nonnegative(),
+    fecha_adquisicion: z.string().optional(),
 });
 
 export const TransferCreateSchema = z.object({
