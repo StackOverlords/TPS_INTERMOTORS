@@ -35,5 +35,6 @@ export const SaleSchema = z.object({
   id_responsable: z.number(),
   detalles: z.array(SaleDetailSchema).nonempty('La venta debe tener al menos un detalle de producto'),
   formas_pago: z.array(SalePaymentMethodSchema).optional(),
+  cotizacion_id: z.number().int().positive().nullable().optional(),
 });
 export const SaleDetailListSchema = z.array(SaleDetailSchema).nonempty()

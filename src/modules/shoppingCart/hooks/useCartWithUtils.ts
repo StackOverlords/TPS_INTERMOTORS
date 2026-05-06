@@ -44,6 +44,10 @@ export const useCartWithUtils = (user: string, branch: string) => {
         });
     }, [state.setMode]);
 
+    const setCartModeSilent = useCallback((mode: CartMode) => {
+        state.setMode(mode);
+    }, [state.setMode]);
+
     const convertToSaleStrictWithToast = useCallback((): ConversionResult => {
         const result = state.convertToSaleStrict();
 
@@ -134,9 +138,24 @@ export const useCartWithUtils = (user: string, branch: string) => {
             );
 
             if (result.success) {
+                if (!result.data?.imported) {
+                    showErrorToast({
+                        title: "Sin stock disponible",
+                        description: `Ningún producto de la cotización #${quotation.nro} tiene stock disponible para importar`,
+                        duration: 3000
+                    });
+                    return { success: false, error: 'NO_STOCK', message: 'Sin stock disponible' };
+                }
+
+                state.setSourceQuotation({ id: quotation.id, nro: quotation.nro });
+
                 const messages: string[] = [
-                    `Se importaron ${result.data?.imported} productos de la cotización #${quotation.nro}`
+                    `Se importaron ${result.data.imported} productos de la cotización #${quotation.nro}`
                 ];
+
+                if (result.data.removed > 0) {
+                    messages.push(`${result.data.removed} sin stock (removidos)`);
+                }
 
                 if (discountInfo.hasDiscount) {
                     messages.push(
@@ -168,7 +187,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
             return result;
         }
-    }, [state.importFromQuotation]);
+    }, [state.importFromQuotation, state.setSourceQuotation]);
 
     // ==================== GESTIÓN DE ITEMS ====================
 
@@ -653,6 +672,7 @@ export const useCartWithUtils = (user: string, branch: string) => {
 
         // Métodos de modo
         setCartMode,
+        setCartModeSilent,
         convertToSaleStrictWithToast,
         convertToSalePermissiveWithToast,
         convertToQuoteWithToast,

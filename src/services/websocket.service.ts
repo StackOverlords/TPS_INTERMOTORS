@@ -182,7 +182,7 @@ export class WebSocketService {
    * @param eventName   - Nombre del evento broadcast (ej: 'message.sent', '.OrderCreated')
    * @param callback    - Función a ejecutar cuando se reciba el evento; recibe el payload del evento
    */
-  listen(channelName: string, eventName: string, callback: Function): void {
+  listen(channelName: string, eventName: string, callback: Function): () => void {
     if (!this.echo) {
       wsLogger.warn("Echo no está conectado. Llama a connect() primero.", {
         channelName,
@@ -258,6 +258,11 @@ export class WebSocketService {
       event: formattedEvent,
       status: "listening",
     });
+
+    return () => {
+      wsLogger.debug('Desuscribiendo evento', { channelName, formattedEvent });
+      this.channels.get(channelName)?.stopListening(formattedEvent, callback);
+    };
   }
 
   /**

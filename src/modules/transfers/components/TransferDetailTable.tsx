@@ -598,11 +598,22 @@ function TransferDetailTableInner(
         size: 250,
         minSize: 200,
         enableHiding: false,
-        cell: ({ getValue }) => (
-          <div className="flex flex-col space-y-1">
+        cell: ({ row }) => (
+          <div className="flex flex-col space-y-0.5">
             <h3 className="font-medium truncate text-sm">
-              {getValue<string>()}
+              {row.original.product.descripcion}
             </h3>
+            {row.original.total_saldo !== undefined && (
+              <span className="text-xs text-muted-foreground">
+                {row.original.lots && row.original.lots.length > 1
+                  ? `${row.original.lots.length} lotes · `
+                  : ""}
+                disp:{" "}
+                <span className="text-amber-600 dark:text-amber-400">
+                  {row.original.total_saldo}
+                </span>
+              </span>
+            )}
           </div>
         ),
       },
@@ -646,7 +657,9 @@ function TransferDetailTableInner(
             }
             validate={(val) => {
               const num = parseInt(val);
-              if (isNaN(num) || num <= 0) return false;
+              if (isNaN(num) || num <= 0) return "Cantidad inválida";
+              if (row.original.total_saldo !== undefined && num > row.original.total_saldo)
+                return `Máx. disponible: ${row.original.total_saldo}`;
               return true;
             }}
             disableWheel

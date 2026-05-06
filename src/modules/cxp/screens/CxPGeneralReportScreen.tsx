@@ -1,6 +1,13 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Label } from "@/components/atoms/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/atoms/select";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
@@ -15,10 +22,12 @@ import useCxPGeneralReport, { useDownloadCxPGeneralReport } from "../hooks/useCx
 import type { CxPReportItem, CxPGeneralReportFilter } from "../schemas/cxpReport.schema";
 import authSDK from "@/services/sdk-simple-auth";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { useProviders } from "@/modules/purchases/hooks/useProviders";
 
 const CxPGeneralReportScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const branches = authSDK.getCurrentUser()?.sucursales || [];
+    const { data: providers = [] } = useProviders();
 
     const [sucursal, setSucursal] = useState<number | null>(
         selectedBranchId ? Number(selectedBranchId) : null
@@ -27,6 +36,9 @@ const CxPGeneralReportScreen = () => {
         format(subMonths(new Date(), 1), "yyyy-MM-dd")
     );
     const [fechaFin, setFechaFin] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+    const [proveedor, setProveedor] = useState<number | null>(null);
+    const [fechaPlazoInicio, setFechaPlazoInicio] = useState<string>("");
+    const [fechaPlazoFin, setFechaPlazoFin] = useState<string>("");
 
     useEffect(() => {
         setSucursal(selectedBranchId ? Number(selectedBranchId) : null);
@@ -171,6 +183,9 @@ const CxPGeneralReportScreen = () => {
             sucursal,
             fecha_inicio: overrideFechaInicio ?? fechaInicio,
             fecha_fin: overrideFechaFin ?? fechaFin,
+            ...(proveedor ? { proveedor } : {}),
+            ...(fechaPlazoInicio ? { fecha_plazo_inicio: fechaPlazoInicio } : {}),
+            ...(fechaPlazoFin ? { fecha_plazo_fin: fechaPlazoFin } : {}),
         });
     };
 
@@ -232,7 +247,7 @@ const CxPGeneralReportScreen = () => {
                         </Button>
                     </div>
 
-                    {/* Controles */}
+                    {/* Controles — fila 1: fechas de compra + sucursal */}
                     <div className="flex items-center gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                             <Label htmlFor="cxp-gr-inicio" className="text-sm">Desde:</Label>
@@ -267,6 +282,51 @@ const CxPGeneralReportScreen = () => {
                                 enableAllOption={true}
                                 optionTag="sucursal"
                                 allowClear={false}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Controles — fila 2: proveedor + fechas de vencimiento de plazo */}
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-sm whitespace-nowrap">Proveedor:</Label>
+                            <Select
+                                value={proveedor ? String(proveedor) : "all"}
+                                onValueChange={(val) => setProveedor(val === "all" ? null : Number(val))}
+                            >
+                                <SelectTrigger className="h-8 text-sm w-48">
+                                    <SelectValue placeholder="Todos" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    {providers.map((p) => (
+                                        <SelectItem key={p.id} value={String(p.id)}>
+                                            {p.nombre}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="cxp-gr-plazo-inicio" className="text-sm whitespace-nowrap">Plazo desde:</Label>
+                            <input
+                                id="cxp-gr-plazo-inicio"
+                                type="date"
+                                value={fechaPlazoInicio}
+                                onChange={(e) => setFechaPlazoInicio(e.target.value)}
+                                className="h-8 px-2 rounded-md border border-border text-sm"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="cxp-gr-plazo-fin" className="text-sm whitespace-nowrap">Plazo hasta:</Label>
+                            <input
+                                id="cxp-gr-plazo-fin"
+                                type="date"
+                                value={fechaPlazoFin}
+                                onChange={(e) => setFechaPlazoFin(e.target.value)}
+                                className="h-8 px-2 rounded-md border border-border text-sm"
                             />
                         </div>
 

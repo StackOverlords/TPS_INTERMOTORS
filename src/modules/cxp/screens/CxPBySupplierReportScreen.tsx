@@ -1,6 +1,13 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Label } from "@/components/atoms/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/atoms/select";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
@@ -12,13 +19,15 @@ import { subMonths, format } from "date-fns";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
 import useCxPBySupplierReport, { useDownloadCxPBySupplierReport } from "../hooks/useCxPBySupplierReport";
-import type { CxPListItem, CxPBySupplierReportFilter } from "../schemas/cxpReport.schema";
+import type { CxPReportItem, CxPBySupplierReportFilter } from "../schemas/cxpReport.schema";
 import authSDK from "@/services/sdk-simple-auth";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
+import { useProviders } from "@/modules/purchases/hooks/useProviders";
 
 const CxPBySupplierReportScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
     const branches = authSDK.getCurrentUser()?.sucursales || [];
+    const { data: providers = [] } = useProviders();
 
     const [sucursal, setSucursal] = useState<number | null>(
         selectedBranchId ? Number(selectedBranchId) : null
@@ -27,6 +36,7 @@ const CxPBySupplierReportScreen = () => {
         format(subMonths(new Date(), 1), "yyyy-MM-dd")
     );
     const [fechaFin, setFechaFin] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+    const [proveedor, setProveedor] = useState<number | null>(null);
 
     useEffect(() => {
         setSucursal(selectedBranchId ? Number(selectedBranchId) : null);
@@ -48,16 +58,16 @@ const CxPBySupplierReportScreen = () => {
 
     const { mutate: downloadReport, isPending: isDownloading } = useDownloadCxPBySupplierReport();
 
-    const data = reportData?.data ?? [];
+    const data = reportData ?? [];
 
     const stats = useMemo(() => {
-        const totalSaldo = data.reduce((sum, item) => sum + item.saldo_pendiente, 0);
-        const proveedoresUnicos = new Set(data.map((item) => item.proveedor.id)).size;
-        const cuentasPendientes = data.filter((item) => item.saldo_pendiente > 0).length;
+        const totalSaldo = data.reduce((sum, item) => sum + item.saldo, 0);
+        const proveedoresUnicos = new Set(data.map((item) => item.proveedor)).size;
+        const cuentasPendientes = data.filter((item) => item.saldo > 0).length;
         return { totalItems: data.length, totalSaldo, proveedoresUnicos, cuentasPendientes };
     }, [data]);
 
-    const columns = useMemo<ColumnDef<CxPListItem>[]>(
+    const columns = useMemo<ColumnDef<CxPReportItem>[]>(
         () => [
             {
                 id: "rowNumber",
@@ -73,8 +83,7 @@ const CxPBySupplierReportScreen = () => {
                 ),
             },
             {
-                id: "proveedor_nombre",
-                accessorFn: (row) => row.proveedor.nombre,
+                accessorKey: "proveedor",
                 header: "Proveedor",
                 size: 250,
                 minSize: 150,
@@ -83,7 +92,7 @@ const CxPBySupplierReportScreen = () => {
                 ),
             },
             {
-                accessorKey: "nro_compra",
+                accessorKey: "nro",
                 header: "Nro. Compra",
                 size: 130,
                 minSize: 100,
@@ -92,7 +101,7 @@ const CxPBySupplierReportScreen = () => {
                 ),
             },
             {
-                accessorKey: "fecha_in",
+                accessorKey: "fecha",
                 header: "Fecha",
                 size: 120,
                 minSize: 100,
@@ -111,7 +120,7 @@ const CxPBySupplierReportScreen = () => {
                 },
             },
             {
-                accessorKey: "total_compra",
+                accessorKey: "total",
                 header: "Total Compra",
                 size: 140,
                 minSize: 100,
@@ -124,7 +133,7 @@ const CxPBySupplierReportScreen = () => {
                 ),
             },
             {
-                accessorKey: "total_pagado",
+                accessorKey: "pagos",
                 header: "Pagado",
                 size: 140,
                 minSize: 100,
@@ -137,7 +146,7 @@ const CxPBySupplierReportScreen = () => {
                 ),
             },
             {
-                accessorKey: "saldo_pendiente",
+                accessorKey: "saldo",
                 header: "Saldo",
                 size: 140,
                 minSize: 100,
@@ -159,7 +168,7 @@ const CxPBySupplierReportScreen = () => {
         []
     );
 
-    const { table } = useCustomTable({
+    const { table } = useCustomTable<CxPReportItem>({
         data,
         columns,
         enableSorting: true,
@@ -178,6 +187,7 @@ const CxPBySupplierReportScreen = () => {
             sucursal,
             fecha_inicio: overrideFechaInicio ?? fechaInicio,
             fecha_fin: overrideFechaFin ?? fechaFin,
+            ...(proveedor ? { proveedor } : {}),
         });
     };
 
@@ -261,6 +271,26 @@ const CxPBySupplierReportScreen = () => {
                                 optionTag="sucursal"
                                 allowClear={false}
                             />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Label className="text-sm whitespace-nowrap">Proveedor:</Label>
+                            <Select
+                                value={proveedor ? String(proveedor) : "all"}
+                                onValueChange={(val) => setProveedor(val === "all" ? null : Number(val))}
+                            >
+                                <SelectTrigger className="h-8 text-sm w-48">
+                                    <SelectValue placeholder="Todos" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos</SelectItem>
+                                    {providers.map((p) => (
+                                        <SelectItem key={p.id} value={String(p.id)}>
+                                            {p.nombre}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <Button variant="default" onClick={() => handleSearch()} disabled={isFetching || !sucursal}>

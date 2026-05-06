@@ -1,3 +1,4 @@
+use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
 pub mod commands;

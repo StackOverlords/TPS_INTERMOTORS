@@ -12,7 +12,7 @@ export interface EditableFieldProps {
     max?: number;
     step?: number;
   };
-  validate?: (value: string) => boolean;
+  validate?: (value: string) => boolean | string;
   formatter?: (value: string | number) => string;
   parser?: (value: string) => string | number;
   placeholder?: string;
@@ -201,15 +201,20 @@ export const EditableField: React.FC<EditableFieldProps> = ({
     return val;
   };
 
-  const validateValue = (val: string): boolean => {
-    if (validate) return validate(val);
+  const validateValue = (val: string): true | string => {
+    if (validate) {
+      const result = validate(val);
+      if (result === true) return true;
+      if (typeof result === "string") return result;
+      return "Valor inválido";
+    }
     if (type === "number") {
       const parsed = parseFloat(val);
-      if (isNaN(parsed)) return false;
+      if (isNaN(parsed)) return "Valor inválido";
       if (numberProps?.min !== undefined && parsed < numberProps.min)
-        return false;
+        return "Valor inválido";
       if (numberProps?.max !== undefined && parsed > numberProps.max)
-        return false;
+        return "Valor inválido";
     }
     return true;
   };
@@ -230,8 +235,9 @@ export const EditableField: React.FC<EditableFieldProps> = ({
   };
 
   const confirmEditing = (shouldFocusNext = false) => {
-    if (!validateValue(tempValue)) {
-      setError("Valor inválido");
+    const validationResult = validateValue(tempValue);
+    if (validationResult !== true) {
+      setError(validationResult);
       return;
     }
 

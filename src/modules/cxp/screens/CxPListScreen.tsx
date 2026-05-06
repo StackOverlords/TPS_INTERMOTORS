@@ -49,6 +49,12 @@ const CxPListScreen = () => {
         setAppliedFilters({ ...filters, pagina: 1 });
     }, [filters]);
 
+    const handleReset = useCallback(() => {
+        const base: CxPPaginatedFilters = { pagina: 1, pagina_registros: 20 };
+        setFilters(base);
+        setAppliedFilters(base);
+    }, []);
+
     const calcularDiasVencimiento = (plazo_pago: string | null): number | null => {
         if (!plazo_pago) return null;
         const hoy = new Date();
@@ -250,6 +256,7 @@ const CxPListScreen = () => {
                     filters={filters}
                     onFilterChange={handleFilterChange}
                     onSearch={handleSearch}
+                    onReset={handleReset}
                     searchMode="manual"
                 />
             </header>

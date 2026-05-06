@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { subMonths, format } from "date-fns";
 import { formatCurrency } from "@/utils/formaters";
 import useCxPRankingReport, { useDownloadCxPRankingReport } from "../hooks/useCxPRankingReport";
-import type { CxPListItem, CxPRankingReportFilter } from "../schemas/cxpReport.schema";
+import type { CxPRankingItem, CxPRankingReportFilter } from "../schemas/cxpReport.schema";
 import authSDK from "@/services/sdk-simple-auth";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 
@@ -46,15 +46,15 @@ const CxPRankingReportScreen = () => {
 
     const { mutate: downloadReport, isPending: isDownloading } = useDownloadCxPRankingReport();
 
-    const data = reportData?.data ?? [];
+    const data = reportData ?? [];
 
     const stats = useMemo(() => {
-        const totalCompra = data.reduce((sum, item) => sum + item.total_compra, 0);
-        const proveedoresUnicos = new Set(data.map((item) => item.proveedor.id)).size;
-        return { totalItems: data.length, totalCompra, proveedoresUnicos };
+        const totalVolumen = data.reduce((sum, item) => sum + item.volumen_compra, 0);
+        const proveedoresUnicos = new Set(data.map((item) => item.proveedor_id)).size;
+        return { totalItems: data.length, totalVolumen, proveedoresUnicos };
     }, [data]);
 
-    const columns = useMemo<ColumnDef<CxPListItem>[]>(
+    const columns = useMemo<ColumnDef<CxPRankingItem>[]>(
         () => [
             {
                 id: "ranking",
@@ -81,8 +81,7 @@ const CxPRankingReportScreen = () => {
                 },
             },
             {
-                id: "proveedor_nombre",
-                accessorFn: (row) => row.proveedor.nombre,
+                accessorKey: "proveedor",
                 header: "Proveedor",
                 size: 250,
                 minSize: 150,
@@ -91,16 +90,25 @@ const CxPRankingReportScreen = () => {
                 ),
             },
             {
-                accessorKey: "nro_compra",
-                header: "Nro. Compra",
+                accessorKey: "nit",
+                header: "NIT",
                 size: 130,
                 minSize: 100,
                 cell: ({ getValue }) => (
-                    <div className="font-mono font-medium">{getValue<string>()}</div>
+                    <div className="font-mono text-sm">{getValue<string | null>() ?? "—"}</div>
                 ),
             },
             {
-                accessorKey: "total_compra",
+                accessorKey: "total_compras",
+                header: "Compras",
+                size: 100,
+                minSize: 80,
+                cell: ({ getValue }) => (
+                    <div className="text-center font-semibold">{getValue<number>()}</div>
+                ),
+            },
+            {
+                accessorKey: "volumen_compra",
                 header: "Volumen de Compra",
                 size: 160,
                 minSize: 120,
@@ -126,8 +134,8 @@ const CxPRankingReportScreen = () => {
                 ),
             },
             {
-                accessorKey: "saldo_pendiente",
-                header: "Saldo Pendiente",
+                accessorKey: "deuda_pendiente",
+                header: "Deuda Pendiente",
                 size: 140,
                 minSize: 100,
                 cell: ({ getValue }) => {
@@ -143,7 +151,7 @@ const CxPRankingReportScreen = () => {
         []
     );
 
-    const { table } = useCustomTable({
+    const { table } = useCustomTable<CxPRankingItem>({
         data,
         columns,
         enableSorting: true,
@@ -292,7 +300,7 @@ const CxPRankingReportScreen = () => {
                             {!appliedFilters
                                 ? "Presiona 'Buscar' para cargar el ranking"
                                 : data.length > 0
-                                ? `${stats.proveedoresUnicos} proveedores — ${formatCurrency(stats.totalCompra)} en compras`
+                                ? `${stats.proveedoresUnicos} proveedores — ${formatCurrency(stats.totalVolumen)} en compras`
                                 : "Sin resultados"}
                         </div>
 

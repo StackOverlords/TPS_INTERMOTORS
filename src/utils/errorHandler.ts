@@ -1,4 +1,3 @@
-import type { ApiError } from "@/types/apiError.types";
 import { AxiosError } from "axios";
 
 interface ErrorResult {
@@ -7,9 +6,67 @@ interface ErrorResult {
     category: "validation" | "network" | "server" | "authentication" | "unknown";
 }
 
-// 👇 Type Guard para validar si la respuesta tiene el formato esperado
-export function isApiErrorResponse(data: unknown): data is { error: ApiError } {
-    return typeof data === "object" && data !== null && "error" in data;
+/**
+ * Extrae un mensaje legible del body de respuesta del backend.
+ * Prueba formatos en orden de prioridad y devuelve undefined si ninguno aplica,
+ * dejando que el fallback por status code tome el control.
+ *
+ * Formatos soportados (en orden de prioridad):
+ *   1. { error: { validation_errors: [{field, message}] } }  → formato ApiError propio con campos
+ *   2. { error: { message: "..." } }                         → formato ApiError propio sin campos
+ *   3. { errors: { campo: ["msg"] } }                        → Laravel estándar 422
+ *   4. { message: "..." }                                    → mensaje simple
+ *   5. string plano (no HTML)                                → respuesta directa
+ */
+function parseResponseMessage(data: unknown): string | undefined {
+    if (typeof data === "string") {
+        const trimmed = data.trim();
+        if (trimmed && !trimmed.startsWith("<") && trimmed.length <= 300) {
+            return trimmed;
+        }
+        return undefined;
+    }
+
+    if (!data || typeof data !== "object") return undefined;
+
+    const d = data as Record<string, unknown>;
+
+    // Formato propio: { error: { validation_errors: [{field, message}], message } }
+    if (d.error && typeof d.error === "object") {
+        const nested = d.error as Record<string, unknown>;
+
+        if (Array.isArray(nested.validation_errors) && nested.validation_errors.length > 0) {
+            const messages = (nested.validation_errors as Array<Record<string, unknown>>)
+                .map((e) => (typeof e.message === "string" ? e.message.trim() : ""))
+                .filter(Boolean)
+                .slice(0, 3);
+            if (messages.length > 0) {
+                return messages.join(" • ");
+            }
+        }
+
+        if (typeof nested.message === "string" && nested.message.trim()) {
+            return nested.message.trim();
+        }
+    }
+
+    // Laravel estándar: { errors: { campo: ["msg1", "msg2"] } }
+    if (d.errors && typeof d.errors === "object" && !Array.isArray(d.errors)) {
+        const fieldErrors = Object.values(d.errors as Record<string, unknown>)
+            .flatMap((v) => (Array.isArray(v) ? v : [v]))
+            .filter((m): m is string => typeof m === "string" && m.trim().length > 0)
+            .slice(0, 3);
+        if (fieldErrors.length > 0) {
+            return fieldErrors.join(" • ");
+        }
+    }
+
+    // Mensaje simple: { message: "..." }
+    if (typeof d.message === "string" && d.message.trim()) {
+        return d.message.trim();
+    }
+
+    return undefined;
 }
 
 export class ErrorHandler {
@@ -20,8 +77,7 @@ export class ErrorHandler {
 
         if (error instanceof Error) {
             return {
-                userMessage:
-                    "Algo salió mal. Si el problema persiste, contacta soporte.",
+                userMessage: "Algo salió mal. Si el problema persiste, contacta soporte.",
                 shouldRetry: false,
                 category: "unknown",
             };
@@ -35,34 +91,21 @@ export class ErrorHandler {
     }
 
     private static handleAxiosError(error: AxiosError): ErrorResult {
-        // Error de red
         if (!error.response) {
             return {
-                userMessage:
-                    "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+                userMessage: "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
                 shouldRetry: true,
                 category: "network",
             };
         }
 
-        // 👇 Validamos la forma de la respuesta antes de acceder
-        // let apiError: ApiError | undefined;
-        // if (isApiErrorResponse(error.response.data)) {
-        //     apiError = error.response.data.error;
-        // }
-
         const status = error.response.status;
-        // const serverMessage = apiError?.message;
+        const serverMessage = parseResponseMessage(error.response.data);
 
-        // return this.handleByStatus(status, serverMessage);
-        return this.handleByStatus(status);
+        return this.handleByStatus(status, serverMessage);
     }
 
-    private static handleByStatus(
-        status: number,
-        serverMessage?: string,
-        // validationErrors?: ValidationError[]
-    ): ErrorResult {
+    private static handleByStatus(status: number, serverMessage?: string): ErrorResult {
         switch (status) {
             case 400:
                 return {
@@ -93,15 +136,6 @@ export class ErrorHandler {
                 };
 
             case 422:
-                // let message = serverMessage || "Corrige los siguientes errores:";
-
-                // if (validationErrors?.length) {
-                //     const errors = validationErrors
-                //         .map((err) => `• ${err.message}`)
-                //         .join("\n");
-                //     message += `\n\n${errors}`;
-                // }
-
                 return {
                     userMessage: serverMessage || "Algunos datos no son válidos, por favor revisa e intenta de nuevo.",
                     shouldRetry: false,
@@ -120,8 +154,7 @@ export class ErrorHandler {
             case 503:
             case 504:
                 return {
-                    userMessage:
-                        serverMessage || "Problemas técnicos temporales. Inténtalo en unos minutos.",
+                    userMessage: serverMessage || "Problemas técnicos temporales. Inténtalo en unos minutos.",
                     shouldRetry: true,
                     category: "server",
                 };

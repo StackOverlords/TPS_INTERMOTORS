@@ -40,7 +40,7 @@ export const useQuotationImport = (
   const user = authSDK.getCurrentUser();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
-  const { setCartMode, previewQuotationImport, importFromQuotation } =
+  const { setCartModeSilent, previewQuotationImport, importFromQuotation } =
     useCartWithUtils(user?.name || "", selectedBranchId ?? "");
 
   const [isImporting, setIsImporting] = useState(false);
@@ -85,7 +85,6 @@ export const useQuotationImport = (
           setShowConversionModal(true);
         } else {
           // No hay cambios, importar directamente en modo strict
-          setCartMode("sale-strict");
           executeImport(quotation, formData, "sale-strict");
           setIsImporting(false);
           onImportComplete?.();
@@ -102,7 +101,6 @@ export const useQuotationImport = (
       user?.name,
       selectedBranchId,
       onImportComplete,
-      setCartMode,
     ],
   );
 
@@ -116,7 +114,7 @@ export const useQuotationImport = (
       importMode: CartMode,
     ) => {
       try {
-        setCartMode(importMode);
+        setCartModeSilent(importMode);
 
         importFromQuotation(quotation);
 
@@ -143,7 +141,7 @@ export const useQuotationImport = (
         console.error("Error al ejecutar importación:", error);
       }
     },
-    [importFromQuotation, setValue, setCartMode],
+    [importFromQuotation, setValue, setCartModeSilent],
   );
 
   /**

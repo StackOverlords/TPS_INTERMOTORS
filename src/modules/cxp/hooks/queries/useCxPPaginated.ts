@@ -11,6 +11,10 @@ export interface CxPPaginatedFilters
     fecha_fin?: string;
     pagina?: number;
     pagina_registros?: number;
+    estado_pago?: "PAGADO" | "DEUDA";
+    tipo_vencimiento?: string;
+    fecha_vencimiento_regla?: ">=" | "<=" | "=";
+    fecha_vencimiento?: string;
 }
 
 const useCxPPaginated = (filters: CxPPaginatedFilters = {}) => {
@@ -20,6 +24,8 @@ const useCxPPaginated = (filters: CxPPaginatedFilters = {}) => {
     const mergedFilters: Partial<CxPFilters> = {
         ...filters,
         sucursal,
+        ...(filters.tipo_vencimiento ? { condicion_vencimiento: true } : {}),
+        ...(filters.fecha_vencimiento ? { condicion_fecha_especifica: true } : {}),
     };
 
     return useQuery({

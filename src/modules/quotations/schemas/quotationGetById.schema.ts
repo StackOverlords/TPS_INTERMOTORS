@@ -40,6 +40,7 @@ export const QuotationGetByIdSchema = z.object({
     cliente_telefono: z.string().nullable(),
     cliente_nombre: z.string().nullable(),
     responsable_cotizacion: SaleResponsibleSchema.nullable(),
+    convertida: z.boolean().optional().default(false),
     caja_sesion_id: z.number().int().nullable().optional(),
     caja_sesion: z.object({
         id: z.number().int(),

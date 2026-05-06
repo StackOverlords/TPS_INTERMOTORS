@@ -1,36 +1,70 @@
 import { useState, useCallback } from "react";
 import type { TransferDetailCreate, UITransferDetailCreate } from "../types/transferCreate.types";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
+import type { ProductStock } from "@/modules/products/types/productStock";
 
 export const useTransferDetails = () => {
     const [details, setDetails] = useState<UITransferDetailCreate[]>([]);
 
-    // Añadir un producto al detalle directamente desde ProductGet
-    const addProduct = useCallback((product: ProductGet, tcTransfer: number = 0) => {
+    // Añadir un producto al detalle.
+    // Si se proveen `lots` (FIFO, más antiguo primero), se crea UNA sola fila con el saldo
+    // total disponible. El split por lote ocurre internamente en getTransferDetails al enviar.
+    const addProduct = useCallback((product: ProductGet, tcTransfer: number = 0, lots?: ProductStock[]) => {
         setDetails((prev) => {
-            // Verificar si el producto ya existe
-            const exists = prev.find((d) => d.producto_id === product.id);
+            if (lots && lots.length > 0) {
+                // Si el producto ya está, no duplicar
+                if (prev.some((d) => d.producto_id === product.id && d.lots !== undefined)) return prev;
+
+                const totalSaldo = lots.reduce((sum, lot) => sum + lot.saldo, 0);
+                const oldestLot = lots[0];
+
+                const newRow: UITransferDetailCreate = {
+                    producto_id: product.id,
+                    cantidad_entrada_salida: totalSaldo,
+                    costo_entrada: oldestLot.costo,
+                    precio_salida: product.precio_venta,
+                    precio_entrada_venta: product.precio_venta,
+                    precio_entrada_venta_alt: product.precio_venta_alt,
+                    incremento_p_entrada_venta: 0,
+                    incremento_p_entrada_venta_alt: 0,
+                    tc_transfer: oldestLot.tc_compra || tcTransfer,
+                    purchase_id: oldestLot.id,
+                    lots,
+                    total_saldo: totalSaldo,
+                    product: {
+                        id: product.id,
+                        descripcion: product.descripcion,
+                        codigo_oem: product.codigo_oem,
+                        codigo_upc: product.codigo_upc,
+                        marca: product.marca || null,
+                        costo: oldestLot.costo,
+                        precio_venta: product.precio_venta,
+                        precio_venta_alt: product.precio_venta_alt,
+                    },
+                };
+                return [...prev, newRow];
+            }
+
+            // Sin lotes: fila única (fallback o producto sin stock)
+            const exists = prev.find((d) => d.producto_id === product.id && d.purchase_id === 0);
             if (exists) {
-                // Si ya existe, incrementar cantidad
                 return prev.map((d) =>
-                    d.producto_id === product.id
+                    d.producto_id === product.id && d.purchase_id === 0
                         ? { ...d, cantidad_entrada_salida: d.cantidad_entrada_salida + 1 }
                         : d
                 );
             }
-
-            // Crear nuevo detalle con valores por defecto
-            // En una transferencia, usamos los precios de venta actuales del producto
             const newDetail: UITransferDetailCreate = {
                 producto_id: product.id,
                 cantidad_entrada_salida: 1,
-                costo_entrada: product.costo_mas_antiguo || 0, // Usar costo más antiguo del producto
+                costo_entrada: product.costo_mas_antiguo || 0,
                 precio_salida: product.precio_venta,
                 precio_entrada_venta: product.precio_venta,
                 precio_entrada_venta_alt: product.precio_venta_alt,
                 incremento_p_entrada_venta: 0,
                 incremento_p_entrada_venta_alt: 0,
                 tc_transfer: tcTransfer,
+                purchase_id: 0,
                 product: {
                     id: product.id,
                     descripcion: product.descripcion,
@@ -41,92 +75,82 @@ export const useTransferDetails = () => {
                     precio_venta: product.precio_venta,
                     precio_venta_alt: product.precio_venta_alt,
                 },
-                purchase_id: 0, // Ya no se usa purchase_id, pero se mantiene por compatibilidad
             };
-
             return [...prev, newDetail];
         });
     }, []);
 
-    // Eliminar un producto del detalle (ahora solo necesita producto_id)
-    const removeProduct = useCallback((producto_id: number, _purchase_id?: number) => {
-        setDetails((prev) => {
-            return prev.filter((d) => d.producto_id !== producto_id);
-        });
-    }, []);
-
-    // Modificar cantidad (ahora solo necesita producto_id)
-    const updateCantidad = useCallback((producto_id: number, _purchase_id: number | undefined, cantidad: number) => {
-        if (cantidad <= 0) return;
+    const removeProduct = useCallback((producto_id: number, purchase_id?: number) => {
         setDetails((prev) =>
-            prev.map((d) =>
-                d.producto_id === producto_id
-                    ? { ...d, cantidad_entrada_salida: cantidad }
-                    : d
-            )
+            prev.filter((d) => !(d.producto_id === producto_id && d.purchase_id === purchase_id))
         );
     }, []);
 
-    // Modificar costo de entrada (ahora solo necesita producto_id)
-    const updateCostoEntrada = useCallback((producto_id: number, _purchase_id: number | undefined, costo: number) => {
+    const updateCantidad = useCallback((producto_id: number, purchase_id: number | undefined, cantidad: number) => {
+        if (cantidad <= 0) return;
+        setDetails((prev) =>
+            prev.map((d) => {
+                if (!(d.producto_id === producto_id && d.purchase_id === purchase_id)) return d;
+                const max = d.total_saldo ?? cantidad;
+                return { ...d, cantidad_entrada_salida: Math.min(cantidad, max) };
+            })
+        );
+    }, []);
+
+    const updateCostoEntrada = useCallback((producto_id: number, purchase_id: number | undefined, costo: number) => {
         setDetails((prev) =>
             prev.map((d) =>
-                d.producto_id === producto_id
+                d.producto_id === producto_id && d.purchase_id === purchase_id
                     ? { ...d, costo_entrada: costo }
                     : d
             )
         );
     }, []);
 
-    // Modificar precio de salida (ahora solo necesita producto_id)
-    const updatePrecioSalida = useCallback((producto_id: number, _purchase_id: number | undefined, precio: number) => {
+    const updatePrecioSalida = useCallback((producto_id: number, purchase_id: number | undefined, precio: number) => {
         setDetails((prev) =>
             prev.map((d) =>
-                d.producto_id === producto_id
+                d.producto_id === producto_id && d.purchase_id === purchase_id
                     ? { ...d, precio_salida: precio }
                     : d
             )
         );
     }, []);
 
-    // Modificar precio de entrada venta (ahora solo necesita producto_id)
-    const updatePrecioEntradaVenta = useCallback((producto_id: number, _purchase_id: number | undefined, precio: number) => {
+    const updatePrecioEntradaVenta = useCallback((producto_id: number, purchase_id: number | undefined, precio: number) => {
         setDetails((prev) =>
             prev.map((d) =>
-                d.producto_id === producto_id
+                d.producto_id === producto_id && d.purchase_id === purchase_id
                     ? { ...d, precio_entrada_venta: precio }
                     : d
             )
         );
     }, []);
 
-    // Modificar precio de entrada venta alt (ahora solo necesita producto_id)
-    const updatePrecioEntradaVentaAlt = useCallback((producto_id: number, _purchase_id: number | undefined, precio: number) => {
+    const updatePrecioEntradaVentaAlt = useCallback((producto_id: number, purchase_id: number | undefined, precio: number) => {
         setDetails((prev) =>
             prev.map((d) =>
-                d.producto_id === producto_id
+                d.producto_id === producto_id && d.purchase_id === purchase_id
                     ? { ...d, precio_entrada_venta_alt: precio }
                     : d
             )
         );
     }, []);
 
-    // Modificar incremento precio entrada venta (ahora solo necesita producto_id)
-    const updateIncrementoPrecioEntradaVenta = useCallback((producto_id: number, _purchase_id: number | undefined, incremento: number) => {
+    const updateIncrementoPrecioEntradaVenta = useCallback((producto_id: number, purchase_id: number | undefined, incremento: number) => {
         setDetails((prev) =>
             prev.map((d) =>
-                d.producto_id === producto_id
+                d.producto_id === producto_id && d.purchase_id === purchase_id
                     ? { ...d, incremento_p_entrada_venta: incremento }
                     : d
             )
         );
     }, []);
 
-    // Modificar incremento precio entrada venta alt (ahora solo necesita producto_id)
-    const updateIncrementoPrecioEntradaVentaAlt = useCallback((producto_id: number, _purchase_id: number | undefined, incremento: number) => {
+    const updateIncrementoPrecioEntradaVentaAlt = useCallback((producto_id: number, purchase_id: number | undefined, incremento: number) => {
         setDetails((prev) =>
             prev.map((d) =>
-                d.producto_id === producto_id
+                d.producto_id === producto_id && d.purchase_id === purchase_id
                     ? { ...d, incremento_p_entrada_venta_alt: incremento }
                     : d
             )
@@ -153,9 +177,28 @@ export const useTransferDetails = () => {
         }, 0);
     }, [details]);
 
-    // Obtener detalles en formato sin product y purchase_id
+    // Obtener detalles para el backend. Filas con `lots` se expanden en múltiples
+    // filas FIFO (una por lote consumido), cada una con su costo_entrada real.
     const getTransferDetails = useCallback((): TransferDetailCreate[] => {
-        return details.map(({ product, purchase_id, ...detail }) => detail);
+        return details.flatMap(({ product, purchase_id, lots, total_saldo, ...base }) => {
+            if (!lots || lots.length === 0) return [base];
+
+            let remaining = base.cantidad_entrada_salida;
+            const rows: TransferDetailCreate[] = [];
+            for (const lot of lots) {
+                if (remaining <= 0) break;
+                const take = Math.min(remaining, lot.saldo);
+                rows.push({
+                    ...base,
+                    cantidad_entrada_salida: take,
+                    costo_entrada: lot.costo,
+                    tc_transfer: lot.tc_compra || base.tc_transfer,
+                    fecha_adquisicion: lot.fecha_adquisicion,
+                });
+                remaining -= take;
+            }
+            return rows;
+        });
     }, [details]);
 
     // Limpiar todos los detalles

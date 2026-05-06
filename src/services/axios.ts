@@ -1,5 +1,9 @@
 import authSDK from "@/services/sdk-simple-auth";
 import { useTabStore } from "@/states/tabStore";
+
+const isSecondaryWindow =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("windowId") !== null;
 import { cleanFilters } from "@/utils/cleanFilters";
 import { environment } from "@/utils/environment";
 import {
@@ -19,6 +23,7 @@ declare module "axios" {
   export interface InternalAxiosRequestConfig {
     requestId?: string;
     startTime?: number;
+    _retry?: boolean;
   }
 }
 
@@ -63,7 +68,7 @@ apiClient.interceptors.request.use(
     config.startTime = Date.now();
 
     // Autenticación
-    const token = await authSDK.getAccessToken();
+    const token = await authSDK.getValidAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -200,18 +205,41 @@ apiClient.interceptors.response.use(
       const status = error.response.status;
 
       if (status === 401 || status === 403) {
+        const hadAuthHeader = !!(error.config?.headers as Record<string, string> | undefined)?.Authorization;
+        const alreadyRetried = !!config?._retry;
+
         logger.warn(
-          "[AUTH ERROR] Unauthorized access, clearing session",
+          "[AUTH ERROR] Unauthorized access",
           JSON.stringify({
             requestId,
             status,
             url: formattedError.fullUrl,
+            isSecondaryWindow,
+            hadAuthHeader,
+            alreadyRetried,
           }),
         );
 
-        // Limpiar todas las tabs
-        useTabStore.getState().closeAllTabs();
-        await authSDK.clearLocalSession();
+        // Retry once after forcing a token refresh.
+        // Covers the race where two parallel requests fire while the SDK mutex
+        // holds a refresh — one gets the new token, the other gets the stale one → 401.
+        if (hadAuthHeader && !alreadyRetried && config) {
+          config._retry = true;
+          try {
+            const newToken = await authSDK.getValidAccessToken();
+            if (newToken) {
+              config.headers.Authorization = `Bearer ${newToken}`;
+              return apiClient(config);
+            }
+          } catch {
+            // refresh failed — fall through to clearSession
+          }
+        }
+
+        if (!isSecondaryWindow && hadAuthHeader) {
+          useTabStore.getState().closeAllTabs();
+          await authSDK.clearLocalSession();
+        }
       }
     }
 
