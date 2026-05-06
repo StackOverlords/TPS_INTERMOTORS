@@ -1,0 +1,387 @@
+/**
+ * ConversationList.tsx
+ *
+ * Gestiona tres vistas en el mismo contenedor (estilo WhatsApp Web):
+ *
+ *   'list'         → lista de conversaciones (default)
+ *   'select-user'  → selección de usuario para chat directo O
+ *                    selección múltiple para grupo
+ *   'setup-group'  → nombre, descripción y confirmación del grupo
+ *
+ * No usa modal. Todo ocurre in-place con transición suave.
+ */
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import {
+  Search,
+  Plus,
+  Users,
+  BellOff,
+  MoreHorizontal,
+  MessageCircle,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { Input } from "@/components/atoms/input";
+import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
+import { Button } from "@/components/atoms/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/atoms/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { useChatList } from "../hooks/useChats";
+import { UserSelectorPanel } from "./UserSelectorPanel";
+import { GroupSetupPanel } from "./GroupSetupPanel";
+import type { User } from "@/modules/users/types/User";
+import type { Chat } from "../types/Chat.types";
+import { useChatStore } from "../stores/ChatStore";
+import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEW STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+type PanelView = "list" | "select-user" | "select-group" | "setup-group";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getInitials(nombre: string) {
+  return nombre
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function getLastMessagePreview(chat: Chat): string {
+  const msg = chat.ultimo_mensaje;
+  if (!msg) return "";
+  const sender = msg.remitente ? `${msg.remitente.nombre.split(" ")[0]}: ` : "";
+  return `${sender}${msg.contenido}`.slice(0, 60);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERSATION ITEM
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ItemProps {
+  chat: Chat;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function ConversationItem({ chat, isActive, onClick }: ItemProps) {
+  const isGroup = chat.tipo !== "DIRECT";
+  const preview = getLastMessagePreview(chat);
+  const lastTime = chat.ultimo_mensaje?.fecha_reg;
+
+  return (
+    <div className="group relative">
+      <button
+        onClick={onClick}
+        className={cn(
+          "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent/40",
+          isActive && "bg-accent/60"
+        )}
+      >
+        <div className="relative shrink-0">
+          <Avatar className="h-11 w-11">
+            <AvatarFallback
+              className={cn(
+                "text-xs font-semibold",
+                isGroup
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {isGroup ? (
+                <Users className="h-5 w-5" />
+              ) : (
+                getInitials(chat.nombre)
+              )}
+            </AvatarFallback>
+          </Avatar>
+          {chat.es_sistema && (
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-background bg-primary">
+              <MessageCircle className="h-2 w-2 text-primary-foreground" />
+            </span>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-[13px] font-semibold">
+                {chat.nombre}
+              </span>
+              {chat.mi_participacion.silenciado && (
+                <BellOff className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40" />
+              )}
+            </div>
+            {lastTime && (
+              <span className="shrink-0 text-[10px] text-muted-foreground/60">
+                {formatDistanceToNow(new Date(lastTime), {
+                  addSuffix: false,
+                  locale: es,
+                })}
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 flex items-center justify-between gap-2">
+            <p className="truncate text-[11px] text-muted-foreground">
+              {preview || "\u00A0"}
+            </p>
+            {chat.no_leidos > 0 && (
+              <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {chat.no_leidos > 99 ? "99+" : chat.no_leidos}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+
+      <div className="absolute right-2 top-3 opacity-0 transition-opacity group-hover:opacity-100">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex h-6 w-6 items-center justify-center rounded-md border border-border/40 bg-background/80 text-muted-foreground hover:bg-accent">
+              <MoreHorizontal className="h-3 w-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem className="text-xs">
+              {chat.mi_participacion.silenciado
+                ? "Activar notificaciones"
+                : "Silenciar"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function ConversationList() {
+  const chats = useChatList();
+  const activeChatId = useChatStore((s) => s.activeChatId);
+  const setActiveChatId = useChatStore((s) => s.setActiveChatId);
+  const isOnline = useOfflineQueueStore((s) => s.isOnline);
+  const pendingCount = useOfflineQueueStore((s) => s.queue.length);
+
+  // ── Panel view state ────────────────────────────────────────────────────────
+  const [view, setView] = useState<PanelView>("list");
+  const [groupSelectedIds, setGroupSelectedIds] = useState<number[]>([]);
+  const [groupSelectedUsers, setGroupSelectedUsers] = useState<User[]>([]);
+
+  // ── Chat list search ────────────────────────────────────────────────────────
+  const [search, setSearch] = useState("");
+
+  const sorted = useMemo(
+    () =>
+      [...chats].sort((a, b) => {
+        if (a.no_leidos > 0 && b.no_leidos === 0) return -1;
+        if (b.no_leidos > 0 && a.no_leidos === 0) return 1;
+        const at = a.ultimo_mensaje?.fecha_reg ?? a.fecha_reg;
+        const bt = b.ultimo_mensaje?.fecha_reg ?? b.fecha_reg;
+        return new Date(bt).getTime() - new Date(at).getTime();
+      }),
+    [chats]
+  );
+
+  const filtered = useMemo(
+    () =>
+      sorted.filter(
+        (c) =>
+          !search ||
+          c.nombre.toLowerCase().includes(search.toLowerCase()) ||
+          c.ultimo_mensaje?.contenido
+            .toLowerCase()
+            .includes(search.toLowerCase())
+      ),
+    [sorted, search]
+  );
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
+  const resetGroupState = () => {
+    setGroupSelectedIds([]);
+    setGroupSelectedUsers([]);
+  };
+
+  const goBack = () => {
+    if (view === "setup-group") {
+      setView("select-group");
+    } else {
+      resetGroupState();
+      setView("list");
+    }
+  };
+
+  const handleToggleGroupUser = (user: User) => {
+    setGroupSelectedIds((prev) => {
+      const has = prev.includes(user.id);
+      if (has) {
+        setGroupSelectedUsers((u) => u.filter((x) => x.id !== user.id));
+        return prev.filter((id) => id !== user.id);
+      }
+      setGroupSelectedUsers((u) => [...u, user]);
+      return [...prev, user.id];
+    });
+  };
+
+  const handleRemoveFromGroup = (userId: number) => {
+    setGroupSelectedIds((p) => p.filter((id) => id !== userId));
+    setGroupSelectedUsers((p) => p.filter((u) => u.id !== userId));
+  };
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  // UserSelectorPanel handles both 'select-user' (direct) and 'select-group' modes
+  if (view === "select-user" || view === "select-group") {
+    return (
+      <UserSelectorPanel
+        mode={view === "select-user" ? "direct" : "group"}
+        selectedIds={groupSelectedIds}
+        onBack={goBack}
+        onSelectDirect={() => setView("list")}
+        onToggleUser={(id) => {
+          // We need the full User object for GroupSetupPanel.
+          // UserSelectorPanel calls this with just the id; we get the user from
+          // the flattened list inside UserSelectorPanel via the prop below.
+          // See onToggleUserFull for the full-object variant.
+          setGroupSelectedIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+          );
+        }}
+        onToggleUserFull={handleToggleGroupUser}
+        onNextGroup={
+          () =>
+            view === "select-user"
+              ? setView("select-group") // "Nuevo grupo" clicked from direct mode
+              : setView("setup-group") // "Siguiente" clicked from group selection
+        }
+      />
+    );
+  }
+
+  if (view === "setup-group") {
+    return (
+      <GroupSetupPanel
+        selectedUsers={groupSelectedUsers}
+        onBack={goBack}
+        onRemoveUser={handleRemoveFromGroup}
+        onSuccess={() => {
+          resetGroupState();
+          setView("list");
+        }}
+      />
+    );
+  }
+
+  // ── Default: conversation list ───────────────────────────────────────────────
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="shrink-0 space-y-2.5 border-b border-border/40 bg-background p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold tracking-tight text-foreground">
+              Mensajes
+            </h3>
+            {!isOnline && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <WifiOff className="h-3.5 w-3.5 text-amber-500" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Sin conexión
+                  {pendingCount > 0 &&
+                    ` · ${pendingCount} mensaje${pendingCount > 1 ? "s" : ""} en cola`}
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {isOnline && pendingCount > 0 && (
+              <Tooltip>
+                <TooltipTrigger>
+                  <Wifi className="h-3.5 w-3.5 animate-pulse text-emerald-500" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  Sincronizando {pendingCount} mensaje
+                  {pendingCount > 1 ? "s" : ""}...
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+                onClick={() => setView("select-user")}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Nueva conversación</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 rounded-xl border-border/30 bg-muted/30 pl-8 text-xs focus-visible:ring-1"
+          />
+        </div>
+      </div>
+
+      {/* Chat list — only this area scrolls */}
+      <div className="flex-1 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <MessageCircle className="h-8 w-8 text-muted-foreground/25" />
+            <p className="text-xs text-muted-foreground">
+              {search ? "Sin resultados" : "Sin conversaciones"}
+            </p>
+            {!search && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-1 h-7 text-xs"
+                onClick={() => setView("select-user")}
+              >
+                <Plus className="mr-1 h-3 w-3" /> Nueva conversación
+              </Button>
+            )}
+          </div>
+        ) : (
+          filtered.map((chat) => (
+            <ConversationItem
+              key={chat.id}
+              chat={chat}
+              isActive={activeChatId === chat.id}
+              onClick={() => setActiveChatId(chat.id)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
