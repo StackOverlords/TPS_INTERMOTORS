@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageCircle, EyeOff } from "lucide-react";
+import { MessagesSquare, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/atoms/badge";
 import {
@@ -142,7 +142,7 @@ export function ChatToggleButton() {
                     }}
                     className="relative flex h-12 w-12 select-none items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-shadow hover:shadow-xl"
                   >
-                    <MessageCircle className="pointer-events-none h-5 w-5" />
+                    <MessagesSquare className="pointer-events-none h-5 w-5" />
                     <AnimatePresence>
                       {totalUnread > 0 && (
                         <motion.div

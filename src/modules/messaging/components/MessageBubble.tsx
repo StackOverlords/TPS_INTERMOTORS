@@ -10,11 +10,11 @@ import {
   ShoppingCart,
   Package,
   ArrowRightLeft,
+  ExternalLink,
+  Ellipsis,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import type { Message, OptimisticMessage } from "../types/Message.types";
-import { getInitials } from "../mocks/ChatMockUsers";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,11 +22,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
+import type { Message, OptimisticMessage } from "../types/Message.types";
 import authSDK from "@/services/sdk-simple-auth";
+import { getInitials } from "../mocks/ChatMockUsers";
+import { Button } from "@/components/atoms/button";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REFERENCE BADGE — for business entity links
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ⚠️ RUTAS: ajusta estos paths a los de tu router
+const REFERENCE_ROUTES: Record<string, (id: number) => string> = {
+  sale: (id) => `/dashboard/sales/${id}`,
+  purchase: (id) => `/dashboard/purchases/${id}`,
+  transfer: (id) => `/dashboard/transfers/${id}`,
+  almacen_out: (id) => `/dashboard/warehouse/out/${id}`,
+  almacen_in: (id) => `/dashboard/warehouse/in/${id}`,
+};
 
 function ReferenceBadge({ tipo, id }: { tipo: string; id: number }) {
   const icons: Record<string, React.ReactNode> = {
@@ -44,16 +56,33 @@ function ReferenceBadge({ tipo, id }: { tipo: string; id: number }) {
     almacen_in: "Entrada almacén",
   };
 
+  const route = REFERENCE_ROUTES[tipo]?.(id);
+
+  const handleClick = () => {
+    if (!route) return;
+    // Navega usando el router de la app — abre en la tab system si usas TabStore
+    // ⚠️ Si usas useNavigate de react-router, reemplaza window.location por navigate(route)
+    window.location.href = route;
+  };
+
   return (
-    <div className="mt-1.5 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5">
+    <button
+      onClick={route ? handleClick : undefined}
+      disabled={!route}
+      className={cn(
+        "mt-1.5 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-left transition-colors",
+        route && "hover:border-primary/40 hover:bg-primary/10 cursor-pointer",
+        !route && "cursor-default"
+      )}
+    >
       <span className="text-primary">
         {icons[tipo] ?? <Package className="h-3 w-3" />}
       </span>
       <span className="text-[11px] font-semibold text-primary">
         {labels[tipo] ?? tipo} #{id}
       </span>
-      {/* ⚠️ Aquí puedes agregar onClick para navegar al detalle del recurso */}
-    </div>
+      {route && <ExternalLink className="ml-auto h-3 w-3 text-primary/50" />}
+    </button>
   );
 }
 
@@ -86,6 +115,7 @@ interface Props {
   prevSenderId?: number | null;
   onReply?: (msg: Message | OptimisticMessage) => void;
   onForward?: (msg: Message | OptimisticMessage) => void;
+  isDirectChat?: boolean; // para ocultar el nombre del remitente en chats 1:1, si se desea
 }
 
 export function MessageBubble({
@@ -93,18 +123,18 @@ export function MessageBubble({
   prevSenderId,
   onReply,
   onForward,
+  isDirectChat = false,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const userId = authSDK.getCurrentUser()?.id;
+  const currentUserId = authSDK.getCurrentUser()?.id;
 
   const isOptimistic = "_tempId" in message;
   const status = isOptimistic
     ? (message as OptimisticMessage)._status
     : undefined;
   const isMine =
-    message.remitente?.id === userId ||
+    message.remitente?.id === currentUserId ||
     (!message.remitente && !message.es_sistema);
-
   const senderName = message.remitente?.nombre ?? "Sistema";
   const senderInitials = getInitials(senderName);
   const showAvatar = !isMine && message.remitente?.id !== prevSenderId;
@@ -135,7 +165,7 @@ export function MessageBubble({
     >
       {/* Avatar */}
       <div className="w-7 shrink-0 flex items-end">
-        {showAvatar ? (
+        {showAvatar && !isDirectChat ? (
           <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground select-none">
             {senderInitials}
           </div>
@@ -144,7 +174,7 @@ export function MessageBubble({
 
       <div className="relative min-w-0 flex flex-col">
         {/* Sender name (only for non-mine, first in group) */}
-        {!isMine && showAvatar && (
+        {!isMine && showAvatar && !isDirectChat && (
           <span className="mb-0.5 ml-1 text-[10px] font-semibold text-primary/80">
             {senderName}
           </span>
@@ -159,30 +189,23 @@ export function MessageBubble({
           )}
         >
           {onReply && (
-            <button
+            <Button
+              variant={"ghost"}
               onClick={() => onReply(message)}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="size-6"
             >
-              <Reply className="h-3 w-3" />
-            </button>
+              <Reply className="size-3" />
+            </Button>
           )}
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">
-                <svg
-                  className="h-3 w-3"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
-                >
-                  <circle cx="3" cy="8" r="1.5" />
-                  <circle cx="8" cy="8" r="1.5" />
-                  <circle cx="13" cy="8" r="1.5" />
-                </svg>
-              </button>
+              <Button variant="ghost" className="size-6">
+                <Ellipsis className="size-3" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align={isMine ? "end" : "start"}
-              className="w-40"
+              className="w-40 z-[9999]"
             >
               <DropdownMenuItem className="gap-2 text-xs" onClick={handleCopy}>
                 <Copy className="h-3 w-3" /> Copiar texto
@@ -212,14 +235,14 @@ export function MessageBubble({
           className={cn(
             "rounded-2xl px-3 py-2 text-sm break-words",
             isMine
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-muted/60 text-foreground rounded-bl-md",
+              ? "bg-primary text-primary-foreground rounded-br-sm"
+              : "bg-muted/60 text-foreground rounded-bl-sm",
             isGrouped && !isMine && "rounded-tl-md",
             isGrouped && isMine && "rounded-tr-md",
             status === "failed" && "opacity-60 ring-1 ring-destructive/40"
           )}
         >
-          <p className="text-[13px] leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
             {message.contenido}
           </p>
 
@@ -234,14 +257,14 @@ export function MessageBubble({
           {/* Timestamp + status */}
           <div
             className={cn(
-              "mt-1 flex items-center gap-1",
+              "flex items-center gap-1",
               isMine ? "justify-end" : "justify-start"
             )}
           >
             <span
               className={cn(
                 "text-[10px]",
-                isMine ? "text-primary-foreground/50" : "text-muted-foreground"
+                isMine ? "text-primary-foreground/60" : "text-muted-foreground"
               )}
             >
               {format(new Date(message.fecha_reg), "HH:mm", { locale: es })}

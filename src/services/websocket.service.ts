@@ -188,7 +188,7 @@ export class WebSocketService {
         channelName,
         eventName,
       });
-      return;
+      return () => {};
     }
 
     wsLogger.debug("Intentando suscribirse a canal", {

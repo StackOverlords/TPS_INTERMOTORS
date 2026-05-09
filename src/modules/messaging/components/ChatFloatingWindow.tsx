@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  MessageCircle,
-  Minus,
   Maximize2,
   Minimize2,
   X,
   PanelRight,
   Loader2,
+  MessagesSquare,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/atoms/button";
@@ -31,11 +30,9 @@ const MAX_H = 860;
 export function ChatFloatingWindow() {
   const {
     isOpen,
-    isMinimized,
     viewMode,
     floatingPos,
     floatingSize,
-    toggleMinimize,
     close,
     setViewMode,
     setFloatingPos,
@@ -55,6 +52,9 @@ export function ChatFloatingWindow() {
 
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
+
+  // ¿Hay espacio suficiente para mostrar las dos columnas?
+  const [isTwoColumn, setIsTwoColumn] = useState<boolean>(false);
 
   // ── Drag ──────────────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
@@ -131,6 +131,7 @@ export function ChatFloatingWindow() {
         setFloatingSize(prevLayout.size);
       }
       setIsMaximized(false);
+      setIsTwoColumn(false);
     } else {
       setPrevLayout({ pos: floatingPos, size: floatingSize });
       setFloatingPos({ x: 60, y: 20 });
@@ -139,35 +140,11 @@ export function ChatFloatingWindow() {
         h: window.innerHeight - 80,
       });
       setIsMaximized(true);
+      setIsTwoColumn(true);
     }
   };
 
   if (!isOpen || viewMode !== "floating") return null;
-
-  // ── Minimized pill ─────────────────────────────────────────────────────────
-  if (isMinimized) {
-    return (
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="fixed z-[60]"
-        style={{ left: floatingPos.x, top: floatingPos.y }}
-      >
-        <button
-          onClick={toggleMinimize}
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-shadow hover:shadow-xl"
-        >
-          <MessageCircle className="h-4 w-4" />
-          Chat
-          {totalUnread > 0 && (
-            <Badge className="h-5 min-w-5 border-0 bg-destructive px-1 text-[10px] text-destructive-foreground">
-              {totalUnread}
-            </Badge>
-          )}
-        </button>
-      </motion.div>
-    );
-  }
 
   return (
     <motion.div
@@ -193,8 +170,8 @@ export function ChatFloatingWindow() {
         className="flex shrink-0 cursor-grab items-center justify-between border-b border-border/50 bg-muted/30 px-3 py-1.5 active:cursor-grabbing"
       >
         <div className="flex items-center gap-2">
-          <MessageCircle className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold">Chat interno</span>
+          <MessagesSquare className="size-5 text-primary" />
+          <span className="text-sm font-semibold">Chat interno</span>
           {totalUnread > 0 && (
             <Badge className="h-4 min-w-4 border-0 bg-primary px-1 text-[10px] text-primary-foreground">
               {totalUnread}
@@ -211,51 +188,63 @@ export function ChatFloatingWindow() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
                 onClick={() => setViewMode("side")}
               >
-                <PanelRight className="h-3 w-3" />
+                <PanelRight className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Panel lateral</TooltipContent>
           </Tooltip>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={toggleMinimize}
-          >
-            <Minus className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={toggleMaximize}
-          >
+          <Button variant="ghost" size="icon" onClick={toggleMaximize}>
             {isMaximized ? (
-              <Minimize2 className="h-3 w-3" />
+              <Minimize2 className="size-4" />
             ) : (
-              <Maximize2 className="h-3 w-3" />
+              <Maximize2 className="size-4" />
             )}
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 hover:text-destructive"
+            className="hover:text-destructive"
             onClick={close}
           >
-            <X className="h-3 w-3" />
+            <X className="size-4" />
           </Button>
         </div>
       </div>
 
-      {/* Content — min-h-0 + flex-1 so messages scroll, not the window */}
+      {/* ── Contenido ─────────────────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        {!activeChatId ? (
-          <ConversationList />
+        {isTwoColumn ? (
+          /*
+           * Layout de dos columnas (≥ 520 px de ancho):
+           * sidebar fijo con la lista + panel principal con la conversación,
+           * exactamente igual a ChatScreen.
+           */
+          <div className="flex h-full overflow-hidden">
+            <aside className="flex h-full w-[300px] shrink-0 flex-col border-r border-border/50">
+              <ConversationList />
+            </aside>
+            <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              {activeChatId ? (
+                <ChatConversation compact={false} showBackButton />
+              ) : (
+                <EmptyConversationPlaceholder />
+              )}
+            </main>
+          </div>
         ) : (
-          <ChatConversation showBackButton />
+          /*
+           * Layout de una sola columna (< 520 px):
+           * comportamiento original — lista o conversación, nunca ambas.
+           */
+          <>
+            {!activeChatId ? (
+              <ConversationList />
+            ) : (
+              <ChatConversation showBackButton />
+            )}
+          </>
         )}
       </div>
 
@@ -271,5 +260,24 @@ export function ChatFloatingWindow() {
         />
       )}
     </motion.div>
+  );
+}
+
+/** Placeholder cuando hay ancho para dos columnas pero no hay chat activo. */
+function EmptyConversationPlaceholder() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-border/40 bg-muted/30">
+        <MessagesSquare className="h-8 w-8 text-muted-foreground/40" />
+      </div>
+      <div>
+        <p className="font-medium text-muted-foreground">
+          Selecciona una conversación
+        </p>
+        <p className="mt-1 text-[12px] text-muted-foreground/60">
+          Elige un chat de la lista o crea uno nuevo
+        </p>
+      </div>
+    </div>
   );
 }

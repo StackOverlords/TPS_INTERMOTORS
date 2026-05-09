@@ -4,6 +4,7 @@ import type { Chat } from "../types/Chat.types";
 import { useChatStore } from "../stores/ChatStore";
 import type { Message } from "../types/Message.types";
 import { messageService } from "../service/Message.service";
+import authSDK from "@/services/sdk-simple-auth";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
@@ -39,7 +40,11 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
         useChatStore.getState();
       appendMessage(chatId, message);
       setLastMessageTimestamp(chatId, message.fecha_reg);
-      if (useChatStore.getState().activeChatId !== chatId) {
+
+      const currentUserId = Number(authSDK.getCurrentUser()?.id);
+      const isOwnMessage =
+        !!currentUserId && message.remitente?.id === currentUserId;
+      if (useChatStore.getState().activeChatId !== chatId && !isOwnMessage) {
         incrementUnread(chatId);
       }
     },

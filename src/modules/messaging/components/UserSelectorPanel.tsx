@@ -1,6 +1,4 @@
 /**
- * UserSelectorPanel.tsx
- *
  * Reemplaza la lista de conversaciones al crear un nuevo chat.
  * Flujo:
  *   - Modo "direct": clic en usuario → crea chat directo
@@ -21,10 +19,10 @@ import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { cn } from "@/lib/utils";
-import { useCreateDirectChat } from "../hooks/useCreateChat";
 import { useUsersInfinite } from "../hooks/useUsersInfinite";
 import authSDK from "@/services/sdk-simple-auth";
 import type { User } from "@/modules/users/types/User";
+import { useChatStore } from "../stores/ChatStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -129,24 +127,22 @@ export function UserSelectorPanel({
   selectedIds,
   onBack,
   onSelectDirect,
-  onToggleUser,
+  // onToggleUser,
   onToggleUserFull,
   onNextGroup,
 }: Props) {
   const [search, setSearch] = useState("");
-  const createDirect = useCreateDirectChat();
+  const setPendingDirectChat = useChatStore((s) => s.setPendingDirectChat);
   const currentUser = authSDK.getCurrentUser();
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useUsersInfinite(search);
 
-  // Flatten pages
   const allUsers: User[] = useMemo(
     () => data?.pages.flatMap((p) => p.data) ?? [],
     [data]
   );
 
-  // Filter client-side by search (the API may not support name filter yet)
   const filtered = useMemo(() => {
     const lower = search.toLowerCase();
     return allUsers.filter(
@@ -157,8 +153,6 @@ export function UserSelectorPanel({
     );
   }, [allUsers, search, currentUser]);
 
-  // Infinite scroll sentinel
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const attachSentinel = useCallback(
     (node: HTMLDivElement | null) => {
@@ -183,18 +177,15 @@ export function UserSelectorPanel({
 
   const handleUserClick = (user: User) => {
     if (mode === "direct") {
-      createDirect.mutate(
-        { usuario_id: user.id },
-        { onSuccess: onSelectDirect }
-      );
+      // Lazy creation: no llamamos al backend aún.
+      // Solo marcamos el chat como "pendiente" en el store.
+      // El chat se crea cuando el usuario envíe el primer mensaje.
+      setPendingDirectChat({ userId: user.id, nombre: user.empleado.nombre });
+      onSelectDirect();
     } else {
-      // Solo onToggleUserFull — gestiona tanto ids como objetos User en ConversationList.
-      // Llamar también onToggleUser causaría doble-toggle (add + remove = neto 0).
       onToggleUserFull(user);
     }
   };
-
-  const isCreating = createDirect.isPending;
 
   return (
     <div className="flex h-full flex-col">
@@ -260,7 +251,7 @@ export function UserSelectorPanel({
                 user={u}
                 isSelected={selectedIds.includes(u.id)}
                 mode={mode}
-                disabled={isCreating}
+                disabled={false}
                 onClick={() => handleUserClick(u)}
               />
             ))}

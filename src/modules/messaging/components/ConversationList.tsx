@@ -1,17 +1,9 @@
 /**
- * ConversationList.tsx
- *
- * Gestiona tres vistas en el mismo contenedor (estilo WhatsApp Web):
- *
  *   'list'         → lista de conversaciones (default)
  *   'select-user'  → selección de usuario para chat directo O
  *                    selección múltiple para grupo
  *   'setup-group'  → nombre, descripción y confirmación del grupo
- *
- * No usa modal. Todo ocurre in-place con transición suave.
  */
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
 import {
   Search,
   Plus,
@@ -21,6 +13,7 @@ import {
   MessageCircle,
   Wifi,
   WifiOff,
+  LogOut,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Input } from "@/components/atoms/input";
@@ -35,16 +28,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useChatList } from "../hooks/useChats";
+import { useLeaveChat } from "../hooks/useParticipants";
 import { UserSelectorPanel } from "./UserSelectorPanel";
 import { GroupSetupPanel } from "./GroupSetupPanel";
 import type { User } from "@/modules/users/types/User";
 import type { Chat } from "../types/Chat.types";
 import { useChatStore } from "../stores/ChatStore";
 import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
+import { useChatTimestamp } from "../hooks/useChatTimestamp";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIEW STATE
@@ -81,10 +77,34 @@ interface ItemProps {
   onClick: () => void;
 }
 
+function ChatTimestamp({ date }: { date: string }) {
+  const label = useChatTimestamp(date);
+  return (
+    <span className="shrink-0 text-[10px] text-muted-foreground/60">
+      {label}
+    </span>
+  );
+}
+
 function ConversationItem({ chat, isActive, onClick }: ItemProps) {
   const isGroup = chat.tipo !== "DIRECT";
+  const isDirect = chat.tipo === "DIRECT";
+  const isSistema = chat.es_sistema;
+  const myRole = chat.mi_participacion.rol;
   const preview = getLastMessagePreview(chat);
   const lastTime = chat.ultimo_mensaje?.fecha_reg;
+
+  const setActiveChatId = useChatStore((s) => s.setActiveChatId);
+  const leaveChat = useLeaveChat(chat.id);
+
+  const handleLeave = () => {
+    // Para chat directo y grupos (excepto OWNER y sistema)
+    leaveChat.mutate();
+    setActiveChatId(null);
+  };
+
+  // Puede salir: directo siempre, grupo si no es OWNER ni sistema
+  const canLeave = isDirect || (!isSistema && myRole !== "OWNER");
 
   return (
     <div className="group relative">
@@ -112,7 +132,7 @@ function ConversationItem({ chat, isActive, onClick }: ItemProps) {
               )}
             </AvatarFallback>
           </Avatar>
-          {chat.es_sistema && (
+          {isSistema && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-background bg-primary">
               <MessageCircle className="h-2 w-2 text-primary-foreground" />
             </span>
@@ -129,14 +149,7 @@ function ConversationItem({ chat, isActive, onClick }: ItemProps) {
                 <BellOff className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40" />
               )}
             </div>
-            {lastTime && (
-              <span className="shrink-0 text-[10px] text-muted-foreground/60">
-                {formatDistanceToNow(new Date(lastTime), {
-                  addSuffix: false,
-                  locale: es,
-                })}
-              </span>
-            )}
+            {lastTime && <ChatTimestamp date={lastTime} />}
           </div>
           <div className="mt-0.5 flex items-center justify-between gap-2">
             <p className="truncate text-[11px] text-muted-foreground">
@@ -151,6 +164,7 @@ function ConversationItem({ chat, isActive, onClick }: ItemProps) {
         </div>
       </button>
 
+      {/* Context menu on hover */}
       <div className="absolute right-2 top-3 opacity-0 transition-opacity group-hover:opacity-100">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -158,12 +172,30 @@ function ConversationItem({ chat, isActive, onClick }: ItemProps) {
               <MoreHorizontal className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          {/*
+            z-[9999]: el dropdown porta a body level pero la floating window
+            tiene z-[60]. Radix por defecto usa z-50, quedando DETRÁS de la
+            ventana. Subimos el z-index para que siempre quede encima.
+          */}
+          <DropdownMenuContent align="end" className="w-44 z-[9999]">
             <DropdownMenuItem className="text-xs">
               {chat.mi_participacion.silenciado
                 ? "Activar notificaciones"
                 : "Silenciar"}
             </DropdownMenuItem>
+            {canLeave && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="gap-2 text-xs text-destructive focus:text-destructive"
+                  disabled={leaveChat.isPending}
+                  onClick={handleLeave}
+                >
+                  <LogOut className="h-3 w-3" />
+                  {isDirect ? "Eliminar conversación" : "Salir del grupo"}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -175,7 +207,11 @@ function ConversationItem({ chat, isActive, onClick }: ItemProps) {
 // MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function ConversationList() {
+export function ConversationList({
+  onChatSelected,
+}: {
+  onChatSelected?: () => void;
+}) {
   const chats = useChatList();
   const activeChatId = useChatStore((s) => s.activeChatId);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
@@ -258,14 +294,10 @@ export function ConversationList() {
         selectedIds={groupSelectedIds}
         onBack={goBack}
         onSelectDirect={() => setView("list")}
-        onToggleUser={(id) => {
-          // We need the full User object for GroupSetupPanel.
-          // UserSelectorPanel calls this with just the id; we get the user from
-          // the flattened list inside UserSelectorPanel via the prop below.
-          // See onToggleUserFull for the full-object variant.
-          setGroupSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-          );
+        onToggleUser={() => {
+          // noop — onToggleUserFull (handleToggleGroupUser) gestiona
+          // tanto groupSelectedIds como groupSelectedUsers.
+          // Mantener esta prop por compatibilidad con la interfaz.
         }}
         onToggleUserFull={handleToggleGroupUser}
         onNextGroup={
@@ -377,7 +409,10 @@ export function ConversationList() {
               key={chat.id}
               chat={chat}
               isActive={activeChatId === chat.id}
-              onClick={() => setActiveChatId(chat.id)}
+              onClick={() => {
+                setActiveChatId(chat.id);
+                onChatSelected?.();
+              }}
             />
           ))
         )}

@@ -1,4 +1,13 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+/**
+ * Layout responsive al ancho del contenedor:
+ *
+ *   WIDE  (≥ 680px) — ChatInfoPanel como columna lateral derecha (WhatsApp Web)
+ *   COMPACT (< 680px) — ChatInfoPanel cubre la conversación (WhatsApp iOS)
+ *
+ * El padre envuelve este componente con un div con ref={containerRef}
+ * para que useChatLayout detecte el ancho correcto.
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Send,
@@ -8,6 +17,8 @@ import {
   Loader2,
   Users,
   AlertCircle,
+  Link,
+  XCircle,
 } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
@@ -18,25 +29,39 @@ import {
   TooltipTrigger,
 } from "@/components/atoms/tooltip";
 import { cn } from "@/lib/utils";
+import { useChatStore, selectActiveChat } from "../stores/ChatStore";
 import { useOpenChat } from "../hooks/useActiveChat";
 import { useSendMessage } from "../hooks/useSendMessage";
+import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInfoPanel } from "./ChatInfoPanel";
-import type { Message, OptimisticMessage } from "../types/Message.types";
-import { selectActiveChat, useChatStore } from "../stores/ChatStore";
-import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
-import { getInitials } from "../mocks/ChatMockUsers";
+import { ReferencePickerModal } from "./ReferencePickerModal";
+import type {
+  Message,
+  OptimisticMessage,
+  ReferenciaTipo,
+} from "../types/Message.types";
+import { DateSeparator } from "./DateSeparator";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// REPLY PREVIEW BAR
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface ReplyBarProps {
-  message: Message | OptimisticMessage;
-  onCancel: () => void;
+function getInitials(nombre: string) {
+  return nombre
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
-function ReplyBar({ message, onCancel }: ReplyBarProps) {
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ReplyBar({
+  message,
+  onCancel,
+}: {
+  message: Message | OptimisticMessage;
+  onCancel: () => void;
+}) {
   return (
     <div className="shrink-0 border-t border-border/30 bg-background px-3 pt-2">
       <div className="flex items-center gap-2 rounded-xl border-l-2 border-primary bg-muted/30 px-3 py-2">
@@ -62,10 +87,6 @@ function ReplyBar({ message, onCancel }: ReplyBarProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EMPTY STATE
-// ─────────────────────────────────────────────────────────────────────────────
-
 function EmptyState() {
   return (
     <div className="flex flex-1 items-center justify-center bg-muted/5">
@@ -86,10 +107,6 @@ function EmptyState() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OFFLINE BANNER
-// ─────────────────────────────────────────────────────────────────────────────
-
 function OfflineBanner({ pendingCount }: { pendingCount: number }) {
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-3 py-1.5">
@@ -104,31 +121,84 @@ function OfflineBanner({ pendingCount }: { pendingCount: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
+// PROPS
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
-  /** If true, shows a back-arrow button (for floating/mobile views) */
   showBackButton?: boolean;
+  /**
+   * Forzar modo compacto desde el padre (ventana flotante, panel lateral).
+   * Si no se pasa, se detecta automáticamente por el ancho del contenedor.
+   */
+  compact?: boolean;
+  /**
+   * Cuando el padre (ChatLayout) gestiona el panel de info externamente.
+   * Si se pasa, el botón Info controla el estado del padre en lugar de
+   * gestionar el panel internamente.
+   */
+  infoActive?: boolean;
+  onToggleInfo?: () => void;
 }
 
-export function ChatConversation({ showBackButton = false }: Props) {
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function ChatConversation({
+  showBackButton = false,
+  compact: compactProp,
+  infoActive: infoActiveProp,
+  onToggleInfo: onToggleInfoProp,
+}: Props) {
   const chat = useChatStore(selectActiveChat);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const isOnline = useOfflineQueueStore((s) => s.isOnline);
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
 
   const [input, setInput] = useState("");
-  const [showInfo, setShowInfo] = useState(false);
+  // showInfo: controlado externamente por ChatLayout (infoActiveProp) O internamente
+  const [showInfoInternal, setShowInfoInternal] = useState(false);
+  const showInfo =
+    infoActiveProp !== undefined ? infoActiveProp : showInfoInternal;
+  const toggleInfo = onToggleInfoProp ?? (() => setShowInfoInternal((v) => !v));
+  const closeInfo = onToggleInfoProp
+    ? () => {
+        if (infoActiveProp) onToggleInfoProp();
+      }
+    : () => setShowInfoInternal(false);
+
   const [replyTo, setReplyTo] = useState<Message | OptimisticMessage | null>(
     null
   );
+  const [showRefPicker, setShowRefPicker] = useState(false);
+  const [reference, setReference] = useState<{
+    tipo: ReferenciaTipo;
+    id: number;
+  } | null>(null);
 
+  // ── Responsive detection ───────────────────────────────────────────────────
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isCompactDetected, setIsCompactDetected] = useState(true);
+  const isCompact = compactProp ?? isCompactDetected;
+
+  useEffect(() => {
+    if (compactProp !== undefined) return; // padre controla, no medir
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      setIsCompactDetected(w < 680);
+    });
+    observer.observe(el);
+    setIsCompactDetected(el.getBoundingClientRect().width < 680);
+    return () => observer.disconnect();
+  }, [compactProp]);
+
+  // ── Scroll ─────────────────────────────────────────────────────────────────
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAtBottomRef = useRef(true);
 
-  // Load messages for active chat
   const {
     messages,
     isLoadingMessages,
@@ -139,52 +209,46 @@ export function ChatConversation({ showBackButton = false }: Props) {
 
   const { send, isPending: isSending } = useSendMessage(chat?.id ?? 0);
 
-  // Auto-scroll to bottom when new messages arrive (only if user is near bottom)
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    if (isAtBottomRef.current) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
-  // Scroll to bottom on chat change
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) {
-      setTimeout(() => (el.scrollTop = el.scrollHeight), 50);
-    }
+    if (el) setTimeout(() => (el.scrollTop = el.scrollHeight), 50);
     setReplyTo(null);
     setInput("");
+    setReference(null);
+    closeInfo();
   }, [chat?.id]);
 
-  // Detect if user is near the bottom
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    isAtBottomRef.current = distanceFromBottom < 80;
-
-    // Load older messages when scrolled to top
-    if (el.scrollTop < 60 && hasOlderMessages && !isFetchingOlderMessages) {
+    isAtBottomRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (el.scrollTop < 60 && hasOlderMessages && !isFetchingOlderMessages)
       void loadOlderMessages();
-    }
   }, [hasOlderMessages, isFetchingOlderMessages, loadOlderMessages]);
 
   const handleSend = useCallback(() => {
     const content = input.trim();
     if (!content || !chat) return;
-    send({ contenido: content });
+    send({
+      contenido: content,
+      referencia_tipo: reference?.tipo,
+      referencia_id: reference?.id,
+    });
     setInput("");
     setReplyTo(null);
+    setReference(null);
     inputRef.current?.focus();
-    // Force scroll to bottom after send
     setTimeout(() => {
-      if (scrollRef.current) {
+      if (scrollRef.current)
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
     }, 50);
-  }, [input, chat, send]);
+  }, [input, chat, send, reference]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -193,17 +257,27 @@ export function ChatConversation({ showBackButton = false }: Props) {
     }
   };
 
-  // No active chat selected
   if (!chat) return <EmptyState />;
 
   const isGroup = chat.tipo !== "DIRECT";
   const canWrite = chat.mi_participacion.puede_escribir;
 
+  // ── Info panel shown in compact mode (covers conversation) ────────────────
+  const showInfoOverlay = showInfo && isCompact;
+
+  // ── Info panel shown in wide mode (side column) ───────────────────────────
+  const showInfoSide = showInfo && !isCompact;
+
   return (
-    <div className="flex h-full">
-      {/* Main column */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* ── Header (shrink-0) ───────────────────────────────────────── */}
+    <div ref={containerRef} className="flex h-full relative">
+      {/* ── Main column ──────────────────────────────────────────────────── */}
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col",
+          showInfoSide && "border-r border-border/40"
+        )}
+      >
+        {/* Header */}
         <div className="flex shrink-0 items-center gap-3 border-b border-border/40 bg-background px-3 py-2.5">
           {showBackButton && (
             <Button
@@ -215,7 +289,6 @@ export function ChatConversation({ showBackButton = false }: Props) {
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-
           <Avatar className="h-9 w-9 shrink-0">
             <AvatarFallback
               className={cn(
@@ -232,7 +305,6 @@ export function ChatConversation({ showBackButton = false }: Props) {
               )}
             </AvatarFallback>
           </Avatar>
-
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{chat.nombre}</p>
             <p className="text-[10px] text-muted-foreground">
@@ -241,84 +313,137 @@ export function ChatConversation({ showBackButton = false }: Props) {
                 : chat.mi_participacion.rol}
             </p>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-7 w-7 text-muted-foreground",
+                  showInfo && "bg-primary/10 text-primary"
+                )}
+                onClick={() => toggleInfo()}
+              >
+                <Info className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Info del chat</TooltipContent>
+          </Tooltip>
+        </div>
 
-          <div className="flex items-center gap-0.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-7 w-7 text-muted-foreground",
-                    showInfo && "bg-primary/10 text-primary"
-                  )}
-                  onClick={() => setShowInfo((v) => !v)}
-                >
-                  <Info className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Info del chat</TooltipContent>
-            </Tooltip>
+        {/* Offline banner */}
+        {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
+
+        {/* Messages area — position relative para el overlay */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Messages scroll */}
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="absolute inset-0 space-y-2 overflow-y-auto bg-muted/5 p-4"
+          >
+            {isFetchingOlderMessages && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {isLoadingMessages ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-10 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Sin mensajes aún
+                </p>
+                <p className="text-[10px] text-muted-foreground/60">
+                  Sé el primero en escribir
+                </p>
+              </div>
+            ) : (
+              messages.map((msg, i) => {
+                const prev = messages[i - 1];
+
+                // Comparar solo la fecha (sin hora) para detectar cambio de día
+                const msgDay = new Date(msg.fecha_reg);
+                msgDay.setHours(0, 0, 0, 0);
+
+                const prevDay = prev ? new Date(prev.fecha_reg) : null;
+                if (prevDay) prevDay.setHours(0, 0, 0, 0);
+
+                const showSeparator =
+                  !prevDay || msgDay.getTime() !== prevDay.getTime();
+
+                return (
+                  <div
+                    key={
+                      "_tempId" in msg
+                        ? (msg as OptimisticMessage)._tempId
+                        : msg.id
+                    }
+                  >
+                    {showSeparator && <DateSeparator date={msg.fecha_reg} />}
+                    <MessageBubble
+                      message={msg}
+                      prevSenderId={prev?.remitente?.id ?? null}
+                      onReply={setReplyTo}
+                      isDirectChat={chat.tipo === "DIRECT"}
+                    />
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* ── Offline banner ──────────────────────────────────────────── */}
-        {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
-
-        {/* ── Messages (flex-1 + overflow = only this area scrolls) ─── */}
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex-1 space-y-2 overflow-y-auto bg-muted/5 p-4"
-        >
-          {/* Load older messages spinner */}
-          {isFetchingOlderMessages && (
-            <div className="flex justify-center py-2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Initial loading */}
-          {isLoadingMessages ? (
-            <div className="flex flex-1 items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <p className="text-xs text-muted-foreground">Sin mensajes aún</p>
-              <p className="text-[10px] text-muted-foreground/60">
-                Sé el primero en escribir
-              </p>
-            </div>
-          ) : (
-            messages.map((msg, i) => {
-              const prev = messages[i - 1];
-              const prevSenderId = prev?.remitente?.id ?? null;
-              return (
-                <MessageBubble
-                  key={
-                    "_tempId" in msg
-                      ? (msg as OptimisticMessage)._tempId
-                      : msg.id
-                  }
-                  message={msg}
-                  prevSenderId={prevSenderId}
-                  onReply={setReplyTo}
-                />
-              );
-            })
-          )}
-        </div>
-
-        {/* ── Reply bar (shrink-0) ────────────────────────────────────── */}
+        {/* Reply bar */}
         {replyTo && (
           <ReplyBar message={replyTo} onCancel={() => setReplyTo(null)} />
         )}
 
-        {/* ── Input (shrink-0) ────────────────────────────────────────── */}
+        {/* Reference preview */}
+        {reference && (
+          <div className="shrink-0 border-t border-border/30 bg-background px-3 pt-2">
+            <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5">
+              <Link className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="flex-1 text-[11px] font-semibold text-primary">
+                {reference.tipo} #{reference.id}
+              </span>
+              <button
+                onClick={() => setReference(null)}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <XCircle className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Input */}
         <div className="shrink-0 border-t border-border/40 bg-background p-3">
           {canWrite ? (
             <div className="flex items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-9 w-9 shrink-0 rounded-xl text-muted-foreground",
+                      reference && "bg-primary/10 text-primary"
+                    )}
+                    onClick={() => setShowRefPicker(true)}
+                    disabled={isSending}
+                  >
+                    <Link className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {reference
+                    ? `Referencia: ${reference.tipo} #${reference.id}`
+                    : "Vincular documento"}
+                </TooltipContent>
+              </Tooltip>
               <Input
                 ref={inputRef}
                 value={input}
@@ -349,10 +474,25 @@ export function ChatConversation({ showBackButton = false }: Props) {
         </div>
       </div>
 
-      {/* ── Info panel (shrink-0, side column) ──────────────────────── */}
-      {showInfo && (
-        <ChatInfoPanel chat={chat} onClose={() => setShowInfo(false)} />
+      {/* ── COMPACT: info panel cubre la conversación (slide-in) ──── */}
+      {showInfoOverlay && (
+        <div className="absolute inset-0 z-10 bg-background">
+          <ChatInfoPanel chat={chat} onClose={() => closeInfo()} />
+        </div>
       )}
+
+      {/* ── WIDE: info panel como columna lateral ────────────────────────── */}
+      {showInfoSide && (
+        <div className="w-[260px] shrink-0">
+          <ChatInfoPanel chat={chat} onClose={() => closeInfo()} />
+        </div>
+      )}
+
+      <ReferencePickerModal
+        open={showRefPicker}
+        onClose={() => setShowRefPicker(false)}
+        onSelect={(tipo, id) => setReference({ tipo, id })}
+      />
     </div>
   );
 }

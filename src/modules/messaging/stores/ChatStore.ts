@@ -45,6 +45,14 @@ interface ChatState {
   // Chat activo (panel de mensajes abierto)
   activeChatId: number | null;
 
+  /**
+   * Chat directo pendiente de creación (lazy creation).
+   * Se establece al seleccionar un usuario en direct mode.
+   * El chat se crea en el backend SOLO cuando se envía el primer mensaje.
+   * Si el usuario sale sin enviar, se limpia sin llamar al backend.
+   */
+  pendingDirectChat: { userId: number; nombre: string } | null;
+
   // Mensajes en memoria por chatId (cargados al abrir el chat)
   messagesByChatId: Record<number, (Message | OptimisticMessage)[]>;
 
@@ -61,6 +69,9 @@ interface ChatActions {
   setChats: (chats: Chat[]) => void;
   setActiveChatId: (id: number | null) => void;
   upsertChat: (chat: Chat) => void;
+  setPendingDirectChat: (
+    pending: { userId: number; nombre: string } | null,
+  ) => void;
 
   // Mensajes
   setMessages: (
@@ -102,6 +113,7 @@ const initialState: ChatState = {
   chats: [],
   chatsLoaded: false,
   activeChatId: null,
+  pendingDirectChat: null,
   messagesByChatId: {},
   lastMessageTimestampByChatId: {},
 };
@@ -132,6 +144,15 @@ export const useChatStore = create<ChatState & ChatActions>()(
     setActiveChatId: (id) =>
       set((state) => {
         state.activeChatId = id;
+        // Al activar un chat real, limpiar cualquier pending
+        if (id !== null) state.pendingDirectChat = null;
+      }),
+
+    setPendingDirectChat: (pending) =>
+      set((state) => {
+        state.pendingDirectChat = pending;
+        // Al poner un pending, limpiar el chat activo real
+        if (pending !== null) state.activeChatId = null;
       }),
 
     upsertChat: (chat) =>
@@ -220,6 +241,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
             state.lastMessageTimestampByChatId[chatId] = message.fecha_reg;
 
             // Actualizar el preview en la lista de chats.
+            // Sin esto, la lista no refleja el último mensaje ni la hora.
             const chatIdx = state.chats.findIndex((c) => c.id === chatId);
             if (chatIdx >= 0) {
               state.chats[chatIdx].ultimo_mensaje = buildUltimoMensaje(message);

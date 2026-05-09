@@ -1,4 +1,4 @@
-import { X, ExternalLink, MessageCircle } from "lucide-react";
+import { X, ExternalLink, MessagesSquare } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
 import {
@@ -22,10 +22,10 @@ export function ChatSidePanel() {
     /* w-[360px] shrink-0 so it doesn't compress the main content */
     <div className="flex h-full w-[360px] shrink-0 flex-col border-l border-border/50 bg-background">
       {/* Header — always visible, never scrolls */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-muted/20 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2 h-16">
         <div className="flex items-center gap-2">
-          <MessageCircle className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold">Chat interno</span>
+          <MessagesSquare className="size-5 text-primary" />
+          <span className="text-sm font-semibold">Chat interno</span>
           {totalUnread > 0 && (
             <Badge className="h-4 min-w-4 border-0 bg-primary px-1 text-[10px] text-primary-foreground">
               {totalUnread}
@@ -38,10 +38,9 @@ export function ChatSidePanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
                 onClick={() => setViewMode("floating")}
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Ventana flotante</TooltipContent>
@@ -49,10 +48,10 @@ export function ChatSidePanel() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 hover:text-destructive"
+            className="hover:text-destructive"
             onClick={close}
           >
-            <X className="h-3 w-3" />
+            <X className="size-4" />
           </Button>
         </div>
       </div>
