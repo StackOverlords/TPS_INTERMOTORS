@@ -39,6 +39,7 @@ export function ChatFloatingWindow() {
     setFloatingSize,
   } = useChatUIStore();
 
+  const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const totalUnread = useChatStore(selectTotalUnread);
   const { isLoading: isLoadingChats } = useChats();
@@ -173,7 +174,7 @@ export function ChatFloatingWindow() {
           <MessagesSquare className="size-5 text-primary" />
           <span className="text-sm font-semibold">Chat interno</span>
           {totalUnread > 0 && (
-            <Badge className="h-4 min-w-4 border-0 bg-primary px-1 text-[10px] text-primary-foreground">
+            <Badge className="h-4 min-w-4 border-0 bg-primary px-1 text-[10px] text-primary-foreground items-center justify-center">
               {totalUnread}
             </Badge>
           )}
@@ -226,7 +227,7 @@ export function ChatFloatingWindow() {
               <ConversationList />
             </aside>
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              {activeChatId ? (
+              {activeChatId || pendingDirectChat ? (
                 <ChatConversation compact={false} showBackButton />
               ) : (
                 <EmptyConversationPlaceholder />
@@ -239,10 +240,10 @@ export function ChatFloatingWindow() {
            * comportamiento original — lista o conversación, nunca ambas.
            */
           <>
-            {!activeChatId ? (
-              <ConversationList />
-            ) : (
+            {activeChatId || pendingDirectChat ? (
               <ChatConversation showBackButton />
+            ) : (
+              <ConversationList />
             )}
           </>
         )}

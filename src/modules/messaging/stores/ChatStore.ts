@@ -331,3 +331,8 @@ export const selectTotalUnread = (state: ChatState) =>
 
 export const selectChatMessages = (chatId: number) => (state: ChatState) =>
   state.messagesByChatId[chatId] ?? [];
+
+export function messageExists(chatId: number, messageId: number): boolean {
+  const msgs = useChatStore.getState().messagesByChatId[chatId] ?? [];
+  return msgs.some((m) => !("_tempId" in m) && m.id === messageId);
+}

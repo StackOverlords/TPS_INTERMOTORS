@@ -15,6 +15,7 @@ export function useMarkAsRead() {
   return useMutation({
     mutationFn: (chatId: number) => chatService.markAsRead(chatId),
     onMutate: (chatId) => {
+      if (!chatId || chatId <= 0) return;
       // Actualización optimista inmediata
       resetUnread(chatId);
     },

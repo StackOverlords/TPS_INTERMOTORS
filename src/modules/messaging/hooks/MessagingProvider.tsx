@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import authSDK from "@/services/sdk-simple-auth";
 import { useChatStore } from "../stores/ChatStore";
 import { useChatUIStore } from "../stores/ChatUiStore";
+import { useDraftStore } from "../stores/DraftStore";
 
 interface MessagingProviderProps {
   children: ReactNode;
@@ -46,6 +47,8 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
   // ── Listener de red (online/offline) + init Tauri store ───────────────────
   useEffect(() => {
     const cleanup = initOfflineListener();
+    // Limpiar borradores expirados al montar (al inicio de sesión)
+    useDraftStore.getState().pruneExpired();
     return cleanup;
   }, []);
 
@@ -58,6 +61,7 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
         useChatStore.getState().reset();
         useChatUIStore.getState().close();
         useOfflineQueueStore.setState({ queue: [] });
+        useDraftStore.getState().clearAllDrafts();
         void queryClient.removeQueries({ queryKey: ["messaging"] });
         void queryClient.removeQueries({ queryKey: ["users-infinite"] });
       }

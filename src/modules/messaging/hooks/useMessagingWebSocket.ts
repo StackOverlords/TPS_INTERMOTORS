@@ -1,10 +1,20 @@
+/**
+ * Se encarga de:
+ *  1. Suscribir cada chat al canal privado `private-chat.{id}` via Laravel Echo/Reverb
+ *  2. Activar polling fallback cuando Echo se desconecta
+ *  3. Limpiar suscripciones al desmontar
+ *
+ * Se monta UNA SOLA VEZ en MessagingProvider, después de cargar los chats.
+ */
+
 import { websocketService } from "@/services/websocket.service";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Chat } from "../types/Chat.types";
-import { useChatStore } from "../stores/ChatStore";
+import { messageExists, useChatStore } from "../stores/ChatStore";
 import type { Message } from "../types/Message.types";
 import { messageService } from "../service/Message.service";
 import authSDK from "@/services/sdk-simple-auth";
+import { soundManager } from "../utils/soundManager";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
@@ -38,18 +48,28 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
     (chatId: number, message: Message) => {
       const { appendMessage, setLastMessageTimestamp, incrementUnread } =
         useChatStore.getState();
+
+      if (messageExists(chatId, message.id)) return;
       appendMessage(chatId, message);
       setLastMessageTimestamp(chatId, message.fecha_reg);
 
       const currentUserId = Number(authSDK.getCurrentUser()?.id);
       const isOwnMessage =
         !!currentUserId && message.remitente?.id === currentUserId;
+
+      if (!isOwnMessage) {
+        // Sonido de mensaje recibido — siempre que sea de otro usuario,
+        // independientemente de si el chat está abierto o no.
+        // El soundManager ya verifica si está muteado o la pestaña está oculta.
+        soundManager.play("received");
+      }
+
       if (useChatStore.getState().activeChatId !== chatId && !isOwnMessage) {
         incrementUnread(chatId);
       }
     },
     [],
-  ); // ✅ sin dependencias → nunca se recrea
+  ); // sin dependencias → nunca se recrea
 
   // ── Polling ────────────────────────────────────────────────────────────────
 
@@ -78,7 +98,7 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
       pollingTimers.current.set(chatId, timer);
     },
     [handleIncomingMessage],
-  ); // ✅ handleIncomingMessage ya es estable
+  );
 
   const stopPolling = useCallback((chatId: number) => {
     const timer = pollingTimers.current.get(chatId);

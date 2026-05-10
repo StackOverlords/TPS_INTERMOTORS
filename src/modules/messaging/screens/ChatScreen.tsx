@@ -22,6 +22,7 @@ import { ChatConversation } from "../components/ChatConversation";
 export default function ChatScreen() {
   const { isLoading } = useChats();
   const activeChatId = useChatStore((s) => s.activeChatId);
+  const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
 
   if (isLoading) {
     return (
@@ -45,7 +46,7 @@ export default function ChatScreen() {
       {/* ── Panel principal — ChatConversation ocupa el resto ─────────── */}
       {/* compact={false} → ChatInfoPanel aparecerá como columna lateral  */}
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {activeChatId ? (
+        {activeChatId || pendingDirectChat ? (
           <ChatConversation compact={false} showBackButton />
         ) : (
           <EmptyPanel />

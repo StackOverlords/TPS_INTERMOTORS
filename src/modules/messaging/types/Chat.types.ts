@@ -21,10 +21,18 @@ export interface MyParticipation {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ChatParticipant {
-  id: number;
-  nombre: string;
+  id: number;           // ID de la participación
+  chat_id: number;
   rol: ParticipantRole;
-  activo: boolean;
+  puede_escribir: boolean;
+  silenciado: boolean;
+  ultima_lectura: string | null;
+  fecha_ingreso: string;
+  usuario: {
+    id: number;
+    nombre: string;
+    activo?: boolean;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

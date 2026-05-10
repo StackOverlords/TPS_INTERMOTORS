@@ -46,6 +46,7 @@ export function useMessages(chatId: number) {
     },
     // Sin staleTime alto para que la primera visita al chat sea siempre fresca.
     // mergeMessages garantiza que al remontar no se pierde nada del store.
+    enabled: chatId > 0,
     staleTime: 0,
     refetchOnWindowFocus: false,
   });

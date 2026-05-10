@@ -11,6 +11,7 @@ import type {
 } from "../types/Message.types";
 import { chatService } from "../service/Chat.service";
 import { messageService } from "../service/Message.service";
+import { soundManager } from "../utils/soundManager";
 
 interface SendMessageContext {
   tempId: string;
@@ -80,6 +81,7 @@ export function useSendMessage(chatId: number) {
       try {
         const message = await messageService.send(chat.id, payload);
         replaceOptimistic(chat.id, tempId, message);
+        soundManager.play("sent"); // ← sonido al confirmar envío
         void qc.invalidateQueries({ queryKey: CHATS_QUERY_KEY });
       } catch {
         markFailed(chat.id, tempId);
@@ -136,6 +138,7 @@ export function useSendMessage(chatId: number) {
 
     onSuccess: (message, _payload, context) => {
       replaceOptimistic(chatId, context.tempId, message);
+      soundManager.play("sent"); // ← sonido al confirmar envío
     },
 
     onError: (error, payload, context) => {

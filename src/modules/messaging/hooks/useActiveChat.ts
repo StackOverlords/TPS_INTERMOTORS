@@ -1,6 +1,4 @@
 /**
- * useActiveChat.ts
- *
  * Hook compuesto para gestionar el chat activo.
  * Al "abrir" un chat:
  *  1. Establece el chat activo en el store
@@ -23,6 +21,7 @@ export function useOpenChat(chatId: number) {
   const allMessages = useChatMessages(chatId);
 
   useEffect(() => {
+    if (!chatId) return; // ← guard: no hacer nada para pending (chatId=0)
     setActiveChatId(chatId);
 
     // Marcar como leído al abrir

@@ -132,6 +132,7 @@ export function UserSelectorPanel({
   onNextGroup,
 }: Props) {
   const [search, setSearch] = useState("");
+  const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const setPendingDirectChat = useChatStore((s) => s.setPendingDirectChat);
   const currentUser = authSDK.getCurrentUser();
 
@@ -177,10 +178,19 @@ export function UserSelectorPanel({
 
   const handleUserClick = (user: User) => {
     if (mode === "direct") {
-      // Lazy creation: no llamamos al backend aún.
-      // Solo marcamos el chat como "pendiente" en el store.
-      // El chat se crea cuando el usuario envíe el primer mensaje.
-      setPendingDirectChat({ userId: user.id, nombre: user.empleado.nombre });
+      const chats = useChatStore.getState().chats;
+
+      const existingChat = chats.find(
+        (c) =>
+          c.tipo === "DIRECT" &&
+          c.participantes.some((p) => p.usuario.id === user.id)
+      );
+
+      if (existingChat) {
+        setActiveChatId(existingChat.id);
+      } else {
+        setPendingDirectChat({ userId: user.id, nombre: user.empleado.nombre });
+      }
       onSelectDirect();
     } else {
       onToggleUserFull(user);

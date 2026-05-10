@@ -42,6 +42,7 @@ import type {
   ReferenciaTipo,
 } from "../types/Message.types";
 import { DateSeparator } from "./DateSeparator";
+import { useDraftStore } from "../stores/DraftStore";
 
 function getInitials(nombre: string) {
   return nombre
@@ -199,6 +200,18 @@ export function ChatConversation({
   const inputRef = useRef<HTMLInputElement>(null);
   const isAtBottomRef = useRef(true);
 
+  const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
+  const setPendingDirectChat = useChatStore((s) => s.setPendingDirectChat);
+
+  // Draft — cargar al montar/cambiar de chat, guardar al escribir
+  const getDraft = useDraftStore((s) => s.getDraft);
+  const setDraft = useDraftStore((s) => s.setDraft);
+  const clearDraft = useDraftStore((s) => s.clearDraft);
+
+  // El "chatId efectivo" para drafts: si es pending usamos userId como key negativa
+  const draftKey =
+    chat?.id ?? (pendingDirectChat ? -pendingDirectChat.userId : null);
+
   const {
     messages,
     isLoadingMessages,
@@ -214,14 +227,27 @@ export function ChatConversation({
     if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
+  // Cargar borrador al cambiar de chat o al abrir un pending
   useEffect(() => {
     const el = scrollRef.current;
     if (el) setTimeout(() => (el.scrollTop = el.scrollHeight), 50);
     setReplyTo(null);
-    setInput("");
     setReference(null);
     closeInfo();
-  }, [chat?.id]);
+
+    const savedDraft = draftKey !== null ? getDraft(draftKey as number) : null;
+    setInput(savedDraft ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chat?.id, pendingDirectChat?.userId]);
+
+  // Guardar borrador con debounce al escribir
+  useEffect(() => {
+    if (draftKey === null) return;
+    const timer = setTimeout(() => {
+      setDraft(draftKey as number, input);
+    }, 500); // debounce 500ms para no escribir en cada keystroke
+    return () => clearTimeout(timer);
+  }, [input, draftKey, setDraft]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -234,7 +260,8 @@ export function ChatConversation({
 
   const handleSend = useCallback(() => {
     const content = input.trim();
-    if (!content || !chat) return;
+    if (!content) return;
+    if (!chat && !pendingDirectChat) return; // nada seleccionado
     send({
       contenido: content,
       referencia_tipo: reference?.tipo,
@@ -243,12 +270,13 @@ export function ChatConversation({
     setInput("");
     setReplyTo(null);
     setReference(null);
+    if (draftKey !== null) clearDraft(draftKey as number);
     inputRef.current?.focus();
     setTimeout(() => {
       if (scrollRef.current)
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, 50);
-  }, [input, chat, send, reference]);
+  }, [input, chat, pendingDirectChat, send, reference, draftKey, clearDraft]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -257,10 +285,14 @@ export function ChatConversation({
     }
   };
 
-  if (!chat) return <EmptyState />;
+  // Pending: mostrar vista de conversación vacía con nombre del usuario destino
+  const isPending = !chat && !!pendingDirectChat;
+  if (!chat && !pendingDirectChat) return <EmptyState />;
 
-  const isGroup = chat.tipo !== "DIRECT";
-  const canWrite = chat.mi_participacion.puede_escribir;
+  // Valores derivados del chat real O del pending
+  const chatNombre = chat?.nombre ?? pendingDirectChat?.nombre ?? "";
+  const isGroup = chat ? chat.tipo !== "DIRECT" : false;
+  const canWrite = chat ? chat.mi_participacion.puede_escribir : true; // pending = siempre puede escribir
 
   // ── Info panel shown in compact mode (covers conversation) ────────────────
   const showInfoOverlay = showInfo && isCompact;
@@ -284,7 +316,13 @@ export function ChatConversation({
               variant="ghost"
               size="icon"
               className="h-7 w-7 shrink-0"
-              onClick={() => setActiveChatId(null)}
+              onClick={() => {
+                if (isPending) {
+                  setPendingDirectChat(null);
+                } else {
+                  setActiveChatId(null);
+                }
+              }}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -301,34 +339,39 @@ export function ChatConversation({
               {isGroup ? (
                 <Users className="h-4 w-4" />
               ) : (
-                getInitials(chat.nombre)
+                getInitials(chatNombre)
               )}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{chat.nombre}</p>
+            <p className="truncate text-sm font-semibold">{chatNombre}</p>
             <p className="text-[10px] text-muted-foreground">
-              {isGroup
-                ? `${chat.participantes.length} participantes`
-                : chat.mi_participacion.rol}
+              {isPending
+                ? "Nuevo mensaje — escribe para iniciar la conversación"
+                : isGroup
+                  ? `${chat!.participantes.length} participantes`
+                  : chat!.tipo_label}
             </p>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-7 w-7 text-muted-foreground",
-                  showInfo && "bg-primary/10 text-primary"
-                )}
-                onClick={() => toggleInfo()}
-              >
-                <Info className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Info del chat</TooltipContent>
-          </Tooltip>
+          {/* Info button solo cuando hay chat real */}
+          {!isPending && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-7 w-7 text-muted-foreground",
+                    showInfo && "bg-primary/10 text-primary"
+                  )}
+                  onClick={() => toggleInfo()}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Info del chat</TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
         {/* Offline banner */}
@@ -387,7 +430,8 @@ export function ChatConversation({
                       message={msg}
                       prevSenderId={prev?.remitente?.id ?? null}
                       onReply={setReplyTo}
-                      isDirectChat={chat.tipo === "DIRECT"}
+                      isDirectChat={chat?.tipo === "DIRECT"}
+                      otherDate={showSeparator}
                     />
                   </div>
                 );
@@ -477,14 +521,14 @@ export function ChatConversation({
       {/* ── COMPACT: info panel cubre la conversación (slide-in) ──── */}
       {showInfoOverlay && (
         <div className="absolute inset-0 z-10 bg-background">
-          <ChatInfoPanel chat={chat} onClose={() => closeInfo()} />
+          <ChatInfoPanel chat={chat!} onClose={() => closeInfo()} />
         </div>
       )}
 
       {/* ── WIDE: info panel como columna lateral ────────────────────────── */}
       {showInfoSide && (
         <div className="w-[260px] shrink-0">
-          <ChatInfoPanel chat={chat} onClose={() => closeInfo()} />
+          <ChatInfoPanel chat={chat!} onClose={() => closeInfo()} />
         </div>
       )}
 

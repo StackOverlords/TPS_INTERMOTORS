@@ -26,6 +26,7 @@ import type { Message, OptimisticMessage } from "../types/Message.types";
 import authSDK from "@/services/sdk-simple-auth";
 import { getInitials } from "../mocks/ChatMockUsers";
 import { Button } from "@/components/atoms/button";
+import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REFERENCE BADGE — for business entity links
@@ -116,6 +117,7 @@ interface Props {
   onReply?: (msg: Message | OptimisticMessage) => void;
   onForward?: (msg: Message | OptimisticMessage) => void;
   isDirectChat?: boolean; // para ocultar el nombre del remitente en chats 1:1, si se desea
+  otherDate?: boolean;
 }
 
 export function MessageBubble({
@@ -124,6 +126,7 @@ export function MessageBubble({
   onReply,
   onForward,
   isDirectChat = false,
+  otherDate = false,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const currentUserId = authSDK.getCurrentUser()?.id;
@@ -138,7 +141,7 @@ export function MessageBubble({
   const senderName = message.remitente?.nombre ?? "Sistema";
   const senderInitials = getInitials(senderName);
   const showAvatar = !isMine && message.remitente?.id !== prevSenderId;
-  const isGrouped = !isMine && message.remitente?.id === prevSenderId;
+  const isGrouped = !otherDate && message.remitente?.id === prevSenderId;
 
   // System message
   if (message.es_sistema) {
@@ -164,11 +167,18 @@ export function MessageBubble({
       )}
     >
       {/* Avatar */}
-      <div className="w-7 shrink-0 flex items-end">
+      <div className="w-7 shrink-0 flex items-start">
         {showAvatar && !isDirectChat ? (
-          <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground select-none">
-            {senderInitials}
-          </div>
+          <Avatar className="size-7">
+            <AvatarFallback
+              className={cn(
+                "text-[10px] font-semibold",
+                "bg-muted text-muted-foreground"
+              )}
+            >
+              {senderInitials}
+            </AvatarFallback>
+          </Avatar>
         ) : null}
       </div>
 
@@ -235,10 +245,10 @@ export function MessageBubble({
           className={cn(
             "rounded-2xl px-3 py-2 text-sm break-words",
             isMine
-              ? "bg-primary text-primary-foreground rounded-br-sm"
-              : "bg-muted/60 text-foreground rounded-bl-sm",
-            isGrouped && !isMine && "rounded-tl-md",
-            isGrouped && isMine && "rounded-tr-md",
+              ? "bg-primary text-primary-foreground rounded-tr-xs"
+              : "bg-secondary text-foreground rounded-tl-xs",
+            isGrouped && !isMine && "rounded-tl-2xl",
+            isGrouped && isMine && "rounded-tr-2xl",
             status === "failed" && "opacity-60 ring-1 ring-destructive/40"
           )}
         >
@@ -264,7 +274,7 @@ export function MessageBubble({
             <span
               className={cn(
                 "text-[10px]",
-                isMine ? "text-primary-foreground/60" : "text-muted-foreground"
+                isMine ? "text-primary-foreground/80" : "text-muted-foreground"
               )}
             >
               {format(new Date(message.fecha_reg), "HH:mm", { locale: es })}

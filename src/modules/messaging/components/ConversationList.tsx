@@ -14,6 +14,7 @@ import {
   Wifi,
   WifiOff,
   LogOut,
+  CheckCheck,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Input } from "@/components/atoms/input";
@@ -41,6 +42,9 @@ import type { Chat } from "../types/Chat.types";
 import { useChatStore } from "../stores/ChatStore";
 import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
 import { useChatTimestamp } from "../hooks/useChatTimestamp";
+import { useDraftStore } from "../stores/DraftStore";
+import authSDK from "@/services/sdk-simple-auth";
+import { Badge } from "@/components/atoms/badge";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIEW STATE
@@ -60,10 +64,21 @@ function getInitials(nombre: string) {
     .join("");
 }
 
-function getLastMessagePreview(chat: Chat): string {
+function getLastMessagePreview(
+  chat: Chat,
+  isDirect: boolean,
+  isMine?: boolean
+): string {
   const msg = chat.ultimo_mensaje;
+
   if (!msg) return "";
-  const sender = msg.remitente ? `${msg.remitente.nombre.split(" ")[0]}: ` : "";
+  if (isDirect) return msg.contenido.slice(0, 60); // sin prefijo en chats directos
+
+  const sender = msg.remitente
+    ? isMine
+      ? "Tú: "
+      : `${msg.remitente.nombre.split(" ")[0]}: `
+    : "";
   return `${sender}${msg.contenido}`.slice(0, 60);
 }
 
@@ -75,6 +90,7 @@ interface ItemProps {
   chat: Chat;
   isActive: boolean;
   onClick: () => void;
+  currentUserId?: string | undefined;
 }
 
 function ChatTimestamp({ date }: { date: string }) {
@@ -86,16 +102,28 @@ function ChatTimestamp({ date }: { date: string }) {
   );
 }
 
-function ConversationItem({ chat, isActive, onClick }: ItemProps) {
+function ConversationItem({
+  chat,
+  isActive,
+  onClick,
+  currentUserId,
+}: ItemProps) {
   const isGroup = chat.tipo !== "DIRECT";
   const isDirect = chat.tipo === "DIRECT";
   const isSistema = chat.es_sistema;
   const myRole = chat.mi_participacion.rol;
-  const preview = getLastMessagePreview(chat);
   const lastTime = chat.ultimo_mensaje?.fecha_reg;
+  const isMine = chat.ultimo_mensaje?.remitente?.id === currentUserId;
 
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const leaveChat = useLeaveChat(chat.id);
+  const getDraft = useDraftStore((s) => s.getDraft);
+
+  // Borrador — mostrar "Borrador: texto..." si existe para este chat
+  const draft = getDraft(chat.id);
+  const preview = draft
+    ? null // se renderiza diferente abajo
+    : getLastMessagePreview(chat, isDirect, isMine);
 
   const handleLeave = () => {
     // Para chat directo y grupos (excepto OWNER y sistema)
@@ -152,13 +180,23 @@ function ConversationItem({ chat, isActive, onClick }: ItemProps) {
             {lastTime && <ChatTimestamp date={lastTime} />}
           </div>
           <div className="mt-0.5 flex items-center justify-between gap-2">
-            <p className="truncate text-[11px] text-muted-foreground">
-              {preview || "\u00A0"}
-            </p>
+            {draft ? (
+              <p className="truncate text-[11px]">
+                <span className="font-semibold text-amber-500">Borrador:</span>
+                <span className="ml-1 text-muted-foreground">{draft}</span>
+              </p>
+            ) : (
+              <p className="truncate text-[11px] text-muted-foreground">
+                {isMine && (
+                  <CheckCheck className="mr-1 inline size-3 text-blue-500" />
+                )}
+                {preview || "\u00A0"}
+              </p>
+            )}
             {chat.no_leidos > 0 && (
-              <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+              <Badge className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[10px]">
                 {chat.no_leidos > 99 ? "99+" : chat.no_leidos}
-              </span>
+              </Badge>
             )}
           </div>
         </div>
@@ -212,6 +250,7 @@ export function ConversationList({
 }: {
   onChatSelected?: () => void;
 }) {
+  const currentUserId = authSDK.getCurrentUser()?.id;
   const chats = useChatList();
   const activeChatId = useChatStore((s) => s.activeChatId);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
@@ -413,6 +452,7 @@ export function ConversationList({
                 setActiveChatId(chat.id);
                 onChatSelected?.();
               }}
+              currentUserId={currentUserId}
             />
           ))
         )}

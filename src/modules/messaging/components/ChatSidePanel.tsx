@@ -14,6 +14,7 @@ import { selectTotalUnread, useChatStore } from "../stores/ChatStore";
 export function ChatSidePanel() {
   const { isOpen, viewMode, close, setViewMode } = useChatUIStore();
   const activeChatId = useChatStore((s) => s.activeChatId);
+  const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
   const totalUnread = useChatStore(selectTotalUnread);
 
   if (!isOpen || viewMode !== "side") return null;
@@ -27,7 +28,7 @@ export function ChatSidePanel() {
           <MessagesSquare className="size-5 text-primary" />
           <span className="text-sm font-semibold">Chat interno</span>
           {totalUnread > 0 && (
-            <Badge className="h-4 min-w-4 border-0 bg-primary px-1 text-[10px] text-primary-foreground">
+            <Badge className="h-4 min-w-4 border-0 bg-primary px-1 text-[10px] text-primary-foreground justify-center items-center">
               {totalUnread}
             </Badge>
           )}
@@ -58,10 +59,10 @@ export function ChatSidePanel() {
 
       {/* Body — flex-1, overflow handled internally by each sub-component */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        {!activeChatId ? (
-          <ConversationList />
-        ) : (
+        {activeChatId || pendingDirectChat ? (
           <ChatConversation showBackButton />
+        ) : (
+          <ConversationList />
         )}
       </div>
     </div>

@@ -1,21 +1,29 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIMITIVES
 // ─────────────────────────────────────────────────────────────────────────────
 
-const myParticipationSchema = z.object({
-  rol: z.enum(['OWNER', 'ADMIN', 'MEMBER']),
-  puede_escribir: z.boolean(),
-  silenciado: z.boolean(),
-  ultima_lectura: z.string(),
-});
-
 const chatParticipantSchema = z.object({
   id: z.number(),
-  nombre: z.string(),
-  rol: z.enum(['OWNER', 'ADMIN', 'MEMBER']),
-  activo: z.boolean(),
+  chat_id: z.number(),
+  rol: z.enum(["OWNER", "ADMIN", "MEMBER"]),
+  puede_escribir: z.boolean(),
+  silenciado: z.boolean(),
+  ultima_lectura: z.string().nullable(),
+  fecha_ingreso: z.string(),
+  usuario: z.object({
+    id: z.number(),
+    nombre: z.string(),
+    activo: z.boolean().optional(),
+  }),
+});
+
+const myParticipationSchema = z.object({
+  rol: z.enum(["OWNER", "ADMIN", "MEMBER"]),
+  puede_escribir: z.boolean(),
+  silenciado: z.boolean(),
+  ultima_lectura: z.string().nullable(),
 });
 
 const lastMessagePreviewSchema = z.object({
@@ -34,9 +42,12 @@ const lastMessagePreviewSchema = z.object({
 
 export const chatSchema = z.object({
   id: z.number(),
-  tipo: z.enum(['DIRECT', 'GROUP', 'CHANNEL']),
+  tipo: z.enum(["DIRECT", "GROUP", "CHANNEL"]),
   tipo_label: z.string(),
-  nombre: z.string(),
+  nombre: z
+    .string()
+    .nullable()
+    .transform((v) => v ?? ""),
   descripcion: z.string().nullable(),
   es_sistema: z.boolean(),
   mi_participacion: myParticipationSchema,
@@ -63,19 +74,17 @@ export const chatsGetAllResponseSchema = z.object({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const createDirectChatSchema = z.object({
-  usuario_id: z.number({ required_error: 'El usuario es requerido' }),
+  usuario_id: z.number({ required_error: "El usuario es requerido" }),
 });
 
 export const createGroupSchema = z.object({
   nombre: z
-    .string({ required_error: 'El nombre es requerido' })
-    .min(2, 'Mínimo 2 caracteres')
-    .max(100, 'Máximo 100 caracteres'),
+    .string({ required_error: "El nombre es requerido" })
+    .min(2, "Mínimo 2 caracteres")
+    .max(100, "Máximo 100 caracteres"),
   descripcion: z.string().max(255).optional(),
-  sucursal: z.number({ required_error: 'La sucursal es requerida' }),
-  participantes: z
-    .array(z.number())
-    .min(1, 'Agrega al menos un participante'),
+  sucursal: z.number({ required_error: "La sucursal es requerida" }),
+  participantes: z.array(z.number()).min(1, "Agrega al menos un participante"),
 });
 
 export type CreateGroupFormValues = z.infer<typeof createGroupSchema>;
