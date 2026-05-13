@@ -7,7 +7,6 @@
 import {
   Search,
   Plus,
-  Users,
   BellOff,
   MoreHorizontal,
   MessageCircle,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Input } from "@/components/atoms/input";
-import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { Button } from "@/components/atoms/button";
 import {
   Tooltip,
@@ -45,6 +43,8 @@ import { useChatTimestamp } from "../hooks/useChatTimestamp";
 import { useDraftStore } from "../stores/DraftStore";
 import authSDK from "@/services/sdk-simple-auth";
 import { Badge } from "@/components/atoms/badge";
+import { getFilePreviewByName } from "../utils/filePreview";
+import { ConversationAvatar } from "./ConversationAvatar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIEW STATE
@@ -56,12 +56,17 @@ type PanelView = "list" | "select-user" | "select-group" | "setup-group";
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getInitials(nombre: string) {
-  return nombre
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
+// Devuelve { icon, label } para mensajes de archivo/imagen, o null para texto normal
+function getFilePreview(msg: Chat["ultimo_mensaje"]): {
+  icon: React.ReactNode;
+  label: string;
+} | null {
+  if (!msg) return null;
+
+  if (msg.tipo === "IMAGE" || msg.tipo === "FILE") {
+    return getFilePreviewByName(msg.contenido);
+  }
+  return null;
 }
 
 function getLastMessagePreview(
@@ -121,6 +126,8 @@ function ConversationItem({
 
   // Borrador — mostrar "Borrador: texto..." si existe para este chat
   const draft = getDraft(chat.id);
+
+  const msg = chat.ultimo_mensaje;
   const preview = draft
     ? null // se renderiza diferente abajo
     : getLastMessagePreview(chat, isDirect, isMine);
@@ -134,6 +141,12 @@ function ConversationItem({
   // Puede salir: directo siempre, grupo si no es OWNER ni sistema
   const canLeave = isDirect || (!isSistema && myRole !== "OWNER");
 
+  const otherParticipantId = !isGroup
+    ? chat?.participantes.find(
+        (p) => p.usuario?.id.toString() !== currentUserId
+      )?.usuario?.id
+    : undefined;
+
   return (
     <div className="group relative">
       <button
@@ -144,22 +157,14 @@ function ConversationItem({
         )}
       >
         <div className="relative shrink-0">
-          <Avatar className="h-11 w-11">
-            <AvatarFallback
-              className={cn(
-                "text-xs font-semibold",
-                isGroup
-                  ? "bg-primary/10 text-primary"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              {isGroup ? (
-                <Users className="h-5 w-5" />
-              ) : (
-                getInitials(chat.nombre)
-              )}
-            </AvatarFallback>
-          </Avatar>
+          <ConversationAvatar
+            userId={otherParticipantId}
+            name={chat.nombre ?? "Usuario desconocido"}
+            isGroup={isGroup}
+            className="size-11"
+            fallbackClassName="text-sm"
+            iconClassName="size-5"
+          />
           {isSistema && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-background bg-primary">
               <MessageCircle className="h-2 w-2 text-primary-foreground" />
@@ -186,12 +191,36 @@ function ConversationItem({
                 <span className="ml-1 text-muted-foreground">{draft}</span>
               </p>
             ) : (
-              <p className="truncate text-[11px] text-muted-foreground">
-                {isMine && (
-                  <CheckCheck className="mr-1 inline size-3 text-blue-500" />
-                )}
-                {preview || "\u00A0"}
-              </p>
+              (() => {
+                const filePrev = getFilePreview(chat.ultimo_mensaje);
+                if (filePrev) {
+                  return (
+                    <p className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+                      {isMine && (
+                        <CheckCheck className="mr-0.5 inline size-3 shrink-0 text-blue-500" />
+                      )}
+                      {!isDirect && isMine && (
+                        <span className="shrink-0">Tú:</span>
+                      )}
+                      {!isDirect && !isMine && msg?.remitente && (
+                        <span className="shrink-0">
+                          {msg.remitente.nombre.split(" ")[0]}:
+                        </span>
+                      )}
+                      {filePrev.icon}
+                      <span>{filePrev.label}</span>
+                    </p>
+                  );
+                }
+                return (
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {isMine && (
+                      <CheckCheck className="mr-1 inline size-3 text-blue-500" />
+                    )}
+                    {preview || "\u00A0"}
+                  </p>
+                );
+              })()
             )}
             {chat.no_leidos > 0 && (
               <Badge className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[10px]">

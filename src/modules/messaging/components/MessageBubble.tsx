@@ -24,9 +24,10 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import type { Message, OptimisticMessage } from "../types/Message.types";
 import authSDK from "@/services/sdk-simple-auth";
-import { getInitials } from "../mocks/ChatMockUsers";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
+import { AttachmentMessage } from "./AttachmentMessage";
+import { getInitials } from "../utils/chatUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REFERENCE BADGE — for business entity links
@@ -244,6 +245,11 @@ export function MessageBubble({
         <div
           className={cn(
             "rounded-2xl px-3 py-2 text-sm break-words",
+            // Imágenes: sin fondo ni padding (la imagen ocupa todo el bubble)
+            message.tipo === "FILE" &&
+              message.adjuntos?.[0]?.es_imagen &&
+              "overflow-hidden",
+            message.tipo === "FILE" ? "px-1.5 pt-0.5 pb-1" : "px-3 py-1",
             isMine
               ? "bg-primary text-primary-foreground rounded-tr-xs"
               : "bg-secondary text-foreground rounded-tl-xs",
@@ -252,9 +258,34 @@ export function MessageBubble({
             status === "failed" && "opacity-60 ring-1 ring-destructive/40"
           )}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message.contenido}
-          </p>
+          {/* Adjuntos (FILE / IMAGE tipo) */}
+          {message.tipo === "FILE" &&
+          message.adjuntos &&
+          message.adjuntos.length > 0 ? (
+            <>
+              <AttachmentMessage
+                adjuntos={message.adjuntos}
+                optimistic={
+                  isOptimistic ? (message as OptimisticMessage) : undefined
+                }
+                isMine={isMine}
+              />
+              {/* Caption si viene junto al archivo */}
+              {message.contenido && (
+                <p
+                  className={cn(
+                    "text-sm leading-relaxed whitespace-pre-wrap px-1.5"
+                  )}
+                >
+                  {message.contenido}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {message.contenido}
+            </p>
+          )}
 
           {/* Reference badge */}
           {message.referencia_tipo && message.referencia_id && (
@@ -265,12 +296,7 @@ export function MessageBubble({
           )}
 
           {/* Timestamp + status */}
-          <div
-            className={cn(
-              "flex items-center gap-1",
-              isMine ? "justify-end" : "justify-start"
-            )}
-          >
+          <div className={cn("flex items-center gap-1 justify-end")}>
             <span
               className={cn(
                 "text-[10px]",

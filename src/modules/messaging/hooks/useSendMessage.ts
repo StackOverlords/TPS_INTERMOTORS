@@ -66,13 +66,16 @@ export function useSendMessage(chatId: number) {
         id: -Date.now(),
         chat_id: chat.id,
         tipo: "TEXT",
+        tipo_label: "Texto",
         contenido: payload.contenido,
         referencia_tipo: payload.referencia_tipo ?? null,
         referencia_id: payload.referencia_id ?? null,
         remitente: null,
         es_sistema: false,
         editado: false,
+        fecha_editado: null,
         fecha_reg: new Date().toISOString(),
+        adjuntos: [],
         _tempId: tempId,
         _status: "sending",
       };
@@ -117,6 +120,7 @@ export function useSendMessage(chatId: number) {
         id: -Date.now(), // ID temporal negativo para no colisionar
         chat_id: chatId,
         tipo: "TEXT",
+        tipo_label: "Texto",
         contenido: payload.contenido,
         referencia_tipo: payload.referencia_tipo ?? null,
         referencia_id: payload.referencia_id ?? null,
@@ -124,6 +128,8 @@ export function useSendMessage(chatId: number) {
         es_sistema: false,
         editado: false,
         fecha_reg: now,
+        fecha_editado: null,
+        adjuntos: [],
         _tempId: tempId,
         _status: "sending",
       };

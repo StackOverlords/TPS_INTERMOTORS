@@ -60,7 +60,6 @@ export const soundManager = {
     if (document.visibilityState === "hidden") return;
 
     const audio = sounds[type];
-    console.debug(`[SoundManager] Playing sound: ${type}`, audio);
     // Reiniciar posición para permitir sonidos rápidos consecutivos
     audio.currentTime = 0;
     audio.play().catch(() => {

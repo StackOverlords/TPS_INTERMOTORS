@@ -18,14 +18,7 @@ import { useAddParticipant, useParticipants } from "../hooks/useParticipants";
 import { useUsersInfinite } from "../hooks/useUsersInfinite";
 import authSDK from "@/services/sdk-simple-auth";
 import type { User } from "@/modules/users/types/User";
-
-function getInitials(nombre: string) {
-  return nombre
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
+import { getInitials } from "../utils/chatUtils";
 
 interface Props {
   chatId: number;

@@ -1,4 +1,19 @@
-import { z } from 'zod';
+import { z } from "zod";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ATTACHMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const attachmentSchema = z.object({
+  id: z.number(),
+  nombre_original: z.string(),
+  tipo_mime: z.string(),
+  extension: z.string(),
+  tamanio: z.number(),
+  es_imagen: z.boolean(),
+  url: z.string(),
+  url_thumbnail: z.string().nullable(),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MESSAGE
@@ -12,14 +27,20 @@ export const messageSenderSchema = z.object({
 export const messageSchema = z.object({
   id: z.number(),
   chat_id: z.number(),
-  tipo: z.enum(['TEXT', 'IMAGE', 'FILE', 'SYSTEM']),
+  tipo: z.enum(["TEXT", "IMAGE", "FILE", "SYSTEM"]),
+  tipo_label: z.string().nullable(),
   contenido: z.string(),
   referencia_tipo: z.string().nullable(),
   referencia_id: z.number().nullable(),
   remitente: messageSenderSchema.nullable(),
   es_sistema: z.boolean(),
-  editado: z.boolean(),
+  editado: z
+    .boolean()
+    .nullable()
+    .transform((v) => v ?? false),
+  fecha_editado: z.string().nullable(),
   fecha_reg: z.string(),
+  adjuntos: z.array(attachmentSchema).optional().default([]),
 });
 
 export const messagesGetAllResponseSchema = z.object({
@@ -43,9 +64,9 @@ export const pollResponseSchema = z.object({
 
 export const sendMessageSchema = z.object({
   contenido: z
-    .string({ required_error: 'El mensaje no puede estar vacío' })
-    .min(1, 'El mensaje no puede estar vacío')
-    .max(5000, 'Máximo 5000 caracteres'),
+    .string({ required_error: "El mensaje no puede estar vacío" })
+    .min(1, "El mensaje no puede estar vacío")
+    .max(10000, "Máximo 10000 caracteres"),
   referencia_tipo: z.string().optional(),
   referencia_id: z.number().optional(),
 });

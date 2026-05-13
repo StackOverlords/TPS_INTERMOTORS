@@ -23,6 +23,7 @@ import { useUsersInfinite } from "../hooks/useUsersInfinite";
 import authSDK from "@/services/sdk-simple-auth";
 import type { User } from "@/modules/users/types/User";
 import { useChatStore } from "../stores/ChatStore";
+import { getInitials } from "../utils/chatUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -38,18 +39,6 @@ interface Props {
   onToggleUser: (id: number) => void; // id-only (fallback)
   onToggleUserFull: (user: User) => void; // full User object (needed for GroupSetupPanel)
   onNextGroup: () => void; // go to GroupSetupPanel or switch to group mode
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
-function getInitials(nombre: string) {
-  return nombre
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

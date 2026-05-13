@@ -2,8 +2,10 @@
 // ENUMS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type ChatType = 'DIRECT' | 'GROUP' | 'CHANNEL';
-export type ParticipantRole = 'OWNER' | 'ADMIN' | 'MEMBER';
+import type { MessageType } from "./Message.types";
+
+export type ChatType = "DIRECT" | "GROUP" | "CHANNEL";
+export type ParticipantRole = "OWNER" | "ADMIN" | "MEMBER";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PARTICIPATION
@@ -21,7 +23,7 @@ export interface MyParticipation {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ChatParticipant {
-  id: number;           // ID de la participación
+  id: number; // ID de la participación
   chat_id: number;
   rol: ParticipantRole;
   puede_escribir: boolean;
@@ -42,6 +44,13 @@ export interface ChatParticipant {
 export interface LastMessagePreview {
   id: number;
   contenido: string;
+  tipo?: MessageType;
+  tipo_label?: string | null;
+  referencia_tipo: string | null;
+  referencia_id: number | null;
+  es_sistema: boolean;
+  editado: boolean;
+  fecha_editado: string | null;
   remitente?: { id: number; nombre: string } | null;
   fecha_reg: string;
 }

@@ -17,6 +17,11 @@ function buildUltimoMensaje(message: Message): Chat["ultimo_mensaje"] {
     contenido: message.contenido,
     remitente: message.remitente,
     fecha_reg: message.fecha_reg,
+    referencia_tipo: message.referencia_tipo,
+    referencia_id: message.referencia_id,
+    es_sistema: message.es_sistema,
+    editado: message.editado,
+    fecha_editado: message.fecha_editado,
   };
 }
 
@@ -93,6 +98,11 @@ interface ChatActions {
     message: Message,
   ) => void;
   markOptimisticAsFailed: (chatId: number, tempId: string) => void;
+  updateOptimisticProgress: (
+    chatId: number,
+    tempId: string,
+    progress: number,
+  ) => void;
 
   // Unread badges
   incrementUnread: (chatId: number) => void;
@@ -283,6 +293,19 @@ export const useChatStore = create<ChatState & ChatActions>()(
         ) as OptimisticMessage | undefined;
         if (msg) {
           msg._status = "failed";
+        }
+      }),
+
+    updateOptimisticProgress: (chatId, tempId, progress) =>
+      set((state) => {
+        const msgs = state.messagesByChatId[chatId];
+        if (!msgs) return;
+        const msg = msgs.find(
+          (m) => "_tempId" in m && (m as OptimisticMessage)._tempId === tempId,
+        ) as OptimisticMessage | undefined;
+        if (msg) {
+          msg._progress = progress;
+          msg._status = "uploading";
         }
       }),
 

@@ -15,14 +15,7 @@ import { cn } from "@/lib/utils";
 import { useCreateGroup } from "../hooks/useCreateChat";
 import type { User } from "@/modules/users/types/User";
 import { useBranchStore } from "@/states/branchStore";
-
-function getInitials(nombre: string) {
-  return nombre
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
+import { getInitials } from "../utils/chatUtils";
 
 interface Props {
   selectedUsers: User[];

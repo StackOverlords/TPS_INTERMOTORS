@@ -29,6 +29,16 @@ const myParticipationSchema = z.object({
 const lastMessagePreviewSchema = z.object({
   id: z.number(),
   contenido: z.string(),
+  tipo: z.enum(["TEXT", "IMAGE", "FILE", "SYSTEM"]).optional(),
+  tipo_label: z.string().nullable(),
+  referencia_tipo: z.string().nullable(),
+  referencia_id: z.number().nullable(),
+  es_sistema: z.boolean(),
+  editado: z
+    .boolean()
+    .nullable()
+    .transform((v) => v ?? false),
+  fecha_editado: z.string().nullable(),
   remitente: z
     .object({ id: z.number(), nombre: z.string() })
     .nullable()

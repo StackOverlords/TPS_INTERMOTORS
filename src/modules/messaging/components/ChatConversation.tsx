@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
-import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -43,14 +42,12 @@ import type {
 } from "../types/Message.types";
 import { DateSeparator } from "./DateSeparator";
 import { useDraftStore } from "../stores/DraftStore";
-
-function getInitials(nombre: string) {
-  return nombre
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
+import { useSendAttachment } from "../hooks/useSendAttachment";
+import { FilePickerButton } from "./FilePickerButton";
+import { isImageMime, validateAttachment } from "../types/Attachment.types";
+import { AttachmentComposer } from "./AttachmentComposer";
+import { ConversationAvatar } from "./ConversationAvatar";
+import authSDK from "@/services/sdk-simple-auth";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
@@ -151,6 +148,7 @@ export function ChatConversation({
   infoActive: infoActiveProp,
   onToggleInfo: onToggleInfoProp,
 }: Props) {
+  const currentUserId = authSDK.getCurrentUser()?.id;
   const chat = useChatStore(selectActiveChat);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const isOnline = useOfflineQueueStore((s) => s.isOnline);
@@ -221,20 +219,87 @@ export function ChatConversation({
   } = useOpenChat(chat?.id ?? 0);
 
   const { send, isPending: isSending } = useSendMessage(chat?.id ?? 0);
+  const { send: sendAttachment } = useSendAttachment(chat?.id ?? 0);
+
+  // ── Pending file state (archivo seleccionado pero aún no enviado) ──────────
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(
+    null
+  );
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [isUploadingSending, setIsUploadingSending] = useState(false);
+
+  // Limpiar objectURL al cancelar o al desmontar
+  const clearPendingFile = useCallback(() => {
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingFile(null);
+    setPendingPreviewUrl(null);
+    setAttachError(null);
+    setIsUploadingSending(false);
+  }, [pendingPreviewUrl]);
+
+  // Cleanup objectURL al desmontar el componente
+  useEffect(
+    () => () => {
+      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    },
+    [pendingPreviewUrl]
+  );
+
+  const handleFileSelected = (file: File) => {
+    const validation = validateAttachment(file);
+    // Crear preview solo para imágenes válidas
+    const previewUrl = isImageMime(file.type)
+      ? URL.createObjectURL(file)
+      : null;
+    setPendingFile(file);
+    setPendingPreviewUrl(previewUrl);
+    // Si es inválido mostramos el error dentro del composer, no lo bloqueamos aquí
+    setAttachError(validation.valid ? null : validation.error);
+    setIsUploadingSending(false);
+  };
+
+  const handleAttachmentSend = async (caption: string) => {
+    if (!pendingFile) return;
+    setIsUploadingSending(true);
+    setAttachError(null);
+    try {
+      await sendAttachment({ file: pendingFile, caption });
+      clearPendingFile(); // éxito — limpiar todo
+    } catch (err) {
+      setAttachError((err as Error).message ?? "Error al subir el archivo");
+      setIsUploadingSending(false); // mantener el composer visible con el error
+    }
+  };
+
+  const prevLoadingRef = useRef(false);
 
   useEffect(() => {
+    // Detectar cuando termina la carga (true → false)
+    if (prevLoadingRef.current && !isLoadingMessages) {
+      // requestAnimationFrame garantiza que el DOM ya pintó los mensajes
+      requestAnimationFrame(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+      // const el = scrollRef.current;
+      // if (el) el.scrollTop = el.scrollHeight;
+    }
+    prevLoadingRef.current = isLoadingMessages;
+  }, [isLoadingMessages]);
+
+  useEffect(() => {
+    if (isLoadingMessages) return; // evitar durante carga inicial
     const el = scrollRef.current;
     if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+  }, [messages.length, isLoadingMessages]);
 
   // Cargar borrador al cambiar de chat o al abrir un pending
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) setTimeout(() => (el.scrollTop = el.scrollHeight), 50);
     setReplyTo(null);
     setReference(null);
     closeInfo();
-
+    isAtBottomRef.current = true; // resetear para que el nuevo chat arranque abajo
     const savedDraft = draftKey !== null ? getDraft(draftKey as number) : null;
     setInput(savedDraft ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -300,6 +365,12 @@ export function ChatConversation({
   // ── Info panel shown in wide mode (side column) ───────────────────────────
   const showInfoSide = showInfo && !isCompact;
 
+  const otherParticipantId = !isGroup
+    ? chat?.participantes.find(
+        (p) => p.usuario?.id.toString() !== currentUserId
+      )?.usuario?.id
+    : undefined;
+
   return (
     <div ref={containerRef} className="flex h-full relative">
       {/* ── Main column ──────────────────────────────────────────────────── */}
@@ -327,22 +398,15 @@ export function ChatConversation({
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          <Avatar className="h-9 w-9 shrink-0">
-            <AvatarFallback
-              className={cn(
-                "text-xs font-semibold",
-                isGroup
-                  ? "bg-primary/10 text-primary"
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              {isGroup ? (
-                <Users className="h-4 w-4" />
-              ) : (
-                getInitials(chatNombre)
-              )}
-            </AvatarFallback>
-          </Avatar>
+
+          <ConversationAvatar
+            userId={otherParticipantId}
+            name={chatNombre}
+            isGroup={isGroup}
+            className="size-9"
+            fallbackClassName="text-xs"
+            iconClassName="size-4"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{chatNombre}</p>
             <p className="text-[10px] text-muted-foreground">
@@ -354,7 +418,7 @@ export function ChatConversation({
             </p>
           </div>
           {/* Info button solo cuando hay chat real */}
-          {!isPending && (
+          {!isPending && isGroup && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -369,7 +433,7 @@ export function ChatConversation({
                   <Info className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Info del chat</TooltipContent>
+              <TooltipContent side="bottom">Info. del chat</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -446,7 +510,7 @@ export function ChatConversation({
         )}
 
         {/* Reference preview */}
-        {reference && (
+        {reference && !pendingFile && (
           <div className="shrink-0 border-t border-border/30 bg-background px-3 pt-2">
             <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5">
               <Link className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -466,54 +530,79 @@ export function ChatConversation({
         {/* Input */}
         <div className="shrink-0 border-t border-border/40 bg-background p-3">
           {canWrite ? (
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-9 w-9 shrink-0 rounded-xl text-muted-foreground",
-                      reference && "bg-primary/10 text-primary"
-                    )}
-                    onClick={() => setShowRefPicker(true)}
-                    disabled={isSending}
-                  >
-                    <Link className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  {reference
-                    ? `Referencia: ${reference.tipo} #${reference.id}`
-                    : "Vincular documento"}
-                </TooltipContent>
-              </Tooltip>
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Escribe un mensaje..."
-                className="h-9 rounded-xl border-border/30 bg-muted/20 px-4 text-sm focus-visible:ring-1"
-                disabled={isSending}
+            pendingFile ? (
+              /* ── AttachmentComposer: reemplaza el input cuando hay archivo ── */
+              <AttachmentComposer
+                file={pendingFile}
+                previewUrl={pendingPreviewUrl}
+                isSending={isUploadingSending}
+                error={attachError}
+                onSend={handleAttachmentSend}
+                onCancel={clearPendingFile}
               />
-              <Button
-                size="icon"
-                className="h-9 w-9 shrink-0 rounded-xl"
-                disabled={!input.trim() || isSending}
-                onClick={handleSend}
-              >
-                {isSending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            ) : (
+              /* ── Input normal ─────────────────────────────────────────────── */
+              <div className="shrink-0 bg-background">
+                <div className="flex items-center gap-2">
+                  {/* Adjuntar archivo */}
+                  <FilePickerButton
+                    disabled={isSending}
+                    onFileSelected={handleFileSelected}
+                  />
+
+                  {/* Vincular documento */}
+                  {/* <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-9 w-9 shrink-0 rounded-xl text-muted-foreground",
+                          reference && "bg-primary/10 text-primary"
+                        )}
+                        onClick={() => setShowRefPicker(true)}
+                        disabled={isSending}
+                      >
+                        <Link className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {reference
+                        ? `Referencia: ${reference.tipo} #${reference.id}`
+                        : "Vincular documento"}
+                    </TooltipContent>
+                  </Tooltip> */}
+
+                  <Input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Escribe un mensaje..."
+                    className="h-9 rounded-xl border-border/30 bg-muted/20 px-4 text-sm focus-visible:ring-1"
+                    disabled={isSending}
+                  />
+                  <Button
+                    size="icon"
+                    className="h-9 w-9 shrink-0 rounded-xl"
+                    disabled={!input.trim() || isSending}
+                    onClick={handleSend}
+                  >
+                    {isSending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )
           ) : (
-            <p className="text-center text-[11px] text-muted-foreground">
-              No tienes permiso para enviar mensajes en este chat
-            </p>
+            <div className="shrink-0 border-t border-border/40 bg-background p-3">
+              <p className="text-center text-[11px] text-muted-foreground">
+                No tienes permiso para enviar mensajes en este chat
+              </p>
+            </div>
           )}
         </div>
       </div>
