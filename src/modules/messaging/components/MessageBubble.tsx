@@ -1,4 +1,11 @@
-import { format } from "date-fns";
+/**
+ *  - Badge "editado" cuando editado === true
+ *  - Botones contextual: Editar (solo propio TEXT < 24h) / Eliminar para todos / Eliminar para mí
+ *  - Moderar (OWNER/ADMIN pueden eliminar cualquier mensaje para todos)
+ *  - Estado visual cuando eliminado === true (placeholder)
+ *  - Props nuevas: onEdit, onDeleteForAll, onDeleteForMe, canModerate
+ */
+import { format, differenceInHours } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   Check,
@@ -12,6 +19,7 @@ import {
   ArrowRightLeft,
   ExternalLink,
   Ellipsis,
+  Pencil,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -30,10 +38,9 @@ import { AttachmentMessage } from "./AttachmentMessage";
 import { getInitials } from "../utils/chatUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REFERENCE BADGE — for business entity links
+// REFERENCE BADGE
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ⚠️ RUTAS: ajusta estos paths a los de tu router
 const REFERENCE_ROUTES: Record<string, (id: number) => string> = {
   sale: (id) => `/dashboard/sales/${id}`,
   purchase: (id) => `/dashboard/purchases/${id}`,
@@ -60,16 +67,9 @@ function ReferenceBadge({ tipo, id }: { tipo: string; id: number }) {
 
   const route = REFERENCE_ROUTES[tipo]?.(id);
 
-  const handleClick = () => {
-    if (!route) return;
-    // Navega usando el router de la app — abre en la tab system si usas TabStore
-    // ⚠️ Si usas useNavigate de react-router, reemplaza window.location por navigate(route)
-    window.location.href = route;
-  };
-
   return (
     <button
-      onClick={route ? handleClick : undefined}
+      onClick={() => route && (window.location.href = route)}
       disabled={!route}
       className={cn(
         "mt-1.5 flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-left transition-colors",
@@ -89,7 +89,7 @@ function ReferenceBadge({ tipo, id }: { tipo: string; id: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STATUS ICON for optimistic messages
+// STATUS ICON
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MessageStatus({
@@ -108,7 +108,37 @@ function MessageStatus({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
+// HELPERS — restricciones de edición y eliminación
+// ─────────────────────────────────────────────────────────────────────────────
+
+function canEditMessage(message: Message, myId: string | undefined): boolean {
+  if (!myId) return false;
+  if (String(message.remitente?.id) !== String(myId)) return false;
+  if (message.tipo !== "TEXT") return false;
+  if (message.es_sistema) return false;
+  // Solo dentro de las primeras 24 horas
+  return differenceInHours(new Date(), new Date(message.fecha_reg)) < 24;
+}
+
+function canDeleteForAll(
+  message: Message,
+  myId: string | undefined,
+  canModerate: boolean,
+  isDirectChat: boolean
+): boolean {
+  if (message.es_sistema) return false;
+  // En chat directo nunca se puede borrar el mensaje del otro para ambos
+  if (isDirectChat && String(message.remitente?.id) !== String(myId))
+    return false;
+  // OWNER/ADMIN pueden eliminar cualquier mensaje sin límite de tiempo
+  if (canModerate && !isDirectChat) return true;
+  // El remitente puede eliminar sus propios mensajes dentro de 24h
+  if (String(message.remitente?.id) !== String(myId)) return false;
+  return differenceInHours(new Date(), new Date(message.fecha_reg)) < 24;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROPS
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -117,15 +147,31 @@ interface Props {
   prevSenderId?: number | null;
   onReply?: (msg: Message | OptimisticMessage) => void;
   onForward?: (msg: Message | OptimisticMessage) => void;
-  isDirectChat?: boolean; // para ocultar el nombre del remitente en chats 1:1, si se desea
+  /** callback para iniciar edición (el padre gestiona el estado) */
+  onEdit?: (msg: Message) => void;
+  /** eliminar para todos */
+  onDeleteForAll?: (msg: Message) => void;
+  /** eliminar solo para mí */
+  onDeleteForMe?: (msg: Message) => void;
+  /** true si el usuario es OWNER o ADMIN del chat */
+  canModerate?: boolean;
+  isDirectChat?: boolean;
   otherDate?: boolean;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function MessageBubble({
   message,
   prevSenderId,
   onReply,
   onForward,
+  onEdit,
+  onDeleteForAll,
+  onDeleteForMe,
+  canModerate = false,
   isDirectChat = false,
   otherDate = false,
 }: Props) {
@@ -144,16 +190,56 @@ export function MessageBubble({
   const showAvatar = !isMine && message.remitente?.id !== prevSenderId;
   const isGrouped = !otherDate && message.remitente?.id === prevSenderId;
 
-  // System message
+  // mensaje eliminado localmente (para_mi)
+  if ((message as Message).eliminado) {
+    return (
+      <div
+        className={cn(
+          "flex gap-2",
+          isMine ? "ml-auto flex-row-reverse" : "mr-auto",
+          "max-w-[80%]"
+        )}
+      >
+        <div className="w-7 shrink-0" />
+        <div
+          className={cn(
+            "rounded-2xl px-3 py-2 text-xs italic text-muted-foreground",
+            isMine ? "bg-primary/10" : "bg-muted/30"
+          )}
+        >
+          Mensaje eliminado
+        </div>
+      </div>
+    );
+  }
+
+  // Mensaje de sistema
   if (message.es_sistema) {
     return (
       <div className="flex justify-center py-1">
-        <span className="rounded-full border border-border/30 bg-muted/40 px-3 py-1 text-[10px] text-muted-foreground">
+        <span className="rounded-full border border-border/30 bg-muted/40 px-3 py-1 text-[10px] italic text-muted-foreground">
           {message.contenido}
         </span>
       </div>
     );
   }
+
+  // permisos de edición/eliminación
+  const realMessage = isOptimistic ? undefined : (message as Message);
+  const canEdit =
+    !isOptimistic &&
+    realMessage !== undefined &&
+    !!onEdit &&
+    canEditMessage(realMessage, currentUserId);
+
+  const canDelForAll =
+    !isOptimistic &&
+    realMessage !== undefined &&
+    !!onDeleteForAll &&
+    canDeleteForAll(realMessage, currentUserId, canModerate, isDirectChat);
+
+  const canDelForMe =
+    !isOptimistic && realMessage !== undefined && !!onDeleteForMe;
 
   const handleCopy = () => {
     void navigator.clipboard.writeText(message.contenido);
@@ -171,12 +257,7 @@ export function MessageBubble({
       <div className="w-7 shrink-0 flex items-start">
         {showAvatar && !isDirectChat ? (
           <Avatar className="size-7">
-            <AvatarFallback
-              className={cn(
-                "text-[10px] font-semibold",
-                "bg-muted text-muted-foreground"
-              )}
-            >
+            <AvatarFallback className="text-[10px] font-semibold bg-muted text-muted-foreground">
               {senderInitials}
             </AvatarFallback>
           </Avatar>
@@ -184,7 +265,7 @@ export function MessageBubble({
       </div>
 
       <div className="relative min-w-0 flex flex-col">
-        {/* Sender name (only for non-mine, first in group) */}
+        {/* Sender name */}
         {!isMine && showAvatar && !isDirectChat && (
           <span className="mb-0.5 ml-1 text-[10px] font-semibold text-primary/80">
             {senderName}
@@ -201,13 +282,26 @@ export function MessageBubble({
         >
           {onReply && (
             <Button
-              variant={"ghost"}
+              variant="ghost"
               onClick={() => onReply(message)}
               className="size-6"
             >
               <Reply className="size-3" />
             </Button>
           )}
+
+          {/* botón editar rápido (solo cuando aplica) */}
+          {canEdit && (
+            <Button
+              variant="ghost"
+              className="size-6"
+              title="Editar"
+              onClick={() => onEdit!(realMessage!)}
+            >
+              <Pencil className="size-3" />
+            </Button>
+          )}
+
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="size-6">
@@ -216,11 +310,12 @@ export function MessageBubble({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align={isMine ? "end" : "start"}
-              className="w-40 z-[9999]"
+              className="w-44 z-[9999]"
             >
               <DropdownMenuItem className="gap-2 text-xs" onClick={handleCopy}>
                 <Copy className="h-3 w-3" /> Copiar texto
               </DropdownMenuItem>
+
               {onForward && (
                 <DropdownMenuItem
                   className="gap-2 text-xs"
@@ -229,12 +324,40 @@ export function MessageBubble({
                   <Forward className="h-3 w-3" /> Reenviar
                 </DropdownMenuItem>
               )}
-              {isMine && (
+
+              {/* editar */}
+              {canEdit && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2 text-xs text-destructive focus:text-destructive">
-                    <Trash2 className="h-3 w-3" /> Eliminar
+                  <DropdownMenuItem
+                    className="gap-2 text-xs"
+                    onClick={() => onEdit!(realMessage!)}
+                  >
+                    <Pencil className="h-3 w-3" /> Editar
                   </DropdownMenuItem>
+                </>
+              )}
+
+              {/* eliminar */}
+              {(canDelForAll || canDelForMe) && (
+                <>
+                  <DropdownMenuSeparator />
+                  {canDelForAll && (
+                    <DropdownMenuItem
+                      className="gap-2 text-xs text-destructive focus:text-destructive"
+                      onClick={() => onDeleteForAll!(realMessage!)}
+                    >
+                      <Trash2 className="h-3 w-3" /> Eliminar para todos
+                    </DropdownMenuItem>
+                  )}
+                  {canDelForMe && (
+                    <DropdownMenuItem
+                      className="gap-2 text-xs text-muted-foreground"
+                      onClick={() => onDeleteForMe!(realMessage!)}
+                    >
+                      <Trash2 className="h-3 w-3" /> Eliminar para mí
+                    </DropdownMenuItem>
+                  )}
                 </>
               )}
             </DropdownMenuContent>
@@ -244,12 +367,12 @@ export function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            "rounded-2xl px-3 py-2 text-sm break-words",
-            // Imágenes: sin fondo ni padding (la imagen ocupa todo el bubble)
-            message.tipo === "FILE" &&
-              message.adjuntos?.[0]?.es_imagen &&
-              "overflow-hidden",
-            message.tipo === "FILE" ? "px-1.5 pt-0.5 pb-1" : "px-3 py-1",
+            "rounded-2xl text-sm break-words",
+            message.tipo === "FILE" && message.adjuntos?.[0]?.es_imagen
+              ? "overflow-hidden px-1.5 pt-0.5 pb-1"
+              : message.tipo === "FILE"
+                ? "px-1.5 pt-0.5 pb-1"
+                : "px-3 py-1",
             isMine
               ? "bg-primary text-primary-foreground rounded-tr-xs"
               : "bg-secondary text-foreground rounded-tl-xs",
@@ -258,7 +381,7 @@ export function MessageBubble({
             status === "failed" && "opacity-60 ring-1 ring-destructive/40"
           )}
         >
-          {/* Adjuntos (FILE / IMAGE tipo) */}
+          {/* Adjuntos */}
           {message.tipo === "FILE" &&
           message.adjuntos &&
           message.adjuntos.length > 0 ? (
@@ -270,13 +393,8 @@ export function MessageBubble({
                 }
                 isMine={isMine}
               />
-              {/* Caption si viene junto al archivo */}
               {message.contenido && (
-                <p
-                  className={cn(
-                    "text-sm leading-relaxed whitespace-pre-wrap px-1.5"
-                  )}
-                >
+                <p className="text-sm leading-relaxed whitespace-pre-wrap px-1.5">
                   {message.contenido}
                 </p>
               )}
@@ -295,8 +413,21 @@ export function MessageBubble({
             />
           )}
 
-          {/* Timestamp + status */}
-          <div className={cn("flex items-center gap-1 justify-end")}>
+          {/* Timestamp + status + badge "editado" */}
+          <div className="flex items-center gap-1 justify-end mt-0.5 flex-wrap">
+            {/* badge editado */}
+            {(message as Message).editado && (
+              <span
+                className={cn(
+                  "text-[9px] italic",
+                  isMine
+                    ? "text-primary-foreground/60"
+                    : "text-muted-foreground/70"
+                )}
+              >
+                editado
+              </span>
+            )}
             <span
               className={cn(
                 "text-[10px]",

@@ -1,6 +1,4 @@
 /**
- * GroupSetupPanel.tsx
- *
  * Segundo paso para crear un grupo.
  * Muestra los usuarios seleccionados, campos nombre/descripción
  * y el botón "Crear grupo".
@@ -13,12 +11,12 @@ import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { ScrollArea } from "@/components/atoms/scroll-area";
 import { cn } from "@/lib/utils";
 import { useCreateGroup } from "../hooks/useCreateChat";
-import type { User } from "@/modules/users/types/User";
+import type { MessagingUser } from "../types/MessagingUser.types";
 import { useBranchStore } from "@/states/branchStore";
 import { getInitials } from "../utils/chatUtils";
 
 interface Props {
-  selectedUsers: User[];
+  selectedUsers: MessagingUser[];
   onBack: () => void;
   onRemoveUser: (id: number) => void;
   onSuccess: () => void;
@@ -65,7 +63,7 @@ export function GroupSetupPanel({
         </div>
       </div>
 
-      {/* ── Body (scrollable) ──────────────────────────────────────── */}
+      {/* ── Body ──────────────────────────────────────────────────── */}
       <ScrollArea className="flex-1">
         <div className="space-y-5 p-4">
           {/* Group icon placeholder */}
@@ -124,15 +122,15 @@ export function GroupSetupPanel({
                 >
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarFallback className="bg-muted text-[11px] text-muted-foreground">
-                      {getInitials(u.empleado.nombre)}
+                      {getInitials(u.nombre)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-medium">
-                      {u.empleado.nombre}
+                      {u.nombre}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {u.email ?? "Sin correo"}
+                      {u.nickname}
                     </p>
                   </div>
                   <button

@@ -1,6 +1,7 @@
 import { ApiService } from "@/lib/apiService";
 import { Logger } from "@/lib/logger";
 import type {
+  EditMessagePayload,
   Message,
   MessagesGetAllResponse,
   PollResponse,
@@ -64,6 +65,53 @@ export const messageService = {
       MODULE_NAME,
     );
     return response as Message;
+  },
+
+  /**
+   * Editar el contenido de un mensaje (solo remitente, solo TEXT, max 24h)
+   */
+  async edit(
+    chatId: number,
+    messageId: number,
+    payload: EditMessagePayload,
+  ): Promise<Message> {
+    Logger.info("Editing message", { chatId, messageId }, MODULE_NAME);
+
+    const response = await ApiService.patch(
+      MESSAGING_ENDPOINTS.messages.edit(chatId, messageId),
+      payload,
+      messageSchema,
+      undefined,
+      { unwrapData: true },
+    );
+
+    Logger.info("Message edited", { chatId, messageId }, MODULE_NAME);
+    return response as Message;
+  },
+
+  /**
+   * Eliminar mensaje para TODOS los participantes.
+   * Requiere ser el remitente (dentro de 24h) o OWNER/ADMIN (sin límite de tiempo).
+   * Genera evento .message.deleted broadcast.
+   */
+  async deleteForAll(chatId: number, messageId: number): Promise<void> {
+    Logger.info("Deleting message for all", { chatId, messageId }, MODULE_NAME);
+    await ApiService.delete(
+      `${MESSAGING_ENDPOINTS.messages.delete(chatId, messageId)}?para_todos=1`,
+    );
+    Logger.info("Message deleted for all", { chatId, messageId }, MODULE_NAME);
+  },
+
+  /**
+   * Eliminar mensaje solo para el usuario actual (sin broadcast).
+   * Cualquier participante puede ocultar cualquier mensaje para sí mismo.
+   */
+  async deleteForMe(chatId: number, messageId: number): Promise<void> {
+    Logger.info("Deleting message for me", { chatId, messageId }, MODULE_NAME);
+    await ApiService.delete(
+      MESSAGING_ENDPOINTS.messages.delete(chatId, messageId),
+    );
+    Logger.info("Message deleted for me", { chatId, messageId }, MODULE_NAME);
   },
 
   /**

@@ -22,13 +22,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
-import { Input } from "@/components/atoms/input";
 import { cn } from "@/lib/utils";
 import {
   formatFileSize,
   isImageMime,
   validateAttachment,
 } from "../types/Attachment.types";
+import { Textarea } from "@/components/atoms/textarea";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -71,7 +71,7 @@ export function AttachmentComposer({
   onCancel,
 }: Props) {
   const [caption, setCaption] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const ext = file.name.split(".").pop() ?? "";
 
   // Validación local
@@ -83,7 +83,7 @@ export function AttachmentComposer({
     setCaption("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -100,14 +100,14 @@ export function AttachmentComposer({
           onClick={onCancel}
           disabled={isSending}
           variant="outline"
-          className="absolute -right-2 -top-2 z-10 flex h-6 w-6 hover:text-destructive hover:border-destructive/50 transition-colors"
+          className="absolute -right-2 -top-2 z-10 flex size-7 cursor-pointer"
         >
           <X className="h-3.5 w-3.5" />
         </Button>
 
         {isImageMime(file.type) && previewUrl ? (
           /* ── Imagen: preview grande ──────────────────────────────────── */
-          <div className="overflow-hidden rounded-xl bg-muted/20">
+          <div className="overflow-hidden rounded-xl bg-muted">
             <img
               src={previewUrl}
               alt={file.name}
@@ -131,7 +131,7 @@ export function AttachmentComposer({
           /* ── Archivo: chip compacto ──────────────────────────────────── */
           <div
             className={cn(
-              "flex items-center gap-3 rounded-xl border bg-muted/20 px-4 py-3",
+              "flex items-center gap-3 rounded-xl border bg-muted/40 px-4 py-3",
               validation.valid
                 ? "border-border/50"
                 : "border-destructive/40 bg-destructive/5"
@@ -160,24 +160,35 @@ export function AttachmentComposer({
       </div>
 
       {/* ── Caption input + Send ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-2">
-        <Input
+      <div className="flex items-end gap-1 rounded-2xl border border-border p-2">
+        <Textarea
           ref={inputRef}
           autoFocus
           value={caption}
-          onChange={(e) => setCaption(e.target.value)}
+          rows={1}
+          onChange={(e) => {
+            setCaption(e.target.value);
+            // auto-resize
+            const el = e.target;
+            el.style.height = "auto";
+            el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+          }}
           onKeyDown={handleKeyDown}
           placeholder={
             isImageMime(file.type)
               ? "Añadir descripción..."
               : "Añadir mensaje..."
           }
-          className="h-9 rounded-xl border-border/30 bg-muted/20 px-4 text-sm focus-visible:ring-1"
           disabled={isSending || !validation.valid}
+          className={cn(
+            "min-h-0 resize-none border-0 bg-transparent p-0 py-1 px-1",
+            "shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+            "max-h-[120px] overflow-y-auto text-sm leading-relaxed"
+          )}
         />
         <Button
           size="icon"
-          className="h-9 w-9 shrink-0 rounded-xl"
+          className="shrink-0"
           disabled={!validation.valid || isSending}
           onClick={handleSend}
         >

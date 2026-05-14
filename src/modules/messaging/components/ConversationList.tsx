@@ -35,7 +35,7 @@ import { useChatList } from "../hooks/useChats";
 import { useLeaveChat } from "../hooks/useParticipants";
 import { UserSelectorPanel } from "./UserSelectorPanel";
 import { GroupSetupPanel } from "./GroupSetupPanel";
-import type { User } from "@/modules/users/types/User";
+import type { MessagingUser } from "../types/MessagingUser.types";
 import type { Chat } from "../types/Chat.types";
 import { useChatStore } from "../stores/ChatStore";
 import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
@@ -56,7 +56,6 @@ type PanelView = "list" | "select-user" | "select-group" | "setup-group";
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Devuelve { icon, label } para mensajes de archivo/imagen, o null para texto normal
 function getFilePreview(msg: Chat["ultimo_mensaje"]): {
   icon: React.ReactNode;
   label: string;
@@ -77,8 +76,7 @@ function getLastMessagePreview(
   const msg = chat.ultimo_mensaje;
 
   if (!msg) return "";
-  if (isDirect) return msg.contenido.slice(0, 60); // sin prefijo en chats directos
-
+  if (isDirect) return msg.contenido.slice(0, 60);
   const sender = msg.remitente
     ? isMine
       ? "Tú: "
@@ -128,17 +126,13 @@ function ConversationItem({
   const draft = getDraft(chat.id);
 
   const msg = chat.ultimo_mensaje;
-  const preview = draft
-    ? null // se renderiza diferente abajo
-    : getLastMessagePreview(chat, isDirect, isMine);
+  const preview = draft ? null : getLastMessagePreview(chat, isDirect, isMine);
 
   const handleLeave = () => {
-    // Para chat directo y grupos (excepto OWNER y sistema)
     leaveChat.mutate();
     setActiveChatId(null);
   };
 
-  // Puede salir: directo siempre, grupo si no es OWNER ni sistema
   const canLeave = isDirect || (!isSistema && myRole !== "OWNER");
 
   const otherParticipantId = !isGroup
@@ -239,11 +233,6 @@ function ConversationItem({
               <MoreHorizontal className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          {/*
-            z-[9999]: el dropdown porta a body level pero la floating window
-            tiene z-[60]. Radix por defecto usa z-50, quedando DETRÁS de la
-            ventana. Subimos el z-index para que siempre quede encima.
-          */}
           <DropdownMenuContent align="end" className="w-44 z-[9999]">
             <DropdownMenuItem className="text-xs">
               {chat.mi_participacion.silenciado
@@ -286,12 +275,13 @@ export function ConversationList({
   const isOnline = useOfflineQueueStore((s) => s.isOnline);
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
 
-  // ── Panel view state ────────────────────────────────────────────────────────
   const [view, setView] = useState<PanelView>("list");
-  const [groupSelectedIds, setGroupSelectedIds] = useState<number[]>([]);
-  const [groupSelectedUsers, setGroupSelectedUsers] = useState<User[]>([]);
 
-  // ── Chat list search ────────────────────────────────────────────────────────
+  const [groupSelectedIds, setGroupSelectedIds] = useState<number[]>([]);
+  const [groupSelectedUsers, setGroupSelectedUsers] = useState<MessagingUser[]>(
+    []
+  );
+
   const [search, setSearch] = useState("");
 
   const sorted = useMemo(
@@ -335,7 +325,7 @@ export function ConversationList({
     }
   };
 
-  const handleToggleGroupUser = (user: User) => {
+  const handleToggleGroupUser = (user: MessagingUser) => {
     setGroupSelectedIds((prev) => {
       const has = prev.includes(user.id);
       if (has) {
@@ -354,7 +344,6 @@ export function ConversationList({
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  // UserSelectorPanel handles both 'select-user' (direct) and 'select-group' modes
   if (view === "select-user" || view === "select-group") {
     return (
       <UserSelectorPanel
@@ -363,16 +352,13 @@ export function ConversationList({
         onBack={goBack}
         onSelectDirect={() => setView("list")}
         onToggleUser={() => {
-          // noop — onToggleUserFull (handleToggleGroupUser) gestiona
-          // tanto groupSelectedIds como groupSelectedUsers.
-          // Mantener esta prop por compatibilidad con la interfaz.
+          // noop — onToggleUserFull gestiona tanto ids como users completos
         }}
         onToggleUserFull={handleToggleGroupUser}
-        onNextGroup={
-          () =>
-            view === "select-user"
-              ? setView("select-group") // "Nuevo grupo" clicked from direct mode
-              : setView("setup-group") // "Siguiente" clicked from group selection
+        onNextGroup={() =>
+          view === "select-user"
+            ? setView("select-group")
+            : setView("setup-group")
         }
       />
     );
@@ -392,7 +378,6 @@ export function ConversationList({
     );
   }
 
-  // ── Default: conversation list ───────────────────────────────────────────────
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -452,7 +437,7 @@ export function ConversationList({
         </div>
       </div>
 
-      {/* Chat list — only this area scrolls */}
+      {/* Chat list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center">

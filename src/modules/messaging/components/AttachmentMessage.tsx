@@ -12,12 +12,14 @@ import {
   Download,
   Loader2,
   AlertCircle,
+  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFileSize, type Attachment } from "../types/Attachment.types";
 import type { OptimisticMessage } from "../types/Message.types";
 import { Button } from "@/components/atoms/button";
 import { ImageViewer } from "@/components/common/ImageViewer";
+import { Skeleton } from "@/components/atoms/skeleton";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ICON BY EXTENSION
@@ -70,28 +72,57 @@ function ImageAttachment({
   isFailed,
 }: ImageAttachmentProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  // Usar thumbnail si existe (imagen ya subida), o preview local durante subida
   const displayUrl =
     attachment.url_thumbnail || localPreviewUrl || attachment.url;
 
+  const hasSize = attachment.ancho && attachment.alto;
+  const aspectRatio = hasSize
+    ? `${attachment.ancho}/${attachment.alto}`
+    : "4/3";
+  // Sin medidas: altura mínima fija para que el skeleton no colapse
+  const minHeight = hasSize ? undefined : "160px";
+
   return (
     <>
-      <div className="relative mt-1 overflow-hidden rounded-xl">
+      <div
+        className="relative mt-1 overflow-hidden rounded-xl"
+        style={{
+          aspectRatio,
+          minHeight,
+          maxHeight: 260,
+          maxWidth: 280,
+          width: "100%",
+        }}
+      >
+        {/* Skeleton */}
+        {!imgLoaded && !isFailed && (
+          <Skeleton className=" absolute inset-0 rounded-xl bg-muted/50 flex items-center justify-center">
+            <Image className="size-12 text-muted-foreground" />
+          </Skeleton>
+        )}
+
         <img
           title={attachment.nombre_original}
           src={displayUrl}
           alt={attachment.nombre_original}
+          onLoad={() => setImgLoaded(true)}
           className={cn(
-            "block max-h-[260px] max-w-[280px] w-full object-cover rounded-xl cursor-pointer transition-opacity",
-            (isUploading || isFailed) && "opacity-60",
-            !isUploading && !isFailed && "hover:opacity-90"
+            "block w-full h-full object-cover rounded-xl cursor-pointer transition-opacity duration-300",
+            (!imgLoaded || isUploading || isFailed) && "opacity-0",
+            imgLoaded &&
+              !isUploading &&
+              !isFailed &&
+              "opacity-100 hover:opacity-90"
           )}
-          onClick={() => !isUploading && !isFailed && setLightboxOpen(true)}
           draggable={false}
+          onClick={() =>
+            imgLoaded && !isUploading && !isFailed && setLightboxOpen(true)
+          }
         />
 
-        {/* Overlay de progreso */}
+        {/* Overlay de progreso (uploading) */}
         {isUploading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-black/40">
             <Loader2 className="h-6 w-6 animate-spin text-white" />
@@ -126,7 +157,7 @@ function ImageAttachment({
           onOpenChange={setLightboxOpen}
           imageSrc={attachment.url}
           editMode={false}
-          allowEdit={false} // ← oculta el botón de editar
+          allowEdit={false}
           title={attachment.nombre_original}
           imageMetadata={{
             fileName: attachment.nombre_original,

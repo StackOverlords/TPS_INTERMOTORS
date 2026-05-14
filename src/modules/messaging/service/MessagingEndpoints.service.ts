@@ -46,4 +46,8 @@ export const MESSAGING_ENDPOINTS = {
       `/messaging/chats/${chatId}/participants/${userId}`,
     leave: (chatId: number) => `/messaging/chats/${chatId}/leave`,
   },
+
+  presence: {
+    leave: "/messaging/presence/leave",
+  },
 } as const;

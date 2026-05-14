@@ -46,6 +46,8 @@ export interface Message {
   fecha_editado: string | null; // ISO date, solo si editado === true
   /** Archivos adjuntos — vacío para mensajes de texto */
   adjuntos: Attachment[];
+  /** Eliminado localmente (para_todos = false — solo afecta al usuario actual) */
+  eliminado?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +78,41 @@ export interface SendMessagePayload {
   contenido: string;
   referencia_tipo?: ReferenciaTipo;
   referencia_id?: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT PAYLOAD
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface EditMessagePayload {
+  contenido: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEBSOCKET EVENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Payload del evento .message.edited */
+export interface MessageEditedEvent {
+  id: number;
+  chat_id: number;
+  contenido: string;
+  editado: true;
+  fecha_editado: string;
+}
+
+/** Payload del evento .message.deleted */
+export interface MessageDeletedEvent {
+  id: number;
+  chat_id: number;
+  eliminado_para: "todos" | "mi";
+}
+
+/** Payload del evento .chat.updated */
+export interface ChatUpdatedEvent {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

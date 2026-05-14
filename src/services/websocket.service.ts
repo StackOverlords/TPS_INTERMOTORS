@@ -11,6 +11,12 @@ declare global {
 
 const wsLogger = logger.withModule("WEBSOCKET");
 
+export interface PresenceHandlers {
+  here: (users: Array<{ id: number; [key: string]: unknown }>) => void;
+  joining: (user: { id: number; [key: string]: unknown }) => void;
+  leaving: (user: { id: number; [key: string]: unknown }) => void;
+}
+
 export class WebSocketService {
   private echo: Echo<any> | null = null;
 
@@ -58,7 +64,6 @@ export class WebSocketService {
         // Obtener el token de acceso antes de crear Echo.
         // Necesario para que Pusher pueda autenticar los canales privados
         // (private-chat.{id}) enviando Authorization: Bearer {token}
-        // al endpoint /broadcasting/auth del backend Laravel.
         const token = await authSDK.getAccessToken();
 
         wsLogger.info("Configurando conexión a Reverb", {
@@ -81,17 +86,10 @@ export class WebSocketService {
           encrypted: useTLS,
           disableStats: true,
           enabledTransports: useTLS ? ["wss"] : ["ws"],
-          cluster: "mt1", // Requerido por Pusher.js aunque Reverb no lo use
-
-          // Configuración de autenticación para canales privados.
-          // El backend valida en routes/channels.php que el usuario
-          // sea participante activo antes de autorizar la suscripción.
-          // Endpoint registrado por BroadcastServiceProvider con middleware auth:sanctum.
+          cluster: "mt1",
           authEndpoint: `${appUrl}/broadcasting/auth`,
           auth: {
             headers: {
-              // Token Bearer necesario para que /broadcasting/auth identifique
-              // al usuario y pueda validar su acceso al canal solicitado.
               Authorization: token ? `Bearer ${token}` : "",
             },
           },
@@ -109,21 +107,11 @@ export class WebSocketService {
         });
 
         this.echo.connector.pusher.connection.bind("error", (err: any) => {
-          wsLogger.error("ERROR CONEXION", {
-            status: "error",
-            error: err,
-            host,
-            port,
-          });
+          wsLogger.error("ERROR CONEXION", { status: "error", error: err });
         });
 
         this.echo.connector.pusher.connection.bind("failed", (err: any) => {
-          wsLogger.error("CONEXION FALLIDA", {
-            status: "failed",
-            error: err,
-            host,
-            port,
-          });
+          wsLogger.error("CONEXION FALLIDA", { status: "failed", error: err });
           reject(new Error(`Failed to connect: ${JSON.stringify(err)}`));
         });
 
@@ -163,7 +151,7 @@ export class WebSocketService {
   }
 
   /**
-   * Suscribirse a un evento en un canal WebSocket.
+   * Suscribirse a un evento en un canal (privado, presencia o público).
    *
    * Convención de nombres de canal (el prefijo determina el tipo):
    *   - 'private-chat.25'      → echo.private('chat.25')       ← canal privado (requiere auth)
@@ -178,16 +166,19 @@ export class WebSocketService {
    *   - Si el eventName no empieza con '.', se agrega automáticamente.
    *   - Ejemplos: 'message.sent' → '.message.sent' | '.OrderCreated' → '.OrderCreated'
    *
+   * Los canales de presencia se manejan con joinPresence() — no usar este método
+   * para los eventos here/joining/leaving.
    * @param channelName - Nombre del canal con prefijo de tipo (ej: 'private-chat.25', 'public-updates')
    * @param eventName   - Nombre del evento broadcast (ej: 'message.sent', '.OrderCreated')
    * @param callback    - Función a ejecutar cuando se reciba el evento; recibe el payload del evento
    */
-  listen(channelName: string, eventName: string, callback: Function): () => void {
+  listen(
+    channelName: string,
+    eventName: string,
+    callback: Function,
+  ): () => void {
     if (!this.echo) {
-      wsLogger.warn("Echo no está conectado. Llama a connect() primero.", {
-        channelName,
-        eventName,
-      });
+      wsLogger.warn("Echo no conectado.", { channelName, eventName });
       return () => {};
     }
 
@@ -200,15 +191,14 @@ export class WebSocketService {
     let channel = this.channels.get(channelName);
 
     if (!channel) {
-      // Determinar el tipo de canal basado en el nombre
       if (channelName.startsWith("private-")) {
-        const privateChannelName = channelName.replace("private-", "");
-        wsLogger.debug("Creando canal privado", { privateChannelName });
-        channel = this.echo.private(privateChannelName);
+        const name = channelName.replace("private-", "");
+        wsLogger.debug("Creando canal privado", { name });
+        channel = this.echo.private(name);
       } else if (channelName.startsWith("presence-")) {
-        const presenceChannelName = channelName.replace("presence-", "");
-        wsLogger.debug("Creando canal de presencia", { presenceChannelName });
-        channel = this.echo.join(presenceChannelName);
+        const name = channelName.replace("presence-", "");
+        wsLogger.debug("Creando canal de presencia", { name });
+        channel = this.echo.join(name);
       } else {
         wsLogger.debug("Creando canal público", { channelName });
         channel = this.echo.channel(channelName);
@@ -220,23 +210,15 @@ export class WebSocketService {
       channel.on("pusher:subscription_succeeded", () => {
         wsLogger.info("CANAL SUSCRITO", {
           channel: channelName,
-          status: "subscribed",
           timestamp: new Date().toISOString(),
         });
       });
 
       channel.on("pusher:subscription_error", (error: any) => {
-        wsLogger.error("ERROR SUSCRIPCION", {
-          channel: channelName,
-          error,
-          status: "failed",
-        });
+        wsLogger.error("ERROR SUSCRIPCION", { channel: channelName, error });
       });
     }
 
-    // Formatear el nombre del evento correctamente.
-    // Si el evento ya tiene un punto al inicio, no agregar otro.
-    // Si no, agregarlo para que Laravel Echo lo maneje correctamente.
     const formattedEvent = eventName.startsWith(".")
       ? eventName
       : `.${eventName}`;
@@ -244,10 +226,7 @@ export class WebSocketService {
     channel.listen(formattedEvent, (data: any) => {
       wsLogger.info("EVENTO RECIBIDO", {
         channel: channelName,
-        event: eventName,
-        formattedEvent,
-        dataType: typeof data,
-        dataKeys: data ? Object.keys(data) : [],
+        event: formattedEvent,
         data,
       });
       callback(data);
@@ -256,36 +235,97 @@ export class WebSocketService {
     wsLogger.info("SUSCRIPCION ACTIVA", {
       channel: channelName,
       event: formattedEvent,
-      status: "listening",
     });
 
     return () => {
-      wsLogger.debug('Desuscribiendo evento', { channelName, formattedEvent });
+      wsLogger.debug("Desuscribiendo evento", { channelName, formattedEvent });
       this.channels.get(channelName)?.stopListening(formattedEvent, callback);
     };
   }
 
   /**
-   * Dejar de escuchar un canal completo y limpiar su instancia del mapa interno.
-   * Útil para desuscribirse cuando el usuario cierra un chat o hace logout.
+   * Suscribirse al canal de presencia.
+   * Maneja los tres callbacks propios del presence channel:
+   *   here    → lista inicial de usuarios conectados
+   *   joining → un usuario se conectó
+   *   leaving → un usuario se desconectó
    *
-   * @param channelName - Nombre del canal a abandonar (mismo nombre usado en listen())
+   * @param channelName  Nombre sin prefijo (ej: 'users' para 'presence-users')
+   * @param handlers     Callbacks de presencia
+   * @returns  Función de limpieza que abandona el canal
    */
+  joinPresence(channelName: string, handlers: PresenceHandlers): () => void {
+    if (!this.echo) {
+      wsLogger.warn(
+        "Echo no conectado. No se puede unir al canal de presencia.",
+        {
+          channelName,
+        },
+      );
+      return () => {};
+    }
+
+    const fullName = `presence-${channelName}`;
+
+    let channel = this.channels.get(fullName);
+
+    if (!channel) {
+      channel = this.echo
+        .join(channelName)
+        .here((users: any[]) => {
+          wsLogger.info("PRESENCE HERE", {
+            channel: fullName,
+            count: users.length,
+          });
+          handlers.here(users);
+        })
+        .joining((user: any) => {
+          wsLogger.info("PRESENCE JOINING", { channel: fullName, user });
+          handlers.joining(user);
+        })
+        .leaving((user: any) => {
+          wsLogger.info("PRESENCE LEAVING", { channel: fullName, user });
+          handlers.leaving(user);
+        });
+
+      this.channels.set(fullName, channel);
+
+      channel.on?.("pusher:subscription_succeeded", () => {
+        wsLogger.info("PRESENCE CANAL SUSCRITO", { channel: fullName });
+      });
+
+      channel.on?.("pusher:subscription_error", (err: any) => {
+        wsLogger.error("PRESENCE ERROR SUSCRIPCION", {
+          channel: fullName,
+          err,
+        });
+      });
+    }
+
+    wsLogger.info("PRESENCE SUSCRIPCION ACTIVA", { channel: fullName });
+
+    return () => {
+      this.leave(fullName);
+    };
+  }
+
   leave(channelName: string): void {
     if (this.echo) {
       wsLogger.info("Dejando canal", { channelName });
-      this.echo.leave(channelName);
+      // Echo.leave() espera el nombre sin prefijo para canales de presencia
+      // pero con prefijo para privados — normalizamos aquí.
+      if (channelName.startsWith("presence-")) {
+        this.echo.leave(channelName.replace("presence-", ""));
+      } else if (channelName.startsWith("private-")) {
+        this.echo.leave(channelName.replace("private-", ""));
+      } else {
+        this.echo.leave(channelName);
+      }
       this.channels.delete(channelName);
     }
   }
 
-  /**
-   * Indica si la conexión WebSocket está activa.
-   * Usa el estado interno de Pusher para una verificación más robusta,
-   * en lugar de depender de flags locales que pueden quedar desactualizados.
-   */
   get isConnected(): boolean {
-    // Verificación más robusta usando el estado interno de Pusher
     return this.echo?.connector?.pusher?.connection?.state === "connected";
   }
 }

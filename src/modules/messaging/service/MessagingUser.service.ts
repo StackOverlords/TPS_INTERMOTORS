@@ -37,4 +37,11 @@ export const messagingUserService = {
     );
     return response as MessagingUsersResponse;
   },
+
+  /**
+   * Para limpiar presencia al salir de la app (ej: cerrar pestaña, logout)
+   */
+  async userLeave(): Promise<void> {
+    await ApiService.post(MESSAGING_ENDPOINTS.presence.leave, {});
+  },
 };

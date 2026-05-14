@@ -43,11 +43,8 @@ function sortChatsByLastMessage(chats: Chat[]): void {
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ChatState {
-  // Lista de chats cargados al login
   chats: Chat[];
   chatsLoaded: boolean;
-
-  // Chat activo (panel de mensajes abierto)
   activeChatId: number | null;
 
   /**
@@ -57,8 +54,6 @@ interface ChatState {
    * Si el usuario sale sin enviar, se limpia sin llamar al backend.
    */
   pendingDirectChat: { userId: number; nombre: string } | null;
-
-  // Mensajes en memoria por chatId (cargados al abrir el chat)
   messagesByChatId: Record<number, (Message | OptimisticMessage)[]>;
 
   // Timestamp del último mensaje recibido por chatId (para polling)
@@ -77,6 +72,13 @@ interface ChatActions {
   setPendingDirectChat: (
     pending: { userId: number; nombre: string } | null,
   ) => void;
+  /**
+   * Actualiza nombre/descripción de un chat desde el evento .chat.updated
+   */
+  updateChatInfo: (
+    chatId: number,
+    updates: { nombre?: string; descripcion?: string | null },
+  ) => void;
 
   // Mensajes
   setMessages: (
@@ -90,7 +92,7 @@ interface ChatActions {
    * Usar en lugar de setMessages para la carga inicial/paginada desde TanStack Query.
    */
   mergeMessages: (chatId: number, incomingFromApi: Message[]) => void;
-  prependMessages: (chatId: number, messages: Message[]) => void; // para paginación hacia atrás
+  prependMessages: (chatId: number, messages: Message[]) => void;
   appendMessage: (chatId: number, message: Message | OptimisticMessage) => void;
   replaceOptimisticMessage: (
     chatId: number,
@@ -102,6 +104,24 @@ interface ChatActions {
     chatId: number,
     tempId: string,
     progress: number,
+  ) => void;
+  /**
+   * Actualiza contenido de un mensaje existente (evento .message.edited).
+   */
+  editMessage: (
+    chatId: number,
+    messageId: number,
+    updates: { contenido: string; editado: boolean; fecha_editado: string },
+  ) => void;
+  /**
+   * Elimina (o marca como eliminado) un mensaje del store.
+   * mode 'remove' → lo saca del array (para_todos).
+   * mode 'hide'   → lo marca con eliminado:true sin sacarlo del array (para_mi).
+   */
+  deleteMessage: (
+    chatId: number,
+    messageId: number,
+    mode?: "remove" | "hide",
   ) => void;
 
   // Unread badges
@@ -142,7 +162,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
       set((state) => {
         state.chats = chats;
         state.chatsLoaded = true;
-        // Inicializar timestamps desde el último mensaje de cada chat
         chats.forEach((chat) => {
           if (chat.ultimo_mensaje) {
             state.lastMessageTimestampByChatId[chat.id] =
@@ -154,14 +173,23 @@ export const useChatStore = create<ChatState & ChatActions>()(
     setActiveChatId: (id) =>
       set((state) => {
         state.activeChatId = id;
-        // Al activar un chat real, limpiar cualquier pending
         if (id !== null) state.pendingDirectChat = null;
+        // Persistir último chat abierto para restauración tras recarga
+        try {
+          if (id !== null) {
+            localStorage.setItem("messaging_last_chat_id", String(id));
+          } else {
+            // Volvió a la lista → borrar para no restaurar
+            localStorage.removeItem("messaging_last_chat_id");
+          }
+        } catch {
+          // localStorage no disponible (modo privado, etc.) — no persistimos
+        }
       }),
 
     setPendingDirectChat: (pending) =>
       set((state) => {
         state.pendingDirectChat = pending;
-        // Al poner un pending, limpiar el chat activo real
         if (pending !== null) state.activeChatId = null;
       }),
 
@@ -174,6 +202,19 @@ export const useChatStore = create<ChatState & ChatActions>()(
           state.chats.unshift(chat);
         }
         sortChatsByLastMessage(state.chats);
+      }),
+
+    updateChatInfo: (chatId, updates) =>
+      set((state) => {
+        const idx = state.chats.findIndex((c) => c.id === chatId);
+        if (idx >= 0) {
+          if (updates.nombre !== undefined) {
+            state.chats[idx].nombre = updates.nombre;
+          }
+          if (updates.descripcion !== undefined) {
+            state.chats[idx].descripcion = updates.descripcion;
+          }
+        }
       }),
 
     // ── Messages ───────────────────────────────────────────────────────────
@@ -190,33 +231,20 @@ export const useChatStore = create<ChatState & ChatActions>()(
     mergeMessages: (chatId, incomingFromApi) =>
       set((state) => {
         const current = state.messagesByChatId[chatId] ?? [];
-
-        // IDs reales que ya están en el store (incluye mensajes de WebSocket
-        // recibidos después de la carga inicial).
         const existingRealIds = new Set(
           current.filter((m) => !("_tempId" in m)).map((m) => m.id),
         );
-
-        // Solo agregar los mensajes de la API que aún no están en el store
         const newFromApi = incomingFromApi.filter(
           (m) => !existingRealIds.has(m.id),
         );
+        if (newFromApi.length === 0) return;
 
-        if (newFromApi.length === 0) {
-          // No hay nada nuevo desde la API — el store ya tiene todo
-          return;
-        }
-
-        // Combinar y reordenar cronológicamente
-        // (los mensajes de la API son más antiguos que los del WebSocket)
         const merged = [...newFromApi, ...current].sort(
           (a, b) =>
             new Date(a.fecha_reg).getTime() - new Date(b.fecha_reg).getTime(),
         );
-
         state.messagesByChatId[chatId] = merged;
 
-        // Actualizar timestamp con el mensaje más reciente
         const last = merged[merged.length - 1];
         if (last) {
           state.lastMessageTimestampByChatId[chatId] = last.fecha_reg;
@@ -226,7 +254,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
     prependMessages: (chatId, messages) =>
       set((state) => {
         const current = state.messagesByChatId[chatId] ?? [];
-        // Deduplicar por id
         const existingIds = new Set(current.map((m) => m.id));
         const newUnique = messages.filter((m) => !existingIds.has(m.id));
         state.messagesByChatId[chatId] = [...newUnique, ...current];
@@ -237,25 +264,17 @@ export const useChatStore = create<ChatState & ChatActions>()(
         if (!state.messagesByChatId[chatId]) {
           state.messagesByChatId[chatId] = [];
         }
-
-        // Evitar duplicados (mismo id real)
         const exists = state.messagesByChatId[chatId].some(
           (m) => !("_tempId" in m) && m.id === message.id,
         );
 
         if (!exists) {
           state.messagesByChatId[chatId].push(message);
-
-          // Solo actualizar metadatos con mensajes reales confirmados por el servidor
           if (!("_tempId" in message)) {
             state.lastMessageTimestampByChatId[chatId] = message.fecha_reg;
-
-            // Actualizar el preview en la lista de chats.
-            // Sin esto, la lista no refleja el último mensaje ni la hora.
             const chatIdx = state.chats.findIndex((c) => c.id === chatId);
             if (chatIdx >= 0) {
               state.chats[chatIdx].ultimo_mensaje = buildUltimoMensaje(message);
-              // Re-ordenar para que este chat suba al tope de la lista
               sortChatsByLastMessage(state.chats);
             }
           }
@@ -275,7 +294,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
           msgs[idx] = message;
           state.lastMessageTimestampByChatId[chatId] = message.fecha_reg;
 
-          // También actualizar el preview al confirmar el mensaje propio
           const chatIdx = state.chats.findIndex((c) => c.id === chatId);
           if (chatIdx >= 0) {
             state.chats[chatIdx].ultimo_mensaje = buildUltimoMensaje(message);
@@ -291,9 +309,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         const msg = msgs.find(
           (m) => "_tempId" in m && (m as OptimisticMessage)._tempId === tempId,
         ) as OptimisticMessage | undefined;
-        if (msg) {
-          msg._status = "failed";
-        }
+        if (msg) msg._status = "failed";
       }),
 
     updateOptimisticProgress: (chatId, tempId, progress) =>
@@ -309,22 +325,56 @@ export const useChatStore = create<ChatState & ChatActions>()(
         }
       }),
 
+    // editar mensaje
+    editMessage: (chatId, messageId, updates) =>
+      set((state) => {
+        const msgs = state.messagesByChatId[chatId];
+        if (!msgs) return;
+        const idx = msgs.findIndex(
+          (m) => !("_tempId" in m) && m.id === messageId,
+        );
+        if (idx >= 0) {
+          const msg = msgs[idx] as Message;
+          msg.contenido = updates.contenido;
+          msg.editado = updates.editado;
+          msg.fecha_editado = updates.fecha_editado;
+        }
+      }),
+
+    // eliminar mensaje
+    deleteMessage: (chatId, messageId, mode = "remove") =>
+      set((state) => {
+        const msgs = state.messagesByChatId[chatId];
+        if (!msgs) return;
+        if (mode === "remove") {
+          // Eliminar del array (para_todos): conservar optimistas, filtrar por id real
+          state.messagesByChatId[chatId] = msgs.filter((m) => {
+            if ("_tempId" in m) return true; // nunca borrar optimistas por id real
+            return m.id !== messageId;
+          });
+        } else {
+          // Ocultar localmente (para_mi) — marcar sin sacar del array
+          const idx = msgs.findIndex(
+            (m) => !("_tempId" in m) && m.id === messageId,
+          );
+          if (idx >= 0) {
+            (msgs[idx] as Message).eliminado = true;
+          }
+        }
+      }),
+
     // ── Unread ─────────────────────────────────────────────────────────────
 
     incrementUnread: (chatId) =>
       set((state) => {
         const chat = state.chats.find((c) => c.id === chatId);
-        if (chat) {
-          chat.no_leidos += 1;
-        }
+        if (chat) chat.no_leidos += 1;
       }),
 
     resetUnread: (chatId) =>
       set((state) => {
         const chat = state.chats.find((c) => c.id === chatId);
-        if (chat) {
-          chat.no_leidos = 0;
-        }
+        if (chat) chat.no_leidos = 0;
       }),
 
     // ── Polling ────────────────────────────────────────────────────────────
@@ -336,7 +386,15 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
     // ── Reset ──────────────────────────────────────────────────────────────
 
-    reset: () => set(() => initialState),
+    reset: () =>
+      set(() => {
+        try {
+          localStorage.removeItem("messaging_last_chat_id");
+        } catch {
+          // no-op
+        }
+        return initialState;
+      }),
   })),
 );
 

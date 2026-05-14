@@ -51,7 +51,10 @@ export function ChatTopbarButton() {
           >
             <MessagesSquare className="h-4 w-4" />
             {totalUnread > 0 && (
-              <Badge className="absolute -right-1 -top-1 h-5 min-w-5 items-center justify-center border-2 border-background bg-destructive px-1 text-[9px] text-destructive-foreground">
+              <Badge
+                variant={"destructive"}
+                className="absolute -right-1 -top-1 h-5 min-w-5 items-center justify-center border-2 border-background px-1 text-[9px]"
+              >
                 {totalUnread > 99 ? "99+" : totalUnread}
               </Badge>
             )}

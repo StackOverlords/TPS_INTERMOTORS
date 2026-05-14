@@ -1,9 +1,8 @@
 /**
- * Panel de información del chat con dos vistas internas:
- *   'info'        → datos del chat, participantes, acciones
- *   'add-member'  → AddParticipantPanel (reemplaza el contenido inline)
- *
- * La vista se controla internamente — el padre solo monta/desmonta el panel.
+ *  - Vista 'edit-group': formulario inline para editar nombre/descripción
+ *    (solo OWNER/ADMIN, solo tipo GROUP, no sistema)
+ *  - useEditChat conectado al botón de editar
+ *  - Indicador online de cada participante via PresenceStore
  */
 import { useState } from "react";
 import {
@@ -16,11 +15,14 @@ import {
   UserMinus,
   LogOut,
   AlertCircle,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
 import { ScrollArea } from "@/components/atoms/scroll-area";
 import { Separator } from "@/components/atoms/separator";
+import { Input } from "@/components/atoms/input";
 import {
   useParticipants,
   useRemoveParticipant,
@@ -31,6 +33,10 @@ import authSDK from "@/services/sdk-simple-auth";
 import type { Chat, ParticipantRole } from "../types/Chat.types";
 import { sortParticipantsByRole } from "../utils/chatUtils";
 import { ConversationAvatar } from "./ConversationAvatar";
+import { useEditChat } from "../hooks/useEditChat";
+import { LastSeenLabel, OnlineDot } from "./PresenceIndicator";
+import { useMessagingUserMap } from "../hooks/useMessagingUsers";
+import { useIsOnline } from "../stores/PresenceStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -51,17 +57,80 @@ const ROLE_ICONS: Record<ParticipantRole, React.ReactNode> = {
   ),
   MEMBER: (
     <Badge variant="warning" className="gap-1 text-[10px] px-1.5 py-0">
-      <User className="h-3 w-3 " />
+      <User className="h-3 w-3" />
       Miembro
     </Badge>
   ),
 };
 
-const ROLE_LABELS: Record<ParticipantRole, string> = {
-  OWNER: "Propietario",
-  ADMIN: "Admin",
-  MEMBER: "Miembro",
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICIPANT ROW (con indicador online)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ParticipantRow({
+  p,
+  isMe,
+  canRemove,
+  onRemove,
+  isRemoving,
+  messagingOnline,
+  messagingLastSeen,
+}: {
+  p: ReturnType<typeof sortParticipantsByRole>[number];
+  isMe: boolean;
+  canRemove: boolean;
+  onRemove: () => void;
+  isRemoving: boolean;
+  messagingOnline: boolean;
+  messagingLastSeen: string | null;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/40">
+      <div className="relative shrink-0">
+        <ConversationAvatar
+          userId={p.usuario.id}
+          name={p.usuario?.nombre ?? "Usuario desconocido"}
+          isGroup={false}
+          className="size-8"
+          fallbackClassName="text-xs"
+          iconClassName="h-7 w-7"
+        />
+        {/* Indicador online */}
+        <OnlineDot
+          online={messagingOnline}
+          lastSeenAt={messagingLastSeen}
+          className="absolute -bottom-0.5 -right-0.5 size-2.5"
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium">
+          {p.usuario?.nombre ?? "Usuario desconocido"}
+          {isMe && <span className="ml-1 text-muted-foreground">(Tú)</span>}
+        </p>
+        <LastSeenLabel
+          online={messagingOnline}
+          lastSeenAt={messagingLastSeen}
+          className="text-[10px]"
+        />
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {ROLE_ICONS[p.rol]}
+        {canRemove && (
+          <Button
+            variant="secondary"
+            size="icon"
+            className="size-7 text-destructive cursor-pointer hover:bg-destructive/10"
+            disabled={isRemoving}
+            onClick={onRemove}
+            title={`Remover a ${p.usuario?.nombre}`}
+          >
+            <UserMinus className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROPS
@@ -72,16 +141,25 @@ interface Props {
   onClose: () => void;
 }
 
+type PanelView = "info" | "add-member" | "edit-group";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ChatInfoPanel({ chat, onClose }: Props) {
-  const [view, setView] = useState<"info" | "add-member">("info");
+  const [view, setView] = useState<PanelView>("info");
+  const [editNombre, setEditNombre] = useState(chat.nombre);
+  const [editDescripcion, setEditDescripcion] = useState(
+    chat.descripcion ?? ""
+  );
 
   const { data: participants = [], isLoading } = useParticipants(chat.id);
   const removeParticipant = useRemoveParticipant(chat.id);
   const leaveChat = useLeaveChat(chat.id);
+  const editChat = useEditChat(chat.id);
+
+  const userMap = useMessagingUserMap();
 
   const isGroup = chat.tipo !== "DIRECT";
   const isSistema = chat.es_sistema;
@@ -95,6 +173,81 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
     leaveChat.mutate();
     onClose();
   };
+
+  // ── Edit group view ──────────────────────────────────────────────────────
+  if (view === "edit-group") {
+    const handleSave = () => {
+      const nombre = editNombre.trim();
+      if (!nombre) return;
+      editChat.mutate(
+        {
+          nombre,
+          descripcion: editDescripcion.trim() || undefined,
+        },
+        { onSuccess: () => setView("info") }
+      );
+    };
+
+    return (
+      <div className="flex h-full flex-col">
+        <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
+          <span className="text-sm font-semibold">Editar grupo</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setView("info")}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+        <div className="flex-1 space-y-4 p-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Nombre <span className="text-destructive">*</span>
+            </label>
+            <Input
+              autoFocus
+              value={editNombre}
+              onChange={(e) => setEditNombre(e.target.value)}
+              maxLength={100}
+              className="h-9 text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Descripción
+            </label>
+            <Input
+              value={editDescripcion}
+              onChange={(e) => setEditDescripcion(e.target.value)}
+              maxLength={255}
+              placeholder="Opcional"
+              className="h-9 text-sm"
+            />
+          </div>
+        </div>
+        <div className="shrink-0 border-t border-border/50 bg-background p-3 flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setView("info")}
+            disabled={editChat.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1 gap-1"
+            disabled={!editNombre.trim() || editChat.isPending}
+            onClick={handleSave}
+          >
+            <Check className="h-3.5 w-3.5" />
+            Guardar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // ── Add member view ──────────────────────────────────────────────────────
   if (view === "add-member") {
@@ -113,14 +266,32 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
         <span className="text-sm font-semibold">
           {isGroup ? "Info. del grupo" : "Info. del chat"}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={onClose}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {/*: botón editar para OWNER/ADMIN */}
+          {canManage && isGroup && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground"
+              title="Editar grupo"
+              onClick={() => {
+                setEditNombre(chat.nombre);
+                setEditDescripcion(chat.descripcion ?? "");
+                setView("edit-group");
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={onClose}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 min-h-0">
@@ -165,9 +336,7 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
               </p>
               <div className="flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2">
                 <span className="text-xs text-muted-foreground">Rol:</span>
-                <div className="flex items-center gap-1">
-                  {ROLE_ICONS[myRole]}
-                </div>
+                {ROLE_ICONS[myRole]}
                 {chat.mi_participacion.silenciado && (
                   <Badge
                     variant="outline"
@@ -188,7 +357,7 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
             </div>
           )}
 
-          {/* Participantes (solo grupos) */}
+          {/* Participantes */}
           {isGroup && (
             <>
               <Separator />
@@ -212,8 +381,7 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
 
                 {isSistema && (
                   <p className="px-1 text-[10px] italic text-muted-foreground">
-                    Los participantes son gestionados automáticamente por el
-                    sistema.
+                    Los participantes son gestionados automáticamente.
                   </p>
                 )}
 
@@ -238,50 +406,28 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
                           (p.rol === "OWNER" || p.rol === "ADMIN")
                         );
 
+                      const messagingUser = userMap.get(p.usuario.id);
+                      const isCurrentUserOnline = useIsOnline(p.usuario.id);
+
+                      const messagingOnline = isMe
+                        ? isCurrentUserOnline
+                        : (messagingUser?.online ?? false);
+
                       return (
-                        <div
+                        <ParticipantRow
                           key={p.id}
-                          className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/40"
-                        >
-                          <ConversationAvatar
-                            userId={p.usuario.id}
-                            name={p.usuario?.nombre ?? "Usuario desconocido"}
-                            isGroup={false}
-                            className="size-8"
-                            fallbackClassName="text-xs"
-                            iconClassName="h-7 w-7"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">
-                              {p.usuario?.nombre ?? "Usuario desconocido"}
-                              {isMe && (
-                                <span className="ml-1 text-muted-foreground">
-                                  (Tú)
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {p.rol_label ?? ROLE_LABELS[p.rol]}
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            {ROLE_ICONS[p.rol]}
-                            {canRemove && (
-                              <Button
-                                variant="secondary"
-                                size="icon"
-                                className="size-7 text-destructive cursor-pointer hover:bg-destructive/10"
-                                disabled={removeParticipant.isPending}
-                                onClick={() =>
-                                  removeParticipant.mutate(p.usuario.id)
-                                }
-                                title={`Remover a ${p.usuario?.nombre ?? "Usuario desconocido"}`}
-                              >
-                                <UserMinus className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
+                          p={p}
+                          isMe={isMe}
+                          canRemove={canRemove}
+                          onRemove={() =>
+                            removeParticipant.mutate(p.usuario.id)
+                          }
+                          isRemoving={removeParticipant.isPending}
+                          messagingOnline={messagingOnline}
+                          messagingLastSeen={
+                            messagingUser?.last_seen_at ?? null
+                          }
+                        />
                       );
                     })}
                   </div>
@@ -291,9 +437,9 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
           )}
         </div>
       </ScrollArea>
+
       {isGroup && !isSistema && myRole !== "OWNER" && (
         <div className="shrink-0 border-t border-border/50 bg-background p-3">
-          {/* Salir del grupo */}
           <Button
             variant="outline"
             className="w-full gap-2 text-xs text-destructive hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive"

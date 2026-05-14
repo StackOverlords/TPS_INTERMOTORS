@@ -11,6 +11,8 @@ export interface Attachment {
   es_imagen: boolean;
   url: string;
   url_thumbnail: string | null; // solo cuando es_imagen === true (320×320 JPEG)
+  ancho: number | null;
+  alto: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

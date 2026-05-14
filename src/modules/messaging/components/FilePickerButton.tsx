@@ -42,7 +42,7 @@ export function FilePickerButton({ onFileSelected, disabled }: Props) {
             variant="ghost"
             size="icon"
             type="button"
-            className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:text-foreground"
+            className="shrink-0"
             disabled={disabled}
             onClick={() => inputRef.current?.click()}
           >

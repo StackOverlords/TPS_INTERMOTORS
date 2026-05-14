@@ -1,12 +1,13 @@
 /**
- * Reemplaza la lista de conversaciones al crear un nuevo chat.
- * Flujo:
- *   - Modo "direct": clic en usuario → crea chat directo
- *   - Modo "group":  selección múltiple → botón "Siguiente" aparece abajo
- *
- * Usa scroll infinito: al llegar al final carga la siguiente página.
+ *    → endpoint /messaging/users con campo online/last_seen_at
+ *  - Indicador de presencia en tiempo real (círculo verde/gris)
+ *  - Sin paginación infinita: el endpoint devuelve todos los usuarios
+ *    de las sucursales del usuario autenticado en una sola llamada.
+ *    Si la lista es grande el backend ya la filtra por sucursal.
+ *  - Search local sobre los datos cargados (el API soporta ?buscar= pero
+ *    la búsqueda local es más responsiva).
  */
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Search,
@@ -19,11 +20,12 @@ import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { cn } from "@/lib/utils";
-import { useUsersInfinite } from "../hooks/useUsersInfinite";
-import authSDK from "@/services/sdk-simple-auth";
-import type { User } from "@/modules/users/types/User";
+import { useMessagingUsersFlat } from "../hooks/useMessagingUsers";
+import type { MessagingUser } from "../types/MessagingUser.types";
 import { useChatStore } from "../stores/ChatStore";
 import { getInitials } from "../utils/chatUtils";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -35,10 +37,38 @@ interface Props {
   mode: SelectorMode;
   selectedIds: number[];
   onBack: () => void;
-  onSelectDirect: () => void; // called after direct chat created
-  onToggleUser: (id: number) => void; // id-only (fallback)
-  onToggleUserFull: (user: User) => void; // full User object (needed for GroupSetupPanel)
-  onNextGroup: () => void; // go to GroupSetupPanel or switch to group mode
+  onSelectDirect: () => void;
+  onToggleUser: (id: number) => void; // solo id (compat)
+  onToggleUserFull: (user: MessagingUser) => void;
+  onNextGroup: () => void;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ONLINE INDICATOR
+// ─────────────────────────────────────────────────────────────────────────────
+
+function OnlineDot({ online }: { online: boolean }) {
+  return (
+    <span
+      className={cn(
+        "absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-background",
+        online ? "bg-emerald-500" : "bg-muted-foreground/30"
+      )}
+    />
+  );
+}
+
+function lastSeenLabel(user: MessagingUser): string {
+  if (user.online) return "En línea";
+  if (!user.last_seen_at) return "Desconectado";
+  try {
+    return `Visto ${formatDistanceToNow(new Date(user.last_seen_at), {
+      addSuffix: true,
+      locale: es,
+    })}`;
+  } catch {
+    return "Desconectado";
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +76,7 @@ interface Props {
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface RowProps {
-  user: User;
+  user: MessagingUser;
   isSelected: boolean;
   mode: SelectorMode;
   disabled: boolean;
@@ -64,33 +94,22 @@ function UserRow({ user, isSelected, mode, disabled, onClick }: RowProps) {
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
-      {/* Avatar */}
       <div className="relative shrink-0">
         <Avatar className="h-10 w-10">
           <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
-            {getInitials(user.empleado.nombre)}
+            {getInitials(user.nombre)}
           </AvatarFallback>
         </Avatar>
-        {/* online indicator = activo */}
-        <span
-          className={cn(
-            "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background",
-            user.activo ? "bg-emerald-500" : "bg-muted-foreground/30"
-          )}
-        />
+        <OnlineDot online={user.online} />
       </div>
 
-      {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold">
-          {user.empleado.nombre}
-        </p>
-        <p className="text-[11px] text-muted-foreground">
-          {user.email ?? "Sin correo"}
+        <p className="truncate text-[13px] font-semibold">{user.nombre}</p>
+        <p className="truncate text-[11px] text-muted-foreground">
+          {lastSeenLabel(user)}
         </p>
       </div>
 
-      {/* Group checkbox */}
       {mode === "group" && (
         <div
           className={cn(
@@ -116,59 +135,19 @@ export function UserSelectorPanel({
   selectedIds,
   onBack,
   onSelectDirect,
-  // onToggleUser,
   onToggleUserFull,
   onNextGroup,
 }: Props) {
   const [search, setSearch] = useState("");
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const setPendingDirectChat = useChatStore((s) => s.setPendingDirectChat);
-  const currentUser = authSDK.getCurrentUser();
 
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
-    useUsersInfinite(search);
+  // usar el hook de mensajería en vez de useUsersInfinite
+  const { users: allUsers, isLoading } = useMessagingUsersFlat(search);
 
-  const allUsers: User[] = useMemo(
-    () => data?.pages.flatMap((p) => p.data) ?? [],
-    [data]
-  );
-
-  const filtered = useMemo(() => {
-    const lower = search.toLowerCase();
-    return allUsers.filter(
-      (u) =>
-        u.id !== Number(currentUser?.id) &&
-        (u.empleado.nombre.toLowerCase().includes(lower) ||
-          (u.email ?? "").toLowerCase().includes(lower))
-    );
-  }, [allUsers, search, currentUser]);
-
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const attachSentinel = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) observerRef.current.disconnect();
-      if (!node) return;
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (
-            entries[0]?.isIntersecting &&
-            hasNextPage &&
-            !isFetchingNextPage
-          ) {
-            void fetchNextPage();
-          }
-        },
-        { threshold: 0.1 }
-      );
-      observerRef.current.observe(node);
-    },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
-  );
-
-  const handleUserClick = (user: User) => {
+  const handleUserClick = (user: MessagingUser) => {
     if (mode === "direct") {
       const chats = useChatStore.getState().chats;
-
       const existingChat = chats.find(
         (c) =>
           c.tipo === "DIRECT" &&
@@ -178,7 +157,7 @@ export function UserSelectorPanel({
       if (existingChat) {
         setActiveChatId(existingChat.id);
       } else {
-        setPendingDirectChat({ userId: user.id, nombre: user.empleado.nombre });
+        setPendingDirectChat({ userId: user.id, nombre: user.nombre });
       }
       onSelectDirect();
     } else {
@@ -186,9 +165,20 @@ export function UserSelectorPanel({
     }
   };
 
+  // Ordenar: online primero
+  const sorted = useMemo(
+    () =>
+      [...allUsers].sort((a, b) => {
+        if (a.online && !b.online) return -1;
+        if (!a.online && b.online) return 1;
+        return a.nombre.localeCompare(b.nombre);
+      }),
+    [allUsers]
+  );
+
   return (
     <div className="flex h-full flex-col">
-      {/* ── Header ───────────────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="shrink-0 space-y-3 border-b border-border/40 bg-background p-3">
         <div className="flex items-center gap-2">
           <Button
@@ -204,7 +194,6 @@ export function UserSelectorPanel({
           </h3>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -216,7 +205,6 @@ export function UserSelectorPanel({
           />
         </div>
 
-        {/* Group mode: "Nuevo grupo" link — only shown in direct mode */}
         {mode === "direct" && (
           <button
             onClick={onNextGroup}
@@ -232,40 +220,31 @@ export function UserSelectorPanel({
         )}
       </div>
 
-      {/* ── List (scrollable) ──────────────────────────────────────── */}
+      {/* ── List ───────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sorted.length === 0 ? (
           <div className="py-10 text-center text-xs text-muted-foreground">
             {search ? "Sin resultados" : "Sin usuarios disponibles"}
           </div>
         ) : (
-          <>
-            {filtered.map((u) => (
-              <UserRow
-                key={u.id}
-                user={u}
-                isSelected={selectedIds.includes(u.id)}
-                mode={mode}
-                disabled={false}
-                onClick={() => handleUserClick(u)}
-              />
-            ))}
-
-            {/* Infinite scroll sentinel */}
-            <div ref={attachSentinel} className="py-2 flex justify-center">
-              {isFetchingNextPage && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
-          </>
+          sorted.map((u) => (
+            <UserRow
+              key={u.id}
+              user={u}
+              isSelected={selectedIds.includes(u.id)}
+              mode={mode}
+              disabled={false}
+              onClick={() => handleUserClick(u)}
+            />
+          ))
         )}
       </div>
 
-      {/* ── Group: "Siguiente" button ──────────────────────────────── */}
+      {/* ── Group: botón Siguiente ─────────────────────────────────────── */}
       {mode === "group" && selectedIds.length > 0 && (
         <div className="shrink-0 border-t border-border/40 bg-background p-3">
           <Button className="h-9 w-full gap-2 text-xs" onClick={onNextGroup}>

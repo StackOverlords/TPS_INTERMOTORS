@@ -88,6 +88,15 @@ export interface CreateGroupPayload {
   participantes: number[];
 }
 
+/**
+ * Solo para tipo GROUP, solo OWNER/ADMIN
+ * Ambos campos son opcionales (se envía solo lo que cambia)
+ */
+export interface UpdateChatPayload {
+  nombre?: string;
+  descripcion?: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API RESPONSES
 // ─────────────────────────────────────────────────────────────────────────────

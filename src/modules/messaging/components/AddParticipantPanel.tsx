@@ -1,23 +1,17 @@
 /**
- * AddParticipantPanel.tsx
- *
- * Panel inline para agregar un participante a un grupo existente.
- * Reemplaza el contenido del ChatInfoPanel sin abrir modal.
- *
- * - Scroll infinito de usuarios (misma lógica que UserSelectorPanel)
- * - Filtra los que ya son participantes del grupo
- * - Agrega uno a la vez (a futuro: selección múltiple)
+ *  - Indicador de presencia online en tiempo real
+ *  - Sin scroll infinito (el endpoint devuelve todos de una vez)
  */
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Search, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { cn } from "@/lib/utils";
 import { useAddParticipant, useParticipants } from "../hooks/useParticipants";
-import { useUsersInfinite } from "../hooks/useUsersInfinite";
+import { useMessagingUsersFlat } from "../hooks/useMessagingUsers";
 import authSDK from "@/services/sdk-simple-auth";
-import type { User } from "@/modules/users/types/User";
+import type { MessagingUser } from "../types/MessagingUser.types";
 import { getInitials } from "../utils/chatUtils";
 
 interface Props {
@@ -33,8 +27,7 @@ export function AddParticipantPanel({ chatId, onBack }: Props) {
   const { data: currentParticipants = [] } = useParticipants(chatId);
   const currentUser = authSDK.getCurrentUser();
 
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
-    useUsersInfinite(search);
+  const { users: allUsers, isLoading } = useMessagingUsersFlat(search);
 
   // IDs ya participantes (para filtrar)
   const participantUserIds = useMemo(
@@ -42,46 +35,16 @@ export function AddParticipantPanel({ chatId, onBack }: Props) {
     [currentParticipants]
   );
 
-  const allUsers: User[] = useMemo(
-    () => data?.pages.flatMap((p) => p.data) ?? [],
-    [data]
+  // Excluir participantes actuales y al usuario autenticado
+  const filtered = useMemo(
+    () =>
+      allUsers.filter(
+        (u) => u.id !== Number(currentUser?.id) && !participantUserIds.has(u.id)
+      ),
+    [allUsers, currentUser, participantUserIds]
   );
 
-  const filtered = useMemo(() => {
-    const lower = search.toLowerCase();
-    return allUsers.filter(
-      (u) =>
-        u.id !== Number(currentUser?.id) &&
-        !participantUserIds.has(u.id) &&
-        (u.empleado.nombre.toLowerCase().includes(lower) ||
-          (u.email ?? "").toLowerCase().includes(lower))
-    );
-  }, [allUsers, search, currentUser, participantUserIds]);
-
-  // Infinite scroll sentinel
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const attachSentinel = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) observerRef.current.disconnect();
-      if (!node) return;
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (
-            entries[0]?.isIntersecting &&
-            hasNextPage &&
-            !isFetchingNextPage
-          ) {
-            void fetchNextPage();
-          }
-        },
-        { threshold: 0.1 }
-      );
-      observerRef.current.observe(node);
-    },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
-  );
-
-  const handleAdd = (user: User) => {
+  const handleAdd = (user: MessagingUser) => {
     addParticipant.mutate(
       { usuario_id: user.id },
       {
@@ -133,47 +96,49 @@ export function AddParticipantPanel({ chatId, onBack }: Props) {
               : "Todos los usuarios ya son participantes"}
           </p>
         ) : (
-          <>
-            {filtered.map((u) => {
-              const wasJustAdded = justAdded === u.id;
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => handleAdd(u)}
-                  disabled={addParticipant.isPending}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent/40",
-                    wasJustAdded && "bg-emerald-500/10",
-                    addParticipant.isPending && "opacity-60 cursor-not-allowed"
-                  )}
-                >
-                  <Avatar className="h-9 w-9 shrink-0">
+          filtered.map((u) => {
+            const wasJustAdded = justAdded === u.id;
+            return (
+              <button
+                key={u.id}
+                onClick={() => handleAdd(u)}
+                disabled={addParticipant.isPending}
+                className={cn(
+                  "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent/40",
+                  wasJustAdded && "bg-emerald-500/10",
+                  addParticipant.isPending && "opacity-60 cursor-not-allowed"
+                )}
+              >
+                {/* Avatar con indicador online */}
+                <div className="relative shrink-0">
+                  <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-muted text-xs text-muted-foreground">
-                      {getInitials(u.empleado.nombre)}
+                      {getInitials(u.nombre)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium">
-                      {u.empleado.nombre}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {u.email ?? "Sin correo"}
-                    </p>
-                  </div>
-                  {wasJustAdded ? (
-                    <Check className="h-4 w-4 shrink-0 text-emerald-500" />
-                  ) : addParticipant.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-                  ) : null}
-                </button>
-              );
-            })}
-            <div ref={attachSentinel} className="flex justify-center py-2">
-              {isFetchingNextPage && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
-          </>
+                  <span
+                    className={cn(
+                      "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background",
+                      u.online ? "bg-emerald-500" : "bg-muted-foreground/30"
+                    )}
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium">{u.nombre}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {u.nickname}
+                  </p>
+                </div>
+
+                {wasJustAdded ? (
+                  <Check className="h-4 w-4 shrink-0 text-emerald-500" />
+                ) : addParticipant.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+                ) : null}
+              </button>
+            );
+          })
         )}
       </div>
     </div>

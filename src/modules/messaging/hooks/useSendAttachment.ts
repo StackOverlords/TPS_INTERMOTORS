@@ -70,6 +70,8 @@ export function useSendAttachment(chatId: number) {
                 es_imagen: true,
                 url: localPreviewUrl ?? "",
                 url_thumbnail: localPreviewUrl ?? null,
+                ancho: null,
+                alto: null,
               },
             ]
           : [
@@ -82,6 +84,8 @@ export function useSendAttachment(chatId: number) {
                 es_imagen: false,
                 url: "",
                 url_thumbnail: null,
+                ancho: null,
+                alto: null,
               },
             ],
         _tempId: tempId,

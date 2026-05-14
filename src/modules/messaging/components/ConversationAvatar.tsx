@@ -20,17 +20,30 @@ export function ConversationAvatar({
   userId,
   name,
   isGroup = false,
-
   className,
   fallbackClassName,
   iconClassName,
 }: Props) {
   const { vars } = getUserAvatarColor(userId);
-
   const avatarStyle = isGroup ? undefined : (vars as React.CSSProperties);
 
   return (
-    <Avatar className={cn("h-10 w-10", className)}>
+    <Avatar
+      className={cn(
+        "h-10 w-10",
+        className,
+        isGroup && "outline-1 outline-primary/20"
+      )}
+      style={
+        !isGroup
+          ? {
+              ...avatarStyle,
+              outline:
+                "1px solid color-mix(in srgb, var(--avatar-text) 30s%, transparent)",
+            }
+          : undefined
+      }
+    >
       <AvatarFallback
         style={avatarStyle}
         className={cn(

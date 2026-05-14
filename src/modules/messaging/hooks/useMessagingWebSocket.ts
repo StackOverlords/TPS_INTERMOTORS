@@ -25,6 +25,7 @@ import { messageService } from "../service/Message.service";
 import authSDK from "@/services/sdk-simple-auth";
 import { soundManager } from "../utils/soundManager";
 import { usePresenceStore } from "../stores/PresenceStore";
+import { messagingUserService } from "../service/MessagingUser.service";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
@@ -156,7 +157,13 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
     const cleanup = websocketService.joinPresence("users", {
       here: (users) => setInitialUsers(users),
       joining: (user) => userJoined(user),
-      leaving: (user) => userLeft(user),
+      leaving: (user) => {
+        userLeft(user);
+        const currentUserId = authSDK.getCurrentUser()?.id;
+        if (String(user.id) === String(currentUserId)) {
+          messagingUserService.userLeave().catch(() => {});
+        }
+      },
     });
 
     presenceSubscribed.current = true;

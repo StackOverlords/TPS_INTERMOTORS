@@ -1,11 +1,8 @@
 /**
- * Layout responsive al ancho del contenedor:
- *
- *   WIDE  (≥ 680px) — ChatInfoPanel como columna lateral derecha (WhatsApp Web)
- *   COMPACT (< 680px) — ChatInfoPanel cubre la conversación (WhatsApp iOS)
- *
- * El padre envuelve este componente con un div con ref={containerRef}
- * para que useChatLayout detecte el ancho correcto.
+ *  - Estado de edición (editingMessage): muestra una EditBar encima del input,
+ *    similar a la ReplyBar, con el texto pre-cargado. Presionar Esc o × cancela.
+ *  - useEditMessage / useDeleteMessage conectados a MessageBubble
+ *  - canModerate derivado de mi_participacion.rol
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -19,8 +16,9 @@ import {
   AlertCircle,
   Link,
   XCircle,
+  Pencil,
+  Check,
 } from "lucide-react";
-import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
 import {
   Tooltip,
@@ -48,6 +46,9 @@ import { isImageMime, validateAttachment } from "../types/Attachment.types";
 import { AttachmentComposer } from "./AttachmentComposer";
 import { ConversationAvatar } from "./ConversationAvatar";
 import authSDK from "@/services/sdk-simple-auth";
+import { useEditMessage } from "../hooks/useEditMessage";
+import { useDeleteMessage } from "../hooks/useDeleteMessage";
+import { Textarea } from "@/components/atoms/textarea";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
@@ -67,6 +68,42 @@ function ReplyBar({
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold text-primary">
             {message.remitente?.nombre ?? "Sistema"}
+          </p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {message.contenido}
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5 shrink-0"
+          onClick={onCancel}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * barra de edición — reemplaza la ReplyBar cuando el usuario
+ * está editando un mensaje existente.
+ */
+function EditBar({
+  message,
+  onCancel,
+}: {
+  message: Message;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="shrink-0 border-t border-border/30 bg-background px-3 pt-2">
+      <div className="flex items-center gap-2 rounded-xl border-l-2 border-amber-500 bg-amber-500/5 px-3 py-2">
+        <Pencil className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold text-amber-600">
+            Editando mensaje
           </p>
           <p className="truncate text-[11px] text-muted-foreground">
             {message.contenido}
@@ -155,7 +192,6 @@ export function ChatConversation({
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
 
   const [input, setInput] = useState("");
-  // showInfo: controlado externamente por ChatLayout (infoActiveProp) O internamente
   const [showInfoInternal, setShowInfoInternal] = useState(false);
   const showInfo =
     infoActiveProp !== undefined ? infoActiveProp : showInfoInternal;
@@ -175,13 +211,16 @@ export function ChatConversation({
     id: number;
   } | null>(null);
 
-  // ── Responsive detection ───────────────────────────────────────────────────
+  // estado de edición
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+
+  // ── Responsive ─────────────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
   const [isCompactDetected, setIsCompactDetected] = useState(true);
   const isCompact = compactProp ?? isCompactDetected;
 
   useEffect(() => {
-    if (compactProp !== undefined) return; // padre controla, no medir
+    if (compactProp !== undefined) return;
     const el = containerRef.current;
     if (!el) return;
     const observer = new ResizeObserver((entries) => {
@@ -195,18 +234,17 @@ export function ChatConversation({
 
   // ── Scroll ─────────────────────────────────────────────────────────────────
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const isAtBottomRef = useRef(true);
 
   const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
   const setPendingDirectChat = useChatStore((s) => s.setPendingDirectChat);
 
-  // Draft — cargar al montar/cambiar de chat, guardar al escribir
+  // Draft
   const getDraft = useDraftStore((s) => s.getDraft);
   const setDraft = useDraftStore((s) => s.setDraft);
   const clearDraft = useDraftStore((s) => s.clearDraft);
 
-  // El "chatId efectivo" para drafts: si es pending usamos userId como key negativa
   const draftKey =
     chat?.id ?? (pendingDirectChat ? -pendingDirectChat.userId : null);
 
@@ -219,9 +257,14 @@ export function ChatConversation({
   } = useOpenChat(chat?.id ?? 0);
 
   const { send, isPending: isSending } = useSendMessage(chat?.id ?? 0);
+
+  // hooks de edición y eliminación
+  const editMutation = useEditMessage(chat?.id ?? 0);
+  const { deleteForAll, deleteForMe } = useDeleteMessage(chat?.id ?? 0);
+
   const { send: sendAttachment } = useSendAttachment(chat?.id ?? 0);
 
-  // ── Pending file state (archivo seleccionado pero aún no enviado) ──────────
+  // ── Pending file ────────────────────────────────────────────────────────────
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(
     null
@@ -229,7 +272,6 @@ export function ChatConversation({
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isUploadingSending, setIsUploadingSending] = useState(false);
 
-  // Limpiar objectURL al cancelar o al desmontar
   const clearPendingFile = useCallback(() => {
     if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
     setPendingFile(null);
@@ -238,7 +280,6 @@ export function ChatConversation({
     setIsUploadingSending(false);
   }, [pendingPreviewUrl]);
 
-  // Cleanup objectURL al desmontar el componente
   useEffect(
     () => () => {
       if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
@@ -248,13 +289,11 @@ export function ChatConversation({
 
   const handleFileSelected = (file: File) => {
     const validation = validateAttachment(file);
-    // Crear preview solo para imágenes válidas
     const previewUrl = isImageMime(file.type)
       ? URL.createObjectURL(file)
       : null;
     setPendingFile(file);
     setPendingPreviewUrl(previewUrl);
-    // Si es inválido mostramos el error dentro del composer, no lo bloqueamos aquí
     setAttachError(validation.valid ? null : validation.error);
     setIsUploadingSending(false);
   };
@@ -265,54 +304,75 @@ export function ChatConversation({
     setAttachError(null);
     try {
       await sendAttachment({ file: pendingFile, caption });
-      clearPendingFile(); // éxito — limpiar todo
+      clearPendingFile();
     } catch (err) {
       setAttachError((err as Error).message ?? "Error al subir el archivo");
-      setIsUploadingSending(false); // mantener el composer visible con el error
+      setIsUploadingSending(false);
     }
+    setTimeout(() => {
+      if (scrollRef.current)
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, 50);
   };
 
-  const prevLoadingRef = useRef(false);
+  // ── Scroll auto ─────────────────────────────────────────────────────────────
+  const isInitialLoadRef = useRef(true);
 
+  // Al cambiar de chat → resetear flags
   useEffect(() => {
-    // Detectar cuando termina la carga (true → false)
-    if (prevLoadingRef.current && !isLoadingMessages) {
-      // requestAnimationFrame garantiza que el DOM ya pintó los mensajes
+    isInitialLoadRef.current = true;
+    isAtBottomRef.current = true;
+  }, [chat?.id, pendingDirectChat?.userId]);
+
+  // ResizeObserver: corrige el scroll cada vez que el contenido crece
+  // (imágenes que cargan, mensajes nuevos, etc.)
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    const observer = new ResizeObserver(() => {
+      if (isInitialLoadRef.current || isAtBottomRef.current) {
+        scrollEl.scrollTop = scrollEl.scrollHeight;
+      }
+    });
+
+    const inner = scrollEl.firstElementChild;
+    if (inner) observer.observe(inner);
+
+    return () => observer.disconnect();
+  }, [chat?.id, pendingDirectChat?.userId]);
+
+  // Cuando llegan los primeros mensajes del chat
+  useEffect(() => {
+    if (isLoadingMessages) return;
+    if (isInitialLoadRef.current && messages.length > 0) {
+      isInitialLoadRef.current = false;
       requestAnimationFrame(() => {
         const el = scrollRef.current;
         if (el) el.scrollTop = el.scrollHeight;
       });
-      // const el = scrollRef.current;
-      // if (el) el.scrollTop = el.scrollHeight;
     }
-    prevLoadingRef.current = isLoadingMessages;
-  }, [isLoadingMessages]);
-
-  useEffect(() => {
-    if (isLoadingMessages) return; // evitar durante carga inicial
-    const el = scrollRef.current;
-    if (el && isAtBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages.length, isLoadingMessages]);
 
-  // Cargar borrador al cambiar de chat o al abrir un pending
   useEffect(() => {
     setReplyTo(null);
     setReference(null);
+    setEditingMessage(null); // limpiar edición al cambiar de chat
     closeInfo();
-    isAtBottomRef.current = true; // resetear para que el nuevo chat arranque abajo
+    isAtBottomRef.current = true;
     const savedDraft = draftKey !== null ? getDraft(draftKey as number) : null;
     setInput(savedDraft ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chat?.id, pendingDirectChat?.userId]);
 
-  // Guardar borrador con debounce al escribir
+  // Guardar borrador (NO guardar cuando estamos editando)
   useEffect(() => {
-    if (draftKey === null) return;
+    if (draftKey === null || editingMessage) return;
     const timer = setTimeout(() => {
       setDraft(draftKey as number, input);
-    }, 500); // debounce 500ms para no escribir en cada keystroke
+    }, 500);
     return () => clearTimeout(timer);
-  }, [input, draftKey, setDraft]);
+  }, [input, draftKey, setDraft, editingMessage]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -323,10 +383,43 @@ export function ChatConversation({
       void loadOlderMessages();
   }, [hasOlderMessages, isFetchingOlderMessages, loadOlderMessages]);
 
+  // ── EDICIÓN ───────────────────────────────────────────────────────
+
+  const handleStartEdit = useCallback((msg: Message) => {
+    setEditingMessage(msg);
+    setInput(msg.contenido); // pre-cargar el texto actual
+    setReplyTo(null);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessage(null);
+    setInput(""); // limpiar o restaurar borrador
+    const draft = draftKey !== null ? getDraft(draftKey as number) : null;
+    setInput(draft ?? "");
+  }, [draftKey, getDraft]);
+
+  // ── SEND (envío normal + confirmar edición) ─────────────────────────────────
   const handleSend = useCallback(() => {
     const content = input.trim();
     if (!content) return;
-    if (!chat && !pendingDirectChat) return; // nada seleccionado
+
+    if (editingMessage) {
+      // confirmar edición
+      if (content !== editingMessage.contenido) {
+        editMutation.mutate({
+          messageId: editingMessage.id,
+          payload: { contenido: content },
+          previousContent: editingMessage.contenido,
+        });
+      }
+      setEditingMessage(null);
+      setInput("");
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (!chat && !pendingDirectChat) return;
     send({
       contenido: content,
       referencia_tipo: reference?.tipo,
@@ -341,28 +434,58 @@ export function ChatConversation({
       if (scrollRef.current)
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, 50);
-  }, [input, chat, pendingDirectChat, send, reference, draftKey, clearDraft]);
+  }, [
+    input,
+    editingMessage,
+    chat,
+    pendingDirectChat,
+    send,
+    reference,
+    draftKey,
+    clearDraft,
+    editMutation,
+  ]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const adjustTextareaHeight = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, []);
+
+  // Resetear altura cuando se limpia el input
+  useEffect(() => {
+    if (!input && inputRef.current) {
+      inputRef.current.style.height = "auto";
+    } else {
+      adjustTextareaHeight();
+    }
+  }, [input, adjustTextareaHeight]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape" && editingMessage) {
+      handleCancelEdit();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  // Pending: mostrar vista de conversación vacía con nombre del usuario destino
+  // permisos de moderación
+  const canModerate =
+    chat?.mi_participacion.rol === "OWNER" ||
+    chat?.mi_participacion.rol === "ADMIN";
+
   const isPending = !chat && !!pendingDirectChat;
   if (!chat && !pendingDirectChat) return <EmptyState />;
 
-  // Valores derivados del chat real O del pending
   const chatNombre = chat?.nombre ?? pendingDirectChat?.nombre ?? "";
   const isGroup = chat ? chat.tipo !== "DIRECT" : false;
-  const canWrite = chat ? chat.mi_participacion.puede_escribir : true; // pending = siempre puede escribir
+  const canWrite = chat ? chat.mi_participacion.puede_escribir : true;
 
-  // ── Info panel shown in compact mode (covers conversation) ────────────────
   const showInfoOverlay = showInfo && isCompact;
-
-  // ── Info panel shown in wide mode (side column) ───────────────────────────
   const showInfoSide = showInfo && !isCompact;
 
   const otherParticipantId = !isGroup
@@ -373,7 +496,6 @@ export function ChatConversation({
 
   return (
     <div ref={containerRef} className="flex h-full relative">
-      {/* ── Main column ──────────────────────────────────────────────────── */}
       <div
         className={cn(
           "flex min-w-0 flex-1 flex-col",
@@ -388,11 +510,8 @@ export function ChatConversation({
               size="icon"
               className="h-7 w-7 shrink-0"
               onClick={() => {
-                if (isPending) {
-                  setPendingDirectChat(null);
-                } else {
-                  setActiveChatId(null);
-                }
+                if (isPending) setPendingDirectChat(null);
+                else setActiveChatId(null);
               }}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -417,7 +536,6 @@ export function ChatConversation({
                   : chat!.tipo_label}
             </p>
           </div>
-          {/* Info button solo cuando hay chat real */}
           {!isPending && isGroup && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -438,12 +556,10 @@ export function ChatConversation({
           )}
         </div>
 
-        {/* Offline banner */}
         {!isOnline && <OfflineBanner pendingCount={pendingCount} />}
 
-        {/* Messages area — position relative para el overlay */}
+        {/* Messages area */}
         <div className="relative flex-1 overflow-hidden">
-          {/* Messages scroll */}
           <div
             ref={scrollRef}
             onScroll={handleScroll}
@@ -470,8 +586,6 @@ export function ChatConversation({
             ) : (
               messages.map((msg, i) => {
                 const prev = messages[i - 1];
-
-                // Comparar solo la fecha (sin hora) para detectar cambio de día
                 const msgDay = new Date(msg.fecha_reg);
                 msgDay.setHours(0, 0, 0, 0);
 
@@ -496,6 +610,11 @@ export function ChatConversation({
                       onReply={setReplyTo}
                       isDirectChat={chat?.tipo === "DIRECT"}
                       otherDate={showSeparator}
+                      // EDICIÓN
+                      onEdit={handleStartEdit}
+                      onDeleteForAll={(m) => deleteForAll.mutate(m.id)}
+                      onDeleteForMe={(m) => deleteForMe.mutate(m.id)}
+                      canModerate={canModerate}
                     />
                   </div>
                 );
@@ -504,13 +623,17 @@ export function ChatConversation({
           </div>
         </div>
 
-        {/* Reply bar */}
-        {replyTo && (
-          <ReplyBar message={replyTo} onCancel={() => setReplyTo(null)} />
+        {/* EditBar — prioridad sobre ReplyBar */}
+        {editingMessage ? (
+          <EditBar message={editingMessage} onCancel={handleCancelEdit} />
+        ) : (
+          replyTo && (
+            <ReplyBar message={replyTo} onCancel={() => setReplyTo(null)} />
+          )
         )}
 
         {/* Reference preview */}
-        {reference && !pendingFile && (
+        {reference && !pendingFile && !editingMessage && (
           <div className="shrink-0 border-t border-border/30 bg-background px-3 pt-2">
             <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5">
               <Link className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -527,11 +650,10 @@ export function ChatConversation({
           </div>
         )}
 
-        {/* Input */}
-        <div className="shrink-0 border-t border-border/40 bg-background p-3">
+        {/* Input area */}
+        <div className="shrink-0 bg-background px-3 py-2.5">
           {canWrite ? (
-            pendingFile ? (
-              /* ── AttachmentComposer: reemplaza el input cuando hay archivo ── */
+            pendingFile && !editingMessage ? (
               <AttachmentComposer
                 file={pendingFile}
                 previewUrl={pendingPreviewUrl}
@@ -541,17 +663,22 @@ export function ChatConversation({
                 onCancel={clearPendingFile}
               />
             ) : (
-              /* ── Input normal ─────────────────────────────────────────────── */
-              <div className="shrink-0 bg-background">
-                <div className="flex items-center gap-2">
-                  {/* Adjuntar archivo */}
-                  <FilePickerButton
-                    disabled={isSending}
-                    onFileSelected={handleFileSelected}
-                  />
-
-                  {/* Vincular documento */}
-                  {/* <Tooltip>
+              <div
+                className={cn(
+                  "flex items-end gap-1 rounded-2xl border p-2",
+                  editingMessage ? "border-amber-500/50" : "border-border"
+                )}
+              >
+                {/* Botón archivo — solo cuando no se está editando */}
+                {!editingMessage && (
+                  <>
+                    <FilePickerButton
+                      disabled={isSending}
+                      onFileSelected={handleFileSelected}
+                      // className="mb-0.5 shrink-0"
+                    />
+                    {/* Vincular documento */}
+                    {/* <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
@@ -572,49 +699,71 @@ export function ChatConversation({
                         : "Vincular documento"}
                     </TooltipContent>
                   </Tooltip> */}
+                  </>
+                )}
 
-                  <Input
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Escribe un mensaje..."
-                    className="h-9 rounded-xl border-border/30 bg-muted/20 px-4 text-sm focus-visible:ring-1"
-                    disabled={isSending}
-                  />
-                  <Button
-                    size="icon"
-                    className="h-9 w-9 shrink-0 rounded-xl"
-                    disabled={!input.trim() || isSending}
-                    onClick={handleSend}
-                  >
-                    {isSending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                {/* Textarea autoexpandible */}
+                <Textarea
+                  ref={inputRef}
+                  value={input}
+                  rows={1}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    adjustTextareaHeight();
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    editingMessage
+                      ? "Editar mensaje... (Esc para cancelar)"
+                      : "Escribe un mensaje..."
+                  }
+                  disabled={isSending || editMutation.isPending}
+                  className={cn(
+                    "min-h-0 resize-none border-0 bg-transparent p-0 py-1",
+                    "shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                    "max-h-[120px] overflow-y-auto text-sm leading-relaxed",
+                    editingMessage && "text-foreground"
+                  )}
+                />
+
+                {/* Botón enviar */}
+                <Button
+                  size="icon"
+                  className={cn(
+                    "shrink-0",
+                    editingMessage && "bg-amber-500 hover:bg-amber-600"
+                  )}
+                  disabled={
+                    !input.trim() || isSending || editMutation.isPending
+                  }
+                  onClick={handleSend}
+                >
+                  {isSending || editMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : editingMessage ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             )
           ) : (
-            <div className="shrink-0 border-t border-border/40 bg-background p-3">
-              <p className="text-center text-[11px] text-muted-foreground">
-                No tienes permiso para enviar mensajes en este chat
-              </p>
-            </div>
+            <p className="text-center text-[11px] text-muted-foreground py-2">
+              No tienes permiso para enviar mensajes en este chat
+            </p>
           )}
         </div>
       </div>
 
-      {/* ── COMPACT: info panel cubre la conversación (slide-in) ──── */}
+      {/* Info panel — compact overlay */}
       {showInfoOverlay && (
         <div className="absolute inset-0 z-10 bg-background">
           <ChatInfoPanel chat={chat!} onClose={() => closeInfo()} />
         </div>
       )}
 
-      {/* ── WIDE: info panel como columna lateral ────────────────────────── */}
+      {/* Info panel — wide side column */}
       {showInfoSide && (
         <div className="w-[260px] shrink-0">
           <ChatInfoPanel chat={chat!} onClose={() => closeInfo()} />

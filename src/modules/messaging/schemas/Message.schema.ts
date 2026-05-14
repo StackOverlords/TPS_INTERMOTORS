@@ -13,6 +13,8 @@ export const attachmentSchema = z.object({
   es_imagen: z.boolean(),
   url: z.string(),
   url_thumbnail: z.string().nullable(),
+  ancho: z.number().nullable(),
+  alto: z.number().nullable(),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
