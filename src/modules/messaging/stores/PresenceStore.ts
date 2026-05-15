@@ -1,32 +1,36 @@
 /**
- * PresenceStore — estado de presencia (online/offline) de usuarios.
+ * Estado de presencia (online/offline) de usuarios via Presence Channel.
  *
- * Fuente primaria: Presence Channel de Reverb/Echo (presence-users).
- * Fuente secundaria: campo `online` de GET /messaging/users (usado antes
- * de que Echo se conecte o como fallback si Reverb no está disponible).
+ * Fuente de verdad:
+ *  - presenceConnected === true  → SOLO el Set onlineUserIds define quién está online.
+ *                                  El campo `online` del HTTP se ignora completamente.
+ *  - presenceConnected === false → Se usa el campo `online` del HTTP como fallback
+ *                                  (polling cada 5 min que hace el backend).
  *
- * El store usa un Set<number> para O(1) lookups por userId.
- * Zustand no maneja Sets de forma reactiva por defecto, así que
- * guardamos también un counter que cambia en cada mutación para
- * forzar re-renders en los componentes suscritos.
+ * presenceConnected se activa con el primer evento `here` del canal presence-users
+ * y se desactiva al hacer reset (logout).
  */
 import { create } from "zustand";
 
 interface PresenceState {
-  /** IDs de usuarios actualmente online */
   onlineUserIds: Set<number>;
-  /** Incrementa con cada cambio para forzar re-renders */
+  /** true en cuanto recibimos el primer evento `here` del canal de presencia */
+  presenceConnected: boolean;
+  /**
+   * Incrementa con cada mutación del Set para forzar re-renders.
+   * Zustand no detecta cambios internos de Set de forma reactiva.
+   */
   _tick: number;
 }
 
 interface PresenceActions {
-  /** Llamar con la lista inicial de presencia (evento `here`) */
+  /** Llamar con la lista inicial cuando Echo hace join (evento `here`) */
   setInitialUsers: (users: Array<{ id: number }>) => void;
-  /** Llamar cuando un usuario entra (evento `joining`) */
+  /** Usuario entró al canal (evento `joining`) */
   userJoined: (user: { id: number }) => void;
-  /** Llamar cuando un usuario sale (evento `leaving`) */
+  /** Usuario salió del canal (evento `leaving`) */
   userLeft: (user: { id: number }) => void;
-  /** Verificar si un usuario está online */
+  /** Verificar si un usuario está online (lectura directa, sin reactividad) */
   isOnline: (userId: number) => boolean;
   /** Resetear al hacer logout */
   reset: () => void;
@@ -34,6 +38,7 @@ interface PresenceActions {
 
 const initialState: PresenceState = {
   onlineUserIds: new Set(),
+  presenceConnected: false,
   _tick: 0,
 };
 
@@ -44,6 +49,7 @@ export const usePresenceStore = create<PresenceState & PresenceActions>()(
     setInitialUsers: (users) =>
       set({
         onlineUserIds: new Set(users.map((u) => u.id)),
+        presenceConnected: true, // ← primer evento here = canal activo
         _tick: get()._tick + 1,
       }),
 
@@ -68,22 +74,20 @@ export const usePresenceStore = create<PresenceState & PresenceActions>()(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SELECTOR HELPERS
+// SELECTOR HOOK
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Hook para saber si un usuario específico está online.
- * Se re-renderiza solo cuando cambia el estado de CUALQUIER usuario
- * (por limitación de Set en Zustand — usamos _tick como proxy).
+ * Hook reactivo para saber si un usuario específico está online.
  *
- * Para componentes que muestran MUCHOS usuarios (listas), es más eficiente
- * usar usePresenceStore.getState().isOnline(id) en renders estáticos.
+ * Usa _tick como proxy para re-evaluar cuando cambia el Set.
+ * Seguro de llamar dentro de componentes — pero NO dentro de .map() directamente;
+ * siempre usarlo en el cuerpo de un componente React.
  */
 export function useIsOnline(userId: number | undefined): boolean {
   return usePresenceStore((s) => {
     if (!userId) return false;
-    // _tick incluido para que el selector re-evalúe al cambiar el Set
-    void s._tick;
+    void s._tick; // dependencia reactiva
     return s.onlineUserIds.has(userId);
   });
 }

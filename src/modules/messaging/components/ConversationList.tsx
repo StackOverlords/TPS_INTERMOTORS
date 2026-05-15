@@ -15,7 +15,7 @@ import {
   LogOut,
   CheckCheck,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
 import {
@@ -45,6 +45,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { Badge } from "@/components/atoms/badge";
 import { getFilePreviewByName } from "../utils/filePreview";
 import { ConversationAvatar } from "./ConversationAvatar";
+import { useChatUIStore } from "../stores/ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIEW STATE
@@ -284,6 +285,22 @@ export function ConversationList({
 
   const [search, setSearch] = useState("");
 
+  // ── Scroll preservation ──────────────────────────────────────────────────
+  const scrollListRef = useRef<HTMLDivElement>(null);
+
+  const conversationListScroll = useChatUIStore(
+    (s) => s.conversationListScroll
+  );
+  const chatPositionOnEnter = useChatUIStore((s) => s.chatPositionOnEnter);
+  const lastVisitedChatId = useChatUIStore((s) => s.lastVisitedChatId);
+  const setConversationListScroll = useChatUIStore(
+    (s) => s.setConversationListScroll
+  );
+  const setChatPositionOnEnter = useChatUIStore(
+    (s) => s.setChatPositionOnEnter
+  );
+  const setLastVisitedChatId = useChatUIStore((s) => s.setLastVisitedChatId);
+
   const sorted = useMemo(
     () =>
       [...chats].sort((a, b) => {
@@ -308,6 +325,34 @@ export function ConversationList({
       ),
     [sorted, search]
   );
+
+  // Al montar (puede ser re-montaje tras volver de un chat)
+  useEffect(() => {
+    const el = scrollListRef.current;
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      if (lastVisitedChatId === null) {
+        // Primera vez, sin historial
+        el.scrollTop = conversationListScroll;
+        return;
+      }
+
+      // Comparar posición actual del chat visitado vs posición al entrar
+      const currentPosition = sorted.findIndex(
+        (c) => c.id === lastVisitedChatId
+      );
+      const shouldRestore = currentPosition === chatPositionOnEnter;
+
+      if (shouldRestore) {
+        el.scrollTop = conversationListScroll;
+      } else {
+        // El chat cambió de posición (subió por mensaje enviado) → ir al tope
+        el.scrollTop = 0;
+        setConversationListScroll(0);
+      }
+    });
+  }, []);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -438,7 +483,13 @@ export function ConversationList({
       </div>
 
       {/* Chat list */}
-      <div className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollListRef}
+        className="flex-1 overflow-y-auto"
+        onScroll={() => {
+          setConversationListScroll(scrollListRef.current?.scrollTop ?? 0);
+        }}
+      >
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center">
             <MessageCircle className="h-8 w-8 text-muted-foreground/25" />
@@ -463,6 +514,9 @@ export function ConversationList({
               chat={chat}
               isActive={activeChatId === chat.id}
               onClick={() => {
+                const position = sorted.findIndex((c) => c.id === chat.id);
+                setChatPositionOnEnter(position);
+                setLastVisitedChatId(chat.id);
                 setActiveChatId(chat.id);
                 onChatSelected?.();
               }}

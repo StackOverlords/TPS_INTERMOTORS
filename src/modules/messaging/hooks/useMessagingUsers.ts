@@ -1,10 +1,10 @@
 /**
- * Usa el endpoint propio GET /messaging/users que devuelve usuarios
- * agrupados por sucursal con estado online/last_seen_at.
+ * Regla de fuente de verdad:
+ *  - presenceConnected === true  → online = onlineUserIds.has(id)  [Presence]
+ *  - presenceConnected === false → online = u.online               [HTTP fallback]
  *
- * Dos variantes:
- *  - useMessagingUsers()       → grupos completos por sucursal
- *  - useMessagingUsersFlat()   → lista plana, sin duplicados, con online en tiempo real
+ * useUserAllSucursalesMap: devuelve Map<userId, sigla[]> con TODAS las sucursales
+ * de cada usuario (no solo la primera), para mostrar los badges completos en la UI.
  */
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -21,12 +21,28 @@ export const MESSAGING_USERS_QUERY_KEY = ["messaging", "users"] as const;
 export interface UseMessagingUsersOptions {
   sucursal_id?: number;
   buscar?: string;
-  /** Por defecto true. Pasar false para deshabilitar (ej: componentes no montados) */
   enabled?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HOOK — grupos por sucursal
+// Helpers internos
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Resuelve si un usuario está online según la fuente de verdad correcta.
+ * Si el canal de presencia está activo, el campo HTTP se ignora completamente.
+ */
+function resolveOnline(
+  userId: number,
+  httpOnline: boolean,
+  onlineUserIds: Set<number>,
+  presenceConnected: boolean,
+): boolean {
+  return presenceConnected ? onlineUserIds.has(userId) : httpOnline;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOOK BASE — grupos por sucursal (datos crudos)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useMessagingUsers(options: UseMessagingUsersOptions = {}) {
@@ -35,7 +51,7 @@ export function useMessagingUsers(options: UseMessagingUsersOptions = {}) {
   const query = useQuery({
     queryKey: [...MESSAGING_USERS_QUERY_KEY, sucursal_id, buscar],
     queryFn: () => messagingUserService.getAll({ sucursal_id, buscar }),
-    staleTime: 1000 * 60 * 5, // 5 min — online se actualiza por presencia
+    staleTime: 1000 * 60 * 5,
     enabled,
   });
 
@@ -48,26 +64,19 @@ export function useMessagingUsers(options: UseMessagingUsersOptions = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HOOK — lista plana sin duplicados
+// HOOK — lista plana deduplicada
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Lista plana de usuarios, filtrada por búsqueda, sin duplicados,
- * con el estado online sobreescrito por el Presence Channel en tiempo real.
- *
- * Si no hay Presence Channel activo, cae back al campo `online` del API.
- */
 export function useMessagingUsersFlat(search?: string): {
   users: MessagingUser[];
   isLoading: boolean;
 } {
   const { groups, isLoading } = useMessagingUsers({ enabled: true });
-  // _tick hace que este selector se re-evalúe cuando cambia el Set de presencia
-  const { onlineUserIds, _tick } = usePresenceStore();
+  const { onlineUserIds, presenceConnected, _tick } = usePresenceStore();
   const currentUserId = authSDK.getCurrentUser()?.id;
 
   const users = useMemo(() => {
-    void _tick; // dependencia reactiva del Set
+    void _tick;
 
     const seen = new Set<number>();
     const flat: MessagingUser[] = [];
@@ -75,13 +84,16 @@ export function useMessagingUsersFlat(search?: string): {
     for (const group of groups) {
       for (const u of group.usuarios) {
         if (seen.has(u.id)) continue;
-        // Excluir al usuario autenticado (el backend ya lo hace, pero doble check)
         if (String(u.id) === String(currentUserId)) continue;
         seen.add(u.id);
         flat.push({
           ...u,
-          // Presence tiene prioridad sobre el campo HTTP
-          online: onlineUserIds.has(u.id) || u.online,
+          online: resolveOnline(
+            u.id,
+            u.online,
+            onlineUserIds,
+            presenceConnected,
+          ),
         });
       }
     }
@@ -94,15 +106,18 @@ export function useMessagingUsersFlat(search?: string): {
         u.nombre.toLowerCase().includes(lower) ||
         u.nickname.toLowerCase().includes(lower),
     );
-  }, [groups, onlineUserIds, _tick, search, currentUserId]);
+  }, [groups, onlineUserIds, presenceConnected, _tick, search, currentUserId]);
 
   return { users, isLoading };
 }
 
-/** Map<userId, MessagingUser> con online en tiempo real para lookups O(1). */
+// ─────────────────────────────────────────────────────────────────────────────
+// HOOK — Map<userId, MessagingUser> para lookups O(1)
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function useMessagingUserMap(): Map<number, MessagingUser> {
   const { groups } = useMessagingUsers({ enabled: true });
-  const { onlineUserIds, _tick } = usePresenceStore();
+  const { onlineUserIds, presenceConnected, _tick } = usePresenceStore();
 
   return useMemo(() => {
     void _tick;
@@ -110,24 +125,59 @@ export function useMessagingUserMap(): Map<number, MessagingUser> {
     for (const group of groups) {
       for (const u of group.usuarios) {
         if (!map.has(u.id)) {
-          map.set(u.id, { ...u, online: onlineUserIds.has(u.id) || u.online });
+          map.set(u.id, {
+            ...u,
+            online: resolveOnline(
+              u.id,
+              u.online,
+              onlineUserIds,
+              presenceConnected,
+            ),
+          });
         }
       }
     }
     return map;
-  }, [groups, onlineUserIds, _tick]);
+  }, [groups, onlineUserIds, presenceConnected, _tick]);
 }
 
-/** Map<userId, sucursalSigla> — primera sucursal donde aparece el usuario. */
-export function useUserSucursalMap(): Map<number, string> {
+// ─────────────────────────────────────────────────────────────────────────────
+// HOOK — Map<userId, sigla[]> con TODAS las sucursales del usuario
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Devuelve un mapa de userId → array de siglas de TODAS las sucursales
+ * a las que pertenece ese usuario.
+ *
+ * Ejemplo: User 6 aparece en CENTRAL(CT) y SUCURSAL 1(S1)
+ *   → map.get(6) === ["CT", "S1"]
+ *
+ * Usado en UserSelectorPanel y GroupSetupPanel para mostrar todos los
+ * badges de sucursal en cada fila de usuario.
+ */
+export function useUserAllSucursalesMap(): Map<number, string[]> {
   const { groups } = useMessagingUsers({ enabled: true });
+
   return useMemo(() => {
-    const map = new Map<number, string>();
+    const map = new Map<number, string[]>();
     for (const group of groups) {
       for (const u of group.usuarios) {
-        if (!map.has(u.id)) map.set(u.id, group.sucursal.sigla);
+        const existing = map.get(u.id) ?? [];
+        if (!existing.includes(group.sucursal.sigla)) {
+          map.set(u.id, [...existing, group.sucursal.sigla]);
+        }
       }
     }
     return map;
   }, [groups]);
+}
+
+// Alias mantenido por compatibilidad con GroupSetupPanel existente
+export function useUserSucursalMap(): Map<number, string> {
+  const allMap = useUserAllSucursalesMap();
+  return useMemo(() => {
+    const map = new Map<number, string>();
+    allMap.forEach((siglas, id) => map.set(id, siglas[0] ?? ""));
+    return map;
+  }, [allMap]);
 }

@@ -4,7 +4,13 @@
  *  - useEditMessage / useDeleteMessage conectados a MessageBubble
  *  - canModerate derivado de mi_participacion.rol
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowLeft,
   Send,
@@ -236,6 +242,7 @@ export function ChatConversation({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isAtBottomRef = useRef(true);
+  const prevScrollHeightRef = useRef<number | null>(null);
 
   const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
   const setPendingDirectChat = useChatStore((s) => s.setPendingDirectChat);
@@ -354,6 +361,26 @@ export function ChatConversation({
     }
   }, [messages.length, isLoadingMessages]);
 
+  // ── Scroll para mensajes en tiempo real (WebSocket) ─────────────────────────
+  const prevMessageCountRef = useRef(messages.length);
+
+  useEffect(() => {
+    const prev = prevMessageCountRef.current;
+    const curr = messages.length;
+    prevMessageCountRef.current = curr;
+
+    // Solo actuar cuando se agrega al menos un mensaje (no en carga inicial)
+    if (curr <= prev || isInitialLoadRef.current) return;
+
+    // Si el usuario está al fondo (o casi), hacer scroll
+    if (isAtBottomRef.current) {
+      requestAnimationFrame(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+    }
+  }, [messages.length]);
+
   useEffect(() => {
     setReplyTo(null);
     setReference(null);
@@ -379,9 +406,35 @@ export function ChatConversation({
     if (!el) return;
     isAtBottomRef.current =
       el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    if (el.scrollTop < 60 && hasOlderMessages && !isFetchingOlderMessages)
+
+    if (el.scrollTop < 60 && hasOlderMessages && !isFetchingOlderMessages) {
       void loadOlderMessages();
+    }
   }, [hasOlderMessages, isFetchingOlderMessages, loadOlderMessages]);
+
+  // Este efecto corre ANTES de pintar (useLayoutEffect) cuando pages.length crece,
+  // pero necesitamos el valor ANTES de que el DOM cambie → lo capturamos en un
+  // useLayoutEffect que se dispara en isFetchingNextPage
+  useLayoutEffect(() => {
+    // Cuando EMPIEZA a fetchear: capturar scrollHeight actual
+    if (isFetchingOlderMessages) {
+      const el = scrollRef.current;
+      if (el) prevScrollHeightRef.current = el.scrollHeight;
+    }
+  }, [isFetchingOlderMessages]);
+
+  // Cuando TERMINA de fetchear y el DOM ya tiene los nuevos mensajes: restaurar
+  useLayoutEffect(() => {
+    if (prevScrollHeightRef.current === null) return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const diff = el.scrollHeight - prevScrollHeightRef.current;
+    if (diff > 0) {
+      el.scrollTop += diff;
+    }
+    prevScrollHeightRef.current = null;
+  }, [messages.length]);
 
   // ── EDICIÓN ───────────────────────────────────────────────────────
 

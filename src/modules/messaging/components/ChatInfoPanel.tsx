@@ -1,9 +1,3 @@
-/**
- *  - Vista 'edit-group': formulario inline para editar nombre/descripción
- *    (solo OWNER/ADMIN, solo tipo GROUP, no sistema)
- *  - useEditChat conectado al botón de editar
- *  - Indicador online de cada participante via PresenceStore
- */
 import { useState } from "react";
 import {
   X,
@@ -34,9 +28,13 @@ import type { Chat, ParticipantRole } from "../types/Chat.types";
 import { sortParticipantsByRole } from "../utils/chatUtils";
 import { ConversationAvatar } from "./ConversationAvatar";
 import { useEditChat } from "../hooks/useEditChat";
-import { LastSeenLabel, OnlineDot } from "./PresenceIndicator";
-import { useMessagingUserMap } from "../hooks/useMessagingUsers";
-import { useIsOnline } from "../stores/PresenceStore";
+import { OnlineDot, LastSeenLabel } from "./PresenceIndicator";
+import {
+  useMessagingUserMap,
+  useUserAllSucursalesMap,
+} from "../hooks/useMessagingUsers";
+import { useIsOnline, usePresenceStore } from "../stores/PresenceStore";
+import type { MessagingUser } from "../types/MessagingUser.types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -64,8 +62,21 @@ const ROLE_ICONS: Record<ParticipantRole, React.ReactNode> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PARTICIPANT ROW (con indicador online)
+// PARTICIPANT ROW
+// Componente separado para poder llamar hooks (useIsOnline) correctamente.
 // ─────────────────────────────────────────────────────────────────────────────
+
+interface ParticipantRowProps {
+  p: ReturnType<typeof sortParticipantsByRole>[number];
+  isMe: boolean;
+  canRemove: boolean;
+  onRemove: () => void;
+  isRemoving: boolean;
+  /** Datos del usuario desde /messaging/users (puede ser undefined para el propio usuario) */
+  messagingUser: MessagingUser | undefined;
+  /** Siglas de TODAS las sucursales del participante */
+  allSucursales: string[];
+}
 
 function ParticipantRow({
   p,
@@ -73,53 +84,90 @@ function ParticipantRow({
   canRemove,
   onRemove,
   isRemoving,
-  messagingOnline,
-  messagingLastSeen,
-}: {
-  p: ReturnType<typeof sortParticipantsByRole>[number];
-  isMe: boolean;
-  canRemove: boolean;
-  onRemove: () => void;
-  isRemoving: boolean;
-  messagingOnline: boolean;
-  messagingLastSeen: string | null;
-}) {
+  messagingUser,
+  allSucursales,
+}: ParticipantRowProps) {
+  const presenceOnline = useIsOnline(p.usuario.id);
+  const presenceConnected = usePresenceStore((s) => s.presenceConnected);
+
+  /**
+   * Fuente de verdad:
+   *  - Presence conectado → usar SOLO el Set de presencia (ignora HTTP)
+   *  - Presence no conectado → usar campo online del HTTP
+   *
+   * Para el usuario autenticado (isMe), messagingUser puede ser undefined
+   * porque el backend lo excluye del endpoint /messaging/users.
+   * En ese caso, presenceOnline (del PresenceStore) es la única fuente.
+   */
+  const online = presenceConnected
+    ? presenceOnline
+    : (messagingUser?.online ?? presenceOnline);
+
+  const lastSeen = messagingUser?.last_seen_at ?? null;
+
   return (
-    <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/40">
+    <div className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-muted/40">
+      {/* Avatar + OnlineDot */}
       <div className="relative shrink-0">
         <ConversationAvatar
           userId={p.usuario.id}
-          name={p.usuario?.nombre ?? "Usuario desconocido"}
+          name={p.usuario?.nombre ?? "Usuario"}
           isGroup={false}
           className="size-8"
           fallbackClassName="text-xs"
           iconClassName="h-7 w-7"
         />
-        {/* Indicador online */}
         <OnlineDot
-          online={messagingOnline}
-          lastSeenAt={messagingLastSeen}
+          online={online}
+          lastSeenAt={lastSeen}
           className="absolute -bottom-0.5 -right-0.5 size-2.5"
         />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-medium">
-          {p.usuario?.nombre ?? "Usuario desconocido"}
-          {isMe && <span className="ml-1 text-muted-foreground">(Tú)</span>}
-        </p>
+
+      {/* Nombre + last seen */}
+      <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-xs font-medium leading-tight">
+            {p.usuario?.nombre ?? "Usuario desconocido"}
+            {isMe && (
+              <span className="ml-1 text-muted-foreground font-normal">
+                (Tú)
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* LastSeenLabel reemplaza la línea de rol repetida */}
         <LastSeenLabel
-          online={messagingOnline}
-          lastSeenAt={messagingLastSeen}
+          online={online}
+          lastSeenAt={lastSeen}
           className="text-[10px]"
         />
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {ROLE_ICONS[p.rol]}
+
+      {/* Rol badge + botón remover */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <div>
+          {ROLE_ICONS[p.rol]}
+          {/* Sucursal badges */}
+          {allSucursales.length > 0 && (
+            <div className="flex gap-0.5 mt-0.5">
+              {allSucursales.map((s) => (
+                <span
+                  key={s}
+                  className="rounded px-1 py-0.5 text-[9px] font-bold bg-muted text-muted-foreground leading-none"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
         {canRemove && (
           <Button
             variant="secondary"
             size="icon"
-            className="size-7 text-destructive cursor-pointer hover:bg-destructive/10"
+            className="text-destructive cursor-pointer hover:bg-destructive/10"
             disabled={isRemoving}
             onClick={onRemove}
             title={`Remover a ${p.usuario?.nombre}`}
@@ -133,7 +181,7 @@ function ParticipantRow({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROPS
+// PROPS / VIEW TYPE
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -159,13 +207,14 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
   const leaveChat = useLeaveChat(chat.id);
   const editChat = useEditChat(chat.id);
 
+  // Mapas de presencia y sucursales
   const userMap = useMessagingUserMap();
+  const allSucursalesMap = useUserAllSucursalesMap();
 
   const isGroup = chat.tipo !== "DIRECT";
   const isSistema = chat.es_sistema;
   const myRole = chat.mi_participacion.rol;
   const canManage = (myRole === "OWNER" || myRole === "ADMIN") && !isSistema;
-
   const currentUserId = Number(authSDK.getCurrentUser()?.id);
   const sortedParticipants = sortParticipantsByRole(participants);
 
@@ -174,16 +223,13 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
     onClose();
   };
 
-  // ── Edit group view ──────────────────────────────────────────────────────
+  // ── Edit group view ────────────────────────────────────────────────────────
   if (view === "edit-group") {
     const handleSave = () => {
       const nombre = editNombre.trim();
       if (!nombre) return;
       editChat.mutate(
-        {
-          nombre,
-          descripcion: editDescripcion.trim() || undefined,
-        },
+        { nombre, descripcion: editDescripcion.trim() || undefined },
         { onSuccess: () => setView("info") }
       );
     };
@@ -249,7 +295,7 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
     );
   }
 
-  // ── Add member view ──────────────────────────────────────────────────────
+  // ── Add member view ────────────────────────────────────────────────────────
   if (view === "add-member") {
     return (
       <div className="flex h-full flex-col">
@@ -258,16 +304,14 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
     );
   }
 
-  // ── Info view ────────────────────────────────────────────────────────────
+  // ── Info view ──────────────────────────────────────────────────────────────
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
         <span className="text-sm font-semibold">
           {isGroup ? "Info. del grupo" : "Info. del chat"}
         </span>
         <div className="flex items-center gap-1">
-          {/*: botón editar para OWNER/ADMIN */}
           {canManage && isGroup && (
             <Button
               variant="ghost"
@@ -296,7 +340,7 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
 
       <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-4 p-4">
-          {/* Avatar + nombre */}
+          {/* Avatar + datos del chat */}
           <div className="space-y-2 text-center">
             <ConversationAvatar
               name={chat.nombre}
@@ -371,7 +415,6 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
                       variant="outline"
                       size="icon"
                       onClick={() => setView("add-member")}
-                      title="Agregar participante"
                       className="cursor-pointer"
                     >
                       <UserPlus className="h-3.5 w-3.5" />
@@ -406,13 +449,6 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
                           (p.rol === "OWNER" || p.rol === "ADMIN")
                         );
 
-                      const messagingUser = userMap.get(p.usuario.id);
-                      const isCurrentUserOnline = useIsOnline(p.usuario.id);
-
-                      const messagingOnline = isMe
-                        ? isCurrentUserOnline
-                        : (messagingUser?.online ?? false);
-
                       return (
                         <ParticipantRow
                           key={p.id}
@@ -423,9 +459,9 @@ export function ChatInfoPanel({ chat, onClose }: Props) {
                             removeParticipant.mutate(p.usuario.id)
                           }
                           isRemoving={removeParticipant.isPending}
-                          messagingOnline={messagingOnline}
-                          messagingLastSeen={
-                            messagingUser?.last_seen_at ?? null
+                          messagingUser={userMap.get(p.usuario.id)}
+                          allSucursales={
+                            allSucursalesMap.get(p.usuario.id) ?? []
                           }
                         />
                       );

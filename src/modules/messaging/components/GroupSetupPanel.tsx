@@ -1,7 +1,6 @@
 /**
- * Segundo paso para crear un grupo.
- * Muestra los usuarios seleccionados, campos nombre/descripción
- * y el botón "Crear grupo".
+ * - MessagingUser (u.nombre, u.nickname)
+ * - Badge de TODAS las sucursales de cada usuario seleccionado
  */
 import { useState } from "react";
 import { ArrowLeft, Users, X, Loader2 } from "lucide-react";
@@ -9,11 +8,12 @@ import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { ScrollArea } from "@/components/atoms/scroll-area";
-import { cn } from "@/lib/utils";
 import { useCreateGroup } from "../hooks/useCreateChat";
 import type { MessagingUser } from "../types/MessagingUser.types";
 import { useBranchStore } from "@/states/branchStore";
 import { getInitials } from "../utils/chatUtils";
+import { OnlineDot } from "./PresenceIndicator";
+import { useUserAllSucursalesMap } from "../hooks/useMessagingUsers";
 
 interface Props {
   selectedUsers: MessagingUser[];
@@ -32,6 +32,7 @@ export function GroupSetupPanel({
   const [descripcion, setDescripcion] = useState("");
   const createGroup = useCreateGroup();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+  const allSucursalesMap = useUserAllSucursalesMap();
 
   const handleCreate = () => {
     if (!nombre.trim() || selectedUsers.length < 1) return;
@@ -48,7 +49,7 @@ export function GroupSetupPanel({
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Header ───────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="shrink-0 border-b border-border/40 bg-background p-3">
         <div className="flex items-center gap-2">
           <Button
@@ -63,18 +64,16 @@ export function GroupSetupPanel({
         </div>
       </div>
 
-      {/* ── Body ──────────────────────────────────────────────────── */}
       <ScrollArea className="flex-1">
         <div className="space-y-5 p-4">
-          {/* Group icon placeholder */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Users className="h-8 w-8 text-primary" />
+          {/* Ícono */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Users className="h-7 w-7 text-primary" />
             </div>
-            <p className="text-[11px] text-muted-foreground">Ícono del grupo</p>
           </div>
 
-          {/* Name */}
+          {/* Nombre */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Nombre del grupo <span className="text-destructive">*</span>
@@ -92,7 +91,7 @@ export function GroupSetupPanel({
             </p>
           </div>
 
-          {/* Description */}
+          {/* Descripción */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Descripción
@@ -106,47 +105,70 @@ export function GroupSetupPanel({
             />
           </div>
 
-          {/* Selected members */}
+          {/* Participantes */}
           <div className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Participantes ({selectedUsers.length})
             </p>
-            <div className="space-y-0.5 rounded-xl border border-border/40 overflow-hidden">
-              {selectedUsers.map((u, i) => (
-                <div
-                  key={u.id}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5",
-                    i < selectedUsers.length - 1 && "border-b border-border/30"
-                  )}
-                >
-                  <Avatar className="h-8 w-8 shrink-0">
-                    <AvatarFallback className="bg-muted text-[11px] text-muted-foreground">
-                      {getInitials(u.nombre)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium">
-                      {u.nombre}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {u.nickname}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => onRemoveUser(u.id)}
-                    className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            <div className="rounded-xl border border-border/40 overflow-hidden divide-y divide-border/30">
+              {selectedUsers.map((u) => {
+                const siglas = allSucursalesMap.get(u.id) ?? [];
+                return (
+                  <div
+                    key={u.id}
+                    className="flex items-center gap-3 px-3 py-2.5"
                   >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
+                    <div className="relative shrink-0">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-muted text-[11px] text-muted-foreground">
+                          {getInitials(u.nombre)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineDot
+                        online={u.online}
+                        lastSeenAt={u.last_seen_at}
+                        className="absolute -bottom-0.5 -right-0.5 size-2"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-medium leading-tight">
+                        {u.nombre}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-[10px] text-muted-foreground">
+                          @{u.nickname}
+                        </p>
+                        {siglas.length > 0 && (
+                          <span className="flex gap-0.5">
+                            {siglas.map((s) => (
+                              <span
+                                key={s}
+                                className="rounded px-1 py-0.5 text-[9px] font-bold bg-muted text-muted-foreground leading-none"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => onRemoveUser(u.id)}
+                      className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </ScrollArea>
 
-      {/* ── Create button ──────────────────────────────────────────── */}
+      {/* Crear */}
       <div className="shrink-0 border-t border-border/40 bg-background p-3">
         <Button
           className="h-10 w-full gap-2 text-sm"

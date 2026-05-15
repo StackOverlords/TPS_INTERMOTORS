@@ -132,20 +132,20 @@ export function formatLastSeen(
 
   const diffMin = differenceInMinutes(new Date(), date);
 
-  if (diffMin < 2) return "Última vez hace un momento";
-  if (diffMin < 60) return `Última vez hace ${diffMin} min`;
+  if (diffMin < 2) return "Últ. vez hace un momento";
+  if (diffMin < 60) return `Últ. vez hace ${diffMin} min`;
 
   const timeStr = format(date, "HH:mm", { locale: es });
 
-  if (isToday(date)) return `Última vez hoy a las ${timeStr}`;
-  if (isYesterday(date)) return `Última vez ayer a las ${timeStr}`;
+  if (isToday(date)) return `Últ. vez hoy a las ${timeStr}`;
+  if (isYesterday(date)) return `Últ. vez ayer a las ${timeStr}`;
   if (isThisWeek(date, { locale: es })) {
     const dayName = DAYS_ABBR[date.getDay()];
-    return `Última vez el ${dayName} a las ${timeStr}`;
+    return `Últ. vez el ${dayName} a las ${timeStr}`;
   }
 
   const dateStr = format(date, "dd/MM/yyyy", { locale: es });
-  return `Última vez el ${dateStr}`;
+  return `Últ. vez el ${dateStr}`;
 }
 
 interface LastSeenLabelProps {

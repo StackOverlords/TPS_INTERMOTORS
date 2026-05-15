@@ -19,6 +19,10 @@ interface ChatUIState {
   floatingPos: FloatingPos;
   floatingSize: FloatingSize;
   fabHidden: boolean;
+  // ── Scroll preservation ──
+  conversationListScroll: number;
+  chatPositionOnEnter: number;
+  lastVisitedChatId: number | null;
 }
 
 interface ChatUIActions {
@@ -29,6 +33,10 @@ interface ChatUIActions {
   setFloatingPos: (pos: FloatingPos) => void;
   setFloatingSize: (size: FloatingSize) => void;
   setFabHidden: (hidden: boolean) => void;
+  // ── Scroll preservation ──
+  setConversationListScroll: (y: number) => void;
+  setChatPositionOnEnter: (pos: number) => void;
+  setLastVisitedChatId: (id: number | null) => void;
 }
 
 const DEFAULT_SIZE: FloatingSize = { w: 420, h: 580 };
@@ -50,6 +58,9 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
       floatingPos: getDefaultPos(),
       floatingSize: DEFAULT_SIZE,
       fabHidden: false,
+      conversationListScroll: 0,
+      chatPositionOnEnter: -1,
+      lastVisitedChatId: null,
 
       open: (mode) =>
         set((s) => ({
@@ -69,6 +80,10 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
       setFloatingSize: (size) => set({ floatingSize: size }),
 
       setFabHidden: (hidden) => set({ fabHidden: hidden }),
+
+      setConversationListScroll: (y) => set({ conversationListScroll: y }),
+      setChatPositionOnEnter: (pos) => set({ chatPositionOnEnter: pos }),
+      setLastVisitedChatId: (id) => set({ lastVisitedChatId: id }),
     }),
     {
       name: "chat-ui-store",
