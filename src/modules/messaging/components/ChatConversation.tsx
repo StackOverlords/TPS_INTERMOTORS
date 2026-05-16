@@ -24,6 +24,7 @@ import {
   XCircle,
   Pencil,
   Check,
+  Dot,
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import {
@@ -55,6 +56,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { useEditMessage } from "../hooks/useEditMessage";
 import { useDeleteMessage } from "../hooks/useDeleteMessage";
 import { Textarea } from "@/components/atoms/textarea";
+import { usePresenceStore } from "../stores/PresenceStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
@@ -547,6 +549,19 @@ export function ChatConversation({
       )?.usuario?.id
     : undefined;
 
+  // Participantes online (excluye al usuario actual)
+  const onlineUserIds = usePresenceStore((s) => {
+    void s._tick; // dependencia reactiva
+    return s.onlineUserIds;
+  });
+  const presenceConnected = usePresenceStore((s) => s.presenceConnected);
+
+  const onlineCount = chat
+    ? chat.participantes.filter(
+        (p) => p.usuario?.id !== undefined && onlineUserIds.has(p.usuario.id)
+      ).length
+    : 0;
+
   return (
     <div ref={containerRef} className="flex h-full relative">
       <div
@@ -582,11 +597,38 @@ export function ChatConversation({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{chatNombre}</p>
             <p className="text-[10px] text-muted-foreground">
-              {isPending
-                ? "Nuevo mensaje — escribe para iniciar la conversación"
-                : isGroup
-                  ? `${chat!.participantes.length} participantes`
-                  : chat!.tipo_label}
+              {isPending ? (
+                "Nuevo mensaje — escribe para iniciar la conversación"
+              ) : isGroup ? (
+                <span className="flex items-center gap-1.5">
+                  <span>{chat!.participantes.length} participantes</span>
+                  {presenceConnected && onlineCount > 0 && (
+                    <>
+                      <Dot className="size-4 text-emerald-600 dark:text-emerald-400" />
+                      <span className="flex items-center gap-1">
+                        {onlineCount} en línea
+                      </span>
+                    </>
+                  )}
+                </span>
+              ) : presenceConnected ? (
+                <span
+                  className={cn(
+                    "flex items-center gap-1",
+                    otherParticipantId !== undefined &&
+                      onlineUserIds.has(otherParticipantId)
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {otherParticipantId !== undefined &&
+                  onlineUserIds.has(otherParticipantId)
+                    ? "En línea"
+                    : "Desconectado"}
+                </span>
+              ) : (
+                chat!.tipo_label
+              )}
             </p>
           </div>
           {!isPending && isGroup && (
@@ -818,7 +860,7 @@ export function ChatConversation({
 
       {/* Info panel — wide side column */}
       {showInfoSide && (
-        <div className="w-[260px] shrink-0">
+        <div className="w-[360px] shrink-0">
           <ChatInfoPanel chat={chat!} onClose={() => closeInfo()} />
         </div>
       )}

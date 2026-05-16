@@ -15,6 +15,7 @@ import {
   isThisWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
+import { useIsOnline, usePresenceStore } from "../stores/PresenceStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES & THRESHOLDS
@@ -99,6 +100,42 @@ export function OnlineDot({
   );
 }
 
+interface OnlineDotLiveProps {
+  userId: number;
+  lastSeenAt?: string | null;
+  className?: string;
+  withRing?: boolean;
+  httpOnline?: boolean;
+}
+
+/**
+ * Versión reactiva de OnlineDot — lee del PresenceStore directamente.
+ * Usar cuando el objeto MessagingUser puede estar desactualizado
+ * (ej: fue capturado antes de que llegara el evento joining/leaving).
+ */
+export function OnlineDotLive({
+  userId,
+  lastSeenAt = null,
+  className,
+  withRing = true,
+  httpOnline = false,
+}: OnlineDotLiveProps) {
+  const presenceOnline = useIsOnline(userId);
+  const presenceConnected = usePresenceStore((s) => s.presenceConnected);
+
+  // Si presence no está conectado aún, el dot va en away
+  // (no tenemos fallback HTTP aquí, pero es temporal)
+  const online = presenceConnected ? presenceOnline : httpOnline;
+
+  return (
+    <OnlineDot
+      online={online}
+      lastSeenAt={lastSeenAt}
+      className={className}
+      withRing={withRing}
+    />
+  );
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // LAST SEEN LABEL
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,5 +216,29 @@ export function LastSeenLabel({
     >
       {text}
     </span>
+  );
+}
+
+export function LastSeenLabelLive({
+  userId,
+  lastSeenAt = null,
+  className,
+  httpOnline = false,
+}: {
+  userId: number;
+  lastSeenAt?: string | null;
+  className?: string;
+  httpOnline?: boolean;
+}) {
+  const presenceOnline = useIsOnline(userId);
+  const presenceConnected = usePresenceStore((s) => s.presenceConnected);
+  const online = presenceConnected ? presenceOnline : httpOnline;
+
+  return (
+    <LastSeenLabel
+      online={online}
+      lastSeenAt={lastSeenAt}
+      className={className}
+    />
   );
 }

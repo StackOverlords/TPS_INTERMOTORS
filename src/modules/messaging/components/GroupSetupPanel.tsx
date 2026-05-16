@@ -6,14 +6,13 @@ import { useState } from "react";
 import { ArrowLeft, Users, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
-import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { ScrollArea } from "@/components/atoms/scroll-area";
 import { useCreateGroup } from "../hooks/useCreateChat";
 import type { MessagingUser } from "../types/MessagingUser.types";
 import { useBranchStore } from "@/states/branchStore";
-import { getInitials } from "../utils/chatUtils";
-import { OnlineDot } from "./PresenceIndicator";
+import { OnlineDotLive } from "./PresenceIndicator";
 import { useUserAllSucursalesMap } from "../hooks/useMessagingUsers";
+import { ConversationAvatar } from "./ConversationAvatar";
 
 interface Props {
   selectedUsers: MessagingUser[];
@@ -119,13 +118,15 @@ export function GroupSetupPanel({
                     className="flex items-center gap-3 px-3 py-2.5"
                   >
                     <div className="relative shrink-0">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-muted text-[11px] text-muted-foreground">
-                          {getInitials(u.nombre)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <OnlineDot
-                        online={u.online}
+                      <ConversationAvatar
+                        userId={u.id}
+                        name={u.nombre ?? "Usuario desconocido"}
+                        className="size-9"
+                        fallbackClassName="text-xs"
+                      />
+                      <OnlineDotLive
+                        userId={u.id}
+                        httpOnline={u.online}
                         lastSeenAt={u.last_seen_at}
                         className="absolute -bottom-0.5 -right-0.5 size-2"
                       />

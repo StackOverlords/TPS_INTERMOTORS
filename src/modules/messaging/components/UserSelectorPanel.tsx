@@ -23,18 +23,17 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/atoms/input";
 import { Button } from "@/components/atoms/button";
-import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { cn } from "@/lib/utils";
 import {
-  useMessagingUsers,
   useMessagingUsersFlat,
+  useMessagingUsersGrouped,
   useUserAllSucursalesMap,
 } from "../hooks/useMessagingUsers";
 import type { MessagingUser } from "../types/MessagingUser.types";
 import { useChatStore } from "../stores/ChatStore";
-import { getInitials } from "../utils/chatUtils";
-import { OnlineDot, LastSeenLabel } from "./PresenceIndicator";
+import { OnlineDotLive, LastSeenLabelLive } from "./PresenceIndicator";
 import authSDK from "@/services/sdk-simple-auth";
+import { ConversationAvatar } from "./ConversationAvatar";
 
 export type SelectorMode = "direct" | "group";
 
@@ -43,7 +42,7 @@ interface Props {
   selectedIds: number[];
   onBack: () => void;
   onSelectDirect: () => void;
-  onToggleUser: (id: number) => void; // compat noop
+  onToggleUser?: (id: number) => void; // compat noop
   onToggleUserFull: (user: MessagingUser) => void;
   onNextGroup: () => void;
 }
@@ -96,15 +95,17 @@ function UserRow({
     >
       {/* Avatar + presencia */}
       <div className="relative shrink-0">
-        <Avatar className="h-9 w-9">
-          <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
-            {getInitials(user.nombre)}
-          </AvatarFallback>
-        </Avatar>
-        <OnlineDot
-          online={user.online}
+        <ConversationAvatar
+          userId={user.id}
+          name={user.nombre ?? "Usuario desconocido"}
+          className="size-9"
+          fallbackClassName="text-xs"
+        />
+        <OnlineDotLive
+          userId={user.id}
           lastSeenAt={user.last_seen_at}
           className="absolute -bottom-0.5 -right-0.5 size-2.5"
+          httpOnline={user.online}
         />
       </div>
 
@@ -121,10 +122,11 @@ function UserRow({
         </div>
       </div>
 
-      <LastSeenLabel
-        online={user.online}
+      <LastSeenLabelLive
+        userId={user.id}
         lastSeenAt={user.last_seen_at}
         className="text-[10px]"
+        httpOnline={user.online}
       />
       {/* Checkbox grupo */}
       {mode === "group" && (
@@ -190,10 +192,7 @@ export function UserSelectorPanel({
 
   const isSearching = search.trim().length > 0;
 
-  // Datos base
-  const { groups, isLoading: loadingGroups } = useMessagingUsers({
-    enabled: true,
-  });
+  const { groups, isLoading: loadingGroups } = useMessagingUsersGrouped();
   const { users: flatSearch, isLoading: loadingFlat } = useMessagingUsersFlat(
     isSearching ? search : undefined
   );

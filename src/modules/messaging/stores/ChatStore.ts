@@ -7,10 +7,6 @@ import type { Chat } from "../types/Chat.types";
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Construye el preview de último mensaje para la lista de chats
- * a partir de un Message real (no optimista).
- */
 function buildUltimoMensaje(message: Message): Chat["ultimo_mensaje"] {
   return {
     id: message.id,
@@ -25,11 +21,6 @@ function buildUltimoMensaje(message: Message): Chat["ultimo_mensaje"] {
   };
 }
 
-/**
- * Re-ordena el array de chats poniendo primero el que tiene
- * el último mensaje más reciente.
- * Opera sobre el draft de Immer (mutación directa).
- */
 function sortChatsByLastMessage(chats: Chat[]): void {
   chats.sort((a, b) => {
     const at = a.ultimo_mensaje?.fecha_reg ?? a.fecha_reg;
@@ -55,8 +46,6 @@ interface ChatState {
    */
   pendingDirectChat: { userId: number; nombre: string } | null;
   messagesByChatId: Record<number, (Message | OptimisticMessage)[]>;
-
-  // Timestamp del último mensaje recibido por chatId (para polling)
   lastMessageTimestampByChatId: Record<number, string>;
 }
 
@@ -72,13 +61,24 @@ interface ChatActions {
   setPendingDirectChat: (
     pending: { userId: number; nombre: string } | null,
   ) => void;
-  /**
-   * Actualiza nombre/descripción de un chat desde el evento .chat.updated
-   */
   updateChatInfo: (
     chatId: number,
     updates: { nombre?: string; descripcion?: string | null },
   ) => void;
+
+  /**
+   * Elimina un participante de chat.participantes en el store.
+   * Se usa al recibir participant.removed en el canal del chat
+   * (para actualizar la lista de participantes visible).
+   */
+  removeParticipantFromChat: (chatId: number, userId: number) => void;
+
+  /**
+   * Elimina el chat completo del store.
+   * Se usa cuando el usuario actual es removido/sale del grupo:
+   * limpia mensajes, timestamps y desactiva el chat si estaba abierto.
+   */
+  removeChat: (chatId: number) => void;
 
   // Mensajes
   setMessages: (
@@ -105,9 +105,6 @@ interface ChatActions {
     tempId: string,
     progress: number,
   ) => void;
-  /**
-   * Actualiza contenido de un mensaje existente (evento .message.edited).
-   */
   editMessage: (
     chatId: number,
     messageId: number,
@@ -183,7 +180,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
             localStorage.removeItem("messaging_last_chat_id");
           }
         } catch {
-          // localStorage no disponible (modo privado, etc.) — no persistimos
+          // localStorage no disponible
         }
       }),
 
@@ -208,12 +205,46 @@ export const useChatStore = create<ChatState & ChatActions>()(
       set((state) => {
         const idx = state.chats.findIndex((c) => c.id === chatId);
         if (idx >= 0) {
-          if (updates.nombre !== undefined) {
+          if (updates.nombre !== undefined)
             state.chats[idx].nombre = updates.nombre;
-          }
-          if (updates.descripcion !== undefined) {
+          if (updates.descripcion !== undefined)
             state.chats[idx].descripcion = updates.descripcion;
+        }
+      }),
+
+    // quitar un participante de la lista del chat ─────────────────
+    removeParticipantFromChat: (chatId, userId) =>
+      set((state) => {
+        const chat = state.chats.find((c) => c.id === chatId);
+        if (!chat) return;
+        chat.participantes = chat.participantes.filter(
+          (p) => p.usuario?.id !== userId,
+        );
+      }),
+
+    // eliminar el chat completo (yo fui removido / salí) ──────────
+    removeChat: (chatId) =>
+      set((state) => {
+        // Quitar de la lista de chats
+        state.chats = state.chats.filter((c) => c.id !== chatId);
+
+        // Si era el chat activo, volver a la lista
+        if (state.activeChatId === chatId) {
+          state.activeChatId = null;
+        }
+
+        // Limpiar mensajes y timestamps para liberar memoria
+        delete state.messagesByChatId[chatId];
+        delete state.lastMessageTimestampByChatId[chatId];
+
+        // Limpiar localStorage si era el último chat abierto
+        try {
+          const stored = localStorage.getItem("messaging_last_chat_id");
+          if (stored === String(chatId)) {
+            localStorage.removeItem("messaging_last_chat_id");
           }
+        } catch {
+          // no-op
         }
       }),
 
@@ -246,9 +277,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         state.messagesByChatId[chatId] = merged;
 
         const last = merged[merged.length - 1];
-        if (last) {
-          state.lastMessageTimestampByChatId[chatId] = last.fecha_reg;
-        }
+        if (last) state.lastMessageTimestampByChatId[chatId] = last.fecha_reg;
       }),
 
     prependMessages: (chatId, messages) =>
@@ -325,7 +354,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
         }
       }),
 
-    // editar mensaje
     editMessage: (chatId, messageId, updates) =>
       set((state) => {
         const msgs = state.messagesByChatId[chatId];
@@ -341,7 +369,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
         }
       }),
 
-    // eliminar mensaje
     deleteMessage: (chatId, messageId, mode = "remove") =>
       set((state) => {
         const msgs = state.messagesByChatId[chatId];
@@ -349,7 +376,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         if (mode === "remove") {
           // Eliminar del array (para_todos): conservar optimistas, filtrar por id real
           state.messagesByChatId[chatId] = msgs.filter((m) => {
-            if ("_tempId" in m) return true; // nunca borrar optimistas por id real
+            if ("_tempId" in m) return true;
             return m.id !== messageId;
           });
         } else {
@@ -357,9 +384,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
           const idx = msgs.findIndex(
             (m) => !("_tempId" in m) && m.id === messageId,
           );
-          if (idx >= 0) {
-            (msgs[idx] as Message).eliminado = true;
-          }
+          if (idx >= 0) (msgs[idx] as Message).eliminado = true;
         }
       }),
 
@@ -399,7 +424,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SELECTORS (memoized)
+// SELECTORS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const selectActiveChat = (state: ChatState) =>

@@ -223,7 +223,7 @@ export function ChatFloatingWindow() {
            * exactamente igual a ChatScreen.
            */
           <div className="flex h-full overflow-hidden">
-            <aside className="flex h-full w-[300px] shrink-0 flex-col border-r border-border/50">
+            <aside className="flex h-full w-[360px] shrink-0 flex-col border-r border-border/50">
               <ConversationList />
             </aside>
             <main className="flex min-w-0 flex-1 flex-col overflow-hidden">

@@ -14,6 +14,9 @@ import {
   WifiOff,
   LogOut,
   CheckCheck,
+  Users,
+  MessageSquare,
+  InboxIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/atoms/input";
@@ -54,6 +57,41 @@ import { useChatUIStore } from "../stores/ChatUiStore";
 type PanelView = "list" | "select-user" | "select-group" | "setup-group";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// FILTER STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+type ChatFilter = "all" | "unread" | "groups" | "direct";
+
+interface FilterTab {
+  id: ChatFilter;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const FILTER_TABS: FilterTab[] = [
+  {
+    id: "all",
+    label: "Todos",
+    icon: <InboxIcon className="h-3 w-3" />,
+  },
+  {
+    id: "unread",
+    label: "No leídos",
+    icon: <MessageCircle className="h-3 w-3" />,
+  },
+  {
+    id: "groups",
+    label: "Grupos",
+    icon: <Users className="h-3 w-3" />,
+  },
+  {
+    id: "direct",
+    label: "Directos",
+    icon: <MessageSquare className="h-3 w-3" />,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -84,6 +122,127 @@ function getLastMessagePreview(
       : `${msg.remitente.nombre.split(" ")[0]}: `
     : "";
   return `${sender}${msg.contenido}`.slice(0, 60);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FILTER TABS COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FilterTabsProps {
+  active: ChatFilter;
+  onChange: (f: ChatFilter) => void;
+  counts: Record<ChatFilter, number>;
+}
+
+function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
+  return (
+    <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+      {FILTER_TABS.map((tab) => {
+        const isActive = active === tab.id;
+        const count = counts[tab.id];
+        const showBadge = tab.id !== "all" && count > 0;
+
+        return (
+          <Button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            variant={isActive ? "default" : "secondary"}
+            className={
+              "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium outline-none h-auto"
+            }
+          >
+            {/* icon — se muestra solo en activo para no saturar */}
+            <span
+              className={cn(
+                "transition-opacity",
+                isActive ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+              )}
+              aria-hidden
+            >
+              {tab.icon}
+            </span>
+
+            <span>{tab.label}</span>
+
+            {/* badge de conteo */}
+            {showBadge && (
+              <span
+                className={cn(
+                  "flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[9px] font-semibold tabular-nums leading-none",
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-primary/15 text-primary"
+                )}
+              >
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPTY STATE POR FILTRO
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FilterEmptyState({
+  filter,
+  onNewChat,
+}: {
+  filter: ChatFilter;
+  onNewChat: () => void;
+}) {
+  const config: Record<
+    ChatFilter,
+    { icon: React.ReactNode; title: string; sub: string; cta?: boolean }
+  > = {
+    all: {
+      icon: <MessageCircle className="h-8 w-8 text-muted-foreground/25" />,
+      title: "Sin conversaciones",
+      sub: "Crea una nueva para empezar",
+      cta: true,
+    },
+    unread: {
+      icon: <CheckCheck className="h-8 w-8 text-emerald-500/40" />,
+      title: "Todo al día",
+      sub: "No tienes mensajes sin leer",
+    },
+    groups: {
+      icon: <Users className="h-8 w-8 text-muted-foreground/25" />,
+      title: "Sin grupos",
+      sub: "Crea un grupo para colaborar",
+      cta: true,
+    },
+    direct: {
+      icon: <MessageSquare className="h-8 w-8 text-muted-foreground/25" />,
+      title: "Sin chats directos",
+      sub: "Escribe a alguien de tu equipo",
+      cta: true,
+    },
+  };
+
+  const { icon, title, sub, cta } = config[filter];
+
+  return (
+    <div className="flex flex-col items-center gap-2 py-12 text-center">
+      {icon}
+      <p className="text-xs font-medium text-muted-foreground">{title}</p>
+      <p className="text-[11px] text-muted-foreground/60">{sub}</p>
+      {cta && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-1 h-7 text-xs"
+          onClick={onNewChat}
+        >
+          <Plus className="mr-1 h-3 w-3" /> Nueva conversación
+        </Button>
+      )}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,7 +282,6 @@ function ConversationItem({
   const leaveChat = useLeaveChat(chat.id);
   const getDraft = useDraftStore((s) => s.getDraft);
 
-  // Borrador — mostrar "Borrador: texto..." si existe para este chat
   const draft = getDraft(chat.id);
 
   const msg = chat.ultimo_mensaje;
@@ -277,6 +435,7 @@ export function ConversationList({
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
 
   const [view, setView] = useState<PanelView>("list");
+  const [activeFilter, setActiveFilter] = useState<ChatFilter>("all");
 
   const [groupSelectedIds, setGroupSelectedIds] = useState<number[]>([]);
   const [groupSelectedUsers, setGroupSelectedUsers] = useState<MessagingUser[]>(
@@ -301,6 +460,7 @@ export function ConversationList({
   );
   const setLastVisitedChatId = useChatUIStore((s) => s.setLastVisitedChatId);
 
+  // ── Sorted base list ─────────────────────────────────────────────────────
   const sorted = useMemo(
     () =>
       [...chats].sort((a, b) => {
@@ -313,18 +473,49 @@ export function ConversationList({
     [chats]
   );
 
-  const filtered = useMemo(
-    () =>
-      sorted.filter(
-        (c) =>
-          !search ||
-          c.nombre.toLowerCase().includes(search.toLowerCase()) ||
-          c.ultimo_mensaje?.contenido
-            .toLowerCase()
-            .includes(search.toLowerCase())
-      ),
-    [sorted, search]
+  // ── Filter counts (sobre sorted, sin búsqueda) ───────────────────────────
+  const counts = useMemo<Record<ChatFilter, number>>(
+    () => ({
+      all: sorted.length,
+      unread: sorted.filter((c) => c.no_leidos > 0).length,
+      groups: sorted.filter((c) => c.tipo !== "DIRECT").length,
+      direct: sorted.filter((c) => c.tipo === "DIRECT").length,
+    }),
+    [sorted]
   );
+
+  // ── Filtered + searched list ─────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    let list = sorted;
+
+    // Aplicar filtro de pestaña
+    if (activeFilter === "unread") {
+      list = list.filter((c) => c.no_leidos > 0);
+    } else if (activeFilter === "groups") {
+      list = list.filter((c) => c.tipo !== "DIRECT");
+    } else if (activeFilter === "direct") {
+      list = list.filter((c) => c.tipo === "DIRECT");
+    }
+
+    // Aplicar búsqueda de texto
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.nombre.toLowerCase().includes(q) ||
+          c.ultimo_mensaje?.contenido.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [sorted, activeFilter, search]);
+
+  // Resetear scroll al cambiar filtro
+  useEffect(() => {
+    if (scrollListRef.current) {
+      scrollListRef.current.scrollTop = 0;
+    }
+  }, [activeFilter]);
 
   // Al montar (puede ser re-montaje tras volver de un chat)
   useEffect(() => {
@@ -333,12 +524,10 @@ export function ConversationList({
 
     requestAnimationFrame(() => {
       if (lastVisitedChatId === null) {
-        // Primera vez, sin historial
         el.scrollTop = conversationListScroll;
         return;
       }
 
-      // Comparar posición actual del chat visitado vs posición al entrar
       const currentPosition = sorted.findIndex(
         (c) => c.id === lastVisitedChatId
       );
@@ -347,12 +536,11 @@ export function ConversationList({
       if (shouldRestore) {
         el.scrollTop = conversationListScroll;
       } else {
-        // El chat cambió de posición (subió por mensaje enviado) → ir al tope
         el.scrollTop = 0;
         setConversationListScroll(0);
       }
     });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -387,6 +575,8 @@ export function ConversationList({
     setGroupSelectedUsers((p) => p.filter((u) => u.id !== userId));
   };
 
+  const handleNewChat = () => setView("select-user");
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (view === "select-user" || view === "select-group") {
@@ -396,9 +586,6 @@ export function ConversationList({
         selectedIds={groupSelectedIds}
         onBack={goBack}
         onSelectDirect={() => setView("list")}
-        onToggleUser={() => {
-          // noop — onToggleUserFull gestiona tanto ids como users completos
-        }}
         onToggleUserFull={handleToggleGroupUser}
         onNextGroup={() =>
           view === "select-user"
@@ -462,7 +649,7 @@ export function ConversationList({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:bg-primary/10 hover:text-foreground"
-                onClick={() => setView("select-user")}
+                onClick={handleNewChat}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -471,6 +658,7 @@ export function ConversationList({
           </Tooltip>
         </div>
 
+        {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -480,6 +668,15 @@ export function ConversationList({
             className="h-8 rounded-xl border-border/30 bg-muted/30 pl-8 text-xs focus-visible:ring-1"
           />
         </div>
+
+        {/* Filter tabs — se ocultan si hay búsqueda activa */}
+        {!search && (
+          <FilterTabs
+            active={activeFilter}
+            onChange={(f) => setActiveFilter(f)}
+            counts={counts}
+          />
+        )}
       </div>
 
       {/* Chat list */}
@@ -491,22 +688,19 @@ export function ConversationList({
         }}
       >
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <MessageCircle className="h-8 w-8 text-muted-foreground/25" />
-            <p className="text-xs text-muted-foreground">
-              {search ? "Sin resultados" : "Sin conversaciones"}
-            </p>
-            {!search && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-1 h-7 text-xs"
-                onClick={() => setView("select-user")}
-              >
-                <Plus className="mr-1 h-3 w-3" /> Nueva conversación
-              </Button>
-            )}
-          </div>
+          search ? (
+            // Sin resultados de búsqueda
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <MessageCircle className="h-8 w-8 text-muted-foreground/25" />
+              <p className="text-xs text-muted-foreground">Sin resultados</p>
+              <p className="text-[11px] text-muted-foreground/60">
+                Intenta con otro término
+              </p>
+            </div>
+          ) : (
+            // Empty state contextual al filtro
+            <FilterEmptyState filter={activeFilter} onNewChat={handleNewChat} />
+          )
         ) : (
           filtered.map((chat) => (
             <ConversationItem

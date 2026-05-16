@@ -1,14 +1,8 @@
 /**
- *  1. Canal personal  private-user.{myId}  → recibe .chat.added
+ *  1. Canal personal  private-user.{myId}  → recibe .chat.added, .participant.removed (yo fui removido)
  *  2. Canal presencia presence-users       → online/offline en tiempo real
- *  3. Por cada chat: .message.edited, .message.deleted, .chat.updated (además de .message.sent)
- *  4. Polling fallback sin cambios
- *
- * Orden de inicialización (según spec backend):
- *  ① Suscribir user.{myId}     (antes de cargar chats)
- *  ② Suscribir presence-users  (antes de cargar chats)
- *  ③ Cargar chats (useChats — lo hace MessagingProvider)
- *  ④ Suscribir private-chat.{id} por cada chat
+ *  3. Por cada chat: .message.sent, .message.edited, .message.deleted,
+ *                    .chat.updated, .participant.removed (otro fue removido)
  */
 
 import { websocketService } from "@/services/websocket.service";
@@ -26,6 +20,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { soundManager } from "../utils/soundManager";
 import { usePresenceStore } from "../stores/PresenceStore";
 import { messagingUserService } from "../service/MessagingUser.service";
+import type { ParticipantRemovedEvent } from "../types/Participant.types";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
@@ -114,7 +109,49 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
     [],
   );
 
-  // ── Canal personal user.{myId} — recibe .chat.added ───────────────────
+  /**
+   * Llega por el canal del CHAT (private-chat.{chatId}).
+   * Solo procesa si el removido NO soy yo — actualiza la lista de
+   * participantes del grupo sin tocar el store de chats.
+   * Si el removido soy yo, el canal personal lo maneja (evita doble acción).
+   */
+  const handleParticipantRemovedInChat = useCallback(
+    (chatId: number, event: ParticipantRemovedEvent) => {
+      const currentUserId = Number(authSDK.getCurrentUser()?.id);
+      if (event.usuario_id === currentUserId) return; // lo gestiona el canal personal
+
+      useChatStore
+        .getState()
+        .removeParticipantFromChat(chatId, event.usuario_id);
+    },
+    [],
+  );
+
+  /**
+   * Llega por el canal PERSONAL (private-user.{myId}).
+   * Significa que YO fui removido o salí del chat:
+   *  - Elimina el chat del store (mensajes, timestamps, activeChatId si aplica)
+   *  - Abandona el canal WebSocket del chat
+   */
+  const handleParticipantRemovedForMe = useCallback(
+    (event: ParticipantRemovedEvent) => {
+      const currentUserId = Number(authSDK.getCurrentUser()?.id);
+      if (event.usuario_id !== currentUserId) return; // no debería pasar, pero por seguridad
+
+      const chatId = event.chat_id;
+
+      // Limpiar store
+      useChatStore.getState().removeChat(chatId);
+
+      // Abandonar el canal WebSocket y dejar de escuchar eventos
+      websocketService.leave(`private-chat.${chatId}`);
+      subscribedChats.current.delete(chatId);
+      stopPolling(chatId);
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── Canal personal user.{myId} ─────────────────────────────────────────
 
   const userChannelSubscribed = useRef(false);
 
@@ -126,12 +163,20 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
 
     const channelName = `private-user.${currentUser.id}`;
 
+    // Chat nuevo al que fui invitado
     websocketService.listen(channelName, "chat.added", (chat: Chat) => {
       const { upsertChat } = useChatStore.getState();
       upsertChat(chat);
       // Suscribirse al canal del nuevo chat
       subscribeToChatChannel(chat.id);
     });
+
+    // Fui removido / salí de un grupo
+    websocketService.listen(
+      channelName,
+      "participant.removed",
+      (data: ParticipantRemovedEvent) => handleParticipantRemovedForMe(data),
+    );
 
     userChannelSubscribed.current = true;
 
@@ -205,6 +250,14 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
         (data: ChatUpdatedEvent) => handleChatUpdated(chatId, data),
       );
 
+      // Un participante fue removido del grupo (o salió)
+      websocketService.listen(
+        channelName,
+        "participant.removed",
+        (data: ParticipantRemovedEvent) =>
+          handleParticipantRemovedInChat(chatId, data),
+      );
+
       subscribedChats.current.add(chatId);
       stopPolling(chatId);
     },
@@ -213,6 +266,7 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
       handleMessageEdited,
       handleMessageDeleted,
       handleChatUpdated,
+      handleParticipantRemovedInChat,
     ], // eslint-disable-line
   );
 

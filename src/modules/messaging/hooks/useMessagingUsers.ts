@@ -111,6 +111,27 @@ export function useMessagingUsersFlat(search?: string): {
   return { users, isLoading };
 }
 
+export function useMessagingUsersGrouped(): {
+  groups: MessagingUserGroup[];
+  isLoading: boolean;
+} {
+  const { groups, isLoading } = useMessagingUsers({ enabled: true });
+  const { onlineUserIds, presenceConnected, _tick } = usePresenceStore();
+
+  const resolvedGroups = useMemo(() => {
+    void _tick;
+    return groups.map((g) => ({
+      ...g,
+      usuarios: g.usuarios.map((u) => ({
+        ...u,
+        online: resolveOnline(u.id, u.online, onlineUserIds, presenceConnected),
+      })),
+    }));
+  }, [groups, onlineUserIds, presenceConnected, _tick]);
+
+  return { groups: resolvedGroups, isLoading };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HOOK — Map<userId, MessagingUser> para lookups O(1)
 // ─────────────────────────────────────────────────────────────────────────────
