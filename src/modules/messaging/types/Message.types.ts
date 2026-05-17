@@ -3,8 +3,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { Attachment } from "./Attachment.types";
+import type { LastMessagePreview } from "./Chat.types";
 
 export type MessageType = "TEXT" | "IMAGE" | "FILE" | "SYSTEM";
+
+export type MessageSubtipo =
+  | "participant_added"
+  | "participant_removed"
+  | "user_left"
+  | "group_name_updated"
+  | "group_description_updated"
+  | null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MESSAGE SENDER
@@ -36,6 +45,8 @@ export interface Message {
   chat_id: number;
   tipo: MessageType;
   tipo_label: string | null;
+  subtipo: MessageSubtipo; // null en mensajes normales
+  actor_id: number | null;
   contenido: string;
   referencia_tipo: ReferenciaTipo | null;
   referencia_id: number | null;
@@ -106,6 +117,8 @@ export interface MessageDeletedEvent {
   id: number;
   chat_id: number;
   eliminado_para: "todos" | "mi";
+  latest_message: LastMessagePreview | null;
+  no_leidos?: number;
 }
 
 /** Payload del evento .chat.updated */
@@ -144,4 +157,9 @@ export interface MessagesGetAllResponse {
 export interface PollResponse {
   data: Message[];
   timestamp: string;
+}
+
+export interface DeleteForMeResponse {
+  message: string;
+  latest_message: LastMessagePreview | null;
 }

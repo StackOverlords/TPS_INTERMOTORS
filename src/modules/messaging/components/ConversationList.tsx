@@ -464,8 +464,8 @@ export function ConversationList({
   const sorted = useMemo(
     () =>
       [...chats].sort((a, b) => {
-        if (a.no_leidos > 0 && b.no_leidos === 0) return -1;
-        if (b.no_leidos > 0 && a.no_leidos === 0) return 1;
+        // if (a.no_leidos > 0 && b.no_leidos === 0) return -1;
+        // if (b.no_leidos > 0 && a.no_leidos === 0) return 1;
         const at = a.ultimo_mensaje?.fecha_reg ?? a.fecha_reg;
         const bt = b.ultimo_mensaje?.fecha_reg ?? b.fecha_reg;
         return new Date(bt).getTime() - new Date(at).getTime();

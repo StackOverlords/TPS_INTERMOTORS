@@ -536,31 +536,33 @@ export function ChatConversation({
   const isPending = !chat && !!pendingDirectChat;
   if (!chat && !pendingDirectChat) return <EmptyState />;
 
-  const chatNombre = chat?.nombre ?? pendingDirectChat?.nombre ?? "";
-  const isGroup = chat ? chat.tipo !== "DIRECT" : false;
-  const canWrite = chat ? chat.mi_participacion.puede_escribir : true;
-
   const showInfoOverlay = showInfo && isCompact;
   const showInfoSide = showInfo && !isCompact;
+  const chatNombre = chat?.nombre ?? pendingDirectChat?.nombre ?? "";
+  const canWrite = chat ? chat.mi_participacion.puede_escribir : true;
+  const isGroup = chat ? chat.tipo !== "DIRECT" : false;
 
   const otherParticipantId = !isGroup
-    ? chat?.participantes.find(
-        (p) => p.usuario?.id.toString() !== currentUserId
-      )?.usuario?.id
+    ? chat?.participantes.find((p) => p.usuario?.id !== Number(currentUserId))
+        ?.usuario?.id
     : undefined;
 
-  // Participantes online (excluye al usuario actual)
-  const onlineUserIds = usePresenceStore((s) => {
-    void s._tick; // dependencia reactiva
-    return s.onlineUserIds;
+  const isOtherOnline = usePresenceStore((s) => {
+    void s._tick;
+    return otherParticipantId !== undefined
+      ? s.onlineUserIds.has(otherParticipantId)
+      : false;
   });
-  const presenceConnected = usePresenceStore((s) => s.presenceConnected);
 
-  const onlineCount = chat
-    ? chat.participantes.filter(
-        (p) => p.usuario?.id !== undefined && onlineUserIds.has(p.usuario.id)
-      ).length
-    : 0;
+  const onlineCount = usePresenceStore((s) => {
+    void s._tick;
+    if (!chat) return 0;
+    return chat.participantes.filter(
+      (p) => p.usuario?.id !== undefined && s.onlineUserIds.has(p.usuario.id)
+    ).length;
+  });
+
+  const presenceConnected = usePresenceStore((s) => s.presenceConnected);
 
   return (
     <div ref={containerRef} className="flex h-full relative">
@@ -615,14 +617,12 @@ export function ChatConversation({
                 <span
                   className={cn(
                     "flex items-center gap-1",
-                    otherParticipantId !== undefined &&
-                      onlineUserIds.has(otherParticipantId)
+                    otherParticipantId !== undefined && isOtherOnline
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-muted-foreground"
                   )}
                 >
-                  {otherParticipantId !== undefined &&
-                  onlineUserIds.has(otherParticipantId)
+                  {otherParticipantId !== undefined && isOtherOnline
                     ? "En línea"
                     : "Desconectado"}
                 </span>

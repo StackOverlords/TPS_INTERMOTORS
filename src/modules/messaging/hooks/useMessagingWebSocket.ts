@@ -21,6 +21,7 @@ import { soundManager } from "../utils/soundManager";
 import { usePresenceStore } from "../stores/PresenceStore";
 import { messagingUserService } from "../service/MessagingUser.service";
 import type { ParticipantRemovedEvent } from "../types/Participant.types";
+import { resolveNotificationBehavior } from "../utils/messageNotifications";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
@@ -62,18 +63,23 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
         useChatStore.getState();
 
       if (messageExists(chatId, message.id)) return;
+
       appendMessage(chatId, message);
       setLastMessageTimestamp(chatId, message.fecha_reg);
 
       const currentUserId = Number(authSDK.getCurrentUser()?.id);
-      const isOwnMessage =
-        !!currentUserId && message.remitente?.id === currentUserId;
 
-      if (!isOwnMessage) {
+      const { badge, sound } = resolveNotificationBehavior(
+        message,
+        currentUserId,
+      );
+
+      if (sound) {
         soundManager.play("received");
       }
 
-      if (useChatStore.getState().activeChatId !== chatId && !isOwnMessage) {
+      // El badge solo aplica cuando el chat NO está activo en pantalla
+      if (badge && useChatStore.getState().activeChatId !== chatId) {
         incrementUnread(chatId);
       }
     },
@@ -87,14 +93,30 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
         editado: true,
         fecha_editado: event.fecha_editado,
       });
+
+      // Si el editado es el último mensaje del chat, actualizar la preview
+      useChatStore.setState((state) => {
+        const idx = state.chats.findIndex((c) => c.id === chatId);
+        if (idx >= 0 && state.chats[idx].ultimo_mensaje?.id === event.id) {
+          state.chats[idx].ultimo_mensaje!.contenido = event.contenido;
+          state.chats[idx].ultimo_mensaje!.editado = true;
+          state.chats[idx].ultimo_mensaje!.fecha_editado = event.fecha_editado;
+        }
+      });
     },
     [],
   );
 
   const handleMessageDeleted = useCallback(
     (chatId: number, event: MessageDeletedEvent) => {
-      // Solo llega cuando para_todos=1 — eliminación "para mí" no genera evento
       useChatStore.getState().deleteMessage(chatId, event.id, "remove");
+
+      useChatStore.setState((state) => {
+        const idx = state.chats.findIndex((c) => c.id === chatId);
+        if (idx >= 0) {
+          state.chats[idx].ultimo_mensaje = event.latest_message ?? null;
+        }
+      });
     },
     [],
   );
@@ -176,6 +198,25 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
       channelName,
       "participant.removed",
       (data: ParticipantRemovedEvent) => handleParticipantRemovedForMe(data),
+    );
+
+    websocketService.listen(
+      channelName,
+      "message.deleted",
+      (data: MessageDeletedEvent) => {
+        const { deleteMessage } = useChatStore.getState();
+
+        deleteMessage(data.chat_id, data.id, "remove");
+
+        useChatStore.setState((state) => {
+          const idx = state.chats.findIndex((c) => c.id === data.chat_id);
+          if (idx >= 0) {
+            state.chats[idx].ultimo_mensaje = data.latest_message ?? null;
+            state.chats[idx].no_leidos =
+              data.no_leidos ?? state.chats[idx].no_leidos;
+          }
+        });
+      },
     );
 
     userChannelSubscribed.current = true;

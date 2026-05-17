@@ -23,6 +23,8 @@ import { useChatStore } from "../stores/ChatStore";
 import { useChatUIStore } from "../stores/ChatUiStore";
 import { useDraftStore } from "../stores/DraftStore";
 import { usePresenceStore } from "../stores/PresenceStore";
+import { MESSAGING_USERS_QUERY_KEY } from "./useMessagingUsers";
+import { usePresenceSync } from "./usePresenceSync";
 
 interface MessagingProviderProps {
   children: ReactNode;
@@ -41,6 +43,7 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
   // ocurre dentro del hook en cuanto isEchoConnected === true, sin esperar
   // a que `chats` esté cargado — garantiza el orden de init correcto.
   useMessagingWebSocket(chats, isEchoConnected);
+  usePresenceSync();
 
   // ── Cola offline ───────────────────────────────────────────────────────────
   useOfflineQueue();
@@ -94,8 +97,8 @@ export function MessagingProvider({ children }: MessagingProviderProps) {
         useOfflineQueueStore.setState({ queue: [] });
         useDraftStore.getState().clearAllDrafts();
         usePresenceStore.getState().reset();
-        void queryClient.removeQueries({ queryKey: ["messaging"] });
-        void queryClient.removeQueries({ queryKey: ["users-infinite"] });
+        void queryClient.removeQueries({ queryKey: ["messaging", "messages"] });
+        void queryClient.removeQueries({ queryKey: MESSAGING_USERS_QUERY_KEY });
       }
     });
     return () => unsubscribe();

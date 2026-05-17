@@ -26,7 +26,7 @@ const myParticipationSchema = z.object({
   ultima_lectura: z.string().nullable(),
 });
 
-const lastMessagePreviewSchema = z.object({
+export const lastMessagePreviewSchema = z.object({
   id: z.number(),
   contenido: z.string(),
   tipo: z.enum(["TEXT", "IMAGE", "FILE", "SYSTEM"]).optional(),

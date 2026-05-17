@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useChatStore } from "../stores/ChatStore";
 import { messageService } from "../service/Message.service";
+import type { LastMessagePreview } from "../types/Chat.types";
 
 /**
  * Eliminar un mensaje.
@@ -19,21 +20,57 @@ export function useDeleteMessage(chatId: number) {
   const deleteForAll = useMutation<void, Error, number>({
     mutationFn: (messageId) => messageService.deleteForAll(chatId, messageId),
     onMutate: (messageId) => {
-      // Eliminar del store inmediatamente (optimista)
       deleteMessageInStore(chatId, messageId, "remove");
+
+      // Calcular el nuevo ultimo_mensaje desde el store local
+      // (suficiente para para_todos porque el WebSocket lo confirmará)
+      useChatStore.setState((state) => {
+        const chatIdx = state.chats.findIndex((c) => c.id === chatId);
+        if (chatIdx < 0) return;
+        if (state.chats[chatIdx].ultimo_mensaje?.id !== messageId) return;
+
+        const msgs = state.messagesByChatId[chatId] ?? [];
+        const previous = [...msgs]
+          .reverse()
+          .find((m) => !("_tempId" in m) && m.id !== messageId);
+
+        state.chats[chatIdx].ultimo_mensaje = previous
+          ? {
+              id: previous.id,
+              contenido: previous.contenido,
+              remitente: previous.remitente,
+              fecha_reg: previous.fecha_reg,
+              referencia_tipo: previous.referencia_tipo,
+              referencia_id: previous.referencia_id,
+              es_sistema: previous.es_sistema,
+              editado: previous.editado,
+              fecha_editado: previous.fecha_editado ?? null,
+            }
+          : null;
+      });
     },
     onError: (_err, messageId) => {
-      // En error no recuperamos el mensaje — es difícil revertir
-      // y el usuario puede recargar si lo necesita.
       console.error("[useDeleteMessage] Failed to delete for all", messageId);
     },
   });
 
-  const deleteForMe = useMutation<void, Error, number>({
+  const deleteForMe = useMutation<
+    { latest_message: LastMessagePreview | null },
+    Error,
+    number
+  >({
     mutationFn: (messageId) => messageService.deleteForMe(chatId, messageId),
     onMutate: (messageId) => {
-      // Ocultar localmente (modo 'hide') — sin sacar del array
       deleteMessageInStore(chatId, messageId, "hide");
+    },
+    onSuccess: ({ latest_message }) => {
+      // Actualizar ultimo_mensaje con lo que dice el backend
+      useChatStore.setState((state) => {
+        const idx = state.chats.findIndex((c) => c.id === chatId);
+        if (idx >= 0) {
+          state.chats[idx].ultimo_mensaje = latest_message;
+        }
+      });
     },
     onError: (_err, messageId) => {
       console.error("[useDeleteMessage] Failed to delete for me", messageId);

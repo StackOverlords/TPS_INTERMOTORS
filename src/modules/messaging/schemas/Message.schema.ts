@@ -1,4 +1,10 @@
 import { z } from "zod";
+import { lastMessagePreviewSchema } from "./Chat.schema";
+
+export const deleteForMeResponseSchema = z.object({
+  message: z.string(),
+  latest_message: lastMessagePreviewSchema.nullable(),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ATTACHMENT
@@ -31,6 +37,16 @@ export const messageSchema = z.object({
   chat_id: z.number(),
   tipo: z.enum(["TEXT", "IMAGE", "FILE", "SYSTEM"]),
   tipo_label: z.string().nullable(),
+  subtipo: z
+    .enum([
+      "participant_added",
+      "participant_removed",
+      "user_left",
+      "group_name_updated",
+      "group_description_updated",
+    ])
+    .nullable(),
+  actor_id: z.number().nullable(),
   contenido: z.string(),
   referencia_tipo: z.string().nullable(),
   referencia_id: z.number().nullable(),

@@ -1,6 +1,7 @@
 import { ApiService } from "@/lib/apiService";
 import { Logger } from "@/lib/logger";
 import type {
+  DeleteForMeResponse,
   EditMessagePayload,
   Message,
   MessagesGetAllResponse,
@@ -9,6 +10,7 @@ import type {
 } from "../types/Message.types";
 import { MESSAGING_ENDPOINTS } from "./MessagingEndpoints.service";
 import {
+  deleteForMeResponseSchema,
   messageSchema,
   messagesGetAllResponseSchema,
   pollResponseSchema,
@@ -106,12 +108,19 @@ export const messageService = {
    * Eliminar mensaje solo para el usuario actual (sin broadcast).
    * Cualquier participante puede ocultar cualquier mensaje para sí mismo.
    */
-  async deleteForMe(chatId: number, messageId: number): Promise<void> {
+  async deleteForMe(
+    chatId: number,
+    messageId: number,
+  ): Promise<DeleteForMeResponse> {
     Logger.info("Deleting message for me", { chatId, messageId }, MODULE_NAME);
-    await ApiService.delete(
+
+    const response = await ApiService.delete(
       MESSAGING_ENDPOINTS.messages.delete(chatId, messageId),
+      deleteForMeResponseSchema,
     );
+
     Logger.info("Message deleted for me", { chatId, messageId }, MODULE_NAME);
+    return response as DeleteForMeResponse;
   },
 
   /**
