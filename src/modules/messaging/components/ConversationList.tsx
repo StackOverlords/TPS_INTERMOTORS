@@ -1,9 +1,3 @@
-/**
- *   'list'         → lista de conversaciones (default)
- *   'select-user'  → selección de usuario para chat directo O
- *                    selección múltiple para grupo
- *   'setup-group'  → nombre, descripción y confirmación del grupo
- */
 import {
   Search,
   Plus,
@@ -17,6 +11,8 @@ import {
   Users,
   MessageSquare,
   InboxIcon,
+  Trash2,
+  UserX,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/atoms/input";
@@ -35,11 +31,16 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useChatList } from "../hooks/useChats";
-import { useLeaveChat } from "../hooks/useParticipants";
+import {
+  useLeaveChat,
+  useDeleteChatForMe,
+  useDeleteGroup,
+} from "../hooks/useParticipants";
 import { UserSelectorPanel } from "./UserSelectorPanel";
 import { GroupSetupPanel } from "./GroupSetupPanel";
 import type { MessagingUser } from "../types/MessagingUser.types";
 import type { Chat } from "../types/Chat.types";
+import { isExMember } from "../types/Chat.types";
 import { useChatStore } from "../stores/ChatStore";
 import { useOfflineQueueStore } from "../stores/OfflineQueueStore";
 import { useChatTimestamp } from "../hooks/useChatTimestamp";
@@ -51,15 +52,10 @@ import { ConversationAvatar } from "./ConversationAvatar";
 import { useChatUIStore } from "../stores/ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VIEW STATE
+// VIEW / FILTER STATE
 // ─────────────────────────────────────────────────────────────────────────────
 
 type PanelView = "list" | "select-user" | "select-group" | "setup-group";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FILTER STATE
-// ─────────────────────────────────────────────────────────────────────────────
-
 type ChatFilter = "all" | "unread" | "groups" | "direct";
 
 interface FilterTab {
@@ -69,21 +65,13 @@ interface FilterTab {
 }
 
 const FILTER_TABS: FilterTab[] = [
-  {
-    id: "all",
-    label: "Todos",
-    icon: <InboxIcon className="h-3 w-3" />,
-  },
+  { id: "all", label: "Todos", icon: <InboxIcon className="h-3 w-3" /> },
   {
     id: "unread",
     label: "No leídos",
     icon: <MessageCircle className="h-3 w-3" />,
   },
-  {
-    id: "groups",
-    label: "Grupos",
-    icon: <Users className="h-3 w-3" />,
-  },
+  { id: "groups", label: "Grupos", icon: <Users className="h-3 w-3" /> },
   {
     id: "direct",
     label: "Directos",
@@ -113,7 +101,6 @@ function getLastMessagePreview(
   isMine?: boolean
 ): string {
   const msg = chat.ultimo_mensaje;
-
   if (!msg) return "";
   if (isDirect) return msg.contenido.slice(0, 60);
   const sender = msg.remitente
@@ -125,16 +112,18 @@ function getLastMessagePreview(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FILTER TABS COMPONENT
+// FILTER TABS
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface FilterTabsProps {
+function FilterTabs({
+  active,
+  onChange,
+  counts,
+}: {
   active: ChatFilter;
   onChange: (f: ChatFilter) => void;
   counts: Record<ChatFilter, number>;
-}
-
-function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
+}) {
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
       {FILTER_TABS.map((tab) => {
@@ -147,11 +136,8 @@ function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
             key={tab.id}
             onClick={() => onChange(tab.id)}
             variant={isActive ? "default" : "secondary"}
-            className={
-              "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium outline-none h-auto"
-            }
+            className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium outline-none h-auto"
           >
-            {/* icon — se muestra solo en activo para no saturar */}
             <span
               className={cn(
                 "transition-opacity",
@@ -161,10 +147,7 @@ function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
             >
               {tab.icon}
             </span>
-
             <span>{tab.label}</span>
-
-            {/* badge de conteo */}
             {showBadge && (
               <span
                 className={cn(
@@ -185,7 +168,7 @@ function FilterTabs({ active, onChange, counts }: FilterTabsProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMPTY STATE POR FILTRO
+// EMPTY STATE
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FilterEmptyState({
@@ -249,13 +232,6 @@ function FilterEmptyState({
 // CONVERSATION ITEM
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface ItemProps {
-  chat: Chat;
-  isActive: boolean;
-  onClick: () => void;
-  currentUserId?: string | undefined;
-}
-
 function ChatTimestamp({ date }: { date: string }) {
   const label = useChatTimestamp(date);
   return (
@@ -270,16 +246,23 @@ function ConversationItem({
   isActive,
   onClick,
   currentUserId,
-}: ItemProps) {
+}: {
+  chat: Chat;
+  isActive: boolean;
+  onClick: () => void;
+  currentUserId?: string;
+}) {
   const isGroup = chat.tipo !== "DIRECT";
   const isDirect = chat.tipo === "DIRECT";
   const isSistema = chat.es_sistema;
   const myRole = chat.mi_participacion.rol;
   const lastTime = chat.ultimo_mensaje?.fecha_reg;
   const isMine = chat.ultimo_mensaje?.remitente?.id === currentUserId;
+  const exMember = isExMember(chat);
 
-  const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const leaveChat = useLeaveChat(chat.id);
+  const deleteForMe = useDeleteChatForMe(chat.id);
+  const deleteGroup = useDeleteGroup(chat.id);
   const getDraft = useDraftStore((s) => s.getDraft);
 
   const draft = getDraft(chat.id);
@@ -289,15 +272,19 @@ function ConversationItem({
 
   const handleLeave = () => {
     leaveChat.mutate();
-    setActiveChatId(null);
+    // No limpiamos activeChatId — el WS event lo marcará como ex-miembro (read-only)
   };
 
-  const canLeave = isDirect || (!isSistema && myRole !== "OWNER");
+  // Puede salir si es miembro activo (no ex-miembro)
+  const canLeave = !exMember && myRole !== "OWNER" && isGroup;
+  // Puede eliminar para sí mismo: cualquier chat excepto sistema
+  const canDeleteForMe = !isSistema;
+  // Puede eliminar el grupo para todos: solo OWNER activo de un grupo
+  const canDeleteGroup = isGroup && myRole === "OWNER" && !exMember;
 
   const otherParticipantId = !isGroup
-    ? chat?.participantes.find(
-        (p) => p.usuario?.id.toString() !== currentUserId
-      )?.usuario?.id
+    ? chat.participantes.find((p) => p.usuario?.id.toString() !== currentUserId)
+        ?.usuario?.id
     : undefined;
 
   return (
@@ -306,7 +293,8 @@ function ConversationItem({
         onClick={onClick}
         className={cn(
           "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent/40",
-          isActive && "bg-accent/60"
+          isActive && "bg-accent/60",
+          exMember && "opacity-70"
         )}
       >
         <div className="relative shrink-0">
@@ -321,6 +309,11 @@ function ConversationItem({
           {isSistema && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-background bg-primary">
               <MessageCircle className="h-2 w-2 text-primary-foreground" />
+            </span>
+          )}
+          {exMember && (
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-background bg-muted">
+              <UserX className="h-2 w-2 text-muted-foreground" />
             </span>
           )}
         </div>
@@ -338,7 +331,11 @@ function ConversationItem({
             {lastTime && <ChatTimestamp date={lastTime} />}
           </div>
           <div className="mt-0.5 flex items-center justify-between gap-2">
-            {draft ? (
+            {exMember ? (
+              <p className="truncate text-[11px] italic text-muted-foreground/60">
+                Ya no eres miembro
+              </p>
+            ) : draft ? (
               <p className="truncate text-[11px]">
                 <span className="font-semibold text-amber-500">Borrador:</span>
                 <span className="ml-1 text-muted-foreground">{draft}</span>
@@ -375,7 +372,7 @@ function ConversationItem({
                 );
               })()
             )}
-            {chat.no_leidos > 0 && (
+            {chat.no_leidos > 0 && !exMember && (
               <Badge className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[10px]">
                 {chat.no_leidos > 99 ? "99+" : chat.no_leidos}
               </Badge>
@@ -384,7 +381,7 @@ function ConversationItem({
         </div>
       </button>
 
-      {/* Context menu on hover */}
+      {/* Context menu */}
       <div className="absolute right-2 top-3 opacity-0 transition-opacity group-hover:opacity-100">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -392,22 +389,55 @@ function ConversationItem({
               <MoreHorizontal className="h-3 w-3" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44 z-[9999]">
-            <DropdownMenuItem className="text-xs">
-              {chat.mi_participacion.silenciado
-                ? "Activar notificaciones"
-                : "Silenciar"}
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-52 z-[9999]">
+            {/* {!exMember && (
+              <DropdownMenuItem className="text-xs">
+                {chat.mi_participacion.silenciado
+                  ? "Activar notificaciones"
+                  : "Silenciar"}
+              </DropdownMenuItem>
+            )} */}
+
+            {/* Salir del grupo (solo miembro activo) */}
             {canLeave && (
               <>
-                <DropdownMenuSeparator />
+                {/* <DropdownMenuSeparator /> */}
                 <DropdownMenuItem
                   className="gap-2 text-xs text-destructive focus:text-destructive"
                   disabled={leaveChat.isPending}
                   onClick={handleLeave}
                 >
                   <LogOut className="h-3 w-3" />
-                  {isDirect ? "Eliminar conversación" : "Salir del grupo"}
+                  Salir del grupo
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {/* Eliminar para mí */}
+            {canDeleteForMe && (
+              <>
+                <DropdownMenuItem
+                  className="gap-2 text-xs text-destructive focus:text-destructive"
+                  disabled={deleteForMe.isPending}
+                  onClick={() => deleteForMe.mutate()}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Eliminar para mí
+                </DropdownMenuItem>
+                {canDeleteGroup && <DropdownMenuSeparator />}
+              </>
+            )}
+
+            {/* Eliminar grupo para todos (solo OWNER activo) */}
+            {canDeleteGroup && (
+              <>
+                <DropdownMenuItem
+                  className="gap-2 text-xs text-destructive focus:text-destructive"
+                  disabled={deleteGroup.isPending}
+                  onClick={() => deleteGroup.mutate()}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Eliminar grupo para todos
                 </DropdownMenuItem>
               </>
             )}
@@ -431,6 +461,7 @@ export function ConversationList({
   const chats = useChatList();
   const activeChatId = useChatStore((s) => s.activeChatId);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
+  const chatDeletions = useChatStore((s) => s.chatDeletions);
   const isOnline = useOfflineQueueStore((s) => s.isOnline);
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
 
@@ -473,31 +504,40 @@ export function ConversationList({
     [chats]
   );
 
-  // ── Filter counts (sobre sorted, sin búsqueda) ───────────────────────────
-  const counts = useMemo<Record<ChatFilter, number>>(
-    () => ({
-      all: sorted.length,
-      unread: sorted.filter((c) => c.no_leidos > 0).length,
-      groups: sorted.filter((c) => c.tipo !== "DIRECT").length,
-      direct: sorted.filter((c) => c.tipo === "DIRECT").length,
-    }),
-    [sorted]
+  // ── Filtrar chats eliminados "para mí" ────────────────────────────────────
+  // Un chat eliminado solo reaparece si hay un mensaje POSTERIOR a deleted_at.
+  const visibleChats = useMemo(
+    () =>
+      sorted.filter((chat) => {
+        const deletedAt = chatDeletions[chat.id];
+        if (!deletedAt) return true;
+        const lastMsg = chat.ultimo_mensaje;
+        if (!lastMsg) return false;
+        return new Date(lastMsg.fecha_reg) > new Date(deletedAt);
+      }),
+    [sorted, chatDeletions]
   );
 
-  // ── Filtered + searched list ─────────────────────────────────────────────
+  // ── Filter counts ──────────────────────────────────────────────────────────
+  const counts = useMemo<Record<ChatFilter, number>>(
+    () => ({
+      all: visibleChats.length,
+      unread: visibleChats.filter((c) => c.no_leidos > 0).length,
+      groups: visibleChats.filter((c) => c.tipo !== "DIRECT").length,
+      direct: visibleChats.filter((c) => c.tipo === "DIRECT").length,
+    }),
+    [visibleChats]
+  );
+
+  // ── Filtered + searched ───────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    let list = sorted;
-
-    // Aplicar filtro de pestaña
-    if (activeFilter === "unread") {
-      list = list.filter((c) => c.no_leidos > 0);
-    } else if (activeFilter === "groups") {
+    let list = visibleChats;
+    if (activeFilter === "unread") list = list.filter((c) => c.no_leidos > 0);
+    else if (activeFilter === "groups")
       list = list.filter((c) => c.tipo !== "DIRECT");
-    } else if (activeFilter === "direct") {
+    else if (activeFilter === "direct")
       list = list.filter((c) => c.tipo === "DIRECT");
-    }
 
-    // Aplicar búsqueda de texto
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -508,16 +548,12 @@ export function ConversationList({
     }
 
     return list;
-  }, [sorted, activeFilter, search]);
+  }, [visibleChats, activeFilter, search]);
 
-  // Resetear scroll al cambiar filtro
   useEffect(() => {
-    if (scrollListRef.current) {
-      scrollListRef.current.scrollTop = 0;
-    }
+    if (scrollListRef.current) scrollListRef.current.scrollTop = 0;
   }, [activeFilter]);
 
-  // Al montar (puede ser re-montaje tras volver de un chat)
   useEffect(() => {
     const el = scrollListRef.current;
     if (!el) return;
@@ -527,13 +563,10 @@ export function ConversationList({
         el.scrollTop = conversationListScroll;
         return;
       }
-
       const currentPosition = sorted.findIndex(
         (c) => c.id === lastVisitedChatId
       );
-      const shouldRestore = currentPosition === chatPositionOnEnter;
-
-      if (shouldRestore) {
+      if (currentPosition === chatPositionOnEnter) {
         el.scrollTop = conversationListScroll;
       } else {
         el.scrollTop = 0;
@@ -542,7 +575,7 @@ export function ConversationList({
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const resetGroupState = () => {
     setGroupSelectedIds([]);
@@ -550,9 +583,8 @@ export function ConversationList({
   };
 
   const goBack = () => {
-    if (view === "setup-group") {
-      setView("select-group");
-    } else {
+    if (view === "setup-group") setView("select-group");
+    else {
       resetGroupState();
       setView("list");
     }
@@ -577,7 +609,7 @@ export function ConversationList({
 
   const handleNewChat = () => setView("select-user");
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   if (view === "select-user" || view === "select-group") {
     return (
@@ -658,7 +690,6 @@ export function ConversationList({
           </Tooltip>
         </div>
 
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -669,11 +700,10 @@ export function ConversationList({
           />
         </div>
 
-        {/* Filter tabs — se ocultan si hay búsqueda activa */}
         {!search && (
           <FilterTabs
             active={activeFilter}
-            onChange={(f) => setActiveFilter(f)}
+            onChange={setActiveFilter}
             counts={counts}
           />
         )}
@@ -683,13 +713,12 @@ export function ConversationList({
       <div
         ref={scrollListRef}
         className="flex-1 overflow-y-auto"
-        onScroll={() => {
-          setConversationListScroll(scrollListRef.current?.scrollTop ?? 0);
-        }}
+        onScroll={() =>
+          setConversationListScroll(scrollListRef.current?.scrollTop ?? 0)
+        }
       >
         {filtered.length === 0 ? (
           search ? (
-            // Sin resultados de búsqueda
             <div className="flex flex-col items-center gap-2 py-12 text-center">
               <MessageCircle className="h-8 w-8 text-muted-foreground/25" />
               <p className="text-xs text-muted-foreground">Sin resultados</p>
@@ -698,7 +727,6 @@ export function ConversationList({
               </p>
             </div>
           ) : (
-            // Empty state contextual al filtro
             <FilterEmptyState filter={activeFilter} onNewChat={handleNewChat} />
           )
         ) : (

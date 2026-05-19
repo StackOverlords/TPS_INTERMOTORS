@@ -38,8 +38,8 @@ export default function ChatScreen() {
   return (
     <div className="flex h-full overflow-hidden rounded-lg border border-border bg-background">
       {/* ── Sidebar izquierdo (lista / selector / setup) ──────────────── */}
-      {/* w-[300px] fijo — no se colapsa en pantalla completa */}
-      <aside className="flex h-full w-[300px] shrink-0 flex-col border-r border-border/50">
+      {/* w-[380px] fijo — no se colapsa en pantalla completa */}
+      <aside className="flex h-full w-[380px] shrink-0 flex-col border-r border-border/50">
         <ConversationList />
       </aside>
 

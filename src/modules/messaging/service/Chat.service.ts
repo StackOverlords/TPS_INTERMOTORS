@@ -112,4 +112,30 @@ export const chatService = {
     Logger.info("Chat updated", { chatId }, MODULE_NAME);
     return response as Chat;
   },
+
+  /**
+   * Eliminar chat "para mí" — directo o grupo (miembro activo o ex-miembro).
+   *
+   * El chat desaparece de la lista del usuario que lo elimina.
+   * Si llega un mensaje nuevo después, el chat reaparece mostrando
+   * solo mensajes desde este momento en adelante.
+   */
+  async deleteForMe(chatId: number): Promise<void> {
+    Logger.info("Deleting chat for me", { chatId }, MODULE_NAME);
+    await ApiService.delete(MESSAGING_ENDPOINTS.chats.deleteForMe(chatId));
+    Logger.info("Chat deleted for me", { chatId }, MODULE_NAME);
+  },
+
+  /**
+   * Eliminar grupo para todos los participantes.
+   * Solo el OWNER puede ejecutar esta acción.
+   *
+   * Genera un mensaje de sistema "X eliminó el grupo", desactiva el chat
+   * y broadcastea chat.deleted a todos los miembros conectados.
+   */
+  async deleteGroup(chatId: number): Promise<void> {
+    Logger.info("Deleting group for everyone", { chatId }, MODULE_NAME);
+    await ApiService.delete(MESSAGING_ENDPOINTS.chats.delete(chatId));
+    Logger.info("Group deleted for everyone", { chatId }, MODULE_NAME);
+  },
 };

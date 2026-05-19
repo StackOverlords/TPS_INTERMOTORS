@@ -44,6 +44,7 @@ export const messageSchema = z.object({
       "user_left",
       "group_name_updated",
       "group_description_updated",
+      "group_deleted",
     ])
     .nullable(),
   actor_id: z.number().nullable(),

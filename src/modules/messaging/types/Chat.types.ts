@@ -15,7 +15,12 @@ export interface MyParticipation {
   rol: ParticipantRole;
   puede_escribir: boolean;
   silenciado: boolean;
-  ultima_lectura: string; // ISO date
+  ultima_lectura: string | null; // ISO date
+  /**
+   * null  → participante activo (puede leer y escribir según puede_escribir)
+   * fecha → ex-miembro (solo lectura hasta esa fecha, read-only en UI)
+   */
+  fecha_salida: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,7 +79,16 @@ export interface Chat {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CREATE PAYLOADS
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** true si el usuario ya no es miembro activo del chat */
+export function isExMember(chat: Chat): boolean {
+  return chat.mi_participacion.fecha_salida !== null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE / UPDATE PAYLOADS
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CreateDirectChatPayload {

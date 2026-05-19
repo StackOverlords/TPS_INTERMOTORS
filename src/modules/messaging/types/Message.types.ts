@@ -13,6 +13,7 @@ export type MessageSubtipo =
   | "user_left"
   | "group_name_updated"
   | "group_description_updated"
+  | "group_deleted"
   | null;
 
 // ─────────────────────────────────────────────────────────────────────────────

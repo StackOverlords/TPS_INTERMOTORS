@@ -4,6 +4,7 @@ import type { Message, MessageSubtipo } from "../types/Message.types";
 const SILENT_SUBTYPES: NonNullable<MessageSubtipo>[] = [
   "group_name_updated",
   "group_description_updated",
+  "group_deleted",
 ];
 
 /** Subtipos que incrementan badge pero NO reproducen sonido */

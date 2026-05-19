@@ -20,7 +20,10 @@ import authSDK from "@/services/sdk-simple-auth";
 import { soundManager } from "../utils/soundManager";
 import { usePresenceStore } from "../stores/PresenceStore";
 import { messagingUserService } from "../service/MessagingUser.service";
-import type { ParticipantRemovedEvent } from "../types/Participant.types";
+import type {
+  ChatDeletedEvent,
+  ParticipantRemovedEvent,
+} from "../types/Participant.types";
 import { resolveNotificationBehavior } from "../utils/messageNotifications";
 
 const POLL_INTERVAL_MS = 7000;
@@ -63,6 +66,11 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
         useChatStore.getState();
 
       if (messageExists(chatId, message.id)) return;
+
+      // Los ex-miembros siguen suscritos para recibir chat.deleted,
+      // pero no deben ver mensajes nuevos ni actualizar el preview.
+      const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
+      if (chat?.mi_participacion?.fecha_salida) return;
 
       appendMessage(chatId, message);
       setLastMessageTimestamp(chatId, message.fecha_reg);
@@ -150,22 +158,36 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
   );
 
   /**
-   * Llega por el canal PERSONAL (private-user.{myId}).
-   * Significa que YO fui removido o salí del chat:
-   *  - Elimina el chat del store (mensajes, timestamps, activeChatId si aplica)
-   *  - Abandona el canal WebSocket del chat
+   * Canal PERSONAL — participant.removed para MÍ MISMO.
+   *
+   *  - El chat NO se elimina del store.
+   *  - Se marca como ex-miembro (fecha_salida) → read-only en UI.
+   *  - El canal WebSocket del chat se abandona.
    */
   const handleParticipantRemovedForMe = useCallback(
     (event: ParticipantRemovedEvent) => {
       const currentUserId = Number(authSDK.getCurrentUser()?.id);
-      if (event.usuario_id !== currentUserId) return; // no debería pasar, pero por seguridad
+      if (event.usuario_id !== currentUserId) return;
 
       const chatId = event.chat_id;
 
-      // Limpiar store
+      useChatStore.getState().markChatAsExMember(chatId, event.fecha_salida);
+
+      websocketService.leave(`private-chat.${chatId}`);
+      subscribedChats.current.delete(chatId);
+      stopPolling(chatId);
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  /**
+   * Canal del CHAT — chat.deleted (OWNER eliminó el grupo para todos).
+   * Elimina el chat completamente del store.
+   */
+  const handleChatDeleted = useCallback(
+    (chatId: number, _event: ChatDeletedEvent) => {
       useChatStore.getState().removeChat(chatId);
 
-      // Abandonar el canal WebSocket y dejar de escuchar eventos
       websocketService.leave(`private-chat.${chatId}`);
       subscribedChats.current.delete(chatId);
       stopPolling(chatId);
@@ -187,8 +209,10 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
 
     // Chat nuevo al que fui invitado
     websocketService.listen(channelName, "chat.added", (chat: Chat) => {
-      const { upsertChat } = useChatStore.getState();
+      const { upsertChat, clearExMemberStatus } = useChatStore.getState();
       upsertChat(chat);
+
+      clearExMemberStatus(chat.id);
       // Suscribirse al canal del nuevo chat
       subscribeToChatChannel(chat.id);
     });
@@ -299,6 +323,13 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
           handleParticipantRemovedInChat(chatId, data),
       );
 
+      // Grupo eliminado para todos por el OWNER
+      websocketService.listen(
+        channelName,
+        "chat.deleted",
+        (data: ChatDeletedEvent) => handleChatDeleted(chatId, data),
+      );
+
       subscribedChats.current.add(chatId);
       stopPolling(chatId);
     },
@@ -308,6 +339,7 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
       handleMessageDeleted,
       handleChatUpdated,
       handleParticipantRemovedInChat,
+      handleChatDeleted,
     ], // eslint-disable-line
   );
 
@@ -318,6 +350,10 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
       if (pollingTimers.current.has(chatId)) return;
 
       const timer = setInterval(async () => {
+        // No hacer polling para ex-miembros (no recibirán mensajes nuevos)
+        const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
+        if (chat?.mi_participacion.fecha_salida) return;
+
         const since =
           useChatStore.getState().lastMessageTimestampByChatId[chatId];
         if (!since) return;
@@ -358,6 +394,7 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
   const chatIds = chats.map((c) => c.id).join(",");
 
   // ── Suscribir Echo por cada chat ─────────────────────────────────────────
+  // Incluye ex-miembros para recibir chat.deleted si el grupo es eliminado.
 
   useEffect(() => {
     if (!isEchoConnected || !chatIds) return;
@@ -374,7 +411,13 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
     const ids = chatIds.split(",").map(Number);
 
     if (!isEchoConnected) {
-      ids.forEach((chatId) => startPolling(chatId));
+      ids.forEach((chatId) => {
+        const chat = useChatStore.getState().chats.find((c) => c.id === chatId);
+        // Omitir ex-miembros en polling
+        if (!chat?.mi_participacion.fecha_salida) {
+          startPolling(chatId);
+        }
+      });
     } else {
       stopAllPolling();
     }

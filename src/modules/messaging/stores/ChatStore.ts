@@ -47,6 +47,12 @@ interface ChatState {
   pendingDirectChat: { userId: number; nombre: string } | null;
   messagesByChatId: Record<number, (Message | OptimisticMessage)[]>;
   lastMessageTimestampByChatId: Record<number, string>;
+  /**
+   * Registro local de chats eliminados "para mí".
+   * ConversationList filtra estos chats de la lista a menos que haya
+   * un mensaje posterior a deleted_at.
+   */
+  chatDeletions: Record<number, string>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,11 +80,38 @@ interface ChatActions {
   removeParticipantFromChat: (chatId: number, userId: number) => void;
 
   /**
+   * Marca el chat como ex-miembro actualizando mi_participacion.fecha_salida.
+   * El chat sigue visible en la lista como read-only.
+   * Se usa al recibir participant.removed para MÍ MISMO.
+   */
+  markChatAsExMember: (chatId: number, fechaSalida: string) => void;
+
+  /**
+   * Reactiva la membresía tras ser re-agregado al grupo.
+   * Limpia fecha_salida sin tocar los mensajes cacheados — el usuario
+   * conserva los mensajes anteriores a su salida y los nuevos
+   * llegan por WebSocket tras la re-suscripción al canal.
+   */
+  clearExMemberStatus: (chatId: number) => void;
+
+  /**
    * Elimina el chat completo del store.
-   * Se usa cuando el usuario actual es removido/sale del grupo:
-   * limpia mensajes, timestamps y desactiva el chat si estaba abierto.
+   * Solo para group_deleted (el grupo fue eliminado para todos).
    */
   removeChat: (chatId: number) => void;
+
+  /**
+   * Registra que el usuario eliminó el chat "para sí mismo".
+   * El chat permanece en store pero ConversationList lo oculta.
+   * También limpia el caché de mensajes para forzar fetch fresco.
+   */
+  setChatDeletion: (chatId: number, deletedAt: string) => void;
+
+  /**
+   * Elimina el registro de deletion para un chat.
+   * Se usa cuando el usuario es re-agregado al grupo.
+   */
+  clearChatDeletion: (chatId: number) => void;
 
   // Mensajes
   setMessages: (
@@ -143,6 +176,7 @@ const initialState: ChatState = {
   pendingDirectChat: null,
   messagesByChatId: {},
   lastMessageTimestampByChatId: {},
+  chatDeletions: {},
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,6 +233,12 @@ export const useChatStore = create<ChatState & ChatActions>()(
           state.chats.unshift(chat);
         }
         sortChatsByLastMessage(state.chats);
+
+        // Si el chat llegó con fecha_salida=null, el usuario fue re-agregado
+        // → limpiar deletion local (el backend ya limpió el registro en DB)
+        if (chat.mi_participacion.fecha_salida === null) {
+          delete state.chatDeletions[chat.id];
+        }
       }),
 
     updateChatInfo: (chatId, updates) =>
@@ -222,22 +262,38 @@ export const useChatStore = create<ChatState & ChatActions>()(
         );
       }),
 
-    // eliminar el chat completo (yo fui removido / salí) ──────────
+    // ── Ex-miembro: mantener chat pero marcarlo read-only ──────────────────
+    markChatAsExMember: (chatId, fechaSalida) =>
+      set((state) => {
+        const chat = state.chats.find((c) => c.id === chatId);
+        if (!chat) return;
+        chat.mi_participacion.fecha_salida = fechaSalida;
+        // Ex-miembro no tiene mensajes no leídos pendientes
+        chat.no_leidos = 0;
+      }),
+
+    // ── Reactivar membresía tras ser re-agregado ───────────────────────────
+    clearExMemberStatus: (chatId) =>
+      set((state) => {
+        const chat = state.chats.find((c) => c.id === chatId);
+        if (!chat) return;
+        chat.mi_participacion.fecha_salida = null;
+        delete state.chatDeletions[chatId];
+      }),
+
+    // ── Eliminar chat completo (group_deleted para todos) ─────────────────
     removeChat: (chatId) =>
       set((state) => {
-        // Quitar de la lista de chats
         state.chats = state.chats.filter((c) => c.id !== chatId);
 
-        // Si era el chat activo, volver a la lista
         if (state.activeChatId === chatId) {
           state.activeChatId = null;
         }
 
-        // Limpiar mensajes y timestamps para liberar memoria
         delete state.messagesByChatId[chatId];
         delete state.lastMessageTimestampByChatId[chatId];
+        delete state.chatDeletions[chatId];
 
-        // Limpiar localStorage si era el último chat abierto
         try {
           const stored = localStorage.getItem("messaging_last_chat_id");
           if (stored === String(chatId)) {
@@ -246,6 +302,27 @@ export const useChatStore = create<ChatState & ChatActions>()(
         } catch {
           // no-op
         }
+      }),
+
+    // ── Eliminar chat "para mí" ────────────────────────────────────────────
+    setChatDeletion: (chatId, deletedAt) =>
+      set((state) => {
+        state.chatDeletions[chatId] = deletedAt;
+
+        // Limpiar mensajes cacheados: cuando el chat reaparezca (nuevo mensaje)
+        // se hará un fetch fresco desde deleted_at en adelante.
+        delete state.messagesByChatId[chatId];
+        delete state.lastMessageTimestampByChatId[chatId];
+
+        // Si era el chat activo, volver a la lista
+        if (state.activeChatId === chatId) {
+          state.activeChatId = null;
+        }
+      }),
+
+    clearChatDeletion: (chatId) =>
+      set((state) => {
+        delete state.chatDeletions[chatId];
       }),
 
     // ── Messages ───────────────────────────────────────────────────────────

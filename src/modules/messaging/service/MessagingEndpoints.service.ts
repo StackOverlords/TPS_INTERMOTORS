@@ -14,6 +14,17 @@ export const MESSAGING_ENDPOINTS = {
     read: (id: number) => `/messaging/chats/${id}/read`,
     /** PATCH — editar nombre/descripción de un grupo (OWNER/ADMIN) */
     update: (id: number) => `/messaging/chats/${id}`,
+    /**
+     * DELETE /messaging/chats/{id}/delete-for-me
+     * Eliminar chat para mí (directo o grupo, activo o ex-miembro)
+     */
+    deleteForMe: (chatId: number) => `/messaging/chats/${chatId}/delete-for-me`,
+
+    /**
+     * DELETE /messaging/chats/{id}
+     * Eliminar grupo para todos (solo OWNER)
+     */
+    delete: (chatId: number) => `/messaging/chats/${chatId}`,
   },
 
   // ── Messages ───────────────────────────────────────────────────────────────

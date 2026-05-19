@@ -24,6 +24,7 @@ const myParticipationSchema = z.object({
   puede_escribir: z.boolean(),
   silenciado: z.boolean(),
   ultima_lectura: z.string().nullable(),
+  fecha_salida: z.string().nullable(),
 });
 
 export const lastMessagePreviewSchema = z.object({

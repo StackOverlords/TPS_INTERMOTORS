@@ -37,9 +37,18 @@ export interface ParticipantsResponse {
   data: Participant[];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// WEBSOCKET EVENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface ParticipantRemovedEvent {
   chat_id: number;
   usuario_id: number; // quién fue removido
   removido_por: number; // quién lo removió (igual a usuario_id si fue voluntario)
   voluntario: boolean; // true = salió solo, false = fue expulsado
+  fecha_salida: string; // ISO — para marcar el chat como read-only en el store
+}
+
+export interface ChatDeletedEvent {
+  chat_id: number;
 }
