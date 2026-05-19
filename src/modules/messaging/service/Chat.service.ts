@@ -1,0 +1,141 @@
+import { ApiService } from "@/lib/apiService";
+import { Logger } from "@/lib/logger";
+import type {
+  Chat,
+  ChatsGetAllResponse,
+  CreateDirectChatPayload,
+  CreateGroupPayload,
+  UpdateChatPayload,
+} from "../types/Chat.types";
+import { MESSAGING_ENDPOINTS } from "./MessagingEndpoints.service";
+import { chatSchema, chatsGetAllResponseSchema } from "../schemas/Chat.schema";
+
+const MODULE_NAME = "CHAT_SERVICE";
+
+export const chatService = {
+  /**
+   * Obtener todos los chats del usuario autenticado
+   */
+  async getAll(): Promise<ChatsGetAllResponse> {
+    Logger.info("Fetching all chats", undefined, MODULE_NAME);
+    const response = await ApiService.get(
+      MESSAGING_ENDPOINTS.chats.all,
+      chatsGetAllResponseSchema,
+    );
+    Logger.info(
+      "Chats fetched successfully",
+      { count: response.data.length },
+      MODULE_NAME,
+    );
+    return response as ChatsGetAllResponse;
+  },
+
+  /**
+   * Obtener un chat por ID
+   */
+  async getById(id: number): Promise<Chat> {
+    Logger.info("Fetching chat by id", { id }, MODULE_NAME);
+    const response = await ApiService.get(
+      MESSAGING_ENDPOINTS.chats.byId(id),
+      chatSchema,
+      undefined,
+      { unwrapData: true },
+    );
+    Logger.info("Chat fetched successfully", { id }, MODULE_NAME);
+    return response as Chat;
+  },
+
+  /**
+   * Crear o recuperar un chat directo (DM)
+   */
+  async createDirect(payload: CreateDirectChatPayload): Promise<Chat> {
+    Logger.info("Creating direct chat", { payload }, MODULE_NAME);
+    const response = await ApiService.post(
+      MESSAGING_ENDPOINTS.chats.direct,
+      payload,
+      chatSchema,
+      undefined,
+      { unwrapData: true },
+    );
+    Logger.info(
+      "Direct chat created/retrieved",
+      { id: (response as Chat).id },
+      MODULE_NAME,
+    );
+    return response as Chat;
+  },
+
+  /**
+   * Crear un grupo
+   */
+  async createGroup(payload: CreateGroupPayload): Promise<Chat> {
+    Logger.info("Creating group chat", { payload }, MODULE_NAME);
+    const response = await ApiService.post(
+      MESSAGING_ENDPOINTS.chats.group,
+      payload,
+      chatSchema,
+      undefined,
+      { unwrapData: true },
+    );
+    Logger.info(
+      "Group chat created",
+      { id: (response as Chat).id },
+      MODULE_NAME,
+    );
+    return response as Chat;
+  },
+
+  /**
+   * Marcar chat como leído (resetea no_leidos)
+   */
+  async markAsRead(chatId: number): Promise<void> {
+    Logger.info("Marking chat as read", { chatId }, MODULE_NAME);
+    await ApiService.patch(MESSAGING_ENDPOINTS.chats.read(chatId), {});
+    Logger.info("Chat marked as read", { chatId }, MODULE_NAME);
+  },
+
+  /**
+   * Editar nombre/descripción de un grupo.
+   * Solo OWNER/ADMIN, solo tipo GROUP.
+   * Genera mensaje de sistema en el chat y evento .chat.updated para todos.
+   */
+  async update(chatId: number, payload: UpdateChatPayload): Promise<Chat> {
+    Logger.info("Updating chat", { chatId, payload }, MODULE_NAME);
+    const response = await ApiService.patch(
+      MESSAGING_ENDPOINTS.chats.update(chatId),
+      payload,
+      undefined, // No validamos con schema porque la respuesta no siempre incluye todos los campos del chat, y el esquema es estricto.
+      // chatSchema, reemplazado por undefined para evitar errores de validación por campos faltantes.
+      undefined,
+      { unwrapData: true },
+    );
+    Logger.info("Chat updated", { chatId }, MODULE_NAME);
+    return response as Chat;
+  },
+
+  /**
+   * Eliminar chat "para mí" — directo o grupo (miembro activo o ex-miembro).
+   *
+   * El chat desaparece de la lista del usuario que lo elimina.
+   * Si llega un mensaje nuevo después, el chat reaparece mostrando
+   * solo mensajes desde este momento en adelante.
+   */
+  async deleteForMe(chatId: number): Promise<void> {
+    Logger.info("Deleting chat for me", { chatId }, MODULE_NAME);
+    await ApiService.delete(MESSAGING_ENDPOINTS.chats.deleteForMe(chatId));
+    Logger.info("Chat deleted for me", { chatId }, MODULE_NAME);
+  },
+
+  /**
+   * Eliminar grupo para todos los participantes.
+   * Solo el OWNER puede ejecutar esta acción.
+   *
+   * Genera un mensaje de sistema "X eliminó el grupo", desactiva el chat
+   * y broadcastea chat.deleted a todos los miembros conectados.
+   */
+  async deleteGroup(chatId: number): Promise<void> {
+    Logger.info("Deleting group for everyone", { chatId }, MODULE_NAME);
+    await ApiService.delete(MESSAGING_ENDPOINTS.chats.delete(chatId));
+    Logger.info("Group deleted for everyone", { chatId }, MODULE_NAME);
+  },
+};

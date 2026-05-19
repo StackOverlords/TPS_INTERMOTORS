@@ -1,16 +1,22 @@
-import type { ReactNode } from 'react';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { websocketService, WebSocketService } from '../services/websocket.service';
-import { useTaskNotificationsContext } from './TaskNotificationsContext';
-import logger from '@/utils/logger';
+import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  websocketService,
+  WebSocketService,
+} from "../services/websocket.service";
+import { useTaskNotificationsContext } from "./TaskNotificationsContext";
+import logger from "@/utils/logger";
 
-const wsContextLogger = logger.withModule('WS_CONTEXT');
+const wsContextLogger = logger.withModule("WS_CONTEXT");
 
-// 1. Actualizamos la interfaz para que coincida con la realidad
 interface WebSocketContextType {
   isConnected: boolean;
   send: (type: string, data: any) => void;
-  subscribe: (channel: string, event: string, callback: (data: any) => void) => () => void;
+  subscribe: (
+    channel: string,
+    event: string,
+    callback: (data: any) => void
+  ) => void;
   leave: (channel: string) => void;
   service: WebSocketService;
 }
@@ -22,124 +28,167 @@ interface WebSocketProviderProps {
   autoConnect?: boolean;
 }
 
-export const WebSocketProvider = ({ children, autoConnect = true }: WebSocketProviderProps) => {
+export const WebSocketProvider = ({
+  children,
+  autoConnect = true,
+}: WebSocketProviderProps) => {
   const [isConnected, setIsConnected] = useState(false);
-  const { completeTask, failTask, addAndStartTask } = useTaskNotificationsContext();
+  const { completeTask, failTask, addAndStartTask } =
+    useTaskNotificationsContext();
 
-  // Ref para rastrear IDs de tareas activas por tipo
   const activeTasksRef = useRef<Map<string, string>>(new Map());
 
+  // Ref para evitar stale closures en el reconnect recursivo
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const checkConnectionRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
+
   useEffect(() => {
-    let checkConnection: NodeJS.Timeout;
-    let reconnectTimeout: NodeJS.Timeout;
-    let retryCount = 0;
-    const MAX_RETRIES = 10;
+    if (!autoConnect) return;
 
-    if (autoConnect) {
-      const initSocket = async () => {
-        try {
-          wsContextLogger.info('Iniciando conexión a Reverb...');
-          await websocketService.connect();
-          retryCount = 0;
-          setIsConnected(true);
-          wsContextLogger.info('WebSocket conectado y listo para suscripciones');
+    let cancelled = false;
 
-          // Suscripción a notificaciones públicas con integración de tareas
-          websocketService.listen('public-updates', 'public.notification', (data: any) => {
-            wsContextLogger.info('NOTIFICACION RECIBIDA [public-updates]', {
-              channel: 'public-updates',
-              event: 'public.notification',
+    const initSocket = async () => {
+      try {
+        wsContextLogger.info("Iniciando conexión a Reverb...");
+        await websocketService.connect();
+
+        if (cancelled) return;
+
+        setIsConnected(true);
+        wsContextLogger.info("WebSocket conectado y listo para suscripciones");
+
+        websocketService.listen(
+          "public-updates",
+          "public.notification",
+          (data: any) => {
+            wsContextLogger.info("NOTIFICACION RECIBIDA [public-updates]", {
+              channel: "public-updates",
+              event: "public.notification",
               data,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
 
-            // Detectar si es una notificación de tarea
-            const message = data.message || data.msg || '';
-            const taskType = 'update-prices'; // Tipo de tarea
+            const message = data.message || data.msg || "";
+            const taskType = "update-prices";
 
-            // Si el mensaje indica inicio de tarea
-            if (message.toLowerCase().includes('en proceso') || message.toLowerCase().includes('procesando')) {
-              // Tercer parámetro: true = mostrar flotante, false = solo en panel del bell
-              const taskId = addAndStartTask('Actualización de precios', message, false);
+            if (
+              message.toLowerCase().includes("en proceso") ||
+              message.toLowerCase().includes("procesando")
+            ) {
+              const taskId = addAndStartTask(
+                "Actualización de precios",
+                message,
+                false
+              );
               activeTasksRef.current.set(taskType, taskId);
-              wsContextLogger.info('Tarea iniciada', { taskId, taskType, message });
-            }
-            // Si el mensaje indica finalización exitosa
-            else if (message.toLowerCase().includes('realizada') || message.toLowerCase().includes('completad')) {
+              wsContextLogger.info("Tarea iniciada", {
+                taskId,
+                taskType,
+                message,
+              });
+            } else if (
+              message.toLowerCase().includes("realizada") ||
+              message.toLowerCase().includes("completad")
+            ) {
               const taskId = activeTasksRef.current.get(taskType);
               if (taskId) {
-                wsContextLogger.info('Tarea completada', { taskId, message });
-                completeTask(taskId, message, 10000); // Se mostrará por 10 segundos
+                wsContextLogger.info("Tarea completada", { taskId, message });
+                completeTask(taskId, message, 10000);
                 activeTasksRef.current.delete(taskType);
               } else {
-                wsContextLogger.warn('No se encontró tarea activa para completar', { taskType, message });
+                wsContextLogger.warn(
+                  "No se encontró tarea activa para completar",
+                  {
+                    taskType,
+                    message,
+                  }
+                );
               }
-            }
-            // Si el mensaje indica error
-            else if (message.toLowerCase().includes('error') || message.toLowerCase().includes('fall')) {
+            } else if (
+              message.toLowerCase().includes("error") ||
+              message.toLowerCase().includes("fall")
+            ) {
               const taskId = activeTasksRef.current.get(taskType);
               if (taskId) {
-                wsContextLogger.error('Tarea falló', { taskId, message });
-                failTask(taskId, message, 8000); // Errores se mostrarán por 8 segundos
+                wsContextLogger.error("Tarea falló", { taskId, message });
+                failTask(taskId, message, 8000);
                 activeTasksRef.current.delete(taskType);
               } else {
-                wsContextLogger.warn('No se encontró tarea activa para marcar como error', { taskType, message });
+                wsContextLogger.warn(
+                  "No se encontró tarea activa para marcar como error",
+                  { taskType, message }
+                );
               }
+            } else {
+              wsContextLogger.debug("Mensaje no clasificado recibido", {
+                message,
+              });
             }
-            // Mensaje no reconocido
-            else {
-              wsContextLogger.debug('Mensaje no clasificado recibido', { message });
-            }
+          }
+        );
+      } catch (error) {
+        if (cancelled) return;
+
+        wsContextLogger.error("Falló la conexión al WebSocket", { error });
+        setIsConnected(false);
+
+        wsContextLogger.info("Reintentando conexión en 5 segundos...");
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (!cancelled) initSocket();
+        }, 5000);
+      }
+    };
+
+    initSocket();
+
+    checkConnectionRef.current = setInterval(() => {
+      if (cancelled) return;
+      const currentState = websocketService.isConnected;
+      setIsConnected((prev) => {
+        if (currentState !== prev) {
+          wsContextLogger.debug("Estado de conexión actualizado", {
+            isConnected: currentState,
           });
-
-        } catch (error) {
-          wsContextLogger.error('Falló la conexión al WebSocket', { error });
-          setIsConnected(false);
-
-          if (retryCount < MAX_RETRIES) {
-            retryCount++;
-            wsContextLogger.info(`Reintentando conexión en 5s (intento ${retryCount}/${MAX_RETRIES})...`);
-            reconnectTimeout = setTimeout(initSocket, 5000);
-          } else {
-            wsContextLogger.error('Máximo de reintentos alcanzado, deteniendo reconexión automática');
-          }
         }
-      };
-
-      initSocket();
-
-      // Polling para verificar estado de conexión
-      checkConnection = setInterval(() => {
-        const currentState = websocketService.isConnected;
-        setIsConnected((prev) => {
-          if (currentState !== prev) {
-            wsContextLogger.debug('Estado de conexión actualizado', { isConnected: currentState });
-          }
-          return currentState;
-        });
-      }, 3000);
-    }
+        return currentState;
+      });
+    }, 3000);
 
     return () => {
-      if (checkConnection) clearInterval(checkConnection);
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      wsContextLogger.info('Limpiando WebSocket Provider...');
+      cancelled = true;
+      if (checkConnectionRef.current) clearInterval(checkConnectionRef.current);
+      if (reconnectTimeoutRef.current)
+        clearTimeout(reconnectTimeoutRef.current);
+      wsContextLogger.info("Limpiando WebSocket Provider...");
       websocketService.disconnect();
     };
   }, [autoConnect, addAndStartTask, completeTask, failTask]);
 
-  // 3. Adaptador para 'send' (Loguea advertencia, Echo es para escuchar)
   const send = (type: string, data: any) => {
-    wsContextLogger.warn('WebSocket via Echo is read-only. Use your HTTP API to broadcast events.', { type, data });
+    wsContextLogger.warn(
+      "WebSocket via Echo is read-only. Use your HTTP API to broadcast events.",
+      { type, data }
+    );
   };
 
-  const subscribe = (channel: string, event: string, callback: (data: any) => void): () => void => {
-    wsContextLogger.debug('Subscribiendo a canal desde context', { channel, event });
-    return websocketService.listen(channel, event, callback);
+  const subscribe = (
+    channel: string,
+    event: string,
+    callback: (data: any) => void
+  ) => {
+    wsContextLogger.debug("Subscribiendo a canal desde context", {
+      channel,
+      event,
+    });
+    websocketService.listen(channel, event, callback);
   };
 
   const leave = (channel: string) => {
-    wsContextLogger.debug('Dejando canal desde context', { channel });
+    wsContextLogger.debug("Dejando canal desde context", { channel });
     websocketService.leave(channel);
   };
 
@@ -161,7 +210,7 @@ export const WebSocketProvider = ({ children, autoConnect = true }: WebSocketPro
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
   if (!context) {
-    throw new Error('useWebSocket must be used within a WebSocketProvider');
+    throw new Error("useWebSocket must be used within a WebSocketProvider");
   }
   return context;
 };

@@ -11,7 +11,7 @@ import { Toaster } from "./components/atoms/toaster.tsx";
 import { ZoomManager } from "./components/common/ZoomManager.tsx";
 import TitleBar from "./components/common/TitleBar.tsx";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
-import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
+// import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
 import { useDebugLogWindow } from "./hooks/useSecondaryWindow";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
 import { queryClient } from "./lib/reactQueryConfig.ts";
@@ -34,7 +34,6 @@ import { useEffect } from "react";
 initializeKeybindingStore().catch((error) => {
   logger.error("❌ Error initializing keybinding store:", error);
 });
-
 
 function App() {
   const debugLogWindow = useDebugLogWindow();
@@ -63,8 +62,8 @@ function App() {
       flushTabStorage();
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
   // Al montar (incluyendo reloads), cerrar todas las ventanas secundarias huérfanas.
@@ -98,27 +97,27 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TaskNotificationsProvider>
-        <WebSocketProvider>
-          <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
-            <TooltipProvider>
-              <Toaster />
-              <ZoomManager />
-              {/* <Sonner /> */}
-              {/* <KeybindingProvider> */}
-              <BrowserRouter>
-                <div className="flex flex-col h-screen w-screen overflow-hidden">
-                  <TitleBar />
-                  {/* <SidebarProvider> */}
-                  <div className="min-h-0 flex-1">
-                    <Navigation />
-                  </div>
-                  {/* </SidebarProvider> */}
+        {/* <WebSocketProvider> */}
+        <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
+          <TooltipProvider>
+            <Toaster />
+            <ZoomManager />
+            {/* <Sonner /> */}
+            {/* <KeybindingProvider> */}
+            <BrowserRouter>
+              <div className="flex flex-col h-screen w-screen overflow-hidden">
+                <TitleBar />
+                {/* <SidebarProvider> */}
+                <div className="min-h-0 flex-1">
+                  <Navigation />
                 </div>
-              </BrowserRouter>
-              {/* </KeybindingProvider> */}
-            </TooltipProvider>
-          </HotkeysProvider>
-        </WebSocketProvider>
+                {/* </SidebarProvider> */}
+              </div>
+            </BrowserRouter>
+            {/* </KeybindingProvider> */}
+          </TooltipProvider>
+        </HotkeysProvider>
+        {/* </WebSocketProvider> */}
       </TaskNotificationsProvider>
     </QueryClientProvider>
   );

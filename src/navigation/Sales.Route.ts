@@ -15,6 +15,7 @@ import { salesListViewConfig } from "@/modules/sales/config/sale.config";
 import MostSoldScreen from "@/modules/reports/screens/sales/mostSoldScreen";
 import TopRevenueScreen from "@/modules/reports/screens/sales/TopRevenueScreen";
 import GeneralReportScreen from "@/modules/reports/screens/sales/GeneralSaleReportScreen";
+import ChatScreen from "@/modules/messaging/screens/ChatScreen";
 
 const salesProtectedRoutes: RouteType[] = [
   {
@@ -105,6 +106,17 @@ const salesProtectedRoutes: RouteType[] = [
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false,
+      },
+       {
+        path: "/dashboard/chat",
+        name: "Chat",
+        type: "protected",
+        element: ChatScreen,
+       isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin"],
+        icon: DollarSign,
+        isHeader: false,
+        showSidebar: true,
       },
     ],
   },

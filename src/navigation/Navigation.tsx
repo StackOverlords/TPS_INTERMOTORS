@@ -17,7 +17,7 @@ const Navigation = () => {
   // Auto-cerrar ventanas secundarias cuando se cierra la app
   useCloseSecondaryWindowsOnExit();
   // console.log(authSDK.getState().user?.sucursales)
-  const closeAllTabs = useTabStore(state => state.closeAllTabs);
+  const closeAllTabs = useTabStore((state) => state.closeAllTabs);
 
   // Estado de autenticación
   const [authState, setAuthState] = useState<{

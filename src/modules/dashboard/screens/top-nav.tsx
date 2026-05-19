@@ -1,5 +1,4 @@
 import { Badge } from "@/components/atoms/badge";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms/button";
 import {
   DropdownMenu,
@@ -24,7 +23,6 @@ import {
   ChevronUp,
   FileText,
   HelpCircle,
-  MessageSquare,
   ShoppingCart,
 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -37,6 +35,7 @@ import ProfilePanel from "@/components/common/ProfilePanel";
 import ThemeToggle from "@/components/common/ThemeToggle";
 import DownloadsPanel from "@/components/common/DownloadsPanel";
 import { getUserAvatarGradient } from "@/utils/userColors";
+import { ChatTopbarButton } from "@/modules/messaging/components/ChatTopBarButton";
 
 interface TopNavProps {
   onOpenCartChange: () => void;
@@ -213,13 +212,7 @@ const TopNav: React.FC<TopNavProps> = ({ onOpenCartChange }) => {
           <SelectBranch></SelectBranch>
         </div>
         <div className="flex items-center gap-4 w-full">
-          <Button
-            variant="outline"
-            className={cn("relative size-8")}
-            // onClick={toggleChat}
-          >
-            <MessageSquare className="h-4 w-4" />
-          </Button>
+          <ChatTopbarButton />
         </div>
         {cart.sourceQuotation && (
           <DropdownMenu>

@@ -78,54 +78,21 @@
     "store:allow-has",
     "store:allow-length",
     "store:default",
-    "http:default",
-    "http:allow-fetch",
-    "http:allow-fetch-cancel",
-    "http:allow-fetch-read-body",
-    "http:allow-fetch-send",
     {
       "identifier": "http:default",
-      "allow": [
-        {
-          "url": "http://**"
-        },
-        {
-          "url": "https://**"
-        }
-      ]
+      "allow": [{ "url": "http://*/*" }, { "url": "https://*/*" }]
     },
     {
       "identifier": "http:allow-fetch",
-      "allow": [
-        {
-          "url": "http://**"
-        },
-        {
-          "url": "https://**"
-        }
-      ]
+      "allow": [{ "url": "http://*/*" }, { "url": "https://*/*" }]
     },
     {
       "identifier": "http:allow-fetch-read-body",
-      "allow": [
-        {
-          "url": "http://**"
-        },
-        {
-          "url": "https://**"
-        }
-      ]
+      "allow": [{ "url": "http://*/*" }, { "url": "https://*/*" }]
     },
     {
       "identifier": "http:allow-fetch-send",
-      "allow": [
-        {
-          "url": "http://**"
-        },
-        {
-          "url": "https://**"
-        }
-      ]
+      "allow": [{ "url": "http://*/*" }, { "url": "https://*/*" }]
     },
     "log:default",
     "log:allow-log"

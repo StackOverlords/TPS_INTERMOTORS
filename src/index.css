@@ -506,3 +506,12 @@ body > .recharts-tooltip-portal {
     min-width: 280px !important;
   }
 }
+
+.avatar-color {
+  background-color: var(--avatar-bg);
+  color: var(--avatar-text);
+}
+.dark .avatar-color {
+  background-color: var(--avatar-bg-dark);
+  color: var(--avatar-text-dark);
+}

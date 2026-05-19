@@ -9,6 +9,7 @@ import { useAuthSDK } from "@/contexts/AuthSDKContext";
 import { QueryClientProvider } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import { HotkeysProvider } from "react-hotkeys-hook";
+import { MessagingProvider } from "@/modules/messaging/hooks/MessagingProvider";
 
 interface WindowLayoutProps {
   children: React.ReactNode;
@@ -38,16 +39,18 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ children }) => {
   return (
     <WebSocketProvider>
       <QueryClientProvider client={queryClient}>
-        <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
-          <TooltipProvider>
-            <Toaster />
-            <ZoomManager />
-            <div className="h-screen w-screen overflow-hidden flex flex-col ring-1 ring-border">
-              <SecondaryTitleBar />
-              <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
-            </div>
-          </TooltipProvider>
-        </HotkeysProvider>
+        <MessagingProvider>
+          <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
+            <TooltipProvider>
+              <Toaster />
+              <ZoomManager />
+              <div className="h-screen w-screen overflow-hidden flex flex-col ring-1 ring-border">
+                <SecondaryTitleBar />
+                <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+              </div>
+            </TooltipProvider>
+          </HotkeysProvider>
+        </MessagingProvider>
       </QueryClientProvider>
     </WebSocketProvider>
   );

@@ -1,77 +1,66 @@
 import { SidebarInset, SidebarProvider } from "@/components/atoms/sidebar";
-// import TabBar from "@/components/tabs/TabBar";
 import TabContainer from "@/components/tabs/TabContainer";
-// import { useTabNavigation } from "@/hooks/useTabNavigation";
-// import { useCommands } from "@/keybindings";
 import CartSidebar from "@/modules/shoppingCart/components/CartSidebar";
-// import ChatPanel from "@/modules/chat/components/ChatPanel";
 import { useCartUiStore } from "@/modules/shoppingCart/store/cartUiStore";
+import { MessagingProvider } from "@/modules/messaging/hooks/MessagingProvider";
+import { ChatFloatingWindow } from "@/modules/messaging/components/ChatFloatingWindow";
+import { ChatToggleButton } from "@/modules/messaging/components/ChatToggleButton";
+import { ChatSidePanel } from "@/modules/messaging/components/ChatSidePanel";
 import { useEffect, useState } from "react";
 import AppSidebar from "./appSidebar";
 import TopNav from "./top-nav";
+import { useChatUIStore } from "@/modules/messaging/stores/ChatUiStore";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 
 export default function Layout() {
-  const {
-    isOpen,
-    close,
-    toggle,
-    // open
-  } = useCartUiStore();
+  const { isOpen, close, toggle } = useCartUiStore();
+  const chatViewMode = useChatUIStore((s) => s.viewMode);
+  const chatIsOpen = useChatUIStore((s) => s.isOpen);
   const [mounted, setMounted] = useState(false);
-  // const {
-  //   nextTab,
-  //   previousTab,
-  //   closeCurrentTab,
-  //   // tabs
-  // } = useTabNavigation();
 
-  // useCommands(
-  //   {
-  //     "tabs.next": nextTab,
-  //     "tabs.previous": previousTab,
-  //     "tabs.close": closeCurrentTab,
-  //   },
-  //   {
-  //     enableOnFormTags: true,
-  //   }
-  // );
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // useHotkeys(
-  //   'alt+c',
-  //   () => {
-  //     if (!isOpen) open();
-  //   },
-  //   {
-  //     enabled: !isOpen,
-  //   }
-  // );
+  if (!mounted) return null;
 
-  if (!mounted) {
-    return null;
-  }
+  const showSidePanel = chatIsOpen && chatViewMode === "side";
 
   return (
-    <SidebarProvider className="h-full w-full flex overflow-hidden relative min-h-0">
-      <AppSidebar />
-      <SidebarInset className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
-        <header className="border-b border-border bg-background flex-shrink-0">
-          <div className="h-16">
-            <TopNav onOpenCartChange={toggle} />
+    <WebSocketProvider>
+      {/* // MessagingProvider envuelve todo el layout autenticado. // Se monta con
+      el primer render protegido y se desmonta con logout. */}
+      <MessagingProvider>
+        {/* Floating chat window y FAB — posición fixed, no afectan el layout */}
+        <ChatFloatingWindow />
+        <ChatToggleButton />
+
+        <SidebarProvider className="h-full w-full flex overflow-hidden relative min-h-0">
+          <AppSidebar />
+
+          {/* Main content + side panel chat en el mismo flex row */}
+          <div className="flex flex-1 min-w-0 overflow-hidden">
+            <SidebarInset className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
+              <header className="border-b border-border bg-background flex-shrink-0">
+                <div className="h-16">
+                  <TopNav onOpenCartChange={toggle} />
+                </div>
+              </header>
+              <div
+                id="main-scroll-container"
+                className="bg-secondary flex-1 min-h-0 overflow-hidden"
+              >
+                <TabContainer />
+              </div>
+            </SidebarInset>
+
+            {/* Panel lateral de chat — aparece a la derecha del contenido principal */}
+            {showSidePanel && <ChatSidePanel />}
           </div>
-          {/* <TabBar onCloseTab={closeCurrentTab} /> */}
-        </header>
-        <div
-          id="main-scroll-container"
-          className="bg-secondary flex-1 min-h-0 overflow-hidden"
-        >
-          <TabContainer />
-        </div>
-      </SidebarInset>
-      <CartSidebar open={isOpen} onOpenChange={close} />
-      {/* <ChatPanel /> */}
-    </SidebarProvider>
+
+          <CartSidebar open={isOpen} onOpenChange={close} />
+        </SidebarProvider>
+      </MessagingProvider>
+    </WebSocketProvider>
   );
 }
