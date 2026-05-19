@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       variant:
-        description: 'Tenant variant'
+        description: "Tenant variant"
         required: true
         type: choice
         options:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -36,7 +36,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install frontend dependencies
         run: npm ci
@@ -49,6 +49,7 @@ jobs:
       - name: Build Tauri app (MSI only)
         env:
           VITE_API_URL: ${{ inputs.variant == 't1' && secrets.VITE_API_URL_T1 || secrets.VITE_API_URL_T2 }}
+          VITE_APP_URL: ${{ inputs.variant == 't1' && secrets.VITE_APP_URL_T1 || secrets.VITE_APP_URL_T2 }}
           VITE_WS_URL: ${{ inputs.variant == 't1' && secrets.VITE_WS_URL_T1 || secrets.VITE_WS_URL_T2 }}
           VITE_SOCKET_KEY: ${{ inputs.variant == 't1' && secrets.VITE_SOCKET_KEY_T1 || secrets.VITE_SOCKET_KEY_T2 }}
           VITE_REVERB_HOST: ${{ inputs.variant == 't1' && secrets.VITE_REVERB_HOST_T1 || secrets.VITE_REVERB_HOST_T2 }}
