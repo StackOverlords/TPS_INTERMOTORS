@@ -1,6 +1,7 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 import authSDK from "@/services/sdk-simple-auth";
+import { environment } from "@/utils/environment";
 import logger from "@/utils/logger";
 
 declare global {
@@ -59,12 +60,8 @@ export class WebSocketService {
         const appKey = import.meta.env.VITE_REVERB_APP_KEY;
         const scheme = import.meta.env.VITE_REVERB_SCHEME || "http";
         const useTLS = scheme === "https" || scheme === "wss";
-        const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
-        // Obtener el token de acceso antes de crear Echo.
-        // Necesario para que Pusher pueda autenticar los canales privados
-        // (private-chat.{id}) enviando Authorization: Bearer {token}
-        const token = await authSDK.getAccessToken();
+        const token = await authSDK.getValidAccessToken();
 
         wsLogger.info("Configurando conexión a Reverb", {
           host,
@@ -72,6 +69,7 @@ export class WebSocketService {
           appKey: appKey ? `${appKey.substring(0, 8)}...` : "NO_KEY",
           scheme,
           useTLS,
+          authEndpoint: `${environment.apiUrl}/broadcasting/auth`,
           hasToken: !!token,
         });
 
@@ -87,7 +85,7 @@ export class WebSocketService {
           disableStats: true,
           enabledTransports: useTLS ? ["wss"] : ["ws"],
           cluster: "mt1",
-          authEndpoint: `${appUrl}/broadcasting/auth`,
+          authEndpoint: `${environment.apiUrl}/broadcasting/auth`,
           auth: {
             headers: {
               Authorization: token ? `Bearer ${token}` : "",
