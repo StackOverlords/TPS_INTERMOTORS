@@ -69,7 +69,7 @@ export class WebSocketService {
           appKey: appKey ? `${appKey.substring(0, 8)}...` : "NO_KEY",
           scheme,
           useTLS,
-          authEndpoint: `${environment.apiUrl}/broadcasting/auth`,
+          authEndpoint: `${environment.apiUrl.replace(/\/api(\/v\d+)?$/, '')}/broadcasting/auth`,
           hasToken: !!token,
         });
 
@@ -85,7 +85,7 @@ export class WebSocketService {
           disableStats: true,
           enabledTransports: useTLS ? ["wss"] : ["ws"],
           cluster: "mt1",
-          authEndpoint: `${environment.apiUrl}/broadcasting/auth`,
+          authEndpoint: `${environment.apiUrl.replace(/\/api(\/v\d+)?$/, '')}/broadcasting/auth`,
           auth: {
             headers: {
               Authorization: token ? `Bearer ${token}` : "",
