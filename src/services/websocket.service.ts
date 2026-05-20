@@ -1,8 +1,6 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import logger from '@/utils/logger';
-import { environment } from '@/utils/environment';
-import authSDK from '@/services/sdk-simple-auth';
 
 declare global {
   interface Window {
@@ -39,7 +37,6 @@ export class WebSocketService {
         const appKey = import.meta.env.VITE_REVERB_APP_KEY;
         const scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
         const useTLS = scheme === 'https' || scheme === 'wss';
-        const token = await authSDK.getValidAccessToken();
 
         wsLogger.info('Configurando conexión a Reverb', {
           host,
@@ -49,6 +46,7 @@ export class WebSocketService {
           useTLS
         });
 
+        // Configuración correcta para Reverb compatible con Pusher
         this.echo = new Echo({
           broadcaster: 'pusher',
           key: appKey,
@@ -59,11 +57,13 @@ export class WebSocketService {
           encrypted: useTLS,
           disableStats: true,
           enabledTransports: useTLS ? ['wss'] : ['ws'],
-          cluster: 'mt1',
-          authEndpoint: `${environment.apiUrl}/broadcasting/auth`,
+          cluster: 'mt1', // Requerido por Pusher.js aunque Reverb no lo use
+
+          // Configuración adicional para Reverb
           auth: {
             headers: {
-              Authorization: token ? `Bearer ${token}` : '',
+              // Aquí vamos a agregar headers de autenticación si es necesario
+              // 'Authorization': `Bearer ${token}`
             },
           },
         });
