@@ -191,7 +191,11 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
     setChats: (chats) =>
       set((state) => {
-        state.chats = chats;
+        const activeId = state.activeChatId;
+        state.chats = chats.map((chat) => ({
+          ...chat,
+          no_leidos: chat.id === activeId ? 0 : chat.no_leidos,
+        }));
         state.chatsLoaded = true;
         chats.forEach((chat) => {
           if (chat.ultimo_mensaje) {
@@ -226,11 +230,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
     upsertChat: (chat) =>
       set((state) => {
+        const isActive = chat.id === state.activeChatId;
+        const merged = isActive ? { ...chat, no_leidos: 0 } : chat;
         const idx = state.chats.findIndex((c) => c.id === chat.id);
         if (idx >= 0) {
-          state.chats[idx] = chat;
+          state.chats[idx] = merged;
         } else {
-          state.chats.unshift(chat);
+          state.chats.unshift(merged);
         }
         sortChatsByLastMessage(state.chats);
 

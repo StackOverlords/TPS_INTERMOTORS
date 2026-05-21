@@ -94,16 +94,32 @@ function ReferenceBadge({ tipo, id }: { tipo: string; id: number }) {
 
 function MessageStatus({
   status,
+  isOptimistic,
+  message,
+  onRetry,
 }: {
   status: string | undefined;
   isMine: boolean;
+  isOptimistic: boolean;
+  onRetry?: (msg: OptimisticMessage) => void;
+  message: Message | OptimisticMessage;
 }) {
   if (!status) return <CheckCheck className="h-3 w-3 text-blue-400" />;
   if (status === "sending") return <Check className="h-3 w-3 opacity-40" />;
   if (status === "queued")
     return <span className="text-[9px] opacity-60">cola</span>;
-  if (status === "failed")
-    return <span className="text-[9px] text-destructive">!</span>;
+  if (status === "failed") {
+    return (
+      <button
+        onClick={() => isOptimistic && onRetry?.(message as OptimisticMessage)}
+        className="flex items-center gap-0.5 text-[9px] text-destructive hover:text-destructive/80 transition-colors"
+        title="Toca para reintentar"
+      >
+        <span>!</span>
+        <span className="underline">reintentar</span>
+      </button>
+    );
+  }
   return <CheckCheck className="h-3 w-3 text-blue-400" />;
 }
 
@@ -157,6 +173,8 @@ interface Props {
   canModerate?: boolean;
   isDirectChat?: boolean;
   otherDate?: boolean;
+  onRetry?: (msg: OptimisticMessage) => void;
+  onRetryAttachment?: (tempId: string) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -174,6 +192,8 @@ export function MessageBubble({
   canModerate = false,
   isDirectChat = false,
   otherDate = false,
+  onRetry,
+  onRetryAttachment,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const currentUserId = authSDK.getCurrentUser()?.id;
@@ -392,6 +412,7 @@ export function MessageBubble({
                   isOptimistic ? (message as OptimisticMessage) : undefined
                 }
                 isMine={isMine}
+                onRetry={onRetryAttachment}
               />
               {message.contenido && (
                 <p className="text-sm leading-relaxed whitespace-pre-wrap px-1.5">
@@ -436,7 +457,15 @@ export function MessageBubble({
             >
               {format(new Date(message.fecha_reg), "HH:mm", { locale: es })}
             </span>
-            {isMine && <MessageStatus status={status} isMine={isMine} />}
+            {isMine && (
+              <MessageStatus
+                status={status}
+                isMine={isMine}
+                isOptimistic={isOptimistic}
+                message={message}
+                onRetry={onRetry}
+              />
+            )}
           </div>
         </div>
       </div>

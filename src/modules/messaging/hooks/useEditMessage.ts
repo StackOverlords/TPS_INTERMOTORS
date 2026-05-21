@@ -1,7 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { useChatStore } from "../stores/ChatStore";
 import { messageService } from "../service/Message.service";
-import type { EditMessagePayload, Message } from "../types/Message.types";
+import type {
+  EditMessagePayload,
+  Message,
+  MessagesGetAllResponse,
+} from "../types/Message.types";
+import { messagesQueryKey } from "./useMessages";
 
 /**
  * Editar el contenido de un mensaje.
@@ -16,8 +25,27 @@ import type { EditMessagePayload, Message } from "../types/Message.types";
  *  2. onSuccess → confirma con la respuesta del servidor
  *  3. onError → revierte al contenido original
  */
+
+type MessagesCache = InfiniteData<MessagesGetAllResponse>;
+
 export function useEditMessage(chatId: number) {
   const editMessageInStore = useChatStore((s) => s.editMessage);
+  const qc = useQueryClient();
+
+  const patchCache = (messageId: number, updates: Partial<Message>) => {
+    qc.setQueryData<MessagesCache>(messagesQueryKey(chatId), (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page) => ({
+          ...page,
+          data: page.data.map((m) =>
+            m.id === messageId ? { ...m, ...updates } : m,
+          ),
+        })),
+      };
+    });
+  };
 
   return useMutation<
     Message,
@@ -29,30 +57,36 @@ export function useEditMessage(chatId: number) {
 
     onMutate: ({ messageId, payload }) => {
       // Optimista: actualizar store antes de que el servidor responda
-      editMessageInStore(chatId, messageId, {
+      const optimisticUpdates = {
         contenido: payload.contenido,
         editado: true,
         fecha_editado: new Date().toISOString(),
-      });
+      };
+      editMessageInStore(chatId, messageId, optimisticUpdates);
+      patchCache(messageId, optimisticUpdates);
     },
 
     onSuccess: (message) => {
       // Confirmar con los valores exactos del servidor
-      editMessageInStore(chatId, message.id, {
+      const confirmedUpdates = {
         contenido: message.contenido,
         editado: message.editado,
         fecha_editado: message.fecha_editado ?? new Date().toISOString(),
-      });
+      };
+      editMessageInStore(chatId, message.id, confirmedUpdates);
+      patchCache(message.id, confirmedUpdates);
     },
 
     onError: (_err, { messageId, previousContent }) => {
       // Revertir si falló — solo si teníamos el contenido previo
       if (previousContent !== undefined) {
-        editMessageInStore(chatId, messageId, {
+        const revert = {
           contenido: previousContent,
           editado: false,
           fecha_editado: "",
-        });
+        };
+        editMessageInStore(chatId, messageId, revert);
+        patchCache(messageId, revert);
       }
     },
   });
