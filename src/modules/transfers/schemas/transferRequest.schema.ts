@@ -39,6 +39,7 @@ const TransferRequestEstadoSchema = z.enum([
   "pending",
   "fulfilled",
   "imported",
+  "in_progress",
   "partial",
   "cancelled",
 ]);

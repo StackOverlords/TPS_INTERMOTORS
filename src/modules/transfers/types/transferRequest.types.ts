@@ -9,6 +9,7 @@ export type TransferRequestEstado =
   | "pending"
   | "fulfilled"
   | "imported"
+  | "in_progress"
   | "partial"
   | "cancelled";
 

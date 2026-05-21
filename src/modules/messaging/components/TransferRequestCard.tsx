@@ -6,8 +6,10 @@
  * - Shows product summary, branch-to-branch direction, estado badge
  * - Action buttons ("Importar" / "Enviar directo") are visible ONLY to the
  *   destinatario (currentUserId === request.usuario_destinatario_id)
- * - Terminal estados (FULFILLED, IMPORTED, CANCELLED) hide action buttons
- * - "Enviar directo" shows a confirm modal, then a result modal
+ * - Terminal estados (FULFILLED, PARTIAL, CANCELLED) hide action buttons
+ * - "imported" is transitional: shows "Retomar importación" + "Enviar directo"
+ * - "in_progress": transfer created but not yet confirmed — shows link
+ * - "Enviar directo" shows a confirm modal, then a result modal with navigation
  */
 
 import { useState } from "react";
@@ -41,14 +43,19 @@ const ESTADO_CONFIG: Record<
   TransferRequestEstado,
   { label: string; variant: "warning" | "success" | "accent" | "info" | "danger" }
 > = {
-  pending:   { label: "Pendiente",  variant: "warning" },
-  fulfilled: { label: "Completado", variant: "success" },
-  partial:   { label: "Parcial",    variant: "accent" },
-  imported:  { label: "Importado",  variant: "info" },
-  cancelled: { label: "Cancelado",  variant: "danger" },
+  pending:     { label: "Pendiente",   variant: "warning" },
+  fulfilled:   { label: "Completado",  variant: "success" },
+  partial:     { label: "Parcial",     variant: "accent" },
+  imported:    { label: "Importado",   variant: "info" },
+  in_progress: { label: "En proceso",  variant: "info" },
+  cancelled:   { label: "Cancelado",   variant: "danger" },
 };
 
-const TERMINAL_ESTADOS: TransferRequestEstado[] = ["fulfilled", "imported", "cancelled"];
+// States where the recipient can no longer take direct action — show transfer link instead
+const TERMINAL_ESTADOS: TransferRequestEstado[] = ["fulfilled", "partial", "cancelled", "in_progress"];
+
+// States where the recipient still needs to act
+const ACTIONABLE_ESTADOS: TransferRequestEstado[] = ["pending", "imported"];
 
 function EstadoBadge({ estado }: { estado: TransferRequestEstado }) {
   const config = ESTADO_CONFIG[estado] ?? { label: estado, variant: "warning" as const };
@@ -66,10 +73,11 @@ function EstadoBadge({ estado }: { estado: TransferRequestEstado }) {
 interface FulfillResultModalProps {
   open: boolean;
   onClose: () => void;
+  onGoToTransfer?: () => void;
   result: FulfillDirectResult;
 }
 
-function FulfillResultModal({ open, onClose, result }: FulfillResultModalProps) {
+function FulfillResultModal({ open, onClose, onGoToTransfer, result }: FulfillResultModalProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md z-[9999]">
@@ -139,10 +147,16 @@ function FulfillResultModal({ open, onClose, result }: FulfillResultModalProps) 
           )}
         </div>
 
-        <DialogFooter>
-          <Button size="sm" onClick={onClose}>
+        <DialogFooter className="gap-2">
+          <Button size="sm" variant="outline" onClick={onClose}>
             Cerrar
           </Button>
+          {onGoToTransfer && result.transfer_id && (
+            <Button size="sm" onClick={onGoToTransfer} className="gap-1.5">
+              <ExternalLink className="h-3.5 w-3.5" />
+              Ir a confirmar envío
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -245,7 +259,10 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   const isRecipient =
     !!request && String(request.usuario_destinatario_id) === String(currentUserId);
   const isTerminal = !!request && TERMINAL_ESTADOS.includes(request.estado);
-  const showActions = isRecipient && !isTerminal;
+  const isActionable = !!request && ACTIONABLE_ESTADOS.includes(request.estado);
+  const isImportedState = request?.estado === "imported";
+  // Recipient still needs to act (pending or stuck at imported with no transfer yet)
+  const showActions = isRecipient && isActionable;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleFulfillConfirm = async () => {
@@ -391,14 +408,23 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           </ul>
         )}
 
-        {/* Terminal estado indicator + optional transfer link */}
+        {/* Non-actionable: show transfer link or processed message */}
         {isTerminal && (
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <CheckCircle2 className="h-3 w-3 shrink-0" />
-              <span>Esta solicitud ya fue procesada</span>
+              {request.estado === "in_progress" ? (
+                <>
+                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+                  <span>Transferencia creada, esperando confirmación de envío</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-3 w-3 shrink-0" />
+                  <span>Esta solicitud ya fue procesada</span>
+                </>
+              )}
             </div>
-            {request.product_transfer_id ? (
+            {request.product_transfer_id != null ? (
               <Button
                 size="sm"
                 variant="secondary"
@@ -408,7 +434,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 <ExternalLink className="h-3 w-3" />
                 Ver transferencia
               </Button>
-            ) : (
+            ) : request.estado !== "cancelled" ? (
               <Button
                 size="sm"
                 variant="ghost"
@@ -418,11 +444,11 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 <ExternalLink className="h-3 w-3" />
                 Ver transferencias
               </Button>
-            )}
+            ) : null}
           </div>
         )}
 
-        {/* Action buttons — only for recipient on non-terminal estados */}
+        {/* Action buttons — recipient on actionable states (pending or imported) */}
         {showActions && (
           <div className="flex gap-1.5 pt-0.5">
             {canImport && (
@@ -435,6 +461,8 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
               >
                 {importMutation.isPending ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
+                ) : isImportedState ? (
+                  "Retomar importación"
                 ) : (
                   "Importar"
                 )}
@@ -449,7 +477,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 onClick={() => setConfirmFulfillOpen(true)}
               >
                 {fulfill.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   "Enviar directo"
                 )}
@@ -458,8 +486,8 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           </div>
         )}
 
-        {/* Permission-based notice when recipient but no permissions */}
-        {isRecipient && !isTerminal && !canImport && !canFulfill && (
+        {/* Permission-based notice when recipient but no permissions and still actionable */}
+        {isRecipient && isActionable && !canImport && !canFulfill && (
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <XCircle className="h-3 w-3 shrink-0 text-muted-foreground/60" />
             <span>Sin permisos para actuar sobre esta solicitud</span>
@@ -480,6 +508,15 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
         <FulfillResultModal
           open={!!fulfillResult}
           onClose={() => setFulfillResult(null)}
+          onGoToTransfer={
+            fulfillResult.transfer_id
+              ? () => {
+                  const tid = fulfillResult.transfer_id;
+                  setFulfillResult(null);
+                  navigate(`/dashboard/transfers/${tid}`);
+                }
+              : undefined
+          }
           result={fulfillResult}
         />
       )}

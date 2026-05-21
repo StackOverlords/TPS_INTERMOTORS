@@ -28,6 +28,7 @@ import type {
 import { resolveNotificationBehavior } from "../utils/messageNotifications";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { messagesQueryKey } from "./useMessages";
+import { TRANSFER_REQUEST_QUERY_KEYS } from "@/modules/transfers/constants/transferRequestQueryKeys";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
@@ -384,6 +385,17 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
         channelName,
         "chat.deleted",
         (data: ChatDeletedEvent) => handleChatDeleted(chatId, data),
+      );
+
+      // Estado de solicitud de transferencia cambiado — invalidar caché para re-render del card
+      websocketService.listen(
+        channelName,
+        "transfer_request.updated",
+        (data: { id: number }) => {
+          void qc.invalidateQueries({
+            queryKey: TRANSFER_REQUEST_QUERY_KEYS.detail(data.id),
+          });
+        },
       );
 
       subscribedChats.current.add(chatId);
