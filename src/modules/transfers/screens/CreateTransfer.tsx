@@ -58,37 +58,51 @@ import type { ImportResult } from "../types/transferRequest.types";
 const buildPrefillRows = (prefill: ImportResult): UITransferDetailCreate[] =>
   prefill.items.flatMap((item) => {
     if (!item.lots || item.lots.length === 0) return [];
-    const lotsAsc = [...item.lots].sort(
-      (a, b) =>
-        new Date(a.fecha_adquisicion).getTime() -
-        new Date(b.fecha_adquisicion).getTime()
-    );
+    // Laravel raw query results return PostgreSQL numerics as strings —
+    // coerce every numeric field to Number() so strictRequiredMoneySchema passes.
+    const lotsAsc = [...item.lots]
+      .map((lot) => ({
+        ...lot,
+        id: Number(lot.id),
+        saldo: Number(lot.saldo),
+        costo: Number(lot.costo) || 0,
+        precio_venta: Number(lot.precio_venta) || 0,
+        precio_venta_alt: Number(lot.precio_venta_alt) || 0,
+        tc_compra: Number(lot.tc_compra) || 0,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(a.fecha_adquisicion).getTime() -
+          new Date(b.fecha_adquisicion).getTime()
+      );
     const totalSaldo = lotsAsc.reduce((sum, lot) => sum + lot.saldo, 0);
     const oldestLot = lotsAsc[0];
     const product = item.product;
+    const precioVenta = Number(product.precio_venta ?? oldestLot.precio_venta) || 0;
+    const precioVentaAlt = Number(product.precio_venta_alt ?? oldestLot.precio_venta_alt) || 0;
     return [
       {
-        producto_id: product.id,
-        cantidad_entrada_salida: Math.min(item.cantidad_solicitada, totalSaldo),
+        producto_id: Number(product.id),
+        cantidad_entrada_salida: Math.min(Number(item.cantidad_solicitada), totalSaldo),
         costo_entrada: oldestLot.costo,
-        precio_salida: product.precio_venta,
-        precio_entrada_venta: product.precio_venta,
-        precio_entrada_venta_alt: product.precio_venta_alt,
+        precio_salida: precioVenta,
+        precio_entrada_venta: precioVenta,
+        precio_entrada_venta_alt: precioVentaAlt,
         incremento_p_entrada_venta: 0,
         incremento_p_entrada_venta_alt: 0,
-        tc_transfer: oldestLot.tc_compra || 0,
+        tc_transfer: oldestLot.tc_compra,
         purchase_id: oldestLot.id,
         lots: lotsAsc,
         total_saldo: totalSaldo,
         product: {
-          id: product.id,
+          id: Number(product.id),
           descripcion: product.descripcion,
           codigo_oem: product.codigo_oem,
           codigo_upc: product.codigo_upc,
           marca: product.marca || null,
           costo: oldestLot.costo,
-          precio_venta: product.precio_venta,
-          precio_venta_alt: product.precio_venta_alt,
+          precio_venta: precioVenta,
+          precio_venta_alt: precioVentaAlt,
         },
       } satisfies UITransferDetailCreate,
     ];
@@ -134,8 +148,10 @@ const CreateTransfer = () => {
       nro_comprobante: "",
       comentarios: "",
       sucursal_origen: Number(selectedBranchId) || 1,
-      // Pre-fill sucursal_destino from import flow; undefined triggers auto-select
-      sucursal_destino: transferRequestPrefill?.sucursal_destinataria_id ?? undefined,
+      // Pre-fill sucursal_destino from import flow.
+      // The SOLICITANTE is who needs the products → destination of this transfer.
+      // (sucursal_destinataria is the branch that HAS stock = current user = origin)
+      sucursal_destino: transferRequestPrefill?.sucursal_solicitante_id ?? undefined,
       responsable: Number(user?._id) || undefined,
       detalles: [],
     },
@@ -278,19 +294,27 @@ const CreateTransfer = () => {
       });
       return;
     }
+
+    if (errors.detalles) {
+      // Array field errors don't surface .message at the root — check explicitly.
+      const detailsMsg = (errors.detalles as { message?: string }).message;
+      validateBeforeSubmit();
+      showErrorToast({
+        title: "Error en los productos",
+        description: detailsMsg ?? "Verifica que los productos y precios sean válidos",
+        duration: 5000,
+      });
+      return;
+    }
+
     const firstErrorKey = Object.keys(errors)[0] as keyof TransferCreate;
     const firstError = errors[firstErrorKey];
-
     if (firstError?.message) {
       showErrorToast({
         title: "Error en formulario",
         description: firstError.message,
         duration: 5000,
       });
-    }
-
-    if (errors.detalles) {
-      validateBeforeSubmit();
     }
   };
 
@@ -304,15 +328,14 @@ const CreateTransfer = () => {
   };
 
   useEffect(() => {
-    if (
-      !user?._id &&
-      transferResponsiblesData &&
-      transferResponsiblesData.data.length > 0
-    ) {
-      const firstResponsible = transferResponsiblesData.data[0];
-      setValue("responsable", firstResponsible.id);
+    if (!transferResponsiblesData?.data.length) return;
+    const currentResponsable = methods.getValues("responsable");
+    // Only auto-select first responsible when no value is set
+    // (avoids overriding current user's ID set in defaultValues)
+    if (!currentResponsable) {
+      setValue("responsable", transferResponsiblesData.data[0].id);
     }
-  }, [transferResponsiblesData, setValue, user?._id]);
+  }, [transferResponsiblesData, setValue, methods]);
 
   // Auto-seleccionar la primera sucursal destino disponible
   useEffect(() => {
