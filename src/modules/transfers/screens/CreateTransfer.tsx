@@ -273,7 +273,10 @@ const CreateTransfer = () => {
       onSuccess: (created) => {
         // If this transfer came from an import prefill, mark the request as fulfilled
         // and link the created transfer so the chat card can show "Ver transferencia".
-        const createdId = (created as { id?: number } | null)?.id;
+        // Laravel JsonResource wraps in { data: {...} } — unwrap before accessing id.
+        const createdId =
+          (created as { data?: { id?: number } } | null)?.data?.id ??
+          (created as { id?: number } | null)?.id;
         if (transferRequestPrefill?.request_id && createdId) {
           linkTransferRequest({
             requestId: transferRequestPrefill.request_id,

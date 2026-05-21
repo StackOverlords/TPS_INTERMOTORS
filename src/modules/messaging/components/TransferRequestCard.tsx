@@ -398,7 +398,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
               <CheckCircle2 className="h-3 w-3 shrink-0" />
               <span>Esta solicitud ya fue procesada</span>
             </div>
-            {request.product_transfer_id && (
+            {request.product_transfer_id ? (
               <Button
                 size="sm"
                 variant="secondary"
@@ -407,6 +407,16 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
               >
                 <ExternalLink className="h-3 w-3" />
                 Ver transferencia
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-full text-[11px] px-2 gap-1.5 text-muted-foreground"
+                onClick={() => navigate("/dashboard/transfers")}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Ver transferencias
               </Button>
             )}
           </div>
