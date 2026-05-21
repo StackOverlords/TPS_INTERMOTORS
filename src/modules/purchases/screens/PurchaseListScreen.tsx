@@ -50,6 +50,7 @@ import { useCommands } from "@/keybindings";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 import { formatColumnNumber } from "@/utils/formaters";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -267,7 +268,7 @@ const PurchaseListScreen = () => {
                     Ver comprobantes
                   </DropdownMenuItem> */}
                   <ProtectedAction
-                    permission="com-edit"
+                    permission={PERMISSIONS.COM.EDIT}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -280,7 +281,7 @@ const PurchaseListScreen = () => {
                     </DropdownMenuItem>
                   </ProtectedAction>
                   <ProtectedAction
-                    permission="com-delete"
+                    permission={PERMISSIONS.COM.DELETE}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -575,7 +576,7 @@ const PurchaseListScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="com-module"
+        permission={PERMISSIONS.COM.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
         showLoader={true}
         showUnauthorizedMessage={true}

@@ -28,6 +28,7 @@ import {
 } from "../schemas/customer.schema";
 import type { CreateCustomer, UpdateCustomer } from "../types/customer.types";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface CustomerFormDialogProps {
   isOpen: boolean;
@@ -225,7 +226,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogToggle}>
       <ProtectedAction
-        permission="cli-create"
+        permission={PERMISSIONS.CLI.CREATE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         fallback={
           <Button disabled className="flex items-center gap-2">
@@ -547,7 +548,7 @@ const CustomerFormDialog: React.FC<CustomerFormDialogProps> = ({
               Cancelar
             </Button>
             <ProtectedAction
-              permission={isEditing ? "cli-edit" : "cli-create"}
+              permission={isEditing ? PERMISSIONS.CLI.EDIT : PERMISSIONS.CLI.CREATE}
               roles={["Super Admin", "Administrador", "Vendedor"]}
               fallback={
                 <Button type="submit" disabled={true}>

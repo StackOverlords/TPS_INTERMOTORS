@@ -18,12 +18,14 @@ import {
   RefreshCw,
   Ruler,
   Settings,
+  Shield,
   Tag,
   Truck,
   Users,
 } from "lucide-react";
 import type RouteType from "./RouteType";
 import EmployeesScreen from "@/modules/settings/screens/employeesScreen";
+import PermissionsScreen from "@/modules/permissions/screens/PermissionsScreen";
 
 const settingsProtectedRoutes: RouteType[] = [
   {
@@ -169,6 +171,18 @@ const settingsProtectedRoutes: RouteType[] = [
         showSidebar: false,
         showInCommandPalette: true,
         icon: Users,
+      },
+      {
+        path: "/dashboard/settings/permissions",
+        name: "Permisos",
+        type: "protected",
+        element: PermissionsScreen,
+        isAdmin: true,
+        role: ["Administrador", "Super Admin"],
+        isHeader: false,
+        showSidebar: false,
+        showInCommandPalette: true,
+        icon: Shield,
       },
     ],
   },

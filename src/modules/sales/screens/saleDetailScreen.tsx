@@ -11,6 +11,7 @@ import ConfirmationModal from "@/components/common/confirmationModal";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
 import { PDFViewer } from "@/components/common/PDFViewer";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
@@ -158,7 +159,7 @@ const SaleDetailScreen = () => {
   return (
     <main className="h-full flex flex-col items-center overflow-hidden p-2">
       <ProtectedAction
-        permission="ven-module"
+        permission={PERMISSIONS.VEN.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         <div className="max-w-7xl w-full h-full flex flex-col gap-2 overflow-auto">
@@ -202,7 +203,7 @@ const SaleDetailScreen = () => {
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <ProtectedAction
-                  permission="ven-edit"
+                  permission={PERMISSIONS.VEN.EDIT}
                   roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >
@@ -220,7 +221,7 @@ const SaleDetailScreen = () => {
                 </ProtectedAction>
 
                 <ProtectedAction
-                  permission="ven-view_print"
+                  permission={PERMISSIONS.VEN.VIEW_PRINT}
                   roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >
@@ -238,7 +239,7 @@ const SaleDetailScreen = () => {
                 </ProtectedAction>
 
                 <ProtectedAction
-                  permission="ven-delete"
+                  permission={PERMISSIONS.VEN.DELETE}
                   roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >

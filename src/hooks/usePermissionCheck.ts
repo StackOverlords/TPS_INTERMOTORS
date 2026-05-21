@@ -2,6 +2,7 @@ import { useUserRole } from './useUserRole';
 import { useCurrentUserPermissions } from './useCurrentUserPermissions';
 import { hasPermission, hasAnyPermission } from '@/utils/permissions';
 import type { UserRole } from './useUserRole';
+import type { Permission } from '@/lib/permissions';
 
 /**
  * Resultado de la validación de permisos
@@ -21,8 +22,8 @@ interface PermissionCheckResult {
  * Opciones para la validación de permisos
  */
 interface UsePermissionCheckOptions {
-  /** Nombre del permiso requerido (ej: 'usu-create') */
-  permission: string;
+  /** Nombre del permiso requerido (ej: PERMISSIONS.USU.CREATE). Type-safe via Permission union. */
+  permission: Permission;
   /** Array de roles permitidos */
   roles: UserRole[];
   /** Si se requieren ambos (rol Y permiso). Default: true (lógica AND) */
@@ -46,7 +47,7 @@ interface UsePermissionCheckOptions {
  * @example
  * ```tsx
  * const { isAuthorized, isLoading } = usePermissionCheck({
- *   permission: 'usu-create',
+ *   permission: PERMISSIONS.USU.CREATE,
  *   roles: ['Super Admin']
  * });
  *
@@ -102,13 +103,6 @@ export const usePermissionCheck = (
   // const authorized = requireBoth
   //   ? (hasRole && hasPerm) // AND logic (default) - ambos necesarios
   //   : (hasRole || hasPerm); // OR logic - cualquiera vale
-
-  console.log('✅ usePermissionCheck Result:', {
-    hasRole,
-    hasPermission: hasPerm,
-    authorized,
-    reason: !hasRole ? 'Missing role' : !hasPerm ? 'Missing permission' : 'OK'
-  });
 
   return {
     isAuthorized: authorized,

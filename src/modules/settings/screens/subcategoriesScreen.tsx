@@ -42,6 +42,8 @@ import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation
 import authSDK from "@/services/sdk-simple-auth";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const SCREEN_PATH = "/dashboard/settings/subcategories";
 
@@ -298,6 +300,11 @@ const SubcategoriesScreen = () => {
 
   return (
     <main className="w-full max-w-5xl mx-auto h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission={PERMISSIONS.SIS.ADM_SUBCATEGORIAS}
+        roles={["Super Admin", "Administrador"]}
+        showLoader={true}
+      >
       <div className="space-y-2 flex-shrink-0">
         <header className="bg-background rounded-lg p-2 border border-border">
           <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -473,6 +480,7 @@ const SubcategoriesScreen = () => {
         onConfirm={handleConfirmDeleteAlert}
         isLoading={isDeleting}
       />
+      </ProtectedAction>
     </main>
   );
 };

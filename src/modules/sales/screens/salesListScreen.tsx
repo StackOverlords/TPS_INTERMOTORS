@@ -20,6 +20,7 @@ import { useViewConfig } from "@/hooks/useViewConfig";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { useCommands } from "@/keybindings";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const SalesListScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -157,7 +158,7 @@ const SalesListScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="ven-module"
+        permission={PERMISSIONS.VEN.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">

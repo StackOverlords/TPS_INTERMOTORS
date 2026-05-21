@@ -11,6 +11,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
@@ -204,7 +205,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                     Ver detalles
                   </DropdownMenuItem>
                   <ProtectedAction
-                    permission="tra-edit"
+                    permission={PERMISSIONS.TRA.EDIT}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -217,7 +218,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                     </DropdownMenuItem>
                   </ProtectedAction>
                   {/* <ProtectedAction
-                    permission="tra-edit"
+                    permission={PERMISSIONS.TRA.EDIT}
                     roles={["Super Admin", "Administrador","Vendedor"]}
                     fallback={null}
                   >
@@ -230,7 +231,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
                     </DropdownMenuItem>
                   </ProtectedAction> */}
                   <ProtectedAction
-                    permission="tra-delete"
+                    permission={PERMISSIONS.TRA.DELETE}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -405,7 +406,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               )}
               {canReceive && (
                 <ProtectedAction
-                  permission="tra-receive"
+                  permission={PERMISSIONS.TRA.RECEIVE}
                   roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >
@@ -432,7 +433,7 @@ const TransferListTable: React.FC<TransferListTableProps> = ({
               )}
               {canRefuse && (
                 <ProtectedAction
-                  permission="tra-receive"
+                  permission={PERMISSIONS.TRA.RECEIVE}
                   roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >

@@ -10,6 +10,7 @@ import { Label } from "@/components/atoms/label";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
@@ -159,7 +160,7 @@ const OrderDetailScreen = () => {
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <ProtectedAction
-                permission="ped-edit"
+                permission={PERMISSIONS.PED.EDIT}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -180,7 +181,7 @@ const OrderDetailScreen = () => {
               </ProtectedAction>
 
               <ProtectedAction
-                permission="ped-delete"
+                permission={PERMISSIONS.PED.DELETE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >

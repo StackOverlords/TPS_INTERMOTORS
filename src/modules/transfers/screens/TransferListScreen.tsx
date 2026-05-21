@@ -21,6 +21,7 @@ import { useTransfersGetAll } from "../hooks/useTransfersGetAll";
 import type { TransferGetAll } from "../types/transferGet.types";
 import { useCommands } from "@/keybindings";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const TransferListScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -233,7 +234,7 @@ const TransferListScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="tra-module"
+        permission={PERMISSIONS.TRA.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
         showLoader={true}
       >

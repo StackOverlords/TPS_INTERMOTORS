@@ -10,6 +10,7 @@ import { ViewToggle } from "../../components/ViewToggle";
 import type { ViewMode } from "../../types/report.types";
 import { useBranchStore } from "@/states/branchStore";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useOrderReportFilters } from "../../hooks/orders/useOrderReportFilters";
 import { useOrderTopProvidersReport } from "../../hooks/orders/useOrderTopProvidersReport";
 import { OrderReportFiltersPanel } from "../../components/orders/orderReportFiltersPanel";
@@ -41,7 +42,7 @@ const OrderTopProveedoresReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="order-report_top_proveedores"
+        permission={PERMISSIONS.PED.REPORT_TOP_PROVEEDORES}
         roles={["Super Admin", "Administrador"]}
       >
         {/* Header */}

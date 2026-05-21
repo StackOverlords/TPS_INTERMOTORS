@@ -39,6 +39,7 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
 import { REPORT_ROWS_OPTIONS } from "@/modules/shared/constants/tableOptions";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const InventarioReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -316,7 +317,7 @@ const InventarioReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="inv-report_valorado"
+        permission={PERMISSIONS.INV.REPORT_VALORADO}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header Compacto */}

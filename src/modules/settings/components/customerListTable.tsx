@@ -17,6 +17,7 @@ import {
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, Settings, Trash2, Users } from "lucide-react";
@@ -85,7 +86,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
   }, []);
 
   // const protectedCreate = useProtectedAction(handleAddCustomer, {
-  //     permission: "cli-create",
+  //     permission: PERMISSIONS.CLI.CREATE,
   //     roles: ["Super Admin", "Administrador", "Vendedor"]
   // });
 
@@ -95,7 +96,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
       handleEditCustomer(customer.id);
     },
     {
-      permission: "cli-edit",
+      permission: PERMISSIONS.CLI.EDIT,
       roles: ["Super Admin", "Administrador", "Vendedor"],
     }
   );
@@ -223,7 +224,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
           return (
             <div className="flex items-center gap-2">
               <ProtectedAction
-                permission="cli-edit"
+                permission={PERMISSIONS.CLI.EDIT}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -237,7 +238,7 @@ const CustomerListTable: React.FC<CustomerListTableProps> = ({
               </ProtectedAction>
 
               <ProtectedAction
-                permission="cli-delete"
+                permission={PERMISSIONS.CLI.DELETE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >

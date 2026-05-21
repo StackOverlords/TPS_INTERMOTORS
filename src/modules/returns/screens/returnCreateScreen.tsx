@@ -67,6 +67,7 @@ import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const ReturnCreateScreen = () => {
   const configuraciones = {
@@ -399,7 +400,7 @@ const ReturnCreateScreen = () => {
   return (
     <main className="p-2 h-full">
       <ProtectedAction
-        permission="dev-module"
+        permission={PERMISSIONS.DEV.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         showLoader={true}
       >
@@ -763,7 +764,7 @@ const ReturnCreateScreen = () => {
                               Nueva Devolución
                             </Button>
                             <ProtectedAction
-                              permission="dev-create"
+                              permission={PERMISSIONS.DEV.CREATE}
                               roles={["Super Admin", "Administrador", "Vendedor"]}
                               fallback={
                                 <TooltipButton

@@ -36,6 +36,7 @@ import { KardexReportFiltersPanel } from "../../components/products/kardexReport
 import { KardexSaldoChart } from "../../components/charts/kardexSaldoChart";
 import { KardexEntradasSalidasChart } from "../../components/charts/KardexEntradasSalidasChart";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const CHART_LIMIT = 100;
 
@@ -96,7 +97,7 @@ const KardexReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="inv-report_kardex"
+        permission={PERMISSIONS.INV.REPORT_KARDEX}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header */}

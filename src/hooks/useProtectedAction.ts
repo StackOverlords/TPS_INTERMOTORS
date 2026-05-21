@@ -2,13 +2,14 @@ import { useCallback } from 'react';
 import { usePermissionCheck } from './usePermissionCheck';
 import { useToast } from '@/components/atoms/use-toast';
 import type { UserRole } from './useUserRole';
+import type { Permission } from '@/lib/permissions';
 
 /**
  * Opciones para proteger una acción
  */
 interface UseProtectedActionOptions {
-  /** Nombre del permiso requerido */
-  permission: string;
+  /** Nombre del permiso requerido. Type-safe via Permission union from src/lib/permissions.ts. */
+  permission: Permission;
   /** Array de roles permitidos */
   roles: UserRole[];
   /** Callback personalizado cuando el usuario no está autorizado */
@@ -38,7 +39,7 @@ interface UseProtectedActionOptions {
  *     toast({ title: 'Usuario eliminado' });
  *   },
  *   {
- *     permission: 'usu-set_estado',
+ *     permission: PERMISSIONS.USU.SET_ESTADO,
  *     roles: ['Super Admin']
  *   }
  * );
@@ -50,7 +51,7 @@ interface UseProtectedActionOptions {
  * const handleEdit = useProtectedAction(
  *   editUser,
  *   {
- *     permission: 'usu-editar',
+ *     permission: PERMISSIONS.USU.EDITAR,
  *     roles: ['Administrador', 'Super Admin'],
  *     onUnauthorized: () => {
  *       console.log('Intento de edición no autorizado');

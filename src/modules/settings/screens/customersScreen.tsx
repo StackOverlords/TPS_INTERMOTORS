@@ -29,6 +29,7 @@ import { useDeleteCustomer } from "../hooks/customer/useDeleteCustomer";
 import { useGetAllCustomers } from "../hooks/customer/useGetAllCustomers";
 import CustomerListTable from "../components/customerListTable";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const CustomersScreen = () => {
   // Estado local para los filtros (búsqueda manual)
@@ -174,7 +175,7 @@ const CustomersScreen = () => {
   return (
     <main className="w-full max-w-7xl mx-auto h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="cli-module"
+        permission={PERMISSIONS.CLI.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         showLoader={true}
       >
@@ -285,7 +286,7 @@ const CustomersScreen = () => {
 
                 <div className="flex gap-2 justify-end w-full">
                   <ProtectedAction
-                    permission="cli-list"
+                    permission={PERMISSIONS.CLI.LIST}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={
                       <Button disabled>

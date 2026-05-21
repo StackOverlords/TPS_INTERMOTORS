@@ -10,6 +10,7 @@ import { ViewToggle } from "../../components/ViewToggle";
 import type { ViewMode } from "../../types/report.types";
 import { useBranchStore } from "@/states/branchStore";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { usePurchaseReportFilters } from "../../hooks/purchases/usePurchaseReportFilters";
 import { useReportPurchaseMasComprado } from "../../hooks/purchases/useReportPurchaseMasComprado";
 import { useDownloadReportPurchaseMasComprado } from "../../hooks/purchases/useReportPurchaseMasComprado";
@@ -47,7 +48,7 @@ const PurchaseMasCompradoReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="purchase-report_mas_comprado"
+        permission={PERMISSIONS.COM.REPORT_MAS_COMPRADO}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header */}
