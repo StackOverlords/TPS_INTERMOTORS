@@ -13,6 +13,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Loader2, ArrowRight, Package, CheckCircle2, XCircle } from "lucide-react";
+import { showErrorToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
 import { Skeleton } from "@/components/atoms/skeleton";
@@ -40,14 +41,14 @@ const ESTADO_CONFIG: Record<
   TransferRequestEstado,
   { label: string; variant: "warning" | "success" | "accent" | "info" | "danger" }
 > = {
-  PENDING: { label: "Pendiente", variant: "warning" },
-  FULFILLED: { label: "Completado", variant: "success" },
-  PARTIAL: { label: "Parcial", variant: "accent" },
-  IMPORTED: { label: "Importado", variant: "info" },
-  CANCELLED: { label: "Cancelado", variant: "danger" },
+  pending:   { label: "Pendiente",  variant: "warning" },
+  fulfilled: { label: "Completado", variant: "success" },
+  partial:   { label: "Parcial",    variant: "accent" },
+  imported:  { label: "Importado",  variant: "info" },
+  cancelled: { label: "Cancelado",  variant: "danger" },
 };
 
-const TERMINAL_ESTADOS: TransferRequestEstado[] = ["FULFILLED", "IMPORTED", "CANCELLED"];
+const TERMINAL_ESTADOS: TransferRequestEstado[] = ["fulfilled", "imported", "cancelled"];
 
 function EstadoBadge({ estado }: { estado: TransferRequestEstado }) {
   const config = ESTADO_CONFIG[estado] ?? { label: estado, variant: "warning" as const };
@@ -71,10 +72,10 @@ interface FulfillResultModalProps {
 function FulfillResultModal({ open, onClose, result }: FulfillResultModalProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md z-[9999]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {result.request_estado === "FULFILLED" ? (
+            {result.request_estado === "fulfilled" ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             ) : (
               <Package className="h-4 w-4 text-amber-500" />
@@ -167,7 +168,7 @@ function ConfirmFulfillModal({
 }: ConfirmFulfillModalProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !isPending && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm z-[9999]">
         <DialogHeader>
           <DialogTitle>Enviar directo</DialogTitle>
           <DialogDescription>
@@ -260,11 +261,39 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   const handleImport = async () => {
     try {
       const result = await importMutation.mutateAsync();
+
+      const withStock = result.items.filter((i) => i.lots && i.lots.length > 0);
+      const withoutStock = result.items.filter((i) => !i.lots || i.lots.length === 0);
+
+      if (withStock.length === 0) {
+        showErrorToast({
+          title: "Sin stock disponible",
+          description: "Ningún producto de la solicitud tiene stock en tu sucursal. No se puede crear la transferencia.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      if (withoutStock.length > 0) {
+        const names = withoutStock
+          .map((i) => i.product?.descripcion ?? `Producto #${i.producto_id}`)
+          .join(", ");
+        showWarningToast({
+          title: `${withoutStock.length} producto${withoutStock.length > 1 ? "s" : ""} sin stock`,
+          description: `Se omitirán: ${names}`,
+          duration: 6000,
+        });
+      }
+
       navigate("/dashboard/create-transfer", {
         state: { transferRequestPrefill: result },
       });
     } catch {
-      // error handled by caller or toast
+      showErrorToast({
+        title: "Error al importar",
+        description: "No se pudo importar la solicitud. Intentá de nuevo.",
+        duration: 4000,
+      });
     }
   };
 

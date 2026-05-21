@@ -36,11 +36,11 @@ export const CreateTransferRequestPayloadSchema = z.object({
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TransferRequestEstadoSchema = z.enum([
-  "PENDING",
-  "FULFILLED",
-  "IMPORTED",
-  "PARTIAL",
-  "CANCELLED",
+  "pending",
+  "fulfilled",
+  "imported",
+  "partial",
+  "cancelled",
 ]);
 
 export const TransferRequestGetSchema = z.object({

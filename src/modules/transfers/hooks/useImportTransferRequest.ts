@@ -1,11 +1,15 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { TRANSFER_REQUEST_QUERY_KEYS } from "../constants/transferRequestQueryKeys";
 import { transferRequestService } from "../services/transferRequestService";
 
 export const useImportTransferRequest = (id: number) => {
+    const queryClient = useQueryClient();
     return useMutation({
         mutationFn: () => transferRequestService.import(id),
-        // No cache invalidation — caller receives ImportResult and navigates away.
-        // The estado transition (IMPORTED) is handled server-side; the request
-        // query cache will be stale but the user is no longer on this screen.
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: TRANSFER_REQUEST_QUERY_KEYS.detail(id),
+            });
+        },
     });
 };

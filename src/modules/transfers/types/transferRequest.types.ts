@@ -6,11 +6,11 @@ import type { ProductStock } from "@/modules/products/types/productStock";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type TransferRequestEstado =
-  | "PENDING"
-  | "FULFILLED"
-  | "IMPORTED"
-  | "PARTIAL"
-  | "CANCELLED";
+  | "pending"
+  | "fulfilled"
+  | "imported"
+  | "partial"
+  | "cancelled";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ITEM TYPES
