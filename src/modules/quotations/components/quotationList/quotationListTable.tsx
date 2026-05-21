@@ -11,6 +11,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -163,7 +164,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                     Ver detalles
                   </DropdownMenuItem>
                   <ProtectedAction
-                    permission="cot-edit"
+                    permission={PERMISSIONS.COT.EDIT}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -176,7 +177,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
                     </DropdownMenuItem>
                   </ProtectedAction>
                   <ProtectedAction
-                    permission="cot-delete"
+                    permission={PERMISSIONS.COT.DELETE}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >

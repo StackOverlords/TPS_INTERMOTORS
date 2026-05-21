@@ -3,6 +3,8 @@ import { Button } from "@/components/atoms/button";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import TooltipButton from "@/components/common/TooltipButton";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
@@ -109,25 +111,37 @@ const ExpenseTypesScreen = () => {
           const expenseType = row.original;
           return (
             <div className="flex items-center gap-2">
-              <TooltipButton
-                tooltip="Editar tipo de gasto"
-                onClick={() => setModal({ open: true, expenseType })}
-                buttonProps={{ className: "w-8" }}
+              <ProtectedAction
+                permission={PERMISSIONS.CAJ.EXPENSE_TYPES_EDIT}
+                roles={["Super Admin", "Administrador"]}
+                fallback={null}
               >
-                <Pencil className="size-4" />
-              </TooltipButton>
-              <TooltipButton
-                tooltip="Eliminar tipo de gasto"
-                onClick={() =>
-                  setDeleteConfirm({ open: true, id: expenseType.id })
-                }
-                buttonProps={{
-                  className:
-                    "w-8 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 bg-transparent hover:border-red-200 dark:hover:border-red-600",
-                }}
+                <TooltipButton
+                  tooltip="Editar tipo de gasto"
+                  onClick={() => setModal({ open: true, expenseType })}
+                  buttonProps={{ className: "w-8" }}
+                >
+                  <Pencil className="size-4" />
+                </TooltipButton>
+              </ProtectedAction>
+              <ProtectedAction
+                permission={PERMISSIONS.CAJ.EXPENSE_TYPES_DELETE}
+                roles={["Super Admin", "Administrador"]}
+                fallback={null}
               >
-                <Trash2 className="size-4" />
-              </TooltipButton>
+                <TooltipButton
+                  tooltip="Eliminar tipo de gasto"
+                  onClick={() =>
+                    setDeleteConfirm({ open: true, id: expenseType.id })
+                  }
+                  buttonProps={{
+                    className:
+                      "w-8 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 bg-transparent hover:border-red-200 dark:hover:border-red-600",
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                </TooltipButton>
+              </ProtectedAction>
             </div>
           );
         },
@@ -156,13 +170,19 @@ const ExpenseTypesScreen = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-lg font-bold text-primary">Tipos de Gasto</h1>
-          <Button
-            onClick={() => setModal({ open: true, expenseType: null })}
-            size="sm"
+          <ProtectedAction
+            permission={PERMISSIONS.CAJ.EXPENSE_TYPES_CREATE}
+            roles={["Super Admin", "Administrador"]}
+            fallback={null}
           >
-            <Plus className="size-4" />
-            Nuevo Tipo de Gasto
-          </Button>
+            <Button
+              onClick={() => setModal({ open: true, expenseType: null })}
+              size="sm"
+            >
+              <Plus className="size-4" />
+              Nuevo Tipo de Gasto
+            </Button>
+          </ProtectedAction>
         </div>
 
         <div className="bg-background rounded-lg border border-border overflow-hidden">

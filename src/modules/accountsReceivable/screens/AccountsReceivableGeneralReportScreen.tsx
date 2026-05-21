@@ -31,6 +31,8 @@ import {
 } from "../hooks/useAccountsReceivableGeneralReport";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import authSDK from "@/services/sdk-simple-auth";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const AccountsReceivableGeneralReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -262,6 +264,11 @@ const AccountsReceivableGeneralReportScreen = () => {
 
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission={PERMISSIONS.CUC.REPORT_GENERAL}
+        roles={["Super Admin", "Administrador"]}
+        showLoader={true}
+      >
       {/* Header */}
       <header className="border-border flex-shrink-0 border bg-background rounded-lg p-2 sm:px-3 flex flex-col gap-2">
         <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -473,6 +480,7 @@ const AccountsReceivableGeneralReportScreen = () => {
           </div>
         </div>
       </div>
+      </ProtectedAction>
     </main>
   );
 };

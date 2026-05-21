@@ -14,6 +14,7 @@ import type { useTransfersFilters } from "../../hooks/useTransfersFilters";
 import { format } from "date-fns";
 import { Button } from "@/components/atoms/button";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface TransferFiltersProps {
   filters: ReturnType<typeof useTransfersFilters>["filters"];
@@ -95,7 +96,7 @@ const TransferFiltersComponent: React.FC<TransferFiltersProps> = ({
   return (
     <section className="space-y-2">
       <ProtectedAction
-        permission="tra-list"
+        permission={PERMISSIONS.TRA.LIST}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         fallback={<div className="text-sm text-destructive">No tienes permisos para buscar.</div>}
       >

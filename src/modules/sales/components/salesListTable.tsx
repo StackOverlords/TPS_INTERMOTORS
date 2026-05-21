@@ -11,6 +11,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -162,7 +163,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     Ver detalles
                   </DropdownMenuItem>
                   <ProtectedAction
-                    permission="ven-edit"
+                    permission={PERMISSIONS.VEN.EDIT}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -175,7 +176,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
                     </DropdownMenuItem>
                   </ProtectedAction>
                   <ProtectedAction
-                    permission="ven-delete"
+                    permission={PERMISSIONS.VEN.DELETE}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >

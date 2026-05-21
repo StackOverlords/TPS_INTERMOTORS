@@ -28,6 +28,7 @@ import {
 } from "../schemas/provider.schema";
 import type { CreateProvider, UpdateProvider } from "../types/provider.types";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface ProviderFormDialogProps {
   isOpen: boolean;
@@ -227,7 +228,7 @@ const ProviderFormDialog: React.FC<ProviderFormDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogToggle}>
       <ProtectedAction
-        permission="pro-create"
+        permission={PERMISSIONS.PRO.CREATE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         fallback={
           <Button

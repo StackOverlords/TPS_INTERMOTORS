@@ -72,6 +72,12 @@ export const fetchUserPermissions = async (userId: number): Promise<Permission[]
   return permissions;
 };
 
+export const fetchMyPermissions = async (): Promise<Permission[]> => {
+  const response = await apiClient.get(USER_ENDPOINTS.myPermission);
+  const permissions = response.data.data || response.data || [];
+  return permissions;
+};
+
 export const updateUserPermissions = async (userPermissionsData: UserPermissionsRequest): Promise<void> => {
   await apiClient.put(USER_ENDPOINTS.updatePermissions, userPermissionsData);
 };

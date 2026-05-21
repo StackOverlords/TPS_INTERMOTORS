@@ -2,6 +2,7 @@ import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
 import { Kbd } from "@/components/atoms/kbd";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showSuccessToast } from "@/hooks/use-toast-enhanced";
@@ -318,7 +319,7 @@ const CreatePurchase: React.FC = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="com-module"
+        permission={PERMISSIONS.COM.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         <FormProvider {...methods}>
@@ -583,7 +584,7 @@ const CreatePurchase: React.FC = () => {
                             </TooltipButton>
 
                             <ProtectedAction
-                              permission="com-create"
+                              permission={PERMISSIONS.COM.CREATE}
                               roles={[
                                 "Super Admin",
                                 "Administrador",

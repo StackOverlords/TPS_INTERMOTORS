@@ -19,6 +19,7 @@ import { Separator } from "@/components/atoms/separator";
 import { Skeleton } from "@/components/atoms/skeleton";
 import { useToast } from "@/components/atoms/use-toast";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useRouteViewConfigWithSync } from "@/hooks/useRouteViewConfig";
 import {
   ArrowLeft,
@@ -387,7 +388,7 @@ const UserDetailScreen = () => {
               <UserCog className="h-4 w-4" />
               Gestionar Permisos
             </Button> */}
-            <ProtectedAction permission="usu-editar" roles={["Super Admin"]}>
+            <ProtectedAction permission={PERMISSIONS.USU.EDITAR} roles={["Super Admin"]}>
               <Button
                 variant="destructive"
                 size={"sm"}
@@ -398,7 +399,7 @@ const UserDetailScreen = () => {
                 Eliminar usuario
               </Button>
             </ProtectedAction>
-            <ProtectedAction permission="usu-editar" roles={["Super Admin"]}>
+            <ProtectedAction permission={PERMISSIONS.USU.EDITAR} roles={["Super Admin"]}>
               <Button
                 variant="default"
                 size={"sm"}
@@ -585,7 +586,7 @@ const UserDetailScreen = () => {
                   <div className="flex items-center gap-2">
                     {viewConfig?.features?.saveButton?.enabled && (
                       <ProtectedAction
-                        permission="usu-editar"
+                        permission={PERMISSIONS.USU.EDITAR}
                         roles={["Super Admin"]}
                       >
                         <Button

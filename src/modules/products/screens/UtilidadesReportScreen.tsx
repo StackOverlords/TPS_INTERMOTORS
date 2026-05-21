@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/formaters";
 import { ViewToggle } from "@/modules/reports/components/ViewToggle";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const UtilidadesReportScreen = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -316,7 +317,7 @@ const UtilidadesReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="inv-report_utilidades"
+        permission={PERMISSIONS.INV.REPORT_UTILIDADES}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header Compacto */}

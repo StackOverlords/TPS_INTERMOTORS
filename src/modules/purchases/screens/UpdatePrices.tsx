@@ -21,6 +21,7 @@ import {
 } from "@/components/atoms/card";
 import TooltipButton from "@/components/common/TooltipButton";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useGetAllBranches } from "@/modules/settings/hooks/branch/useGetAllBranches";
 import { useGetAllCategories } from "@/modules/settings/hooks/category/useGetAllCategories";
 import {
@@ -155,7 +156,7 @@ const UpdatePrices = () => {
   return (
     <main className="h-full p-4 overflow-auto">
       <ProtectedAction
-        permission="com-update_prices"
+        permission={PERMISSIONS.COM.UPDATE_PRICES}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         showUnauthorizedMessage={true}
       >

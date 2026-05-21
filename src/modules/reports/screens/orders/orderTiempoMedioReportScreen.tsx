@@ -10,6 +10,7 @@ import { ViewToggle } from "../../components/ViewToggle";
 import type { ViewMode } from "../../types/report.types";
 import { useBranchStore } from "@/states/branchStore";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useOrderReportFilters } from "../../hooks/orders/useOrderReportFilters";
 import { useOrderAverageTimeReport } from "../../hooks/orders/useOrderAverageTimeReport";
 import { OrderReportFiltersPanel } from "../../components/orders/orderReportFiltersPanel";
@@ -58,7 +59,7 @@ const OrderTiempoMedioReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="order-report_tiempo_medio"
+        permission={PERMISSIONS.PED.REPORT_TIEMPO_MEDIO}
         roles={["Super Admin", "Administrador"]}
       >
         {/* Header */}

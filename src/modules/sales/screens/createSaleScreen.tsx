@@ -74,6 +74,7 @@ import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { convertCartToSaleDetails } from "@/modules/shoppingCart/utils/cartCalculations";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useQuotationImport } from "@/modules/shoppingCart/hooks/useQuotationImport";
 // import { useTabNavigation } from "@/hooks/useTabNavigation";
 
@@ -790,7 +791,7 @@ const CreateSaleScreen = () => {
   return (
     <main className="p-2 h-full">
       <ProtectedAction
-        permission="ven-module"
+        permission={PERMISSIONS.VEN.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         <FormProvider {...methods}>

@@ -2,6 +2,8 @@ import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ConfirmationModal from "@/components/common/confirmationModal";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useBranchStore } from "@/states/branchStore";
 import { cn } from "@/lib/utils";
 import { showSuccessToast, showErrorToast } from "@/hooks/use-toast-enhanced";
@@ -240,13 +242,19 @@ const CashSessionDetailScreen = () => {
               PDF
             </Button>
             {session?.estado === "ABIERTA" && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setCloseModal(true)}
+              <ProtectedAction
+                permission={PERMISSIONS.CAJ.CLOSE_SESSION}
+                roles={["Super Admin", "Administrador"]}
+                fallback={null}
               >
-                Cerrar Sesión
-              </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setCloseModal(true)}
+                >
+                  Cerrar Sesión
+                </Button>
+              </ProtectedAction>
             )}
           </div>
         </div>
@@ -330,16 +338,22 @@ const CashSessionDetailScreen = () => {
           <Minus className="size-4" />
           Retiro
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setExpenseModal(true)}
-          disabled={isClosed}
-          className="gap-1"
+        <ProtectedAction
+          permission={PERMISSIONS.CAJ.CREATE_EXPENSE}
+          roles={["Super Admin", "Administrador"]}
+          fallback={null}
         >
-          <Receipt className="size-4" />
-          Registrar Gasto
-        </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setExpenseModal(true)}
+            disabled={isClosed}
+            className="gap-1"
+          >
+            <Receipt className="size-4" />
+            Registrar Gasto
+          </Button>
+        </ProtectedAction>
       </div>
 
       {/* Movement filters */}

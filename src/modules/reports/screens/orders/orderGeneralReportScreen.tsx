@@ -16,6 +16,7 @@ import { ViewToggle } from "../../components/ViewToggle";
 import type { ViewMode } from "../../types/report.types";
 import { useBranchStore } from "@/states/branchStore";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useOrderReportFilters } from "../../hooks/orders/useOrderReportFilters";
 import { useOrderGeneralReport } from "../../hooks/orders/useOrderGeneralReport";
 import { useDownloadOrderGeneralReport } from "../../hooks/orders/useOrderGeneralReport";
@@ -58,7 +59,7 @@ const OrderGeneralReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="order-report_general"
+        permission={PERMISSIONS.PED.REPORT_GENERAL}
         roles={["Super Admin", "Administrador"]}
       >
         {/* Header */}

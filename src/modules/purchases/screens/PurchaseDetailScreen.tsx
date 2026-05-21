@@ -2,6 +2,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
 import TooltipButton from "@/components/common/TooltipButton";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { CornerUpLeft, Edit } from "lucide-react";
 import { useCallback } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -136,7 +137,7 @@ const PurchaseDetailScreen = () => {
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <ProtectedAction
-                  permission="com-edit"
+                  permission={PERMISSIONS.COM.EDIT}
                   roles={["Super Admin", "Administrador", "Vendedor"]}
                   fallback={null}
                 >

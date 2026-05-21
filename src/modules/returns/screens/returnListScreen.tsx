@@ -21,6 +21,7 @@ import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { useCommands } from "@/keybindings";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { useProtectedAction } from "@/hooks/useProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const ReturnListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -150,7 +151,7 @@ const ReturnListScreen = () => {
         enabled: true,
     })
     const searchManual = useProtectedAction(handleManualSearch,{
-        permission:"dev-list",
+        permission: PERMISSIONS.DEV.LIST,
         roles:["Super Admin", "Administrador", "Vendedor"]
     })
     useCommands({
@@ -163,7 +164,7 @@ const ReturnListScreen = () => {
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
             <ProtectedAction
-                permission="dev-module"
+                permission={PERMISSIONS.DEV.MODULE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 showLoader={true}
             >

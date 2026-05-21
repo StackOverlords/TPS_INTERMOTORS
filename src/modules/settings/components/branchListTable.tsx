@@ -17,6 +17,7 @@ import {
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useProtectedAction } from "@/hooks/useProtectedAction";
@@ -102,7 +103,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
       handleEditBranch(branch.id);
     },
     {
-      permission: "sis-adm_sucursales",
+      permission: PERMISSIONS.SIS.ADM_SUCURSALES,
       roles: ["Super Admin", "Administrador", "Vendedor"],
     }
   );
@@ -248,7 +249,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
           return (
             <div className="flex items-center gap-2">
               <ProtectedAction
-                permission="sis-adm_sucursales"
+                permission={PERMISSIONS.SIS.ADM_SUCURSALES}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -261,7 +262,7 @@ const BranchListTable: React.FC<BranchListTableProps> = ({
               </ProtectedAction>
 
               <ProtectedAction
-                permission="sis-adm_sucursales"
+                permission={PERMISSIONS.SIS.ADM_SUCURSALES}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >

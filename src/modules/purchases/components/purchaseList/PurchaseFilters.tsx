@@ -10,6 +10,7 @@ import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface PurchaseFiltersProps {
   filters: ReturnType<typeof usePurchaseFilters>["filters"];
@@ -102,7 +103,7 @@ const PurchaseFilters: React.FC<PurchaseFiltersProps> = ({
   return (
     <section className="space-y-2">
       <ProtectedAction
-        permission="com-list"
+        permission={PERMISSIONS.COM.LIST}
         roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
         showLoader={true}
         fallback={null}

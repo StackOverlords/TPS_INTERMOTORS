@@ -19,6 +19,7 @@ import { formatCell } from "@/utils/formatCell";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { useProtectedAction } from "@/hooks/useProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
   CheckCircle,
   Eye,
@@ -138,7 +139,7 @@ const UserListScreen = () => {
   const handleConfirmDelete = useProtectedAction(
     handleConfirmDeleteUnprotected,
     {
-      permission: "usu-set_estado",
+      permission: PERMISSIONS.USU.SET_ESTADO,
       roles: ["Super Admin"],
     }
   );
@@ -225,7 +226,7 @@ const UserListScreen = () => {
                   </DropdownMenuItem>
 
                   <ProtectedAction
-                    permission="usu-editar"
+                    permission={PERMISSIONS.USU.EDITAR}
                     roles={["Super Admin"]}
                     fallback={null}
                     // bypassForSuperAdmin={true}
@@ -239,7 +240,7 @@ const UserListScreen = () => {
                   </ProtectedAction>
 
                   <ProtectedAction
-                    permission="usu-set_estado"
+                    permission={PERMISSIONS.USU.SET_ESTADO}
                     roles={["Super Admin"]}
                     fallback={null}
                   >
@@ -416,7 +417,7 @@ const UserListScreen = () => {
   return (
     <main className="h-full flex flex-col overflow-hidden p-2">
       <ProtectedAction
-        permission="usu-module"
+        permission={PERMISSIONS.USU.MODULE}
         roles={["Super Admin"]}
         showUnauthorizedMessage={true}
       >
@@ -433,7 +434,7 @@ const UserListScreen = () => {
 
               <div className="flex items-center gap-2 flex-wrap">
                 <ProtectedAction
-                  permission="usu-create"
+                  permission={PERMISSIONS.USU.CREATE}
                   roles={["Super Admin"]}
                   showUnauthorizedMessage={false}
                 >

@@ -25,6 +25,8 @@ import AccountReceivableFilters from "../components/accountsReceivableList/Accou
 import { useAccountsReceivablePaginated } from "../hooks/queries/useAccountsReceivablePaginated";
 import { useAccountReceivableFilters } from "../hooks/useAccountReceivableFilters";
 import type { AccountReceivable } from "../types/accountReceivable";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const AccountsReceivableListScreen = () => {
   const [isInfiniteScroll, setIsInfiniteScroll] = useState(false);
@@ -516,6 +518,11 @@ const AccountsReceivableListScreen = () => {
   );
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission={PERMISSIONS.CUC.MODULE}
+        roles={["Super Admin", "Administrador", "Vendedor"]}
+        showLoader={true}
+      >
       {/* Header */}
       <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
         <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
@@ -811,6 +818,7 @@ const AccountsReceivableListScreen = () => {
         onOpenChange={setModalOpen}
         onPaymentChange={refetchAccountsReceivable}
       />
+      </ProtectedAction>
     </main>
   );
 };

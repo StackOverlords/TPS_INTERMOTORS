@@ -10,6 +10,7 @@ import { Label } from "@/components/atoms/label";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import ErrorDataComponent from "@/components/common/errorDataComponent";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
@@ -251,7 +252,7 @@ const QuotationDetailScreen = () => {
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <ProtectedAction
-                permission="cot-edit"
+                permission={PERMISSIONS.COT.EDIT}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -269,7 +270,7 @@ const QuotationDetailScreen = () => {
               </ProtectedAction>
 
               <ProtectedAction
-                permission="ven-create"
+                permission={PERMISSIONS.VEN.CREATE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -306,7 +307,7 @@ const QuotationDetailScreen = () => {
               </ProtectedAction>
 
               <ProtectedAction
-                permission="cot-view_print"
+                permission={PERMISSIONS.COT.VIEW_PRINT}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -324,7 +325,7 @@ const QuotationDetailScreen = () => {
               </ProtectedAction>
 
               <ProtectedAction
-                permission="cot-delete"
+                permission={PERMISSIONS.COT.DELETE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >

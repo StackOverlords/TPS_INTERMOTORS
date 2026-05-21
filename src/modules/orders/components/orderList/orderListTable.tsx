@@ -10,7 +10,8 @@ import {
 import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
-// import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -177,11 +178,11 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     <Eye className="size-4 mr-2" />
                     Ver detalles
                   </DropdownMenuItem>
-                  {/* <ProtectedAction
-                    permission="ped-edit"
+                  <ProtectedAction
+                    permission={PERMISSIONS.PED.EDIT}
                     roles={["Super Admin", "Administrador"]}
                     fallback={null}
-                  > */}
+                  >
                   <DropdownMenuItem
                     onKeyDown={(e) => e.stopPropagation()}
                     disabled={row.original.situacion_actual === "Disponible"}
@@ -190,12 +191,12 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     <Edit className="size-4 mr-2" />
                     Editar pedido
                   </DropdownMenuItem>
-                  {/* </ProtectedAction> */}
-                  {/* <ProtectedAction
-                    permission="ped-delete"
+                  </ProtectedAction>
+                  <ProtectedAction
+                    permission={PERMISSIONS.PED.DELETE}
                     roles={["Super Admin", "Administrador"]}
                     fallback={null}
-                  > */}
+                  >
                   <DropdownMenuItem
                     onKeyDown={(e) => e.stopPropagation()}
                     onClick={() => handleDeleteSale(row.original.id)}
@@ -204,7 +205,7 @@ const OrdersListTable: React.FC<OrdersListTableProps> = ({
                     <Trash2 className="size-4 mr-2" />
                     Eliminar pedido
                   </DropdownMenuItem>
-                  {/* </ProtectedAction> */}
+                  </ProtectedAction>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

@@ -11,6 +11,7 @@ import { Kbd } from "@/components/atoms/kbd";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
@@ -161,7 +162,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                     Ver detalles
                   </DropdownMenuItem>
                   <ProtectedAction
-                    permission="dev-edit"
+                    permission={PERMISSIONS.DEV.EDIT}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
@@ -174,7 +175,7 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
                     </DropdownMenuItem>
                   </ProtectedAction>
                   <ProtectedAction
-                    permission="dev-delete"
+                    permission={PERMISSIONS.DEV.DELETE}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={null}
                   >
