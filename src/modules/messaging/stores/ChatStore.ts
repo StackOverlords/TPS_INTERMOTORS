@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Message, OptimisticMessage } from "../types/Message.types";
 import type { Chat } from "../types/Chat.types";
+import { chatService } from "../service/Chat.service";
+import { messageService } from "../service/Message.service";
+import { useChatUIStore } from "./ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -163,6 +166,19 @@ interface ChatActions {
 
   // Reset
   reset: () => void;
+
+  // ── Transfer Requests ─────────────────────────────────────────────────────
+
+  /**
+   * Crea o reutiliza un DM con `toUserId`, luego envía un mensaje
+   * de tipo transfer_request con la referencia al pedido.
+   * Abre el panel de chat apuntando al chat correcto.
+   */
+  sendTransferRequest: (params: {
+    toUserId: number;
+    transferRequestId: number;
+    itemCount: number;
+  }) => Promise<void>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,7 +200,7 @@ const initialState: ChatState = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const useChatStore = create<ChatState & ChatActions>()(
-  immer((set) => ({
+  immer((set, get) => ({
     ...initialState,
 
     // ── Chats ──────────────────────────────────────────────────────────────
@@ -491,6 +507,45 @@ export const useChatStore = create<ChatState & ChatActions>()(
       set((state) => {
         state.lastMessageTimestampByChatId[chatId] = timestamp;
       }),
+
+    // ── Transfer Requests ──────────────────────────────────────────────────
+
+    sendTransferRequest: async ({ toUserId, transferRequestId, itemCount }) => {
+      // 1. Check if a DIRECT chat with toUserId already exists in the store.
+      const { chats } = get();
+      let chat = chats.find(
+        (c) =>
+          c.tipo === "DIRECT" &&
+          c.participantes.some((p) => p.usuario?.id === toUserId),
+      ) ?? null;
+
+      // 2. If no DM exists, create/retrieve it via the backend.
+      if (!chat) {
+        chat = await chatService.createDirect({ usuario_id: toUserId });
+        // Upsert into the store so subsequent operations can find it.
+        useChatStore.getState().upsertChat(chat);
+      }
+
+      // 3. Send the transfer request message.
+      const plural = itemCount !== 1 ? "s" : "";
+      await messageService.send(chat.id, {
+        contenido: `Solicitud de transferencia — ${itemCount} producto${plural}`,
+        referencia_tipo: "transfer_request",
+        referencia_id: transferRequestId,
+      });
+
+      // 4. Open the chat panel and navigate to the chat.
+      set((state) => {
+        state.activeChatId = chat!.id;
+        state.pendingDirectChat = null;
+        try {
+          localStorage.setItem("messaging_last_chat_id", String(chat!.id));
+        } catch {
+          // localStorage not available
+        }
+      });
+      useChatUIStore.getState().open();
+    },
 
     // ── Reset ──────────────────────────────────────────────────────────────
 

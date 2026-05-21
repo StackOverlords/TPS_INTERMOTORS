@@ -3,8 +3,10 @@ import type { TransferDetailCreate, UITransferDetailCreate } from "../types/tran
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import type { ProductStock } from "@/modules/products/types/productStock";
 
-export const useTransferDetails = () => {
-    const [details, setDetails] = useState<UITransferDetailCreate[]>([]);
+export const useTransferDetails = (
+    options: { initialDetails?: UITransferDetailCreate[] } = {}
+) => {
+    const [details, setDetails] = useState<UITransferDetailCreate[]>(() => options.initialDetails ?? []);
 
     // Añadir un producto al detalle.
     // Si se proveen `lots` (FIFO, más antiguo primero), se crea UNA sola fila con el saldo

@@ -39,7 +39,7 @@ import {
   type FieldErrors,
 } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import type { TransferDetailTableRef } from "../components/TransferDetailTable";
 import TransferDetailTable from "../components/TransferDetailTable";
 import { useTransferBranches } from "../hooks/commons/useTransferBranches";
@@ -48,18 +48,70 @@ import { useCreateTransfer } from "../hooks/useCreateTransfer";
 import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchById";
 import { useTransferDetails } from "../hooks/useTransferDetails";
 import { TransferCreateSchema } from "../schemas/transferCreateSchema";
-import type { TransferCreate } from "../types/transferCreate.types";
+import type { TransferCreate, UITransferDetailCreate } from "../types/transferCreate.types";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { PERMISSIONS } from "@/lib/permissions";
+import type { ImportResult } from "../types/transferRequest.types";
+
+// Build UITransferDetailCreate rows from ImportResult items.
+// Same shape that addProduct() produces when called with lots.
+const buildPrefillRows = (prefill: ImportResult): UITransferDetailCreate[] =>
+  prefill.items.flatMap((item) => {
+    if (!item.lots || item.lots.length === 0) return [];
+    const lotsAsc = [...item.lots].sort(
+      (a, b) =>
+        new Date(a.fecha_adquisicion).getTime() -
+        new Date(b.fecha_adquisicion).getTime()
+    );
+    const totalSaldo = lotsAsc.reduce((sum, lot) => sum + lot.saldo, 0);
+    const oldestLot = lotsAsc[0];
+    const product = item.product;
+    return [
+      {
+        producto_id: product.id,
+        cantidad_entrada_salida: Math.min(item.cantidad_solicitada, totalSaldo),
+        costo_entrada: oldestLot.costo,
+        precio_salida: product.precio_venta,
+        precio_entrada_venta: product.precio_venta,
+        precio_entrada_venta_alt: product.precio_venta_alt,
+        incremento_p_entrada_venta: 0,
+        incremento_p_entrada_venta_alt: 0,
+        tc_transfer: oldestLot.tc_compra || 0,
+        purchase_id: oldestLot.id,
+        lots: lotsAsc,
+        total_saldo: totalSaldo,
+        product: {
+          id: product.id,
+          descripcion: product.descripcion,
+          codigo_oem: product.codigo_oem,
+          codigo_upc: product.codigo_upc,
+          marca: product.marca || null,
+          costo: oldestLot.costo,
+          precio_venta: product.precio_venta,
+          precio_venta_alt: product.precio_venta_alt,
+        },
+      } satisfies UITransferDetailCreate,
+    ];
+  });
 
 const CreateTransfer = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read prefill state ONCE at mount — never re-read on re-renders
+  const transferRequestPrefill = (location.state as { transferRequestPrefill?: ImportResult } | null)
+    ?.transferRequestPrefill;
+
+  const prefillRows = transferRequestPrefill
+    ? buildPrefillRows(transferRequestPrefill)
+    : undefined;
+
   const user = authSDK.getCurrentUser();
   const { selectedBranchId } = useBranchStore();
   const tableRef = useRef<TransferDetailTableRef>(null);
 
-  // Hook de detalles de transferencia
-  const transferDetailsHook = useTransferDetails();
+  // Hook de detalles de transferencia — pre-populated from import flow when available
+  const transferDetailsHook = useTransferDetails({ initialDetails: prefillRows });
 
   const { data: transferResponsiblesData } = useTransferResponsibles();
 
@@ -82,7 +134,8 @@ const CreateTransfer = () => {
       nro_comprobante: "",
       comentarios: "",
       sucursal_origen: Number(selectedBranchId) || 1,
-      sucursal_destino: undefined,
+      // Pre-fill sucursal_destino from import flow; undefined triggers auto-select
+      sucursal_destino: transferRequestPrefill?.sucursal_destinataria_id ?? undefined,
       responsable: Number(user?._id) || undefined,
       detalles: [],
     },

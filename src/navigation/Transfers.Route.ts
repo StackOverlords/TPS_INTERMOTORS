@@ -3,7 +3,8 @@ import CreateTransfer from "@/modules/transfers/screens/CreateTransfer";
 import EditTransfer from "@/modules/transfers/screens/EditTransfer";
 import TransferDetailScreen from "@/modules/transfers/screens/TransferDetailScreen";
 import TransferListScreen from "@/modules/transfers/screens/TransferListScreen";
-import { ArrowLeftRight, Package, Pencil, Shuffle, Table2 } from "lucide-react";
+import TransferRequestCreatePage from "@/modules/transfers/screens/TransferRequestCreatePage";
+import { ArrowLeftRight, Package, Pencil, Plus, Shuffle, Table2 } from "lucide-react";
 import type RouteType from "./RouteType";
 
 // Transferencias entre sucursales
@@ -42,6 +43,18 @@ const transfersProtectedRoutes: RouteType[] = [
         keepAlive: true,
         isHeader: false,
         showSidebar: true
+      },
+      {
+        path: "/dashboard/transfers/request/new",
+        name: "Nueva Solicitud de Transferencia",
+        type: "protected",
+        element: TransferRequestCreatePage,
+        isAdmin: false,
+        role: ["Administrador", "Vendedor", "Super Admin"],
+        icon: Plus,
+        isHeader: false,
+        showSidebar: true,
+        showInCommandPalette: true
       },
       {
         path: "/dashboard/transfers/:id",

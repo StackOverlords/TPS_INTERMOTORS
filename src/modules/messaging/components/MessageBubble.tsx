@@ -35,6 +35,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { AttachmentMessage } from "./AttachmentMessage";
+import { TransferRequestCard } from "./TransferRequestCard";
 import { getInitials } from "../utils/chatUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -426,12 +427,20 @@ export function MessageBubble({
             </p>
           )}
 
-          {/* Reference badge */}
+          {/* Reference badge / transfer request card */}
           {message.referencia_tipo && message.referencia_id && (
-            <ReferenceBadge
-              tipo={message.referencia_tipo}
-              id={message.referencia_id}
-            />
+            message.referencia_tipo === "transfer_request" ? (
+              <TransferRequestCard
+                requestId={message.referencia_id}
+                currentUserId={currentUserId}
+                isMine={isMine}
+              />
+            ) : (
+              <ReferenceBadge
+                tipo={message.referencia_tipo}
+                id={message.referencia_id}
+              />
+            )
           )}
 
           {/* Timestamp + status + badge "editado" */}
