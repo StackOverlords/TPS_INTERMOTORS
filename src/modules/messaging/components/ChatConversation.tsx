@@ -227,6 +227,7 @@ export function ChatConversation({
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const isOnline = useOfflineQueueStore((s) => s.isOnline);
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
+  const pendingFileRef = useRef<File | null>(null);
 
   // ── Estado de ex-miembro ──────────────────────────────────────────────────
   const exMember = chat ? isExMember(chat) : false;
@@ -294,11 +295,13 @@ export function ChatConversation({
     isFetchingOlderMessages,
   } = useOpenChat(chat?.id ?? 0);
 
-  const { send, isPending: isSending } = useSendMessage(chat?.id ?? 0);
+  const { send } = useSendMessage(chat?.id ?? 0);
   const editMutation = useEditMessage(chat?.id ?? 0);
   const { deleteForAll, deleteForMe } = useDeleteMessage(chat?.id ?? 0);
 
-  const { send: sendAttachment } = useSendAttachment(chat?.id ?? 0);
+  const { send: sendAttachment, retry: retryAttachment } = useSendAttachment(
+    chat?.id ?? 0
+  );
 
   // ── Pending file ────────────────────────────────────────────────────────────
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -309,6 +312,7 @@ export function ChatConversation({
   const [isUploadingSending, setIsUploadingSending] = useState(false);
 
   const clearPendingFile = useCallback(() => {
+    pendingFileRef.current = null;
     if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
     setPendingFile(null);
     setPendingPreviewUrl(null);
@@ -324,6 +328,7 @@ export function ChatConversation({
   );
 
   const handleFileSelected = (file: File) => {
+    pendingFileRef.current = file;
     const validation = validateAttachment(file);
     const previewUrl = isImageMime(file.type)
       ? URL.createObjectURL(file)
@@ -350,6 +355,23 @@ export function ChatConversation({
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, 50);
   };
+
+  const handleAttachmentRetry = useCallback(
+    async (tempId: string) => {
+      const file = pendingFileRef.current;
+      if (!file) return;
+      setIsUploadingSending(true);
+      setAttachError(null);
+      try {
+        await retryAttachment(tempId, file, "");
+        clearPendingFile();
+      } catch (err) {
+        setAttachError((err as Error).message ?? "Error al subir el archivo");
+        setIsUploadingSending(false);
+      }
+    },
+    [retryAttachment, clearPendingFile]
+  );
 
   // ── Scroll auto ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -510,6 +532,31 @@ export function ChatConversation({
     clearDraft,
     editMutation,
   ]);
+
+  const handleRetry = useCallback(
+    (failedMsg: OptimisticMessage) => {
+      // 1. Quitar el optimista fallido del store
+      useChatStore
+        .getState()
+        .deleteMessage(chat?.id ?? 0, failedMsg.id, "remove");
+      // 2. Reenviar con el mismo contenido
+      send({
+        contenido: failedMsg.contenido,
+        referencia_tipo: failedMsg.referencia_tipo ?? undefined,
+        referencia_id: failedMsg.referencia_id ?? undefined,
+      });
+    },
+    [chat?.id, send]
+  );
+
+  // const handleDeleteFailed = useCallback(
+  //   (failedMsg: OptimisticMessage) => {
+  //     useChatStore
+  //       .getState()
+  //       .deleteMessage(chat?.id ?? 0, failedMsg.id, "remove");
+  //   },
+  //   [chat?.id]
+  // );
 
   const adjustTextareaHeight = useCallback(() => {
     const el = inputRef.current;
@@ -722,7 +769,7 @@ export function ChatConversation({
                     <MessageBubble
                       message={msg}
                       prevSenderId={prev?.remitente?.id ?? null}
-                      onReply={exMember ? undefined : setReplyTo}
+                      // onReply={exMember ? undefined : setReplyTo}
                       isDirectChat={chat?.tipo === "DIRECT"}
                       otherDate={showSeparator}
                       onEdit={exMember ? undefined : handleStartEdit}
@@ -733,6 +780,11 @@ export function ChatConversation({
                         exMember ? undefined : (m) => deleteForMe.mutate(m.id)
                       }
                       canModerate={canModerate}
+                      onRetry={exMember ? undefined : handleRetry}
+                      // onDeleteFailed={exMember ? undefined : handleDeleteFailed}
+                      onRetryAttachment={
+                        exMember ? undefined : handleAttachmentRetry
+                      }
                     />
                   </div>
                 );
@@ -793,10 +845,7 @@ export function ChatConversation({
                 >
                   {!editingMessage && (
                     <>
-                      <FilePickerButton
-                        disabled={isSending}
-                        onFileSelected={handleFileSelected}
-                      />
+                      <FilePickerButton onFileSelected={handleFileSelected} />
                       {/* Vincular documento (comentado) */}
                     </>
                   )}
@@ -815,7 +864,7 @@ export function ChatConversation({
                         ? "Editar mensaje... (Esc para cancelar)"
                         : "Escribe un mensaje..."
                     }
-                    disabled={isSending || editMutation.isPending}
+                    disabled={editMutation.isPending}
                     className={cn(
                       "min-h-0 resize-none border-0 bg-transparent p-0 py-1",
                       "shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
@@ -830,12 +879,10 @@ export function ChatConversation({
                       "shrink-0",
                       editingMessage && "bg-amber-500 hover:bg-amber-600"
                     )}
-                    disabled={
-                      !input.trim() || isSending || editMutation.isPending
-                    }
+                    disabled={!input.trim() || editMutation.isPending}
                     onClick={handleSend}
                   >
-                    {isSending || editMutation.isPending ? (
+                    {editMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : editingMessage ? (
                       <Check className="h-4 w-4" />

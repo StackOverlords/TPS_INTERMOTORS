@@ -4,6 +4,7 @@ import { participantService } from "../service/Participant.service";
 import type { AddParticipantPayload } from "../types/Participant.types";
 import { chatService } from "../service/Chat.service";
 import { useChatStore } from "../stores/ChatStore";
+import { messagesQueryKey } from "./useMessages";
 
 export const participantsQueryKey = (chatId: number) =>
   ["messaging", "participants", chatId] as const;
@@ -88,6 +89,7 @@ export function useLeaveChat(chatId: number) {
 export function useDeleteChatForMe(chatId: number) {
   const setChatDeletion = useChatStore((s) => s.setChatDeletion);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
+  const qc = useQueryClient();
 
   return useMutation({
     mutationFn: () => chatService.deleteForMe(chatId),
@@ -95,6 +97,7 @@ export function useDeleteChatForMe(chatId: number) {
       // Actualizar store inmediatamente (optimistic)
       setChatDeletion(chatId, new Date().toISOString());
       setActiveChatId(null);
+      qc.removeQueries({ queryKey: messagesQueryKey(chatId) });
     },
   });
 }

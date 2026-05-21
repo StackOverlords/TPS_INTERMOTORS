@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createObjectURL, revokeObjectURL, downloadPDF } from "@/lib/pdfUtils";
+import { downloadPDF } from "@/lib/pdfUtils";
 import { Loader2, Download, Maximize2, X } from "lucide-react";
 import {
   Dialog,
@@ -20,6 +20,7 @@ interface PDFViewerProps {
   onClose: (open: boolean) => void;
   title?: string;
   pdfName?: string;
+  appendIdToName?: boolean;
 }
 
 export const PDFViewer = ({
@@ -31,6 +32,7 @@ export const PDFViewer = ({
   onClose,
   title = "Detalle de impresión",
   pdfName = "archivo",
+  appendIdToName = true,
 }: PDFViewerProps) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [expandedView, setExpandedView] = useState(false);
@@ -38,20 +40,18 @@ export const PDFViewer = ({
 
   useEffect(() => {
     if (pdfBlob) {
-      const url = createObjectURL(pdfBlob);
+      const url = URL.createObjectURL(pdfBlob);
       setPdfUrl(url);
-
-      return () => {
-        if (url) {
-          revokeObjectURL(url);
-        }
-      };
+      return () => URL.revokeObjectURL(url);
     }
+    setPdfUrl(null);
   }, [pdfBlob]);
 
   const handleDownload = () => {
+    const name =
+      appendIdToName && id ? `${pdfName}_${id}.pdf` : `${pdfName}.pdf`;
     if (pdfBlob) {
-      downloadPDF(pdfBlob, `${pdfName}_${id}.pdf`);
+      downloadPDF(pdfBlob, name);
     }
   };
 
@@ -71,12 +71,12 @@ export const PDFViewer = ({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col gap-2 p-3",
+          "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col gap-2 p-3 z-[9999]",
           (isLoading || isError) && "max-w-max max-h-max",
           expandedView && "max-w-full max-h-full"
         )}
         aria-description="pdf-viewer"
-        aria-describedby="pdf-viewer"
+        aria-describedby={undefined}
       >
         {isLoading ? (
           <div className="p-8 flex flex-col items-center gap-4">

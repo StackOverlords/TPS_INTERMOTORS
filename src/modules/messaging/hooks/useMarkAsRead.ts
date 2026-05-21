@@ -1,5 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CHATS_QUERY_KEY } from "./useChats";
+import { useMutation } from "@tanstack/react-query";
 import { useChatStore } from "../stores/ChatStore";
 import { chatService } from "../service/Chat.service";
 
@@ -10,7 +9,6 @@ import { chatService } from "../service/Chat.service";
  */
 export function useMarkAsRead() {
   const resetUnread = useChatStore((s) => s.resetUnread);
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (chatId: number) => chatService.markAsRead(chatId),
@@ -18,10 +16,6 @@ export function useMarkAsRead() {
       if (!chatId || chatId <= 0) return;
       // Actualización optimista inmediata
       resetUnread(chatId);
-    },
-    onSuccess: () => {
-      // Invalidar query para que el servidor confirme el estado
-      void queryClient.invalidateQueries({ queryKey: CHATS_QUERY_KEY });
     },
     onError: (_, chatId) => {
       // En error no revertimos el store — la UI ya mostró 0 y el usuario

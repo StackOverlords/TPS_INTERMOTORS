@@ -50,6 +50,8 @@ export function useSendAttachment(chatId: number) {
         id: -Date.now(),
         chat_id: chatId,
         tipo: "FILE",
+        actor_id: null,
+        subtipo: null,
         tipo_label: "Archivo",
         contenido: payload.caption ?? "",
         referencia_tipo: null,
@@ -112,7 +114,11 @@ export function useSendAttachment(chatId: number) {
         replaceOptimistic(chatId, tempId, message);
         soundManager.play("sent");
       } catch (error) {
-        if ((error as Error).name === "AbortError") return; // cancelado intencionalmente
+        if ((error as Error).name === "AbortError") {
+          // Cancelado intencionalmente → sí limpiar
+          if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+          return;
+        }
 
         // Limpiar objectURL en error también
         if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
@@ -134,5 +140,49 @@ export function useSendAttachment(chatId: number) {
     abortControllers.current.get(tempId)?.abort();
   }, []);
 
-  return { send, cancel };
+  /**
+   * Reintenta subir un adjunto fallido.
+   * Recibe el optimista fallido para extraer el archivo original.
+   * Como el File original ya no existe (es efímero), necesitamos
+   * que el componente guarde el File hasta confirmación/fallo definitivo.
+   */
+  const retry = useCallback(
+    async (
+      failedTempId: string,
+      file: File,
+      caption: string,
+    ): Promise<void> => {
+      // Quitar el optimista fallido antes de crear uno nuevo
+      markFailed(chatId, failedTempId); // ya está failed, solo para claridad
+      useChatStore.getState().deleteMessage(chatId, -Date.now(), "remove");
+
+      // Limpiar el objectURL del fallido si aún existe
+      const msgs = useChatStore.getState().messagesByChatId[chatId] ?? [];
+      const failedMsg = msgs.find(
+        (m) =>
+          "_tempId" in m && (m as OptimisticMessage)._tempId === failedTempId,
+      ) as OptimisticMessage | undefined;
+
+      if (failedMsg?._localPreviewUrl) {
+        URL.revokeObjectURL(failedMsg._localPreviewUrl);
+      }
+
+      // Eliminar el optimista fallido del store
+      useChatStore.setState((state) => {
+        const chatMsgs = state.messagesByChatId[chatId];
+        if (!chatMsgs) return;
+        state.messagesByChatId[chatId] = chatMsgs.filter(
+          (m) =>
+            !("_tempId" in m) ||
+            (m as OptimisticMessage)._tempId !== failedTempId,
+        );
+      });
+
+      // Reenviar desde cero
+      await send({ file, caption });
+    },
+    [chatId, send, markFailed],
+  );
+
+  return { send, cancel, retry };
 }

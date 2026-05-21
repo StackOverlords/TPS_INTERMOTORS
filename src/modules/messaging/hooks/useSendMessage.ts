@@ -56,6 +56,7 @@ export function useSendMessage(chatId: number) {
       upsertChat(chat);
       setActiveChatId(chat.id);
       setPending(null);
+      clearDraft(-userId);
 
       // 2. Limpiar borrador si existía para el pending (no tiene chatId real)
       //    Una vez creado el chat, el draft para ese chatId no existe aún.
@@ -71,6 +72,8 @@ export function useSendMessage(chatId: number) {
         referencia_tipo: payload.referencia_tipo ?? null,
         referencia_id: payload.referencia_id ?? null,
         remitente: null,
+        subtipo: null,
+        actor_id: null,
         es_sistema: false,
         editado: false,
         fecha_editado: null,
@@ -95,6 +98,7 @@ export function useSendMessage(chatId: number) {
       upsertChat,
       setActiveChatId,
       setPending,
+      clearDraft,
       appendMessage,
       replaceOptimistic,
       markFailed,
@@ -125,6 +129,8 @@ export function useSendMessage(chatId: number) {
         referencia_tipo: payload.referencia_tipo ?? null,
         referencia_id: payload.referencia_id ?? null,
         remitente: null, // se rellenará con el usuario actual en el componente
+        subtipo: null,
+        actor_id: null,
         es_sistema: false,
         editado: false,
         fecha_reg: now,

@@ -14,6 +14,7 @@ import type {
   Message,
   MessageDeletedEvent,
   MessageEditedEvent,
+  MessagesGetAllResponse,
 } from "../types/Message.types";
 import { messageService } from "../service/Message.service";
 import authSDK from "@/services/sdk-simple-auth";
@@ -25,9 +26,13 @@ import type {
   ParticipantRemovedEvent,
 } from "../types/Participant.types";
 import { resolveNotificationBehavior } from "../utils/messageNotifications";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { messagesQueryKey } from "./useMessages";
 
 const POLL_INTERVAL_MS = 7000;
 const ECHO_CHECK_INTERVAL_MS = 5000;
+
+type MessagesCache = InfiniteData<MessagesGetAllResponse>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ECHO CONNECTION STATE
@@ -53,10 +58,47 @@ export function useEchoConnectionState(): boolean {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
+  const qc = useQueryClient();
   const pollingTimers = useRef<Map<number, ReturnType<typeof setInterval>>>(
     new Map(),
   );
   const subscribedChats = useRef<Set<number>>(new Set());
+
+  // ── Helper: parchear caché de mensajes ─────────────────────────────────
+
+  const patchMessageInCache = useCallback(
+    (chatId: number, messageId: number, updates: Partial<Message>) => {
+      qc.setQueryData<MessagesCache>(messagesQueryKey(chatId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.map((m) =>
+              m.id === messageId ? { ...m, ...updates } : m,
+            ),
+          })),
+        };
+      });
+    },
+    [qc],
+  );
+
+  const removeMessageFromCache = useCallback(
+    (chatId: number, messageId: number) => {
+      qc.setQueryData<MessagesCache>(messagesQueryKey(chatId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            data: page.data.filter((m) => m.id !== messageId),
+          })),
+        };
+      });
+    },
+    [qc],
+  );
 
   // ── Handlers de mensajes ────────────────────────────────────────────────
 
@@ -96,11 +138,17 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
 
   const handleMessageEdited = useCallback(
     (chatId: number, event: MessageEditedEvent) => {
-      useChatStore.getState().editMessage(chatId, event.id, {
+      const updates = {
         contenido: event.contenido,
-        editado: true,
+        editado: true as const,
         fecha_editado: event.fecha_editado,
-      });
+      };
+
+      // Store
+      useChatStore.getState().editMessage(chatId, event.id, updates);
+
+      // Caché
+      patchMessageInCache(chatId, event.id, updates);
 
       // Si el editado es el último mensaje del chat, actualizar la preview
       useChatStore.setState((state) => {
@@ -118,6 +166,9 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
   const handleMessageDeleted = useCallback(
     (chatId: number, event: MessageDeletedEvent) => {
       useChatStore.getState().deleteMessage(chatId, event.id, "remove");
+
+      // Caché
+      removeMessageFromCache(chatId, event.id);
 
       useChatStore.setState((state) => {
         const idx = state.chats.findIndex((c) => c.id === chatId);
@@ -236,8 +287,13 @@ export function useMessagingWebSocket(chats: Chat[], isEchoConnected: boolean) {
           const idx = state.chats.findIndex((c) => c.id === data.chat_id);
           if (idx >= 0) {
             state.chats[idx].ultimo_mensaje = data.latest_message ?? null;
-            state.chats[idx].no_leidos =
-              data.no_leidos ?? state.chats[idx].no_leidos;
+
+            if (
+              state.activeChatId !== data.chat_id &&
+              typeof data.no_leidos === "number"
+            ) {
+              state.chats[idx].no_leidos = data.no_leidos;
+            }
           }
         });
       },

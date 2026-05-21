@@ -47,7 +47,8 @@ export function useMessages(chatId: number) {
     // Sin staleTime alto para que la primera visita al chat sea siempre fresca.
     // mergeMessages garantiza que al remontar no se pierde nada del store.
     enabled: chatId > 0,
-    staleTime: 0,
+    // staleTime: 0,
+    staleTime: 1000 * 60 * 2, // 2 minutos
     refetchOnWindowFocus: false,
   });
 
@@ -60,7 +61,7 @@ export function useMessages(chatId: number) {
       const firstPage = query.data.pages[0].data;
       mergeMessages(chatId, [...firstPage].reverse()); // más antiguos primero
     }
-  }, [query.data?.pages[0], chatId, mergeMessages]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query.dataUpdatedAt, chatId, mergeMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Paginación hacia atrás: el usuario hizo scroll hasta arriba.
   // prependMessages ya deduplica por id, así que es seguro llamarlo siempre.
