@@ -1,10 +1,14 @@
 import Layout from "@/modules/dashboard/screens/layout";
 import type React from "react";
+import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router";
 import type RouteType from "./RouteType";
 import { useUserRole } from "@/hooks/useUserRole";
 import { hasRouteAccess } from "@/utils/permissions";
 import { showWarningToast } from "@/hooks/use-toast-enhanced";
+import { useQueryClient } from "@tanstack/react-query";
+import { useBranchStore } from "@/states/branchStore";
+import { PERMISSIONS_QUERY_KEYS } from "@/lib/queryKeys";
 
 interface RouteRendererProps {
   route: RouteType;
@@ -22,6 +26,19 @@ const RouteRenderer: React.FC<RouteRendererProps> = ({
   const Component = route.element;
   const location = useLocation();
   const { rol: userRole, isLoading: isLoadingRole } = useUserRole();
+  const queryClient = useQueryClient();
+  const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
+
+  // Invalidate the permissions cache whenever the active branch changes.
+  // This ensures useCurrentUserPermissions re-fetches with the new branch scope
+  // and guards never show stale permissions from the previous branch.
+  useEffect(() => {
+    if (selectedBranchId) {
+      queryClient.invalidateQueries({
+        queryKey: PERMISSIONS_QUERY_KEYS.currentUser(),
+      });
+    }
+  }, [selectedBranchId, queryClient]);
 
   if (isLoading || isLoadingRole) {
     return (

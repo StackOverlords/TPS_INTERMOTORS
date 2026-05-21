@@ -8,4 +8,5 @@ export const USER_ENDPOINTS = {
   permissions: "/permissions/list",
   userPermissions: (userId: number) => `/users/permissions?usuario=${userId}`,
   updatePermissions: "/users/permissions",
+  myPermission: "/users/mypermission",
 } as const;

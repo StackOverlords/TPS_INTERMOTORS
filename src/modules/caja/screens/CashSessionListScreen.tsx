@@ -2,6 +2,8 @@ import { Alert, AlertDescription } from "@/components/atoms/alert";
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useBranchStore } from "@/states/branchStore";
 import { Info } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -89,6 +91,11 @@ const CashSessionListScreen = () => {
 
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission={PERMISSIONS.CAJ.MODULE}
+        roles={["Super Admin", "Administrador"]}
+        showLoader={true}
+      >
       <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h1 className="text-lg font-bold text-primary">Sesiones de Caja</h1>
@@ -99,13 +106,19 @@ const CashSessionListScreen = () => {
                 {activeSession.saldo_sistema.toFixed(2)}
               </Badge>
             )}
-            <Button
-              onClick={() => setOpenSessionModal(true)}
-              disabled={!!activeSession || openSessionMutationPending}
-              size="sm"
+            <ProtectedAction
+              permission={PERMISSIONS.CAJ.OPEN_SESSION}
+              roles={["Super Admin", "Administrador"]}
+              fallback={null}
             >
-              Abrir Sesión
-            </Button>
+              <Button
+                onClick={() => setOpenSessionModal(true)}
+                disabled={!!activeSession || openSessionMutationPending}
+                size="sm"
+              >
+                Abrir Sesión
+              </Button>
+            </ProtectedAction>
           </div>
         </div>
 
@@ -162,6 +175,7 @@ const CashSessionListScreen = () => {
           saldoSistema={closeSessionModal.session.saldo_sistema}
         />
       )}
+      </ProtectedAction>
     </main>
   );
 };

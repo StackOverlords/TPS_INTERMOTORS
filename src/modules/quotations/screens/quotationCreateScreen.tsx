@@ -65,6 +65,8 @@ import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { convertCartToQuotationDetails } from "@/modules/shoppingCart/utils/cartCalculations";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const SCREEN_PATH = "/dashboard/create-quotation";
 
@@ -517,6 +519,10 @@ const QuotationCreateScreen = () => {
   });
   return (
     <main className="p-2 h-full">
+      <ProtectedAction
+        permission={PERMISSIONS.COT.CREATE}
+        roles={["Super Admin", "Administrador", "Vendedor"]}
+      >
       <FormProvider {...methods}>
         <form
           onSubmit={handleSubmit(onSubmit, onError)}
@@ -987,6 +993,7 @@ const QuotationCreateScreen = () => {
           </div>
         </form>
       </FormProvider>
+      </ProtectedAction>
     </main>
   );
 };

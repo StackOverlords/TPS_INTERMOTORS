@@ -12,6 +12,7 @@ import {
 } from "@/components/atoms/alert-dialog";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { formatCurrency } from "@/utils/formaters";
@@ -156,7 +157,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                 cell: ({ row }) => (
                     <div className="flex justify-center">
                         <ProtectedAction
-                            permission="cuc-create_pago"
+                            permission={PERMISSIONS.CUC.DELETE_PAGO}
                             roles={["Super Admin", "Administrador","Vendedor"]}
                             fallback={null}
                         >
@@ -231,7 +232,7 @@ export const PaymentsList = ({ id_venta, saldoPendiente, onPaymentChange }: Paym
                         </Badge>
                     )}
                     <ProtectedAction
-                        permission="cuc-create_pago"
+                        permission={PERMISSIONS.CUC.CREATE_PAGO}
                         roles={["Super Admin", "Administrador", "Vendedor"]}
                         fallback={null}
                     >

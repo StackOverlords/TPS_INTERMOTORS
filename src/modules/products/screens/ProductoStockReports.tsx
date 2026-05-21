@@ -31,6 +31,7 @@ import { StockDistributionChart } from "../components/StockDistributionChart";
 import { ViewToggle } from "@/modules/reports/components/ViewToggle";
 import { cn } from "@/lib/utils";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const ProductoStockReports = () => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -230,7 +231,7 @@ const ProductoStockReports = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="pro-report-stock"
+        permission={PERMISSIONS.PRD.REPORT_STOCK}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header Compacto */}

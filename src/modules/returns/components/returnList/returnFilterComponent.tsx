@@ -10,6 +10,7 @@ import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface OrdersFiltersProps {
   filters: ReturnType<typeof useReturnsFilters>["filters"];
@@ -93,7 +94,7 @@ const ReturnsFiltersComponent: React.FC<OrdersFiltersProps> = ({
   return (
     <section className="space-y-2">
       <ProtectedAction
-        permission="dev-list"
+        permission={PERMISSIONS.DEV.LIST}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         fallback={<div className="text-destructive">No tienes permisos para busqueda.</div>}
       >

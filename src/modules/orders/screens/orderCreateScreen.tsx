@@ -73,7 +73,8 @@ import {
   roundTo5Decimals,
 } from "@/utils/decimalUtils";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
-// import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const OrderCreateScreen = () => {
   const configuraciones = {
@@ -507,10 +508,10 @@ const OrderCreateScreen = () => {
 
   return (
     <main className="p-2 h-full">
-      {/* <ProtectedAction
-        permission="ped-module"
+      <ProtectedAction
+        permission={PERMISSIONS.PED.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
-      > */}
+      >
       <FormProvider {...methods}>
         <form
           onSubmit={handleSubmit(onSubmit, onError)}
@@ -1030,8 +1031,8 @@ const OrderCreateScreen = () => {
                           >
                             Nuevo Pedido
                           </Button>
-                          {/* <ProtectedAction
-                              permission="ped-create"
+                          <ProtectedAction
+                              permission={PERMISSIONS.PED.CREATE}
                               roles={["Super Admin", "Administrador", "Vendedor"]}
                               fallback={
                                 <TooltipButton
@@ -1046,10 +1047,10 @@ const OrderCreateScreen = () => {
                                     </span>
                                   }
                                 >
-                                  <ShieldAlert></ShieldAlert>No tienes permisos
+                                  No tienes permisos
                                 </TooltipButton>
                               }
-                            > */}
+                            >
                           <TooltipButton
                             buttonProps={{
                               type: "submit",
@@ -1077,7 +1078,7 @@ const OrderCreateScreen = () => {
                               </>
                             )}
                           </TooltipButton>
-                          {/* </ProtectedAction> */}
+                          </ProtectedAction>
                         </div>
                       </footer>
                     </CardContent>
@@ -1089,7 +1090,7 @@ const OrderCreateScreen = () => {
           </div>
         </form>
       </FormProvider>
-      {/* </ProtectedAction> */}
+      </ProtectedAction>
     </main>
   );
 };

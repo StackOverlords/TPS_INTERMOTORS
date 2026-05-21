@@ -76,6 +76,7 @@ import { formatDateForUpdate } from "@/utils/dateFormatters";
 import { Badge } from "@/components/atoms/badge";
 import { roundTo5Decimals } from "@/utils/decimalUtils";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
 
@@ -654,7 +655,7 @@ const SaleEditScreen = () => {
   return (
     <main className="p-2 h-full">
       <ProtectedAction
-        permission="ven-module"
+        permission={PERMISSIONS.VEN.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         <FormProvider {...formMethods}>

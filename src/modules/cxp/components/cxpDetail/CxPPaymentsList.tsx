@@ -11,6 +11,7 @@ import {
     AlertDialogTitle,
 } from "@/components/atoms/alert-dialog";
 import CustomizableTable from "@/components/common/CustomizableTable";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { formatCurrency } from "@/utils/formaters";
@@ -21,6 +22,7 @@ import useDeleteCxPPayment from "../../hooks/mutations/useDeleteCxPPayment";
 import useCxPPayments from "../../hooks/queries/useCxPPayments";
 import type { CxPPayment } from "../../schemas/cxpPayment.schema";
 import { CreateCxPPaymentForm } from "./CreateCxPPaymentForm";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface CxPPaymentsListProps {
     id_compra: number;
@@ -149,19 +151,25 @@ export const CxPPaymentsList = ({ id_compra, proveedor_id, saldoPendiente, onPay
                 minSize: 30,
                 cell: ({ row }) => (
                     <div className="flex justify-center">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                openDeleteDialog(row.original);
-                            }}
-                            disabled={isDeleting}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            title="Eliminar pago"
+                        <ProtectedAction
+                            permission={PERMISSIONS.CUC.DELETE_PAGO}
+                            roles={["Super Admin", "Administrador"]}
+                            fallback={null}
                         >
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    openDeleteDialog(row.original);
+                                }}
+                                disabled={isDeleting}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                title="Eliminar pago"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </ProtectedAction>
                     </div>
                 ),
             },
@@ -218,15 +226,21 @@ export const CxPPaymentsList = ({ id_compra, proveedor_id, saldoPendiente, onPay
                             Saldo a favor: {formatCurrency(Math.abs(saldoPendiente))}
                         </Badge>
                     )}
-                    <Button
-                        onClick={() => setShowCreateForm(!showCreateForm)}
-                        size="sm"
-                        disabled={saldoPendiente <= 0}
-                        title={saldoPendiente <= 0 ? "No hay saldo pendiente para pagar" : "Crear nuevo pago"}
+                    <ProtectedAction
+                        permission={PERMISSIONS.CUC.CREATE_PAGO}
+                        roles={["Super Admin", "Administrador"]}
+                        fallback={null}
                     >
-                        <Plus className="h-4 w-4 mr-1" />
-                        {showCreateForm ? "Cancelar" : "Nuevo Pago"}
-                    </Button>
+                        <Button
+                            onClick={() => setShowCreateForm(!showCreateForm)}
+                            size="sm"
+                            disabled={saldoPendiente <= 0}
+                            title={saldoPendiente <= 0 ? "No hay saldo pendiente para pagar" : "Crear nuevo pago"}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {showCreateForm ? "Cancelar" : "Nuevo Pago"}
+                        </Button>
+                    </ProtectedAction>
                 </div>
             </div>
 

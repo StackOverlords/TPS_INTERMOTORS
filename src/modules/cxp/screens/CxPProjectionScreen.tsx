@@ -1,11 +1,13 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import TooltipButton from "@/components/common/TooltipButton";
 import { formatCurrency } from "@/utils/formaters";
 import { AlertTriangle, ChevronDown, ChevronRight, Loader2, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import useCxPProjectionReport from "../hooks/useCxPProjectionReport";
 import type { CxPProjectionBucket, CxPListItem } from "../schemas/cxpReport.schema";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface ProjectionBucketCardProps {
     title: string;
@@ -102,6 +104,11 @@ const CxPProjectionScreen = () => {
 
     return (
         <main className="h-full p-2 gap-2 flex flex-col overflow-auto">
+            <ProtectedAction
+                permission={PERMISSIONS.CUC.MODULE}
+                roles={["Super Admin", "Administrador"]}
+                showLoader={true}
+            >
             {/* Header */}
             <header className="border-border flex-shrink-0 border bg-background rounded-lg p-2 sm:px-3 flex items-center justify-between gap-2">
                 <div>
@@ -174,6 +181,7 @@ const CxPProjectionScreen = () => {
                     </div>
                 </div>
             )}
+            </ProtectedAction>
         </main>
     );
 };

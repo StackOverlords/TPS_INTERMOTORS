@@ -526,6 +526,32 @@ export const PERMISSIONS_QUERY_KEYS = {
    */
   userPermissions: (userId: number) =>
     [...PERMISSIONS_QUERY_KEYS.all, "user", userId] as const,
+
+  /**
+   * Key para los permisos del usuario autenticado actual, con scope por sucursal.
+   * El branchId en la key garantiza que cada sucursal tiene su propia entrada en caché.
+   * @param branchId - ID de la sucursal activa (string | null)
+   * @example PERMISSIONS_QUERY_KEYS.currentUser('1')
+   * @example PERMISSIONS_QUERY_KEYS.currentUser(null) // → 'none'
+   */
+  currentUser: (branchId?: string | null) =>
+    [...PERMISSIONS_QUERY_KEYS.all, "me", branchId ?? "none"] as const,
+
+  /**
+   * Key para el catálogo completo de permisos disponibles (agrupado por módulo).
+   * staleTime: alto (rara vez cambia). Usado por la matriz de permisos.
+   * @example PERMISSIONS_QUERY_KEYS.allList()
+   */
+  allList: () => [...PERMISSIONS_QUERY_KEYS.all, "catalog"] as const,
+
+  /**
+   * Key para los usuarios de una sucursal específica.
+   * Usado por la pantalla de matriz de permisos.
+   * @param branchId - ID de la sucursal
+   * @example PERMISSIONS_QUERY_KEYS.branchUsers('1')
+   */
+  branchUsers: (branchId?: string | null) =>
+    [...PERMISSIONS_QUERY_KEYS.all, "branch-users", branchId ?? "none"] as const,
 } as const;
 
 // ========================================

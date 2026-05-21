@@ -19,7 +19,8 @@ import OrdersListTable from "../components/orderList/orderListTable";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { useCommands } from "@/keybindings";
-// import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const OrderListScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId)
@@ -159,11 +160,11 @@ const OrderListScreen = () => {
 
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
-            {/* <ProtectedAction
-                permission="ped-module"
+            <ProtectedAction
+                permission={PERMISSIONS.PED.MODULE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 showLoader={true}
-            > */}
+            >
                 <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
                     <h1 className="text-lg font-bold text-primary">Pedidos</h1>
                     <section className="flex items-center justify-between gap-2 md:gap-4 flex-wrap">
@@ -282,7 +283,7 @@ const OrderListScreen = () => {
                     onConfirm={handleConfirmDeleteAlert}
                     isLoading={isDeleting}
                 />
-            {/* </ProtectedAction> */}
+            </ProtectedAction>
         </main>
     );
 }

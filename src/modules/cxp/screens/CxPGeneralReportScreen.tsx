@@ -9,6 +9,7 @@ import {
     SelectValue,
 } from "@/components/atoms/select";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { useBranchStore } from "@/states/branchStore";
@@ -23,6 +24,7 @@ import type { CxPReportItem, CxPGeneralReportFilter } from "../schemas/cxpReport
 import authSDK from "@/services/sdk-simple-auth";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useProviders } from "@/modules/purchases/hooks/useProviders";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const CxPGeneralReportScreen = () => {
     const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
@@ -219,6 +221,11 @@ const CxPGeneralReportScreen = () => {
 
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
+            <ProtectedAction
+                permission={PERMISSIONS.CUC.REPORT_GENERAL}
+                roles={["Super Admin", "Administrador"]}
+                showLoader={true}
+            >
             {/* Header */}
             <header className="border-border flex-shrink-0 border bg-background rounded-lg p-2 sm:px-3 flex flex-col gap-2">
                 <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -428,6 +435,7 @@ const CxPGeneralReportScreen = () => {
                     </div>
                 </div>
             </div>
+            </ProtectedAction>
         </main>
     );
 };

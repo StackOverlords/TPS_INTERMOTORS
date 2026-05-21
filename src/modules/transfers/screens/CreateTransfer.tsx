@@ -50,6 +50,7 @@ import { useTransferDetails } from "../hooks/useTransferDetails";
 import { TransferCreateSchema } from "../schemas/transferCreateSchema";
 import type { TransferCreate } from "../types/transferCreate.types";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const CreateTransfer = () => {
   const navigate = useNavigate();
@@ -339,7 +340,7 @@ const CreateTransfer = () => {
   return (
     <main className="h-full flex flex-col">
       <ProtectedAction
-        permission="tra-module"
+        permission={PERMISSIONS.TRA.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor", "Invitado"]}
         showLoader={true}
       >
@@ -609,7 +610,7 @@ const CreateTransfer = () => {
                       Nueva Transferencia
                     </Button>
                     <ProtectedAction
-                      permission="tra-create"
+                      permission={PERMISSIONS.TRA.CREATE}
                       roles={["Super Admin", "Administrador", "Vendedor"]}
                       fallback={
                         <TooltipButton

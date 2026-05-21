@@ -24,6 +24,7 @@ import { Loader2, Plus, Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { useGetEmployeeById } from "../../hooks/employee/useGetEmployeeById";
 import { useCreateEmployee } from "../../hooks/employee/useCreateEmployee";
 import { useUpdateEmployee } from "../../hooks/employee/useUpdateEmployee";
@@ -605,7 +606,7 @@ const EmployeeFormInner: React.FC<EmployeeFormInnerProps> = ({
           Cancelar
         </Button>
         <ProtectedAction
-          permission={isEditing ? "emp-edit" : "emp-create"}
+          permission={isEditing ? PERMISSIONS.EMP.EDIT : PERMISSIONS.EMP.CREATE}
           roles={["Super Admin", "Administrador"]}
           fallback={
             <Button type="submit" disabled>
@@ -654,7 +655,7 @@ const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogToggle}>
       <ProtectedAction
-        permission="emp-create"
+        permission={PERMISSIONS.EMP.CREATE}
         roles={["Super Admin", "Administrador"]}
         fallback={
           <Button disabled className="flex items-center gap-2">

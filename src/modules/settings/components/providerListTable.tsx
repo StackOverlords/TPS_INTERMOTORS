@@ -17,6 +17,7 @@ import {
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import authSDK from "@/services/sdk-simple-auth";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Edit, Settings, Trash2, Truck } from "lucide-react";
@@ -89,7 +90,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
       handleEditProvider(provider.id);
     },
     {
-      permission: "pro-edit",
+      permission: PERMISSIONS.PRO.EDIT,
       roles: ["Super Admin", "Administrador", "Vendedor"],
     }
   );
@@ -220,7 +221,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
           return (
             <div className="flex items-center gap-2">
               <ProtectedAction
-                permission="pro-edit"
+                permission={PERMISSIONS.PRO.EDIT}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -234,7 +235,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
               </ProtectedAction>
 
               <ProtectedAction
-                permission="pro-delete"
+                permission={PERMISSIONS.PRO.DELETE}
                 roles={["Super Admin", "Administrador", "Vendedor"]}
                 fallback={null}
               >
@@ -364,7 +365,7 @@ const ProviderListTable: React.FC<ProviderListTableProps> = ({
         <div className="flex-1 min-h-0">
           <div className="h-full overflow-auto">
             <ProtectedAction
-              permission="pro-list"
+              permission={PERMISSIONS.PRO.LIST}
               roles={["Super Admin", "Administrador", "Vendedor"]}
               showUnauthorizedMessage={true}
             >

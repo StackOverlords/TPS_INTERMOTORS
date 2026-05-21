@@ -6,6 +6,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useParams } from "react-router";
 import { useEffect } from "react";
 import { usePermissionCheck } from "@/hooks/usePermissionCheck";
+import { PERMISSIONS } from "@/lib/permissions";
 import FormUser from "../components/FormUser";
 import { useUserByIdForEdit } from "../hooks/useUserByIdForEdit";
 
@@ -16,7 +17,7 @@ const EditUserScreen = () => {
 
   // Validar permisos para editar usuarios
   const { isAuthorized, isLoading: isLoadingPermissions } = usePermissionCheck({
-    permission: "usu-editar",
+    permission: PERMISSIONS.USU.EDITAR,
     roles: ["Super Admin"],
   });
 

@@ -2,6 +2,7 @@ import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import Pagination from "@/components/common/pagination";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { formatCurrency } from "@/utils/formaters";
@@ -12,6 +13,7 @@ import { CxPDetailModal } from "../components/cxpDetail/CxPDetailModal";
 import CxPFilters from "../components/cxpList/CxPFilters";
 import useCxPPaginated, { type CxPPaginatedFilters } from "../hooks/queries/useCxPPaginated";
 import type { CxPListItem } from "../schemas/cxpReport.schema";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const CxPListScreen = () => {
     const [filters, setFilters] = useState<CxPPaginatedFilters>({
@@ -234,6 +236,11 @@ const CxPListScreen = () => {
 
     return (
         <main className="h-full p-2 gap-2 flex flex-col">
+            <ProtectedAction
+                permission={PERMISSIONS.CUC.MODULE}
+                roles={["Super Admin", "Administrador", "Vendedor"]}
+                showLoader={true}
+            >
             {/* Header */}
             <header className="bg-background rounded-lg p-2 space-y-2 border border-border flex-shrink-0">
                 <section className="flex items-center justify-between gap-2 flex-wrap">
@@ -340,6 +347,7 @@ const CxPListScreen = () => {
                 onOpenChange={setModalOpen}
                 onDataChange={refetch}
             />
+            </ProtectedAction>
         </main>
     );
 };

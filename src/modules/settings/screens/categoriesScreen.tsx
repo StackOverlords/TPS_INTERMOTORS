@@ -21,6 +21,8 @@ import { useGetAllCategories } from "../hooks/category/useGetAllCategories";
 import { useDeleteCategory } from "../hooks/category/useDeleteCategory";
 import { Label } from "@/components/atoms/label";
 import CategoryListTable from "../components/categoryListTable";
+import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const CategoriesScreen = () => {
   const [codigo_interno, setCodigoInterno] = useState("");
@@ -117,6 +119,11 @@ const CategoriesScreen = () => {
 
   return (
     <main className="w-full max-w-5xl mx-auto h-full p-2 gap-2 flex flex-col">
+      <ProtectedAction
+        permission={PERMISSIONS.SIS.ADM_CATEGORIAS}
+        roles={["Super Admin", "Administrador"]}
+        showLoader={true}
+      >
       <div className="space-y-2 flex-shrink-0">
         <header className="bg-background rounded-lg p-2 border border-border">
           <div className="flex flex-wrap gap-2 items-center justify-between">
@@ -251,6 +258,7 @@ const CategoriesScreen = () => {
         onConfirm={handleConfirmDeleteAlert}
         isLoading={isDeleting}
       />
+      </ProtectedAction>
     </main>
   );
 };

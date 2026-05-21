@@ -16,6 +16,7 @@ import { ViewToggle } from "../../components/ViewToggle";
 import type { ViewMode } from "../../types/report.types";
 import { useBranchStore } from "@/states/branchStore";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 import { usePurchaseReportFilters } from "../../hooks/purchases/usePurchaseReportFilters";
 import { useReportPurchaseGeneral } from "../../hooks/purchases/useReportPurchaseGeneral";
 import { useDownloadReportPurchaseGeneral } from "../../hooks/purchases/useReportPurchaseGeneral";
@@ -60,7 +61,7 @@ const PurchaseGeneralReportScreen = () => {
   return (
     <main className="h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="purchase-report_general"
+        permission={PERMISSIONS.COM.REPORT_GENERAL}
         roles={["Super Admin", "Administrador", "Vendedor"]}
       >
         {/* Header */}

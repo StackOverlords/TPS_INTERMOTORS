@@ -35,6 +35,7 @@ import { useDeleteProvider } from "../hooks/provider/useDeleteProvider";
 import { useGetAllProviders } from "../hooks/provider/useGetAllProviders";
 import ProviderListTable from "../components/providerListTable";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const ProvidersScreen = () => {
   // Estado local para los filtros (búsqueda manual)
@@ -180,7 +181,7 @@ const ProvidersScreen = () => {
   return (
     <main className="w-full max-w-7xl mx-auto h-full p-2 gap-2 flex flex-col">
       <ProtectedAction
-        permission="pro-module"
+        permission={PERMISSIONS.PRO.MODULE}
         roles={["Super Admin", "Administrador", "Vendedor"]}
         showLoader={true}
       >
@@ -291,7 +292,7 @@ const ProvidersScreen = () => {
 
                 <div className="flex gap-2 justify-end w-full">
                   <ProtectedAction
-                    permission="pro-list"
+                    permission={PERMISSIONS.PRO.LIST}
                     roles={["Super Admin", "Administrador", "Vendedor"]}
                     fallback={
                       <Button

@@ -1,11 +1,12 @@
 import authSDK from '../services/sdk-simple-auth';
+import { PERMISSIONS, type Permission } from '@/lib/permissions';
 
 export interface KeybindingAction {
   id: string;
   keys: string;
   description: string;
   category: string;
-  permission?: string; // Permission required to use this keybinding
+  permission?: Permission; // Permission required to use this keybinding
   contexts?: string[]; // Where this keybinding is active (e.g., ['forms', 'tables', 'global'])
   enabled?: boolean;
   action: () => void | ((context?: any) => void);
@@ -152,7 +153,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'ctrl+n',
         description: 'Nueva compra',
         category: 'action',
-        permission: 'com-create',
+        permission: PERMISSIONS.COM.CREATE,
         contexts: ['purchases', 'purchases-list'],
         action: () => {
           // Navigate to new purchase
@@ -164,7 +165,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'ctrl+f',
         description: 'Buscar compras',
         category: 'navigation',
-        permission: 'com-list',
+        permission: PERMISSIONS.COM.LIST,
         contexts: ['purchases', 'purchases-list'],
         action: () => {
           // Focus search input
@@ -176,7 +177,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'ctrl+p',
         description: 'Imprimir compra',
         category: 'action',
-        permission: 'com-view_print',
+        permission: PERMISSIONS.COM.VIEW_PRINT,
         contexts: ['purchases-detail', 'purchases-edit'],
         action: () => {
           // Print current purchase
@@ -195,7 +196,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'ctrl+n',
         description: 'Nueva venta',
         category: 'action',
-        permission: 'ven-create',
+        permission: PERMISSIONS.VEN.CREATE,
         contexts: ['sales', 'sales-list'],
         action: () => {
           // Navigate to new sale
@@ -207,7 +208,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'alt+c',
         description: 'Abrir carrito',
         category: 'navigation',
-        permission: 'cve-module',
+        permission: PERMISSIONS.CVE.MODULE,
         contexts: ['sales', 'cart'],
         action: () => {
           // Open shopping cart
@@ -219,7 +220,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'ctrl+shift+f',
         description: 'Buscar productos',
         category: 'navigation',
-        permission: 'cve-list',
+        permission: PERMISSIONS.CVE.LIST,
         contexts: ['sales', 'cart'],
         action: () => {
           // Focus product search
@@ -238,7 +239,7 @@ export const moduleKeybindings: KeybindingCategory[] = [
         keys: 'ctrl+f',
         description: 'Buscar en inventario',
         category: 'navigation',
-        permission: 'inv-module',
+        permission: PERMISSIONS.INV.MODULE,
         contexts: ['inventory'],
         action: () => {
           // Focus inventory search
