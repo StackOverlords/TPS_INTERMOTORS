@@ -30,10 +30,11 @@ import {
 import { cn } from "@/lib/utils";
 import { PERMISSIONS } from "@/lib/permissions";
 import { usePermissionCheck } from "@/hooks/usePermissionCheck";
-import type { TransferRequestEstado, FulfillDirectResult } from "@/modules/transfers/types/transferRequest.types";
+import type { TransferRequestEstado, FulfillDirectResult, FulfilledItem, SkippedItem } from "@/modules/transfers/types/transferRequest.types";
 import { useTransferRequestById } from "@/modules/transfers/hooks/useTransferRequestById";
 import { useImportTransferRequest } from "@/modules/transfers/hooks/useImportTransferRequest";
 import { useFulfillTransferRequest } from "@/modules/transfers/hooks/useFulfillTransferRequest";
+import { transferRequestService } from "@/modules/transfers/services/transferRequestService";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADO BADGE
@@ -106,11 +107,30 @@ function FulfillResultModal({ open, onClose, onGoToTransfer, result }: FulfillRe
                 {result.fulfilled_items.map((item) => (
                   <div
                     key={item.producto_id}
-                    className="flex items-center justify-between rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 text-xs"
+                    className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs ${
+                      item.was_partial
+                        ? "bg-amber-50 dark:bg-amber-500/10"
+                        : "bg-emerald-50 dark:bg-emerald-500/10"
+                    }`}
                   >
-                    <span className="text-foreground">{item.producto_descripcion}</span>
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-300 ml-2">
-                      ×{item.cantidad}
+                    <div>
+                      <span className="text-foreground">{item.producto_descripcion}</span>
+                      {item.was_partial && (
+                        <span className="block text-[10px] text-amber-600 dark:text-amber-400">
+                          Stock insuficiente — enviado parcialmente
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`font-semibold ml-2 ${
+                        item.was_partial
+                          ? "text-amber-700 dark:text-amber-300"
+                          : "text-emerald-700 dark:text-emerald-300"
+                      }`}
+                    >
+                      {item.was_partial
+                        ? `×${item.cantidad} de ${item.cantidad_solicitada}`
+                        : `×${item.cantidad}`}
                     </span>
                   </div>
                 ))}
@@ -120,24 +140,17 @@ function FulfillResultModal({ open, onClose, onGoToTransfer, result }: FulfillRe
 
           {result.skipped_items.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1.5">
-                No despachados ({result.skipped_items.length})
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
+                Sin stock — no despachados ({result.skipped_items.length})
               </p>
               <div className="space-y-1">
                 {result.skipped_items.map((item) => (
                   <div
                     key={item.producto_id}
-                    className="flex items-center justify-between rounded-lg bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1.5 text-xs"
+                    className="flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-500/10 px-2.5 py-1.5 text-xs"
                   >
-                    <div>
-                      <span className="text-foreground">{item.producto_descripcion}</span>
-                      <span className="block text-[10px] text-muted-foreground">
-                        {item.reason === "NO_STOCK" || item.reason === "INSUFFICIENT_STOCK"
-                          ? "Sin stock disponible"
-                          : "Producto inactivo"}
-                      </span>
-                    </div>
-                    <span className="font-semibold text-amber-700 dark:text-amber-300 ml-2">
+                    <span className="text-foreground">{item.producto_descripcion}</span>
+                    <span className="font-semibold text-red-700 dark:text-red-300 ml-2">
                       ×{item.cantidad_solicitada}
                     </span>
                   </div>
@@ -154,7 +167,7 @@ function FulfillResultModal({ open, onClose, onGoToTransfer, result }: FulfillRe
           {onGoToTransfer && result.transfer_id && (
             <Button size="sm" onClick={onGoToTransfer} className="gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" />
-              Ir a confirmar envío
+              Ver transferencia
             </Button>
           )}
         </DialogFooter>
@@ -172,6 +185,9 @@ interface ConfirmFulfillModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isPending: boolean;
+  isLoadingPreview: boolean;
+  fulfilledItems: FulfilledItem[];
+  skippedItems: SkippedItem[];
 }
 
 function ConfirmFulfillModal({
@@ -179,31 +195,99 @@ function ConfirmFulfillModal({
   onClose,
   onConfirm,
   isPending,
+  isLoadingPreview,
+  fulfilledItems,
+  skippedItems,
 }: ConfirmFulfillModalProps) {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !isPending && onClose()}>
-      <DialogContent className="max-w-sm z-[9999]">
+      <DialogContent className="max-w-md z-[9999]">
         <DialogHeader>
           <DialogTitle>Enviar directo</DialogTitle>
           <DialogDescription>
             Se creará una transferencia con los productos disponibles en tu
-            sucursal. Los productos sin stock serán omitidos. Esta acción no
-            se puede deshacer.
+            sucursal. Esta acción no se puede deshacer.
           </DialogDescription>
         </DialogHeader>
+
+        {isLoadingPreview ? (
+          <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verificando stock…
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {fulfilledItems.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1.5">
+                  Se enviarán ({fulfilledItems.length})
+                </p>
+                <div className="space-y-1">
+                  {fulfilledItems.map((item) => (
+                    <div
+                      key={item.producto_id}
+                      className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs ${
+                        item.was_partial
+                          ? "bg-amber-50 dark:bg-amber-500/10"
+                          : "bg-emerald-50 dark:bg-emerald-500/10"
+                      }`}
+                    >
+                      <div>
+                        <span className="text-foreground">{item.producto_descripcion}</span>
+                        {item.was_partial && (
+                          <span className="block text-[10px] text-amber-600 dark:text-amber-400">
+                            Stock insuficiente — se ajustará la cantidad
+                          </span>
+                        )}
+                      </div>
+                      <span className={`font-semibold ml-2 ${item.was_partial ? "text-amber-700 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-300"}`}>
+                        {item.was_partial
+                          ? `×${item.cantidad} de ${item.cantidad_solicitada}`
+                          : `×${item.cantidad}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {skippedItems.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
+                  Sin stock — se omitirán ({skippedItems.length})
+                </p>
+                <div className="space-y-1">
+                  {skippedItems.map((item) => (
+                    <div
+                      key={item.producto_id}
+                      className="flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-500/10 px-2.5 py-1.5 text-xs"
+                    >
+                      <span className="text-foreground">{item.producto_descripcion}</span>
+                      <span className="font-semibold text-red-700 dark:text-red-300 ml-2">
+                        ×{item.cantidad_solicitada}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {fulfilledItems.length === 0 && skippedItems.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                Sin productos para enviar.
+              </p>
+            )}
+          </div>
+        )}
+
         <DialogFooter className="gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            disabled={isPending}
-          >
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isPending}>
             Cancelar
           </Button>
           <Button
             size="sm"
             onClick={onConfirm}
-            disabled={isPending}
+            disabled={isPending || isLoadingPreview || fulfilledItems.length === 0}
           >
             {isPending ? (
               <>
@@ -254,6 +338,8 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   // ── Modal states ──────────────────────────────────────────────────────────
   const [confirmFulfillOpen, setConfirmFulfillOpen] = useState(false);
   const [fulfillResult, setFulfillResult] = useState<FulfillDirectResult | null>(null);
+  const [preview, setPreview] = useState<{ fulfilled_items: FulfilledItem[]; skipped_items: SkippedItem[] } | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const isRecipient =
@@ -473,10 +559,21 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
               <Button
                 size="sm"
                 className="h-7 flex-1 text-[11px] px-2"
-                disabled={fulfill.isPending}
-                onClick={() => setConfirmFulfillOpen(true)}
+                disabled={fulfill.isPending || isLoadingPreview}
+                onClick={() => {
+                  setPreview(null);
+                  setIsLoadingPreview(true);
+                  setConfirmFulfillOpen(true);
+                  void transferRequestService.previewFulfillDirect(requestId).then((data) => {
+                    setPreview(data);
+                    setIsLoadingPreview(false);
+                  }).catch(() => {
+                    setConfirmFulfillOpen(false);
+                    setIsLoadingPreview(false);
+                  });
+                }}
               >
-                {fulfill.isPending ? (
+                {isLoadingPreview ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   "Enviar directo"
@@ -498,9 +595,12 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
       {/* Confirm fulfill modal */}
       <ConfirmFulfillModal
         open={confirmFulfillOpen}
-        onClose={() => setConfirmFulfillOpen(false)}
+        onClose={() => { setConfirmFulfillOpen(false); setPreview(null); }}
         onConfirm={() => void handleFulfillConfirm()}
         isPending={fulfill.isPending}
+        isLoadingPreview={isLoadingPreview}
+        fulfilledItems={preview?.fulfilled_items ?? []}
+        skippedItems={preview?.skipped_items ?? []}
       />
 
       {/* Fulfill result modal */}

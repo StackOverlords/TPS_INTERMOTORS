@@ -43,6 +43,21 @@ export const transferRequestService = {
     },
 
     /**
+     * Dry-run FIFO check — returns what would be sent/adjusted/skipped without creating anything.
+     * @param id - Transfer request ID
+     */
+    async previewFulfillDirect(id: number): Promise<Pick<FulfillDirectResult, "fulfilled_items" | "skipped_items">> {
+        Logger.info("Previewing fulfill direct", { id }, MODULE_NAME);
+
+        const response = await ApiService.get<Pick<FulfillDirectResult, "fulfilled_items" | "skipped_items">>(
+            TRANSFER_REQUEST_ENDPOINTS.fulfillDirectPreview(id),
+        );
+
+        Logger.info("Preview fetched", { id }, MODULE_NAME);
+        return response;
+    },
+
+    /**
      * Fulfill a transfer request directly from stock
      * @param id - Transfer request ID
      */

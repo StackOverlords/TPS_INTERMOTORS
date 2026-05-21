@@ -73,6 +73,8 @@ export interface FulfilledItem {
   producto_id: number;
   producto_descripcion: string;
   cantidad: number;
+  cantidad_solicitada?: number;
+  was_partial?: boolean;
   lots_used: {
     almacen_id: number;
     lote: string;
