@@ -56,6 +56,7 @@ export const TransferRequestGetSchema = z.object({
   estado: TransferRequestEstadoSchema,
   notas: z.string().nullable(),
   chat_message_id: z.number().nullable(),
+  product_transfer_id: z.number().nullable().optional(),
   items: z.array(TransferRequestItemSchema),
   created_at: z.string(),
   updated_at: z.string(),

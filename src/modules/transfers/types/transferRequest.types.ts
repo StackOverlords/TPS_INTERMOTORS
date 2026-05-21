@@ -58,6 +58,7 @@ export interface TransferRequest {
   estado: TransferRequestEstado;
   notas: string | null;
   chat_message_id: number | null;
+  product_transfer_id: number | null;
   items: TransferRequestItem[];
   created_at: string;
   updated_at: string;

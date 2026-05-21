@@ -72,4 +72,21 @@ export const transferRequestService = {
         Logger.info("Transfer Request imported successfully", { id }, MODULE_NAME);
         return response;
     },
+
+    /**
+     * Link a created transfer to an imported request and mark it as fulfilled.
+     * Called after the recipient creates the actual transfer from an import prefill.
+     * @param id - Transfer request ID
+     * @param transferId - ID of the ProductTransfer that was created
+     */
+    async linkTransfer(id: number, transferId: number): Promise<void> {
+        Logger.info("Linking transfer to request", { id, transferId }, MODULE_NAME);
+
+        await ApiService.post(
+            TRANSFER_REQUEST_ENDPOINTS.linkTransfer(id),
+            { transfer_id: transferId },
+        );
+
+        Logger.info("Transfer request linked and fulfilled", { id }, MODULE_NAME);
+    },
 };

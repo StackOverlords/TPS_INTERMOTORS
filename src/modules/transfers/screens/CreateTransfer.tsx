@@ -47,6 +47,7 @@ import { useTransferResponsibles } from "../hooks/commons/useTransferResponsible
 import { useCreateTransfer } from "../hooks/useCreateTransfer";
 import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchById";
 import { useTransferDetails } from "../hooks/useTransferDetails";
+import { useLinkTransferRequest } from "../hooks/useLinkTransferRequest";
 import { TransferCreateSchema } from "../schemas/transferCreateSchema";
 import type { TransferCreate, UITransferDetailCreate } from "../types/transferCreate.types";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
@@ -138,6 +139,7 @@ const CreateTransfer = () => {
   );
 
   const { mutate: createTransfer, isPending: isSaving } = useCreateTransfer();
+  const { mutate: linkTransferRequest } = useLinkTransferRequest();
 
   const { handleError } = useErrorHandler();
 
@@ -268,7 +270,16 @@ const CreateTransfer = () => {
     };
 
     createTransfer(adjustedData, {
-      onSuccess: () => {
+      onSuccess: (created) => {
+        // If this transfer came from an import prefill, mark the request as fulfilled
+        // and link the created transfer so the chat card can show "Ver transferencia".
+        const createdId = (created as { id?: number } | null)?.id;
+        if (transferRequestPrefill?.request_id && createdId) {
+          linkTransferRequest({
+            requestId: transferRequestPrefill.request_id,
+            transferId: createdId,
+          });
+        }
         showSuccessToast({
           title: "Transferencia Exitosa",
           description: `Transferencia realizada con éxito`,

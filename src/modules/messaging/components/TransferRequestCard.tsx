@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Loader2, ArrowRight, Package, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, ArrowRight, Package, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { showErrorToast, showWarningToast } from "@/hooks/use-toast-enhanced";
 import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
@@ -391,11 +391,24 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           </ul>
         )}
 
-        {/* Terminal estado indicator (no buttons) */}
+        {/* Terminal estado indicator + optional transfer link */}
         {isTerminal && (
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <CheckCircle2 className="h-3 w-3 shrink-0" />
-            <span>Esta solicitud ya fue procesada</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
+              <span>Esta solicitud ya fue procesada</span>
+            </div>
+            {request.product_transfer_id && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-7 w-full text-[11px] px-2 gap-1.5"
+                onClick={() => navigate(`/dashboard/transfers/${request.product_transfer_id}`)}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Ver transferencia
+              </Button>
+            )}
           </div>
         )}
 
