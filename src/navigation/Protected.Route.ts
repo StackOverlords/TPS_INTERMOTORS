@@ -1,4 +1,4 @@
-import { LayoutDashboardIcon } from "lucide-react";
+import { LayoutDashboardIcon, MessageSquare } from "lucide-react";
 import accountsReceivable from "./AccountReceivable.Route";
 import cashProtectedRoutes from "./Cash.Route";
 import financeRoutes from "./Finance.Route";
@@ -13,6 +13,7 @@ import settingsProtectedRoutes from "./Settings.Route";
 import transfersProtectedRoutes from "./Transfers.Route";
 import usersProtectedRoutes from "./Users.Route";
 import Dashboard from "@/modules/dashboard/screens/dashboard";
+import ChatScreen from "@/modules/messaging/screens/ChatScreen";
 
 const protectedRoutes: RouteType[] = [
   {
@@ -23,6 +24,17 @@ const protectedRoutes: RouteType[] = [
     isAdmin: false,
     role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
     icon: LayoutDashboardIcon,
+    showSidebar: true,
+  },
+  {
+    path: "/dashboard/chat",
+    name: "Chat",
+    type: "protected",
+    element: ChatScreen,
+    isAdmin: false,
+    role: ["Administrador", "Vendedor", "Super Admin"],
+    icon: MessageSquare,
+    isHeader: false,
     showSidebar: true,
   },
   ...cashProtectedRoutes,

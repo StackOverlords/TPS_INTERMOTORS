@@ -22,7 +22,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Super Admin"],
         icon: UserPlus,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: true,
@@ -49,7 +49,7 @@ const usuariosProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Super Admin"],
         icon: BoxIcon,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: false,
         showInCommandPalette: false,

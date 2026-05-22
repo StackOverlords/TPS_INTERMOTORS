@@ -84,7 +84,7 @@ const purchasesProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: PencilLine,
-
+        keepAlive: true,
         isHeader: false,
         showSidebar: true,
       },

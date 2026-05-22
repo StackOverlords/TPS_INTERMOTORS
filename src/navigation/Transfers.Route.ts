@@ -52,6 +52,7 @@ const transfersProtectedRoutes: RouteType[] = [
         isAdmin: false,
         role: ["Administrador", "Vendedor", "Super Admin"],
         icon: Plus,
+        keepAlive: true,
         isHeader: false,
         showSidebar: true,
         showInCommandPalette: true

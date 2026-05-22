@@ -47,6 +47,7 @@ const productosProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: Table2Icon,
+        keepAlive: true,
         isHeader: false,
         showSidebar: true,
         viewConfig: productsListViewConfig,
