@@ -35,6 +35,7 @@ import authSDK from "@/services/sdk-simple-auth";
 import { Button } from "@/components/atoms/button";
 import { Avatar, AvatarFallback } from "@/components/atoms/avatar";
 import { AttachmentMessage } from "./AttachmentMessage";
+import { TransferRequestCard } from "./TransferRequestCard";
 import { getInitials } from "../utils/chatUtils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,14 +111,7 @@ function MessageStatus({
     return <span className="text-[9px] opacity-60">cola</span>;
   if (status === "failed") {
     return (
-      <button
-        onClick={() => isOptimistic && onRetry?.(message as OptimisticMessage)}
-        className="flex items-center gap-0.5 text-[9px] text-destructive hover:text-destructive/80 transition-colors"
-        title="Toca para reintentar"
-      >
-        <span>!</span>
-        <span className="underline">reintentar</span>
-      </button>
+      <span className="text-[10px] font-bold text-destructive" title="Error al enviar">!</span>
     );
   }
   return <CheckCheck className="h-3 w-3 text-blue-400" />;
@@ -292,12 +286,12 @@ export function MessageBubble({
           </span>
         )}
 
-        {/* Hover actions */}
+        {/* Hover actions — positioned beside the bubble (Telegram-style) */}
         <div
           className={cn(
-            "absolute -top-6 z-10 flex items-center gap-0.5 rounded-lg border border-border/50 bg-card p-0.5 shadow-md",
-            "opacity-0 group-hover:opacity-100 transition-opacity",
-            isMine ? "right-0" : "left-0"
+            "absolute top-1/2 -translate-y-1/2 z-10 flex items-center gap-0.5 rounded-lg border border-border/50 bg-card p-0.5 shadow-md transition-opacity",
+            isMine ? "right-[calc(100%+6px)]" : "left-[calc(100%+6px)]",
+            menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100",
           )}
         >
           {onReply && (
@@ -387,18 +381,19 @@ export function MessageBubble({
         {/* Bubble */}
         <div
           className={cn(
-            "rounded-2xl text-sm break-words",
+            "rounded-2xl text-sm break-words transition-shadow",
             message.tipo === "FILE" && message.adjuntos?.[0]?.es_imagen
-              ? "overflow-hidden px-1.5 pt-0.5 pb-1"
+              ? "overflow-hidden px-1.5 pt-0.5 pb-1 max-w-[340px]"
               : message.tipo === "FILE"
                 ? "px-1.5 pt-0.5 pb-1"
                 : "px-3 py-1",
             isMine
-              ? "bg-primary text-primary-foreground rounded-tr-xs"
-              : "bg-secondary text-foreground rounded-tl-xs",
+              ? "bg-primary text-primary-foreground rounded-tr-xs shadow-[0_4px_16px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.07] group-hover:ring-2 group-hover:ring-white/30"
+              : "bg-secondary text-foreground rounded-tl-xs shadow-[0_1px_3px_rgba(0,0,0,0.07),0_4px_14px_rgba(0,0,0,0.05)] group-hover:ring-2 group-hover:ring-primary/25",
             isGrouped && !isMine && "rounded-tl-2xl",
             isGrouped && isMine && "rounded-tr-2xl",
-            status === "failed" && "opacity-60 ring-1 ring-destructive/40"
+            status === "failed" && "opacity-60 ring-1 ring-destructive/40",
+            menuOpen && (isMine ? "ring-2 ring-white/40" : "ring-2 ring-primary/40"),
           )}
         >
           {/* Adjuntos */}
@@ -426,12 +421,20 @@ export function MessageBubble({
             </p>
           )}
 
-          {/* Reference badge */}
+          {/* Reference badge / transfer request card */}
           {message.referencia_tipo && message.referencia_id && (
-            <ReferenceBadge
-              tipo={message.referencia_tipo}
-              id={message.referencia_id}
-            />
+            message.referencia_tipo === "transfer_request" ? (
+              <TransferRequestCard
+                requestId={message.referencia_id}
+                currentUserId={currentUserId}
+                isMine={isMine}
+              />
+            ) : (
+              <ReferenceBadge
+                tipo={message.referencia_tipo}
+                id={message.referencia_id}
+              />
+            )
           )}
 
           {/* Timestamp + status + badge "editado" */}
@@ -468,6 +471,7 @@ export function MessageBubble({
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

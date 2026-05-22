@@ -26,6 +26,7 @@ import NavItem from "../components/NavItem";
 import logoLight from "@/assets/images/logo_light.webp";
 import logoDark from "@/assets/images/darkmodeweb.webp";
 import { Button } from "@/components/atoms/button";
+import { queryClient } from "@/lib/reactQueryConfig";
 
 const AppSidebar = () => {
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
@@ -52,6 +53,7 @@ const AppSidebar = () => {
     try {
       // Limpiar todas las tabs antes del logout
       closeAllTabs();
+      queryClient.clear();
       // localStorage.removeItem("lastPath"); ///POR SI QUEREMOS BORRAR HISTORIAL DE ULTIMA RUTA
       await authSDK.logout();
     } catch (error) {

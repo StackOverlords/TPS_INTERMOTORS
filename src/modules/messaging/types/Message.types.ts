@@ -35,6 +35,7 @@ export type ReferenciaTipo =
   | "sale"
   | "purchase"
   | "transfer"
+  | "transfer_request"
   | string;
 
 // ─────────────────────────────────────────────────────────────────────────────

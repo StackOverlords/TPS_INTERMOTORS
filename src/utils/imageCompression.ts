@@ -181,6 +181,32 @@ export function calculateSavings(
   return Math.round(((originalSize - compressedSize) / originalSize) * 100);
 }
 
+/**
+ * Convierte un File a base64 data URL
+ */
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Error leyendo el archivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Convierte un base64 data URL a un objeto File
+ */
+export function base64ToFile(base64Data: string, filename: string): File {
+  const arr = base64Data.split(",");
+  const mimeMatch = arr[0]?.match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : "image/webp";
+  const bstr = atob(arr[1] ?? "");
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new File([u8arr], filename, { type: mime });
+}
+
 // Función pura sin estado
 export async function fetchImageAsBlobUrl(url: string): Promise<string> {
   const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");

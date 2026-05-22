@@ -1,7 +1,11 @@
+import { nanoid } from "nanoid";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Message, OptimisticMessage } from "../types/Message.types";
 import type { Chat } from "../types/Chat.types";
+import { chatService } from "../service/Chat.service";
+import { messageService } from "../service/Message.service";
+import { useChatUIStore } from "./ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -163,6 +167,19 @@ interface ChatActions {
 
   // Reset
   reset: () => void;
+
+  // ── Transfer Requests ─────────────────────────────────────────────────────
+
+  /**
+   * Crea o reutiliza un DM con `toUserId`, luego envía un mensaje
+   * de tipo transfer_request con la referencia al pedido.
+   * Abre el panel de chat apuntando al chat correcto.
+   */
+  sendTransferRequest: (params: {
+    toUserId: number;
+    transferRequestId: number;
+    itemCount: number;
+  }) => Promise<void>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,7 +201,7 @@ const initialState: ChatState = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const useChatStore = create<ChatState & ChatActions>()(
-  immer((set) => ({
+  immer((set, get) => ({
     ...initialState,
 
     // ── Chats ──────────────────────────────────────────────────────────────
@@ -491,6 +508,72 @@ export const useChatStore = create<ChatState & ChatActions>()(
       set((state) => {
         state.lastMessageTimestampByChatId[chatId] = timestamp;
       }),
+
+    // ── Transfer Requests ──────────────────────────────────────────────────
+
+    sendTransferRequest: async ({ toUserId, transferRequestId, itemCount }) => {
+      // 1. Check if a DIRECT chat with toUserId already exists in the store.
+      const { chats } = get();
+      let chat = chats.find(
+        (c) =>
+          c.tipo === "DIRECT" &&
+          c.participantes.some((p) => p.usuario?.id === toUserId),
+      ) ?? null;
+
+      // 2. If no DM exists, create/retrieve it via the backend.
+      if (!chat) {
+        chat = await chatService.createDirect({ usuario_id: toUserId });
+        // Upsert into the store so subsequent operations can find it.
+        useChatStore.getState().upsertChat(chat);
+      }
+
+      // 3. Send the transfer request message — optimistic first, then confirm.
+      const plural = itemCount !== 1 ? "s" : "";
+      const msgPayload = {
+        contenido: `Solicitud de transferencia — ${itemCount} producto${plural}`,
+        referencia_tipo: "transfer_request" as const,
+        referencia_id: transferRequestId,
+      };
+      const tempId = nanoid();
+      const optimistic: OptimisticMessage = {
+        id: -Date.now(),
+        chat_id: chat.id,
+        tipo: "TEXT",
+        tipo_label: "Texto",
+        contenido: msgPayload.contenido,
+        referencia_tipo: msgPayload.referencia_tipo,
+        referencia_id: msgPayload.referencia_id,
+        remitente: null,
+        subtipo: null,
+        actor_id: null,
+        es_sistema: false,
+        editado: false,
+        fecha_reg: new Date().toISOString(),
+        fecha_editado: null,
+        adjuntos: [],
+        _tempId: tempId,
+        _status: "sending",
+      };
+      useChatStore.getState().appendMessage(chat.id, optimistic);
+      try {
+        const message = await messageService.send(chat.id, msgPayload);
+        useChatStore.getState().replaceOptimisticMessage(chat.id, tempId, message);
+      } catch {
+        useChatStore.getState().markOptimisticAsFailed(chat.id, tempId);
+      }
+
+      // 4. Open the chat panel and navigate to the chat.
+      set((state) => {
+        state.activeChatId = chat!.id;
+        state.pendingDirectChat = null;
+        try {
+          localStorage.setItem("messaging_last_chat_id", String(chat!.id));
+        } catch {
+          // localStorage not available
+        }
+      });
+      useChatUIStore.getState().open();
+    },
 
     // ── Reset ──────────────────────────────────────────────────────────────
 

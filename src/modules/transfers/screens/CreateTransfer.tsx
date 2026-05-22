@@ -39,7 +39,7 @@ import {
   type FieldErrors,
 } from "react-hook-form";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import type { TransferDetailTableRef } from "../components/TransferDetailTable";
 import TransferDetailTable from "../components/TransferDetailTable";
 import { useTransferBranches } from "../hooks/commons/useTransferBranches";
@@ -47,19 +47,86 @@ import { useTransferResponsibles } from "../hooks/commons/useTransferResponsible
 import { useCreateTransfer } from "../hooks/useCreateTransfer";
 import { useGetBranchById } from "@/modules/settings/hooks/branch/useGetBranchById";
 import { useTransferDetails } from "../hooks/useTransferDetails";
+import { useLinkTransferRequest } from "../hooks/useLinkTransferRequest";
 import { TransferCreateSchema } from "../schemas/transferCreateSchema";
-import type { TransferCreate } from "../types/transferCreate.types";
+import type { TransferCreate, UITransferDetailCreate } from "../types/transferCreate.types";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { PERMISSIONS } from "@/lib/permissions";
+import type { ImportResult } from "../types/transferRequest.types";
+
+// Build UITransferDetailCreate rows from ImportResult items.
+// Same shape that addProduct() produces when called with lots.
+const buildPrefillRows = (prefill: ImportResult): UITransferDetailCreate[] =>
+  prefill.items.flatMap((item) => {
+    if (!item.lots || item.lots.length === 0) return [];
+    // Laravel raw query results return PostgreSQL numerics as strings —
+    // coerce every numeric field to Number() so strictRequiredMoneySchema passes.
+    const lotsAsc = [...item.lots]
+      .map((lot) => ({
+        ...lot,
+        id: Number(lot.id),
+        saldo: Number(lot.saldo),
+        costo: Number(lot.costo) || 0,
+        precio_venta: Number(lot.precio_venta) || 0,
+        precio_venta_alt: Number(lot.precio_venta_alt) || 0,
+        tc_compra: Number(lot.tc_compra) || 0,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(a.fecha_adquisicion).getTime() -
+          new Date(b.fecha_adquisicion).getTime()
+      );
+    const totalSaldo = lotsAsc.reduce((sum, lot) => sum + lot.saldo, 0);
+    const oldestLot = lotsAsc[0];
+    const product = item.product;
+    const precioVenta = Number(product.precio_venta ?? oldestLot.precio_venta) || 0;
+    const precioVentaAlt = Number(product.precio_venta_alt ?? oldestLot.precio_venta_alt) || 0;
+    return [
+      {
+        producto_id: Number(product.id),
+        cantidad_entrada_salida: Math.min(Number(item.cantidad_solicitada), totalSaldo),
+        costo_entrada: oldestLot.costo,
+        precio_salida: precioVenta,
+        precio_entrada_venta: precioVenta,
+        precio_entrada_venta_alt: precioVentaAlt,
+        incremento_p_entrada_venta: 0,
+        incremento_p_entrada_venta_alt: 0,
+        tc_transfer: oldestLot.tc_compra,
+        purchase_id: oldestLot.id,
+        lots: lotsAsc,
+        total_saldo: totalSaldo,
+        product: {
+          id: Number(product.id),
+          descripcion: product.descripcion,
+          codigo_oem: product.codigo_oem,
+          codigo_upc: product.codigo_upc,
+          marca: product.marca || null,
+          costo: oldestLot.costo,
+          precio_venta: precioVenta,
+          precio_venta_alt: precioVentaAlt,
+        },
+      } satisfies UITransferDetailCreate,
+    ];
+  });
 
 const CreateTransfer = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read prefill state ONCE at mount — never re-read on re-renders
+  const transferRequestPrefill = (location.state as { transferRequestPrefill?: ImportResult } | null)
+    ?.transferRequestPrefill;
+
+  const prefillRows = transferRequestPrefill
+    ? buildPrefillRows(transferRequestPrefill)
+    : undefined;
+
   const user = authSDK.getCurrentUser();
   const { selectedBranchId } = useBranchStore();
   const tableRef = useRef<TransferDetailTableRef>(null);
 
-  // Hook de detalles de transferencia
-  const transferDetailsHook = useTransferDetails();
+  // Hook de detalles de transferencia — pre-populated from import flow when available
+  const transferDetailsHook = useTransferDetails({ initialDetails: prefillRows });
 
   const { data: transferResponsiblesData } = useTransferResponsibles();
 
@@ -72,6 +139,7 @@ const CreateTransfer = () => {
   );
 
   const { mutate: createTransfer, isPending: isSaving } = useCreateTransfer();
+  const { mutate: linkTransferRequest } = useLinkTransferRequest();
 
   const { handleError } = useErrorHandler();
 
@@ -82,7 +150,10 @@ const CreateTransfer = () => {
       nro_comprobante: "",
       comentarios: "",
       sucursal_origen: Number(selectedBranchId) || 1,
-      sucursal_destino: undefined,
+      // Pre-fill sucursal_destino from import flow.
+      // The SOLICITANTE is who needs the products → destination of this transfer.
+      // (sucursal_destinataria is the branch that HAS stock = current user = origin)
+      sucursal_destino: transferRequestPrefill?.sucursal_solicitante_id ?? undefined,
       responsable: Number(user?._id) || undefined,
       detalles: [],
     },
@@ -199,7 +270,19 @@ const CreateTransfer = () => {
     };
 
     createTransfer(adjustedData, {
-      onSuccess: () => {
+      onSuccess: (created) => {
+        // If this transfer came from an import prefill, mark the request as fulfilled
+        // and link the created transfer so the chat card can show "Ver transferencia".
+        // Laravel JsonResource wraps in { data: {...} } — unwrap before accessing id.
+        const createdId =
+          (created as { data?: { id?: number } } | null)?.data?.id ??
+          (created as { id?: number } | null)?.id;
+        if (transferRequestPrefill?.request_id && createdId) {
+          linkTransferRequest({
+            requestId: transferRequestPrefill.request_id,
+            transferId: createdId,
+          });
+        }
         showSuccessToast({
           title: "Transferencia Exitosa",
           description: `Transferencia realizada con éxito`,
@@ -225,19 +308,27 @@ const CreateTransfer = () => {
       });
       return;
     }
+
+    if (errors.detalles) {
+      // Array field errors don't surface .message at the root — check explicitly.
+      const detailsMsg = (errors.detalles as { message?: string }).message;
+      validateBeforeSubmit();
+      showErrorToast({
+        title: "Error en los productos",
+        description: detailsMsg ?? "Verifica que los productos y precios sean válidos",
+        duration: 5000,
+      });
+      return;
+    }
+
     const firstErrorKey = Object.keys(errors)[0] as keyof TransferCreate;
     const firstError = errors[firstErrorKey];
-
     if (firstError?.message) {
       showErrorToast({
         title: "Error en formulario",
         description: firstError.message,
         duration: 5000,
       });
-    }
-
-    if (errors.detalles) {
-      validateBeforeSubmit();
     }
   };
 
@@ -251,15 +342,14 @@ const CreateTransfer = () => {
   };
 
   useEffect(() => {
-    if (
-      !user?._id &&
-      transferResponsiblesData &&
-      transferResponsiblesData.data.length > 0
-    ) {
-      const firstResponsible = transferResponsiblesData.data[0];
-      setValue("responsable", firstResponsible.id);
+    if (!transferResponsiblesData?.data.length) return;
+    const currentResponsable = methods.getValues("responsable");
+    // Only auto-select first responsible when no value is set
+    // (avoids overriding current user's ID set in defaultValues)
+    if (!currentResponsable) {
+      setValue("responsable", transferResponsiblesData.data[0].id);
     }
-  }, [transferResponsiblesData, setValue, user?._id]);
+  }, [transferResponsiblesData, setValue, methods]);
 
   // Auto-seleccionar la primera sucursal destino disponible
   useEffect(() => {
