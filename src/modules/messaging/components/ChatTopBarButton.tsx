@@ -1,6 +1,4 @@
 import {
-  Eye,
-  EyeOff,
   PanelRight,
   Maximize2,
   MessagesSquare,
@@ -23,12 +21,16 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import { useChatUIStore } from "../stores/ChatUiStore";
 import { selectTotalUnread, useChatStore } from "../stores/ChatStore";
+import { useLocation } from "react-router";
 
 export function ChatTopbarButton() {
-  const { open, fabHidden, setFabHidden } = useChatUIStore();
+  const { open } = useChatUIStore();
   const totalUnread = useChatStore(selectTotalUnread);
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  if (location.pathname === "/dashboard/chat") return null;
 
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -90,22 +92,6 @@ export function ChatTopbarButton() {
             Panel lateral
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
-            Burbuja flotante
-          </DropdownMenuLabel>
-
-          {fabHidden ? (
-            <DropdownMenuItem onClick={() => setFabHidden(false)}>
-              <Eye className="mr-2 h-4 w-4" />
-              Mostrar burbuja
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem onClick={() => setFabHidden(true)}>
-              <EyeOff className="mr-2 h-4 w-4" />
-              Ocultar burbuja
-            </DropdownMenuItem>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -15,6 +15,7 @@ import {
 } from "@/components/atoms/dropdown-menu";
 import { useChatUIStore } from "../stores/ChatUiStore";
 import { selectTotalUnread, useChatStore } from "../stores/ChatStore";
+import { useLocation } from "react-router";
 
 const SIZE = 48;
 const DRAG_THRESHOLD = 4;
@@ -34,6 +35,8 @@ function clamp(p: Pos): Pos {
 export function ChatToggleButton() {
   const { isOpen, fabHidden, open, setFabHidden } = useChatUIStore();
   const totalUnread = useChatStore(selectTotalUnread);
+  const location = useLocation();
+  const isOnChatPage = location.pathname === "/dashboard/chat";
 
   const [pos, setPos] = useState<Pos>(() =>
     clamp({
@@ -107,7 +110,7 @@ export function ChatToggleButton() {
     setMenuOpen(true);
   };
 
-  const shouldHide = isOpen || fabHidden;
+  const shouldHide = isOpen || fabHidden || isOnChatPage;
 
   return (
     <AnimatePresence>

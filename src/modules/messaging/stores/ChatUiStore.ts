@@ -28,7 +28,6 @@ interface ChatUIState {
   viewMode: ChatViewMode;
   floatingPos: FloatingPos;
   floatingSize: FloatingSize;
-  fabHidden: boolean;
   isMaximized: boolean;
   preMaximizeLayout: { pos: FloatingPos; size: FloatingSize } | null;
   // ── Scroll preservation ──
@@ -44,7 +43,6 @@ interface ChatUIActions {
   setViewMode: (mode: ChatViewMode) => void;
   setFloatingPos: (pos: FloatingPos) => void;
   setFloatingSize: (size: FloatingSize) => void;
-  setFabHidden: (hidden: boolean) => void;
   setIsMaximized: (v: boolean) => void;
   setPreMaximizeLayout: (layout: { pos: FloatingPos; size: FloatingSize } | null) => void;
   // ── Scroll preservation ──
@@ -61,7 +59,6 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
       viewMode: "floating",
       floatingPos: getDefaultPos(),
       floatingSize: DEFAULT_FLOATING_SIZE,
-      fabHidden: false,
       isMaximized: false,
       preMaximizeLayout: null,
       conversationListScroll: 0,
@@ -85,8 +82,6 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
 
       setFloatingSize: (size) => set({ floatingSize: size }),
 
-      setFabHidden: (hidden) => set({ fabHidden: hidden }),
-
       setIsMaximized: (v) => set({ isMaximized: v }),
 
       setPreMaximizeLayout: (layout) => set({ preMaximizeLayout: layout }),
@@ -101,7 +96,6 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
         viewMode: s.viewMode,
         floatingPos: s.floatingPos,
         floatingSize: s.floatingSize,
-        fabHidden: s.fabHidden,
         isMaximized: s.isMaximized,
         preMaximizeLayout: s.preMaximizeLayout,
       }),

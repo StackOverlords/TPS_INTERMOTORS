@@ -14,15 +14,22 @@
  * Solo los scrolls internos de cada panel se desplazan.
  * El layout en sí es completamente estático (overflow-hidden).
  */
+import { useEffect } from "react";
 import { Loader2, MessagesSquare } from "lucide-react";
 import { useChats } from "../hooks/useChats";
 import { useChatStore } from "../stores/ChatStore";
+import { useChatUIStore } from "../stores/ChatUiStore";
 import { ConversationList } from "../components/ConversationList";
 import { ChatConversation } from "../components/ChatConversation";
 export default function ChatScreen() {
   const { isLoading } = useChats();
   const activeChatId = useChatStore((s) => s.activeChatId);
   const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
+  const { isOpen, close } = useChatUIStore();
+
+  useEffect(() => {
+    if (isOpen) close();
+  }, []);
 
   if (isLoading) {
     return (
