@@ -40,7 +40,13 @@ export const PDFViewer = ({
 
   useEffect(() => {
     if (pdfBlob) {
-      const url = URL.createObjectURL(pdfBlob);
+      // tauriFetch's .blob() may return type:"" — force application/pdf so the
+      // WebView renders it inline instead of treating it as octet-stream
+      const typed =
+        pdfBlob.type === "application/pdf"
+          ? pdfBlob
+          : new Blob([pdfBlob], { type: "application/pdf" });
+      const url = URL.createObjectURL(typed);
       setPdfUrl(url);
       return () => URL.revokeObjectURL(url);
     }
@@ -71,7 +77,7 @@ export const PDFViewer = ({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "max-w-4xl max-h-[90vh] h-full overflow-y-auto flex flex-col gap-2 p-3 z-[9999]",
+          "max-w-4xl max-h-[90vh] h-full overflow-hidden flex flex-col gap-2 p-3 z-[9999]",
           (isLoading || isError) && "max-w-max max-h-max",
           expandedView && "max-w-full max-h-full"
         )}
@@ -130,7 +136,7 @@ export const PDFViewer = ({
               </DialogTitle>
             </DialogHeader>
 
-            <div className="flex-1 overflow-hidden grow">
+            <div className="flex-1 min-h-0">
               {pdfUrl ? (
                 <iframe
                   src={pdfUrl}

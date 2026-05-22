@@ -17,6 +17,7 @@ import {
   // ChevronRight,
 } from "lucide-react";
 // import { useState, useMemo } from 'react';
+import { queryClient } from "@/lib/reactQueryConfig";
 import authSDK from "@/services/sdk-simple-auth";
 import { getUserAvatarGradient } from "@/utils/userColors";
 // import { useNavigate } from 'react-router';
@@ -99,6 +100,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({
   };
 
   const handleLogout = async () => {
+    queryClient.clear();
     await authSDK.logout();
   };
   return (

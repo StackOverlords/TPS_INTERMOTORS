@@ -9,8 +9,8 @@ import { Calendar } from "../atoms/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../atoms/popover";
 
 interface PopoverDatePickerProps {
-  /** Fecha seleccionada */
-  value?: Date | null;
+  /** Fecha seleccionada (string "yyyy-MM-dd", Date, o null/undefined) */
+  value?: string | Date | null;
   /** Cambia la fecha */
   onChange: (date: Date | undefined) => void;
   /** Texto a mostrar cuando no hay fecha */

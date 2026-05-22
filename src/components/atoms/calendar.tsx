@@ -271,12 +271,12 @@ function Calendar({
         }}
         components={{
           MonthCaption: () => (
-            <div className="text-sm font-medium text-center absolute top-4 left-0 right-0 flex items-center justify-center">
+            <div className="text-sm font-medium text-center absolute top-4 left-0 right-0 flex items-center justify-center pointer-events-none">
               {/* Month button */}
               <Button
                 onClick={() => setPickerView("month")}
                 variant={"ghost"}
-                className="h-auto px-1.5 py-0.5 text-sm font-medium capitalize hover:underline underline-offset-2"
+                className="h-auto px-1.5 py-0.5 text-sm font-medium capitalize hover:underline underline-offset-2 pointer-events-auto"
                 title="Seleccionar mes"
                 aria-label={`Mes ${monthName}, click para cambiar`}
               >
@@ -287,7 +287,7 @@ function Calendar({
               <Button
                 onClick={() => setPickerView("year")}
                 variant={"ghost"}
-                className="h-auto px-1.5 py-0.5 text-sm font-medium hover:underline underline-offset-2"
+                className="h-auto px-1.5 py-0.5 text-sm font-medium hover:underline underline-offset-2 pointer-events-auto"
                 title="Seleccionar año"
                 aria-label={`Año ${displayedYear}, click para cambiar`}
               >

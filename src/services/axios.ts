@@ -204,7 +204,7 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
 
-      if (status === 401 || status === 403) {
+      if (status === 401) {
         const hadAuthHeader = !!(error.config?.headers as Record<string, string> | undefined)?.Authorization;
         const alreadyRetried = !!config?._retry;
 
@@ -240,6 +240,18 @@ apiClient.interceptors.response.use(
           useTabStore.getState().closeAllTabs();
           await authSDK.clearLocalSession();
         }
+      }
+
+      // 403 = authenticated but no permission — do NOT logout, let the caller handle the error
+      if (status === 403) {
+        logger.warn(
+          "[AUTH ERROR] Forbidden — insufficient permissions",
+          JSON.stringify({
+            requestId,
+            status,
+            url: formattedError.fullUrl,
+          }),
+        );
       }
     }
 
