@@ -34,6 +34,7 @@ import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuan
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/atoms/input";
 import { format, subMonths } from "date-fns";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { showErrorToast } from "@/hooks/use-toast-enhanced";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import { useCategoriesWithSubcategories } from "@/modules/shared/hooks/useCategories";
@@ -353,13 +354,11 @@ const InventarioReportScreen = () => {
                     Fecha de Corte (hasta cuándo contar)
                   </Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="fecha"
-                      type="date"
+                    <PopoverDatePicker
                       value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
+                      onChange={(date) => setFecha(date ? format(date, "yyyy-MM-dd") : "")}
+                      disabled={(date) => date > new Date()}
                       className="w-auto"
-                      max={format(new Date(), "yyyy-MM-dd")}
                     />
                     <Button
                       type="button"
@@ -381,13 +380,14 @@ const InventarioReportScreen = () => {
                   >
                     Rango para Costo Promedio (opcional) - Desde:
                   </Label>
-                  <Input
-                    id="fecha-inicio-costo"
-                    type="date"
+                  <PopoverDatePicker
                     value={fechaInicioCosto}
-                    onChange={(e) => setFechaInicioCosto(e.target.value)}
+                    onChange={(date) => setFechaInicioCosto(date ? format(date, "yyyy-MM-dd") : "")}
+                    disabled={(date) => {
+                      const max = fechaFinCosto ? new Date(fechaFinCosto + "T23:59:59") : new Date();
+                      return date > max;
+                    }}
                     className="w-auto"
-                    max={fechaFinCosto || format(new Date(), "yyyy-MM-dd")}
                   />
                 </div>
 
@@ -399,14 +399,15 @@ const InventarioReportScreen = () => {
                   >
                     Hasta:
                   </Label>
-                  <Input
-                    id="fecha-fin-costo"
-                    type="date"
+                  <PopoverDatePicker
                     value={fechaFinCosto}
-                    onChange={(e) => setFechaFinCosto(e.target.value)}
+                    onChange={(date) => setFechaFinCosto(date ? format(date, "yyyy-MM-dd") : "")}
+                    disabled={(date) => {
+                      const today = new Date();
+                      const min = fechaInicioCosto ? new Date(fechaInicioCosto) : null;
+                      return date > today || (min !== null && date < min);
+                    }}
                     className="w-auto"
-                    min={fechaInicioCosto}
-                    max={format(new Date(), "yyyy-MM-dd")}
                   />
                 </div>
 

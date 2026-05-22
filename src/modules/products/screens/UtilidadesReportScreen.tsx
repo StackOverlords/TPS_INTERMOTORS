@@ -30,6 +30,7 @@ import type {
 import { type StockViewMode } from "../components/StockViewToggle";
 import { UtilidadesChart } from "../components/UtilidadesChart";
 import { subMonths, subWeeks, format } from "date-fns";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/formaters";
@@ -394,12 +395,10 @@ const UtilidadesReportScreen = () => {
                 <Label htmlFor="fecha-inicio" className="text-sm">
                   Desde:
                 </Label>
-                <input
-                  id="fecha-inicio"
-                  type="date"
+                <PopoverDatePicker
                   value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  className="h-8 px-2 rounded-md border border-border text-sm"
+                  onChange={(date) => setFechaInicio(date ? format(date, "yyyy-MM-dd") : "")}
+                  className="h-8"
                 />
               </div>
 
@@ -407,12 +406,10 @@ const UtilidadesReportScreen = () => {
                 <Label htmlFor="fecha-fin" className="text-sm">
                   Hasta:
                 </Label>
-                <input
-                  id="fecha-fin"
-                  type="date"
+                <PopoverDatePicker
                   value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                  className="h-8 px-2 rounded-md border border-border text-sm"
+                  onChange={(date) => setFechaFin(date ? format(date, "yyyy-MM-dd") : "")}
+                  className="h-8"
                 />
               </div>
 
