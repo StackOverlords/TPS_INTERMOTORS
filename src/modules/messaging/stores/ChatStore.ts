@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import type { Message, OptimisticMessage } from "../types/Message.types";
@@ -526,13 +527,40 @@ export const useChatStore = create<ChatState & ChatActions>()(
         useChatStore.getState().upsertChat(chat);
       }
 
-      // 3. Send the transfer request message.
+      // 3. Send the transfer request message — optimistic first, then confirm.
       const plural = itemCount !== 1 ? "s" : "";
-      await messageService.send(chat.id, {
+      const msgPayload = {
         contenido: `Solicitud de transferencia — ${itemCount} producto${plural}`,
-        referencia_tipo: "transfer_request",
+        referencia_tipo: "transfer_request" as const,
         referencia_id: transferRequestId,
-      });
+      };
+      const tempId = nanoid();
+      const optimistic: OptimisticMessage = {
+        id: -Date.now(),
+        chat_id: chat.id,
+        tipo: "TEXT",
+        tipo_label: "Texto",
+        contenido: msgPayload.contenido,
+        referencia_tipo: msgPayload.referencia_tipo,
+        referencia_id: msgPayload.referencia_id,
+        remitente: null,
+        subtipo: null,
+        actor_id: null,
+        es_sistema: false,
+        editado: false,
+        fecha_reg: new Date().toISOString(),
+        fecha_editado: null,
+        adjuntos: [],
+        _tempId: tempId,
+        _status: "sending",
+      };
+      useChatStore.getState().appendMessage(chat.id, optimistic);
+      try {
+        const message = await messageService.send(chat.id, msgPayload);
+        useChatStore.getState().replaceOptimisticMessage(chat.id, tempId, message);
+      } catch {
+        useChatStore.getState().markOptimisticAsFailed(chat.id, tempId);
+      }
 
       // 4. Open the chat panel and navigate to the chat.
       set((state) => {

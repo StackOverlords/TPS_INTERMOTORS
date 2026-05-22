@@ -96,14 +96,14 @@ function ImageAttachment({
         style={{
           aspectRatio,
           minHeight,
-          maxHeight: 260,
-          maxWidth: 280,
+          maxHeight: 300,
+          maxWidth: 360,
           width: "100%",
         }}
       >
-        {/* Skeleton */}
-        {!imgLoaded && !isFailed && (
-          <Skeleton className=" absolute inset-0 rounded-xl bg-muted/50 flex items-center justify-center">
+        {/* Skeleton mientras carga (no durante upload fallido) */}
+        {!imgLoaded && !isUploading && !isFailed && (
+          <Skeleton className="absolute inset-0 rounded-xl bg-muted/50 flex items-center justify-center">
             <Image className="size-12 text-muted-foreground" />
           </Skeleton>
         )}
@@ -114,12 +114,10 @@ function ImageAttachment({
           alt={attachment.nombre_original}
           onLoad={() => setImgLoaded(true)}
           className={cn(
-            "block w-full h-full object-cover rounded-xl cursor-pointer transition-opacity duration-300",
-            (!imgLoaded || isUploading || isFailed) && "opacity-0",
-            imgLoaded &&
-              !isUploading &&
-              !isFailed &&
-              "opacity-100 hover:opacity-90"
+            "block w-full h-full object-cover rounded-xl transition-opacity duration-300",
+            (!imgLoaded || isUploading) && "opacity-0",
+            imgLoaded && !isUploading && !isFailed && "cursor-pointer opacity-100 hover:opacity-90",
+            imgLoaded && isFailed && "opacity-60 cursor-default",
           )}
           draggable={false}
           onClick={() =>
@@ -147,18 +145,16 @@ function ImageAttachment({
           </div>
         )}
 
-        {/* Overlay de error */}
+        {/* Overlay de error — imagen visible con botón centrado (estilo WhatsApp) */}
         {isFailed && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-black/50 gap-2">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-            <span className="text-[10px] text-white">Error al subir</span>
+          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/30">
             {onRetry && (
               <button
                 onClick={onRetry}
-                className="rounded-lg bg-white/20 px-3 py-1 text-[10px] font-semibold text-white hover:bg-white/30 transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-lg transition-all hover:scale-105 hover:bg-white active:scale-95"
+                title="Reintentar"
               >
-                <RotateCcw className="h-3 w-3" />
-                Reintentar
+                <RotateCcw className="h-5 w-5 text-gray-800" />
               </button>
             )}
           </div>
@@ -254,19 +250,13 @@ function FileChip({
         className={cn(
           "mt-1.5 flex items-center gap-2 rounded-xl border p-2 min-w-[200px] max-w-[280px]",
           isMine
-            ? "border-background/10 bg-background/20"
-            : "border-border/50 bg-card/50",
-          isFailed && "border-destructive/30 bg-destructive/5",
+            ? "border-border/40 bg-muted shadow-[0_4px_16px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.07]"
+            : "border-border bg-card shadow-md",
           isClickable && "cursor-pointer hover:opacity-80 transition-opacity"
         )}
       >
         {/* Icono */}
-        <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-            isMine ? "bg-background/10" : "bg-muted-foreground/10"
-          )}
-        >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted-foreground/10">
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : isFailed ? (
@@ -280,19 +270,11 @@ function FileChip({
         <div className="min-w-0 flex-1">
           <p
             title={attachment.nombre_original}
-            className={cn(
-              "truncate text-[12px] font-semibold",
-              isMine ? "text-primary-foreground" : "text-foreground"
-            )}
+            className="truncate text-[12px] font-semibold text-foreground"
           >
             {attachment.nombre_original}
           </p>
-          <p
-            className={cn(
-              "text-[10px]",
-              isMine ? "text-primary-foreground/60" : "text-muted-foreground"
-            )}
-          >
+          <p className={cn("text-[10px]", isFailed ? "text-destructive" : "text-muted-foreground")}>
             {isFailed
               ? "Error al subir"
               : isUploading && progress !== undefined
@@ -319,7 +301,7 @@ function FileChip({
               e.stopPropagation();
               onRetry();
             }}
-            className="shrink-0 flex items-center gap-1 rounded-lg border border-destructive/30 px-2 py-1 text-[10px] text-destructive hover:bg-destructive/10 transition-colors"
+            className="shrink-0 flex items-center gap-1.5 rounded-lg bg-destructive px-2.5 py-1.5 text-[10px] font-semibold text-white hover:bg-destructive/90 active:bg-destructive/80 transition-colors"
           >
             <RotateCcw className="h-3 w-3" />
             Reintentar
@@ -332,12 +314,7 @@ function FileChip({
             }}
             variant="ghost"
             disabled={isDownloading}
-            className={cn(
-              "shrink-0 h-7 w-7",
-              isMine
-                ? "text-primary-foreground/70 hover:bg-primary-foreground/15 hover:text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
+            className="shrink-0 h-7 w-7 text-muted-foreground hover:bg-accent hover:text-foreground"
             title="Descargar"
           >
             {isDownloading ? (

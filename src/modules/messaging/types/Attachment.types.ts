@@ -23,6 +23,9 @@ export interface SendAttachmentPayload {
   file: File;
   /** Caption opcional — equivalente al campo "contenido" */
   caption?: string;
+  /** Dimensiones reales de la imagen — reservan espacio en el optimista para evitar layout shift */
+  width?: number;
+  height?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

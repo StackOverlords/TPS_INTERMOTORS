@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
@@ -21,6 +22,10 @@ import {
   Dot,
   UserX,
   Trash2,
+  Paperclip,
+  PackagePlus,
+  ImageIcon,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/atoms/button";
 import {
@@ -28,6 +33,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/atoms/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useChatStore, selectActiveChat } from "../stores/ChatStore";
 import { useOpenChat } from "../hooks/useActiveChat";
@@ -45,8 +58,9 @@ import { isExMember } from "../types/Chat.types";
 import { DateSeparator } from "./DateSeparator";
 import { useDraftStore } from "../stores/DraftStore";
 import { useSendAttachment } from "../hooks/useSendAttachment";
-import { FilePickerButton } from "./FilePickerButton";
 import { isImageMime, validateAttachment } from "../types/Attachment.types";
+import { smartCompressToWebP, fileToBase64, base64ToFile } from "@/utils/imageCompression";
+import { isTauriEnvironment } from "@/utils/environment";
 import { AttachmentComposer } from "./AttachmentComposer";
 import { ConversationAvatar } from "./ConversationAvatar";
 import authSDK from "@/services/sdk-simple-auth";
@@ -213,6 +227,19 @@ interface Props {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function readImageDimensions(
+  blobUrl: string,
+  onDimensions: (dims: { width: number; height: number }) => void,
+) {
+  const img = new window.Image();
+  img.onload = () => onDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+  img.src = blobUrl;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -222,12 +249,15 @@ export function ChatConversation({
   infoActive: infoActiveProp,
   onToggleInfo: onToggleInfoProp,
 }: Props) {
+  const navigate = useNavigate();
   const currentUserId = authSDK.getCurrentUser()?.id;
   const chat = useChatStore(selectActiveChat);
   const setActiveChatId = useChatStore((s) => s.setActiveChatId);
   const isOnline = useOfflineQueueStore((s) => s.isOnline);
   const pendingCount = useOfflineQueueStore((s) => s.queue.length);
   const pendingFileRef = useRef<File | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
 
   // ── Estado de ex-miembro ──────────────────────────────────────────────────
   const exMember = chat ? isExMember(chat) : false;
@@ -239,8 +269,8 @@ export function ChatConversation({
   const toggleInfo = onToggleInfoProp ?? (() => setShowInfoInternal((v) => !v));
   const closeInfo = onToggleInfoProp
     ? () => {
-        if (infoActiveProp) onToggleInfoProp();
-      }
+      if (infoActiveProp) onToggleInfoProp();
+    }
     : () => setShowInfoInternal(false);
 
   const [replyTo, setReplyTo] = useState<Message | OptimisticMessage | null>(
@@ -272,6 +302,7 @@ export function ChatConversation({
 
   // ── Scroll ─────────────────────────────────────────────────────────────────
   const scrollRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const isAtBottomRef = useRef(true);
   const prevScrollHeightRef = useRef<number | null>(null);
@@ -308,14 +339,20 @@ export function ChatConversation({
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(
     null
   );
+  const [pendingImageDimensions, setPendingImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isUploadingSending, setIsUploadingSending] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const clearPendingFile = useCallback(() => {
     pendingFileRef.current = null;
     if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
     setPendingFile(null);
     setPendingPreviewUrl(null);
+    setPendingImageDimensions(null);
     setAttachError(null);
     setIsUploadingSending(false);
   }, [pendingPreviewUrl]);
@@ -327,16 +364,52 @@ export function ChatConversation({
     [pendingPreviewUrl]
   );
 
-  const handleFileSelected = (file: File) => {
+  const handleFileSelected = async (file: File) => {
+    setIsUploadingSending(false);
+
+    if (isImageMime(file.type) && isTauriEnvironment()) {
+      setIsCompressing(true);
+      try {
+        const base64 = await fileToBase64(file);
+        const result = await smartCompressToWebP(base64, { quality: 82, effort: 4 });
+        const baseName = file.name.replace(/\.[^.]+$/, "");
+        const compressed = base64ToFile(result.data, `${baseName}.webp`);
+        pendingFileRef.current = compressed;
+        const previewUrl = URL.createObjectURL(compressed);
+        const validation = validateAttachment(compressed);
+        setPendingFile(compressed);
+        setPendingPreviewUrl(previewUrl);
+        setAttachError(validation.valid ? null : validation.error);
+        readImageDimensions(previewUrl, setPendingImageDimensions);
+      } catch {
+        // Fallback: usar imagen original sin comprimir
+        pendingFileRef.current = file;
+        const validation = validateAttachment(file);
+        const previewUrl = URL.createObjectURL(file);
+        setPendingFile(file);
+        setPendingPreviewUrl(previewUrl);
+        setAttachError(validation.valid ? null : validation.error);
+        readImageDimensions(previewUrl, setPendingImageDimensions);
+      } finally {
+        setIsCompressing(false);
+      }
+      return;
+    }
+
+    // Documentos o entorno no-Tauri: sin compresión
     pendingFileRef.current = file;
     const validation = validateAttachment(file);
-    const previewUrl = isImageMime(file.type)
-      ? URL.createObjectURL(file)
-      : null;
-    setPendingFile(file);
-    setPendingPreviewUrl(previewUrl);
-    setAttachError(validation.valid ? null : validation.error);
-    setIsUploadingSending(false);
+    if (isImageMime(file.type)) {
+      const previewUrl = URL.createObjectURL(file);
+      setPendingFile(file);
+      setPendingPreviewUrl(previewUrl);
+      setAttachError(validation.valid ? null : validation.error);
+      readImageDimensions(previewUrl, setPendingImageDimensions);
+    } else {
+      setPendingFile(file);
+      setPendingPreviewUrl(null);
+      setAttachError(validation.valid ? null : validation.error);
+    }
   };
 
   const handleAttachmentSend = async (caption: string) => {
@@ -344,7 +417,12 @@ export function ChatConversation({
     setIsUploadingSending(true);
     setAttachError(null);
     try {
-      await sendAttachment({ file: pendingFile, caption });
+      await sendAttachment({
+        file: pendingFile,
+        caption,
+        width: pendingImageDimensions?.width,
+        height: pendingImageDimensions?.height,
+      });
       clearPendingFile();
     } catch (err) {
       setAttachError((err as Error).message ?? "Error al subir el archivo");
@@ -379,32 +457,31 @@ export function ChatConversation({
     isAtBottomRef.current = true;
   }, [chat?.id, pendingDirectChat?.userId]);
 
-  // ResizeObserver: corrige el scroll cada vez que el contenido crece
-  // (imágenes que cargan, mensajes nuevos, etc.)
+  // ResizeObserver: corrige el scroll cuando el contenido crece (imágenes,
+  // cards async, etc.). Observa innerRef que es estable — no cambia cuando
+  // el chat cambia, a diferencia de firstElementChild que se reemplaza.
   useEffect(() => {
     const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
+    const inner = innerRef.current;
+    if (!scrollEl || !inner) return;
 
     const observer = new ResizeObserver(() => {
-      if (isInitialLoadRef.current || isAtBottomRef.current) {
+      const dist = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+      if (isInitialLoadRef.current || isAtBottomRef.current || dist < 250) {
         scrollEl.scrollTop = scrollEl.scrollHeight;
       }
     });
 
-    const inner = scrollEl.firstElementChild;
-    if (inner) observer.observe(inner);
-
+    observer.observe(inner);
     return () => observer.disconnect();
-  }, [chat?.id, pendingDirectChat?.userId]);
+  }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isLoadingMessages) return;
     if (isInitialLoadRef.current && messages.length > 0) {
       isInitialLoadRef.current = false;
-      requestAnimationFrame(() => {
-        const el = scrollRef.current;
-        if (el) el.scrollTop = el.scrollHeight;
-      });
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
     }
   }, [messages.length, isLoadingMessages]);
 
@@ -601,7 +678,13 @@ export function ChatConversation({
 
   const otherParticipantId = !isGroup
     ? chat?.participantes.find((p) => p.usuario?.id !== Number(currentUserId))
-        ?.usuario?.id
+      ?.usuario?.id
+    : undefined;
+
+  const otherParticipant = !isGroup
+    ? chat?.participantes.find(
+      (p) => p.usuario?.id !== Number(currentUserId)
+    )?.usuario
     : undefined;
 
   const isOtherOnline = usePresenceStore((s) => {
@@ -623,6 +706,28 @@ export function ChatConversation({
 
   return (
     <div ref={containerRef} className="flex h-full relative">
+      <input
+        ref={imageInputRef}
+        type="file"
+        className="sr-only"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFileSelected(file);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={documentInputRef}
+        type="file"
+        className="sr-only"
+        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFileSelected(file);
+          e.target.value = "";
+        }}
+      />
       <div
         className={cn(
           "flex min-w-0 flex-1 flex-col",
@@ -725,71 +830,73 @@ export function ChatConversation({
           <div
             ref={scrollRef}
             onScroll={handleScroll}
-            className="absolute inset-0 space-y-2 overflow-y-auto bg-muted/5 p-4"
+            className="absolute inset-0 overflow-y-auto bg-muted/5 [overflow-anchor:none]"
           >
-            {isFetchingOlderMessages && (
-              <div className="flex justify-center py-2">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              </div>
-            )}
-            {isLoadingMessages ? (
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-10 text-center">
-                <p className="text-xs text-muted-foreground">
-                  Sin mensajes aún
-                </p>
-                <p className="text-[10px] text-muted-foreground/60">
-                  Sé el primero en escribir
-                </p>
-              </div>
-            ) : (
-              messages.map((msg, i) => {
-                const prev = messages[i - 1];
-                const msgDay = new Date(msg.fecha_reg);
-                msgDay.setHours(0, 0, 0, 0);
+            <div ref={innerRef} className="space-y-2 p-4">
+              {isFetchingOlderMessages && (
+                <div className="flex justify-center py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {isLoadingMessages ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Sin mensajes aún
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    Sé el primero en escribir
+                  </p>
+                </div>
+              ) : (
+                messages.map((msg, i) => {
+                  const prev = messages[i - 1];
+                  const msgDay = new Date(msg.fecha_reg);
+                  msgDay.setHours(0, 0, 0, 0);
 
-                const prevDay = prev ? new Date(prev.fecha_reg) : null;
-                if (prevDay) prevDay.setHours(0, 0, 0, 0);
+                  const prevDay = prev ? new Date(prev.fecha_reg) : null;
+                  if (prevDay) prevDay.setHours(0, 0, 0, 0);
 
-                const showSeparator =
-                  !prevDay || msgDay.getTime() !== prevDay.getTime();
+                  const showSeparator =
+                    !prevDay || msgDay.getTime() !== prevDay.getTime();
 
-                return (
-                  <div
-                    key={
-                      "_tempId" in msg
-                        ? (msg as OptimisticMessage)._tempId
-                        : msg.id
-                    }
-                  >
-                    {showSeparator && <DateSeparator date={msg.fecha_reg} />}
-                    <MessageBubble
-                      message={msg}
-                      prevSenderId={prev?.remitente?.id ?? null}
-                      // onReply={exMember ? undefined : setReplyTo}
-                      isDirectChat={chat?.tipo === "DIRECT"}
-                      otherDate={showSeparator}
-                      onEdit={exMember ? undefined : handleStartEdit}
-                      onDeleteForAll={
-                        exMember ? undefined : (m) => deleteForAll.mutate(m.id)
+                  return (
+                    <div
+                      key={
+                        "_tempId" in msg
+                          ? (msg as OptimisticMessage)._tempId
+                          : msg.id
                       }
-                      onDeleteForMe={
-                        exMember ? undefined : (m) => deleteForMe.mutate(m.id)
-                      }
-                      canModerate={canModerate}
-                      onRetry={exMember ? undefined : handleRetry}
-                      // onDeleteFailed={exMember ? undefined : handleDeleteFailed}
-                      onRetryAttachment={
-                        exMember ? undefined : handleAttachmentRetry
-                      }
-                    />
-                  </div>
-                );
-              })
-            )}
+                    >
+                      {showSeparator && <DateSeparator date={msg.fecha_reg} />}
+                      <MessageBubble
+                        message={msg}
+                        prevSenderId={prev?.remitente?.id ?? null}
+                        // onReply={exMember ? undefined : setReplyTo}
+                        isDirectChat={chat?.tipo === "DIRECT"}
+                        otherDate={showSeparator}
+                        onEdit={exMember ? undefined : handleStartEdit}
+                        onDeleteForAll={
+                          exMember ? undefined : (m) => deleteForAll.mutate(m.id)
+                        }
+                        onDeleteForMe={
+                          exMember ? undefined : (m) => deleteForMe.mutate(m.id)
+                        }
+                        canModerate={canModerate}
+                        onRetry={exMember ? undefined : handleRetry}
+                        // onDeleteFailed={exMember ? undefined : handleDeleteFailed}
+                        onRetryAttachment={
+                          exMember ? undefined : handleAttachmentRetry
+                        }
+                      />
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
 
@@ -836,6 +943,11 @@ export function ChatConversation({
                   onSend={handleAttachmentSend}
                   onCancel={clearPendingFile}
                 />
+              ) : isCompressing ? (
+                <div className="flex items-center gap-2.5 rounded-2xl border border-border px-4 py-3 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  Procesando...
+                </div>
               ) : (
                 <div
                   className={cn(
@@ -845,7 +957,60 @@ export function ChatConversation({
                 >
                   {!editingMessage && (
                     <>
-                      <FilePickerButton onFileSelected={handleFileSelected} />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="top" align="start" className="z-[9999]">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">
+                            Adjuntar
+                          </DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              setTimeout(() => imageInputRef.current?.click(), 0)
+                            }
+                          >
+                            <ImageIcon className="mr-2 h-4 w-4" />
+                            Imagen
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              setTimeout(
+                                () => documentInputRef.current?.click(),
+                                0,
+                              )
+                            }
+                          >
+                            <FileText className="mr-2 h-4 w-4 shrink-0" />
+                            <div className="flex flex-col">
+                              <span>Documento</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                PDF · Word · Excel
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                          {!isGroup && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onSelect={() =>
+                                  navigate(
+                                    "/dashboard/transfers/request/new",
+                                    {
+                                      state: { destinatario: otherParticipant },
+                                    },
+                                  )
+                                }
+                              >
+                                <PackagePlus className="mr-2 h-4 w-4" />
+                                Solicitar transferencia
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {/* Vincular documento (comentado) */}
                     </>
                   )}

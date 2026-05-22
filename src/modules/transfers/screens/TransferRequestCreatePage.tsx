@@ -1,5 +1,5 @@
 import { useChatStore } from "@/modules/messaging/stores/ChatStore";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import type { TransferRequest } from "../types/transferRequest.types";
 import TransferRequestCreateScreen from "./TransferRequestCreateScreen";
 
@@ -17,7 +17,9 @@ import TransferRequestCreateScreen from "./TransferRequestCreateScreen";
  */
 const TransferRequestCreatePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const sendTransferRequest = useChatStore((s) => s.sendTransferRequest);
+  const initialDestinatario = location.state?.destinatario ?? null;
 
   const handleSuccess = async (request: TransferRequest) => {
     await sendTransferRequest({
@@ -28,7 +30,7 @@ const TransferRequestCreatePage = () => {
     navigate("/dashboard/transfers");
   };
 
-  return <TransferRequestCreateScreen onSuccess={handleSuccess} />;
+  return <TransferRequestCreateScreen onSuccess={handleSuccess} initialDestinatario={initialDestinatario} />;
 };
 
 export default TransferRequestCreatePage;

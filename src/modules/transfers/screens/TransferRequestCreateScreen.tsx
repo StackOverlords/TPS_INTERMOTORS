@@ -12,6 +12,7 @@ import { Textarea } from "@/components/atoms/textarea";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { PERMISSIONS } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import {
@@ -56,6 +57,8 @@ interface ProductRow {
 interface Props {
   /** Called after a successful request creation. Phase 4 wires this to ChatStore. */
   onSuccess?: (request: TransferRequest) => void;
+  /** Pre-selected recipient (e.g. navigated from a chat conversation). */
+  initialDestinatario?: MessagingUser | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,13 +90,17 @@ interface UserPickerProps {
   onSelect: (user: MessagingUser) => void;
   onClear: () => void;
   error?: string;
+  excludeUserIds?: Set<number>;
 }
 
-function UserPicker({ selectedUser, onSelect, onClear, error }: UserPickerProps) {
+function UserPicker({ selectedUser, onSelect, onClear, error, excludeUserIds }: UserPickerProps) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
-  const { users, isLoading } = useMessagingUsersFlat(search.trim() || undefined);
+  const { users: allUsers, isLoading } = useMessagingUsersFlat(search.trim() || undefined);
+  const users = excludeUserIds?.size
+    ? allUsers.filter((u) => !excludeUserIds.has(u.id))
+    : allUsers;
   const allSucursalesMap = useUserAllSucursalesMap();
 
   const handleSelect = (user: MessagingUser) => {
@@ -185,126 +192,19 @@ function UserPicker({ selectedUser, onSelect, onClear, error }: UserPickerProps)
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PRODUCT SEARCH ROW (inline search for adding product rows)
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface ProductSearchRowProps {
-  onAdd: (producto_id: number, descripcion: string) => void;
-  existingIds: Set<number>;
-}
-
-function ProductSearchRow({ onAdd, existingIds }: ProductSearchRowProps) {
-  const [search, setSearch] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const [results, setResults] = useState<{ id: number; descripcion: string }[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-
-  const handleSearch = async (query: string) => {
-    setSearch(query);
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const { productsService } = await import(
-        "@/modules/products/services/productService"
-      );
-      const data = await productsService.getAll({
-        descripcion: query,
-        pagina: 1,
-        pagina_registros: 20,
-      });
-      setResults(
-        (data?.data ?? []).map((p: { id: number; descripcion: string }) => ({
-          id: p.id,
-          descripcion: p.descripcion,
-        }))
-      );
-    } catch {
-      setResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSelect = (producto_id: number, descripcion: string) => {
-    if (existingIds.has(producto_id)) return;
-    onAdd(producto_id, descripcion);
-    setSearch("");
-    setResults([]);
-    setIsOpen(false);
-  };
-
-  return (
-    <div className="relative">
-      <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-background">
-        <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        <input
-          className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
-          placeholder="Buscar producto para agregar..."
-          value={search}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => setTimeout(() => setIsOpen(false), 150)}
-          onChange={(e) => {
-            handleSearch(e.target.value);
-            setIsOpen(true);
-          }}
-        />
-        {isSearching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-        {search && !isSearching && (
-          <button
-            type="button"
-            onClick={() => { setSearch(""); setResults([]); }}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      {isOpen && results.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-md max-h-52 overflow-y-auto">
-          {results.map((p) => {
-            const alreadyAdded = existingIds.has(p.id);
-            return (
-              <button
-                key={p.id}
-                type="button"
-                disabled={alreadyAdded}
-                className={cn(
-                  "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors",
-                  alreadyAdded
-                    ? "opacity-40 cursor-not-allowed"
-                    : "hover:bg-accent/40"
-                )}
-                onMouseDown={() => handleSelect(p.id, p.descripcion)}
-              >
-                <Plus className="h-3 w-3 shrink-0 text-muted-foreground" />
-                <span className="flex-1 truncate">{p.descripcion}</span>
-                {alreadyAdded && (
-                  <span className="text-[10px] text-muted-foreground">ya agregado</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TransferRequestCreateScreen = ({ onSuccess }: Props) => {
+const TransferRequestCreateScreen = ({ onSuccess, initialDestinatario }: Props) => {
   const navigate = useNavigate();
   const { selectedBranchId } = useBranchStore();
 
   // ── Form state ───────────────────────────────────────────────────────────
-  const [destinatario, setDestinatario] = useState<MessagingUser | null>(null);
+  const [destinatario, setDestinatario] = useState<MessagingUser | null>(
+    () => initialDestinatario ?? null
+  );
   const [items, setItems] = useState<ProductRow[]>([]);
   const [notas, setNotas] = useState("");
 
@@ -321,31 +221,72 @@ const TransferRequestCreateScreen = ({ onSuccess }: Props) => {
     Number(selectedBranchId) || 1
   );
 
-  // Build userId → sucursalId map for resolving destinatario's branch
+  // Build userId → sucursalId map for resolving destinatario's branch.
+  // Prefer non-current-branch entries: a user can appear in multiple groups;
+  // we want their "other" branch, not the one matching the requester.
   const { groups } = useMessagingUsersGrouped();
+  const currentBranchId = Number(selectedBranchId) || 1;
   const userBranchMap = useMemo(() => {
     const map = new Map<number, number>();
     for (const group of groups) {
       for (const u of group.usuarios) {
-        if (!map.has(u.id)) {
+        const existing = map.get(u.id);
+        // Set if unseen, or overwrite only if the current entry is the same branch
+        if (existing === undefined || existing === currentBranchId) {
           map.set(u.id, group.sucursal.id);
         }
       }
     }
     return map;
-  }, [groups]);
+  }, [groups, currentBranchId]);
 
-  const existingProductIds = new Set(items.map((i) => i.producto_id));
+  // IDs of users whose resolved branch equals the requester's branch — excluded from picker
+  const sameBranchUserIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const [userId, branchId] of userBranchMap) {
+      if (branchId === currentBranchId) ids.add(userId);
+    }
+    return ids;
+  }, [userBranchMap, currentBranchId]);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
-
-  const handleAddProduct = (producto_id: number, descripcion: string) => {
-    setItems((prev) => [
-      ...prev,
-      { producto_id, descripcion, cantidad_solicitada: 1 },
-    ]);
+  // ── Product selector window ───────────────────────────────────────────────
+  const mergeProducts = (incoming: ProductRow[]) => {
+    setItems((prev) => {
+      const existingIds = new Set(prev.map((r) => r.producto_id));
+      const newItems = incoming.filter((r) => !existingIds.has(r.producto_id));
+      return [...prev, ...newItems];
+    });
     if (itemsError) setItemsError("");
   };
+
+  const productWindow = useProductSelectorWindow({
+    context: "transfer-request",
+    multiSelect: true,
+    mode: "create",
+    validateStock: false,
+    // Handles multi-select confirm (array)
+    onMultiSelect: (products) => {
+      mergeProducts(
+        products.map((p) => ({
+          producto_id: p.id,
+          descripcion: p.descripcion,
+          cantidad_solicitada: p.quantity ?? 1,
+        }))
+      );
+    },
+    // Fallback: window fires single-select event even in multiSelect mode
+    onProductSelect: (product) => {
+      mergeProducts([
+        {
+          producto_id: product.id,
+          descripcion: product.descripcion,
+          cantidad_solicitada: product.quantity ?? 1,
+        },
+      ]);
+    },
+  });
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleRemoveProduct = (producto_id: number) => {
     setItems((prev) => prev.filter((r) => r.producto_id !== producto_id));
@@ -392,6 +333,14 @@ const TransferRequestCreateScreen = ({ onSuccess }: Props) => {
       showErrorToast({
         title: "Error de validación",
         description: "No se pudo determinar la sucursal del destinatario",
+        duration: 4000,
+      });
+      return;
+    }
+    if (sucursalDestinatariaId === currentBranchId) {
+      showErrorToast({
+        title: "Sucursal inválida",
+        description: "El destinatario debe pertenecer a una sucursal diferente a la tuya.",
         duration: 4000,
       });
       return;
@@ -483,6 +432,7 @@ const TransferRequestCreateScreen = ({ onSuccess }: Props) => {
                       }}
                       onClear={() => setDestinatario(null)}
                       error={destinatarioError}
+                      excludeUserIds={sameBranchUserIds}
                     />
                     {destinatarioError && (
                       <p className="text-destructive text-xs mt-0.5">
@@ -527,13 +477,21 @@ const TransferRequestCreateScreen = ({ onSuccess }: Props) => {
                 <ArrowLeftRight className="size-4" />
                 Productos Solicitados
               </CardTitle>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => productWindow.open()}
+                disabled={productWindow.isLoading}
+              >
+                {productWindow.isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                Agregar Productos
+              </Button>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 flex flex-col gap-3">
-              {/* Product search input */}
-              <ProductSearchRow
-                onAdd={handleAddProduct}
-                existingIds={existingProductIds}
-              />
 
               {itemsError && (
                 <p className="text-destructive text-xs">{itemsError}</p>
@@ -545,7 +503,7 @@ const TransferRequestCreateScreen = ({ onSuccess }: Props) => {
                   <ArrowLeftRight className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
                   <p className="text-sm">Sin productos agregados</p>
                   <p className="text-xs">
-                    Buscá un producto arriba para agregarlo a la solicitud
+                    Hacé clic en "Agregar Productos" para seleccionarlos
                   </p>
                 </div>
               ) : (

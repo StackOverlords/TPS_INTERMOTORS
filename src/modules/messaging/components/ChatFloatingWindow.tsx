@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DEFAULT_FLOATING_SIZE } from "../stores/ChatUiStore";
 import {
   Maximize2,
   Minimize2,
@@ -37,6 +38,10 @@ export function ChatFloatingWindow() {
     setViewMode,
     setFloatingPos,
     setFloatingSize,
+    isMaximized,
+    setIsMaximized,
+    preMaximizeLayout,
+    setPreMaximizeLayout,
   } = useChatUIStore();
 
   const pendingDirectChat = useChatStore((s) => s.pendingDirectChat);
@@ -45,22 +50,18 @@ export function ChatFloatingWindow() {
   const { isLoading: isLoadingChats } = useChats();
 
   const [isDragging, setIsDragging] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [prevLayout, setPrevLayout] = useState<{
-    pos: typeof floatingPos;
-    size: typeof floatingSize;
-  } | null>(null);
 
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const windowRef = useRef<HTMLDivElement>(null);
 
-  // ¿Hay espacio suficiente para mostrar las dos columnas?
-  const [isTwoColumn, setIsTwoColumn] = useState<boolean>(false);
+  // Two-column layout follows maximize state
+  const isTwoColumn = isMaximized;
 
   // ── Drag ──────────────────────────────────────────────────────────────────
   const handleDragStart = useCallback(
     (e: React.MouseEvent) => {
       if (isMaximized) return;
+      e.preventDefault();
       dragOffsetRef.current = {
         x: e.clientX - floatingPos.x,
         y: e.clientY - floatingPos.y,
@@ -72,6 +73,7 @@ export function ChatFloatingWindow() {
 
   useEffect(() => {
     if (!isDragging) return;
+    document.body.style.userSelect = "none";
     const onMove = (e: MouseEvent) => {
       const x = Math.max(
         0,
@@ -90,6 +92,7 @@ export function ChatFloatingWindow() {
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
+      document.body.style.userSelect = "";
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
@@ -98,7 +101,9 @@ export function ChatFloatingWindow() {
   // ── Resize ─────────────────────────────────────────────────────────────────
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
+      e.preventDefault();
       e.stopPropagation();
+      document.body.style.userSelect = "none";
       const startX = e.clientX;
       const startY = e.clientY;
       const startW = floatingSize.w;
@@ -115,6 +120,7 @@ export function ChatFloatingWindow() {
         setFloatingSize({ w: newW, h: newH });
       };
       const onUp = () => {
+        document.body.style.userSelect = "";
         window.removeEventListener("mousemove", onMove);
         window.removeEventListener("mouseup", onUp);
       };
@@ -127,21 +133,23 @@ export function ChatFloatingWindow() {
   // ── Maximize toggle ────────────────────────────────────────────────────────
   const toggleMaximize = () => {
     if (isMaximized) {
-      if (prevLayout) {
-        setFloatingPos(prevLayout.pos);
-        setFloatingSize(prevLayout.size);
-      }
+      const restoreSize = preMaximizeLayout?.size ?? DEFAULT_FLOATING_SIZE;
+      const restorePos = preMaximizeLayout?.pos ?? {
+        x: window.innerWidth - restoreSize.w - 24,
+        y: window.innerHeight - restoreSize.h - 24,
+      };
+      setFloatingPos(restorePos);
+      setFloatingSize(restoreSize);
+      setPreMaximizeLayout(null);
       setIsMaximized(false);
-      setIsTwoColumn(false);
     } else {
-      setPrevLayout({ pos: floatingPos, size: floatingSize });
+      setPreMaximizeLayout({ pos: floatingPos, size: floatingSize });
       setFloatingPos({ x: 60, y: 20 });
       setFloatingSize({
         w: window.innerWidth - 120,
         h: window.innerHeight - 80,
       });
       setIsMaximized(true);
-      setIsTwoColumn(true);
     }
   };
 

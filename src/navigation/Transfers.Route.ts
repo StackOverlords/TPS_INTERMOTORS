@@ -46,7 +46,7 @@ const transfersProtectedRoutes: RouteType[] = [
       },
       {
         path: "/dashboard/transfers/request/new",
-        name: "Nueva Solicitud de Transferencia",
+        name: "Solicitar Transferencia",
         type: "protected",
         element: TransferRequestCreatePage,
         isAdmin: false,

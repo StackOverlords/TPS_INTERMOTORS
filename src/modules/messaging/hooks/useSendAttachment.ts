@@ -72,8 +72,8 @@ export function useSendAttachment(chatId: number) {
                 es_imagen: true,
                 url: localPreviewUrl ?? "",
                 url_thumbnail: localPreviewUrl ?? null,
-                ancho: null,
-                alto: null,
+                ancho: payload.width ?? null,
+                alto: payload.height ?? null,
               },
             ]
           : [
@@ -120,8 +120,8 @@ export function useSendAttachment(chatId: number) {
           return;
         }
 
-        // Limpiar objectURL en error también
-        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+        // No revocar localPreviewUrl aquí — la imagen necesita ser visible en estado fallido
+        // El cleanup ocurre en retry() o cuando el mensaje es eliminado
         markFailed(chatId, tempId);
         // Re-lanzar para que el componente pueda mostrar el error
         throw error;

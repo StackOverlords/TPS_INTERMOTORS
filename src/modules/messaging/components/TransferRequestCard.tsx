@@ -35,6 +35,7 @@ import { useTransferRequestById } from "@/modules/transfers/hooks/useTransferReq
 import { useImportTransferRequest } from "@/modules/transfers/hooks/useImportTransferRequest";
 import { useFulfillTransferRequest } from "@/modules/transfers/hooks/useFulfillTransferRequest";
 import { transferRequestService } from "@/modules/transfers/services/transferRequestService";
+import { useChatUIStore } from "@/modules/messaging/stores/ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADO BADGE
@@ -311,12 +312,12 @@ function ConfirmFulfillModal({
 interface Props {
   requestId: number;
   currentUserId: string | number | undefined;
-  /** Whether the bubble itself is mine (affects subtle styling) */
   isMine?: boolean;
 }
 
 export function TransferRequestCard({ requestId, currentUserId, isMine = false }: Props) {
   const navigate = useNavigate();
+  const closeChat = useChatUIStore((s) => s.close);
 
   // ── Data ──────────────────────────────────────────────────────────────────
   const { data: request, isLoading } = useTransferRequestById(requestId);
@@ -388,6 +389,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
         });
       }
 
+      closeChat();
       navigate("/dashboard/create-transfer", {
         state: { transferRequestPrefill: result },
       });
@@ -403,33 +405,38 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="mt-1.5 rounded-xl border border-border/50 bg-card/50 p-3 space-y-2 min-w-[220px]">
+      <div className={cn(
+        "mt-2 rounded-xl border w-full overflow-hidden px-3 py-2.5 space-y-2",
+        isMine
+          ? "border-border/40 bg-muted shadow-[0_4px_16px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.07]"
+          : "border-border bg-card shadow-md"
+      )}>
         <Skeleton className="h-3 w-2/3" />
-        <Skeleton className="h-3 w-1/2" />
-        <Skeleton className="h-3 w-3/4" />
+        <Skeleton className="h-2.5 w-1/2" />
+        <Skeleton className="h-2.5 w-3/4" />
       </div>
     );
   }
 
   if (!request) return null;
 
-  const itemCount = request.items.length;
+  const visibleItems = request.items.slice(0, 3);
 
   return (
     <>
       <div
         className={cn(
-          "mt-1.5 rounded-xl border px-3 py-2.5 min-w-[220px] max-w-[300px] space-y-2",
+          "mt-2 rounded-xl border w-full overflow-hidden px-3 py-2.5 space-y-2",
           isMine
-            ? "border-background/15 bg-background/20"
-            : "border-border/50 bg-card/50"
+            ? "border-border/40 bg-muted shadow-[0_4px_16px_rgba(0,0,0,0.2)] ring-1 ring-black/[0.07]"
+            : "border-border bg-card shadow-md"
         )}
       >
-        {/* Header row: icon + title + estado */}
+        {/* Header: icono + título + badge */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <Package className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-            <span className={cn("text-[11px] font-semibold", isMine ? "text-primary-foreground" : "text-foreground")}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Package className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+            <span className="text-[11px] font-semibold truncate text-foreground">
               Solicitud de transferencia
             </span>
           </div>
@@ -437,83 +444,58 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
         </div>
 
         {/* Branch direction */}
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <span className="truncate max-w-[80px]">{request.sucursal_solicitante_nombre}</span>
-          <ArrowRight className="h-3 w-3 shrink-0" />
-          <span className="truncate max-w-[80px]">{request.sucursal_destinataria_nombre}</span>
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <span className="truncate">{request.sucursal_solicitante_nombre}</span>
+          <ArrowRight className="h-3 w-3 shrink-0 flex-none" />
+          <span className="truncate">{request.sucursal_destinataria_nombre}</span>
         </div>
 
-        {/* Product summary */}
-        <div
-          className={cn(
-            "text-[11px]",
-            isMine ? "text-primary-foreground/80" : "text-muted-foreground"
-          )}
-        >
-          {itemCount === 1
-            ? `1 producto solicitado`
-            : `${itemCount} productos solicitados`}
-        </div>
-
-        {/* Product list (up to 3 items shown) */}
-        {request.items.length > 0 && (
-          <ul className="space-y-0.5">
-            {request.items.slice(0, 3).map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between text-[10px]"
-              >
-                <span
-                  className={cn(
-                    "truncate",
-                    isMine ? "text-primary-foreground/70" : "text-muted-foreground"
-                  )}
-                >
-                  {item.producto_descripcion}
-                </span>
-                <span
-                  className={cn(
-                    "ml-2 shrink-0 font-semibold",
-                    isMine ? "text-primary-foreground" : "text-foreground"
-                  )}
-                >
-                  ×{item.cantidad_solicitada}
-                </span>
-              </li>
+        {/* Item list con separadores gradient entre items */}
+        {visibleItems.length > 0 && (
+          <div>
+            {visibleItems.map((item, idx) => (
+              <div key={item.id}>
+                <div className="flex items-center justify-between text-[10px] py-1">
+                  <span className="truncate mr-2 text-muted-foreground">
+                    {item.producto_descripcion}
+                  </span>
+                  <span className="shrink-0 font-semibold tabular-nums text-foreground">
+                    ×{item.cantidad_solicitada}
+                  </span>
+                </div>
+                {idx < visibleItems.length - 1 && (
+                  <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+                )}
+              </div>
             ))}
             {request.items.length > 3 && (
-              <li
-                className={cn(
-                  "text-[10px] italic",
-                  isMine ? "text-primary-foreground/50" : "text-muted-foreground/70"
-                )}
-              >
+              <p className="text-[10px] italic text-muted-foreground/70 pt-1">
                 +{request.items.length - 3} más…
-              </li>
+              </p>
             )}
-          </ul>
+          </div>
         )}
 
-        {/* Non-actionable: show transfer link or processed message */}
+        {/* Estado terminal: mensaje + link */}
         {isTerminal && (
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 pt-0.5">
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               {request.estado === "in_progress" ? (
                 <>
                   <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-                  <span>Transferencia creada, esperando confirmación de envío</span>
+                  <span>Esperando confirmación de envío</span>
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-3 w-3 shrink-0" />
-                  <span>Esta solicitud ya fue procesada</span>
+                  <span>Solicitud ya procesada</span>
                 </>
               )}
             </div>
             {request.product_transfer_id != null ? (
               <Button
                 size="sm"
-                variant="secondary"
+                variant="link"
                 className="h-7 w-full text-[11px] px-2 gap-1.5"
                 onClick={() => navigate(`/dashboard/transfers/${request.product_transfer_id}`)}
               >
@@ -534,7 +516,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           </div>
         )}
 
-        {/* Action buttons — recipient on actionable states (pending or imported) */}
+        {/* Botones de acción */}
         {showActions && (
           <div className="flex gap-1.5 pt-0.5">
             {canImport && (
@@ -548,16 +530,16 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 {importMutation.isPending ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : isImportedState ? (
-                  "Retomar importación"
+                  "Retomar"
                 ) : (
                   "Importar"
                 )}
               </Button>
             )}
-
             {canFulfill && (
               <Button
                 size="sm"
+                variant="default"
                 className="h-7 flex-1 text-[11px] px-2"
                 disabled={fulfill.isPending || isLoadingPreview}
                 onClick={() => {
@@ -583,11 +565,11 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           </div>
         )}
 
-        {/* Permission-based notice when recipient but no permissions and still actionable */}
+        {/* Sin permisos */}
         {isRecipient && isActionable && !canImport && !canFulfill && (
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <XCircle className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-            <span>Sin permisos para actuar sobre esta solicitud</span>
+            <XCircle className="h-3 w-3 shrink-0 opacity-60" />
+            <span>Sin permisos para actuar</span>
           </div>
         )}
       </div>

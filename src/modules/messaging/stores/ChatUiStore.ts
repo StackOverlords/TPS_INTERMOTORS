@@ -12,6 +12,16 @@ interface FloatingSize {
   h: number;
 }
 
+export const DEFAULT_FLOATING_SIZE: FloatingSize = { w: 420, h: 580 };
+
+function getDefaultPos(): FloatingPos {
+  if (typeof window === "undefined") return { x: 100, y: 100 };
+  return {
+    x: window.innerWidth - DEFAULT_FLOATING_SIZE.w - 24,
+    y: window.innerHeight - DEFAULT_FLOATING_SIZE.h - 24,
+  };
+}
+
 interface ChatUIState {
   isOpen: boolean;
   isMinimized: boolean;
@@ -19,6 +29,8 @@ interface ChatUIState {
   floatingPos: FloatingPos;
   floatingSize: FloatingSize;
   fabHidden: boolean;
+  isMaximized: boolean;
+  preMaximizeLayout: { pos: FloatingPos; size: FloatingSize } | null;
   // ── Scroll preservation ──
   conversationListScroll: number;
   chatPositionOnEnter: number;
@@ -33,20 +45,12 @@ interface ChatUIActions {
   setFloatingPos: (pos: FloatingPos) => void;
   setFloatingSize: (size: FloatingSize) => void;
   setFabHidden: (hidden: boolean) => void;
+  setIsMaximized: (v: boolean) => void;
+  setPreMaximizeLayout: (layout: { pos: FloatingPos; size: FloatingSize } | null) => void;
   // ── Scroll preservation ──
   setConversationListScroll: (y: number) => void;
   setChatPositionOnEnter: (pos: number) => void;
   setLastVisitedChatId: (id: number | null) => void;
-}
-
-const DEFAULT_SIZE: FloatingSize = { w: 420, h: 580 };
-
-function getDefaultPos(): FloatingPos {
-  if (typeof window === "undefined") return { x: 100, y: 100 };
-  return {
-    x: window.innerWidth - DEFAULT_SIZE.w - 24,
-    y: window.innerHeight - DEFAULT_SIZE.h - 24,
-  };
 }
 
 export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
@@ -56,8 +60,10 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
       isMinimized: false,
       viewMode: "floating",
       floatingPos: getDefaultPos(),
-      floatingSize: DEFAULT_SIZE,
+      floatingSize: DEFAULT_FLOATING_SIZE,
       fabHidden: false,
+      isMaximized: false,
+      preMaximizeLayout: null,
       conversationListScroll: 0,
       chatPositionOnEnter: -1,
       lastVisitedChatId: null,
@@ -81,18 +87,23 @@ export const useChatUIStore = create<ChatUIState & ChatUIActions>()(
 
       setFabHidden: (hidden) => set({ fabHidden: hidden }),
 
+      setIsMaximized: (v) => set({ isMaximized: v }),
+
+      setPreMaximizeLayout: (layout) => set({ preMaximizeLayout: layout }),
+
       setConversationListScroll: (y) => set({ conversationListScroll: y }),
       setChatPositionOnEnter: (pos) => set({ chatPositionOnEnter: pos }),
       setLastVisitedChatId: (id) => set({ lastVisitedChatId: id }),
     }),
     {
       name: "chat-ui-store",
-      // Only persist layout preferences
       partialize: (s) => ({
         viewMode: s.viewMode,
         floatingPos: s.floatingPos,
         floatingSize: s.floatingSize,
         fabHidden: s.fabHidden,
+        isMaximized: s.isMaximized,
+        preMaximizeLayout: s.preMaximizeLayout,
       }),
     },
   ),
