@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
-import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { format } from "date-fns";
 import VirtualizedCustomizableTable from "@/components/common/VirtualizedCustomizableTable";
 import TooltipButton from "@/components/common/TooltipButton";
 import { useCustomTable } from "@/hooks/useCustomTable";
@@ -317,13 +318,10 @@ const QuotationReportGeneralScreen = () => {
               <Label htmlFor="fecha-inicio" className="text-sm whitespace-nowrap">
                 Fecha inicio:
               </Label>
-              <Input
-                id="fecha-inicio"
-                type="date"
+              <PopoverDatePicker
                 value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
+                onChange={(date) => setFechaInicio(date ? format(date, "yyyy-MM-dd") : "")}
                 className="h-8 w-36"
-                required
               />
             </div>
 
@@ -331,11 +329,9 @@ const QuotationReportGeneralScreen = () => {
               <Label htmlFor="fecha-fin" className="text-sm whitespace-nowrap">
                 Fecha fin:
               </Label>
-              <Input
-                id="fecha-fin"
-                type="date"
+              <PopoverDatePicker
                 value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
+                onChange={(date) => setFechaFin(date ? format(date, "yyyy-MM-dd") : "")}
                 className="h-8 w-36"
               />
             </div>
