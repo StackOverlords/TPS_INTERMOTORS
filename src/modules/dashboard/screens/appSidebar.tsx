@@ -51,10 +51,8 @@ const AppSidebar = () => {
 
   const handleLogout = async () => {
     try {
-      // Limpiar todas las tabs antes del logout
       closeAllTabs();
       queryClient.clear();
-      // localStorage.removeItem("lastPath"); ///POR SI QUEREMOS BORRAR HISTORIAL DE ULTIMA RUTA
       await authSDK.logout();
     } catch (error) {
       console.error("Error al cerrar sesión:", error);

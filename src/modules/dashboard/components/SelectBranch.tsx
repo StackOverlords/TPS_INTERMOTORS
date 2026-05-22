@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/atoms/select';
 import authSDK from '@/services/sdk-simple-auth';
-import { useBranchStore } from '@/states/branchStore';
+import { getBranchKey, useBranchStore } from '@/states/branchStore';
 import { useEffect, useState } from 'react';
 
 interface Branch {
@@ -30,7 +30,7 @@ const SelectBranch = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingBranchId, setPendingBranchId] = useState<string | null>(null);
   const [localValue, setLocalValue] = useState<string>('');
-  const { selectedBranchId, setSelectedBranch } = useBranchStore();
+  const { selectedBranchId, setSelectedBranch, restoreForUser } = useBranchStore();
 
   // Sincronizar el valor local con el store
   useEffect(() => {
@@ -43,15 +43,21 @@ const SelectBranch = () => {
     const fetchBranches = async () => {
       const { user } = await authSDK.getState();
       const userBranches: Branch[] = user?.sucursales || [];
-      // console.log(user?.sucursales)
       setBranches(userBranches);
-      if (!selectedBranchId && userBranches.length > 0) {
-        const initialBranchId = String(userBranches[0].id);
-        setSelectedBranch(initialBranchId);
+
+      if (user?.id) {
+        const saved = localStorage.getItem(getBranchKey(user.id));
+        if (saved) {
+          restoreForUser(user.id);
+        } else if (userBranches.length > 0) {
+          setSelectedBranch(String(userBranches[0].id));
+        }
+      } else if (!selectedBranchId && userBranches.length > 0) {
+        setSelectedBranch(String(userBranches[0].id));
       }
     };
     fetchBranches();
-  }, [selectedBranchId, setSelectedBranch]);
+  }, [selectedBranchId, setSelectedBranch, restoreForUser]);
 
   // Efecto para escuchar el evento de toggle desde el keybinding
   useEffect(() => {

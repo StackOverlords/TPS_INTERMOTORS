@@ -1,47 +1,38 @@
-import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { ShoppingCart } from "lucide-react";
 import { useDateFilters } from "../hooks/useDateFilters";
-import { useDashboardData } from "../hooks/useDashboardData";
+import { useDashboardKpis } from "../hooks/useDashboardKpis";
+import { useDashboardAlertas } from "../hooks/useDashboardAlertas";
+import { useDashboardFeed } from "../hooks/useDashboardFeed";
 import { DashboardMetricsGrid } from "../components/dashboard/DashboardMetricsGrid";
-import { TopSoldCard } from "../components/dashboard/TopSoldCard";
-import { TopRevenueCard } from "../components/dashboard/TopRevenueCard";
-import { DebtDistributionCard } from "../components/dashboard/DebtDistributionCard";
-import { ReceivablesCard } from "../components/dashboard/ReceivablesCard";
-import { RecentSalesCard } from "../components/dashboard/RecentSalesCard";
-import { QuickActionsCardWrapper } from "../components/dashboard/QuickActionsCardWrapper";
+import { TendenciaChart } from "../components/dashboard/TendenciaChart";
+import { AlertasPanel } from "../components/dashboard/AlertasPanel";
+import { RecentSalesFeed } from "../components/dashboard/RecentSalesFeed";
+import { AgingCxcCard } from "../components/dashboard/AgingCxcCard";
 import { DateRangeFilter } from "../components/dashboard/DateRangeFilter";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/atoms/card";
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  // ─── Date range state ─────────────────────────────────────────────────────
+  const { globalRange, setGlobalRange } = useDateFilters();
 
-  // ─── Manejo de filtros jerárquicos ─────────────────────────────────────────
-  const { globalRange, setGlobalRange, getEffectiveRange, setCardPeriod } =
-    useDateFilters();
+  const fechaInicio = format(globalRange.from, "yyyy-MM-dd");
+  const fechaFin = format(globalRange.to, "yyyy-MM-dd");
 
-  // IDs de cada card que tiene filtro específico
-  const CARD_IDS = {
-    TOP_SOLD: "top-sold",
-    TOP_REVENUE: "top-revenue",
-    RECEIVABLES: "receivables",
-  };
+  // ─── Data hooks ───────────────────────────────────────────────────────────
+  const kpisData = useDashboardKpis({ fechaInicio, fechaFin });
+  const alertasData = useDashboardAlertas();
+  const feedData = useDashboardFeed();
 
-  // ─── Obtener datos del dashboard ───────────────────────────────────────────
-  // Cada card puede tener su propio rango efectivo
-  const topSoldRange = getEffectiveRange(CARD_IDS.TOP_SOLD);
-  const topRevenueRange = getEffectiveRange(CARD_IDS.TOP_REVENUE);
-  const receivablesRange = getEffectiveRange(CARD_IDS.RECEIVABLES);
-
-  // Para el dashboard general usamos el rango global
-  const dashboardData = useDashboardData(globalRange);
-
-  // ─── Datos específicos por card ──────────────────────────────────────────
-  const topSoldData = useDashboardData(topSoldRange);
-  const topRevenueData = useDashboardData(topRevenueRange);
-  const receivablesData = useDashboardData(receivablesRange);
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="h-full flex flex-col gap-2 p-2 overflow-hidden">
-      {/* ─── Header ────────────────────────────────────────────────────────── */}
+      {/* ─── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg lg:text-xl font-bold tracking-tight">
@@ -58,62 +49,59 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* ─── Bento Grid ───────────────────────────────────────────────────── */}
+      {/* ─── Bento Grid ──────────────────────────────────────────────────── */}
       <div
         className="flex-1 grid grid-cols-12 gap-2.5 min-h-0"
         style={{ gridTemplateRows: "auto 1fr 1fr" }}
       >
-        {/* ─── Row 1: KPI Metrics Cards (6 cards × 2 cols = 12 cols) ─────── */}
+        {/* ─── Row 1: KPI Metrics Cards (6 × col-span-2 = 12 cols) ──────── */}
         <DashboardMetricsGrid
-          metrics={dashboardData.metrics}
-          receivableMetrics={dashboardData.receivableMetrics}
+          ventas={kpisData.data?.ventas}
+          margen={kpisData.data?.margen}
+          cajaHoy={kpisData.data?.caja_hoy}
+          cotizaciones={kpisData.data?.cotizaciones}
+          isLoading={kpisData.isLoading}
         />
 
-        {/* ─── Row 2: Charts Row ──────────────────────────────────────────── */}
-        {/* Top Más Vendidos (4 cols) */}
-        <TopSoldCard
-          data={topSoldData.topSold}
-          onNavigate={() => navigate("/dashboard/reports/most-sold")}
-          period={null}
-          onPeriodChange={(period) => setCardPeriod(CARD_IDS.TOP_SOLD, period)}
-          isLoading={topSoldData.isLoading}
-        />
+        {/* ─── Row 2: Tendencia (7 cols) + Alertas (5 cols) ────────────── */}
+        <div className="col-span-7 min-h-0">
+          <TendenciaChart
+            data={kpisData.data?.tendencia_diaria ?? []}
+            isLoading={kpisData.isLoading}
+          />
+        </div>
 
-        {/* Top Mayor Ingreso (5 cols) */}
-        <TopRevenueCard
-          data={topRevenueData.topRevenue}
-          onNavigate={() => navigate("/dashboard/reports/top-revenue")}
-          period={null}
-          onPeriodChange={(period) =>
-            setCardPeriod(CARD_IDS.TOP_REVENUE, period)
-          }
-          isLoading={topRevenueData.isLoading}
-        />
+        <div className="col-span-5 min-h-0">
+          <AlertasPanel
+            data={alertasData.data}
+            isLoading={alertasData.isLoading}
+          />
+        </div>
 
-        {/* Deuda por Cliente - Donut (3 cols) */}
-        <DebtDistributionCard
-          receivableMetrics={dashboardData.receivableMetrics}
-          isError={dashboardData.isError}
-          isLoading={dashboardData.isLoading}
-        />
+        {/* ─── Row 3: Feed (6 cols) + Cartera CxC (6 cols) ────────────── */}
+        <div className="col-span-6 min-h-0">
+          <Card className="h-full flex flex-col overflow-hidden border-border/40">
+            <CardHeader className="flex flex-row items-center justify-between py-2 px-3 pb-0 shrink-0">
+              <CardTitle className="text-[11px] font-semibold flex items-center gap-1.5">
+                <ShoppingCart className="size-4 text-emerald-500" />
+                Últimas Ventas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 p-2 pt-1 min-h-0">
+              <RecentSalesFeed
+                items={feedData.data?.ventas_hoy ?? []}
+                isLoading={feedData.isLoading}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* ─── Row 3: Bottom Row ──────────────────────────────────────────── */}
-        {/* Cuentas por Cobrar - Stacked Bar (6 cols) */}
-        <ReceivablesCard
-          data={receivablesData.receivables}
-          onNavigate={() => navigate("/reportes/ventas/general")}
-          period={null}
-          onPeriodChange={(period) =>
-            setCardPeriod(CARD_IDS.RECEIVABLES, period)
-          }
-          isLoading={receivablesData.isLoading}
-        />
-
-        {/* Últimas Ventas (3 cols) */}
-        <RecentSalesCard />
-
-        {/* Accesos Rápidos (3 cols) */}
-        <QuickActionsCardWrapper />
+        <div className="col-span-6 min-h-0">
+          <AgingCxcCard
+            data={alertasData.data?.cxc}
+            isLoading={alertasData.isLoading}
+          />
+        </div>
       </div>
     </div>
   );

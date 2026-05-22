@@ -4,7 +4,6 @@ import CartSidebar from "@/modules/shoppingCart/components/CartSidebar";
 import { useCartUiStore } from "@/modules/shoppingCart/store/cartUiStore";
 import { MessagingProvider } from "@/modules/messaging/hooks/MessagingProvider";
 import { ChatFloatingWindow } from "@/modules/messaging/components/ChatFloatingWindow";
-import { ChatToggleButton } from "@/modules/messaging/components/ChatToggleButton";
 import { ChatSidePanel } from "@/modules/messaging/components/ChatSidePanel";
 import { useEffect, useState } from "react";
 import AppSidebar from "./appSidebar";
@@ -31,9 +30,8 @@ export default function Layout() {
       {/* // MessagingProvider envuelve todo el layout autenticado. // Se monta con
       el primer render protegido y se desmonta con logout. */}
       <MessagingProvider>
-        {/* Floating chat window y FAB — posición fixed, no afectan el layout */}
+        {/* Floating chat window — posición fixed, no afecta el layout */}
         <ChatFloatingWindow />
-        <ChatToggleButton />
 
         <SidebarProvider className="h-full w-full flex overflow-hidden relative min-h-0">
           <AppSidebar />
