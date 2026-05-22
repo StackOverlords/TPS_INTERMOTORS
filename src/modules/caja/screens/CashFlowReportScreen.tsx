@@ -1,7 +1,8 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Card, CardContent } from "@/components/atoms/card";
-import { Input } from "@/components/atoms/input";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/atoms/tabs";
 import {
   Table,
@@ -17,7 +18,7 @@ import { useCashFlowReport } from "../hooks/useCashFlowReport";
 
 const formatCurrency = (amount: number) => `Bs ${amount.toFixed(2)}`;
 
-const toISO = (d: Date) => d.toISOString().slice(0, 10);
+const toISO = (d: Date) => format(d, "yyyy-MM-dd");
 
 const getPreset = (preset: '15d' | '1m' | '3m') => {
   const end = new Date();
@@ -67,19 +68,17 @@ const CashFlowReportScreen = () => {
         <div className="flex items-end gap-2 flex-wrap">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground font-medium">Fecha inicio</label>
-            <Input
-              type="date"
+            <PopoverDatePicker
               value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
+              onChange={(date) => setFechaInicio(date ? format(date, "yyyy-MM-dd") : "")}
               className="w-40"
             />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground font-medium">Fecha fin</label>
-            <Input
-              type="date"
+            <PopoverDatePicker
               value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
+              onChange={(date) => setFechaFin(date ? format(date, "yyyy-MM-dd") : "")}
               className="w-40"
             />
           </div>

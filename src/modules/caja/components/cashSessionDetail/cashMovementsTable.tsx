@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Undo2 } from "lucide-react";
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { ANULABLE_CONCEPTS, type CashMovement } from "../../types/cashMovement.types";
 
 interface CashMovementsTableProps {
@@ -27,6 +28,13 @@ const formatDateSafe = (dateString: string): string => {
   }
 };
 
+const REFERENCIA_ROUTES: Partial<Record<string, (nro: string, id: number) => string>> = {
+  almacen_out:     (_nro, id) => `/dashboard/sales/${id}`,
+  almacen_out_dev: (_nro, id) => `/dashboard/returns/${id}`,
+  almacen_in:      (_nro, id) => `/dashboard/purchases/${id}`,
+  almacen_quo:     (_nro, id) => `/dashboard/quotations/${id}`,
+};
+
 export const CashMovementsTable: React.FC<CashMovementsTableProps> = ({
   data,
   isLoading,
@@ -35,6 +43,8 @@ export const CashMovementsTable: React.FC<CashMovementsTableProps> = ({
   canAnular = false,
   onAnular,
 }) => {
+  const navigate = useNavigate();
+
   const columns = useMemo<ColumnDef<CashMovement>[]>(
     () => [
       {
@@ -112,16 +122,28 @@ export const CashMovementsTable: React.FC<CashMovementsTableProps> = ({
       {
         id: "referencia",
         header: "Referencia",
-        size: 140,
+        size: 150,
         cell: ({ row }) => {
-          const { referencia_tipo, referencia_id } = row.original;
-          return (
-            <span className="text-sm text-muted-foreground">
-              {referencia_tipo && referencia_id != null
-                ? `${referencia_tipo} #${referencia_id}`
-                : "—"}
-            </span>
-          );
+          const { referencia_tipo, referencia_id, referencia_nro } = row.original;
+          if (!referencia_tipo || referencia_id == null) return <span className="text-muted-foreground">—</span>;
+
+          const display = referencia_nro ?? `#${referencia_id}`;
+          const routeFn = referencia_tipo ? REFERENCIA_ROUTES[referencia_tipo] : undefined;
+          const path = routeFn ? routeFn(referencia_nro ?? String(referencia_id), referencia_id) : null;
+
+          if (path) {
+            return (
+              <button
+                type="button"
+                onClick={() => navigate(path)}
+                className="text-sm font-medium text-primary underline-offset-2 hover:underline cursor-pointer"
+              >
+                {display}
+              </button>
+            );
+          }
+
+          return <span className="text-sm text-muted-foreground">{display}</span>;
         },
       },
       {
