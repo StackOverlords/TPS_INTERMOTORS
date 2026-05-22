@@ -23,6 +23,7 @@ import type {
   AccountsReceivableStats,
 } from "../types/AccountsReceivableReport.types";
 import { subMonths, format } from "date-fns";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { formatCurrency } from "@/utils/formaters";
 import { parseDateForUi } from "@/utils/dateFormatters";
 import {
@@ -326,12 +327,10 @@ const AccountsReceivableGeneralReportScreen = () => {
               <Label htmlFor="fecha-inicio" className="text-sm">
                 Desde:
               </Label>
-              <input
-                id="fecha-inicio"
-                type="date"
+              <PopoverDatePicker
                 value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-                className="h-8 px-2 rounded-md border border-border text-sm"
+                onChange={(date) => setFechaInicio(date ? format(date, "yyyy-MM-dd") : "")}
+                className="h-8"
               />
             </div>
 
@@ -339,12 +338,10 @@ const AccountsReceivableGeneralReportScreen = () => {
               <Label htmlFor="fecha-fin" className="text-sm">
                 Hasta:
               </Label>
-              <input
-                id="fecha-fin"
-                type="date"
+              <PopoverDatePicker
                 value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-                className="h-8 px-2 rounded-md border border-border text-sm"
+                onChange={(date) => setFechaFin(date ? format(date, "yyyy-MM-dd") : "")}
+                className="h-8"
               />
             </div>
 

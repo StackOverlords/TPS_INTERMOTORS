@@ -2,6 +2,8 @@ import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { format } from "date-fns";
 import { Switch } from "@/components/atoms/switch";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 // import { PaginatedCombobox } from "@/components/common/paginatedCombobox";
@@ -179,11 +181,10 @@ const AccountReceivableFilters: React.FC<AccountReceivableFiltersProps> = ({
                 {/* Fecha Inicio */}
                 <div className="space-y-0.5">
                     <Label className="text-xs">Fecha Inicio</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_inicio ?? ""}
-                        onChange={(e) =>
-                            updateFilter("fecha_inicio", e.target.value || undefined)
+                    <PopoverDatePicker
+                        value={filters.fecha_inicio ?? undefined}
+                        onChange={(date) =>
+                            updateFilter("fecha_inicio", date ? format(date, "yyyy-MM-dd") : undefined)
                         }
                         className="h-7 text-xs"
                     />
@@ -192,11 +193,10 @@ const AccountReceivableFilters: React.FC<AccountReceivableFiltersProps> = ({
                 {/* Fecha Fin */}
                 <div className="space-y-0.5">
                     <Label className="text-xs">Fecha Fin</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_fin ?? ""}
-                        onChange={(e) =>
-                            updateFilter("fecha_fin", e.target.value || undefined)
+                    <PopoverDatePicker
+                        value={filters.fecha_fin ?? undefined}
+                        onChange={(date) =>
+                            updateFilter("fecha_fin", date ? format(date, "yyyy-MM-dd") : undefined)
                         }
                         className="h-7 text-xs"
                     />
@@ -272,12 +272,10 @@ const AccountReceivableFilters: React.FC<AccountReceivableFiltersProps> = ({
                                 clearOnEmpty={true}
                             />
                         </div>
-                        <Input
-                            type="date"
-                            disabled={!filters.condicion_fecha_especifica}
-                            value={filters.fecha_vencimiento ?? ""}
-                            onChange={(e) =>
-                                updateFilter("fecha_vencimiento", e.target.value || undefined)
+                        <PopoverDatePicker
+                            value={filters.fecha_vencimiento ?? undefined}
+                            onChange={(date) =>
+                                updateFilter("fecha_vencimiento", date ? format(date, "yyyy-MM-dd") : undefined)
                             }
                             className="h-7 text-xs w-36"
                         />
