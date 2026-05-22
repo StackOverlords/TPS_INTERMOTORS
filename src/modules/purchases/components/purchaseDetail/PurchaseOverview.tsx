@@ -52,8 +52,8 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
   };
 
   const getContextColor = (tipo: string) => {
-    if (tipo === "C") return "warning"; // Credito
-    if (tipo === "P") return "success"; // Pagado
+    if (tipo === "C") return "success";
+    if (tipo === "CC") return "warning";
     return "secondary";
   };
 
@@ -66,8 +66,8 @@ const PurchaseOverview: React.FC<PurchaseOverviewProps> = ({
   };
 
   const getTipoCompraLabel = (tipo: string) => {
-    if (tipo === "C") return "Crédito";
-    if (tipo === "P") return "Contado";
+    if (tipo === "C") return "Contado";
+    if (tipo === "CC") return "Crédito";
     return tipo;
   };
 

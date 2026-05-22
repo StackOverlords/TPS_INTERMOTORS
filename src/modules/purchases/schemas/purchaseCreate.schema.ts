@@ -29,6 +29,8 @@ export const PurchaseCreateSchema = z.object({
   id_responsable: z.number().int().positive("El responsable es requerido"),
   id_pedido: z.number().int().positive().optional().nullable(),
   detalles: z.array(PurchaseDetailCreateSchema).min(1, "Debe agregar al menos un producto"),
+  generar_movimiento_caja: z.boolean().default(false),
+  forma_pago_caja: z.string().nullable().optional(),
 });
 
 /**

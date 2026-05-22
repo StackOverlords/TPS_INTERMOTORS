@@ -40,6 +40,13 @@ import type { ProductGet } from "@/modules/products/types/ProductGet";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { Label } from "@/components/atoms/label";
 import { Switch } from "@/components/atoms/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
 import { CardHeader, CardTitle } from "@/components/atoms/card";
 import type { PurchaseDetailsTableRef } from "../components/PurchaseDetailsTable";
 import { usePurchaseDetails } from "../hooks/usePurchaseDetails";
@@ -88,6 +95,8 @@ const CreatePurchase: React.FC = () => {
       id_responsable: 0,
       id_pedido: null,
       detalles: [],
+      generar_movimiento_caja: false,
+      forma_pago_caja: null,
     },
   });
 
@@ -456,6 +465,39 @@ const CreatePurchase: React.FC = () => {
                                 <ArrowRightLeft className="h-4 w-4" />
                                 {isUSD ? "USD → BOB" : "BOB → USD"}
                               </TooltipButton>
+
+                            {formData.tipo_compra === "C" && (
+                              <div className="flex items-center gap-3">
+                                <Switch
+                                  id="generar-movimiento-caja"
+                                  checked={formData.generar_movimiento_caja ?? false}
+                                  onCheckedChange={(checked) => {
+                                    setValue("generar_movimiento_caja", checked);
+                                    if (!checked) setValue("forma_pago_caja", null);
+                                  }}
+                                />
+                                <Label htmlFor="generar-movimiento-caja" className="text-sm cursor-pointer whitespace-nowrap">
+                                  Registrar en caja
+                                </Label>
+                                {formData.generar_movimiento_caja && (
+                                  <Select
+                                    value={formData.forma_pago_caja ?? ""}
+                                    onValueChange={(val) => setValue("forma_pago_caja", val)}
+                                  >
+                                    <SelectTrigger className="w-36 h-8 text-sm">
+                                      <SelectValue placeholder="Forma de pago" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="EFECTIVO">Efectivo</SelectItem>
+                                      <SelectItem value="CHEQUE">Cheque</SelectItem>
+                                      <SelectItem value="TRASNF">Transferencia</SelectItem>
+                                      <SelectItem value="QR">QR</SelectItem>
+                                      <SelectItem value="QR-EFECT">QR + Efectivo</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </div>
+                            )}
                             </div>
 
                             {/* Botones de acción */}

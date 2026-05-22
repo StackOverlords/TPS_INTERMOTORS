@@ -543,9 +543,9 @@ export const usePurchaseDetails = <
       precio_venta: roundTo5Decimals(Number(detail.precio_venta)),
       inc_p_venta_alt: roundTo5Decimals(Number(detail.inc_p_venta_alt)),
       precio_venta_alt: roundTo5Decimals(Number(detail.precio_venta_alt)),
-      tc_compra: roundTo5Decimals(Number(detail.tc_compra)),
+      tc_compra: roundTo5Decimals(exchangeRate),
     })) as any;
-  }, [details]);
+  }, [details, exchangeRate]);
 
   // ==================== LIMPIAR DETALLES ====================
   /**
