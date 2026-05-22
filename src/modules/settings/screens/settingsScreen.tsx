@@ -17,7 +17,7 @@ import {
   RefreshCw,
   Settings,
   // Settings as SettingsIcon,
-  // Shield,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import AdvancedSettings from '../components/settings/AdvancedSettings';
@@ -27,7 +27,7 @@ import BackupSettings from "../components/settings/BackupSettings";
 import KeybindingsSettings from "../components/settings/KeybindingsSettings";
 import MasterDataSettings from "../components/settings/MasterDataSettings";
 // import NotificationSettings from '../components/settings/NotificationSettings';
-// import SecuritySettings from '../components/settings/SecuritySettings';
+import SecuritySettings from '../components/settings/SecuritySettings';
 import { SettingsNavigation } from "../components/settings/SettingsNavigation";
 // import SystemSettings from '../components/settings/SystemSettings';
 import UpdateSettings from "../components/settings/UpdateSettings";
@@ -100,14 +100,14 @@ const settingsSections: SettingsSection[] = [
   //   component: IntegrationSettings,
   //   stickyHeader: false,
   // },
-  // {
-  //   id: 'security',
-  //   label: 'Seguridad',
-  //   icon: Shield,
-  //   description: 'Permisos y control de acceso',
-  //   component: SecuritySettings,
-  //   stickyHeader: false,
-  // },
+  {
+    id: 'security',
+    label: 'Seguridad',
+    icon: Shield,
+    description: 'Permisos y control de acceso',
+    component: SecuritySettings,
+    stickyHeader: false,
+  },
   // {
   //   id: 'notifications',
   //   label: 'Notificaciones',

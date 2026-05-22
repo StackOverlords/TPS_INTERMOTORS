@@ -64,8 +64,8 @@ const PERMISSIONS_MATRIX_ENDPOINTS = {
   userPermissions: (userId: number) =>
     `/users/permissions?usuario=${userId}`,
   updatePermissions: '/users/permissions',
-  addUserToBranch: (branchId: number) =>
-    `/branches/actions/add_user/${branchId}`,
+  updateUserRole: (branchId: number) =>
+    `/branches/actions/update_user_role/${branchId}`,
 } as const;
 
 // ─── Catalog prefix → label mapping ──────────────────────────────────────────
@@ -252,8 +252,8 @@ export const updateUserPermissions = async (
 export const updateUserRole = async (
   request: UpdateUserRoleRequest
 ): Promise<void> => {
-  await apiClient.post(
-    PERMISSIONS_MATRIX_ENDPOINTS.addUserToBranch(request.branchId),
+  await apiClient.put(
+    PERMISSIONS_MATRIX_ENDPOINTS.updateUserRole(request.branchId),
     {
       usuario_id: request.userId,
       rol: request.role,
