@@ -34,53 +34,38 @@ const ReturnsFiltersComponent: React.FC<OrdersFiltersProps> = ({
     isLoading: isReturnResponsiblesLoading,
   } = useReturnResponsibles();
 
-  // Función auxiliar para formatear fecha de manera segura
+  const toLocalDate = (str: string): Date => {
+    const [y, m, d] = str.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+
   const formatDateSafe = (date: Date): string => {
     try {
       return format(date, "yyyy-MM-dd");
-    } catch (error) {
-      console.error("Error formatting date:", error);
+    } catch {
       return "";
     }
   };
 
   const handleFechaInicioChange = (date: Date | undefined) => {
-    setDateError(null); // Limpiar errores anteriores
-
-    if (date) {
-      // Validar que la fecha inicio no sea posterior a fecha fin
-      if (filters.fecha_fin && date > filters.fecha_fin) {
-        setDateError(
-          "La fecha de inicio no puede ser posterior a la fecha de fin"
-        );
+    setDateError(null);
+    if (date && filters.fecha_fin) {
+      if (date > toLocalDate(filters.fecha_fin)) {
+        setDateError("La fecha de inicio no puede ser posterior a la fecha de fin");
         return;
       }
     }
-
     updateFilter("fecha_inicio", date ? formatDateSafe(date) : undefined);
   };
 
   const handleFechaFinChange = (date: Date | undefined) => {
-    setDateError(null); // Limpiar errores anteriores
-
-    if (date) {
-      // Validar que la fecha fin no sea anterior a fecha inicio
-      if (filters.fecha_inicio && date < filters.fecha_inicio) {
-        setDateError(
-          "La fecha de fin no puede ser anterior a la fecha de inicio"
-        );
+    setDateError(null);
+    if (date && filters.fecha_inicio) {
+      if (date < toLocalDate(filters.fecha_inicio)) {
+        setDateError("La fecha de fin no puede ser anterior a la fecha de inicio");
         return;
       }
-
-      // Validar que la fecha no sea futura (opcional, según tu caso de uso)
-      // const today = new Date();
-      // today.setHours(0, 0, 0, 0);
-      // if (date > today) {
-      //     setDateError('No se pueden seleccionar fechas futuras');
-      //     return;
-      // }
     }
-
     updateFilter("fecha_fin", date ? formatDateSafe(date) : undefined);
   };
 
@@ -165,16 +150,10 @@ const ReturnsFiltersComponent: React.FC<OrdersFiltersProps> = ({
                   onChange={(date) => handleFechaInicioChange(date)}
                   hasError={dateError}
                   disabled={(date) => {
-                    // Deshabilitar fechas futuras
-                    // const today = new Date();
-                    // today.setHours(0, 0, 0, 0);
-
-                    const fechaFin = filters.fecha_fin
-                      ? new Date(filters.fecha_fin)
-                      : undefined;
-                    if (fechaFin && date > fechaFin) return true;
-                    // return date > today;
-                    return false;
+                    if (!filters.fecha_fin) return false;
+                    const [y, m, d] = filters.fecha_fin.split("-").map(Number);
+                    const fechaFin = new Date(y, m - 1, d);
+                    return date > fechaFin;
                   }}
                 />
               </div>
@@ -191,18 +170,10 @@ const ReturnsFiltersComponent: React.FC<OrdersFiltersProps> = ({
                   onChange={(date) => handleFechaFinChange(date)}
                   hasError={dateError}
                   disabled={(date) => {
-                    // Deshabilitar fechas futuras
-                    // const today = new Date();
-                    // today.setHours(0, 0, 0, 0);
-                    // if (date > today) return true;
-
-                    const fechaInicio = filters.fecha_inicio
-                      ? new Date(filters.fecha_inicio)
-                      : undefined;
-                    // Deshabilitar fechas anteriores a la fecha de inicio
-                    if (fechaInicio && date < fechaInicio) return true;
-
-                    return false;
+                    if (!filters.fecha_inicio) return false;
+                    const [y, m, d] = filters.fecha_inicio.split("-").map(Number);
+                    const fechaInicio = new Date(y, m - 1, d);
+                    return date < fechaInicio;
                   }}
                 />
               </div>

@@ -15,6 +15,7 @@ export const ReturnGetSchema = z.object({
     id: z.number(),
     nro: z.number(),
     fecha: z.string(),
+    fecha_reg: z.string().nullable(),
     comprobante: z.string().nullable(),
     responsable: ResponsableSchema.nullable(),
     total: strictMoneySchema,

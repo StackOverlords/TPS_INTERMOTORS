@@ -18,7 +18,6 @@ import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation
 import authSDK from "@/services/sdk-simple-auth";
 import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   Clock,
@@ -40,7 +39,7 @@ import type {
 import type { useReturnsFilters } from "../../hooks/useReturnsFilters";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { formatInTimeZone } from "date-fns-tz";
-import { getTodayDate, parseDateFromBackend } from "@/utils/dateFormatters";
+import { getTodayDate, parseDateFromBackend, formatDateOnly } from "@/utils/dateFormatters";
 
 interface ReturnsListTableProps {
   data: ReturnsGetAllResponse;
@@ -73,8 +72,6 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null);
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
   const handleSeeDetails = useCallback(
     (id: number) => {
       navigate(`/dashboard/returns/${id}`);
@@ -220,22 +217,25 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
           const dateString = getValue<string>();
 
           try {
-            const date = new Date(dateString);
-            const isToday = parseDateFromBackend(dateString) === getTodayDate();
+            const datePart = parseDateFromBackend(dateString);
+            const isToday = datePart === getTodayDate();
+            const hasTime = dateString.length > 10;
 
             return (
               <div className="text-center text-xs">
                 <div
                   className={`font-medium ${isToday ? "text-blue-600 dark:text-blue-400" : "text-foreground"}`}
                 >
-                  {formatInTimeZone(dateString, timeZone, "dd/MM/yyyy", {
-                    locale: es,
-                  })}
+                  {formatDateOnly(datePart)}
                 </div>
-                <div className="text-muted-foreground flex items-center justify-center gap-1">
-                  <Clock className="size-3" />
-                  {format(date, "HH:mm", { locale: es })}
-                </div>
+                {hasTime && (
+                  <div className="text-muted-foreground flex items-center justify-center gap-1">
+                    <Clock className="size-3" />
+                    {formatInTimeZone(dateString, "America/La_Paz", "HH:mm", {
+                      locale: es,
+                    })}
+                  </div>
+                )}
               </div>
             );
           } catch {
@@ -283,6 +283,31 @@ const ReturnsListTable: React.FC<ReturnsListTableProps> = ({
               <span className=" font-semibold text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(getValue<number>())}
               </span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "fecha_reg",
+        header: "Registrado",
+        size: 120,
+        minSize: 100,
+        cell: ({ getValue }) => {
+          const fechaReg = getValue<string | null>();
+          if (!fechaReg) return <span className="text-xs text-muted-foreground italic">—</span>;
+          const datePart = parseDateFromBackend(fechaReg);
+          const timePart = fechaReg.length > 10 ? fechaReg.slice(11, 16) : null;
+          return (
+            <div className="text-center text-xs">
+              <div className="font-medium text-foreground">
+                {formatDateOnly(datePart)}
+              </div>
+              {timePart && (
+                <div className="text-muted-foreground flex items-center justify-center gap-1">
+                  <Clock className="size-3" />
+                  {timePart}
+                </div>
+              )}
             </div>
           );
         },

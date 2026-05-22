@@ -18,10 +18,10 @@ export interface ReturnsFilters {
     responsable?: number;
 
     /** Rango inicial fecha de registro (yyyy-mm-dd) */
-    fecha_inicio?: Date;
+    fecha_inicio?: string;
 
     /** Rango final fecha de registro (yyyy-mm-dd) */
-    fecha_fin?: Date;
+    fecha_fin?: string;
 
     /** Código OEM del producto que debería contener en sus detalles */
     codigo_oem_producto?: string;

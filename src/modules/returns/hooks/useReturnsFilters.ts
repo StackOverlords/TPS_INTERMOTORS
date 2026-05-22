@@ -1,5 +1,6 @@
 import { useCallback, useState, useMemo, useEffect } from "react";
 import { useDebounce } from "use-debounce";
+import { format } from "date-fns";
 import type { ReturnsFilters } from "../types/returnFilters.types";
 
 // Helper para limpiar filtros opcionales
@@ -18,8 +19,8 @@ export const useReturnsFilters = (defaultSucursal: number) => {
         lastThreeMonths.setMonth(today.getMonth() - 3);
 
         return {
-            today,
-            lastThreeMonths,
+            today: format(today, "yyyy-MM-dd"),
+            lastThreeMonths: format(lastThreeMonths, "yyyy-MM-dd"),
         };
     }, []);
 
