@@ -9,6 +9,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Download, Loader2, RefreshCcw, Search, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { subMonths, format } from "date-fns";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
 import { formatCurrency } from "@/utils/formaters";
 import useCxPRankingReport, { useDownloadCxPRankingReport } from "../hooks/useCxPRankingReport";
 import type { CxPRankingItem, CxPRankingReportFilter } from "../schemas/cxpReport.schema";
@@ -228,23 +229,19 @@ const CxPRankingReportScreen = () => {
                     <div className="flex items-center gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                             <Label htmlFor="cxp-rk-inicio" className="text-sm">Desde:</Label>
-                            <input
-                                id="cxp-rk-inicio"
-                                type="date"
+                            <PopoverDatePicker
                                 value={fechaInicio}
-                                onChange={(e) => setFechaInicio(e.target.value)}
-                                className="h-8 px-2 rounded-md border border-border text-sm"
+                                onChange={(date) => setFechaInicio(date ? format(date, "yyyy-MM-dd") : "")}
+                                className="h-8"
                             />
                         </div>
 
                         <div className="flex items-center gap-2">
                             <Label htmlFor="cxp-rk-fin" className="text-sm">Hasta:</Label>
-                            <input
-                                id="cxp-rk-fin"
-                                type="date"
+                            <PopoverDatePicker
                                 value={fechaFin}
-                                onChange={(e) => setFechaFin(e.target.value)}
-                                className="h-8 px-2 rounded-md border border-border text-sm"
+                                onChange={(date) => setFechaFin(date ? format(date, "yyyy-MM-dd") : "")}
+                                className="h-8"
                             />
                         </div>
 

@@ -1,6 +1,7 @@
 import { Button } from "@/components/atoms/button";
-import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
+import PopoverDatePicker from "@/components/common/PopoverDatePicker";
+import { format } from "date-fns";
 import {
     Select,
     SelectContent,
@@ -108,11 +109,10 @@ const CxPFilters: React.FC<CxPFiltersProps> = ({
                 {/* Fecha Inicio */}
                 <div className="space-y-0.5">
                     <Label className="text-xs">Fecha Inicio</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_inicio ?? ""}
-                        onChange={(e) =>
-                            onFilterChange("fecha_inicio", e.target.value || undefined)
+                    <PopoverDatePicker
+                        value={filters.fecha_inicio ?? undefined}
+                        onChange={(date) =>
+                            onFilterChange("fecha_inicio", date ? format(date, "yyyy-MM-dd") : undefined)
                         }
                         className="h-7 text-xs"
                     />
@@ -121,11 +121,10 @@ const CxPFilters: React.FC<CxPFiltersProps> = ({
                 {/* Fecha Fin */}
                 <div className="space-y-0.5">
                     <Label className="text-xs">Fecha Fin</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_fin ?? ""}
-                        onChange={(e) =>
-                            onFilterChange("fecha_fin", e.target.value || undefined)
+                    <PopoverDatePicker
+                        value={filters.fecha_fin ?? undefined}
+                        onChange={(date) =>
+                            onFilterChange("fecha_fin", date ? format(date, "yyyy-MM-dd") : undefined)
                         }
                         className="h-7 text-xs"
                     />
@@ -158,13 +157,11 @@ const CxPFilters: React.FC<CxPFiltersProps> = ({
                 {/* Vence — fecha */}
                 <div className="space-y-0.5">
                     <Label className="text-xs">Fecha vencimiento</Label>
-                    <Input
-                        type="date"
-                        value={filters.fecha_vencimiento ?? ""}
-                        onChange={(e) =>
-                            onFilterChange("fecha_vencimiento", e.target.value || undefined)
+                    <PopoverDatePicker
+                        value={filters.fecha_vencimiento ?? undefined}
+                        onChange={(date) =>
+                            onFilterChange("fecha_vencimiento", date ? format(date, "yyyy-MM-dd") : undefined)
                         }
-                        disabled={!filters.fecha_vencimiento_regla}
                         className="h-7 text-xs disabled:opacity-40"
                     />
                 </div>
