@@ -2,10 +2,10 @@ import { z } from "zod";
 
 export const SalePaymentMethodSchema = z.object({
   forma_pago: z.string().min(1),
-  monto: z.number().positive(),
-  monto_recibido: z.number().nonnegative().nullable().optional(),
-  vuelto: z.number().nonnegative().nullable().optional(),
-  orden: z.number().int(),
+  monto: z.coerce.number().positive(),
+  monto_recibido: z.coerce.number().nonnegative().nullable().optional(),
+  vuelto: z.coerce.number().nonnegative().nullable().optional(),
+  orden: z.coerce.number().int(),
 });
 
 export const SaleDetailSchema = z.object({

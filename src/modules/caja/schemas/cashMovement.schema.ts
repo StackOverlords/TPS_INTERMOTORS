@@ -33,6 +33,7 @@ export const CashMovementSchema = z.object({
         'PAGO_PROVEEDOR',
         'ANULACION_PAGO_PROVEEDOR',
         'COMPRA_CONTADO',
+        'ANULACION_COMPRA',
     ]),
     concepto_label: z.string(),
     origen: z.enum(['AUTOMATICO', 'MANUAL']),

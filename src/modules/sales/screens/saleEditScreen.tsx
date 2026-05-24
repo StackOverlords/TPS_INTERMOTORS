@@ -1142,7 +1142,7 @@ const SaleEditScreen = () => {
                                 <Input
                                   type="number"
                                   min={0}
-                                  step="0.01"
+                                  step="any"
                                   value={fp.monto === 0 ? "" : fp.monto}
                                   onChange={(e) => {
                                     const value = parseFloat(e.target.value) || 0;
@@ -1162,7 +1162,7 @@ const SaleEditScreen = () => {
                                   <Input
                                     type="number"
                                     min={0}
-                                    step="0.01"
+                                    step="any"
                                     value={fp.monto_recibido ?? ""}
                                     onChange={(e) => {
                                       const value =
