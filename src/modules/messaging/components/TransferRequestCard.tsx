@@ -12,8 +12,8 @@
  * - "Enviar directo" shows a confirm modal, then a result modal with navigation
  */
 
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { Fragment, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { Loader2, ArrowRight, Package, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { showErrorToast, showWarningToast } from "@/hooks/use-toast-enhanced";
@@ -38,6 +38,12 @@ import { useFulfillTransferRequest } from "@/modules/transfers/hooks/useFulfillT
 import { transferRequestService } from "@/modules/transfers/services/transferRequestService";
 import { transferService } from "@/modules/transfers/services/transfer.service";
 import { TRANSFER_QUERY_KEYS } from "@/modules/transfers/constants/transferQueryKeys";
+import { productsService } from "@/modules/products/services/productService";
+import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from "@/components/atoms/hover-card";
 import { useChatUIStore } from "@/modules/messaging/stores/ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,6 +183,84 @@ function FulfillResultModal({ open, onClose, onGoToTransfer, result }: FulfillRe
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT ITEM HOVER CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ProductItemHoverCard({ item }: { item: { producto_id: number; producto_descripcion: string; cantidad_solicitada: number } }) {
+  const [hasHovered, setHasHovered] = useState(false);
+
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["product-detail", item.producto_id],
+    queryFn: () => productsService.getById(item.producto_id),
+    enabled: hasHovered,
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const fields: { label: string; value: string | null | undefined }[] = [
+    { label: "OEM", value: product?.codigo_oem },
+    { label: "UPC", value: product?.codigo_upc },
+    { label: "Modelo", value: product?.modelo },
+    { label: "Medida", value: product?.medida },
+    { label: "Motor", value: product?.nro_motor },
+    { label: "Marca", value: product?.marca?.marca },
+    { label: "Categoría", value: product?.categoria?.categoria },
+  ].filter((f) => f.value);
+
+  return (
+    <HoverCard openDelay={350}>
+      <HoverCardTrigger asChild>
+        <div
+          className="flex items-center justify-between text-[10px] py-1 cursor-default"
+          onMouseEnter={() => !hasHovered && setHasHovered(true)}
+        >
+          <span className="truncate mr-2 text-muted-foreground">
+            {item.producto_descripcion}
+          </span>
+          <span className="shrink-0 font-semibold tabular-nums text-foreground">
+            ×{item.cantidad_solicitada}
+          </span>
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-72 p-3" side="right" align="start">
+        {isLoading ? (
+          <div className="space-y-1.5">
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-2.5 w-1/2" />
+            <Skeleton className="h-2.5 w-3/4" />
+          </div>
+        ) : product ? (
+          <div className="space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-foreground leading-snug">
+                {product.descripcion}
+              </p>
+              {product.descripcion_alt && (
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {product.descripcion_alt}
+                </p>
+              )}
+            </div>
+            {fields.length > 0 && (
+              <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px]">
+                {fields.map(({ label, value }) => (
+                  <Fragment key={label}>
+                    <span className="text-muted-foreground whitespace-nowrap">{label}</span>
+                    <span className="font-medium text-foreground truncate">{value}</span>
+                  </Fragment>
+                ))}
+              </div>
+            )}
+            {fields.length === 0 && (
+              <p className="text-[10px] text-muted-foreground italic">Sin datos adicionales</p>
+            )}
+          </div>
+        ) : null}
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -602,14 +686,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           <div>
             {visibleItems.map((item, idx) => (
               <div key={item.id}>
-                <div className="flex items-center justify-between text-[10px] py-1">
-                  <span className="truncate mr-2 text-muted-foreground">
-                    {item.producto_descripcion}
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums text-foreground">
-                    ×{item.cantidad_solicitada}
-                  </span>
-                </div>
+                <ProductItemHoverCard item={item} />
                 {idx < visibleItems.length - 1 && (
                   <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
                 )}
