@@ -11,8 +11,13 @@ import {
   DollarSign,
   FolderOpen,
   ShoppingBag,
-  ChevronRight,
+  Users,
+  MessagesSquare,
 } from "lucide-react";
+import { Kbd } from "@/components/atoms/kbd";
+import { useThemeStore } from "@/stores/themeStore";
+import logoLight from "@/assets/images/logo_light.webp";
+import logoDark from "@/assets/images/darkmodeweb.webp";
 
 interface ShortcutItem {
   label: string;
@@ -82,37 +87,88 @@ const shortcuts: ShortcutItem[] = [
     path: "/dashboard/list-accounts-payable",
     icon: FolderOpen,
   },
+  {
+    label: "Usuarios",
+    description: "Gestión de usuarios y permisos",
+    path: "/dashboard/user",
+    icon: Users,
+  },
+  {
+    label: "Chat",
+    description: "Comunicación interna",
+    path: "/dashboard/chat",
+    icon: MessagesSquare,
+  },
 ];
 
-export default function Dashboard() {
-  return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold">Inicio</h1>
-        <p className="text-sm text-muted-foreground">
-          Accesos directos a los módulos del sistema
-        </p>
-      </div>
+const COLS = 4;
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {shortcuts.map(({ label, description, path, icon: Icon }) => (
-          <Link
-            key={path}
-            to={path}
-            className="flex items-center gap-3 rounded-lg bg-card p-4 hover:bg-accent/50 transition-colors group"
+export default function Dashboard() {
+  const { resolvedTheme } = useThemeStore();
+
+  return (
+    <div className="min-h-full w-full flex items-center justify-center px-6 py-12 bg-background">
+      <div className="w-full max-w-3xl flex flex-col items-center">
+        {/* Header */}
+        <div className="flex flex-col items-center text-center mb-12">
+          <img
+            src={resolvedTheme === "dark" ? logoDark : logoLight}
+            alt="Intermotors Logo"
+            className="h-10 w-auto object-contain transition-opacity duration-300"
+          />
+          <p className="text-sm text-muted-foreground mt-2 max-w-md">
+            Accede rápidamente a cualquier módulo desde aquí.
+          </p>
+        </div>
+
+        {/* Grid with fading mask */}
+        <div
+          className="relative w-full"
+          style={{
+            WebkitMaskImage:
+              "radial-gradient(ellipse 80% 80% at 50% 50%, black 50%, transparent 100%)",
+            maskImage:
+              "radial-gradient(ellipse 80% 80% at 50% 50%, black 50%, transparent 100%)",
+          }}
+        >
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)` }}
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
-              <Icon className="size-4 text-muted-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium leading-none">{label}</p>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                {description}
-              </p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </Link>
-        ))}
+            {shortcuts.map(({ label, description, path, icon: Icon }, i) => {
+              const totalRows = Math.ceil(shortcuts.length / COLS);
+              const rowIndex = Math.floor(i / COLS);
+              const isLastRow = rowIndex === totalRows - 1;
+              const isLastCol = (i + 1) % COLS === 0;
+
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={[
+                    "group h-28 flex flex-col items-center justify-center text-center gap-1.5 px-3",
+                    "transition-colors hover:bg-accent/40 focus:outline-none focus-visible:bg-accent/40",
+                    !isLastCol ? "border-r border-border/50" : "",
+                    !isLastRow ? "border-b border-border/50" : "",
+                  ].join(" ")}
+                >
+                  <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <div>
+                    <p className="text-xs font-medium leading-tight">{label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                      {description}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer hint */}
+        <p className="text-[11px] text-muted-foreground/60 mt-10">
+          Presiona <Kbd>⌘K</Kbd> para buscar
+        </p>
       </div>
     </div>
   );
