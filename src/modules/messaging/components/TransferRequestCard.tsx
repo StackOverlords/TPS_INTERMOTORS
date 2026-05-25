@@ -42,6 +42,7 @@ import { productsService } from "@/modules/products/services/productService";
 import {
   HoverCard,
   HoverCardTrigger,
+  HoverCardPortal,
   HoverCardContent,
 } from "@/components/atoms/hover-card";
 import { useChatUIStore } from "@/modules/messaging/stores/ChatUiStore";
@@ -214,7 +215,7 @@ function ProductItemHoverCard({ item }: { item: { producto_id: number; producto_
     <HoverCard openDelay={350}>
       <HoverCardTrigger asChild>
         <div
-          className="flex items-center justify-between text-[10px] py-1 cursor-default"
+          className="flex items-center justify-between text-[10px] py-1 px-1 -mx-1 rounded cursor-default transition-colors hover:bg-accent/50"
           onMouseEnter={() => !hasHovered && setHasHovered(true)}
         >
           <span className="truncate mr-2 text-muted-foreground">
@@ -225,7 +226,8 @@ function ProductItemHoverCard({ item }: { item: { producto_id: number; producto_
           </span>
         </div>
       </HoverCardTrigger>
-      <HoverCardContent className="w-72 p-3" side="right" align="start">
+      <HoverCardPortal>
+        <HoverCardContent className="w-72 p-3" side="right" align="start">
         {isLoading ? (
           <div className="space-y-1.5">
             <Skeleton className="h-3 w-2/3" />
@@ -259,7 +261,8 @@ function ProductItemHoverCard({ item }: { item: { producto_id: number; producto_
             )}
           </div>
         ) : null}
-      </HoverCardContent>
+        </HoverCardContent>
+      </HoverCardPortal>
     </HoverCard>
   );
 }
