@@ -1,107 +1,118 @@
-import { format } from "date-fns";
-import { ShoppingCart } from "lucide-react";
-import { useDateFilters } from "../hooks/useDateFilters";
-import { useDashboardKpis } from "../hooks/useDashboardKpis";
-import { useDashboardAlertas } from "../hooks/useDashboardAlertas";
-import { useDashboardFeed } from "../hooks/useDashboardFeed";
-import { DashboardMetricsGrid } from "../components/dashboard/DashboardMetricsGrid";
-import { TendenciaChart } from "../components/dashboard/TendenciaChart";
-import { AlertasPanel } from "../components/dashboard/AlertasPanel";
-import { RecentSalesFeed } from "../components/dashboard/RecentSalesFeed";
-import { AgingCxcCard } from "../components/dashboard/AgingCxcCard";
-import { DateRangeFilter } from "../components/dashboard/DateRangeFilter";
+import type { ElementType } from "react";
+import { Link } from "react-router";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/atoms/card";
+  ShoppingCart,
+  Package,
+  Landmark,
+  FileText,
+  ClipboardList,
+  RotateCcw,
+  ArrowLeftRight,
+  DollarSign,
+  FolderOpen,
+  ShoppingBag,
+  ChevronRight,
+} from "lucide-react";
+
+interface ShortcutItem {
+  label: string;
+  description: string;
+  path: string;
+  icon: ElementType;
+}
+
+const shortcuts: ShortcutItem[] = [
+  {
+    label: "Ventas",
+    description: "Lista de ventas registradas",
+    path: "/dashboard/sales",
+    icon: ShoppingCart,
+  },
+  {
+    label: "Compras",
+    description: "Órdenes de compra a proveedores",
+    path: "/dashboard/list-purchases",
+    icon: ShoppingBag,
+  },
+  {
+    label: "Caja",
+    description: "Sesiones de caja y movimientos",
+    path: "/dashboard/caja/sesiones",
+    icon: Landmark,
+  },
+  {
+    label: "Productos",
+    description: "Catálogo y stock de productos",
+    path: "/dashboard/productos",
+    icon: Package,
+  },
+  {
+    label: "Cotizaciones",
+    description: "Presupuestos y proformas",
+    path: "/dashboard/quotations",
+    icon: FileText,
+  },
+  {
+    label: "Pedidos",
+    description: "Órdenes de pedido",
+    path: "/dashboard/orders",
+    icon: ClipboardList,
+  },
+  {
+    label: "Devoluciones",
+    description: "Gestión de devoluciones",
+    path: "/dashboard/returns",
+    icon: RotateCcw,
+  },
+  {
+    label: "Transferencias",
+    description: "Movimientos entre sucursales",
+    path: "/dashboard/transfers",
+    icon: ArrowLeftRight,
+  },
+  {
+    label: "Finanzas (CxP)",
+    description: "Cuentas por pagar",
+    path: "/dashboard/cxp/list",
+    icon: DollarSign,
+  },
+  {
+    label: "Cuentas por cobrar",
+    description: "Cartera de clientes",
+    path: "/dashboard/list-accounts-payable",
+    icon: FolderOpen,
+  },
+];
 
 export default function Dashboard() {
-  // ─── Date range state ─────────────────────────────────────────────────────
-  const { globalRange, setGlobalRange } = useDateFilters();
-
-  const fechaInicio = format(globalRange.from, "yyyy-MM-dd");
-  const fechaFin = format(globalRange.to, "yyyy-MM-dd");
-
-  // ─── Data hooks ───────────────────────────────────────────────────────────
-  const kpisData = useDashboardKpis({ fechaInicio, fechaFin });
-  const alertasData = useDashboardAlertas();
-  const feedData = useDashboardFeed();
-
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col gap-2 p-2 overflow-hidden">
-      {/* ─── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg lg:text-xl font-bold tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Resumen general del negocio
-          </p>
-        </div>
-        <DateRangeFilter
-          from={globalRange.from}
-          to={globalRange.to}
-          onChange={(f, t) => setGlobalRange(f, t)}
-        />
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold">Inicio</h1>
+        <p className="text-sm text-muted-foreground">
+          Accesos directos a los módulos del sistema
+        </p>
       </div>
 
-      {/* ─── Bento Grid ──────────────────────────────────────────────────── */}
-      <div
-        className="flex-1 grid grid-cols-12 gap-2.5 min-h-0"
-        style={{ gridTemplateRows: "auto 1fr 1fr" }}
-      >
-        {/* ─── Row 1: KPI Metrics Cards (6 × col-span-2 = 12 cols) ──────── */}
-        <DashboardMetricsGrid
-          ventas={kpisData.data?.ventas}
-          margen={kpisData.data?.margen}
-          cajaHoy={kpisData.data?.caja_hoy}
-          cotizaciones={kpisData.data?.cotizaciones}
-          isLoading={kpisData.isLoading}
-        />
-
-        {/* ─── Row 2: Tendencia (7 cols) + Alertas (5 cols) ────────────── */}
-        <div className="col-span-7 min-h-0">
-          <TendenciaChart
-            data={kpisData.data?.tendencia_diaria ?? []}
-            isLoading={kpisData.isLoading}
-          />
-        </div>
-
-        <div className="col-span-5 min-h-0">
-          <AlertasPanel
-            data={alertasData.data}
-            isLoading={alertasData.isLoading}
-          />
-        </div>
-
-        {/* ─── Row 3: Feed (6 cols) + Cartera CxC (6 cols) ────────────── */}
-        <div className="col-span-6 min-h-0">
-          <Card className="h-full flex flex-col overflow-hidden border-border/40">
-            <CardHeader className="flex flex-row items-center justify-between py-2 px-3 pb-0 shrink-0">
-              <CardTitle className="text-[11px] font-semibold flex items-center gap-1.5">
-                <ShoppingCart className="size-4 text-emerald-500" />
-                Últimas Ventas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 p-2 pt-1 min-h-0">
-              <RecentSalesFeed
-                items={feedData.data?.ventas_hoy ?? []}
-                isLoading={feedData.isLoading}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="col-span-6 min-h-0">
-          <AgingCxcCard
-            data={alertasData.data?.cxc}
-            isLoading={alertasData.isLoading}
-          />
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {shortcuts.map(({ label, description, path, icon: Icon }) => (
+          <Link
+            key={path}
+            to={path}
+            className="flex items-center gap-3 rounded-lg bg-card p-4 hover:bg-accent/50 transition-colors group"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+              <Icon className="size-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-none">{label}</p>
+              <p className="text-xs text-muted-foreground mt-1 truncate">
+                {description}
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
+        ))}
       </div>
     </div>
   );
