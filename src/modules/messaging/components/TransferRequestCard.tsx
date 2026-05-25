@@ -227,7 +227,7 @@ function ProductItemHoverCard({ item }: { item: { producto_id: number; producto_
         </div>
       </HoverCardTrigger>
       <HoverCardPortal>
-        <HoverCardContent className="w-72 p-3 z-[9999]" side="top" align="start">
+        <HoverCardContent className="w-72 p-3 z-[9999] border-border" side="top" align="start">
         {isLoading ? (
           <div className="space-y-1.5">
             <Skeleton className="h-3 w-2/3" />
