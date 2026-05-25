@@ -13,6 +13,7 @@
  */
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { Loader2, ArrowRight, Package, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import { showErrorToast, showWarningToast } from "@/hooks/use-toast-enhanced";
@@ -35,6 +36,8 @@ import { useTransferRequestById } from "@/modules/transfers/hooks/useTransferReq
 import { useImportTransferRequest } from "@/modules/transfers/hooks/useImportTransferRequest";
 import { useFulfillTransferRequest } from "@/modules/transfers/hooks/useFulfillTransferRequest";
 import { transferRequestService } from "@/modules/transfers/services/transferRequestService";
+import { transferService } from "@/modules/transfers/services/transfer.service";
+import { TRANSFER_QUERY_KEYS } from "@/modules/transfers/constants/transferQueryKeys";
 import { useChatUIStore } from "@/modules/messaging/stores/ChatUiStore";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,37 +184,119 @@ function FulfillResultModal({ open, onClose, onGoToTransfer, result }: FulfillRe
 // CONFIRM FULFILL MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 
+type ProcessStep = "idle" | "creating" | "accepting" | "accept_failed";
+
+function StepRow({
+  label,
+  status,
+}: {
+  label: string;
+  status: "pending" | "loading" | "success" | "error";
+}) {
+  return (
+    <div className="flex items-center gap-2.5 py-1.5">
+      {status === "loading" && (
+        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+      )}
+      {status === "success" && (
+        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+      )}
+      {status === "error" && (
+        <XCircle className="h-4 w-4 text-destructive shrink-0" />
+      )}
+      {status === "pending" && (
+        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+      )}
+      <span
+        className={cn(
+          "text-sm",
+          status === "success" && "text-emerald-600 dark:text-emerald-400",
+          status === "error" && "text-destructive",
+          status === "pending" && "text-muted-foreground",
+          status === "loading" && "text-foreground font-medium",
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
 interface ConfirmFulfillModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  isPending: boolean;
   isLoadingPreview: boolean;
   fulfilledItems: FulfilledItem[];
   skippedItems: SkippedItem[];
+  processStep: ProcessStep;
+  isRetryingAccept: boolean;
+  onRetryAccept: () => void;
+  onSkipAccept: () => void;
 }
 
 function ConfirmFulfillModal({
   open,
   onClose,
   onConfirm,
-  isPending,
   isLoadingPreview,
   fulfilledItems,
   skippedItems,
+  processStep,
+  isRetryingAccept,
+  onRetryAccept,
+  onSkipAccept,
 }: ConfirmFulfillModalProps) {
+  const isProcessing = processStep === "creating" || processStep === "accepting";
+
+  const handleOpenChange = (v: boolean) => {
+    if (v) return;
+    if (isProcessing) return;
+    if (processStep === "accept_failed") { onSkipAccept(); return; }
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && !isPending && onClose()}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md z-[9999]">
         <DialogHeader>
           <DialogTitle>Enviar directo</DialogTitle>
-          <DialogDescription>
-            Se creará una transferencia con los productos disponibles en tu
-            sucursal. Esta acción no se puede deshacer.
-          </DialogDescription>
+          {processStep === "idle" && (
+            <DialogDescription>
+              Se creará una transferencia con los productos disponibles en tu
+              sucursal y se recepcionará automáticamente. Esta acción no se puede deshacer.
+            </DialogDescription>
+          )}
         </DialogHeader>
 
-        {isLoadingPreview ? (
+        {processStep !== "idle" ? (
+          <div className="py-2 divide-y divide-border">
+            <StepRow
+              label={
+                processStep === "creating"
+                  ? "Creando transferencia..."
+                  : "Transferencia creada"
+              }
+              status={processStep === "creating" ? "loading" : "success"}
+            />
+            <StepRow
+              label={
+                processStep === "accepting" || isRetryingAccept
+                  ? "Recepcionando..."
+                  : processStep === "accept_failed"
+                  ? "Error al recepcionar"
+                  : "Recepcionando"
+              }
+              status={
+                processStep === "accepting" || isRetryingAccept
+                  ? "loading"
+                  : processStep === "accept_failed"
+                  ? "error"
+                  : "pending"
+              }
+            />
+          </div>
+        ) : isLoadingPreview ? (
           <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground text-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
             Verificando stock…
@@ -251,7 +336,6 @@ function ConfirmFulfillModal({
                 </div>
               </div>
             )}
-
             {skippedItems.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1.5">
@@ -272,7 +356,6 @@ function ConfirmFulfillModal({
                 </div>
               </div>
             )}
-
             {fulfilledItems.length === 0 && skippedItems.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-2">
                 Sin productos para enviar.
@@ -282,23 +365,37 @@ function ConfirmFulfillModal({
         )}
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button
-            size="sm"
-            onClick={onConfirm}
-            disabled={isPending || isLoadingPreview || fulfilledItems.length === 0}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                Enviando…
-              </>
-            ) : (
-              "Confirmar envío"
-            )}
-          </Button>
+          {processStep === "idle" && (
+            <>
+              <Button variant="outline" size="sm" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={onConfirm}
+                disabled={isLoadingPreview || fulfilledItems.length === 0}
+              >
+                Confirmar envío
+              </Button>
+            </>
+          )}
+          {processStep === "accept_failed" && (
+            <>
+              <Button variant="outline" size="sm" onClick={onSkipAccept}>
+                Cerrar sin recepcionar
+              </Button>
+              <Button size="sm" onClick={onRetryAccept} disabled={isRetryingAccept}>
+                {isRetryingAccept ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    Reintentando…
+                  </>
+                ) : (
+                  "Reintentar recepción"
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -317,6 +414,7 @@ interface Props {
 
 export function TransferRequestCard({ requestId, currentUserId, isMine = false }: Props) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const closeChat = useChatUIStore((s) => s.close);
 
   // ── Data ──────────────────────────────────────────────────────────────────
@@ -341,6 +439,10 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   const [fulfillResult, setFulfillResult] = useState<FulfillDirectResult | null>(null);
   const [preview, setPreview] = useState<{ fulfilled_items: FulfilledItem[]; skipped_items: SkippedItem[] } | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [processStep, setProcessStep] = useState<ProcessStep>("idle");
+  const [pendingTransferId, setPendingTransferId] = useState<number | null>(null);
+  const [pendingFulfillResult, setPendingFulfillResult] = useState<FulfillDirectResult | null>(null);
+  const [isRetryingAccept, setIsRetryingAccept] = useState(false);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const isRecipient =
@@ -352,14 +454,59 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   const showActions = isRecipient && isActionable;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+  const finishFulfill = (result: FulfillDirectResult) => {
+    setProcessStep("idle");
+    setPendingTransferId(null);
+    setPendingFulfillResult(null);
+    setConfirmFulfillOpen(false);
+    setFulfillResult(result);
+  };
+
   const handleFulfillConfirm = async () => {
     try {
+      setProcessStep("creating");
       const result = await fulfill.mutateAsync();
-      setConfirmFulfillOpen(false);
-      setFulfillResult(result);
+
+      if (result.transfer_id) {
+        setProcessStep("accepting");
+        setPendingTransferId(result.transfer_id);
+        setPendingFulfillResult(result);
+        try {
+          await transferService.accept(result.transfer_id);
+          queryClient.invalidateQueries({ queryKey: TRANSFER_QUERY_KEYS.lists() });
+          finishFulfill(result);
+        } catch {
+          setProcessStep("accept_failed");
+        }
+      } else {
+        finishFulfill(result);
+      }
     } catch {
+      setProcessStep("idle");
       setConfirmFulfillOpen(false);
     }
+  };
+
+  const handleRetryAccept = async () => {
+    if (!pendingTransferId || !pendingFulfillResult) return;
+    setIsRetryingAccept(true);
+    try {
+      await transferService.accept(pendingTransferId);
+      queryClient.invalidateQueries({ queryKey: TRANSFER_QUERY_KEYS.lists() });
+      setIsRetryingAccept(false);
+      finishFulfill(pendingFulfillResult);
+    } catch {
+      setIsRetryingAccept(false);
+    }
+  };
+
+  const handleSkipAccept = () => {
+    const result = pendingFulfillResult;
+    setProcessStep("idle");
+    setPendingTransferId(null);
+    setPendingFulfillResult(null);
+    setConfirmFulfillOpen(false);
+    if (result) setFulfillResult(result);
   };
 
   const handleImport = async () => {
@@ -577,12 +724,15 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
       {/* Confirm fulfill modal */}
       <ConfirmFulfillModal
         open={confirmFulfillOpen}
-        onClose={() => { setConfirmFulfillOpen(false); setPreview(null); }}
+        onClose={() => { setConfirmFulfillOpen(false); setPreview(null); setProcessStep("idle"); }}
         onConfirm={() => void handleFulfillConfirm()}
-        isPending={fulfill.isPending}
         isLoadingPreview={isLoadingPreview}
         fulfilledItems={preview?.fulfilled_items ?? []}
         skippedItems={preview?.skipped_items ?? []}
+        processStep={processStep}
+        isRetryingAccept={isRetryingAccept}
+        onRetryAccept={() => void handleRetryAccept()}
+        onSkipAccept={handleSkipAccept}
       />
 
       {/* Fulfill result modal */}
