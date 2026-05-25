@@ -28,6 +28,7 @@ import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { COMMANDS, useCommands, useKeybindingKeys } from "@/keybindings";
+import { QuickTransferRequestModal } from "@/modules/transfers/components/QuickTransferRequestModal";
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 import authSDK from "@/services/sdk-simple-auth";
@@ -36,6 +37,7 @@ import { formatCell } from "@/utils/formatCell";
 import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
+  ArrowLeftRight,
   Edit,
   Eye,
   HelpCircle,
@@ -90,6 +92,10 @@ const ProductListScreen = () => {
   const [selectedProductForImage, setSelectedProductForImage] =
     useState<ProductGet | null>(null);
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
+  const [transferRequestProduct, setTransferRequestProduct] =
+    useState<ProductGet | null>(null);
+  const [transferRequestModalOpen, setTransferRequestModalOpen] =
+    useState(false);
   const [searchMode, setSearchMode] = useState<"realtime" | "manual">(
     getBehaviorValue<"realtime" | "manual">("defaultSearchMode") ?? "manual"
   );
@@ -305,6 +311,11 @@ const ProductListScreen = () => {
     setImageModalOpen(true);
   }, []);
 
+  const handleRequestTransfer = useCallback((product: ProductGet) => {
+    setTransferRequestProduct(product);
+    setTransferRequestModalOpen(true);
+  }, []);
+
   const handleAddSelectedToCart = useCallback(() => {
     const selectedProducts = getAllSelectedProducts();
 
@@ -432,6 +443,12 @@ const ProductListScreen = () => {
                       Editar producto
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem
+                    onClick={() => handleRequestTransfer(row.original)}
+                  >
+                    <ArrowLeftRight className="mr-2 h-4 w-4" />
+                    Solicitar transferencia
+                  </DropdownMenuItem>
                   {/* <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleViewDetails(row.original.id)}>
@@ -668,6 +685,7 @@ const ProductListScreen = () => {
       handleProductDetail,
       handleViewImage,
       handleUpdateProduct,
+      handleRequestTransfer,
     ]
   );
 
@@ -1267,6 +1285,15 @@ const ProductListScreen = () => {
           tableRef={tableShoppingCartRef}
         />
       )}
+
+      <QuickTransferRequestModal
+        product={transferRequestProduct}
+        open={transferRequestModalOpen}
+        onOpenChange={(open) => {
+          setTransferRequestModalOpen(open);
+          if (!open) setTransferRequestProduct(null);
+        }}
+      />
 
       {imageModalOpen && selectedProductForImage && (
         <ImageViewer
