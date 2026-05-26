@@ -94,6 +94,18 @@ export const transferRequestService = {
      * @param id - Transfer request ID
      * @param transferId - ID of the ProductTransfer that was created
      */
+    async cancel(id: number): Promise<void> {
+        Logger.info("Cancelling Transfer Request", { id }, MODULE_NAME);
+        await ApiService.post(TRANSFER_REQUEST_ENDPOINTS.cancel(id));
+        Logger.info("Transfer Request cancelled", { id }, MODULE_NAME);
+    },
+
+    async reject(id: number): Promise<void> {
+        Logger.info("Rejecting Transfer Request", { id }, MODULE_NAME);
+        await ApiService.post(TRANSFER_REQUEST_ENDPOINTS.reject(id));
+        Logger.info("Transfer Request rejected", { id }, MODULE_NAME);
+    },
+
     async linkTransfer(id: number, transferId: number): Promise<void> {
         Logger.info("Linking transfer to request", { id, transferId }, MODULE_NAME);
 

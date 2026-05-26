@@ -35,6 +35,8 @@ import type { TransferRequestEstado, FulfillDirectResult, FulfilledItem, Skipped
 import { useTransferRequestById } from "@/modules/transfers/hooks/useTransferRequestById";
 import { useImportTransferRequest } from "@/modules/transfers/hooks/useImportTransferRequest";
 import { useFulfillTransferRequest } from "@/modules/transfers/hooks/useFulfillTransferRequest";
+import { useCancelTransferRequest } from "@/modules/transfers/hooks/useCancelTransferRequest";
+import { useRejectTransferRequest } from "@/modules/transfers/hooks/useRejectTransferRequest";
 import { transferRequestService } from "@/modules/transfers/services/transferRequestService";
 import { transferService } from "@/modules/transfers/services/transfer.service";
 import { TRANSFER_QUERY_KEYS } from "@/modules/transfers/constants/transferQueryKeys";
@@ -61,10 +63,11 @@ const ESTADO_CONFIG: Record<
   imported:    { label: "Importado",   variant: "info" },
   in_progress: { label: "En proceso",  variant: "info" },
   cancelled:   { label: "Cancelado",   variant: "danger" },
+  rejected:    { label: "Rechazado",   variant: "danger" },
 };
 
 // States where the recipient can no longer take direct action — show transfer link instead
-const TERMINAL_ESTADOS: TransferRequestEstado[] = ["fulfilled", "partial", "cancelled", "in_progress"];
+const TERMINAL_ESTADOS: TransferRequestEstado[] = ["fulfilled", "partial", "cancelled", "rejected", "in_progress"];
 
 // States where the recipient still needs to act
 const ACTIONABLE_ESTADOS: TransferRequestEstado[] = ["pending", "imported"];
@@ -516,10 +519,16 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
     permission: PERMISSIONS.TRA.REQUEST_IMPORT,
     roles: ["Super Admin", "Administrador", "Vendedor"],
   });
+  const { isAuthorized: canCancel } = usePermissionCheck({
+    permission: PERMISSIONS.TRA.REQUEST_CANCEL,
+    roles: ["Super Admin", "Administrador", "Vendedor"],
+  });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const fulfill = useFulfillTransferRequest(requestId);
   const importMutation = useImportTransferRequest(requestId);
+  const cancelMutation = useCancelTransferRequest(requestId);
+  const rejectMutation = useRejectTransferRequest(requestId);
 
   // ── Modal states ──────────────────────────────────────────────────────────
   const [confirmFulfillOpen, setConfirmFulfillOpen] = useState(false);
@@ -530,6 +539,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   const [pendingTransferId, setPendingTransferId] = useState<number | null>(null);
   const [pendingFulfillResult, setPendingFulfillResult] = useState<FulfillDirectResult | null>(null);
   const [isRetryingAccept, setIsRetryingAccept] = useState(false);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const isRecipient =
@@ -539,6 +549,8 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
   const isImportedState = request?.estado === "imported";
   // Recipient still needs to act (pending or stuck at imported with no transfer yet)
   const showActions = isRecipient && isActionable;
+  // Both recipient and requestor can cancel while actionable
+  const showCancelAction = isActionable && canCancel && (isRecipient || isMine);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const finishFulfill = (result: FulfillDirectResult) => {
@@ -594,6 +606,24 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
     setPendingFulfillResult(null);
     setConfirmFulfillOpen(false);
     if (result) setFulfillResult(result);
+  };
+
+  const handleCancel = async () => {
+    try {
+      if (isRecipient) {
+        await rejectMutation.mutateAsync();
+      } else {
+        await cancelMutation.mutateAsync();
+      }
+    } catch {
+      showErrorToast({
+        title: isRecipient ? "Error al rechazar" : "Error al cancelar",
+        description: "No se pudo procesar la acción. Intentá de nuevo.",
+        duration: 4000,
+      });
+    } finally {
+      setConfirmCancelOpen(false);
+    }
   };
 
   const handleImport = async () => {
@@ -751,7 +781,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 size="sm"
                 variant="secondary"
                 className="h-7 flex-1 text-[11px] px-2"
-                disabled={importMutation.isPending}
+                disabled={importMutation.isPending || cancelMutation.isPending}
                 onClick={() => void handleImport()}
               >
                 {importMutation.isPending ? (
@@ -768,7 +798,7 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 size="sm"
                 variant="default"
                 className="h-7 flex-1 text-[11px] px-2"
-                disabled={fulfill.isPending || isLoadingPreview}
+                disabled={fulfill.isPending || isLoadingPreview || cancelMutation.isPending}
                 onClick={() => {
                   setPreview(null);
                   setIsLoadingPreview(true);
@@ -789,7 +819,39 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
                 )}
               </Button>
             )}
+            {canCancel && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] px-2 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                disabled={rejectMutation.isPending || cancelMutation.isPending || importMutation.isPending || fulfill.isPending}
+                onClick={() => setConfirmCancelOpen(true)}
+              >
+                {rejectMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Rechazar"
+                )}
+              </Button>
+            )}
           </div>
+        )}
+
+        {/* Cancelar para el solicitante (isMine, no recipient) */}
+        {!isRecipient && isMine && isActionable && canCancel && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 w-full text-[10px] px-2 text-muted-foreground hover:text-destructive"
+            disabled={cancelMutation.isPending}
+            onClick={() => setConfirmCancelOpen(true)}
+          >
+            {cancelMutation.isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              "Cancelar solicitud"
+            )}
+          </Button>
         )}
 
         {/* Sin permisos */}
@@ -800,6 +862,46 @@ export function TransferRequestCard({ requestId, currentUserId, isMine = false }
           </div>
         )}
       </div>
+
+      {/* Confirm cancel modal */}
+      <Dialog open={confirmCancelOpen} onOpenChange={(v) => !cancelMutation.isPending && setConfirmCancelOpen(v)}>
+        <DialogContent className="max-w-sm z-[9999]">
+          <DialogHeader>
+            <DialogTitle>
+              {isRecipient ? "¿Rechazar solicitud?" : "¿Cancelar solicitud?"}
+            </DialogTitle>
+            <DialogDescription>
+              {isRecipient
+                ? "La solicitud quedará cancelada y el solicitante será notificado."
+                : "Se cancelará la solicitud de transferencia. Esta acción no se puede deshacer."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={cancelMutation.isPending}
+              onClick={() => setConfirmCancelOpen(false)}
+            >
+              Volver
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={cancelMutation.isPending}
+              onClick={() => void handleCancel()}
+            >
+              {cancelMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : isRecipient ? (
+                "Rechazar"
+              ) : (
+                "Cancelar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm fulfill modal */}
       <ConfirmFulfillModal

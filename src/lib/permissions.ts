@@ -135,6 +135,7 @@ export const PERMISSIONS = {
     REQUEST_VIEW: 'tra-request_view',
     REQUEST_FULFILL: 'tra-request_fulfill',
     REQUEST_IMPORT: 'tra-request_import',
+    REQUEST_CANCEL: 'tra-request_create',
   },
 
   // ─── CUENTAS POR COBRAR (CUC / CxC) ─────────────────────────────────────────

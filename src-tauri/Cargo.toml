@@ -37,6 +37,7 @@ tauri-plugin-sql = { version = "2.3.0", features = ["sqlite"] }
 image = "0.25"
 libwebp-sys = "0.14.1"
 base64 = "0.22"
+arboard = "3"
 
 [profile.release]
 panic = "abort"

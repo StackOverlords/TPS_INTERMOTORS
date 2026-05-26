@@ -19,6 +19,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
+            // Comandos de clipboard
+            commands::clipboard::read_clipboard_image,
             // Comandos de imagen
             commands::image::compress_image_to_webp,
             commands::image::get_image_info,

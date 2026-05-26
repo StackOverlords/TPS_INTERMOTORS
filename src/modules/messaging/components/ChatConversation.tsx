@@ -364,7 +364,7 @@ export function ChatConversation({
     [pendingPreviewUrl]
   );
 
-  const handleFileSelected = async (file: File) => {
+  const handleFileSelected = useCallback(async (file: File) => {
     setIsUploadingSending(false);
 
     if (isImageMime(file.type) && isTauriEnvironment()) {
@@ -410,7 +410,7 @@ export function ChatConversation({
       setPendingPreviewUrl(null);
       setAttachError(validation.valid ? null : validation.error);
     }
-  };
+  }, []);
 
   const handleAttachmentSend = async (caption: string) => {
     if (!pendingFile) return;
@@ -655,6 +655,39 @@ export function ChatConversation({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "v" && !editingMessage && isTauriEnvironment()) {
+      e.preventDefault();
+      void (async () => {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          const base64 = await invoke<string>("read_clipboard_image");
+          const byteString = atob(base64);
+          const bytes = new Uint8Array(byteString.length);
+          for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+          const blob = new Blob([bytes], { type: "image/png" });
+          const file = new File([blob], `captura-${Date.now()}.png`, { type: "image/png" });
+          void handleFileSelected(file);
+        } catch (err) {
+          // No hay imagen en el clipboard — dejar que el paste de texto ocurra normalmente
+          if (String(err).includes("no_image")) {
+            // Restaurar el paste de texto manualmente
+            try {
+              const text = await navigator.clipboard.readText();
+              if (text && inputRef.current) {
+                const el = inputRef.current;
+                const start = el.selectionStart ?? 0;
+                const end = el.selectionEnd ?? 0;
+                setInput(input.slice(0, start) + text + input.slice(end));
+                requestAnimationFrame(() => {
+                  el.selectionStart = el.selectionEnd = start + text.length;
+                });
+              }
+            } catch { /* nada */ }
+          }
+        }
+      })();
     }
   };
 

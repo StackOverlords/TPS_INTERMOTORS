@@ -11,7 +11,8 @@ export type TransferRequestEstado =
   | "imported"
   | "in_progress"
   | "partial"
-  | "cancelled";
+  | "cancelled"
+  | "rejected";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ITEM TYPES
