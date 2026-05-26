@@ -17,6 +17,8 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Check, Package, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SaleGetAll } from "@/modules/sales/types/salesGetResponse";
+import { useBranchStore } from "@/states/branchStore";
+import authSDK from "@/services/sdk-simple-auth";
 import SaleReturnList from "@/modules/returns/components/SalesReturnList";
 import SelectSalesReturnModal from "@/modules/returns/components/SelectSalesReturnModal";
 import ReturnDetailTable, {
@@ -81,6 +83,14 @@ const SaleDetailSelectorWindow = () => {
   const STORAGE_KEY = config.windowId + "-sale-detail-filters";
   const FILTER_EXPIRATION_HOURS = 2;
   const [selectedSale, setSelectedSale] = useState<SaleGetAll | null>(null);
+
+  // Hidratar el branch store desde localStorage — en ventanas secundarias de Tauri
+  // el store arranca con selectedBranchId: null porque restoreForUser() nunca se llama.
+  // authSDK.ready ya resolvió antes de este render (ver window-entry.tsx).
+  useEffect(() => {
+    const user = authSDK.getCurrentUser();
+    useBranchStore.getState().restoreForUser(user?.id ?? "");
+  }, []);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [selectedItems, setSelectedItems] = useState<SelectedItemWithSale[]>(
     []
