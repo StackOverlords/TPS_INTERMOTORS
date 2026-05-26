@@ -127,9 +127,11 @@ func rollback(m Model, failedStep Step) ([]string, error) {
 		restoreFiles()
 
 	case failedStep == StepGitTagT1:
-		// Commit hecho, ningún tag creado
-		if err := m.git.RevertLastCommit(); err == nil {
-			actions = append(actions, "git reset HEAD~1 --soft")
+		// Commit hecho (si aplica), ningún tag creado
+		if !m.noBump {
+			if err := m.git.RevertLastCommit(); err == nil {
+				actions = append(actions, "git reset HEAD~1 --soft")
+			}
 		}
 		restoreFiles()
 
@@ -138,8 +140,10 @@ func rollback(m Model, failedStep Step) ([]string, error) {
 		if err := m.git.DeleteTagLocal(t1); err == nil {
 			actions = append(actions, fmt.Sprintf("git tag -d %s", t1))
 		}
-		if err := m.git.RevertLastCommit(); err == nil {
-			actions = append(actions, "git reset HEAD~1 --soft")
+		if !m.noBump {
+			if err := m.git.RevertLastCommit(); err == nil {
+				actions = append(actions, "git reset HEAD~1 --soft")
+			}
 		}
 		restoreFiles()
 
@@ -151,8 +155,10 @@ func rollback(m Model, failedStep Step) ([]string, error) {
 		if err := m.git.DeleteTagLocal(t2); err == nil {
 			actions = append(actions, fmt.Sprintf("git tag -d %s", t2))
 		}
-		if err := m.git.RevertLastCommit(); err == nil {
-			actions = append(actions, "git reset HEAD~1 --soft")
+		if !m.noBump {
+			if err := m.git.RevertLastCommit(); err == nil {
+				actions = append(actions, "git reset HEAD~1 --soft")
+			}
 		}
 		restoreFiles()
 		// Si el push de t1 llegó al remote, intentar borrarlo
