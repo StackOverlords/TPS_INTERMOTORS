@@ -70,6 +70,7 @@ import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeC
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
+import { computePaymentBalance } from "../utils/paymentBalance";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { convertCartToSaleDetails } from "@/modules/shoppingCart/utils/cartCalculations";
@@ -418,6 +419,39 @@ const CreateSaleScreen = () => {
         message: "Debes seleccionar una forma de pago",
       });
       isValid = false;
+    }
+
+    // Payment balance guards (only relevant for split-payment / contado sales)
+    if (isContado && formasPago.length > 0) {
+      const balance = computePaymentBalance(
+        formasPago,
+        total,
+        formValues.forma_pago,
+        salePaymentTypesData
+      );
+
+      if (balance.status === "over") {
+        showErrorToast({
+          title: "Monto excedido",
+          description:
+            "El monto ingresado en las formas de pago supera el total de la venta",
+        });
+        isValid = false;
+      }
+
+      if (balance.status === "pending" && !formValues.forma_pago) {
+        setError("forma_pago", {
+          type: "manual",
+          message:
+            "Seleccioná una forma de pago principal para cubrir el saldo restante",
+        });
+        showErrorToast({
+          title: "Forma de pago requerida",
+          description:
+            "Hay un saldo pendiente pero no se ha seleccionado la forma de pago principal",
+        });
+        isValid = false;
+      }
     }
 
     if (
@@ -1344,6 +1378,39 @@ const CreateSaleScreen = () => {
                               </p>
                             )}
                           </div>
+
+                          {/* Balance inline feedback — hidden when no split rows */}
+                          {formasPago.length > 0 && (() => {
+                            const balance = computePaymentBalance(
+                              formasPago,
+                              total,
+                              formValues.forma_pago,
+                              salePaymentTypesData
+                            );
+                            if (balance.status === "pending") {
+                              return (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                  ⚠ Saldo de Bs {balance.saldo.toFixed(2)} se
+                                  cobrará con{" "}
+                                  {balance.headerLabel || formValues.forma_pago || "—"}
+                                </p>
+                              );
+                            }
+                            if (balance.status === "over") {
+                              return (
+                                <p className="text-xs text-destructive">
+                                  El monto ingresado supera el total de la venta
+                                  en Bs{" "}
+                                  {(balance.assigned - total).toFixed(2)}
+                                </p>
+                              );
+                            }
+                            return (
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                ✓ Pago completo
+                              </p>
+                            );
+                          })()}
                         </div>
                       </CardContent>
                     </Card>

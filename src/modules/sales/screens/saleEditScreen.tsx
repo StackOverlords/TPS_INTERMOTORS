@@ -68,6 +68,7 @@ import type { SaleGetById } from "../types/salesGetResponse";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
+import { computePaymentBalance } from "../utils/paymentBalance";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { PDFViewer } from "@/components/common/PDFViewer";
 import { useSalePDF } from "../hooks/useSalePDF";
@@ -260,9 +261,11 @@ const SaleEditScreen = () => {
     // Guardar los detalles originales
     setOriginalDetails(detallesTransformados);
 
-    // Pre-cargar formas de pago solo si la venta participó en el sistema de caja
+    // Pre-cargar formas de pago solo si la venta participó en el sistema de caja.
+    // Filter out es_saldo rows: buildFormasPago recomputes them fresh on save,
+    // so they must never appear as explicit editable rows (avoids duplicate stacking on re-edit).
     if (sale.caja_sesion_id != null && sale.formas_pago_detalle?.length) {
-      setFormasPago(sale.formas_pago_detalle);
+      setFormasPago(sale.formas_pago_detalle.filter((fp) => !fp.es_saldo));
     } else {
       setFormasPago([]);
     }
@@ -409,6 +412,40 @@ const SaleEditScreen = () => {
           title: "Fecha inválida",
           description:
             "La fecha de plazo debe ser posterior a la fecha de venta",
+        });
+        isValid = false;
+      }
+    }
+
+    // Payment balance guards (only relevant for split-payment / contado sales)
+    const isContadoLocal = formData.tipo_venta !== "VC" && formData.tipo_venta !== "";
+    if (isContadoLocal && formasPago.length > 0) {
+      const balance = computePaymentBalance(
+        formasPago,
+        calculateTotal(),
+        formData.forma_pago,
+        salePaymentTypesData
+      );
+
+      if (balance.status === "over") {
+        showErrorToast({
+          title: "Monto excedido",
+          description:
+            "El monto ingresado en las formas de pago supera el total de la venta",
+        });
+        isValid = false;
+      }
+
+      if (balance.status === "pending" && !formData.forma_pago) {
+        setError("forma_pago", {
+          type: "manual",
+          message:
+            "Seleccioná una forma de pago principal para cubrir el saldo restante",
+        });
+        showErrorToast({
+          title: "Forma de pago requerida",
+          description:
+            "Hay un saldo pendiente pero no se ha seleccionado la forma de pago principal",
         });
         isValid = false;
       }
@@ -1238,6 +1275,39 @@ const SaleEditScreen = () => {
                               </p>
                             )}
                           </div>
+
+                          {/* Balance inline feedback — hidden when no split rows */}
+                          {formasPago.length > 0 && (() => {
+                            const balance = computePaymentBalance(
+                              formasPago,
+                              calculateTotal(),
+                              formValues.forma_pago,
+                              salePaymentTypesData
+                            );
+                            if (balance.status === "pending") {
+                              return (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                  ⚠ Saldo de Bs {balance.saldo.toFixed(2)} se
+                                  cobrará con{" "}
+                                  {balance.headerLabel || formValues.forma_pago || "—"}
+                                </p>
+                              );
+                            }
+                            if (balance.status === "over") {
+                              return (
+                                <p className="text-xs text-destructive">
+                                  El monto ingresado supera el total de la venta
+                                  en Bs{" "}
+                                  {(balance.assigned - calculateTotal()).toFixed(2)}
+                                </p>
+                              );
+                            }
+                            return (
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                ✓ Pago completo
+                              </p>
+                            );
+                          })()}
                         </div>
                       </CardContent>
                     </Card>
