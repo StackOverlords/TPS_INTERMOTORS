@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.9.0",
   "type": "module",
+  "workspaces": ["packages/*", "plugins-poc/*"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -111,6 +112,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.29.0",
+    "@module-federation/vite": "^1.16.2",
     "@tauri-apps/cli": "^2.9.4",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "24.0.10",
