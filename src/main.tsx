@@ -19,6 +19,8 @@ import logger from "./utils/logger.ts";
 // import { useAppearanceStore } from "./stores/appearanceStore.ts";
 import { flushTabStorage } from "./states/tabStore.ts";
 import { getWindowManager } from "@/platform";
+import { PluginDialogHost } from "./plugins/components/PluginDialogHost.tsx";
+import { PluginKeybindingHost } from "./plugins/components/PluginKeybindingHost.tsx";
 import { useEffect } from "react";
 
 // try {
@@ -32,6 +34,18 @@ import { useEffect } from "react";
 initializeKeybindingStore().catch((error) => {
   logger.error("❌ Error initializing keybinding store:", error);
 });
+
+// ✨ [DEV-ONLY] Activar plugins de desarrollo cuando VITE_DEV_PLUGINS=1
+// No se ejecuta en producción — el flag nunca se setea en el entorno de build.
+if (import.meta.env.VITE_DEV_PLUGINS === "1") {
+  import("./plugins/__dev__/bootstrap").then(({ bootstrapDevPlugins }) => {
+    bootstrapDevPlugins().catch((e) => {
+      console.error("[dev-plugins] bootstrap failed:", e);
+    });
+  }).catch((e) => {
+    console.error("[dev-plugins] import failed:", e);
+  });
+}
 
 function App() {
   // ✅ Forzar guardado de tabs antes de cerrar la aplicación
@@ -75,6 +89,8 @@ function App() {
         <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
           <TooltipProvider>
             <Toaster />
+            <PluginDialogHost />
+            <PluginKeybindingHost />
             <ZoomManager />
             {/* <Sonner /> */}
             {/* <KeybindingProvider> */}

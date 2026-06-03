@@ -46,8 +46,10 @@ import { RouteRegistry } from "./core/route-registry";
 import { logger } from "@/utils/logger";
 import authSDK from "@/services/sdk-simple-auth";
 import { useThemeStore } from "@/stores/themeStore";
+import { useTabStore } from "@/states/tabStore";
 import { createTauriStorage } from "@/stores/tauriPluginAdapterStore";
 import { toast } from "sonner";
+import { usePluginDialogStore } from "./stores/pluginDialogStore";
 
 // ---------------------------------------------------------------------------
 // Capabilities declaradas por el host TPS en esta fase.
@@ -69,8 +71,8 @@ const HOST_CAPABILITIES = new Set<Capability>([
   "commands",
   "events",
   "storage",
-  // "tabs",        // TODO Fase 3: cablear a tabStore
-  // "keybindings", // TODO Fase 3: cablear a keybindingsService
+  "tabs",          // Fase 3: cableado a tabStore (getActiveTab/onTabChange implementados)
+  "keybindings",   // Fase 3 Batch 5: registry aislado de plugins + PluginKeybindingHost listener
 ]);
 
 // ---------------------------------------------------------------------------
@@ -94,6 +96,18 @@ interface PluginEntry {
   registeredSettingsActionIds: string[];
   /** Funciones de desuscripción del bus de eventos (para cleanup). */
   eventUnsubscribers: Array<() => void>;
+  /**
+   * Funciones de desuscripción de suscripciones al tabStore (onTabChange).
+   * Se limpian automáticamente en deactivate(). Separadas de eventUnsubscribers
+   * para distinguir el origen semántico (tabStore vs bus pub/sub de plugins).
+   */
+  tabUnsubscribers: Array<() => void>;
+  /**
+   * Funciones de desregistro de keybindings del plugin.
+   * Cada entrada es el "unsubscribe" retornado al plugin en registerKeybinding().
+   * Se limpian automáticamente en deactivate() para que el listener global las descarte.
+   */
+  keybindingUnsubscribers: Array<() => void>;
 }
 
 /**
@@ -196,11 +210,33 @@ export class PluginManagerClass {
   /** Secciones del sidebar aportadas por plugins, ordenadas por `order`. */
   private sidebarSections: SidebarSection[] = [];
 
+  /**
+   * Caché estable para getSidebarSections().
+   * Se invalida (null) en cada mutación del array. Garantiza referencia estable
+   * para useSyncExternalStore — misma referencia = React omite el re-render.
+   * Patrón idéntico al flatCache del RouteRegistry (Batch 1).
+   */
+  private sidebarSectionsCache: SidebarSection[] | null = null;
+
   /** Acciones del panel de settings aportadas por plugins. */
   private settingsActions: SettingsAction[] = [];
 
+  /**
+   * Caché estable para getSettingsActions().
+   * Se invalida en cada mutación para garantizar referencia estable con useSyncExternalStore.
+   */
+  private settingsActionsCache: SettingsAction[] | null = null;
+
   /** Listeners del bus interno del manager (para hooks React del host). */
   private managerListeners: Set<(event: ManagerEvent) => void> = new Set();
+
+  /**
+   * Bus reactivo liviano (firma `() => void`) para useSyncExternalStore.
+   * Separado del bus tipado (managerListeners) para no romper la firma pública de subscribe().
+   * Se dispara cuando cambian sidebarSections o settingsActions.
+   * Decisión: opción (a) — bus aditivo, consistente con el patrón de RouteRegistry (Batch 1).
+   */
+  private uiListeners: Set<() => void> = new Set();
 
   /**
    * Bus pub/sub entre plugins (por topic).
@@ -208,16 +244,109 @@ export class PluginManagerClass {
    */
   private pluginEventBus: Map<string, PluginEventListener[]> = new Map();
 
+  /**
+   * Registry aislado de keybindings de plugins (Fase 3 Batch 5).
+   *
+   * Diseño: 100% paralelo al sistema de keybindings nativo de TPS (react-hotkeys-hook + Zustand).
+   * NO modifica ni toca el sistema nativo — corre en paralelo, solo para plugins.
+   *
+   * Estructura: keybindingId → { pluginId, decl, handler }
+   * `handler` es el CommandHandler del plugin que se ejecuta al disparar el binding.
+   * El `keybindingId` es el `KeybindingDeclaration.id` del SDK — único por plugin.
+   *
+   * El `PluginKeybindingHost` (componente React montado en main.tsx) suscribe a este registry
+   * via `subscribeKeybindings()` y monta UN listener `keydown` global que matchea las
+   * combinaciones registradas aquí.
+   */
+  private pluginKeybindings: Map<string, { pluginId: string; decl: KeybindingDeclaration; handler: CommandHandler }> = new Map();
+
+  /**
+   * Listeners del bus de keybindings (para `PluginKeybindingHost`).
+   * Se dispara cuando el registry muta (registro o desregistro).
+   * Firma `() => void` compatible con useSyncExternalStore.
+   */
+  private keybindingListeners: Set<() => void> = new Set();
+
   // ── Getters para la UI (Fase 3 los consume) ──────────────────────────────
 
-  /** Retorna las secciones del sidebar aportadas por plugins activos. */
+  /**
+   * Retorna las secciones del sidebar aportadas por plugins activos.
+   * El resultado está cacheado — devuelve la MISMA referencia de array mientras
+   * no haya mutación. Requerido por useSyncExternalStore para evitar loops de re-render.
+   */
   getSidebarSections(): SidebarSection[] {
-    return this.sidebarSections;
+    if (this.sidebarSectionsCache !== null) return this.sidebarSectionsCache;
+    this.sidebarSectionsCache = [...this.sidebarSections];
+    return this.sidebarSectionsCache;
   }
 
-  /** Retorna las acciones de settings aportadas por plugins activos. */
+  /**
+   * Retorna las acciones de settings aportadas por plugins activos.
+   * El resultado está cacheado con referencia estable (mismo patrón que getSidebarSections).
+   */
   getSettingsActions(): SettingsAction[] {
-    return this.settingsActions;
+    if (this.settingsActionsCache !== null) return this.settingsActionsCache;
+    this.settingsActionsCache = [...this.settingsActions];
+    return this.settingsActionsCache;
+  }
+
+  // ── Bus reactivo para UI (Fase 3) ─────────────────────────────────────────
+
+  /**
+   * Suscribe un listener que se invoca cuando cambian sidebarSections o settingsActions.
+   * Firma `() => void` compatible directamente con useSyncExternalStore.
+   *
+   * Bus ADITIVO — no reemplaza ni modifica subscribe() existente (bus tipado con ManagerEvent).
+   * Patrón idéntico al RouteRegistry.subscribe() de Batch 1.
+   *
+   * @param listener - Función sin argumentos invocada en cada mutación de UI.
+   * @returns Función de desuscripción.
+   */
+  subscribeUI(listener: () => void): () => void {
+    this.uiListeners.add(listener);
+    return () => {
+      this.uiListeners.delete(listener);
+    };
+  }
+
+  /** Notifica a los listeners de UI. Llamado internamente cuando mutan sidebarSections o settingsActions. */
+  private notifyUI(): void {
+    for (const listener of this.uiListeners) {
+      listener();
+    }
+  }
+
+  // ── Keybinding registry API (Fase 3 Batch 5) ──────────────────────────────
+
+  /**
+   * Retorna un snapshot inmutable del registry de keybindings de plugins.
+   * Usado por `PluginKeybindingHost` vía useSyncExternalStore para re-sincronizar
+   * el listener global de keydown cuando el registry muta.
+   */
+  getPluginKeybindings(): ReadonlyMap<string, { pluginId: string; decl: KeybindingDeclaration; handler: CommandHandler }> {
+    return this.pluginKeybindings;
+  }
+
+  /**
+   * Suscribe un listener al registry de keybindings de plugins.
+   * Se invoca cuando se registra o desregistra un keybinding de plugin.
+   * Firma `() => void` compatible con useSyncExternalStore.
+   *
+   * @param listener - Función invocada en cada mutación del registry.
+   * @returns Función de desuscripción.
+   */
+  subscribeKeybindings(listener: () => void): () => void {
+    this.keybindingListeners.add(listener);
+    return () => {
+      this.keybindingListeners.delete(listener);
+    };
+  }
+
+  /** Notifica a los listeners del registry de keybindings. */
+  private notifyKeybindings(): void {
+    for (const listener of this.keybindingListeners) {
+      listener();
+    }
   }
 
   // ── Registro y ciclo de vida ───────────────────────────────────────────────
@@ -273,6 +402,8 @@ export class PluginManagerClass {
       registeredRouteIds: [],
       registeredSettingsActionIds: [],
       eventUnsubscribers: [],
+      tabUnsubscribers: [],
+      keybindingUnsubscribers: [],
     });
 
     logger.info(`[PluginManager] Plugin "${id}" (${plugin.manifest.name}) registrado.`);
@@ -373,18 +504,37 @@ export class PluginManagerClass {
     entry.registeredCommandIds = [];
 
     // Cleanup automático de secciones del sidebar
+    let sidebarMutated = false;
     for (const sectionId of entry.registeredSectionIds) {
       const idx = this.sidebarSections.findIndex((s) => s.id === sectionId);
-      if (idx !== -1) this.sidebarSections.splice(idx, 1);
+      if (idx !== -1) {
+        this.sidebarSections.splice(idx, 1);
+        sidebarMutated = true;
+      }
+    }
+    if (sidebarMutated) {
+      this.sidebarSectionsCache = null;
     }
     entry.registeredSectionIds = [];
 
     // Cleanup automático de settings actions
+    let settingsMutated = false;
     for (const actionId of entry.registeredSettingsActionIds) {
       const idx = this.settingsActions.findIndex((a) => a.id === actionId);
-      if (idx !== -1) this.settingsActions.splice(idx, 1);
+      if (idx !== -1) {
+        this.settingsActions.splice(idx, 1);
+        settingsMutated = true;
+      }
+    }
+    if (settingsMutated) {
+      this.settingsActionsCache = null;
     }
     entry.registeredSettingsActionIds = [];
+
+    // Notificar al bus de UI si alguna colección mutó
+    if (sidebarMutated || settingsMutated) {
+      this.notifyUI();
+    }
 
     // Cleanup automático de rutas en el RouteRegistry
     for (const routeId of entry.registeredRouteIds) {
@@ -397,6 +547,37 @@ export class PluginManagerClass {
       unsub();
     }
     entry.eventUnsubscribers = [];
+
+    // Cleanup automático de suscripciones al tabStore (onTabChange)
+    for (const unsub of entry.tabUnsubscribers) {
+      unsub();
+    }
+    entry.tabUnsubscribers = [];
+
+    // Cleanup automático de keybindings del plugin (Fase 3 Batch 5)
+    // Llama a cada unsub (que remueve la entrada del registry) y luego notifica al host.
+    let keybindingsMutated = false;
+    for (const unsub of entry.keybindingUnsubscribers) {
+      unsub();
+      keybindingsMutated = true;
+    }
+    entry.keybindingUnsubscribers = [];
+    if (keybindingsMutated) {
+      this.notifyKeybindings();
+    }
+
+    // Cleanup adicional de seguridad: eliminar cualquier keybinding de este plugin
+    // que no haya sido desregistrado via unsub (ej: plugin no guardó el retorno).
+    for (const [kbId, entry_] of this.pluginKeybindings) {
+      if (entry_.pluginId === pluginId) {
+        this.pluginKeybindings.delete(kbId);
+        keybindingsMutated = true;
+      }
+    }
+    // Notificar si el safety-sweep encontró algo extra
+    if (keybindingsMutated) {
+      this.notifyKeybindings();
+    }
 
     // Cleanup adicional: eliminar todos los listeners del bus que sean de este plugin
     // (por si el plugin registró eventos sin retornar el unsubscriber correctamente)
@@ -522,7 +703,11 @@ export class PluginManagerClass {
         if (!manager.sidebarSections.some((s) => s.id === section.id)) {
           manager.sidebarSections.push(section);
           manager.sidebarSections.sort((a, b) => a.order - b.order);
+          // Invalidar caché para que getSidebarSections() devuelva nueva referencia
+          manager.sidebarSectionsCache = null;
           entry.registeredSectionIds.push(section.id);
+          // Notificar al bus de UI (useSyncExternalStore) que el snapshot cambió
+          manager.notifyUI();
           logger.info(`[PluginManager] Plugin "${pluginId}" registró sidebar section "${section.id}".`);
         }
       },
@@ -532,7 +717,11 @@ export class PluginManagerClass {
       registerSettingsAction(action: SettingsAction): void {
         if (!manager.settingsActions.some((a) => a.id === action.id)) {
           manager.settingsActions.push(action);
+          // Invalidar caché para que getSettingsActions() devuelva nueva referencia
+          manager.settingsActionsCache = null;
           entry.registeredSettingsActionIds.push(action.id);
+          // Notificar al bus de UI (useSyncExternalStore) que el snapshot cambió
+          manager.notifyUI();
           logger.info(`[PluginManager] Plugin "${pluginId}" registró settings action "${action.id}".`);
         }
       },
@@ -583,24 +772,15 @@ export class PluginManagerClass {
         }
       },
 
-      async confirm(_opts?: ConfirmOptions): Promise<boolean> {
-        // TODO Fase 3: cablear a confirmationModal del host (AlertDialog de Radix).
-        // Por ahora: stub que siempre rechaza para evitar efectos colaterales.
-        logger.warn(
-          `[PluginManager] api.confirm() no está implementado en Fase 2. ` +
-            `Retorna false. Cablear a AlertDialog en Fase 3.`
-        );
-        return false;
+      async confirm(opts?: ConfirmOptions): Promise<boolean> {
+        // CABLEADO Fase 3: delega al pluginDialogStore → PluginDialogHost (AlertDialog Radix).
+        // Acceso sincrónico vía getState() — idéntico al patrón de useThemeStore.getState().
+        return usePluginDialogStore.getState().requestConfirm(opts ?? {});
       },
 
-      async prompt(_opts: PromptOptions): Promise<PromptResult> {
-        // TODO Fase 3: cablear a un Dialog de formulario del host.
-        // Por ahora: stub que siempre cancela.
-        logger.warn(
-          `[PluginManager] api.prompt() no está implementado en Fase 2. ` +
-            `Retorna null. Cablear a Dialog en Fase 3.`
-        );
-        return null;
+      async prompt(opts: PromptOptions): Promise<PromptResult> {
+        // CABLEADO Fase 3: delega al pluginDialogStore → PluginDialogHost (Dialog Radix).
+        return usePluginDialogStore.getState().requestPrompt(opts);
       },
 
       // ── Auth ──────────────────────────────────────────────────────────────
@@ -630,34 +810,112 @@ export class PluginManagerClass {
       // ── Tabs ──────────────────────────────────────────────────────────────
 
       getActiveTab(): ActiveTabInfo | null {
-        // TODO Fase 3: cablear a tabStore.getState().activeTabId y resolver la tab.
-        // El tabStore actual no expone `routeId` en Tab todavía (Fase 3 lo agrega).
-        logger.warn(
-          `[PluginManager] api.getActiveTab() no está implementado en Fase 2. ` +
-            `Retorna null. Cablear a tabStore en Fase 3.`
-        );
-        return null;
+        // Acceso sincrónico al tabStore — mismo patrón que useThemeStore.getState().
+        const { tabs, activeTabId } = useTabStore.getState();
+        if (!activeTabId) return null;
+        const tab = tabs.find((t) => t.id === activeTabId);
+        if (!tab) return null;
+
+        // routeId es requerido por ActiveTabInfo según el contrato del SDK.
+        // Las tabs estáticas (nativas) no tienen routeId — no las exponemos vía esta API
+        // porque el SDK no permite un ActiveTabInfo sin routeId.
+        // Un plugin que llame getActiveTab() recibirá null si la tab activa es estática.
+        if (!tab.routeId) return null;
+
+        return {
+          tabId: tab.id,
+          routeId: tab.routeId,
+          title: tab.title,
+          path: tab.path,
+          instanceId: tab.instanceId,
+          metadata: tab.metadata as Record<string, unknown> | undefined,
+        };
       },
 
-      onTabChange(_handler: (tab: ActiveTabInfo | null) => void): () => void {
-        // TODO Fase 3: suscribir a tabStore cuando se agregue routeId aditivo.
-        logger.warn(
-          `[PluginManager] api.onTabChange() no está implementado en Fase 2. ` +
-            `El handler nunca se llamará. Cablear a tabStore en Fase 3.`
-        );
-        // Retornamos un no-op unsubscriber para que el plugin no explote
-        return () => {};
+      onTabChange(handler: (tab: ActiveTabInfo | null) => void): () => void {
+        // tabStore NO usa subscribeWithSelector. Suscribimos al estado completo
+        // y filtramos manualmente para evitar disparos espurios (Zustand 5 compatible).
+        let prevActiveTabId = useTabStore.getState().activeTabId;
+
+        const unsub = useTabStore.subscribe((state) => {
+          const currentActiveTabId = state.activeTabId;
+          // Solo disparar si el activeTabId cambió — evita re-disparos por otras mutaciones
+          // del store (scrollPosition, reorder, etc.) que no cambian la tab activa.
+          if (currentActiveTabId === prevActiveTabId) return;
+          prevActiveTabId = currentActiveTabId;
+
+          // Resolver la tab activa al shape ActiveTabInfo (o null)
+          const tab = currentActiveTabId
+            ? state.tabs.find((t) => t.id === currentActiveTabId)
+            : undefined;
+
+          if (!tab || !tab.routeId) {
+            // Tab estática o sin tab activa — el SDK no puede representarla con ActiveTabInfo
+            handler(null);
+            return;
+          }
+
+          handler({
+            tabId: tab.id,
+            routeId: tab.routeId,
+            title: tab.title,
+            path: tab.path,
+            instanceId: tab.instanceId,
+            metadata: tab.metadata as Record<string, unknown> | undefined,
+          });
+        });
+
+        // Registrar en tabUnsubscribers para cleanup automático en deactivate()
+        entry.tabUnsubscribers.push(unsub);
+
+        logger.info(`[PluginManager] Plugin "${pluginId}" suscrito a cambios de tab activa.`);
+
+        return unsub;
       },
 
       // ── Keybindings ───────────────────────────────────────────────────────
+      // Fase 3 Batch 5: registry aislado de plugins.
+      // El sistema nativo de TPS (react-hotkeys-hook + Zustand) solo acepta comandos
+      // estáticos declarados en COMMANDS (src/keybindings/core/commands.ts) y no expone
+      // una API de registro programático fuera de React.
+      // Solución: registry paralelo en el kernel + PluginKeybindingHost (listener global
+      // de keydown montado en main.tsx). 100% aditivo — no toca el sistema nativo.
 
-      registerKeybinding(_decl: KeybindingDeclaration): void {
-        // TODO Fase 3: cablear a keybindingsService cuando esté listo.
-        // El keybindingsService en TPS es un servicio externo que requiere análisis adicional
-        // para exponer un API de registro programático (actualmente usa archivos de config).
-        logger.warn(
-          `[PluginManager] api.registerKeybinding() no está implementado en Fase 2. ` +
-            `Cablear a keybindingsService en Fase 3.`
+      registerKeybinding(decl: KeybindingDeclaration): void {
+        // Prevenir duplicados: el ID del keybinding debe ser único en el registry global.
+        if (manager.pluginKeybindings.has(decl.id)) {
+          logger.warn(
+            `[PluginManager] Keybinding "${decl.id}" ya está registrado. ` +
+              `Plugin "${pluginId}" no puede sobreescribirlo.`
+          );
+          return;
+        }
+
+        // Resolver el CommandHandler del plugin: buscar en commandHandlers (el plugin
+        // debería haber registrado el comando antes del keybinding, pero también
+        // aceptamos un handler inline vía `decl.command` que referencie un command registrado).
+        // El `decl.command` es el commandId a ejecutar cuando se dispara el binding.
+        const handler: CommandHandler = () => manager.executeCommand(decl.command);
+
+        manager.pluginKeybindings.set(decl.id, { pluginId, decl, handler });
+
+        // Función de desregistro: remueve la entrada del registry y notifica al host.
+        const unsub = () => {
+          manager.pluginKeybindings.delete(decl.id);
+          // No notificamos aquí porque deactivate() lo hace en bulk tras el loop.
+          // Si el plugin llama unsub() manualmente (fuera de deactivate), sí notificamos.
+          manager.notifyKeybindings();
+        };
+
+        // Trackear para cleanup automático en deactivate()
+        entry.keybindingUnsubscribers.push(unsub);
+
+        // Notificar al PluginKeybindingHost que el registry cambió
+        manager.notifyKeybindings();
+
+        logger.info(
+          `[PluginManager] Plugin "${pluginId}" registró keybinding "${decl.id}" ` +
+            `(key: "${decl.key}", command: "${decl.command}").`
         );
       },
 

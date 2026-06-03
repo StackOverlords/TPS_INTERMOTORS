@@ -3,6 +3,7 @@ import type RouteType from '@/navigation/RouteType';
 import { useTabStore } from '@/states/tabStore';
 import { useUserRole } from '@/hooks/useUserRole';
 import { hasRouteAccess } from '@/utils/permissions';
+import { RouteRegistry, useRegistryRoutes } from '@/plugins';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 
@@ -25,7 +26,11 @@ export const useTabNavigation = () => {
   // Bandera para prevenir recreación de tabs después de cerrar
   const isClosingTabRef = useRef(false);
 
-  // Cache de rutas aplanadas (se calcula una sola vez)
+  // Rutas aportadas por plugins — reactivas vía useSyncExternalStore.
+  // Se re-calculan cuando un plugin registra o des-registra rutas, sin reload.
+  const registryRoutes = useRegistryRoutes();
+
+  // Cache de rutas aplanadas (estáticas + plugin) — se recalcula cuando el registry cambia.
   const flatRoutes = useMemo(() => {
     const flatten = (routes: RouteType[]): RouteType[] => {
       const result: RouteType[] = [];
@@ -39,11 +44,28 @@ export const useTabNavigation = () => {
       });
       return result;
     };
-    return flatten(protectedRoutes);
-  }, []);
 
-  // Cache de rutas ya resueltas
+    // Adaptar RouteConfig (SDK) → RouteType para que findRouteInfo/findRouteByPath
+    // resuelvan nombre, icono y permisos de las rutas de plugin igual que las estáticas.
+    const pluginAsRouteType: RouteType[] = registryRoutes.map(rc => ({
+      path: rc.path,
+      element: rc.component,
+      name: rc.label,
+      type: 'protected' as const,
+      icon: rc.icon,
+      role: rc.roles as RouteType['role'],
+    }));
+
+    return [...flatten(protectedRoutes), ...pluginAsRouteType];
+  }, [registryRoutes]);
+
+  // Cache de rutas ya resueltas.
+  // Se invalida explícitamente cuando flatRoutes cambia (nueva ruta de plugin registrada).
   const routeInfoCache = useRef(new Map<string, { name: string; icon?: any }>());
+  useMemo(() => {
+    // flatRoutes es el único origen de routeInfoCache — si cambia, el cache es stale.
+    routeInfoCache.current.clear();
+  }, [flatRoutes]);
 
   // Función para encontrar el nombre e icono de una ruta
   // Soporta rutas dinámicas y extrae parámetros para mostrar en el título
@@ -124,6 +146,14 @@ export const useTabNavigation = () => {
         : routeInfo.name;
 
       const tabId = state.addTab(path, title, routeInfo.icon, instanceId, metadata);
+
+      // Anotar con routeId si el path corresponde a una ruta de plugin registrada.
+      // Las tabs estáticas nativas no están en el RouteRegistry → routeId queda undefined.
+      const pluginRoute = RouteRegistry.getRouteByPath(path);
+      if (pluginRoute) {
+        state.updateTab(tabId, { routeId: pluginRoute.id });
+      }
+
       state.setActiveTab(tabId);
     } else {
       // Tab existe - actualizar metadata si se provee displayCode
@@ -281,6 +311,14 @@ export const useTabNavigation = () => {
       // Crear tab automáticamente si no existe (sin instanceId)
       const routeInfo = findRouteInfo(currentPath);
       const tabId = state.addTab(currentPath, routeInfo.name, routeInfo.icon, undefined);
+
+      // Anotar con routeId si el path corresponde a una ruta de plugin registrada.
+      // Las tabs estáticas nativas no están en el RouteRegistry → routeId queda undefined.
+      const pluginRoute = RouteRegistry.getRouteByPath(currentPath);
+      if (pluginRoute) {
+        state.updateTab(tabId, { routeId: pluginRoute.id });
+      }
+
       state.setActiveTab(tabId);
     } else {
       // Respetar displayCode existente en metadata

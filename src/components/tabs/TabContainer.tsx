@@ -1,6 +1,7 @@
 import NotFound from "@/modules/shared/screens/NotFound";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
+import { useRegistryRoutes } from "@/plugins";
 import { useTabStore } from "@/states/tabStore";
 import { useTabsConfigStore } from "@/stores/tabsConfigStore";
 import React, { useMemo, useRef } from "react";
@@ -15,7 +16,11 @@ const TabContainer: React.FC = () => {
   // Keep-Alive: Trackear qué tabs han sido visitadas
   const mountedTabsRef = useRef<Set<string>>(new Set());
 
-  // Aplanar todas las rutas protegidas
+  // Rutas aportadas por plugins — reactivas vía useSyncExternalStore.
+  // Se re-calculan cuando un plugin registra o des-registra rutas, sin reload.
+  const registryRoutes = useRegistryRoutes();
+
+  // Aplanar todas las rutas protegidas (estáticas + plugin)
   const flatRoutes = useMemo(() => {
     const flatten = (routes: RouteType[]): RouteType[] => {
       const result: RouteType[] = [];
@@ -30,14 +35,28 @@ const TabContainer: React.FC = () => {
       return result;
     };
 
-    return flatten(protectedRoutes);
-  }, []);
+    // Adaptar RouteConfig (SDK) → RouteType para que TabContainer pueda
+    // resolver el componente de las tabs de plugin igual que las estáticas.
+    const pluginAsRouteType: RouteType[] = registryRoutes.map((rc) => ({
+      path: rc.path,
+      element: rc.component,
+      name: rc.label,
+      type: "protected" as const,
+      icon: rc.icon,
+    }));
+
+    return [...flatten(protectedRoutes), ...pluginAsRouteType];
+  }, [registryRoutes]);
 
   // Cache persistente (no se recrea en cada render)
   const routeCacheRef = useRef(new Map<string, RouteType | null>());
 
   // Función de búsqueda optimizada con cache persistente
   const findMatchingRoute = useMemo(() => {
+    // Invalidar cache cuando flatRoutes cambia (p.ej. un plugin registra/des-registra rutas).
+    // Sin esto, el cache devolvería null para rutas de plugin recién registradas.
+    routeCacheRef.current.clear();
+
     return (path: string): RouteType | undefined => {
       // Verificar cache primero
       if (routeCacheRef.current.has(path)) {
