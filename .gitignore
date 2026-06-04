@@ -12,8 +12,10 @@ dist
 dist-ssr
 *.local
 
-# Diagnosticos generados por Module Federation (se regeneran en cada build)
+# Artefactos y diagnosticos de Module Federation (se regeneran en cada build)
+.mf
 .mf/
+@mf-types
 
 # Editor directories and files
 .vscode/*

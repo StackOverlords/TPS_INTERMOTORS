@@ -1,0 +1,6 @@
+{
+  "id": "com.tps.demo-external",
+  "name": "helloExternal",
+  "version": "1.0.0",
+  "entry": "remoteEntry.js"
+}
