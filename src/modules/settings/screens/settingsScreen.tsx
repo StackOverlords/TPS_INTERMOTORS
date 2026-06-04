@@ -13,6 +13,7 @@ import {
   HardDrive,
   Keyboard,
   // Link,
+  Package,
   Palette,
   RefreshCw,
   Settings,
@@ -27,6 +28,7 @@ import BackupSettings from "../components/settings/BackupSettings";
 import KeybindingsSettings from "../components/settings/KeybindingsSettings";
 import MasterDataSettings from "../components/settings/MasterDataSettings";
 // import NotificationSettings from '../components/settings/NotificationSettings';
+import PluginSettings from "../components/settings/PluginSettings";
 import SecuritySettings from '../components/settings/SecuritySettings';
 import { SettingsNavigation } from "../components/settings/SettingsNavigation";
 // import SystemSettings from '../components/settings/SystemSettings';
@@ -122,6 +124,14 @@ const settingsSections: SettingsSection[] = [
     icon: Code,
     description: 'Configuraciones avanzadas del sistema',
     component: AdvancedSettings,
+    stickyHeader: false,
+  },
+  {
+    id: 'plugins',
+    label: 'Plugins',
+    icon: Package,
+    description: 'Gestiona los plugins instalados en el sistema',
+    component: PluginSettings,
     stickyHeader: false,
   },
   {

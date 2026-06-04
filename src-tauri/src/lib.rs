@@ -32,6 +32,11 @@ pub fn run() {
             logging::log_error,
             logging::log_warn,
             logging::log_debug,
+            // Comandos de plugins externos (Fase 4)
+            commands::plugins::get_external_plugins,
+            commands::plugins::install_plugin,
+            commands::plugins::uninstall_plugin,
+            commands::plugins::set_plugin_enabled,
         ])
         .setup(|app| {
             // Habilitar logging tanto en desarrollo como en producción
@@ -56,6 +61,32 @@ pub fn run() {
                     ])
                     .build(),
             )?;
+
+            // Habilitar asset protocol scope para el directorio de plugins.
+            // Esto permite al WebView hacer fetch de los remoteEntry.js via asset://
+            // usando convertFileSrc() en el lado TypeScript.
+            //
+            // API: app.asset_protocol_scope().allow_directory(dir, recursive)
+            // Disponible porque tauri feature "protocol-asset" está activada en Cargo.toml.
+            // El scope estático de tauri.conf.json (assetProtocol.scope) solo soporta
+            // variables conocidas en tiempo de build; app_data_dir es dinámico, por eso
+            // se permite en runtime aquí.
+            {
+                let plugins_dir = app
+                    .path()
+                    .app_data_dir()
+                    .map(|d| d.join("plugins"))
+                    .ok();
+                if let Some(dir) = plugins_dir {
+                    // Crear el dir si no existe para que allow_directory no falle
+                    let _ = std::fs::create_dir_all(&dir);
+                    if let Err(e) = app.asset_protocol_scope().allow_directory(&dir, true) {
+                        log::warn!("No se pudo habilitar asset scope para plugins: {e}");
+                    } else {
+                        log::info!("Asset protocol scope habilitado para: {}", dir.display());
+                    }
+                }
+            }
 
             // Generar un log inicial para crear el archivo
             log::info!("TPS Intermotors iniciado correctamente");

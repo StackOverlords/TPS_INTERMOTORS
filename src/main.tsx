@@ -47,6 +47,32 @@ if (import.meta.env.VITE_DEV_PLUGINS === "1") {
   });
 }
 
+// ✨ [PRODUCTION] Cargar plugins externos instalados vía Module Federation.
+// Siempre activo — los plugins externos son primera clase, no solo dev.
+// Best-effort: errores aislados por plugin (no tumban la app ni el bootstrap dev).
+import("./plugins/loadExternalPlugins")
+  .then(({ loadExternalPlugins }) =>
+    import("./plugins/sources/TauriPluginSource").then(({ TauriPluginSource }) =>
+      import("./plugins/plugin-manager").then(({ PluginManager }) =>
+        loadExternalPlugins(new TauriPluginSource(), PluginManager)
+      )
+    )
+  )
+  .then((results) =>
+    // Exponer los resultados a la UI de gestión (badges de error de carga).
+    // Import dinámico: módulo liviano, no arrastra la pantalla PluginSettings.
+    import("./plugins/bootstrapLoadResults").then(({ setBootstrapLoadResults }) => {
+      setBootstrapLoadResults(results);
+      const failed = results.filter((r) => r.status === "failed");
+      if (failed.length > 0) {
+        logger.warn("[external-plugins] Plugins con error:", failed);
+      }
+    })
+  )
+  .catch((e) => {
+    logger.error("[external-plugins] bootstrap failed:", e);
+  });
+
 function App() {
   // ✅ Forzar guardado de tabs antes de cerrar la aplicación
   // Esto previene pérdida de datos cuando el usuario cierra antes de los 300ms del debounce
