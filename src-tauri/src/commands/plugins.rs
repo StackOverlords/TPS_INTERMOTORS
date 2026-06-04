@@ -25,15 +25,19 @@
 //! ```
 //! Map `id → enabled`. Si un plugin no aparece: enabled = true (default).
 //!
-//! ## Contrato Rust ↔ TypeScript (asset protocol)
-//! - Rust devuelve `entry` como **path absoluto** al remoteEntry.js en disco.
-//! - TS (`TauriPluginSource`) convierte ese path con `convertFileSrc()` de
-//!   `@tauri-apps/api/core` antes de pasarlo a `registerRemotes`.
-//!   URL resultante: `asset://localhost/<abs-path>` (Linux/macOS)
-//!                  o `https://asset.localhost/<abs-path>` (Windows WebView2).
+//! ## Contrato Rust ↔ TypeScript (custom scheme `plugin://`)
+//! - Rust devuelve `entry` como **path RELATIVO bajo `plugins_dir`**, con forward slashes.
+//!   Formato: `"<id>/<manifest.entry>"`, ej: `"com.rhleone.facturacion/remoteEntry.js"`.
+//! - TS (`TauriPluginSource`) construye la URL del custom scheme `plugin://`:
+//!   Linux/macOS: `plugin://localhost/<id>/remoteEntry.js`
+//!   Windows:     `http://plugin.localhost/<id>/remoteEntry.js`
+//! - El handler Rust (`register_uri_scheme_protocol("plugin", ...)` en `lib.rs`) parsea
+//!   esa URI, mapea a `<app_data_dir>/plugins/<relPath>`, y sirve el archivo con MIME correcto.
+//! - Ventaja sobre asset protocol: los imports relativos `./assets/x.js` del remoteEntry.js
+//!   resuelven dentro del mismo scheme sin colapsarse (Module Federation multi-chunk funciona).
 //!
 //! ## ExternalPluginRef (struct serializable, shape alineado a RustExternalPlugin en TS)
-//! Campos: `id`, `name`, `version`, `entry` (path abs), `enabled`
+//! Campos: `id`, `name`, `version`, `entry` (path RELATIVO bajo plugins_dir), `enabled`
 //! Todos snake_case en JSON (sin rename_all) para coincidir con el mapper TS.
 
 use serde::{Deserialize, Serialize};
@@ -54,8 +58,9 @@ pub struct ExternalPluginRef {
     pub id: String,
     pub name: String,
     pub version: String,
-    /// Path ABSOLUTO al remoteEntry.js en disco.
-    /// El lado TypeScript lo convierte con convertFileSrc() antes de usarlo.
+    /// Path RELATIVO bajo `plugins_dir`, con forward slashes.
+    /// Formato: `"<id>/<manifest.entry>"`, ej: `"com.rhleone.facturacion/remoteEntry.js"`.
+    /// El lado TypeScript construye la URL `plugin://localhost/<entry>` con este valor.
     pub entry: String,
     pub enabled: bool,
 }
@@ -78,7 +83,8 @@ type PluginsState = HashMap<String, bool>;
 // ---------------------------------------------------------------------------
 
 /// Devuelve `<app_data_dir>/plugins/`.
-fn plugins_dir(app: &AppHandle) -> Result<PathBuf, String> {
+/// `pub(crate)` para que el handler del custom scheme en `lib.rs` pueda reutilizarlo.
+pub(crate) fn plugins_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let base = app
         .path()
         .app_data_dir()
@@ -127,13 +133,20 @@ fn read_manifest(plugin_dir: &Path) -> Result<PluginManifest, String> {
 }
 
 /// Construye un `ExternalPluginRef` desde un directorio de plugin y el estado global.
+///
+/// `entry` se devuelve como path RELATIVO bajo `plugins_dir`, con forward slashes.
+/// Formato: `"<id>/<manifest.entry>"`, ej: `"com.rhleone.facturacion/remoteEntry.js"`.
+/// El nombre del directorio del plugin se usa como `<id>` (install copia a `<plugins_dir>/<id>/`).
 fn build_ref(plugin_dir: &Path, state: &PluginsState) -> Result<ExternalPluginRef, String> {
     let manifest = read_manifest(plugin_dir)?;
-    let entry_path = plugin_dir.join(&manifest.entry);
-    let entry = entry_path
-        .to_str()
-        .ok_or_else(|| "Path de entry no es UTF-8 válido".to_string())?
-        .to_string();
+    // Usar el nombre del directorio como primer segmento del path relativo.
+    // Esto es el ID porque install_plugin copia a <plugins_dir>/<id>/.
+    let dir_name = plugin_dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| "Nombre de directorio de plugin no es UTF-8 válido".to_string())?;
+    // Construir el path relativo con forward slashes (multiplataforma para URLs).
+    let entry = format!("{}/{}", dir_name, manifest.entry);
     // Default enabled = true si no aparece en plugins.json
     let enabled = *state.get(&manifest.id).unwrap_or(&true);
     Ok(ExternalPluginRef {
@@ -173,7 +186,8 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
 ///
 /// - Si el directorio no existe, lo crea y devuelve vec vacío.
 /// - Para cada subdirectorio: lee manifest.json y plugins.json para enabled.
-/// - `entry` en el resultado es un PATH ABSOLUTO (el TS lo convierte con convertFileSrc).
+/// - `entry` en el resultado es un PATH RELATIVO bajo `plugins_dir` (ej: `"com.rhleone.facturacion/remoteEntry.js"`).
+///   El lado TS construye la URL `plugin://localhost/<entry>` con ese valor.
 #[tauri::command]
 pub fn get_external_plugins(app: AppHandle) -> Result<Vec<ExternalPluginRef>, String> {
     let dir = plugins_dir(&app)?;

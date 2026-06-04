@@ -12,8 +12,8 @@
  * - `type: "module"` es OBLIGATORIO en registerRemotes. Sin él, el runtime busca
  *   window[name] y falla con RUNTIME-001 "Failed to get remoteEntry exports".
  * - El remote DEBE exponer "./plugin" como el nombre del expose en vite.config del remote.
- * - El kernel recibe la `entry` ya como URL asset:// (TauriPluginSource la convierte
- *   internamente con convertFileSrc). No hay conversión aquí.
+ * - El kernel recibe la `entry` ya como URL `plugin://` (TauriPluginSource la construye
+ *   internamente con `buildPluginUrl()`). No hay conversión aquí.
  *
  * @module plugins/loadExternalPlugins
  */
@@ -153,7 +153,7 @@ interface EnabledPluginRef {
  * Aísla errores: cualquier fallo retorna LoadResult con status "failed".
  * Nunca propaga excepciones — permite que el loop principal continúe.
  *
- * @param ref     - Referencia al plugin externo (id, name, entry ya como URL asset://).
+ * @param ref     - Referencia al plugin externo (id, name, entry ya como URL plugin://).
  * @param manager - Instancia del PluginManager para register/activate.
  * @returns       LoadResult para este plugin.
  */
