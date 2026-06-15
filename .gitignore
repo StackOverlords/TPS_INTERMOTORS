@@ -17,6 +17,9 @@ dist-ssr
 .mf/
 @mf-types
 
+# plugin-sdk emite .d.ts a ./dist (tsc --noEmit en el flujo normal); nunca en src
+packages/plugin-sdk/src/*.d.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
