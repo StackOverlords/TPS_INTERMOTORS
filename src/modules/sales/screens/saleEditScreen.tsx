@@ -265,7 +265,24 @@ const SaleEditScreen = () => {
     // Filter out es_saldo rows: buildFormasPago recomputes them fresh on save,
     // so they must never appear as explicit editable rows (avoids duplicate stacking on re-edit).
     if (sale.caja_sesion_id != null && sale.formas_pago_detalle?.length) {
-      setFormasPago(sale.formas_pago_detalle.filter((fp) => !fp.es_saldo));
+      const nonSaldoRows = sale.formas_pago_detalle.filter(
+        (fp) => !fp.es_saldo
+      );
+      const hasSaldoRow = sale.formas_pago_detalle.some((fp) => fp.es_saldo);
+
+      // Fila base implícita: una sola fila no-saldo, sin fila de saldo, y cuyo
+      // forma_pago coincide con el header. El backend la genera SIEMPRE (incluso
+      // para ventas sin pago dividido real), por lo que cubre el total entero y
+      // espeja el dropdown header. NO debe resucitarse como fila de split editable:
+      // si lo hiciéramos, cambiar el dropdown header no tendría efecto (el backend
+      // confía en formas_pago) y el movimiento de caja no se actualizaría.
+      // Colapsándola, el header vuelve a ser la única fuente de verdad para el pago único.
+      const isImplicitBase =
+        nonSaldoRows.length === 1 &&
+        !hasSaldoRow &&
+        nonSaldoRows[0].forma_pago === (sale.forma_pago ?? "");
+
+      setFormasPago(isImplicitBase ? [] : nonSaldoRows);
     } else {
       setFormasPago([]);
     }
