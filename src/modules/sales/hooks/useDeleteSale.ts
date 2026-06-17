@@ -20,6 +20,12 @@ export const useDeleteSale = () => {
       queryClient.invalidateQueries({
         queryKey: ["product-provider-orders"],
       });
+      // Anular una venta convertida reabre su cotización-pedido (convertida=false):
+      // refrescar cotizaciones para que el pedido reaparezca disponible.
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
+      // La anulación reversa movimientos de caja (saldo).
+      queryClient.invalidateQueries({ queryKey: ["cash-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-session-active"] });
     },
     retry: false,
     networkMode: "offlineFirst",
