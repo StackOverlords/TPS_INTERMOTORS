@@ -76,6 +76,11 @@ export interface QuotationFormData {
   vehiculo?: string;
   nro_motor?: string;
   comentario?: string;
+  /** Anticipo ya cobrado en la cotización-pedido. Se acredita al total de la venta
+   *  sin generar movimiento de caja nuevo (ya entró como ANTICIPO_COTIZACION). */
+  anticipo?: number;
+  /** Forma de pago con la que se cobró el anticipo (código PaymentTypes). */
+  forma_pago_anticipo?: string;
 }
 
 export const extractFormDataFromQuotation = (
@@ -93,6 +98,8 @@ export const extractFormDataFromQuotation = (
     vehiculo: quotation.vehiculo || undefined,
     nro_motor: quotation.nmotor || undefined,
     comentario: quotation.comentarios || undefined,
+    anticipo: quotation.anticipo || undefined,
+    forma_pago_anticipo: quotation.forma_pago_anticipo || undefined,
   };
 };
 

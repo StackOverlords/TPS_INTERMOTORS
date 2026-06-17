@@ -7,6 +7,7 @@ export const SalePaymentMethodSchema = z.object({
   vuelto: z.coerce.number().nonnegative().nullable().optional(),
   orden: z.coerce.number().int(),
   es_saldo: z.boolean().nullable().optional(),
+  es_anticipo: z.boolean().nullable().optional(),
 });
 
 export const SaleDetailSchema = z.object({

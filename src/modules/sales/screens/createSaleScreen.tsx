@@ -64,13 +64,14 @@ import {
   ResizablePanelGroup,
 } from "@/components/atoms/resizable";
 import { Button } from "@/components/atoms/button";
+import { Badge } from "@/components/atoms/badge";
 import { useTabEffect } from "@/hooks/tabs/useTabEffect";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeConversionModal";
 import { useFormEnterNavigation } from "@/hooks/useFormEnterNavigation";
 import { formatDateForSubmission, getTodayDate } from "@/utils/dateFormatters";
 import { useSalePaymentTypes } from "../hooks/useSalePaymentTypes";
-import { computePaymentBalance } from "../utils/paymentBalance";
+import { computePaymentBalance, resolvePaymentLabel } from "../utils/paymentBalance";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
 import { useTabStore } from "@/states/tabStore";
 import { convertCartToSaleDetails } from "@/modules/shoppingCart/utils/cartCalculations";
@@ -333,6 +334,24 @@ const CreateSaleScreen = () => {
         setValue("comentario", formData.comentario);
       }
 
+      // Pedido con anticipo ya cobrado en la cotización: pre-cargar fila
+      // bloqueada (no editable, no removible). El backend relee el anticipo
+      // por cotizacion_id — esta fila es solo informativa para que el cajero
+      // vea que solo debe cobrar el saldo.
+      if (formData.anticipo && formData.anticipo > 0) {
+        setFormasPago((prev) => [
+          {
+            forma_pago: formData.forma_pago_anticipo ?? "",
+            monto: formData.anticipo,
+            monto_recibido: null,
+            vuelto: null,
+            orden: 1,
+            es_anticipo: true,
+          },
+          ...prev.map((item, i) => ({ ...item, orden: i + 2 })),
+        ]);
+      }
+
       // Limpiar el sessionStorage después de cargar
       sessionStorage.removeItem(storageKey);
 
@@ -585,10 +604,17 @@ const CreateSaleScreen = () => {
       return;
     }
 
+    // La fila es_anticipo es SOLO display en el FE: el backend re-inyecta el anticipo
+    // autoritativamente desde la cotización (server-side). Si la mandáramos en formas_pago,
+    // el backend la contaría como pago normal Y sumaría su propio anticipo → doble conteo.
+    const formasPagoToSend = formasPago.filter((fp) => !fp.es_anticipo);
+
     const dataToSend: Sale = {
       ...data,
       fecha: formatDateForSubmission(data.fecha),
-      ...(isContado && formasPago.length > 0 ? { formas_pago: formasPago } : {}),
+      ...(isContado && formasPagoToSend.length > 0
+        ? { formas_pago: formasPagoToSend }
+        : {}),
       cotizacion_id: sourceQuotation?.id ?? null,
     };
 
@@ -1237,108 +1263,133 @@ const CreateSaleScreen = () => {
                             </p>
                           )}
 
-                          {formasPago.map((fp, index) => (
-                            <div
-                              key={index}
-                              className="flex flex-wrap gap-2 items-end"
-                            >
-                              <div className="flex-1 min-w-[120px]">
-                                <Label className="text-xs">Forma de pago</Label>
-                                <Select
-                                  value={fp.forma_pago}
-                                  onValueChange={(value) => {
-                                    setFormasPago((prev) =>
-                                      prev.map((item, i) =>
-                                        i === index
-                                          ? {
-                                              ...item,
-                                              forma_pago: value,
-                                              monto_recibido:
-                                                value !== "EF"
-                                                  ? null
-                                                  : item.monto_recibido,
-                                            }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecciona" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {salePaymentTypesData &&
-                                      salePaymentTypesData.map((pt) => (
-                                        <SelectItem key={pt.code} value={pt.code}>
-                                          {pt.label}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
+                          {formasPago.map((fp, index) =>
+                            fp.es_anticipo ? (
+                              <div
+                                key={index}
+                                className="flex flex-wrap gap-2 items-center justify-between rounded-md border border-dashed border-emerald-400/50 bg-emerald-50/50 dark:bg-emerald-950/20 p-2"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant="success"
+                                    className="text-xs"
+                                  >
+                                    Adelanto ya cobrado
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    {resolvePaymentLabel(
+                                      fp.forma_pago,
+                                      salePaymentTypesData
+                                    )}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium text-foreground">
+                                  Bs {fp.monto.toFixed(2)}
+                                </span>
                               </div>
+                            ) : (
+                              <div
+                                key={index}
+                                className="flex flex-wrap gap-2 items-end"
+                              >
+                                <div className="flex-1 min-w-[120px]">
+                                  <Label className="text-xs">Forma de pago</Label>
+                                  <Select
+                                    value={fp.forma_pago}
+                                    onValueChange={(value) => {
+                                      setFormasPago((prev) =>
+                                        prev.map((item, i) =>
+                                          i === index
+                                            ? {
+                                                ...item,
+                                                forma_pago: value,
+                                                monto_recibido:
+                                                  value !== "EF"
+                                                    ? null
+                                                    : item.monto_recibido,
+                                              }
+                                            : item
+                                        )
+                                      );
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecciona" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {salePaymentTypesData &&
+                                        salePaymentTypesData.map((pt) => (
+                                          <SelectItem key={pt.code} value={pt.code}>
+                                            {pt.label}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
 
-                              <div className="flex-1 min-w-[100px]">
-                                <Label className="text-xs">Monto</Label>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  value={fp.monto === 0 ? "" : fp.monto}
-                                  onChange={(e) => {
-                                    const value = parseFloat(e.target.value) || 0;
-                                    setFormasPago((prev) =>
-                                      prev.map((item, i) =>
-                                        i === index ? { ...item, monto: value } : item
-                                      )
-                                    );
-                                  }}
-                                  placeholder="0.00"
-                                />
-                              </div>
-
-                              {fp.forma_pago === "EF" && (
                                 <div className="flex-1 min-w-[100px]">
-                                  <Label className="text-xs">Monto recibido</Label>
+                                  <Label className="text-xs">Monto</Label>
                                   <Input
                                     type="number"
                                     min={0}
                                     step="0.01"
-                                    value={fp.monto_recibido ?? ""}
+                                    value={fp.monto === 0 ? "" : fp.monto}
                                     onChange={(e) => {
-                                      const value =
-                                        e.target.value === ""
-                                          ? null
-                                          : parseFloat(e.target.value) || 0;
+                                      const value = parseFloat(e.target.value) || 0;
                                       setFormasPago((prev) =>
                                         prev.map((item, i) =>
-                                          i === index
-                                            ? { ...item, monto_recibido: value }
-                                            : item
+                                          i === index ? { ...item, monto: value } : item
                                         )
                                       );
                                     }}
                                     placeholder="0.00"
                                   />
                                 </div>
-                              )}
 
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() =>
-                                  setFormasPago((prev) =>
-                                    prev
-                                      .filter((_, i) => i !== index)
-                                      .map((item, i) => ({ ...item, orden: i + 1 }))
-                                  )
-                                }
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </div>
-                          ))}
+                                {fp.forma_pago === "EF" && (
+                                  <div className="flex-1 min-w-[100px]">
+                                    <Label className="text-xs">Monto recibido</Label>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      step="0.01"
+                                      value={fp.monto_recibido ?? ""}
+                                      onChange={(e) => {
+                                        const value =
+                                          e.target.value === ""
+                                            ? null
+                                            : parseFloat(e.target.value) || 0;
+                                        setFormasPago((prev) =>
+                                          prev.map((item, i) =>
+                                            i === index
+                                              ? { ...item, monto_recibido: value }
+                                              : item
+                                          )
+                                        );
+                                      }}
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                )}
+
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() =>
+                                    setFormasPago((prev) =>
+                                      prev
+                                        .filter((_, i) => i !== index)
+                                        .map((item, i) => ({ ...item, orden: i + 1 }))
+                                    )
+                                  }
+                                >
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </div>
+                            )
+                          )}
 
                           <div className="flex items-center justify-between pt-1">
                             <Button
@@ -1408,6 +1459,24 @@ const CreateSaleScreen = () => {
                             return (
                               <p className="text-xs text-emerald-600 dark:text-emerald-400">
                                 ✓ Pago completo
+                              </p>
+                            );
+                          })()}
+
+                          {/* Resumen de saldo a cobrar cuando hay anticipo aplicado */}
+                          {formasPago.some((fp) => fp.es_anticipo) && (() => {
+                            const balance = computePaymentBalance(
+                              formasPago,
+                              total,
+                              formValues.forma_pago,
+                              salePaymentTypesData
+                            );
+                            return (
+                              <p className="text-xs font-medium text-foreground pt-1 border-t border-border">
+                                Saldo a cobrar: Bs{" "}
+                                {balance.status === "pending"
+                                  ? balance.saldo.toFixed(2)
+                                  : "0.00"}
                               </p>
                             );
                           })()}
