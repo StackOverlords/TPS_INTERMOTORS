@@ -30,6 +30,7 @@ export const CashMovementSchema = z.object({
         'ANULACION_COBRANZA',
         'ANULACION_GASTO',
         'ANULACION_RETIRO',
+        'ANULACION_ANTICIPO_COTIZACION',
         'PAGO_PROVEEDOR',
         'ANULACION_PAGO_PROVEEDOR',
         'COMPRA_CONTADO',
