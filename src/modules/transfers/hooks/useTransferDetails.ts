@@ -25,8 +25,10 @@ export const useTransferDetails = (
                     cantidad_entrada_salida: totalSaldo,
                     costo_entrada: oldestLot.costo,
                     precio_salida: product.precio_venta,
-                    precio_entrada_venta: product.precio_venta,
-                    precio_entrada_venta_alt: product.precio_venta_alt,
+                    // Default de display por-lote (más antiguo). El envío real
+                    // re-parte por lote en getTransferDetails con lot.precio_venta.
+                    precio_entrada_venta: oldestLot.precio_venta,
+                    precio_entrada_venta_alt: oldestLot.precio_venta_alt,
                     incremento_p_entrada_venta: 0,
                     incremento_p_entrada_venta_alt: 0,
                     tc_transfer: oldestLot.tc_compra || tcTransfer,
@@ -194,6 +196,11 @@ export const useTransferDetails = (
                     ...base,
                     cantidad_entrada_salida: take,
                     costo_entrada: lot.costo,
+                    // Precio de venta POR LOTE (simétrico con el costo). Antes se
+                    // heredaba de `base` (precio global del producto), lo que aplanaba
+                    // el precio real de cada lote en el destino.
+                    precio_entrada_venta: lot.precio_venta,
+                    precio_entrada_venta_alt: lot.precio_venta_alt,
                     tc_transfer: lot.tc_compra || base.tc_transfer,
                     fecha_adquisicion: lot.fecha_adquisicion,
                 });

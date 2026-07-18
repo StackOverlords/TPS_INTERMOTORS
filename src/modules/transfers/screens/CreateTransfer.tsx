@@ -87,8 +87,10 @@ const buildPrefillRows = (prefill: ImportResult): UITransferDetailCreate[] =>
         cantidad_entrada_salida: Math.min(Number(item.cantidad_solicitada), totalSaldo),
         costo_entrada: oldestLot.costo,
         precio_salida: precioVenta,
-        precio_entrada_venta: precioVenta,
-        precio_entrada_venta_alt: precioVentaAlt,
+        // Precio de venta por-lote (más antiguo). El envío re-parte por lote
+        // en getTransferDetails usando lot.precio_venta.
+        precio_entrada_venta: oldestLot.precio_venta,
+        precio_entrada_venta_alt: oldestLot.precio_venta_alt,
         incremento_p_entrada_venta: 0,
         incremento_p_entrada_venta_alt: 0,
         tc_transfer: oldestLot.tc_compra,
