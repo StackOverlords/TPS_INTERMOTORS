@@ -79,8 +79,11 @@ const buildPrefillRows = (prefill: ImportResult): UITransferDetailCreate[] =>
     const totalSaldo = lotsAsc.reduce((sum, lot) => sum + lot.saldo, 0);
     const oldestLot = lotsAsc[0];
     const product = item.product;
-    const precioVenta = Number(product.precio_venta ?? oldestLot.precio_venta) || 0;
-    const precioVentaAlt = Number(product.precio_venta_alt ?? oldestLot.precio_venta_alt) || 0;
+    // Precio por LOTE, no el maestro del producto (B puro): el precio real de
+    // la transferencia sale del lote. getTransferDetails vuelve a pisar por lote
+    // al partir FIFO; esta semilla solo alimenta el display del row agregado.
+    const precioVenta = Number(oldestLot.precio_venta ?? product.precio_venta) || 0;
+    const precioVentaAlt = Number(oldestLot.precio_venta_alt ?? product.precio_venta_alt) || 0;
     return [
       {
         producto_id: Number(product.id),

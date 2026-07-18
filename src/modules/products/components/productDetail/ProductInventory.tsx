@@ -8,7 +8,7 @@ import {
 } from "@/components/atoms/card";
 import CustomizableTable from "@/components/common/CustomizableTable";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Building2, Edit } from "lucide-react";
+import { Building2, Edit, Loader2, Save } from "lucide-react";
 import type { ProductStock } from "../../types/productStock";
 import { formatCurrency } from "@/utils/formaters";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,10 @@ import { useMemo } from "react";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { parseDateForUi } from "@/utils/dateFormatters";
+import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
+import { usePermissionCheck } from "@/hooks/usePermissionCheck";
+import { PERMISSIONS } from "@/lib/permissions";
+import { useStockPriceDrafts } from "../../hooks/useInlineStockPriceUpdate";
 
 interface ProductInventoryProps {
   productStockData: ProductStock[];
@@ -37,6 +41,21 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
   onEditPrice,
 }) => {
   const user = authSDK.getCurrentUser();
+
+  // Edición inline de precios gateada por el permiso del endpoint update_prices
+  const { isAuthorized: canEditPrice } = usePermissionCheck({
+    permission: PERMISSIONS.COM.UPDATE_PRICES,
+    roles: [],
+    requireBoth: false,
+  });
+  const {
+    getFieldValue,
+    setDraftField,
+    dirtyCount,
+    discard,
+    save,
+    isSaving,
+  } = useStockPriceDrafts();
 
   // 🔥 Filtrar datos por stock si filterByStock = true
   const filteredData = useMemo(() => {
@@ -109,20 +128,70 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
       accessorKey: "precio_venta",
       header: `Precio Venta F.`,
       minSize: 30,
-      size: 80,
-      cell: ({ getValue }) => {
-        const value = getValue<number>();
-        return <div className="text-end">{formatCurrency(value)}</div>;
+      size: 90,
+      cell: ({ row }) => {
+        const detail = row.original;
+        if (!canEditPrice)
+          return (
+            <div className="text-end">{formatCurrency(detail.precio_venta)}</div>
+          );
+        const value = getFieldValue(detail, "precio_venta");
+        const changed = value !== detail.precio_venta;
+        return (
+          <EditablePrice
+            value={value}
+            onSubmit={(val) =>
+              setDraftField(
+                detail,
+                "precio_venta",
+                typeof val === "number" ? val : parseFloat(val.toString()) || 0
+              )
+            }
+            showEditIcon={false}
+            autoSelect
+            inputClassName="text-end"
+            buttonClassName={cn(
+              "justify-end",
+              changed && "text-amber-600 dark:text-amber-400 font-semibold"
+            )}
+          />
+        );
       },
     },
     {
       accessorKey: "precio_venta_alt",
       header: `Precio Venta Alt.`,
       minSize: 30,
-      size: 80,
-      cell: ({ getValue }) => {
-        const value = getValue<number>();
-        return <div className="text-end">{formatCurrency(value)}</div>;
+      size: 90,
+      cell: ({ row }) => {
+        const detail = row.original;
+        if (!canEditPrice)
+          return (
+            <div className="text-end">
+              {formatCurrency(detail.precio_venta_alt)}
+            </div>
+          );
+        const value = getFieldValue(detail, "precio_venta_alt");
+        const changed = value !== detail.precio_venta_alt;
+        return (
+          <EditablePrice
+            value={value}
+            onSubmit={(val) =>
+              setDraftField(
+                detail,
+                "precio_venta_alt",
+                typeof val === "number" ? val : parseFloat(val.toString()) || 0
+              )
+            }
+            showEditIcon={false}
+            autoSelect
+            inputClassName="text-end"
+            buttonClassName={cn(
+              "justify-end",
+              changed && "text-amber-600 dark:text-amber-400 font-semibold"
+            )}
+          />
+        );
       },
     },
     {
@@ -182,14 +251,16 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
       enableHiding: false,
       cell: ({ row }: { row: any }) => (
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onEditPrice?.(row.original)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+          {canEditPrice && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEditPrice?.(row.original)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -224,13 +295,39 @@ const ProductInventory: React.FC<ProductInventoryProps> = ({
       )}
     >
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="flex items-center gap-3 text-base font-semibold text-foreground">
-          <Building2 className="size-4 text-muted-foreground" />
-          Detalle disponibles en otras sucursales
+        <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <Building2 className="size-4 text-muted-foreground shrink-0" />
+          <span className="truncate min-w-0">
+            Detalle disponibles en otras sucursales
+          </span>
           {filterByStock && (
-            <Badge variant="info" className="text-xs">
+            <Badge variant="info" className="text-xs shrink-0">
               Solo con stock
             </Badge>
+          )}
+          {canEditPrice && dirtyCount > 0 && (
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={discard}
+                disabled={isSaving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => save(filteredData)}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                Guardar ({dirtyCount})
+              </Button>
+            </div>
           )}
         </CardTitle>
       </CardHeader>

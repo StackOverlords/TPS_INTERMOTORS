@@ -20,13 +20,14 @@ export const useTransferDetails = (
                 const totalSaldo = lots.reduce((sum, lot) => sum + lot.saldo, 0);
                 const oldestLot = lots[0];
 
+                // El precio de venta se toma del LOTE (precio real por compra), no del
+                // precio maestro del producto. El maestro puede diferir del precio editado
+                // por lote y provocaba que la transferencia arrastrara un precio viejo.
                 const newRow: UITransferDetailCreate = {
                     producto_id: product.id,
                     cantidad_entrada_salida: totalSaldo,
                     costo_entrada: oldestLot.costo,
-                    precio_salida: product.precio_venta,
-                    // Default de display por-lote (más antiguo). El envío real
-                    // re-parte por lote en getTransferDetails con lot.precio_venta.
+                    precio_salida: oldestLot.precio_venta,
                     precio_entrada_venta: oldestLot.precio_venta,
                     precio_entrada_venta_alt: oldestLot.precio_venta_alt,
                     incremento_p_entrada_venta: 0,
@@ -42,8 +43,8 @@ export const useTransferDetails = (
                         codigo_upc: product.codigo_upc,
                         marca: product.marca || null,
                         costo: oldestLot.costo,
-                        precio_venta: product.precio_venta,
-                        precio_venta_alt: product.precio_venta_alt,
+                        precio_venta: oldestLot.precio_venta,
+                        precio_venta_alt: oldestLot.precio_venta_alt,
                     },
                 };
                 return [...prev, newRow];
@@ -196,9 +197,9 @@ export const useTransferDetails = (
                     ...base,
                     cantidad_entrada_salida: take,
                     costo_entrada: lot.costo,
-                    // Precio de venta POR LOTE (simétrico con el costo). Antes se
-                    // heredaba de `base` (precio global del producto), lo que aplanaba
-                    // el precio real de cada lote en el destino.
+                    // Fidelidad por lote (B puro): cada lote viaja con SU precio de venta,
+                    // no con el precio agregado del producto.
+                    precio_salida: lot.precio_venta,
                     precio_entrada_venta: lot.precio_venta,
                     precio_entrada_venta_alt: lot.precio_venta_alt,
                     tc_transfer: lot.tc_compra || base.tc_transfer,

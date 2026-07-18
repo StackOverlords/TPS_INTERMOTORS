@@ -10,12 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/atoms/card";
-import { Edit, ShoppingCart } from "lucide-react";
+import { Edit, Loader2, Save, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import authSDK from "@/services/sdk-simple-auth";
 import { parseDateForUi } from "@/utils/dateFormatters";
+import { EditablePrice } from "@/modules/shoppingCart/components/editablePrice";
+import { usePermissionCheck } from "@/hooks/usePermissionCheck";
+import { PERMISSIONS } from "@/lib/permissions";
+import { useStockPriceDrafts } from "../../hooks/useInlineStockPriceUpdate";
 
 interface ProductTableOverviewProps {
   productStockData: ProductStock[];
@@ -39,6 +43,21 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
   onEditPrice,
 }) => {
   const user = authSDK.getCurrentUser();
+
+  // Edición inline de precios gateada por el permiso del endpoint update_prices
+  const { isAuthorized: canEditPrice } = usePermissionCheck({
+    permission: PERMISSIONS.COM.UPDATE_PRICES,
+    roles: [],
+    requireBoth: false,
+  });
+  const {
+    getFieldValue,
+    setDraftField,
+    dirtyCount,
+    discard,
+    save,
+    isSaving,
+  } = useStockPriceDrafts();
 
   // 🔥 Filtrar datos por stock si filterByStock = true
   const filteredData = useMemo(() => {
@@ -94,20 +113,71 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
       accessorKey: "precio_venta",
       header: `Precio Venta F.`,
       minSize: 30,
-      size: 80,
-      cell: ({ getValue }) => {
-        const value = getValue<number>();
-        return <div className="text-end">{formatCurrency(value)}</div>;
+      size: 90,
+      cell: ({ row }) => {
+        const detail = row.original;
+        if (!canEditPrice)
+          return (
+            <div className="text-end">{formatCurrency(detail.precio_venta)}</div>
+          );
+        const value = getFieldValue(detail, "precio_venta");
+        const changed = value !== detail.precio_venta;
+        return (
+          <EditablePrice
+            value={value}
+            onSubmit={(val) =>
+              setDraftField(
+                detail,
+                "precio_venta",
+                typeof val === "number" ? val : parseFloat(val.toString()) || 0
+              )
+            }
+            showEditIcon={false}
+            autoSelect
+            inputClassName="text-end"
+            buttonClassName={cn(
+              "justify-end",
+              changed && "text-amber-600 dark:text-amber-400 font-semibold"
+            )}
+          />
+        );
       },
     },
     {
       accessorKey: "precio_venta_alt",
       header: `Precio Venta Alt.`,
       minSize: 30,
-      size: 80,
-      cell: ({ getValue }) => (
-        <div className="text-end">{formatCurrency(getValue<number>())}</div>
-      ),
+      size: 90,
+      cell: ({ row }) => {
+        const detail = row.original;
+        if (!canEditPrice)
+          return (
+            <div className="text-end">
+              {formatCurrency(detail.precio_venta_alt)}
+            </div>
+          );
+        const value = getFieldValue(detail, "precio_venta_alt");
+        const changed = value !== detail.precio_venta_alt;
+        return (
+          <EditablePrice
+            value={value}
+            onSubmit={(val) =>
+              setDraftField(
+                detail,
+                "precio_venta_alt",
+                typeof val === "number" ? val : parseFloat(val.toString()) || 0
+              )
+            }
+            showEditIcon={false}
+            autoSelect
+            inputClassName="text-end"
+            buttonClassName={cn(
+              "justify-end",
+              changed && "text-amber-600 dark:text-amber-400 font-semibold"
+            )}
+          />
+        );
+      },
     },
     {
       accessorKey: "tc_compra",
@@ -188,14 +258,16 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
       enableHiding: false,
       cell: ({ row }: { row: any }) => (
         <div className="flex justify-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onEditPrice?.(row.original)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+          {canEditPrice && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEditPrice?.(row.original)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -231,16 +303,42 @@ const ProductTableOverview: React.FC<ProductTableOverviewProps> = ({
     >
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center justify-between gap-3 text-base font-semibold text-foreground">
-          <span className="flex items-center gap-2">
-            <ShoppingCart className="size-4 text-muted-foreground" />
-            Compras Disponibles
+          <span className="flex items-center gap-2 min-w-0">
+            <ShoppingCart className="size-4 text-muted-foreground shrink-0" />
+            <span className="truncate">Compras Disponibles</span>
             {filterByStock && (
-              <Badge variant="info" className="text-xs ml-2">
+              <Badge variant="info" className="text-xs ml-2 shrink-0">
                 Solo con stock
               </Badge>
             )}
           </span>
-          <Badge variant="secondary">Stock Total: {stockTotal}</Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            {canEditPrice && dirtyCount > 0 && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={discard}
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => save(filteredData)}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  Guardar ({dirtyCount})
+                </Button>
+              </>
+            )}
+            <Badge variant="secondary">Stock Total: {stockTotal}</Badge>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
