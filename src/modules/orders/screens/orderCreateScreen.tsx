@@ -32,7 +32,10 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { useViewConfig } from "@/hooks/useViewConfig";
 import { cn } from "@/lib/utils";
+import { OrderCartTransferButton } from "@/modules/orderCart/components/OrderCartTransferButton";
+import { useOrderCart } from "@/modules/orderCart/hooks/useOrderCart";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
@@ -99,6 +102,9 @@ const OrderCreateScreen = () => {
 
   // Hook de detalles de orden (pasar exchangeRate)
   const orderDetailsHook = useOrderDetails(false, exchangeRate);
+
+  const { isFeatureEnabled } = useViewConfig("orders-list");
+  const orderCart = useOrderCart();
 
   const { data: orderTypesData } = useOrderTypes();
 
@@ -319,6 +325,44 @@ const OrderCreateScreen = () => {
         tableRef.current?.focusQuantityInputByProductId(products[0].id);
       }
     }, 100);
+  };
+
+  // Traer productos seleccionados desde el carrito de pedido (orderCart)
+  const handleSeedFromOrderCart = (selectedIds: number[]) => {
+    const selectedItems = orderCart.items.filter((item) =>
+      selectedIds.includes(item.product.id)
+    );
+
+    if (selectedItems.length === 0) return;
+
+    // [DEFECT COMPENSATION 1] useOrderDetails.ts:141 hace
+    // `cantidad: product.quantity` SIN `?? 1` en la rama de ítem nuevo (a
+    // diferencia de la rama de merge, que sí lo tiene). Pasar el `product`
+    // crudo sin `quantity` explícito dejaría `cantidad: undefined`.
+    const payload = selectedItems.map((item) => ({
+      ...item.product,
+      quantity: item.cantidad,
+    }));
+
+    const addedProductIds = orderDetailsHook.addMultipleProducts(payload);
+
+    setTimeout(() => {
+      // Enfocar el primer producto nuevo que se agregó (mismo patrón que
+      // handleAddMultipleProducts)
+      if (addedProductIds.length > 0) {
+        tableRef.current?.focusQuantityInputByProductId(addedProductIds[0]);
+      } else if (payload.length > 0) {
+        tableRef.current?.focusQuantityInputByProductId(payload[0].id);
+      }
+    }, 100);
+
+    // [DEFECT COMPENSATION 2] `addedProductIds` (useOrderDetails.ts:166) solo
+    // incluye ids agregados por la rama de ítem NUEVO — un producto que ya
+    // estaba en el pedido se mergea pero su id nunca se retorna. Vaciar el
+    // carrito por `addedProductIds` dejaría colgado ese producto mergeado.
+    // Se vacía por el subconjunto SELECCIONADO, que sí llega completo al
+    // pedido (nuevo o mergeado).
+    orderCart.removeMany(selectedIds);
   };
 
   const onSubmit = (data: OrderCreate) => {
@@ -957,18 +1001,29 @@ const OrderCreateScreen = () => {
                             </div>
 
                             {/* Botón de acción - Derecha */}
-                            {configuraciones.selector_mode === "window" && (
-                              <Button
-                                type="button"
-                                onClick={toggleWindowSelector}
-                                disabled={isSaving}
-                              >
-                                <Plus className="size-4" />
-                                <span className="hidden sm:block">
-                                  Seleccionar Productos
-                                </span>
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {isFeatureEnabled("seedFromOrderCart") && (
+                                <OrderCartTransferButton
+                                  onTransfer={handleSeedFromOrderCart}
+                                  allowSelective={isFeatureEnabled(
+                                    "seedFromOrderCartSelective"
+                                  )}
+                                />
+                              )}
+
+                              {configuraciones.selector_mode === "window" && (
+                                <Button
+                                  type="button"
+                                  onClick={toggleWindowSelector}
+                                  disabled={isSaving}
+                                >
+                                  <Plus className="size-4" />
+                                  <span className="hidden sm:block">
+                                    Seleccionar Productos
+                                  </span>
+                                </Button>
+                              )}
+                            </div>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="flex-1 min-h-0">

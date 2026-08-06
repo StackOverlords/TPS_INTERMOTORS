@@ -28,6 +28,12 @@ export interface ViewFeaturesConfig {
   // Features personalizadas (extensible)
   permissions?: ViewFeatureConfig;
   saveButton?: ViewFeatureConfig;
+
+  // Carrito de pedido (order-cart)
+  addToOrderCart?: ViewFeatureConfig;
+  bulkAddToOrderCart?: ViewFeatureConfig;
+  seedFromOrderCart?: ViewFeatureConfig;
+
   [key: string]: ViewFeatureConfig | undefined;
 }
 

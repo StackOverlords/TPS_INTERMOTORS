@@ -31,6 +31,8 @@ import { COMMANDS, useCommands, useKeybindingKeys } from "@/keybindings";
 import { QuickTransferRequestModal } from "@/modules/transfers/components/QuickTransferRequestModal";
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
+import { OrderCartBadgeButton } from "@/modules/orderCart/components/OrderCartBadgeButton";
+import { useOrderCart } from "@/modules/orderCart/hooks/useOrderCart";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCell } from "@/utils/formatCell";
@@ -38,6 +40,7 @@ import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
   ArrowLeftRight,
+  ClipboardList,
   Edit,
   Eye,
   HelpCircle,
@@ -188,6 +191,8 @@ const ProductListScreen = () => {
   const { addItemToCart, addMultipleItems, decrementQuantity } =
     useCartWithUtils(user?.name ?? "", selectedBranchId ?? "");
 
+  const orderCart = useOrderCart();
+
   const [products, setProducts] = useState<ProductGet[]>([]);
   const { handleError } = useErrorHandler();
 
@@ -316,6 +321,13 @@ const ProductListScreen = () => {
     setTransferRequestModalOpen(true);
   }, []);
 
+  const handleAddToOrderCart = useCallback(
+    (product: ProductGet) => {
+      orderCart.addItem(product);
+    },
+    [orderCart.addItem]
+  );
+
   const handleAddSelectedToCart = useCallback(() => {
     const selectedProducts = getAllSelectedProducts();
 
@@ -352,6 +364,28 @@ const ProductListScreen = () => {
     clearAllSelections,
     getBehaviorValue,
   ]);
+
+  const handleAddSelectedToOrderCart = useCallback(() => {
+    const selectedProducts = getAllSelectedProducts();
+
+    if (selectedProducts.length === 0) {
+      showErrorToast({
+        title: "Error al agregar los productos",
+        description: `No hay productos seleccionados para agregar al pedido.`,
+      });
+      return;
+    }
+
+    try {
+      orderCart.addMany(selectedProducts);
+      clearAllSelections();
+    } catch (error) {
+      showErrorToast({
+        title: "Error al agregar los productos",
+        description: `Error al procesar productos para el carrito de pedido`,
+      });
+    }
+  }, [getAllSelectedProducts, orderCart.addMany, clearAllSelections]);
 
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
@@ -449,17 +483,19 @@ const ProductListScreen = () => {
                     <ArrowLeftRight className="mr-2 h-4 w-4" />
                     Solicitar transferencia
                   </DropdownMenuItem>
+                  {isFeatureEnabled("addToOrderCart") && (
+                    <DropdownMenuItem
+                      onClick={() => handleAddToOrderCart(row.original)}
+                    >
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Agregar a pedido
+                    </DropdownMenuItem>
+                  )}
                   {/* <DropdownMenuItem
                                     onKeyDown={(e) => e.stopPropagation()}
                                     onClick={() => handleViewDetails(row.original.id)}>
                                     <TrendingUp className="mr-2 h-4 w-4" />
                                     Ver estadisticas
-                                </DropdownMenuItem> */}
-                  {/* <DropdownMenuItem
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                    onClick={() => handleAddItemCart(row.original)}>
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
-                                    Agregar al carrito
                                 </DropdownMenuItem> */}
 
                   {/* <DropdownMenuItem
@@ -686,6 +722,7 @@ const ProductListScreen = () => {
       handleViewImage,
       handleUpdateProduct,
       handleRequestTransfer,
+      handleAddToOrderCart,
     ]
   );
 
@@ -1072,6 +1109,12 @@ const ProductListScreen = () => {
                   <ColumnVisibilityDropdown table={table} />
                 )}
 
+                {/* Carrito de Pedido (badge + panel) */}
+                {(isFeatureEnabled("addToOrderCart") ||
+                  isFeatureEnabled("bulkAddToOrderCart")) && (
+                  <OrderCartBadgeButton />
+                )}
+
                 {/* Acciones de Selección Múltiple */}
                 {isFeatureEnabled("bulkAddToCart") &&
                   getSelectedCount() > 0 && (
@@ -1093,6 +1136,25 @@ const ProductListScreen = () => {
                         </Badge>
                       </Button>
                     </>
+                  )}
+
+                {/* Acción de Selección Múltiple — Carrito de Pedido */}
+                {isFeatureEnabled("bulkAddToOrderCart") &&
+                  getSelectedCount() > 0 && (
+                    <Button
+                      variant="outline"
+                      className="relative"
+                      onClick={handleAddSelectedToOrderCart}
+                    >
+                      <ClipboardList className="size-4" />
+                      Agregar a pedido
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+                      >
+                        {getSelectedCount()}
+                      </Badge>
+                    </Button>
                   )}
 
                 {/* Ayuda de Atajos de Teclado */}
