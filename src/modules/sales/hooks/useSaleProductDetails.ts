@@ -45,6 +45,11 @@ interface UseSaleProductDetailsReturn {
   setGlobalDiscount: (discount: number) => void;
 }
 
+// Reasigna `orden` secuencialmente. El backend ordena por (orden, id), asi que
+// las filas deben quedar sin huecos ni repetidos al agregar o quitar productos.
+const reindexOrden = (details: SaleUpdateDetailUI[]): SaleUpdateDetailUI[] =>
+  details.map((detail, index) => ({ ...detail, orden: index + 1 }));
+
 const useSaleProductDetailsWithForm = ({
   formMethods,
   originalDetails = [],
@@ -498,7 +503,7 @@ const useSaleProductDetailsWithForm = ({
         }
       });
 
-      setValue("detalles", updated);
+      setValue("detalles", reindexOrden(updated));
       showToastSummary(input, addedCount, skippedCount, productsToAdd);
     },
     [setValue, getValues, hasDiscount, getAvailableStock, calculateItemDiscount, getRealQuantity]
@@ -521,7 +526,7 @@ const useSaleProductDetailsWithForm = ({
       const updated = currentProducts.filter(
         (detail) => detail.producto?.id !== productId
       );
-      setValue("detalles", updated);
+      setValue("detalles", reindexOrden(updated));
     },
     [setValue, getValues]
   );
@@ -628,7 +633,7 @@ const useSaleProductDetailsWithForm = ({
         }
       });
 
-      setValue("detalles", updated);
+      setValue("detalles", reindexOrden(updated));
 
       if (addedCount > 0) {
         showSuccessToast({
