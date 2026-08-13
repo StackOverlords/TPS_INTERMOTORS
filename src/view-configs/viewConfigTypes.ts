@@ -33,6 +33,7 @@ export interface ViewFeaturesConfig {
   addToOrderCart?: ViewFeatureConfig;
   bulkAddToOrderCart?: ViewFeatureConfig;
   seedFromOrderCart?: ViewFeatureConfig;
+  seedFromOrderCartSelective?: ViewFeatureConfig;
 
   [key: string]: ViewFeatureConfig | undefined;
 }
