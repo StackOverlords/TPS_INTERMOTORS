@@ -37,6 +37,7 @@ import type { QuotationGetAll } from "@/modules/quotations/types/quotationGet.ty
 import { useQuotationsPaginated } from "@/modules/quotations/hooks/useQuotationsPaginated";
 import { useSalesFilters } from "@/modules/sales/hooks/useSalesFilters";
 import { useBranchStore } from "@/states/branchStore";
+import authSDK from "@/services/sdk-simple-auth";
 import TooltipButton from "@/components/common/TooltipButton";
 import QuotationsFiltersComponent from "@/modules/quotations/components/quotationList/quotationFilterComponent";
 import { format } from "date-fns";
@@ -54,6 +55,14 @@ const QuotationSelectorWindow: React.FC = () => {
   const currentWindow = getCurrentWebviewWindow();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   const tableRef = useRef<HTMLTableElement>(null);
+
+  // Hidratar el branch store desde localStorage — en ventanas secundarias de Tauri
+  // el store arranca con selectedBranchId: null porque restoreForUser() nunca se llama.
+  // authSDK.ready ya resolvió antes de este render (ver window-entry.tsx).
+  useEffect(() => {
+    const user = authSDK.getCurrentUser();
+    useBranchStore.getState().restoreForUser(user?.id ?? "");
+  }, []);
 
   const config: WindowConfig = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
