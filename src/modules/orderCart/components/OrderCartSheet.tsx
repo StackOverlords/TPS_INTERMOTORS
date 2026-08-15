@@ -9,13 +9,23 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/atoms/sheet";
-import { BrushCleaning, ListChecks, ShoppingCart, Truck, X } from "lucide-react";
+import {
+  BrushCleaning,
+  ListChecks,
+  ShoppingCart,
+  Truck,
+  X,
+} from "lucide-react";
 import { useOrderCart } from "../hooks/useOrderCart";
 import { OrderCartItemRow } from "./OrderCartItemRow";
 
 interface OrderCartSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  branchId?: number;
+  transferDisabled?: boolean;
+  /** Productos que ya fueron transferidos al borrador actual. */
+  excludedProductIds?: ReadonlySet<number>;
   /**
    * Cuando se provee, agrega una acción de traspaso en el footer.
    * Este componente NO sabe nada de pedidos/`useOrderDetails` — solo
@@ -42,12 +52,22 @@ interface OrderCartSheetProps {
 export const OrderCartSheet: React.FC<OrderCartSheetProps> = ({
   open,
   onOpenChange,
+  branchId,
+  transferDisabled = false,
+  excludedProductIds,
   onTransferSelected,
   transferLabel = "Traer al pedido",
   allowSelective = false,
 }) => {
-  const { items, updateCantidad, removeItem, clear } = useOrderCart();
+  const { items, updateCantidad, removeItem, removeMany, clear } =
+    useOrderCart(branchId);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const availableItems = excludedProductIds
+    ? items.filter((item) => !excludedProductIds.has(item.product.id))
+    : items;
+  const selectedAvailableIds = availableItems
+    .map((item) => item.product.id)
+    .filter((productId) => selectedIds.has(productId));
 
   useEffect(() => {
     if (!open) setSelectedIds(new Set());
@@ -63,15 +83,24 @@ export const OrderCartSheet: React.FC<OrderCartSheetProps> = ({
   };
 
   const handleTransferSelected = () => {
-    if (!onTransferSelected || selectedIds.size === 0) return;
-    onTransferSelected(Array.from(selectedIds));
+    if (!onTransferSelected || selectedAvailableIds.length === 0) return;
+    onTransferSelected(selectedAvailableIds);
     setSelectedIds(new Set());
   };
 
   const handleTransferAll = () => {
-    if (!onTransferSelected || items.length === 0) return;
-    onTransferSelected(items.map((item) => item.product.id));
+    if (!onTransferSelected || availableItems.length === 0) return;
+    onTransferSelected(availableItems.map((item) => item.product.id));
     setSelectedIds(new Set());
+  };
+
+  const handleClear = () => {
+    if (!excludedProductIds) {
+      clear();
+      return;
+    }
+
+    removeMany(availableItems.map((item) => item.product.id));
   };
 
   return (
@@ -87,15 +116,15 @@ export const OrderCartSheet: React.FC<OrderCartSheetProps> = ({
               Carrito de pedido
             </div>
             <div className="flex items-center gap-2">
-              {items.length > 0 && (
+              {availableItems.length > 0 && (
                 <Button
                   type="button"
                   className="cursor-pointer"
-                  onClick={clear}
+                  onClick={handleClear}
                   variant="destructive"
                 >
                   <BrushCleaning />
-                  Vaciar carrito
+                  {excludedProductIds ? "Vaciar disponibles" : "Vaciar carrito"}
                 </Button>
               )}
               <SheetClose className="size-8 rounded-sm ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary flex items-center justify-center">
@@ -104,20 +133,23 @@ export const OrderCartSheet: React.FC<OrderCartSheetProps> = ({
             </div>
           </SheetTitle>
           <SheetDescription className="-mt-2 text-left">
-            {items.length} producto{items.length === 1 ? "" : "s"} en el
-            carrito
+            {availableItems.length} producto
+            {availableItems.length === 1 ? "" : "s"}{" "}
+            {excludedProductIds
+              ? `disponible${availableItems.length === 1 ? "" : "s"}`
+              : "en el carrito"}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 min-h-0 overflow-hidden">
-          {items.length === 0 ? (
+          {availableItems.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground h-full flex flex-col justify-center items-center">
               <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>El carrito de pedido está vacío</p>
             </div>
           ) : (
             <div className="overflow-y-auto h-full flex flex-col gap-2">
-              {items.map((item) => (
+              {availableItems.map((item) => (
                 <OrderCartItemRow
                   key={`order-cart-item-${item.product.id}`}
                   item={item}
@@ -131,15 +163,16 @@ export const OrderCartSheet: React.FC<OrderCartSheetProps> = ({
           )}
         </div>
 
-        {onTransferSelected && items.length > 0 && (
+        {onTransferSelected && availableItems.length > 0 && (
           <SheetFooter className="flex-shrink-0 border-t border-border pt-2 flex flex-col gap-2">
             <Button
               type="button"
               className="w-full cursor-pointer"
               onClick={handleTransferAll}
+              disabled={transferDisabled}
             >
               <Truck />
-              {transferLabel} todo ({items.length})
+              {transferLabel} todo ({availableItems.length})
             </Button>
 
             {allowSelective && (
@@ -147,11 +180,11 @@ export const OrderCartSheet: React.FC<OrderCartSheetProps> = ({
                 type="button"
                 variant="outline"
                 className="w-full cursor-pointer"
-                disabled={selectedIds.size === 0}
+                disabled={transferDisabled || selectedAvailableIds.length === 0}
                 onClick={handleTransferSelected}
               >
                 <ListChecks />
-                Traer seleccionados ({selectedIds.size})
+                Traer seleccionados ({selectedAvailableIds.length})
               </Button>
             )}
           </SheetFooter>

@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { OrderCartTransferButton } from "@/modules/orderCart/components/OrderCartTransferButton";
 import { useOrderCart } from "@/modules/orderCart/hooks/useOrderCart";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { productsService } from "@/modules/products/services/productService";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -79,6 +80,11 @@ import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuan
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { PERMISSIONS } from "@/lib/permissions";
 
+interface ImportedOrderCartQuantity {
+  importedQuantity: number;
+  draftQuantityBeforeImport: number;
+}
+
 const OrderCreateScreen = () => {
   const configuraciones = {
     inputs: false,
@@ -104,7 +110,16 @@ const OrderCreateScreen = () => {
   const orderDetailsHook = useOrderDetails(false, exchangeRate);
 
   const { isFeatureEnabled } = useViewConfig("orders-list");
-  const orderCart = useOrderCart();
+  const [importedOrderCartQuantities, setImportedOrderCartQuantities] = useState<
+    Map<number, ImportedOrderCartQuantity>
+  >(() => new Map());
+  const [isImportingOrderCart, setIsImportingOrderCart] = useState(false);
+
+  const importedOrderCartIdsInDraft = new Set(
+    orderDetailsHook.details
+      .map((detail) => detail.id_producto)
+      .filter((productId) => importedOrderCartQuantities.has(productId)),
+  );
 
   const { data: orderTypesData } = useOrderTypes();
 
@@ -156,6 +171,8 @@ const OrderCreateScreen = () => {
   } = methods;
 
   const currentStatus = watch("estado_actual");
+  const draftBranchId = watch("sucursal");
+  const orderCart = useOrderCart(draftBranchId);
 
   // Sincronizar detalles con el formulario
   useEffect(() => {
@@ -296,6 +313,7 @@ const OrderCreateScreen = () => {
 
       if (canClearDetails) {
         orderDetailsHook.clearDetails();
+        setImportedOrderCartQuantities(new Map());
       }
     },
     [getValues, reset]
@@ -328,41 +346,81 @@ const OrderCreateScreen = () => {
   };
 
   // Traer productos seleccionados desde el carrito de pedido (orderCart)
-  const handleSeedFromOrderCart = (selectedIds: number[]) => {
-    const selectedItems = orderCart.items.filter((item) =>
-      selectedIds.includes(item.product.id)
+  const handleSeedFromOrderCart = async (selectedIds: number[]) => {
+    if (!draftBranchId || isSaving || isImportingOrderCart) return;
+
+    const draftQuantities = new Map(
+      orderDetailsHook.details.map((detail) => [
+        detail.id_producto,
+        Number(detail.cantidad),
+      ]),
+    );
+    const selectedItems = orderCart.items.filter(
+      (item) =>
+        selectedIds.includes(item.product.id) &&
+        !(
+          importedOrderCartQuantities.has(item.product.id) &&
+          draftQuantities.has(item.product.id)
+        ),
     );
 
     if (selectedItems.length === 0) return;
 
-    // [DEFECT COMPENSATION 1] useOrderDetails.ts:141 hace
-    // `cantidad: product.quantity` SIN `?? 1` en la rama de ítem nuevo (a
-    // diferencia de la rama de merge, que sí lo tiene). Pasar el `product`
-    // crudo sin `quantity` explícito dejaría `cantidad: undefined`.
-    const payload = selectedItems.map((item) => ({
-      ...item.product,
-      quantity: item.cantidad,
-    }));
+    setIsImportingOrderCart(true);
 
-    const addedProductIds = orderDetailsHook.addMultipleProducts(payload);
+    try {
+      // El carrito persiste solo datos de presentación. Precio y metadatos
+      // financieros se consultan otra vez al transferir al borrador.
+      const payload = await Promise.all(
+        selectedItems.map(async (item) => {
+          const latestProduct = await productsService.getByIdWithStock(
+            item.product.id,
+            draftBranchId,
+          );
+          const product = latestProduct.data;
 
-    setTimeout(() => {
-      // Enfocar el primer producto nuevo que se agregó (mismo patrón que
-      // handleAddMultipleProducts)
-      if (addedProductIds.length > 0) {
-        tableRef.current?.focusQuantityInputByProductId(addedProductIds[0]);
-      } else if (payload.length > 0) {
-        tableRef.current?.focusQuantityInputByProductId(payload[0].id);
-      }
-    }, 100);
+          return {
+            id: product.id,
+            codigo_interno: product.codigo_interno,
+            descripcion: product.descripcion,
+            codigo_oem: product.codigo_oem,
+            codigo_upc: product.codigo_upc,
+            precio_venta: product.precio_venta,
+            marca: product.marca?.marca ?? "",
+            procedencia: product.procedencia?.procedencia ?? "",
+            quantity: item.cantidad,
+          };
+        }),
+      );
 
-    // [DEFECT COMPENSATION 2] `addedProductIds` (useOrderDetails.ts:166) solo
-    // incluye ids agregados por la rama de ítem NUEVO — un producto que ya
-    // estaba en el pedido se mergea pero su id nunca se retorna. Vaciar el
-    // carrito por `addedProductIds` dejaría colgado ese producto mergeado.
-    // Se vacía por el subconjunto SELECCIONADO, que sí llega completo al
-    // pedido (nuevo o mergeado).
-    orderCart.removeMany(selectedIds);
+      const addedProductIds = orderDetailsHook.addMultipleProducts(payload);
+      setImportedOrderCartQuantities((currentQuantities) => {
+        const nextQuantities = new Map(currentQuantities);
+        selectedItems.forEach((item) =>
+          nextQuantities.set(item.product.id, {
+            importedQuantity: item.cantidad,
+            draftQuantityBeforeImport:
+              draftQuantities.get(item.product.id) ?? 0,
+          }),
+        );
+        return nextQuantities;
+      });
+
+      setTimeout(() => {
+        if (addedProductIds.length > 0) {
+          tableRef.current?.focusQuantityInputByProductId(addedProductIds[0]);
+        } else if (payload.length > 0) {
+          tableRef.current?.focusQuantityInputByProductId(payload[0].id);
+        }
+      }, 100);
+    } catch (error: unknown) {
+      handleError({
+        error,
+        customTitle: "No se pudieron actualizar los productos del carrito",
+      });
+    } finally {
+      setIsImportingOrderCart(false);
+    }
   };
 
   const onSubmit = (data: OrderCreate) => {
@@ -389,6 +447,36 @@ const OrderCreateScreen = () => {
 
     createOrder(dataWithTC, {
       onSuccess: (createdOrder) => {
+        const submittedQuantities = new Map(
+          data.detalles.map((detail) => [
+            detail.id_producto,
+            Number(detail.cantidad),
+          ]),
+        );
+        const fulfilledOrderCartQuantities = Array.from(
+          importedOrderCartQuantities,
+        )
+          .map(
+            ([
+              productId,
+              { importedQuantity, draftQuantityBeforeImport },
+            ]) => ({
+              productId,
+              cantidad: Math.min(
+                importedQuantity,
+                Math.max(
+                  0,
+                  (submittedQuantities.get(productId) ?? 0) -
+                    draftQuantityBeforeImport,
+                ),
+              ),
+            }),
+          )
+          .filter(({ cantidad }) => cantidad > 0);
+
+        orderCart.removeQuantities(fulfilledOrderCartQuantities);
+        setImportedOrderCartQuantities(new Map());
+
         showSuccessToast({
           title: "Pedido Exitoso",
           description: `Pedido #${createdOrder.nro} realizado con éxito`,
@@ -1005,6 +1093,11 @@ const OrderCreateScreen = () => {
                               {isFeatureEnabled("seedFromOrderCart") && (
                                 <OrderCartTransferButton
                                   onTransfer={handleSeedFromOrderCart}
+                                  branchId={draftBranchId}
+                                  disabled={isSaving || isImportingOrderCart}
+                                  excludedProductIds={
+                                    importedOrderCartIdsInDraft
+                                  }
                                   allowSelective={isFeatureEnabled(
                                     "seedFromOrderCartSelective"
                                   )}

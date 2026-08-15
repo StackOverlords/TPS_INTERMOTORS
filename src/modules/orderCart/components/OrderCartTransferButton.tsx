@@ -9,8 +9,8 @@ interface OrderCartTransferButtonProps {
    * Recibe el subconjunto de ids a traer. Este componente NO conoce
    * `useOrderDetails` ni el contrato de detalle de pedido — la lógica de
    * traspaso (mapeo `{ ...product, quantity: cantidad }`,
-   * `addMultipleProducts`, `removeMany`) vive en `orderCreateScreen`
-   * (Fase 3, defect compensations 1 y 2).
+   * `addMultipleProducts` y limpieza tras el registro) vive en
+   * `orderCreateScreen`.
    */
   onTransfer: (selectedIds: number[]) => void;
   /**
@@ -19,6 +19,10 @@ interface OrderCartTransferButtonProps {
    * Se conserva detrás del flag `seedFromOrderCartSelective`.
    */
   allowSelective?: boolean;
+  /** Productos que ya están dentro del borrador actual. */
+  excludedProductIds?: ReadonlySet<number>;
+  branchId?: number;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -31,11 +35,21 @@ interface OrderCartTransferButtonProps {
  */
 export const OrderCartTransferButton: React.FC<
   OrderCartTransferButtonProps
-> = ({ onTransfer, allowSelective = false, className }) => {
-  const { count, isReady } = useOrderCart();
+> = ({
+  onTransfer,
+  allowSelective = false,
+  excludedProductIds,
+  branchId,
+  disabled = false,
+  className,
+}) => {
+  const { items, isReady } = useOrderCart(branchId);
   const [open, setOpen] = useState(false);
+  const availableCount = excludedProductIds
+    ? items.filter((item) => !excludedProductIds.has(item.product.id)).length
+    : items.length;
 
-  if (!isReady || count === 0) return null;
+  if (!isReady || availableCount === 0) return null;
 
   return (
     <>
@@ -48,9 +62,10 @@ export const OrderCartTransferButton: React.FC<
         size="sm"
         className={className}
         onClick={() => setOpen(true)}
+        disabled={disabled}
       >
         <Truck className="h-4 w-4" />
-        Traer del carrito ({count})
+        Traer del carrito ({availableCount})
       </Button>
 
       <OrderCartSheet
@@ -58,6 +73,9 @@ export const OrderCartTransferButton: React.FC<
         onOpenChange={setOpen}
         transferLabel="Traer al pedido"
         allowSelective={allowSelective}
+        excludedProductIds={excludedProductIds}
+        branchId={branchId}
+        transferDisabled={disabled}
         onTransferSelected={(selectedIds) => {
           onTransfer(selectedIds);
           setOpen(false);

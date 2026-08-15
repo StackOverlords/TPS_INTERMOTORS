@@ -39,6 +39,7 @@ export const NULL_ORDER_CART: OrderCartStoreInstance = create<OrderCartStore>()(
     updateCantidad: () => {},
     removeItem: () => {},
     removeMany: () => {},
+    removeQuantities: () => {},
     clear: () => {},
   }),
 );

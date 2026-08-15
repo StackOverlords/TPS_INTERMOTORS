@@ -1,16 +1,31 @@
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 
+export type OrderCartProduct = Pick<
+  ProductGet,
+  | "id"
+  | "descripcion"
+  | "codigo_oem"
+  | "marca"
+  | "stock_actual"
+  | "pedido_transito"
+  | "pedido_almacen"
+>;
+
 /**
- * Línea del carrito de pedido: snapshot del producto (no solo el id) +
- * cantidad acumulada + fecha de alta. Sin campos de precio/costo — esa
- * derivación es responsabilidad exclusiva de `useOrderDetails` al momento
- * del traspaso, no del carrito.
+ * Línea del carrito de pedido: snapshot mínimo para mostrar el producto +
+ * cantidad acumulada + fecha de alta. Precio/costo se consulta nuevamente
+ * al transferir para no crear pedidos con datos financieros persistidos.
  */
 export interface OrderCartItem {
-  product: ProductGet;
+  product: OrderCartProduct;
   cantidad: number;
   /** ISO timestamp — habilita el aviso de antigüedad en el panel */
   addedAt: string;
+}
+
+export interface OrderCartQuantity {
+  productId: number;
+  cantidad: number;
 }
 
 export interface OrderCartState {
@@ -33,8 +48,10 @@ export interface OrderCartActions {
   /** Ignora valores `<= 0` o `NaN` — la línea queda con la cantidad anterior. */
   updateCantidad: (productId: number, cantidad: number) => void;
   removeItem: (productId: number) => void;
-  /** Usado en el traspaso a pedido: limpia únicamente el subconjunto transferido. */
+  /** Elimina completamente las líneas indicadas. */
   removeMany: (productIds: number[]) => void;
+  /** Descuenta solo la cantidad que quedó registrada en el pedido. */
+  removeQuantities: (quantities: OrderCartQuantity[]) => void;
   clear: () => void;
 }
 

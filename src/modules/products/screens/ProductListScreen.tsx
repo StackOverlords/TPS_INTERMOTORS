@@ -168,7 +168,7 @@ const ProductListScreen = () => {
           productId: selectedProductForImage.id,
           imageFile: file,
         });
-      } catch (error) {
+      } catch {
         showErrorToast({
           title: "Error",
           description: "No se pudo procesar la imagen",
@@ -323,9 +323,10 @@ const ProductListScreen = () => {
 
   const handleAddToOrderCart = useCallback(
     (product: ProductGet) => {
+      if (!orderCart.isReady) return;
       orderCart.addItem(product);
     },
-    [orderCart.addItem]
+    [orderCart]
   );
 
   const handleAddSelectedToCart = useCallback(() => {
@@ -352,7 +353,7 @@ const ProductListScreen = () => {
       }, 100);
 
       clearAllSelections();
-    } catch (error) {
+    } catch {
       showErrorToast({
         title: "Error al agregar los productos",
         description: `Error al procesar productos para el carrito`,
@@ -376,16 +377,22 @@ const ProductListScreen = () => {
       return;
     }
 
+    if (!orderCart.isReady) return;
+
     try {
       orderCart.addMany(selectedProducts);
       clearAllSelections();
-    } catch (error) {
+    } catch {
       showErrorToast({
         title: "Error al agregar los productos",
         description: `Error al procesar productos para el carrito de pedido`,
       });
     }
-  }, [getAllSelectedProducts, orderCart.addMany, clearAllSelections]);
+  }, [
+    getAllSelectedProducts,
+    orderCart,
+    clearAllSelections,
+  ]);
 
   const columns = useMemo<ColumnDef<ProductGet>[]>(
     () => [
@@ -483,7 +490,7 @@ const ProductListScreen = () => {
                     <ArrowLeftRight className="mr-2 h-4 w-4" />
                     Solicitar transferencia
                   </DropdownMenuItem>
-                  {isFeatureEnabled("addToOrderCart") && (
+                  {isFeatureEnabled("addToOrderCart") && orderCart.isReady && (
                     <DropdownMenuItem
                       onClick={() => handleAddToOrderCart(row.original)}
                     >
@@ -723,6 +730,10 @@ const ProductListScreen = () => {
       handleUpdateProduct,
       handleRequestTransfer,
       handleAddToOrderCart,
+      getStockColor,
+      isFeatureEnabled,
+      orderCart.isReady,
+      products,
     ]
   );
 
@@ -1140,6 +1151,7 @@ const ProductListScreen = () => {
 
                 {/* Acción de Selección Múltiple — Carrito de Pedido */}
                 {isFeatureEnabled("bulkAddToOrderCart") &&
+                  orderCart.isReady &&
                   getSelectedCount() > 0 && (
                     <Button
                       variant="outline"

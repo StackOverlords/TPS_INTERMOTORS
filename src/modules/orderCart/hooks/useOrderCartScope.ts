@@ -24,11 +24,16 @@ function buildScopeKey(
  * `getCurrentUser()` puede devolver `null` aunque haya sesión persistida,
  * y sin esta suscripción el scope quedaría pegado en `null`.
  *
- * `null` cuando no hay usuario o no hay sucursal seleccionada todavía —
- * el consumidor (`useOrderCart`) debe caer a `NULL_ORDER_CART` en ese caso.
+ * Puede recibir una sucursal explícita para ligar un borrador al carrito de
+ * su sucursal original aunque la selección global cambie. Sin override usa
+ * la sucursal global. `null` cuando usuario o sucursal aún no están listos.
  */
-export function useOrderCartScope(): string | null {
-  const branchId = useBranchStore((state) => state.selectedBranchId);
+export function useOrderCartScope(branchIdOverride?: number): string | null {
+  const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
+  const branchId =
+    branchIdOverride === undefined
+      ? selectedBranchId
+      : branchIdOverride.toString();
   const [scopeKey, setScopeKey] = useState<string | null>(() =>
     buildScopeKey(authSDK.getCurrentUser()?.id, branchId),
   );
@@ -43,7 +48,6 @@ export function useOrderCartScope(): string | null {
     return () => unsubscribe();
     // branchId es dependencia intencional: al cambiar de sucursal el scope
     // debe re-derivarse aunque no cambie el estado de auth.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
 
   return scopeKey;

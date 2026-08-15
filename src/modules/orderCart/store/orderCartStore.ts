@@ -2,9 +2,23 @@ import { create } from "zustand";
 import type { StoreApi, UseBoundStore } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { ORDER_CART_STORAGE_PREFIX } from "../constants/orderCart.constants";
-import type { OrderCartItem, OrderCartStore } from "../types/orderCart.types";
+import type {
+  OrderCartItem,
+  OrderCartProduct,
+  OrderCartStore,
+} from "../types/orderCart.types";
 
 type PersistedOrderCart = Pick<OrderCartStore, "items">;
+
+const toOrderCartProduct = (product: OrderCartProduct): OrderCartProduct => ({
+  id: product.id,
+  descripcion: product.descripcion,
+  codigo_oem: product.codigo_oem,
+  marca: product.marca,
+  stock_actual: product.stock_actual,
+  pedido_transito: product.pedido_transito,
+  pedido_almacen: product.pedido_almacen,
+});
 
 /**
  * Store por scope (usuario+sucursal). Factory, no singleton — cada
@@ -32,13 +46,17 @@ export const createOrderCartStore = (scopeKey: string) =>
               items = existing
                 ? items.map((i) =>
                     i.product.id === product.id
-                      ? { ...i, cantidad: i.cantidad + cantidad }
+                      ? {
+                          ...i,
+                          product: toOrderCartProduct(product),
+                          cantidad: i.cantidad + cantidad,
+                        }
                       : i,
                   )
                 : [
                     ...items,
                     {
-                      product,
+                      product: toOrderCartProduct(product),
                       cantidad,
                       addedAt: new Date().toISOString(),
                     } satisfies OrderCartItem,
@@ -71,6 +89,24 @@ export const createOrderCartStore = (scopeKey: string) =>
             });
           },
 
+          removeQuantities: (quantities) => {
+            const quantitiesByProduct = new Map(
+              quantities.map(({ productId, cantidad }) => [productId, cantidad]),
+            );
+
+            set({
+              items: get().items.flatMap((item) => {
+                const quantityToRemove = quantitiesByProduct.get(item.product.id);
+                if (!quantityToRemove) return [item];
+
+                const remainingQuantity = item.cantidad - quantityToRemove;
+                return remainingQuantity > 0
+                  ? [{ ...item, cantidad: remainingQuantity }]
+                  : [];
+              }),
+            });
+          },
+
           clear: () => set({ items: [] }),
         }),
         {
@@ -80,9 +116,14 @@ export const createOrderCartStore = (scopeKey: string) =>
           version: 1,
           merge: (persistedState, currentState) => {
             const persisted = persistedState as Partial<PersistedOrderCart> | undefined;
-            const items = (persisted?.items ?? []).filter(
-              (item): item is OrderCartItem => Boolean(item?.product?.id),
-            );
+            const items = (persisted?.items ?? [])
+              .filter(
+                (item): item is OrderCartItem => Boolean(item?.product?.id),
+              )
+              .map((item) => ({
+                ...item,
+                product: toOrderCartProduct(item.product),
+              }));
 
             return { ...currentState, items };
           },

@@ -6,6 +6,7 @@ import {
   NULL_ORDER_CART,
 } from "../store/orderCartRegistry";
 import type { OrderCartItem } from "../types/orderCart.types";
+import type { OrderCartQuantity } from "../types/orderCart.types";
 
 export interface UseOrderCartResult {
   items: OrderCartItem[];
@@ -17,14 +18,14 @@ export interface UseOrderCartResult {
   updateCantidad: (productId: number, cantidad: number) => void;
   removeItem: (productId: number) => void;
   removeMany: (productIds: number[]) => void;
+  removeQuantities: (quantities: OrderCartQuantity[]) => void;
   clear: () => void;
 }
 
 /**
- * Facade del carrito de pedido. Sin argumentos: resuelve el scope
- * (usuario+sucursal) internamente vía `useOrderCartScope` — así ningún
- * call site puede llavear mal el carrito (el defecto de `useCartWithUtils`
- * con `user.name`, ver design D2).
+ * Facade del carrito de pedido. Por defecto resuelve usuario+sucursal global.
+ * Un borrador puede pasar su sucursal para conservar el scope original aunque
+ * el usuario cambie la sucursal global mientras la pestaña sigue montada.
  *
  * `useMemo` acá guarda la IDENTIDAD del store (no el costo de crearlo) —
  * sin él, cada render pediría una instancia "nueva" al registry y
@@ -34,8 +35,8 @@ export interface UseOrderCartResult {
  * hidratación async del auth) → `NULL_ORDER_CART`: vacío, no persistido,
  * `isReady: false`, acciones no-op.
  */
-export function useOrderCart(): UseOrderCartResult {
-  const scopeKey = useOrderCartScope();
+export function useOrderCart(branchId?: number): UseOrderCartResult {
+  const scopeKey = useOrderCartScope(branchId);
 
   const store = useMemo(
     () => (scopeKey ? getOrCreateOrderCartStore(scopeKey) : NULL_ORDER_CART),
@@ -49,6 +50,7 @@ export function useOrderCart(): UseOrderCartResult {
   const updateCantidad = useStore(store, (s) => s.updateCantidad);
   const removeItem = useStore(store, (s) => s.removeItem);
   const removeMany = useStore(store, (s) => s.removeMany);
+  const removeQuantities = useStore(store, (s) => s.removeQuantities);
   const clear = useStore(store, (s) => s.clear);
 
   return {
@@ -60,6 +62,7 @@ export function useOrderCart(): UseOrderCartResult {
     updateCantidad,
     removeItem,
     removeMany,
+    removeQuantities,
     clear,
   };
 }
