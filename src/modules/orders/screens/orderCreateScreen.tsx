@@ -32,8 +32,12 @@ import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
+import { useViewConfig } from "@/hooks/useViewConfig";
 import { cn } from "@/lib/utils";
+import { OrderCartTransferButton } from "@/modules/orderCart/components/OrderCartTransferButton";
+import { useOrderCart } from "@/modules/orderCart/hooks/useOrderCart";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
+import { productsService } from "@/modules/products/services/productService";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,6 +80,11 @@ import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuan
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { PERMISSIONS } from "@/lib/permissions";
 
+interface ImportedOrderCartQuantity {
+  importedQuantity: number;
+  draftQuantityBeforeImport: number;
+}
+
 const OrderCreateScreen = () => {
   const configuraciones = {
     inputs: false,
@@ -99,6 +108,18 @@ const OrderCreateScreen = () => {
 
   // Hook de detalles de orden (pasar exchangeRate)
   const orderDetailsHook = useOrderDetails(false, exchangeRate);
+
+  const { isFeatureEnabled } = useViewConfig("orders-list");
+  const [importedOrderCartQuantities, setImportedOrderCartQuantities] = useState<
+    Map<number, ImportedOrderCartQuantity>
+  >(() => new Map());
+  const [isImportingOrderCart, setIsImportingOrderCart] = useState(false);
+
+  const importedOrderCartIdsInDraft = new Set(
+    orderDetailsHook.details
+      .map((detail) => detail.id_producto)
+      .filter((productId) => importedOrderCartQuantities.has(productId)),
+  );
 
   const { data: orderTypesData } = useOrderTypes();
 
@@ -150,6 +171,8 @@ const OrderCreateScreen = () => {
   } = methods;
 
   const currentStatus = watch("estado_actual");
+  const draftBranchId = watch("sucursal");
+  const orderCart = useOrderCart(draftBranchId);
 
   // Sincronizar detalles con el formulario
   useEffect(() => {
@@ -290,6 +313,7 @@ const OrderCreateScreen = () => {
 
       if (canClearDetails) {
         orderDetailsHook.clearDetails();
+        setImportedOrderCartQuantities(new Map());
       }
     },
     [getValues, reset]
@@ -321,6 +345,84 @@ const OrderCreateScreen = () => {
     }, 100);
   };
 
+  // Traer productos seleccionados desde el carrito de pedido (orderCart)
+  const handleSeedFromOrderCart = async (selectedIds: number[]) => {
+    if (!draftBranchId || isSaving || isImportingOrderCart) return;
+
+    const draftQuantities = new Map(
+      orderDetailsHook.details.map((detail) => [
+        detail.id_producto,
+        Number(detail.cantidad),
+      ]),
+    );
+    const selectedItems = orderCart.items.filter(
+      (item) =>
+        selectedIds.includes(item.product.id) &&
+        !(
+          importedOrderCartQuantities.has(item.product.id) &&
+          draftQuantities.has(item.product.id)
+        ),
+    );
+
+    if (selectedItems.length === 0) return;
+
+    setIsImportingOrderCart(true);
+
+    try {
+      // El carrito persiste solo datos de presentación. Precio y metadatos
+      // financieros se consultan otra vez al transferir al borrador.
+      const payload = await Promise.all(
+        selectedItems.map(async (item) => {
+          const latestProduct = await productsService.getByIdWithStock(
+            item.product.id,
+            draftBranchId,
+          );
+          const product = latestProduct.data;
+
+          return {
+            id: product.id,
+            codigo_interno: product.codigo_interno,
+            descripcion: product.descripcion,
+            codigo_oem: product.codigo_oem,
+            codigo_upc: product.codigo_upc,
+            precio_venta: product.precio_venta,
+            marca: product.marca?.marca ?? "",
+            procedencia: product.procedencia?.procedencia ?? "",
+            quantity: item.cantidad,
+          };
+        }),
+      );
+
+      const addedProductIds = orderDetailsHook.addMultipleProducts(payload);
+      setImportedOrderCartQuantities((currentQuantities) => {
+        const nextQuantities = new Map(currentQuantities);
+        selectedItems.forEach((item) =>
+          nextQuantities.set(item.product.id, {
+            importedQuantity: item.cantidad,
+            draftQuantityBeforeImport:
+              draftQuantities.get(item.product.id) ?? 0,
+          }),
+        );
+        return nextQuantities;
+      });
+
+      setTimeout(() => {
+        if (addedProductIds.length > 0) {
+          tableRef.current?.focusQuantityInputByProductId(addedProductIds[0]);
+        } else if (payload.length > 0) {
+          tableRef.current?.focusQuantityInputByProductId(payload[0].id);
+        }
+      }, 100);
+    } catch (error: unknown) {
+      handleError({
+        error,
+        customTitle: "No se pudieron actualizar los productos del carrito",
+      });
+    } finally {
+      setIsImportingOrderCart(false);
+    }
+  };
+
   const onSubmit = (data: OrderCreate) => {
     if (!validateBeforeSubmit()) {
       return;
@@ -345,6 +447,36 @@ const OrderCreateScreen = () => {
 
     createOrder(dataWithTC, {
       onSuccess: (createdOrder) => {
+        const submittedQuantities = new Map(
+          data.detalles.map((detail) => [
+            detail.id_producto,
+            Number(detail.cantidad),
+          ]),
+        );
+        const fulfilledOrderCartQuantities = Array.from(
+          importedOrderCartQuantities,
+        )
+          .map(
+            ([
+              productId,
+              { importedQuantity, draftQuantityBeforeImport },
+            ]) => ({
+              productId,
+              cantidad: Math.min(
+                importedQuantity,
+                Math.max(
+                  0,
+                  (submittedQuantities.get(productId) ?? 0) -
+                    draftQuantityBeforeImport,
+                ),
+              ),
+            }),
+          )
+          .filter(({ cantidad }) => cantidad > 0);
+
+        orderCart.removeQuantities(fulfilledOrderCartQuantities);
+        setImportedOrderCartQuantities(new Map());
+
         showSuccessToast({
           title: "Pedido Exitoso",
           description: `Pedido #${createdOrder.nro} realizado con éxito`,
@@ -957,18 +1089,34 @@ const OrderCreateScreen = () => {
                             </div>
 
                             {/* Botón de acción - Derecha */}
-                            {configuraciones.selector_mode === "window" && (
-                              <Button
-                                type="button"
-                                onClick={toggleWindowSelector}
-                                disabled={isSaving}
-                              >
-                                <Plus className="size-4" />
-                                <span className="hidden sm:block">
-                                  Seleccionar Productos
-                                </span>
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {isFeatureEnabled("seedFromOrderCart") && (
+                                <OrderCartTransferButton
+                                  onTransfer={handleSeedFromOrderCart}
+                                  branchId={draftBranchId}
+                                  disabled={isSaving || isImportingOrderCart}
+                                  excludedProductIds={
+                                    importedOrderCartIdsInDraft
+                                  }
+                                  allowSelective={isFeatureEnabled(
+                                    "seedFromOrderCartSelective"
+                                  )}
+                                />
+                              )}
+
+                              {configuraciones.selector_mode === "window" && (
+                                <Button
+                                  type="button"
+                                  onClick={toggleWindowSelector}
+                                  disabled={isSaving}
+                                >
+                                  <Plus className="size-4" />
+                                  <span className="hidden sm:block">
+                                    Seleccionar Productos
+                                  </span>
+                                </Button>
+                              )}
+                            </div>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="flex-1 min-h-0">

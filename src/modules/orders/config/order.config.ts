@@ -174,6 +174,18 @@ export const ordersListViewConfig: ViewConfiguration = {
       label: 'Ayuda de Filtros',
       description: 'Mostrar tooltip con atajos de filtros',
     },
+
+    seedFromOrderCart: {
+      enabled: true,
+      label: 'Traer del Carrito de Pedido',
+      description: 'Permitir transferir productos del carrito de pedido al crear un pedido',
+    },
+
+    seedFromOrderCartSelective: {
+      enabled: false,
+      label: 'Selección individual al traer del Carrito de Pedido',
+      description: 'Agrega un botón para elegir qué productos traer en vez de traer el carrito completo. Desactivado: en la práctica se trae todo de una',
+    },
   },
 
   behaviors: {

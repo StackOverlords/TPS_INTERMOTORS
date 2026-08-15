@@ -91,6 +91,18 @@ export const productsListViewConfig: ViewConfiguration = {
       description: 'Agregar productos seleccionados al carrito',
     },
 
+    addToOrderCart: {
+      enabled: true,
+      label: 'Agregar a Pedido',
+      description: 'Agregar el producto al carrito de pedido',
+    },
+
+    bulkAddToOrderCart: {
+      enabled: true,
+      label: 'Agregar Múltiples a Pedido',
+      description: 'Agregar productos seleccionados al carrito de pedido',
+    },
+
     viewImage: {
       enabled: true,
       label: 'Ver Imagen',

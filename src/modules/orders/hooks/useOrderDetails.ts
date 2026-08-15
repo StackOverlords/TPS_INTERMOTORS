@@ -17,6 +17,18 @@ import {
   calculatePercent,
 } from "@/utils/decimalUtils";
 
+type OrderProductInput = Pick<
+  ProductGet,
+  | "id"
+  | "codigo_interno"
+  | "descripcion"
+  | "codigo_oem"
+  | "codigo_upc"
+  | "precio_venta"
+  | "marca"
+  | "procedencia"
+> & { quantity?: number };
+
 const DEFAULT_INC_P_VENTA = 0; // 30%
 const DEFAULT_INC_P_VENTA_ALT = 16; // 15%
 
@@ -73,7 +85,7 @@ export const useOrderDetails = <
           DEFAULT_INC_P_VENTA_ALT,
         );
 
-        const newDetail: any = {
+        const newDetail = {
           id_producto: product.id,
           cantidad: 1,
           costo,
@@ -93,13 +105,10 @@ export const useOrderDetails = <
             marca: product.marca,
             procedencia: product.procedencia,
           },
-        };
+          ...(isEditMode ? { id_detalle_pedido: null } : {}),
+        } as T;
 
-        if (isEditMode) {
-          newDetail.id_detalle_pedido = null;
-        }
-
-        return [...prev, newDetail as T];
+        return [...prev, newDetail];
       });
     },
     [isEditMode, exchangeRate],
@@ -107,7 +116,7 @@ export const useOrderDetails = <
 
   // ==================== AÑADIR MÚLTIPLES PRODUCTOS ====================
   const addMultipleProducts = useCallback(
-    (products: Array<ProductGet & { quantity?: number }>): number[] => {
+    (products: OrderProductInput[]): number[] => {
       const addedProductIds: number[] = [];
 
       setDetails((prev) => {
@@ -136,7 +145,7 @@ export const useOrderDetails = <
               DEFAULT_INC_P_VENTA_ALT,
             );
 
-            const newDetail: any = {
+            const newDetail = {
               id_producto: product.id,
               cantidad: product.quantity,
               costo,
@@ -156,13 +165,10 @@ export const useOrderDetails = <
                 marca: product.marca,
                 procedencia: product.procedencia,
               },
-            };
+              ...(isEditMode ? { id_detalle_pedido: null } : {}),
+            } as T;
 
-            if (isEditMode) {
-              newDetail.id_detalle_pedido = null;
-            }
-
-            newDetails.push(newDetail as T);
+            newDetails.push(newDetail);
             addedProductIds.push(product.id);
           }
         });
@@ -366,22 +372,27 @@ export const useOrderDetails = <
   const getOrderDetails = useCallback((): T extends UIOrderDetailUpdate
     ? OrderDetailUpdate[]
     : OrderDetailCreate[] => {
-    return details.map(({ product, ...detail }) => ({
-      ...detail,
-      // Redondear todos los valores a 5 decimales antes de enviar
-      id_producto: Number(detail.id_producto),
-      cantidad: Number(detail.cantidad),
-      costo: roundTo5Decimals(Number(detail.costo)),
-      inc_p_venta: roundTo5Decimals(Number(detail.inc_p_venta)),
-      precio_venta: roundTo5Decimals(Number(detail.precio_venta)),
-      inc_p_venta_alt: roundTo5Decimals(Number(detail.inc_p_venta_alt)),
-      precio_venta_alt: roundTo5Decimals(Number(detail.precio_venta_alt)),
-      orden: Number(detail.orden),
-      tc_compra:
-        detail.tc_compra !== null && detail.tc_compra !== undefined
-          ? roundTo5Decimals(Number(detail.tc_compra))
-          : null,
-    })) as any;
+    return details.map((detail) => {
+      const normalizedDetail = {
+        ...detail,
+        id_producto: Number(detail.id_producto),
+        cantidad: Number(detail.cantidad),
+        costo: roundTo5Decimals(Number(detail.costo)),
+        inc_p_venta: roundTo5Decimals(Number(detail.inc_p_venta)),
+        precio_venta: roundTo5Decimals(Number(detail.precio_venta)),
+        inc_p_venta_alt: roundTo5Decimals(Number(detail.inc_p_venta_alt)),
+        precio_venta_alt: roundTo5Decimals(Number(detail.precio_venta_alt)),
+        orden: Number(detail.orden),
+        tc_compra:
+          detail.tc_compra !== null && detail.tc_compra !== undefined
+            ? roundTo5Decimals(Number(detail.tc_compra))
+            : null,
+      };
+      Reflect.deleteProperty(normalizedDetail, "product");
+      return normalizedDetail;
+    }) as T extends UIOrderDetailUpdate
+      ? OrderDetailUpdate[]
+      : OrderDetailCreate[];
   }, [details]);
 
   // ==================== LIMPIAR DETALLES ====================

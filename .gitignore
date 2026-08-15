@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Diagnosticos generados por Module Federation (se regeneran en cada build)
+.mf/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
