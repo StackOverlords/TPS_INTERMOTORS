@@ -46,6 +46,9 @@ export default defineConfig({
   },
   // Clear screen on rebuild
   clearScreen: false,
-  // Tauri expects a fixed port
-  envPrefix: ['VITE_', 'TAURI_'],
+  // Only expose VITE_* and Tauri's build-context TAURI_ENV_* vars to the client.
+  // A bare 'TAURI_' prefix would also inline TAURI_SIGNING_PRIVATE_KEY (and its
+  // password) into the shipped bundle, since the release workflow sets them on
+  // the same step that runs `vite build`.
+  envPrefix: ['VITE_', 'TAURI_ENV_'],
 })
