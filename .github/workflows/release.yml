@@ -206,9 +206,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_API_URL: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_API_URL_T1 || secrets.VITE_API_URL_T2 }}
-          VITE_APP_URL: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_APP_URL_T1 || secrets.VITE_APP_URL_T2 }}
-          VITE_WS_URL: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_WS_URL_T1 || secrets.VITE_WS_URL_T2 }}
-          VITE_SOCKET_KEY: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_SOCKET_KEY_T1 || secrets.VITE_SOCKET_KEY_T2 }}
           VITE_REVERB_HOST: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_HOST_T1 || secrets.VITE_REVERB_HOST_T2 }}
           VITE_REVERB_PORT: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_PORT_T1 || secrets.VITE_REVERB_PORT_T2 }}
           VITE_REVERB_APP_KEY: ${{ steps.extract_variant.outputs.VARIANT == 't1' && secrets.VITE_REVERB_APP_KEY_T1 || secrets.VITE_REVERB_APP_KEY_T2 }}
