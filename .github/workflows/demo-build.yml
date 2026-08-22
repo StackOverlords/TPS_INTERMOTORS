@@ -7,10 +7,6 @@ on:
         description: "API URL (ej: https://demo-api.example.com)"
         required: true
         type: string
-      ws_url:
-        description: "WebSocket URL (opcional, usa API URL si está vacío)"
-        required: false
-        type: string
       reverb_host:
         description: "Reverb Host (opcional)"
         required: false
@@ -74,8 +70,6 @@ jobs:
       - name: Build Tauri app
         env:
           VITE_API_URL: ${{ github.event.inputs.api_url }}
-          VITE_WS_URL: ${{ github.event.inputs.ws_url || github.event.inputs.api_url }}
-          VITE_SOCKET_KEY: ${{ secrets.VITE_SOCKET_KEY_T1 }}
           VITE_REVERB_HOST: ${{ github.event.inputs.reverb_host || '' }}
           VITE_REVERB_PORT: ${{ github.event.inputs.reverb_port }}
           VITE_REVERB_APP_KEY: ${{ secrets.VITE_REVERB_APP_KEY_T1 }}
