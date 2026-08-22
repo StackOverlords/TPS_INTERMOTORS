@@ -74,7 +74,6 @@ jobs:
       - name: Build Tauri app
         env:
           VITE_API_URL: ${{ github.event.inputs.api_url }}
-          VITE_APP_URL: ${{ github.event.inputs.app_url }}
           VITE_WS_URL: ${{ github.event.inputs.ws_url || github.event.inputs.api_url }}
           VITE_SOCKET_KEY: ${{ secrets.VITE_SOCKET_KEY_T1 }}
           VITE_REVERB_HOST: ${{ github.event.inputs.reverb_host || '' }}
