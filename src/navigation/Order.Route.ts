@@ -4,6 +4,7 @@ import {
   Clock,
   Package,
   ShoppingBag,
+  ShoppingCart,
   Table2,
   Truck,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { ordersListViewConfig } from "@/modules/orders/config/order.config";
 import OrderGeneralReportScreen from "@/modules/reports/screens/orders/orderGeneralReportScreen";
 import OrderTopProveedoresReportScreen from "@/modules/reports/screens/orders/orderTopProvidersReportScreen";
 import OrderTiempoMedioReportScreen from "@/modules/reports/screens/orders/orderTiempoMedioReportScreen";
+import OrderCartListScreen from "@/modules/orderCart/screens/orderCartListScreen";
 
 const ordersProtectedRoutes: RouteType[] = [
   {
@@ -35,6 +37,18 @@ const ordersProtectedRoutes: RouteType[] = [
         isAdmin: true,
         role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
         icon: ShoppingBag,
+        keepAlive: true,
+        isHeader: false,
+        showSidebar: true,
+      },
+      {
+        path: "/dashboard/order-cart",
+        name: "Lista de compras",
+        type: "protected",
+        element: OrderCartListScreen,
+        isAdmin: true,
+        role: ["Administrador", "Vendedor", "Super Admin", "Invitado"],
+        icon: ShoppingCart,
         keepAlive: true,
         isHeader: false,
         showSidebar: true,
