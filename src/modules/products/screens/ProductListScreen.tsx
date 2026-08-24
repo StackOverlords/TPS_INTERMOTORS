@@ -32,6 +32,7 @@ import { QuickTransferRequestModal } from "@/modules/transfers/components/QuickT
 import BottomShoppingCartBar from "@/modules/shoppingCart/components/BottomShoppingCartBar";
 import { useCartWithUtils } from "@/modules/shoppingCart/hooks/useCartWithUtils";
 import { OrderCartBadgeButton } from "@/modules/orderCart/components/OrderCartBadgeButton";
+import { OrderCartQuantityDialog } from "@/modules/orderCart/components/OrderCartQuantityDialog";
 import { useOrderCart } from "@/modules/orderCart/hooks/useOrderCart";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
@@ -99,6 +100,10 @@ const ProductListScreen = () => {
     useState<ProductGet | null>(null);
   const [transferRequestModalOpen, setTransferRequestModalOpen] =
     useState(false);
+  // Producto en espera de que el usuario confirme cuánto pedir. `null` =
+  // diálogo cerrado; es la única fuente de apertura.
+  const [orderCartPendingProduct, setOrderCartPendingProduct] =
+    useState<ProductGet | null>(null);
   const [searchMode, setSearchMode] = useState<"realtime" | "manual">(
     getBehaviorValue<"realtime" | "manual">("defaultSearchMode") ?? "manual"
   );
@@ -321,12 +326,26 @@ const ProductListScreen = () => {
     setTransferRequestModalOpen(true);
   }, []);
 
+  // Abre el diálogo en vez de agregar directo: antes metía siempre 1 unidad
+  // y obligaba a corregir la cantidad después, dentro de la lista.
   const handleAddToOrderCart = useCallback(
     (product: ProductGet) => {
       if (!orderCart.isReady) return;
-      orderCart.addItem(product);
+      setOrderCartPendingProduct(product);
     },
-    [orderCart]
+    [orderCart.isReady]
+  );
+
+  const handleConfirmOrderCartQuantity = useCallback(
+    (cantidad: number) => {
+      if (!orderCartPendingProduct || !orderCart.isReady) return;
+      orderCart.addItem(orderCartPendingProduct, cantidad);
+      showSuccessToast({
+        title: "Agregado a la lista de compras",
+        description: `${cantidad} × ${orderCartPendingProduct.descripcion}`,
+      });
+    },
+    [orderCartPendingProduct, orderCart]
   );
 
   const handleAddSelectedToCart = useCallback(() => {
@@ -1367,6 +1386,19 @@ const ProductListScreen = () => {
           setTransferRequestModalOpen(open);
           if (!open) setTransferRequestProduct(null);
         }}
+      />
+
+      <OrderCartQuantityDialog
+        product={orderCartPendingProduct}
+        cantidadActual={
+          orderCart.items.find(
+            (item) => item.product.id === orderCartPendingProduct?.id
+          )?.cantidad ?? 0
+        }
+        onOpenChange={(open) => {
+          if (!open) setOrderCartPendingProduct(null);
+        }}
+        onConfirm={handleConfirmOrderCartQuantity}
       />
 
       {imageModalOpen && selectedProductForImage && (
