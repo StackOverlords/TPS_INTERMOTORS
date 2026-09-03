@@ -18,8 +18,10 @@
  */
 
 import { tauriAppUpdater } from './adapters/tauri/appUpdater';
+import { tauriClipboard } from './adapters/tauri/clipboard';
 import { tauriFileSystem } from './adapters/tauri/fileSystem';
 import { tauriHttp } from './adapters/tauri/http';
+import { tauriImageProcessor } from './adapters/tauri/imageProcessor';
 import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
 import { tauriKeybindingsRepository } from './adapters/tauri/keybindingsRepository';
 import { tauriLogger } from './adapters/tauri/logger';
@@ -27,8 +29,10 @@ import { tauriPreferencesRepository } from './adapters/tauri/preferencesReposito
 import { tauriWindowChrome } from './adapters/tauri/windowChrome';
 import { tauriWindowManager } from './adapters/tauri/windowManager';
 import { webAppUpdater } from './adapters/web/appUpdater';
+import { webClipboard } from './adapters/web/clipboard';
 import { webFileSystem } from './adapters/web/fileSystem';
 import { webHttp } from './adapters/web/http';
+import { webImageProcessor } from './adapters/web/imageProcessor';
 import { webKeyValueStore } from './adapters/web/keyValueStore';
 import { webKeybindingsRepository } from './adapters/web/keybindingsRepository';
 import { webLogger } from './adapters/web/logger';
@@ -37,8 +41,10 @@ import { webWindowChrome } from './adapters/web/windowChrome';
 import { webWindowManager } from './adapters/web/windowManager';
 import { isTauri } from './env';
 import type { AppUpdaterPort } from './ports/appUpdater';
+import type { ClipboardPort } from './ports/clipboard';
 import type { FileSystemPort } from './ports/fileSystem';
 import type { HttpPort } from './ports/http';
+import type { ImageProcessorPort } from './ports/imageProcessor';
 import type { KeyValueStorePort } from './ports/keyValueStore';
 import type { KeybindingsRepositoryPort } from './ports/keybindingsRepository';
 import type { LoggerPort } from './ports/logger';
@@ -68,6 +74,12 @@ export type {
 } from './ports/fileSystem';
 export type { HttpPort } from './ports/http';
 export type { WindowChromePort } from './ports/windowChrome';
+export type { ClipboardPort } from './ports/clipboard';
+export type {
+  CompressToWebPOptions,
+  ImageInfo,
+  ImageProcessorPort,
+} from './ports/imageProcessor';
 export type {
   AppUpdateInfo,
   AppUpdaterPort,
@@ -217,4 +229,33 @@ export function getWindowChrome(): WindowChromePort {
     windowChromeInstance = isTauri() ? tauriWindowChrome : webWindowChrome;
   }
   return windowChromeInstance;
+}
+
+let imageProcessorInstance: ImageProcessorPort | null = null;
+
+/**
+ * Inspección y compresión de imágenes del target activo.
+ *
+ * Escritorio: codificador WebP de Rust (`libwebp-sys`).
+ * Web: `canvas.toDataURL('image/webp')`, nativo del navegador.
+ */
+export function getImageProcessor(): ImageProcessorPort {
+  if (!imageProcessorInstance) {
+    imageProcessorInstance = isTauri() ? tauriImageProcessor : webImageProcessor;
+  }
+  return imageProcessorInstance;
+}
+
+let clipboardInstance: ClipboardPort | null = null;
+
+/**
+ * Lectura del portapapeles del target activo.
+ *
+ * Escritorio: comando Rust (`arboard`). Web: Async Clipboard API.
+ */
+export function getClipboard(): ClipboardPort {
+  if (!clipboardInstance) {
+    clipboardInstance = isTauri() ? tauriClipboard : webClipboard;
+  }
+  return clipboardInstance;
 }

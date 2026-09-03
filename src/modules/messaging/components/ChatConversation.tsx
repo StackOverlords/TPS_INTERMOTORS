@@ -60,6 +60,7 @@ import { useDraftStore } from "../stores/DraftStore";
 import { useSendAttachment } from "../hooks/useSendAttachment";
 import { isImageMime, validateAttachment } from "../types/Attachment.types";
 import { smartCompressToWebP, fileToBase64, base64ToFile } from "@/utils/imageCompression";
+import { getClipboard } from "@/platform";
 import { isTauriEnvironment } from "@/utils/environment";
 import { AttachmentComposer } from "./AttachmentComposer";
 import { ConversationAvatar } from "./ConversationAvatar";
@@ -657,36 +658,38 @@ export function ChatConversation({
       handleSend();
       return;
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === "v" && !editingMessage && isTauriEnvironment()) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "v" && !editingMessage && getClipboard().canReadImage()) {
       e.preventDefault();
       void (async () => {
-        try {
-          const { invoke } = await import("@tauri-apps/api/core");
-          const base64 = await invoke<string>("read_clipboard_image");
+        // El puerto normaliza a data URL en ambos targets y devuelve null
+        // cuando el portapapeles no tiene una imagen.
+        const dataUrl = await getClipboard().readImage();
+
+        if (dataUrl) {
+          const base64 = dataUrl.split(",")[1] ?? "";
           const byteString = atob(base64);
           const bytes = new Uint8Array(byteString.length);
           for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
           const blob = new Blob([bytes], { type: "image/png" });
           const file = new File([blob], `captura-${Date.now()}.png`, { type: "image/png" });
           void handleFileSelected(file);
-        } catch (err) {
-          // No hay imagen en el clipboard — dejar que el paste de texto ocurra normalmente
-          if (String(err).includes("no_image")) {
-            // Restaurar el paste de texto manualmente
-            try {
-              const text = await navigator.clipboard.readText();
-              if (text && inputRef.current) {
-                const el = inputRef.current;
-                const start = el.selectionStart ?? 0;
-                const end = el.selectionEnd ?? 0;
-                setInput(input.slice(0, start) + text + input.slice(end));
-                requestAnimationFrame(() => {
-                  el.selectionStart = el.selectionEnd = start + text.length;
-                });
-              }
-            } catch { /* nada */ }
-          }
+          return;
         }
+
+        // Sin imagen: restaurar manualmente el pegado de texto, porque ya
+        // llamamos a preventDefault().
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text && inputRef.current) {
+            const el = inputRef.current;
+            const start = el.selectionStart ?? 0;
+            const end = el.selectionEnd ?? 0;
+            setInput(input.slice(0, start) + text + input.slice(end));
+            requestAnimationFrame(() => {
+              el.selectionStart = el.selectionEnd = start + text.length;
+            });
+          }
+        } catch { /* nada */ }
       })();
     }
   };

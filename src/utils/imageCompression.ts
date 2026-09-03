@@ -1,5 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
-import { getHttp } from "@/platform";
+import { getHttp, getImageProcessor } from "@/platform";
 
 export interface CompressionOptions {
   quality?: number; // 0-100 (default: 75)
@@ -75,7 +74,7 @@ async function estimateWebPQuality(base64Data: string): Promise<number> {
  */
 export async function getImageInfo(base64Data: string): Promise<ImageInfo> {
   try {
-    return await invoke<ImageInfo>("get_image_info", { base64Data });
+    return await getImageProcessor().getImageInfo(base64Data);
   } catch (error) {
     console.error("Error getting image info:", error);
     throw error;
@@ -119,8 +118,7 @@ export async function smartCompressToWebP(
     }
 
     // Comprimir (sea por no ser WebP o por reducción de calidad válida)
-    const compressed = await invoke<string>("compress_image_to_webp", {
-      base64Data,
+    const compressed = await getImageProcessor().compressToWebP(base64Data, {
       quality: quality / 100,
       effort,
     });
@@ -152,8 +150,7 @@ export async function forceCompressToWebP(
   const { quality = 75, effort = 4 } = options;
 
   try {
-    return await invoke<string>("compress_image_to_webp", {
-      base64Data,
+    return await getImageProcessor().compressToWebP(base64Data, {
       quality: quality / 100,
       effort,
     });
