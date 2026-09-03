@@ -1,45 +1,48 @@
-import { getAllWebviewWindows, getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getWindowManager } from '@/platform';
 import { useEffect } from 'react';
 
-// Hook para cerrar ventanas secundarias al salir de la app
+/**
+ * Cierra las ventanas secundarias cuando la ventana principal se está cerrando.
+ *
+ * El handler es SÍNCRONO y dispara el cierre fire-and-forget. La versión previa
+ * usaba un handler `async` que esperaba a que todas cerraran: en Tauri v2 eso
+ * bloquea el cierre hasta que el Promise resuelve, y es exactamente la causa
+ * raíz de las ventanas zombie ya documentada en `window-entry.tsx` y `main.tsx`.
+ * Este hook ahora sigue esa misma regla.
+ *
+ * Red de seguridad independiente: el heartbeat de `main.tsx` — si el pulso se
+ * corta por más de 5s, cada ventana secundaria se auto-cierra.
+ */
 export function useCloseSecondaryWindowsOnExit() {
   useEffect(() => {
-    const currentWindow = getCurrentWebviewWindow();
+    const windows = getWindowManager();
 
-    // Solo ejecutar en la ventana principal
-    if (currentWindow.label !== 'main') {
-      return;
-    }
+    // Solo la ventana principal orquesta el cierre.
+    if (windows.isSecondaryWindow()) return;
 
-    // Listener para cuando se va a cerrar la ventana principal
-    const unlisten = currentWindow.onCloseRequested(async () => {
-      try {
-        // Obtener todas las ventanas
-        const allWindows = await getAllWebviewWindows();
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
 
-        // Cerrar todas las ventanas secundarias (excepto 'main')
-        const closePromises = allWindows
-          .filter(window => window.label !== 'main')
-          .map(async (window) => {
-            try {
-              console.log(`[CloseSecondaryWindows] Cerrando ventana: ${window.label}`);
-              await window.close();
-            } catch (error) {
-              console.error(`[CloseSecondaryWindows] Error cerrando ${window.label}:`, error);
-            }
-          });
-
-        // Esperar a que todas se cierren
-        await Promise.all(closePromises);
-
-        console.log('[CloseSecondaryWindows] Todas las ventanas secundarias cerradas');
-      } catch (error) {
-        console.error('[CloseSecondaryWindows] Error en cleanup:', error);
-      }
-    });
+    windows
+      .onCurrentWindowClose(() => {
+        windows.closeAllSecondary().catch((error) => {
+          console.error('[CloseSecondaryWindows] Error en cleanup:', error);
+        });
+      })
+      .then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      })
+      .catch((error) => {
+        console.error(
+          '[CloseSecondaryWindows] No se pudo registrar el handler de cierre:',
+          error,
+        );
+      });
 
     return () => {
-      unlisten.then(fn => fn());
+      disposed = true;
+      unlisten?.();
     };
   }, []);
 }

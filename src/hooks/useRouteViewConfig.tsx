@@ -1,6 +1,7 @@
 import type { ViewConfiguration } from '@/config/viewConfigTypes';
 import { STORAGE_KEYS } from '@/config/viewConfigTypes';
 import protectedRoutes from '@/navigation/Protected.Route';
+import { getWindowManager } from '@/platform';
 import type RouteType from '@/navigation/RouteType';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -51,17 +52,13 @@ const emitThrottled = (() => {
     );
     console.log(`[emitThrottled] ✅ Custom event emitido`);
 
-    // Emitir evento Tauri para otras ventanas (async, no bloqueante)
-    if ((window as any).__TAURI__) {
-      import('@tauri-apps/api/event')
-        .then(({ emit }) => {
-          emit('view-config:updated', { viewId, timestamp: now });
-          console.log(`[emitThrottled] ✅ Tauri event emitido`);
-        })
-        .catch(err => {
-          console.error('[emitThrottled] Error emitting Tauri event:', err);
-        });
-    }
+    // Avisar a las demás ventanas (async, no bloqueante). El puerto resuelve el
+    // transporte: eventos de Tauri en escritorio, BroadcastChannel en web.
+    getWindowManager()
+      .broadcast('view-config:updated', { viewId, timestamp: now })
+      .catch(err => {
+        console.error('[emitThrottled] Error emitiendo a otras ventanas:', err);
+      });
   };
 })();
 
@@ -454,36 +451,33 @@ export function useViewConfigSync(viewId: string) {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('local-view-config:updated', handleLocalChange);
 
-    // 3. Tauri events (ventanas secundarias)
-    let unlistenTauri: (() => void) | null = null;
+    // 3. Otras ventanas de la app (secundarias). El puerto abstrae el transporte.
+    let disposed = false;
+    let unlistenWindows: (() => void) | null = null;
 
-    if ((window as any).__TAURI__) {
-      import('@tauri-apps/api/event')
-        .then(({ listen }) => {
-          listen('view-config:updated', (event: any) => {
-            if (event.payload.viewId === viewId) {
-              reloadConfig();
-            }
-          })
-            .then(unlisten => {
-              unlistenTauri = unlisten;
-            })
-            .catch(err => {
-              console.error(
-                '[useViewConfigSync] Error setting up Tauri listener:',
-                err
-              );
-            });
-        })
-        .catch(err => {
-          console.error('[useViewConfigSync] Tauri not available:', err);
-        });
-    }
+    getWindowManager()
+      .subscribe('view-config:updated', payload => {
+        const data = payload as { viewId?: string } | null;
+        if (data?.viewId === viewId) {
+          reloadConfig();
+        }
+      })
+      .then(unlisten => {
+        if (disposed) unlisten();
+        else unlistenWindows = unlisten;
+      })
+      .catch(err => {
+        console.error(
+          '[useViewConfigSync] Error registrando listener entre ventanas:',
+          err
+        );
+      });
 
     return () => {
+      disposed = true;
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('local-view-config:updated', handleLocalChange);
-      unlistenTauri?.();
+      unlistenWindows?.();
       if (reloadTimeoutRef.current) {
         clearTimeout(reloadTimeoutRef.current);
       }

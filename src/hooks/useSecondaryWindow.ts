@@ -33,14 +33,10 @@ import type { UIReturnDetailCreate } from "@/modules/returns/types/returnCreate.
 import type { UIReturnDetailUpdate } from "@/modules/returns/types/returnUpdate.types";
 import type { SelectedItem } from "@/types/windowSelectedItems";
 import {
-  closeSecondaryWindow,
-  createSecondaryWindow,
-  focusSecondaryWindow,
-  isWindowOpen,
-  listenToWindowEvent,
+  getWindowManager,
   type SecondaryWindowConfig,
-} from "@/utils/tauriWindows";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+  type SecondaryWindowHandle,
+} from "@/platform";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
@@ -61,7 +57,7 @@ export interface UseSecondaryWindowConfig extends Omit<
   /**
    * Callback que se ejecuta cuando la ventana se crea exitosamente
    */
-  onWindowCreated?: (window: WebviewWindow) => void;
+  onWindowCreated?: (window: SecondaryWindowHandle) => void;
   /**
    * Callback que se ejecuta cuando la ventana se cierra
    */
@@ -89,7 +85,7 @@ export interface UseSecondaryWindowResult {
   /** Error si ocurrió algún problema */
   error: Error | null;
   /** Instancia de la ventana (si está abierta) */
-  window: WebviewWindow | null;
+  window: SecondaryWindowHandle | null;
   /** Función para abrir la ventana */
   open: () => Promise<void>;
   /** Función para cerrar la ventana */
@@ -135,7 +131,7 @@ export function useSecondaryWindow(
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [window, setWindow] = useState<WebviewWindow | null>(null);
+  const [window, setWindow] = useState<SecondaryWindowHandle | null>(null);
 
   // Refs para mantener referencias actualizadas de callbacks
   const onEventRef = useRef(onEvent);
@@ -151,11 +147,11 @@ export function useSecondaryWindow(
   // Limpiar ventanas huérfanas al montar
   useEffect(() => {
     const checkAndCleanup = async () => {
-      const existingWindow = await isWindowOpen(windowId);
+      const existingWindow = await getWindowManager().isOpen(windowId);
       if (existingWindow && !isOpen) {
         // console.log(`[useSecondaryWindow] Limpiando ventana huérfana "${windowId}"`);
         try {
-          await closeSecondaryWindow(windowId);
+          await getWindowManager().close(windowId);
         } catch (err) {
           console.error(
             `[useSecondaryWindow] Error limpiando ventana huérfana:`,
@@ -176,8 +172,16 @@ export function useSecondaryWindow(
       setIsLoading(true);
       setError(null);
 
-      // Crear/obtener ventana (createSecondaryWindow maneja la lógica de reutilización)
-      const newWindow = await createSecondaryWindow({
+      // El adaptador activo maneja la lógica de reutilización/recreación.
+      //
+      // ⚠️ NO agregar ningún `await` antes de esta línea.
+      // En el target web `create()` abre la ventana con `window.open()`, que el
+      // navegador solo permite DENTRO del gesto del usuario. Todo lo anterior
+      // debe ser síncrono (los setState lo son) para que la cadena
+      // onClick → open() → create() siga siendo un único turno. Si se rompe, el
+      // popup queda bloqueado EN SILENCIO (window.open devuelve null, sin error).
+      // Ver: src/platform/adapters/web/windowManager.ts
+      const newWindow = await getWindowManager().create({
         windowId,
         ...windowConfig,
       });
@@ -212,7 +216,7 @@ export function useSecondaryWindow(
    */
   const close = useCallback(async () => {
     try {
-      const success = await closeSecondaryWindow(windowId);
+      const success = await getWindowManager().close(windowId);
       if (success) {
         setIsOpen(false);
         setWindow(null);
@@ -233,7 +237,7 @@ export function useSecondaryWindow(
    */
   const focus = useCallback(async () => {
     if (isOpen) {
-      await focusSecondaryWindow(windowId);
+      await getWindowManager().focus(windowId);
     }
   }, [windowId, isOpen]);
 
@@ -271,7 +275,7 @@ export function useSecondaryWindow(
 
         try {
           // console.log(`[useSecondaryWindow] ${windowId}: 📡 Registrando listener para "${eventName}"`);
-          const unlisten = await listenToWindowEvent(
+          const unlisten = await getWindowManager().listenToWindowEvent(
             windowId,
             eventName,
             (data) => {
@@ -318,9 +322,9 @@ export function useSecondaryWindow(
     return () => {
       if (autoCloseOnUnmount) {
         // Cerrar ventana de forma asíncrona en cleanup
-        isWindowOpen(windowId).then((isOpen) => {
+        getWindowManager().isOpen(windowId).then((isOpen) => {
           if (isOpen) {
-            closeSecondaryWindow(windowId);
+            getWindowManager().close(windowId);
           }
         });
       }

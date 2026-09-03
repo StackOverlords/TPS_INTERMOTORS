@@ -12,8 +12,7 @@ import {
   CardTitle,
 } from "@/components/atoms/card";
 import { showSuccessToast, showErrorToast } from "@/hooks/use-toast-enhanced";
-import { emitToWindow } from "@/utils/tauriWindows";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getWindowManager } from "@/platform";
 import { Check, Package, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SaleGetAll } from "@/modules/sales/types/salesGetResponse";
@@ -56,7 +55,7 @@ interface SelectedItemWithSale {
 }
 
 const SaleDetailSelectorWindow = () => {
-  const currentWindow = getCurrentWebviewWindow();
+  const platformWindows = getWindowManager();
   const tableRef = useRef<ReturnDetailTableRef>(null);
 
   const config: WindowConfig = useMemo(() => {
@@ -291,13 +290,13 @@ const SaleDetailSelectorWindow = () => {
           duration: 2000,
         });
 
-        await emitToWindow(
+        await platformWindows.emitToWindow(
           config.windowId,
           "sale-details-changes-applied",
           changes
         );
 
-        await currentWindow.close();
+        await platformWindows.closeCurrentWindow();
       } catch (error) {
         console.error("Error confirming selection:", error);
         showErrorToast({
@@ -454,8 +453,8 @@ const SaleDetailSelectorWindow = () => {
   }, [selectedItems, confirmAndClose]);
 
   const handleClose = useCallback(async () => {
-    await emitToWindow(config.windowId, "window-closed", { canceled: true });
-    await currentWindow.close();
+    await platformWindows.emitToWindow(config.windowId, "window-closed", { canceled: true });
+    await platformWindows.closeCurrentWindow();
   }, [config.windowId, currentWindow]);
 
   useEffect(() => {

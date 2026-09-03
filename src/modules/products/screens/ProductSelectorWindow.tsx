@@ -25,9 +25,8 @@ import type { ProductGet } from "@/modules/products/types/ProductGet";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCell } from "@/utils/formatCell";
 import { formatCurrency } from "@/utils/formaters";
-import { emitToWindow } from "@/utils/tauriWindows";
+import { getWindowManager } from "@/platform";
 import { type ColumnDef } from "@tanstack/react-table";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   Check,
   Package,
@@ -72,7 +71,7 @@ interface WindowConfig {
 }
 
 const ProductSelectorWindow: React.FC = () => {
-  const currentWindow = getCurrentWebviewWindow();
+  const platformWindows = getWindowManager();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   const queryClient = useQueryClient();
 
@@ -352,8 +351,8 @@ const ProductSelectorWindow: React.FC = () => {
           duration: 1500,
         });
 
-        await emitToWindow(config.windowId, "product-selected", product).catch(() => {});
-        await currentWindow.close();
+        await platformWindows.emitToWindow(config.windowId, "product-selected", product).catch(() => {});
+        await platformWindows.closeCurrentWindow();
       }
     },
     [
@@ -511,13 +510,13 @@ const ProductSelectorWindow: React.FC = () => {
       duration: 2000,
     });
 
-    await emitToWindow(
+    await platformWindows.emitToWindow(
       config.windowId,
       "product-multi-selected",
       productsWithQuantities
     ).catch(() => {});
 
-    await currentWindow.close();
+    await platformWindows.closeCurrentWindow();
   };
 
   const getStockColor = (stock: number, stock_min: number) => {
@@ -981,8 +980,8 @@ const ProductSelectorWindow: React.FC = () => {
   };
 
   const handleClose = async () => {
-    await emitToWindow(config.windowId, "window-closed", { canceled: true }).catch(() => {});
-    await currentWindow.close();
+    await platformWindows.emitToWindow(config.windowId, "window-closed", { canceled: true }).catch(() => {});
+    await platformWindows.closeCurrentWindow();
   };
 
   const onPageChange = (page: number) => setPage(page);
