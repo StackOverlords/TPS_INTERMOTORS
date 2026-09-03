@@ -1,5 +1,5 @@
 import { environment } from "@/utils/environment";
-import { invoke } from '@tauri-apps/api/core';
+import { getLogger } from '@/platform';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -38,9 +38,7 @@ export class Logger {
         console.log(formattedMessage, data || '');
 
         // Escribir al archivo de logs de Tauri usando comando personalizado
-        invoke('log_info', { message: formattedMessage }).catch(() => {
-            // Silenciar errores de logging para no afectar UX
-        });
+        getLogger().write('info', formattedMessage);
 
         // Enviar a servicio externo solo en producción
         if (this.isProduction) {
@@ -56,9 +54,7 @@ export class Logger {
         console.error(formattedMessage, error || '');
 
         // Escribir al archivo de logs de Tauri usando comando personalizado
-        invoke('log_error', { message: formattedMessage }).catch(() => {
-            // Silenciar errores de logging para no afectar UX
-        });
+        getLogger().write('error', formattedMessage);
 
         // Enviar a servicio externo solo en producción
         if (this.isProduction) {
@@ -74,9 +70,7 @@ export class Logger {
         console.warn(formattedMessage, data || '');
 
         // Escribir al archivo de logs de Tauri usando comando personalizado
-        invoke('log_warn', { message: formattedMessage }).catch(() => {
-            // Silenciar errores de logging para no afectar UX
-        });
+        getLogger().write('warn', formattedMessage);
 
         // Enviar a servicio externo solo en producción
         if (this.isProduction) {
@@ -91,9 +85,7 @@ export class Logger {
         if (this.isDevelopment) {
             console.debug(formattedMessage, data || '');
             // Escribir al archivo de logs de Tauri usando comando personalizado
-            invoke('log_debug', { message: formattedMessage }).catch(() => {
-                // Silenciar errores de logging para no afectar UX
-            });
+            getLogger().write('debug', formattedMessage);
         }
 
         // Debug logs normalmente no se envían en producción

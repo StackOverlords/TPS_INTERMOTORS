@@ -1,13 +1,11 @@
 /**
- * Adapter para persistencia de keybindings en la base de datos
- * Abstrae la lógica de DB del store
+ * Adapter para persistencia de keybindings.
+ *
+ * El almacenamiento concreto lo resuelve el puerto: tabla SQLite en escritorio,
+ * clave/valor en web (ver platform/ports/keybindingsRepository.ts).
  */
 
-import {
-  executeCommand,
-  executeQuery,
-} from '@/database/db';
-import type { KeybindingRow } from '@/database/schemas/keybindings.schema';
+import { getKeybindingsRepository } from '@/platform';
 import { COMMANDS, type CommandId } from '../core/commands';
 import type { KeybindingEntry, ImportMode } from '../core/types';
 
@@ -17,9 +15,7 @@ import type { KeybindingEntry, ImportMode } from '../core/types';
 export async function loadAllKeybindings(): Promise<Map<string, KeybindingEntry>> {
   try {
     // Obtener keybindings personalizados desde la DB
-    const customBindings = await executeQuery<KeybindingRow>(
-      'SELECT * FROM keybindings WHERE enabled = 1 ORDER BY id'
-    );
+    const customBindings = await getKeybindingsRepository().getEnabled();
 
     // Crear mapa de customizaciones
     const customMap = new Map<string, string>();
@@ -82,25 +78,21 @@ export async function saveKeybinding(id: string, keys: string): Promise<void> {
     throw new Error(`Command ID "${id}" does not exist`);
   }
 
-  await executeCommand(
-    `INSERT OR REPLACE INTO keybindings (id, keys, default_keys, source, updated_at)
-     VALUES (?, ?, ?, 'user', strftime('%s', 'now'))`,
-    [id, keys, command.defaultKeys]
-  );
+  await getKeybindingsRepository().upsert(id, keys, command.defaultKeys);
 }
 
 /**
  * Elimina un keybinding personalizado (vuelve al default)
  */
 export async function deleteKeybinding(id: string): Promise<void> {
-  await executeCommand('DELETE FROM keybindings WHERE id = ?', [id]);
+  await getKeybindingsRepository().remove(id);
 }
 
 /**
  * Resetea todos los keybindings a sus valores por defecto
  */
 export async function resetAllKeybindings(): Promise<void> {
-  await executeCommand('DELETE FROM keybindings');
+  await getKeybindingsRepository().clear();
 }
 
 /**
@@ -203,9 +195,7 @@ export async function importKeybindings(
   // Obtener IDs actuales para modo add-only
   let currentIds = new Set<string>();
   if (mode === 'add-only') {
-    const current = await executeQuery<KeybindingRow>(
-      'SELECT id FROM keybindings'
-    );
+    const current = await getKeybindingsRepository().getAll();
     currentIds = new Set(current.map(kb => kb.id));
   }
 

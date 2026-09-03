@@ -1,4 +1,12 @@
-import { info, error, warn, debug, trace } from '@tauri-apps/plugin-log';
+import { getLogger } from '@/platform';
+
+// Atajos al sumidero persistente del target activo (archivo en escritorio,
+// buffer en memoria en web). `console.*` sigue siendo el canal de desarrollo.
+const info = (message: string) => getLogger().write('info', message);
+const error = (message: string) => getLogger().write('error', message);
+const warn = (message: string) => getLogger().write('warn', message);
+const debug = (message: string) => getLogger().write('debug', message);
+const trace = (message: string) => getLogger().write('trace', message);
 
 /**
  * Sistema de logging unificado que funciona tanto en desarrollo como en producción

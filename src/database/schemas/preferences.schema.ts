@@ -1,11 +1,11 @@
-import { executeCommand, executeQuery } from '../db';
+import { getPreferencesRepository } from '@/platform';
+import type { PreferenceRecord } from '@/platform/ports/preferencesRepository';
 
-export interface PreferenceRow {
-  key: string;
-  value: string;
-  type: 'string' | 'json' | 'number' | 'boolean';
-  updated_at: number;
-}
+/**
+  * Forma de una preferencia persistida. Vive en el puerto porque ya no es un
+  * detalle del esquema SQLite: el target web guarda la misma estructura.
+  */
+export type PreferenceRow = PreferenceRecord;
 
 export const savePreference = async <T = any>(
   key: string,
@@ -28,27 +28,18 @@ export const savePreference = async <T = any>(
     serializedValue = String(value);
   }
 
-  await executeCommand(
-    `INSERT OR REPLACE INTO user_preferences (key, value, type, updated_at)
-     VALUES (?, ?, ?, strftime('%s', 'now'))`,
-    [key, serializedValue, type]
-  );
+  await getPreferencesRepository().set(key, serializedValue, type);
 };
 
 export const getPreference = async <T = any>(
   key: string,
   defaultValue?: T
 ): Promise<T | null> => {
-  const results = await executeQuery<PreferenceRow>(
-    'SELECT * FROM user_preferences WHERE key = ?',
-    [key]
-  );
+  const pref = await getPreferencesRepository().get(key);
 
-  if (!results[0]) {
+  if (!pref) {
     return defaultValue !== undefined ? defaultValue : null;
   }
-
-  const pref = results[0];
 
   switch (pref.type) {
     case 'boolean':
@@ -64,9 +55,7 @@ export const getPreference = async <T = any>(
 
 
 export const getAllPreferences = async (): Promise<Record<string, any>> => {
-  const results = await executeQuery<PreferenceRow>(
-    'SELECT * FROM user_preferences'
-  );
+  const results = await getPreferencesRepository().getAll();
 
   const preferences: Record<string, any> = {};
 
@@ -90,9 +79,9 @@ export const getAllPreferences = async (): Promise<Record<string, any>> => {
 };
 
 export const deletePreference = async (key: string): Promise<void> => {
-  await executeCommand('DELETE FROM user_preferences WHERE key = ?', [key]);
+  await getPreferencesRepository().remove(key);
 };
 
 export const resetAllPreferences = async (): Promise<void> => {
-  await executeCommand('DELETE FROM user_preferences');
+  await getPreferencesRepository().clear();
 };

@@ -20,15 +20,24 @@
 import { tauriFileSystem } from './adapters/tauri/fileSystem';
 import { tauriHttp } from './adapters/tauri/http';
 import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
+import { tauriKeybindingsRepository } from './adapters/tauri/keybindingsRepository';
+import { tauriLogger } from './adapters/tauri/logger';
+import { tauriPreferencesRepository } from './adapters/tauri/preferencesRepository';
 import { tauriWindowManager } from './adapters/tauri/windowManager';
 import { webFileSystem } from './adapters/web/fileSystem';
 import { webHttp } from './adapters/web/http';
 import { webKeyValueStore } from './adapters/web/keyValueStore';
+import { webKeybindingsRepository } from './adapters/web/keybindingsRepository';
+import { webLogger } from './adapters/web/logger';
+import { webPreferencesRepository } from './adapters/web/preferencesRepository';
 import { webWindowManager } from './adapters/web/windowManager';
 import { isTauri } from './env';
 import type { FileSystemPort } from './ports/fileSystem';
 import type { HttpPort } from './ports/http';
 import type { KeyValueStorePort } from './ports/keyValueStore';
+import type { KeybindingsRepositoryPort } from './ports/keybindingsRepository';
+import type { LoggerPort } from './ports/logger';
+import type { PreferencesRepositoryPort } from './ports/preferencesRepository';
 import type { WindowManagerPort } from './ports/windowManager';
 
 export { getPlatformTarget, isTauri } from './env';
@@ -52,6 +61,16 @@ export type {
   SaveFileRequest,
 } from './ports/fileSystem';
 export type { HttpPort } from './ports/http';
+export type { LogEntry, LoggerPort, LogLevel } from './ports/logger';
+export type {
+  KeybindingRecord,
+  KeybindingsRepositoryPort,
+} from './ports/keybindingsRepository';
+export type {
+  PreferenceRecord,
+  PreferencesRepositoryPort,
+  PreferenceType,
+} from './ports/preferencesRepository';
 
 let windowManagerInstance: WindowManagerPort | null = null;
 
@@ -110,4 +129,50 @@ export function getHttp(): HttpPort {
     httpInstance = isTauri() ? tauriHttp : webHttp;
   }
   return httpInstance;
+}
+
+let loggerInstance: LoggerPort | null = null;
+
+/**
+ * Sumidero persistente de logs del target activo.
+ *
+ * Escritorio: archivo de log de la app. Web: buffer en memoria acotado.
+ */
+export function getLogger(): LoggerPort {
+  if (!loggerInstance) {
+    loggerInstance = isTauri() ? tauriLogger : webLogger;
+  }
+  return loggerInstance;
+}
+
+let keybindingsRepositoryInstance: KeybindingsRepositoryPort | null = null;
+
+/**
+ * Persistencia de atajos personalizados del target activo.
+ *
+ * Escritorio: tabla `keybindings` de SQLite. Web: puerto de clave/valor.
+ */
+export function getKeybindingsRepository(): KeybindingsRepositoryPort {
+  if (!keybindingsRepositoryInstance) {
+    keybindingsRepositoryInstance = isTauri()
+      ? tauriKeybindingsRepository
+      : webKeybindingsRepository;
+  }
+  return keybindingsRepositoryInstance;
+}
+
+let preferencesRepositoryInstance: PreferencesRepositoryPort | null = null;
+
+/**
+ * Preferencias de usuario persistidas del target activo.
+ *
+ * Escritorio: tabla `user_preferences` de SQLite. Web: puerto de clave/valor.
+ */
+export function getPreferencesRepository(): PreferencesRepositoryPort {
+  if (!preferencesRepositoryInstance) {
+    preferencesRepositoryInstance = isTauri()
+      ? tauriPreferencesRepository
+      : webPreferencesRepository;
+  }
+  return preferencesRepositoryInstance;
 }
