@@ -12,12 +12,26 @@
  * del backend, no este buffer.
  */
 
-import type { LogEntry, LoggerPort, LogLevel } from '@/platform/ports/logger';
+import type { LoggerPort, LogLevel } from '@/platform/ports/logger';
 
 /** Tope del buffer. Suficiente para diagnosticar sin comerse la memoria. */
 const MAX_ENTRIES = 2000;
 
-const buffer: LogEntry[] = [];
+interface BufferedEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+}
+
+const buffer: BufferedEntry[] = [];
+
+/**
+ * Formato de línea equivalente al del archivo en escritorio, para que el Panel
+ * de Debug (que filtra por texto) se comporte igual en los dos targets.
+ */
+function formatLine({ timestamp, level, message }: BufferedEntry): string {
+  return `${timestamp} [${level.toUpperCase()}] ${message}`;
+}
 
 export const webLogger: LoggerPort = {
   write(level: LogLevel, message: string): void {
@@ -31,8 +45,13 @@ export const webLogger: LoggerPort = {
     return true;
   },
 
-  async readRecentLogs(): Promise<LogEntry[]> {
-    return [...buffer];
+  async readLogText(): Promise<string> {
+    return buffer.map(formatLine).join('\n');
+  },
+
+  async getLogLocation(): Promise<string | null> {
+    // No hay archivo: el log vive en memoria.
+    return null;
   },
 
   async clearLogs(): Promise<void> {

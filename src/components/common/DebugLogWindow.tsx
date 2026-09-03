@@ -1,9 +1,7 @@
 import { Button } from '@/components/atoms/button';
 import { Input } from '@/components/atoms/input';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/atoms/resizable';
-import { appLogDir } from '@tauri-apps/api/path';
-import { save } from '@tauri-apps/plugin-dialog';
-import { BaseDirectory, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { getFileSystem, getLogger } from '@/platform';
 import { ArrowUpDown, PanelRightClose, PanelRightOpen, RefreshCw, Search, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { LogLine } from './LogLine';
@@ -34,37 +32,35 @@ export function DebugLogWindow() {
 
   const loadLogs = async () => {
     try {
-      const logDir = await appLogDir();
-      const logFileName = 'app.log';
-      setLogPath(`${logDir}/${logFileName}`);
+      const logger = getLogger();
 
-      const logContent = await readTextFile(logFileName, {
-        baseDir: BaseDirectory.AppLog
-      });
+      // En web no hay archivo: el log vive en memoria y `getLogLocation()`
+      // devuelve null.
+      const location = await logger.getLogLocation();
+      setLogPath(location ?? 'En memoria (se pierde al recargar la página)');
 
-      setLogs(logContent || 'No hay logs disponibles');
-    } catch (error) {
-      const errorStr = String(error);
+      const logContent = await logger.readLogText();
 
-      if (errorStr.includes('No existe el fichero') || errorStr.includes('No such file') || errorStr.includes('os error 2')) {
-        setLogs(`📝 Archivo de logs aún no creado.\n\n` +
-                `El archivo se creará automáticamente cuando se genere el primer log.\n\n` +
-                `💡 Prueba realizar alguna acción en la app (login, cargar datos, etc.) ` +
-                `y luego presiona el botón "Refresh" para ver los logs.\n\n` +
-                `📂 Ubicación: ${logPath || 'Calculando...'}`);
-      } else {
-        setLogs(`❌ Error cargando logs: ${errorStr}\n\n` +
-                `📂 Ruta: ${logPath || 'Calculando...'}\n\n` +
-                `💡 Si el error persiste, verifica los permisos del sistema.`);
+      if (!logContent) {
+        setLogs(`📝 Todavía no hay logs registrados.\n\n` +
+                `Se irán acumulando a medida que la app genere actividad.\n\n` +
+                `💡 Prueba realizar alguna acción (login, cargar datos, etc.) ` +
+                `y luego presiona el botón "Refresh".\n\n` +
+                `📂 Ubicación: ${location ?? 'memoria'}`);
+        return;
       }
+
+      setLogs(logContent);
+    } catch (error) {
+      setLogs(`❌ Error cargando logs: ${String(error)}\n\n` +
+              `📂 Ruta: ${logPath || 'Calculando...'}\n\n` +
+              `💡 Si el error persiste, verifica los permisos del sistema.`);
     }
   };
 
   const clearLogs = async () => {
     try {
-      await writeTextFile('app.log', '', {
-        baseDir: BaseDirectory.AppLog
-      });
+      await getLogger().clearLogs();
       setLogs('✅ Logs limpiados correctamente');
       setTimeout(loadLogs, 500);
     } catch (error) {
@@ -94,19 +90,6 @@ export function DebugLogWindow() {
 
       fileName += '.txt';
 
-      const filePath = await save({
-        defaultPath: fileName,
-        filters: [
-          { name: 'Text Files', extensions: ['txt'] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
-      });
-
-      if (!filePath) {
-        console.log('Download cancelled by user');
-        return;
-      }
-
       let header = `# TPS Intermotors - Log Export\n`;
       header += `# Export Date: ${new Date().toLocaleString()}\n`;
       header += `# Total Lines: ${processedLogs.lines.length}\n`;
@@ -119,9 +102,20 @@ export function DebugLogWindow() {
 
       const finalContent = header + logsToDownload;
 
-      await writeTextFile(filePath, finalContent);
+      const saved = await getFileSystem().saveFile({
+        suggestedName: fileName,
+        data: finalContent,
+        mimeType: 'text/plain;charset=utf-8',
+        extensions: ['txt'],
+        filterName: 'Text Files',
+      });
 
-      console.log('Filtered logs saved successfully to:', filePath);
+      if (!saved) {
+        console.log('Download cancelled by user');
+        return;
+      }
+
+      console.log('Filtered logs saved successfully as:', fileName);
     } catch (error) {
       console.error('Error downloading logs:', error);
     }

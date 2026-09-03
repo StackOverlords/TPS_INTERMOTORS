@@ -85,7 +85,7 @@ export type {
   AppUpdaterPort,
   UpdateProgress,
 } from './ports/appUpdater';
-export type { LogEntry, LoggerPort, LogLevel } from './ports/logger';
+export type { LoggerPort, LogLevel } from './ports/logger';
 export type {
   KeybindingRecord,
   KeybindingsRepositoryPort,

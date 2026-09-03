@@ -12,13 +12,6 @@
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
-export interface LogEntry {
-  level: LogLevel;
-  message: string;
-  /** ISO 8601. */
-  timestamp: string;
-}
-
 export interface LoggerPort {
   write(level: LogLevel, message: string): void;
 
@@ -26,11 +19,20 @@ export interface LoggerPort {
   canReadLogs(): boolean;
 
   /**
-   * Devuelve los logs disponibles, del más viejo al más nuevo.
-   * Array vacío si el target no puede leerlos.
+   * Todo el log disponible como texto plano, una entrada por línea.
+   *
+   * Se devuelve texto y no entradas estructuradas porque es el formato real en
+   * los dos targets: en escritorio el archivo ya es texto, y el Panel de Debug
+   * filtra por línea. Estructurarlo para volver a aplanarlo no agrega nada.
    */
-  readRecentLogs(): Promise<LogEntry[]>;
+  readLogText(): Promise<string>;
 
-  /** Borra los logs acumulados donde sea posible. */
+  /**
+   * Ruta del archivo de log, para mostrarla en la UI.
+   * `null` donde no hay archivo (web).
+   */
+  getLogLocation(): Promise<string | null>;
+
+  /** Borra los logs acumulados. */
   clearLogs(): Promise<void>;
 }
