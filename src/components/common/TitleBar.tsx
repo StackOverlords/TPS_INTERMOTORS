@@ -1,6 +1,6 @@
 import { Minus, Square, Copy, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getWindowChrome } from "@/platform";
 import TabBar from "../tabs/TabBar";
 import { useTabNavigation } from "@/hooks/useTabNavigation";
 import { useCommands } from "@/keybindings";
@@ -11,39 +11,54 @@ import { flushTabStorage } from "@/states/tabStore";
 
 const TitleBar = () => {
   const [isMaximized, setIsMaximized] = useState(false);
-  const appWindow = getCurrentWindow();
+  const chrome = getWindowChrome();
+
+  // En web el marco de la ventana lo dibuja el navegador: la barra sigue
+  // mostrando marca y pestañas, pero sin controles de ventana.
+  const showWindowControls = chrome.hasCustomChrome();
 
   const { shouldShowTabBar } = useShowTabBar();
 
   useEffect(() => {
-    const unlisten = appWindow.onResized(async () => {
-      const maximized = await appWindow.isMaximized();
-      setIsMaximized(maximized);
-    });
+    if (!showWindowControls) return;
+
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+
+    chrome
+      .onMaximizeChange(setIsMaximized)
+      .then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      })
+      .catch(() => {});
 
     return () => {
-      unlisten.then((f) => f());
+      disposed = true;
+      unlisten?.();
     };
-  }, [appWindow]);
+  }, [chrome, showWindowControls]);
 
   const handleMinimize = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await appWindow.minimize();
+    await chrome.minimize();
   };
 
   const handleMaximize = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await appWindow.toggleMaximize();
+    await chrome.toggleMaximize();
   };
 
   const handleClose = async (e: React.MouseEvent) => {
     e.stopPropagation();
     // ✅ Forzar guardado inmediato antes de cerrar
     flushTabStorage();
-    await appWindow.close();
+    await chrome.close();
   };
 
   const handleDragAreaClick = async (e: React.MouseEvent) => {
+    if (!showWindowControls) return;
+
     const target = e.target as HTMLElement;
 
     // Prevenir drag en elementos interactivos
@@ -66,7 +81,7 @@ const TitleBar = () => {
     ) {
       if (e.button === 0) {
         e.preventDefault();
-        await appWindow.startDragging();
+        await chrome.startDragging();
       }
       return;
     }
@@ -74,7 +89,7 @@ const TitleBar = () => {
     // Drag general en el resto de la barra
     if (e.button === 0) {
       e.preventDefault();
-      await appWindow.startDragging();
+      await chrome.startDragging();
     }
   };
 
@@ -109,6 +124,7 @@ const TitleBar = () => {
         )}
       </div>
 
+      {showWindowControls && (
       <div className="flex items-center flex-shrink-0 gap-2">
         <div data-drag-area-tabbar className="h-8 w-3" />
 
@@ -143,6 +159,7 @@ const TitleBar = () => {
           <X className="size-3" />
         </Button>
       </div>
+      )}
     </div>
   );
 };

@@ -24,6 +24,7 @@ import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
 import { tauriKeybindingsRepository } from './adapters/tauri/keybindingsRepository';
 import { tauriLogger } from './adapters/tauri/logger';
 import { tauriPreferencesRepository } from './adapters/tauri/preferencesRepository';
+import { tauriWindowChrome } from './adapters/tauri/windowChrome';
 import { tauriWindowManager } from './adapters/tauri/windowManager';
 import { webAppUpdater } from './adapters/web/appUpdater';
 import { webFileSystem } from './adapters/web/fileSystem';
@@ -32,6 +33,7 @@ import { webKeyValueStore } from './adapters/web/keyValueStore';
 import { webKeybindingsRepository } from './adapters/web/keybindingsRepository';
 import { webLogger } from './adapters/web/logger';
 import { webPreferencesRepository } from './adapters/web/preferencesRepository';
+import { webWindowChrome } from './adapters/web/windowChrome';
 import { webWindowManager } from './adapters/web/windowManager';
 import { isTauri } from './env';
 import type { AppUpdaterPort } from './ports/appUpdater';
@@ -41,6 +43,7 @@ import type { KeyValueStorePort } from './ports/keyValueStore';
 import type { KeybindingsRepositoryPort } from './ports/keybindingsRepository';
 import type { LoggerPort } from './ports/logger';
 import type { PreferencesRepositoryPort } from './ports/preferencesRepository';
+import type { WindowChromePort } from './ports/windowChrome';
 import type { WindowManagerPort } from './ports/windowManager';
 
 export { getPlatformTarget, isTauri } from './env';
@@ -64,6 +67,7 @@ export type {
   SaveFileRequest,
 } from './ports/fileSystem';
 export type { HttpPort } from './ports/http';
+export type { WindowChromePort } from './ports/windowChrome';
 export type {
   AppUpdateInfo,
   AppUpdaterPort,
@@ -198,4 +202,19 @@ export function getAppUpdater(): AppUpdaterPort {
     appUpdaterInstance = isTauri() ? tauriAppUpdater : webAppUpdater;
   }
   return appUpdaterInstance;
+}
+
+let windowChromeInstance: WindowChromePort | null = null;
+
+/**
+ * Control del marco de la ventana actual del target activo.
+ *
+ * Escritorio: barra de título propia (la app corre sin decoraciones del SO).
+ * Web: el navegador es el dueño; `hasCustomChrome()` es `false`.
+ */
+export function getWindowChrome(): WindowChromePort {
+  if (!windowChromeInstance) {
+    windowChromeInstance = isTauri() ? tauriWindowChrome : webWindowChrome;
+  }
+  return windowChromeInstance;
 }
