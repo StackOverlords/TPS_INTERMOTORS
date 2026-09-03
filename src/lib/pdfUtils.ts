@@ -1,4 +1,4 @@
-import { getFileSystem } from "@/platform";
+import { getFileSystem, type SaveFileResult } from "@/platform";
 import { Logger } from "./logger";
 
 const MODULE_NAME = "PDF_UTILS";
@@ -15,14 +15,17 @@ export const revokeObjectURL = (url: string): void => {
  * Entrega un PDF al usuario.
  *
  * Escritorio: diálogo nativo "Guardar como". Web: descarga del navegador.
- * Retorna `true` si se guardó, `false` si el usuario canceló el diálogo.
+ *
+ * Devuelve el resultado COMPLETO, no un booleano: el panel de descargas guarda
+ * `path` para poder revelar el archivo en el explorador. En web `path` es
+ * `null` y esa acción queda escondida (`canRevealInFolder()`).
  */
 export const downloadPDF = async (
   blob: Blob,
   filename: string,
-): Promise<boolean> => {
+): Promise<SaveFileResult> => {
   try {
-    const saved = await getFileSystem().saveFile({
+    const result = await getFileSystem().saveFile({
       suggestedName: filename,
       data: blob,
       mimeType: blob.type || "application/pdf",
@@ -30,13 +33,13 @@ export const downloadPDF = async (
       filterName: "PDF",
     });
 
-    if (!saved) {
+    if (!result.saved) {
       Logger.info("User cancelled save dialog", {}, MODULE_NAME);
-      return false;
+      return result;
     }
 
     Logger.info("PDF saved successfully", { filename }, MODULE_NAME);
-    return true;
+    return result;
   } catch (error) {
     Logger.error("Error downloading PDF", { error, filename }, MODULE_NAME);
     throw error;

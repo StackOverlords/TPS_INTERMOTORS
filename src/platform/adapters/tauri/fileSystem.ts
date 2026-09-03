@@ -20,6 +20,7 @@ import type {
   FileSystemPort,
   PickTextFileOptions,
   SaveFileRequest,
+  SaveFileResult,
 } from '@/platform/ports/fileSystem';
 
 async function toBytes(data: FileData): Promise<Uint8Array | null> {
@@ -44,7 +45,7 @@ function extensionOf(name: string): string {
 }
 
 export const tauriFileSystem: FileSystemPort = {
-  async saveFile(request: SaveFileRequest): Promise<boolean> {
+  async saveFile(request: SaveFileRequest): Promise<SaveFileResult> {
     const { suggestedName, data, extensions, filterName } = request;
 
     const filePath = await save({
@@ -57,13 +58,13 @@ export const tauriFileSystem: FileSystemPort = {
       ],
     });
 
-    if (!filePath) return false; // el usuario canceló
+    if (!filePath) return { saved: false, path: null }; // el usuario canceló
 
     const bytes = await toBytes(data);
     if (bytes) await writeFile(filePath, bytes);
     else await writeTextFile(filePath, data as string);
 
-    return true;
+    return { saved: true, path: filePath };
   },
 
   async pickTextFile(options: PickTextFileOptions = {}) {

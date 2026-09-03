@@ -26,7 +26,7 @@ export const saveExcelFile = async (
   filename: string,
 ): Promise<boolean> => {
   try {
-    const saved = await getFileSystem().saveFile({
+    const { saved } = await getFileSystem().saveFile({
       suggestedName: filename,
       data: blob,
       mimeType: blob.type || XLSX_MIME,

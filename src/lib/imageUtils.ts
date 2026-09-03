@@ -36,7 +36,7 @@ export const downloadImage = async (dataUrl: string, defaultFilename: string = '
 
         const { mimeType, extension } = parseDataUrl(dataUrl);
 
-        const saved = await getFileSystem().saveFile({
+        const { saved } = await getFileSystem().saveFile({
             suggestedName: defaultFilename,
             data: dataUrlToBytes(dataUrl),
             mimeType,

@@ -5,6 +5,7 @@
  * secundaria: `getCurrentWindow()` resuelve la correcta en cada contexto.
  */
 
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import type { WindowChromePort } from '@/platform/ports/windowChrome';
@@ -46,6 +47,8 @@ export const tauriWindowChrome: WindowChromePort = {
   },
 
   async setZoom(level: number) {
-    await getCurrentWindow().setZoom(level);
+    // `setZoom` vive en el WEBVIEW, no en la ventana: `getCurrentWindow()`
+    // devuelve un `Window` y no lo expone.
+    await getCurrentWebviewWindow().setZoom(level);
   },
 };

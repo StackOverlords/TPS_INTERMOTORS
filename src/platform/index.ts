@@ -71,6 +71,7 @@ export type {
   PickedTextFile,
   PickTextFileOptions,
   SaveFileRequest,
+  SaveFileResult,
 } from './ports/fileSystem';
 export type { HttpPort } from './ports/http';
 export type { WindowChromePort } from './ports/windowChrome';

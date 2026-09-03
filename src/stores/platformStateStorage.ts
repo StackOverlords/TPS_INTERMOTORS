@@ -13,8 +13,13 @@ import type { StateStorage } from 'zustand/middleware';
  */
 class PlatformStateStorage implements StateStorage {
   private store: Promise<KeyValueStore> | null = null;
+  private readonly storeName: string;
 
-  constructor(private readonly storeName: string) {}
+  // Campo explícito en vez de propiedad de parámetro: `erasableSyntaxOnly`
+  // (tsconfig.app.json) prohíbe la sintaxis que TypeScript debe transformar.
+  constructor(storeName: string) {
+    this.storeName = storeName;
+  }
 
   private getStore(): Promise<KeyValueStore> {
     // El puerto ya cachea por nombre; guardamos la promesa para no re-entrar.

@@ -102,7 +102,7 @@ export function DebugLogWindow() {
 
       const finalContent = header + logsToDownload;
 
-      const saved = await getFileSystem().saveFile({
+      const { saved } = await getFileSystem().saveFile({
         suggestedName: fileName,
         data: finalContent,
         mimeType: 'text/plain;charset=utf-8',

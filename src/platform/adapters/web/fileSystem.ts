@@ -22,6 +22,7 @@ import type {
   FileSystemPort,
   PickTextFileOptions,
   SaveFileRequest,
+  SaveFileResult,
 } from '@/platform/ports/fileSystem';
 
 function toBlob(data: FileData, mimeType?: string): Blob {
@@ -59,12 +60,13 @@ function triggerDownload(blob: Blob, fileName: string): void {
 }
 
 export const webFileSystem: FileSystemPort = {
-  async saveFile(request: SaveFileRequest): Promise<boolean> {
+  async saveFile(request: SaveFileRequest): Promise<SaveFileResult> {
     triggerDownload(
       toBlob(request.data, request.mimeType),
       request.suggestedName,
     );
-    return true;
+    // El navegador no revela dónde guardó la descarga: `path` siempre null.
+    return { saved: true, path: null };
   },
 
   pickTextFile(options: PickTextFileOptions = {}) {

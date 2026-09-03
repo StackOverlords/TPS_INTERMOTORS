@@ -313,7 +313,7 @@ const SaleDetailSelectorWindow = () => {
       initialItems,
       calculateChanges,
       config.windowId,
-      currentWindow,
+      platformWindows,
     ]
   );
 
@@ -455,7 +455,7 @@ const SaleDetailSelectorWindow = () => {
   const handleClose = useCallback(async () => {
     await platformWindows.emitToWindow(config.windowId, "window-closed", { canceled: true });
     await platformWindows.closeCurrentWindow();
-  }, [config.windowId, currentWindow]);
+  }, [config.windowId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

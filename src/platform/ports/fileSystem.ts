@@ -26,6 +26,19 @@ export interface SaveFileRequest {
   filterName?: string;
 }
 
+export interface SaveFileResult {
+  /** `false` solo si el usuario canceló el diálogo. */
+  saved: boolean;
+  /**
+   * Ruta absoluta donde quedó el archivo, o `null` si el target no la expone.
+   *
+   * En web SIEMPRE es `null`: el navegador no revela dónde guardó la descarga.
+   * Por eso `saved` y `path` son campos separados — colapsarlos en un solo
+   * `string | null` haría que una descarga web exitosa se lea como cancelada.
+   */
+  path: string | null;
+}
+
 export interface PickedTextFile {
   name: string;
   text: string;
@@ -44,9 +57,9 @@ export interface FileSystemPort {
    * Web: dispara la descarga del navegador a la carpeta de descargas por
    * defecto (sin diálogo — ver la nota del adaptador web sobre por qué).
    *
-   * Devuelve `false` solo si el usuario canceló explícitamente el diálogo.
+   * `saved` es `false` solo si el usuario canceló explícitamente el diálogo.
    */
-  saveFile(request: SaveFileRequest): Promise<boolean>;
+  saveFile(request: SaveFileRequest): Promise<SaveFileResult>;
 
   /**
    * Abre el selector de archivos y devuelve el contenido como texto.

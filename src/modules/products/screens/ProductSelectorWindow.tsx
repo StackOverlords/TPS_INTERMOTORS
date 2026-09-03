@@ -360,7 +360,7 @@ const ProductSelectorWindow: React.FC = () => {
       toggleProductSelection,
       quantities,
       config.windowId,
-      currentWindow,
+      platformWindows,
       canAddProduct,
       selectedItemsMap,
     ]

@@ -118,7 +118,7 @@ const KeybindingsSettings = () => {
 
       const fileName = `keybindings-${new Date().toISOString().split("T")[0]}.json`;
 
-      const saved = await getFileSystem().saveFile({
+      const { saved } = await getFileSystem().saveFile({
         suggestedName: fileName,
         data: json,
         mimeType: "application/json",
@@ -169,11 +169,7 @@ const KeybindingsSettings = () => {
 
         // Guardar para usar después
         setImportFileContent(text);
-        setImportFileName(
-          typeof filePath === "string"
-            ? filePath.split(/[\\/]/).pop() || "archivo.json"
-            : "archivo.json"
-        );
+        setImportFileName(picked.name || "archivo.json");
         setImportValidation(validation);
 
         // Mostrar modal de vista previa

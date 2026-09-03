@@ -160,10 +160,10 @@ export const cashService = {
 
         try {
             const blob = new Blob([response.data], { type: 'application/pdf' });
-            const savedPath = await downloadPDF(blob, filename);
+            const { saved, path } = await downloadPDF(blob, filename);
             updateDownload(downloadId, {
-                status: savedPath ? 'success' : 'cancelled',
-                path: savedPath,
+                status: saved ? 'success' : 'cancelled',
+                path,
             });
         } catch (err) {
             updateDownload(downloadId, { status: 'error', error: (err as Error).message });

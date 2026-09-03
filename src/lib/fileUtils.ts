@@ -25,7 +25,7 @@ export async function downloadFile(
   try {
     const blob = await fetchBlob(url);
 
-    const saved = await getFileSystem().saveFile({
+    const { saved } = await getFileSystem().saveFile({
       suggestedName,
       data: blob,
       mimeType: blob.type || undefined,

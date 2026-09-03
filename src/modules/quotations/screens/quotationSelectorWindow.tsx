@@ -137,7 +137,7 @@ const QuotationSelectorWindow: React.FC = () => {
 
       sendDataAndClose();
     }
-  }, [quotationFullData, selectedQuotationId, config.windowId, currentWindow]);
+  }, [quotationFullData, selectedQuotationId, config.windowId, platformWindows]);
 
   const columns = useMemo<ColumnDef<QuotationGetAll>[]>(
     () => [
