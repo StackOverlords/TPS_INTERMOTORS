@@ -1,10 +1,8 @@
+import { getAppUpdater } from '@/platform';
 import { environment } from '@/utils/environment';
-import { getVersion } from '@tauri-apps/api/app';
-import { relaunch } from '@tauri-apps/plugin-process';
-import { check, Update } from '@tauri-apps/plugin-updater';
 
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface UpdateState {
   available: boolean;
@@ -16,99 +14,108 @@ export interface UpdateState {
   isInstalling: boolean;
   downloadProgress: number;
   error: string | null;
-  update: Update | null;
   releaseNotes: string | null;
   releaseDate: string | null;
+  /**
+   * `false` donde la app no puede autoactualizarse (web). La UI debe usarlo
+   * para esconder la sección de actualizaciones en vez de mostrar botones que
+   * no hacen nada.
+   */
+  supportsSelfUpdate: boolean;
 }
 
+const INITIAL_STATE: UpdateState = {
+  available: false,
+  currentVersion: '',
+  latestVersion: '',
+  variant: null,
+  isChecking: false,
+  isDownloading: false,
+  isInstalling: false,
+  downloadProgress: 0,
+  error: null,
+  releaseNotes: null,
+  releaseDate: null,
+  supportsSelfUpdate: false,
+};
+
 export const useUpdateChecker = () => {
-  const [updateState, setUpdateState] = useState<UpdateState>({
-    available: false,
-    currentVersion: '',
-    latestVersion: '',
-    variant: null,
-    isChecking: false,
-    isDownloading: false,
-    isInstalling: false,
-    downloadProgress: 0,
-    error: null,
-    update: null,
-    releaseNotes: null,
-    releaseDate: null,
-  });
+  const [updateState, setUpdateState] = useState<UpdateState>(INITIAL_STATE);
 
-  // Get variant from environment variable
-  // const appVariant = import.meta.env.VITE_APP_VARIANT || null;
-  // Check on mount
-  useEffect(() => {
-    checkForUpdates();
-  }, []);
-  
-  const checkForUpdates = async (silent = true) => {
-    if (updateState.isChecking) return;
+  const checkForUpdates = useCallback(async (silent = true) => {
+    const updater = getAppUpdater();
 
-    setUpdateState(prev => ({
-      ...prev,
-      isChecking: true,
-      error: null,
-    }));
+    // En web no hay binario que reemplazar: solo publicamos la versión actual.
+    if (!updater.supportsSelfUpdate()) {
+      const currentVersion = await updater.getCurrentVersion();
+      setUpdateState(prev => ({
+        ...prev,
+        supportsSelfUpdate: false,
+        available: false,
+        currentVersion,
+        latestVersion: currentVersion,
+        variant: environment.variant,
+        isChecking: false,
+      }));
+      return;
+    }
+
+    setUpdateState(prev => {
+      if (prev.isChecking) return prev;
+      return { ...prev, isChecking: true, error: null, supportsSelfUpdate: true };
+    });
 
     try {
-      const update = await check();
-      const currentVersion = update?.currentVersion || await getVersion();
-      // alert(JSON.stringify({update, currentVersion, appVariant}));
-      if (update && 'available' in update && update.available) {
-        // Hay actualización disponible
+      const update = await updater.checkForUpdate();
+
+      if (update) {
         setUpdateState(prev => ({
           ...prev,
           available: true,
           currentVersion: update.currentVersion,
           latestVersion: update.version,
           variant: environment.variant,
-          update,
-          releaseNotes: update.body || null,
-          releaseDate: update.date || null,
+          releaseNotes: update.notes,
+          releaseDate: update.date,
           isChecking: false,
         }));
-      } else {
-        // No hay actualización - obtener notas de la versión actual desde GitHub
-        let currentVersionNotes = null;
-        let currentVersionDate = null;
-
-        try {
-          // Build the correct tag with variant (e.g., v1.1.29-t1)
-          const tagWithVariant = environment.variant ? `v${currentVersion}-${environment.variant}` : `v${currentVersion}`;
-          // console.log(`https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`)
-          const response = await axios.get(
-            `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`
-          );
-          if (response.status === 200) {
-            const releaseData = response.data;
-            currentVersionNotes = releaseData.body || null;
-            currentVersionDate = releaseData.published_at || null;
-          }
-        } catch (err) {
-          console.error('Error fetching current version release notes:', err);
-        }
-
-        setUpdateState(prev => ({
-          ...prev,
-          available: false,
-          currentVersion: currentVersion,
-          latestVersion: currentVersion,
-          variant: environment.variant,
-          releaseNotes: currentVersionNotes,
-          releaseDate: currentVersionDate,
-          isChecking: false,
-        }));
-
-        if (!silent) {
-          setUpdateState(prev => ({
-            ...prev,
-            error: 'Ya estás en la última versión',
-          }));
-        }
+        return;
       }
+
+      // Sin actualización: traemos las notas de la versión actual desde GitHub.
+      const currentVersion = await updater.getCurrentVersion();
+      let currentVersionNotes: string | null = null;
+      let currentVersionDate: string | null = null;
+
+      try {
+        // El tag incluye la variante (ej. v1.1.29-t1).
+        const tagWithVariant = environment.variant
+          ? `v${currentVersion}-${environment.variant}`
+          : `v${currentVersion}`;
+
+        const response = await axios.get(
+          `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`
+        );
+
+        if (response.status === 200) {
+          currentVersionNotes = response.data.body || null;
+          currentVersionDate = response.data.published_at || null;
+        }
+      } catch (err) {
+        console.error('Error fetching current version release notes:', err);
+      }
+
+      setUpdateState(prev => ({
+        ...prev,
+        available: false,
+        currentVersion,
+        latestVersion: currentVersion,
+        variant: environment.variant,
+        releaseNotes: currentVersionNotes,
+        releaseDate: currentVersionDate,
+        isChecking: false,
+        error: silent ? prev.error : 'Ya estás en la última versión',
+      }));
     } catch (error) {
       const errorMessage = error instanceof Error
         ? `Error: ${error.message}`
@@ -120,10 +127,14 @@ export const useUpdateChecker = () => {
         error: errorMessage,
       }));
     }
-  };
+  }, []);
 
-  const downloadAndInstall = async () => {
-    if (!updateState.update) return;
+  useEffect(() => {
+    checkForUpdates();
+  }, [checkForUpdates]);
+
+  const downloadAndInstall = useCallback(async () => {
+    const updater = getAppUpdater();
 
     setUpdateState(prev => ({
       ...prev,
@@ -136,20 +147,19 @@ export const useUpdateChecker = () => {
       let downloaded = 0;
       let contentLength = 0;
 
-      await updateState.update.downloadAndInstall((event) => {
-        switch (event.event) {
-          case 'Started':
-            contentLength = event.data.contentLength || 0;
+      await updater.downloadAndInstall(progress => {
+        switch (progress.phase) {
+          case 'started':
+            contentLength = progress.contentLength;
             break;
-          case 'Progress':
-            downloaded += event.data.chunkLength;
-            const progress = contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
-            setUpdateState(prev => ({
-              ...prev,
-              downloadProgress: progress,
-            }));
+          case 'progress': {
+            downloaded += progress.chunkLength;
+            const percent =
+              contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
+            setUpdateState(prev => ({ ...prev, downloadProgress: percent }));
             break;
-          case 'Finished':
+          }
+          case 'finished':
             setUpdateState(prev => ({
               ...prev,
               isDownloading: false,
@@ -159,32 +169,32 @@ export const useUpdateChecker = () => {
         }
       });
 
-      await relaunch();
+      await updater.relaunch();
     } catch (error) {
       setUpdateState(prev => ({
         ...prev,
         isDownloading: false,
         isInstalling: false,
-        error: error instanceof Error ? error.message : 'Error al descargar/instalar actualización',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Error al descargar/instalar actualización',
       }));
     }
-  };
+  }, []);
 
-  const dismissUpdate = () => {
+  const dismissUpdate = useCallback(() => {
+    getAppUpdater().dismiss();
     setUpdateState(prev => ({
       ...prev,
       available: false,
-      update: null,
       error: null,
     }));
-  };
+  }, []);
 
-  const clearError = () => {
-    setUpdateState(prev => ({
-      ...prev,
-      error: null,
-    }));
-  };
+  const clearError = useCallback(() => {
+    setUpdateState(prev => ({ ...prev, error: null }));
+  }, []);
 
   return {
     ...updateState,

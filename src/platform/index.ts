@@ -17,6 +17,7 @@
  * resuelto en build, sin tocar un solo consumidor.
  */
 
+import { tauriAppUpdater } from './adapters/tauri/appUpdater';
 import { tauriFileSystem } from './adapters/tauri/fileSystem';
 import { tauriHttp } from './adapters/tauri/http';
 import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
@@ -24,6 +25,7 @@ import { tauriKeybindingsRepository } from './adapters/tauri/keybindingsReposito
 import { tauriLogger } from './adapters/tauri/logger';
 import { tauriPreferencesRepository } from './adapters/tauri/preferencesRepository';
 import { tauriWindowManager } from './adapters/tauri/windowManager';
+import { webAppUpdater } from './adapters/web/appUpdater';
 import { webFileSystem } from './adapters/web/fileSystem';
 import { webHttp } from './adapters/web/http';
 import { webKeyValueStore } from './adapters/web/keyValueStore';
@@ -32,6 +34,7 @@ import { webLogger } from './adapters/web/logger';
 import { webPreferencesRepository } from './adapters/web/preferencesRepository';
 import { webWindowManager } from './adapters/web/windowManager';
 import { isTauri } from './env';
+import type { AppUpdaterPort } from './ports/appUpdater';
 import type { FileSystemPort } from './ports/fileSystem';
 import type { HttpPort } from './ports/http';
 import type { KeyValueStorePort } from './ports/keyValueStore';
@@ -61,6 +64,11 @@ export type {
   SaveFileRequest,
 } from './ports/fileSystem';
 export type { HttpPort } from './ports/http';
+export type {
+  AppUpdateInfo,
+  AppUpdaterPort,
+  UpdateProgress,
+} from './ports/appUpdater';
 export type { LogEntry, LoggerPort, LogLevel } from './ports/logger';
 export type {
   KeybindingRecord,
@@ -175,4 +183,19 @@ export function getPreferencesRepository(): PreferencesRepositoryPort {
       : webPreferencesRepository;
   }
   return preferencesRepositoryInstance;
+}
+
+let appUpdaterInstance: AppUpdaterPort | null = null;
+
+/**
+ * Versión de la app y actualizaciones del target activo.
+ *
+ * Escritorio: plugin-updater + relanzar el proceso.
+ * Web: sin autoactualización (`supportsSelfUpdate()` es `false`).
+ */
+export function getAppUpdater(): AppUpdaterPort {
+  if (!appUpdaterInstance) {
+    appUpdaterInstance = isTauri() ? tauriAppUpdater : webAppUpdater;
+  }
+  return appUpdaterInstance;
 }
