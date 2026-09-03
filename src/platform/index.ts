@@ -17,9 +17,12 @@
  * resuelto en build, sin tocar un solo consumidor.
  */
 
+import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
 import { tauriWindowManager } from './adapters/tauri/windowManager';
+import { webKeyValueStore } from './adapters/web/keyValueStore';
 import { webWindowManager } from './adapters/web/windowManager';
 import { isTauri } from './env';
+import type { KeyValueStorePort } from './ports/keyValueStore';
 import type { WindowManagerPort } from './ports/windowManager';
 
 export { getPlatformTarget, isTauri } from './env';
@@ -30,6 +33,11 @@ export type {
   SecondaryWindowHandle,
   WindowManagerPort,
 } from './ports/windowManager';
+export type {
+  KeyValueStore,
+  KeyValueStoreOptions,
+  KeyValueStorePort,
+} from './ports/keyValueStore';
 
 let windowManagerInstance: WindowManagerPort | null = null;
 
@@ -45,4 +53,19 @@ export function getWindowManager(): WindowManagerPort {
     windowManagerInstance = isTauri() ? tauriWindowManager : webWindowManager;
   }
   return windowManagerInstance;
+}
+
+let keyValueStoreInstance: KeyValueStorePort | null = null;
+
+/**
+ * Almacenamiento clave/valor persistente del target activo.
+ *
+ * Escritorio: un archivo JSON por store (`@tauri-apps/plugin-store`).
+ * Web: claves con prefijo en `localStorage`.
+ */
+export function getKeyValueStore(): KeyValueStorePort {
+  if (!keyValueStoreInstance) {
+    keyValueStoreInstance = isTauri() ? tauriKeyValueStore : webKeyValueStore;
+  }
+  return keyValueStoreInstance;
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { tauriThemeStorage } from './tauriPluginAdapterStore'
+import { themeStorage } from './platformStateStorage'
 
 type Theme = 'light' | 'dark' | 'system'
 type ResolvedTheme = 'light' | 'dark'
@@ -93,7 +93,7 @@ export const useThemeStore = create<ThemeStore>()(
     }),
     {
       name: 'theme-storage',
-      storage: createJSONStorage(() => tauriThemeStorage),
+      storage: createJSONStorage(() => themeStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.initializeTheme();
