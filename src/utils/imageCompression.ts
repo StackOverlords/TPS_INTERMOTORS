@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getHttp } from "@/platform";
 
 export interface CompressionOptions {
   quality?: number; // 0-100 (default: 75)
@@ -209,13 +210,6 @@ export function base64ToFile(base64Data: string, filename: string): File {
 
 // Función pura sin estado
 export async function fetchImageAsBlobUrl(url: string): Promise<string> {
-  const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-
-  const response = await tauriFetch(url, { method: "GET" });
-
-  // Tauri v2 plugin-http implementa la Web Fetch API estándar
-  // response.blob() funciona correctamente
-  const blob = await response.blob();
-
+  const blob = await getHttp().fetchBlob(url);
   return URL.createObjectURL(blob);
 }

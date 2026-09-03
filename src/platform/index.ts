@@ -17,11 +17,17 @@
  * resuelto en build, sin tocar un solo consumidor.
  */
 
+import { tauriFileSystem } from './adapters/tauri/fileSystem';
+import { tauriHttp } from './adapters/tauri/http';
 import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
 import { tauriWindowManager } from './adapters/tauri/windowManager';
+import { webFileSystem } from './adapters/web/fileSystem';
+import { webHttp } from './adapters/web/http';
 import { webKeyValueStore } from './adapters/web/keyValueStore';
 import { webWindowManager } from './adapters/web/windowManager';
 import { isTauri } from './env';
+import type { FileSystemPort } from './ports/fileSystem';
+import type { HttpPort } from './ports/http';
 import type { KeyValueStorePort } from './ports/keyValueStore';
 import type { WindowManagerPort } from './ports/windowManager';
 
@@ -38,6 +44,14 @@ export type {
   KeyValueStoreOptions,
   KeyValueStorePort,
 } from './ports/keyValueStore';
+export type {
+  FileData,
+  FileSystemPort,
+  PickedTextFile,
+  PickTextFileOptions,
+  SaveFileRequest,
+} from './ports/fileSystem';
+export type { HttpPort } from './ports/http';
 
 let windowManagerInstance: WindowManagerPort | null = null;
 
@@ -68,4 +82,32 @@ export function getKeyValueStore(): KeyValueStorePort {
     keyValueStoreInstance = isTauri() ? tauriKeyValueStore : webKeyValueStore;
   }
   return keyValueStoreInstance;
+}
+
+let fileSystemInstance: FileSystemPort | null = null;
+
+/**
+ * Entrada/salida de archivos hacia el usuario del target activo.
+ *
+ * Escritorio: diálogos nativos del SO. Web: descarga del navegador.
+ */
+export function getFileSystem(): FileSystemPort {
+  if (!fileSystemInstance) {
+    fileSystemInstance = isTauri() ? tauriFileSystem : webFileSystem;
+  }
+  return fileSystemInstance;
+}
+
+let httpInstance: HttpPort | null = null;
+
+/**
+ * Descarga de binarios del target activo.
+ *
+ * Escritorio: por Rust, sin CORS. Web: `fetch`, sujeto a CORS.
+ */
+export function getHttp(): HttpPort {
+  if (!httpInstance) {
+    httpInstance = isTauri() ? tauriHttp : webHttp;
+  }
+  return httpInstance;
 }

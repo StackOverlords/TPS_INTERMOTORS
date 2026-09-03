@@ -1,7 +1,4 @@
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile, BaseDirectory } from "@tauri-apps/plugin-fs";
-import { downloadDir, tempDir } from "@tauri-apps/api/path";
-import { open } from "@tauri-apps/plugin-shell";
+import { getFileSystem } from "@/platform";
 import { Logger } from "./logger";
 
 const MODULE_NAME = "PDF_UTILS";
@@ -15,30 +12,31 @@ export const revokeObjectURL = (url: string): void => {
 };
 
 /**
- * Descarga un PDF con diálogo nativo "Guardar como".
+ * Entrega un PDF al usuario.
+ *
+ * Escritorio: diálogo nativo "Guardar como". Web: descarga del navegador.
+ * Retorna `true` si se guardó, `false` si el usuario canceló el diálogo.
  */
 export const downloadPDF = async (
   blob: Blob,
   filename: string,
-): Promise<string | null> => {
+): Promise<boolean> => {
   try {
-    const dir = await downloadDir();
-    const sep = dir.endsWith("/") || dir.endsWith("\\") ? "" : "/";
-
-    const filePath = await save({
-      defaultPath: `${dir}${sep}${filename}`,
-      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    const saved = await getFileSystem().saveFile({
+      suggestedName: filename,
+      data: blob,
+      mimeType: blob.type || "application/pdf",
+      extensions: ["pdf"],
+      filterName: "PDF",
     });
 
-    if (!filePath) {
+    if (!saved) {
       Logger.info("User cancelled save dialog", {}, MODULE_NAME);
-      return null;
+      return false;
     }
 
-    const arrayBuffer = await blob.arrayBuffer();
-    await writeFile(filePath, new Uint8Array(arrayBuffer));
-    Logger.info("PDF saved successfully", { path: filePath }, MODULE_NAME);
-    return filePath;
+    Logger.info("PDF saved successfully", { filename }, MODULE_NAME);
+    return true;
   } catch (error) {
     Logger.error("Error downloading PDF", { error, filename }, MODULE_NAME);
     throw error;
@@ -46,40 +44,20 @@ export const downloadPDF = async (
 };
 
 /**
- * Abre un PDF con el visor predeterminado del sistema para imprimir.
+ * Abre un PDF en el visor correspondiente para que el usuario lo imprima.
+ *
+ * Escritorio: archivo temporal + visor por defecto del SO.
+ * Web: pestaña nueva con el visor del navegador (que ya trae botón de imprimir).
  */
 export const printPDF = async (blob: Blob): Promise<void> => {
   try {
-    Logger.info("Starting PDF open process in Tauri", {}, MODULE_NAME);
+    Logger.info("Opening PDF for printing", {}, MODULE_NAME);
 
-    const arrayBuffer = await blob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-
-    const timestamp = Date.now();
-    const tempFileName = `cotizacion_temp_${timestamp}.pdf`;
-
-    await writeFile(tempFileName, uint8Array, {
-      baseDir: BaseDirectory.Temp,
-    });
-
-    Logger.info(
-      "PDF saved to temp directory",
-      { fileName: tempFileName },
-      MODULE_NAME,
-    );
-
-    const tempDirPath = await tempDir();
-    const sep =
-      tempDirPath.endsWith("/") || tempDirPath.endsWith("\\") ? "" : "/";
-    const fullPath = `${tempDirPath}${sep}${tempFileName}`;
-
-    Logger.info("Opening PDF", { path: fullPath }, MODULE_NAME);
-
-    await open(fullPath);
+    await getFileSystem().openBlob(blob, "documento.pdf");
 
     Logger.info("PDF opened successfully", {}, MODULE_NAME);
   } catch (error) {
-    Logger.error("Error opening PDF in Tauri", { error }, MODULE_NAME);
+    Logger.error("Error opening PDF", { error }, MODULE_NAME);
     throw error;
   }
 };
