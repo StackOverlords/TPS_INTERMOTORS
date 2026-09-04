@@ -10,6 +10,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Los tests corren en happy-dom, o sea el target web. Los adaptadores de
+      // escritorio se prueban aparte (necesitan el runtime de Tauri).
+      '@platform-adapters': path.resolve(
+        __dirname,
+        './src/platform/adapters/web/index.ts',
+      ),
     },
   },
   define: {

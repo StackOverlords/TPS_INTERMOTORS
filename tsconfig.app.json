@@ -22,7 +22,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // TS solo puede apuntar a UNA ruta. Da igual cual: ambos barrels estan
+      // anotados con los tipos de los puertos y se compilan los dos, asi que
+      // una desincronizacion la detecta igual.
+      "@platform-adapters": ["./src/platform/adapters/web/index.ts"]
     }
   },
   "include": ["src"]
