@@ -2,10 +2,21 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import path, { resolve } from 'path';
+import { readFileSync } from 'fs';
+
+// Version de la app disponible en runtime para ambos targets. En escritorio la
+// da `getVersion()` de Tauri; en web no hay equivalente, asi que se inyecta en
+// build desde package.json (unica fuente de verdad, la misma que usa Tauri).
+const appVersion = JSON.parse(
+  readFileSync(resolve(__dirname, 'package.json'), 'utf-8'),
+).version as string;
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

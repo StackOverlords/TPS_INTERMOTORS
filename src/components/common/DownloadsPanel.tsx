@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/atoms/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { isTauriEnvironment } from '@/utils/environment';
+import { getFileSystem } from '@/platform';
 import { useDownloadStore, type DownloadEntry } from '@/states/downloadStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -38,10 +38,9 @@ const TypeIcon: React.FC<{ type: DownloadEntry['type'] }> = ({ type }) => {
 
 const revealInExplorer = async (filePath: string) => {
   try {
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('reveal_in_folder', { path: filePath });
+    await getFileSystem().revealInFolder(filePath);
   } catch {
-    // silenciar — no disponible fuera de Tauri
+    // silenciar — el explorador del sistema puede no estar disponible
   }
 };
 
@@ -49,7 +48,8 @@ const revealInExplorer = async (filePath: string) => {
 
 const DownloadsPanel: React.FC = () => {
   const { downloads, removeDownload, clearDownloads } = useDownloadStore();
-  const isTauri = isTauriEnvironment();
+  // El navegador no da acceso al explorador de archivos: la acción se esconde.
+  const canReveal = getFileSystem().canRevealInFolder();
 
   const activeCount = downloads.filter((d) => d.status === 'downloading').length;
 
@@ -111,7 +111,7 @@ const DownloadsPanel: React.FC = () => {
                 </div>
 
                 <div className={cn("flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity")}>
-                  {isTauri && entry.path && entry.status === 'success' && (
+                  {canReveal && entry.path && entry.status === 'success' && (
                     <Button
                       variant="ghost"
                       size="sm"

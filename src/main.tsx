@@ -19,8 +19,7 @@ import { queryClient } from "./lib/reactQueryConfig.ts";
 import logger from "./utils/logger.ts";
 // import { useAppearanceStore } from "./stores/appearanceStore.ts";
 import { flushTabStorage } from "./states/tabStore.ts";
-import { emit } from "@tauri-apps/api/event";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getWindowManager } from "@/platform";
 import { useEffect } from "react";
 
 // try {
@@ -72,14 +71,9 @@ function App() {
   useEffect(() => {
     const killOrphanWindows = async () => {
       try {
-        const allWindows = await WebviewWindow.getAll();
-        for (const win of allWindows) {
-          if (win.label !== "main") {
-            win.close().catch(() => {});
-          }
-        }
+        await getWindowManager().closeAllSecondary();
       } catch {
-        // no-op: si falla el listado, no hay nada que limpiar
+        // no-op: si falla el cierre, el heartbeat las recoge igual
       }
     };
     killOrphanWindows();
@@ -89,7 +83,7 @@ function App() {
   // Las ventanas secundarias se auto-cierran si no reciben pulso por 5s.
   useEffect(() => {
     const interval = setInterval(() => {
-      emit("main:heartbeat").catch(() => {});
+      getWindowManager().broadcast("main:heartbeat").catch(() => {});
     }, 2000);
     return () => clearInterval(interval);
   }, []);

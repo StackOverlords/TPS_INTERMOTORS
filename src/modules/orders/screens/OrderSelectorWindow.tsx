@@ -1,8 +1,7 @@
 import { Badge } from "@/components/atoms/badge";
 import { Button } from "@/components/atoms/button";
 import { useBranchStore } from "@/states/branchStore";
-import { emitToWindow } from "@/utils/tauriWindows";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getWindowManager } from "@/platform";
 import { Zap } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import OrderSelectorFilters from "../components/orderSelector/OrderSelectorFilters";
@@ -80,7 +79,7 @@ const OrderSelectorWindow = () => {
 };
 
 const OrderSelectorWindowContent = () => {
-  const currentWindow = getCurrentWebviewWindow();
+  const platformWindows = getWindowManager();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
 
   // Extraer config de URL
@@ -120,13 +119,13 @@ const OrderSelectorWindowContent = () => {
 
   // Manejar selección de pedido
   const handleSelectOrder = async (order: OrderGetAll) => {
-    await emitToWindow(config.windowId, "order-selected", { id: order.id });
-    await currentWindow.close();
+    await platformWindows.emitToWindow(config.windowId, "order-selected", { id: order.id });
+    await platformWindows.closeCurrentWindow();
   };
 
   // const handleClose = async () => {
-  //   await emitToWindow(config.windowId, 'window-closed', { canceled: true });
-  //   await currentWindow.close();
+  //   await platformWindows.emitToWindow(config.windowId, 'window-closed', { canceled: true });
+  //   await platformWindows.closeCurrentWindow();
   // };
 
   const handleManualSearch = () => {

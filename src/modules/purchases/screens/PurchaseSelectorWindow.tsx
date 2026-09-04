@@ -12,9 +12,8 @@ import { usePurchasesPaginated } from "@/modules/purchases/hooks/usePurchasesPag
 import type { PurchaseGet } from "@/modules/purchases/types/PurchaseGet";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
-import { emitToWindow } from "@/utils/tauriWindows";
+import { getWindowManager } from "@/platform";
 import { type ColumnDef } from "@tanstack/react-table";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Plus, RotateCcw, Search, X, Zap } from "lucide-react";
@@ -22,7 +21,7 @@ import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
 
 const PurchaseSelectorWindow: React.FC = () => {
-  const currentWindow = getCurrentWebviewWindow();
+  const platformWindows = getWindowManager();
   const { selectedBranchId } = useBranchStore();
 
   // Extraer config de URL
@@ -62,13 +61,13 @@ const PurchaseSelectorWindow: React.FC = () => {
 
   // Manejar selección de compra
   const handleSelectPurchase = async (purchase: PurchaseGet) => {
-    await emitToWindow(config.windowId, "purchase-selected", purchase);
-    await currentWindow.close();
+    await platformWindows.emitToWindow(config.windowId, "purchase-selected", purchase);
+    await platformWindows.closeCurrentWindow();
   };
 
   const handleClose = async () => {
-    await emitToWindow(config.windowId, "window-closed", { canceled: true });
-    await currentWindow.close();
+    await platformWindows.emitToWindow(config.windowId, "window-closed", { canceled: true });
+    await platformWindows.closeCurrentWindow();
   };
 
   const handleManualSearch = () => {

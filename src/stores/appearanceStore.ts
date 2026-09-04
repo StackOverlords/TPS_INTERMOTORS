@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { tauriAppearanceStorage } from './tauriPluginAdapterStore';
+import { appearanceStorage } from './platformStateStorage';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 // Definimos los tipos aqui ,, pendiente de cambiar a otro archivo
@@ -271,7 +271,7 @@ export const useAppearanceStore = create<AppearanceStore>()(
     }),
     {
       name: 'appearance-storage',
-      storage: createJSONStorage(() => tauriAppearanceStorage),
+      storage: createJSONStorage(() => appearanceStorage),
       onRehydrateStorage: () => (state) => { // Rehidratacionn para el initialized de nuestro main
         if (state) {
           state.initializeAppearance();

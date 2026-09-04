@@ -1,6 +1,8 @@
 import WindowLayout from "@/layouts/WindowLayout";
-import { emit, listen } from "@tauri-apps/api/event";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import {
+  getWindowManager,
+  PLATFORM_CLOSE_ALL_SECONDARY,
+} from "@/platform";
 import { createRoot } from "react-dom/client";
 import { AuthSDKContext } from "./contexts/AuthSDKContext.tsx";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
@@ -16,9 +18,10 @@ import { useThemeStore } from "./stores/themeStore.ts";
 import { useAppearanceStore } from "./stores/appearanceStore.ts";
 
 // Detect if this entry point is running in a secondary window.
-// All secondary windows are opened with ?windowId=... in the URL by tauriWindows.ts.
-const isSecondaryWindow =
-  new URLSearchParams(window.location.search).get("windowId") !== null;
+// Todas las ventanas secundarias se abren con ?windowId=... en la URL
+// (ver src/platform/ports/windowManager.ts).
+const platformWindows = getWindowManager();
+const isSecondaryWindow = platformWindows.isSecondaryWindow();
 
 // The module-level authSDK singleton auto-detects isSecondary via URLSearchParams,
 // so it's already correctly configured for secondary windows (validateOnStartup: false).
@@ -35,20 +38,26 @@ try {
 // Cada ventana secundaria maneja su propio cierre desde su propio contexto.
 // Esto evita que un onCloseRequested registrado desde el main quede "muerto"
 // en Tauri esperando una respuesta que nunca llega (root cause del zombie).
-(async () => {
-  const selfWindow = getCurrentWebviewWindow();
-  const windowId = new URLSearchParams(window.location.search).get("windowId");
+(() => {
+  const windowId = platformWindows.getCurrentWindowId();
+  if (!windowId) return;
 
-  // Cuando el OS dispara X o se llama window.close() desde cualquier lado,
-  // este handler (en el contexto propio de la ventana) emite el evento y deja
-  // que Tauri cierre la ventana normalmente (sin preventDefault).
-  // Handler SÍNCRONO — en Tauri v2 un handler async bloquea el cierre hasta
-  // que el Promise resuelve. El emit va fire-and-forget; Tauri cierra la
-  // ventana de inmediato al retornar el handler sin preventDefault().
-  selfWindow.onCloseRequested(() => {
-    if (windowId) {
-      emit(`${windowId}:window-closed`, { canceled: false }).catch(() => {});
-    }
+  // Cuando el usuario cierra la ventana (X del SO o del navegador), este handler
+  // —en el contexto propio de la ventana— avisa al padre y deja que el cierre
+  // siga su curso. Handler SÍNCRONO: en Tauri v2 un handler async bloquea el
+  // cierre hasta que el Promise resuelve (causa raíz de las ventanas zombie),
+  // y en web `beforeunload` tampoco espera promesas. El aviso va
+  // fire-and-forget en los dos targets.
+  platformWindows.onCurrentWindowClose(() => {
+    platformWindows
+      .emitToWindow(windowId, "window-closed", { canceled: false })
+      .catch(() => {});
+  });
+
+  // Orden global de cierre emitida por la ventana principal
+  // (`closeAllSecondary`). Cada ventana cierra desde su propio contexto.
+  platformWindows.subscribe(PLATFORM_CLOSE_ALL_SECONDARY, () => {
+    platformWindows.closeCurrentWindow().catch(() => {});
   });
 })();
 
@@ -58,7 +67,7 @@ try {
   const TIMEOUT_MS = 5000;
   let lastHeartbeat = Date.now();
 
-  const unlisten = await listen("main:heartbeat", () => {
+  const unlisten = await platformWindows.subscribe("main:heartbeat", () => {
     lastHeartbeat = Date.now();
   });
 
@@ -67,7 +76,7 @@ try {
       clearInterval(interval);
       unlisten();
       console.log("[WindowEntry] Main window heartbeat lost — closing orphan window");
-      await getCurrentWebviewWindow().close();
+      await platformWindows.closeCurrentWindow();
     }
   }, 1000);
 })();

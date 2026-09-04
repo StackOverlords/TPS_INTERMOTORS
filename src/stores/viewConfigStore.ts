@@ -1,8 +1,8 @@
 import type { ViewConfiguration, TableState, TableConfig } from '@/view-configs/viewConfigTypes';
-import { Store } from '@tauri-apps/plugin-store';
+import { getKeyValueStore, type KeyValueStore } from '@/platform';
 
 class ViewConfigStore {
-  private store: Store | null = null;
+  private store: KeyValueStore | null = null;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
 
@@ -23,9 +23,9 @@ class ViewConfigStore {
 
   private async initialize() {
     try {
-      this.store = await Store.load('view-configs.json', { 
-        autoSave: false, 
-        defaults: {} 
+      this.store = await getKeyValueStore().open('view-configs.json', {
+        autoSave: false,
+        defaults: {},
       });
       this.initialized = true;
     } catch (error) {

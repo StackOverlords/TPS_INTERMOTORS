@@ -18,9 +18,8 @@ import { TooltipWrapper } from "@/components/common/TooltipWrapper";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCustomTable } from "@/hooks/useCustomTable";
 import { formatCurrency } from "@/utils/formaters";
-import { emitToWindow } from "@/utils/tauriWindows";
+import { getWindowManager } from "@/platform";
 import { type ColumnDef } from "@tanstack/react-table";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   Check,
   Clock,
@@ -52,7 +51,7 @@ interface WindowConfig {
 }
 
 const QuotationSelectorWindow: React.FC = () => {
-  const currentWindow = getCurrentWebviewWindow();
+  const platformWindows = getWindowManager();
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -127,18 +126,18 @@ const QuotationSelectorWindow: React.FC = () => {
         });
 
         // Enviar cotización COMPLETA
-        await emitToWindow(
+        await platformWindows.emitToWindow(
           config.windowId,
           "quotation-selected",
           quotationFullData
         );
 
-        await currentWindow.close();
+        await platformWindows.closeCurrentWindow();
       };
 
       sendDataAndClose();
     }
-  }, [quotationFullData, selectedQuotationId, config.windowId, currentWindow]);
+  }, [quotationFullData, selectedQuotationId, config.windowId, platformWindows]);
 
   const columns = useMemo<ColumnDef<QuotationGetAll>[]>(
     () => [
@@ -389,8 +388,8 @@ const QuotationSelectorWindow: React.FC = () => {
   };
 
   const handleClose = async () => {
-    await emitToWindow(config.windowId, "window-closed", { canceled: true });
-    await currentWindow.close();
+    await platformWindows.emitToWindow(config.windowId, "window-closed", { canceled: true });
+    await platformWindows.closeCurrentWindow();
   };
 
   const onPageChange = (page: number) => {

@@ -2,34 +2,34 @@
  * offlineQueueStore.ts
  *
  * Cola de mensajes pendientes para envío offline.
- * Persiste en disco via @tauri-apps/plugin-store para sobrevivir reinicios.
+ * Persiste vía el puerto de almacenamiento para sobrevivir reinicios: un JSON en
+ * disco en el target escritorio, `localStorage` en el target web.
  *
- * Requiere en Cargo.toml:
- *   tauri-plugin-store = "2"
- *
- * Y en main.rs:
- *   .plugin(tauri_plugin_store::Builder::default().build())
+ * ⚠️ En web la cuota de `localStorage` ronda los 5 MB para TODO el origen. Si la
+ * cola llegara a crecer mucho, el reemplazo es IndexedDB detrás del MISMO puerto
+ * (`platform/adapters/web/keyValueStore.ts`), sin tocar este archivo.
  */
 
-import { load, type Store } from "@tauri-apps/plugin-store";
+import { getKeyValueStore, type KeyValueStore } from "@/platform";
 import { create } from "zustand";
 import type { OfflineQueueItem } from "../types/Message.types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAURI STORE SINGLETON
+// STORE SINGLETON
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STORE_FILE = "messaging_offline.json";
 const QUEUE_KEY = "offline_queue";
 const MAX_ATTEMPTS = 3;
 
-let tauriStore: Store | null = null;
+let queueStore: Promise<KeyValueStore> | null = null;
 
-async function getTauriStore(): Promise<Store> {
-  if (!tauriStore) {
-    tauriStore = await load(STORE_FILE, { defaults: {}, autoSave: true });
-  }
-  return tauriStore;
+function getQueueStore(): Promise<KeyValueStore> {
+  queueStore ??= getKeyValueStore().open(STORE_FILE, {
+    defaults: {},
+    autoSave: true,
+  });
+  return queueStore;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ async function getTauriStore(): Promise<Store> {
 
 async function persistQueue(queue: OfflineQueueItem[]): Promise<void> {
   try {
-    const store = await getTauriStore();
+    const store = await getQueueStore();
     await store.set(QUEUE_KEY, queue);
   } catch (err) {
     console.error("[OfflineQueue] Failed to persist queue:", err);
@@ -47,7 +47,7 @@ async function persistQueue(queue: OfflineQueueItem[]): Promise<void> {
 
 async function loadQueueFromDisk(): Promise<OfflineQueueItem[]> {
   try {
-    const store = await getTauriStore();
+    const store = await getQueueStore();
     const saved = await store.get<OfflineQueueItem[]>(QUEUE_KEY);
     return saved ?? [];
   } catch {

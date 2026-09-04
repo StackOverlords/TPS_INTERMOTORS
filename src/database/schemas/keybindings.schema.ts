@@ -1,13 +1,11 @@
-import { executeCommand, executeQuery } from '../db';
+import { getKeybindingsRepository } from '@/platform';
+import type { KeybindingRecord } from '@/platform/ports/keybindingsRepository';
 
-export interface KeybindingRow {
-  id: string;
-  keys: string;
-  default_keys: string;
-  enabled: number; // SQLite usa INTEGER para boolean (0 o 1)
-  source: 'user' | 'default';
-  updated_at: number;
-}
+/**
+ * Forma de una fila persistida. Vive en el puerto porque ya no es un detalle
+ * del esquema SQLite: el target web guarda la misma estructura en clave/valor.
+ */
+export type KeybindingRow = KeybindingRecord;
 
 // Formato mejorado para exportación/importación
 export interface KeybindingExport {
@@ -59,11 +57,7 @@ export const saveKeybinding = async (
   keys: string,
   defaultKeys: string = keys
 ): Promise<void> => {
-  await executeCommand(
-    `INSERT OR REPLACE INTO keybindings (id, keys, default_keys, source, updated_at)
-     VALUES (?, ?, ?, 'user', strftime('%s', 'now'))`,
-    [id, keys, defaultKeys]
-  );
+  await getKeybindingsRepository().upsert(id, keys, defaultKeys);
 };
 
 
@@ -71,27 +65,18 @@ export const saveKeybinding = async (
 export const getKeybinding = async (
   id: string
 ): Promise<KeybindingRow | null> => {
-  const results = await executeQuery<KeybindingRow>(
-    'SELECT * FROM keybindings WHERE id = ?',
-    [id]
-  );
-  return results[0] || null;
+  return getKeybindingsRepository().getById(id);
 };
 
 
 //Obtiene todos los keybindings personalizados
 export const getAllKeybindings = async (): Promise<KeybindingRow[]> => {
-  await executeQuery<KeybindingRow>(
-    'SELECT * FROM keybindings WHERE enabled = 1 ORDER BY id'
-  );
-  return await executeQuery<KeybindingRow>(
-    'SELECT * FROM keybindings WHERE enabled = 1 ORDER BY id'
-  );
+  return getKeybindingsRepository().getEnabled();
 };
 
 //Elimina un keybinding personalizado (vuelve al default)
 export const deleteKeybinding = async (id: string): Promise<void> => {
-  await executeCommand('DELETE FROM keybindings WHERE id = ?', [id]);
+  await getKeybindingsRepository().remove(id);
 };
 
 
@@ -100,16 +85,13 @@ export const toggleKeybinding = async (
   id: string,
   enabled: boolean
 ): Promise<void> => {
-  await executeCommand(
-    'UPDATE keybindings SET enabled = ?, updated_at = strftime(\'%s\', \'now\') WHERE id = ?',
-    [enabled ? 1 : 0, id]
-  );
+  await getKeybindingsRepository().setEnabled(id, enabled);
 };
 
 
 //Elimina todos los keybindings personalizados
 export const resetAllKeybindings = async (): Promise<void> => {
-  await executeCommand('DELETE FROM keybindings');
+  await getKeybindingsRepository().clear();
 };
 
 //Exporta todos los keybindings a JSON con formato mejorado

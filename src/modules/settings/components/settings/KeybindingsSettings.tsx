@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import ImportKeybindingsModal from "../ImportKeybindingsModal";
 import KeybindingRow from "../keyBindingRow";
+import { getFileSystem } from "@/platform";
 
 const KeybindingsSettings = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -115,28 +116,19 @@ const KeybindingsSettings = () => {
     try {
       const json = await exportKeybindings();
 
-      // Usar la API de Tauri para guardar archivos
-      const { save } = await import("@tauri-apps/plugin-dialog");
-      const { writeTextFile } = await import("@tauri-apps/plugin-fs");
-
       const fileName = `keybindings-${new Date().toISOString().split("T")[0]}.json`;
 
-      // Mostrar diálogo para guardar archivo
-      const filePath = await save({
-        defaultPath: fileName,
-        filters: [
-          {
-            name: "JSON",
-            extensions: ["json"],
-          },
-        ],
+      const { saved } = await getFileSystem().saveFile({
+        suggestedName: fileName,
+        data: json,
+        mimeType: "application/json",
+        extensions: ["json"],
+        filterName: "JSON",
       });
 
-      if (filePath) {
-        await writeTextFile(filePath, json);
-
+      if (saved) {
         toast.success("Atajos exportados correctamente", {
-          description: `Archivo guardado en: ${filePath}`,
+          description: `Archivo guardado como: ${fileName}`,
         });
       }
     } catch (error) {
@@ -150,25 +142,14 @@ const KeybindingsSettings = () => {
 
   const handleImportFileSelect = async () => {
     try {
-      // Usar la API de Tauri para abrir archivos
-      const { open } = await import("@tauri-apps/plugin-dialog");
-      const { readTextFile } = await import("@tauri-apps/plugin-fs");
-
-      // Mostrar diálogo para abrir archivo
-      const filePath = await open({
-        multiple: false,
-        filters: [
-          {
-            name: "JSON",
-            extensions: ["json"],
-          },
-        ],
+      const picked = await getFileSystem().pickTextFile({
+        extensions: ["json"],
+        filterName: "JSON",
       });
 
-      if (!filePath) return;
+      if (!picked) return;
 
-      // Leer el archivo
-      const text = await readTextFile(filePath as string);
+      const text = picked.text;
 
       // Validación básica
       try {
@@ -188,11 +169,7 @@ const KeybindingsSettings = () => {
 
         // Guardar para usar después
         setImportFileContent(text);
-        setImportFileName(
-          typeof filePath === "string"
-            ? filePath.split(/[\\/]/).pop() || "archivo.json"
-            : "archivo.json"
-        );
+        setImportFileName(picked.name || "archivo.json");
         setImportValidation(validation);
 
         // Mostrar modal de vista previa
