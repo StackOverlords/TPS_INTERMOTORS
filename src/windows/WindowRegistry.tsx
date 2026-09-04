@@ -1,4 +1,3 @@
-import { DebugLogWindow } from "@/components/common/DebugLogWindow";
 import OrderSelectorWindow from "@/modules/orders/screens/OrderSelectorWindow";
 import ProductSelectorWindow from "@/modules/products/screens/ProductSelectorWindow";
 import PurchaseSelectorWindow from "@/modules/purchases/screens/PurchaseSelectorWindow";
@@ -56,7 +55,6 @@ export function registerDefaultWindowComponents(): void {
   // Registrar ProductSelectorWindow || Todos los que vamos a usar
   registerWindowComponent("product-selector", ProductSelectorWindow);
   registerWindowComponent("purchase-selector", PurchaseSelectorWindow);
-  registerWindowComponent("debug-log", DebugLogWindow);
   registerWindowComponent("order-selector", OrderSelectorWindow);
   registerWindowComponent("sale-detail-selector", SaleDetailSelectorWindow);
   registerWindowComponent("quotation-selector", QuotationSelectorWindow);

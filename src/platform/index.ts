@@ -5,52 +5,26 @@
  * ni toca APIs del navegador directamente. Cambiar de target = cambiar de
  * adaptador, no de código de negocio.
  *
- * ── Por qué los dos adaptadores se importan estáticamente ────────────────────
- * La alternativa (import dinámico según el target) haría asíncrona la resolución,
- * y eso ROMPE el adaptador web: `window.open()` debe correr dentro del gesto del
- * usuario y un `await` previo lo invalida. Por eso resolvemos síncrono y pagamos
- * el precio de que el bundle web incluya el adaptador Tauri.
+ * ── Selección del adaptador: en BUILD, no en runtime ─────────────────────────
+ * `@platform-adapters` es un alias de Vite que resuelve a
+ * `adapters/tauri/index.ts` o `adapters/web/index.ts` según `BUILD_TARGET`
+ * (ver `vite.config.ts`). Sin la variable, resuelve a `tauri`: así los comandos
+ * que ya invoca Tauri (`npm run dev`, `npm run build`) siguen funcionando igual.
  *
- * Ese peso es una optimización posterior, no un problema de corrección: el
- * adaptador Tauri nunca se ejecuta en el navegador. Cuando el target web se
- * confirme, se reemplaza por un alias de Vite (`@/platform/adapters/active`)
- * resuelto en build, sin tocar un solo consumidor.
+ * Consecuencia: el bundle de cada target NO contiene el código del otro. El
+ * artefacto web no arrastra ni una línea de `@tauri-apps`.
+ *
+ * ── Por qué el acceso sigue siendo SÍNCRONO ──────────────────────────────────
+ * `window.open()` y `requestFullscreen()` solo se permiten dentro del gesto del
+ * usuario: cualquier `await` previo hace que el navegador los bloquee EN
+ * SILENCIO. Por eso los `get*()` resuelven sin `await` y el alias se resuelve en
+ * build — un import dinámico por target volvería asíncrona la resolución y
+ * rompería el target web.
  */
 
-import { tauriAppUpdater } from './adapters/tauri/appUpdater';
-import { tauriClipboard } from './adapters/tauri/clipboard';
-import { tauriFileSystem } from './adapters/tauri/fileSystem';
-import { tauriHttp } from './adapters/tauri/http';
-import { tauriImageProcessor } from './adapters/tauri/imageProcessor';
-import { tauriKeyValueStore } from './adapters/tauri/keyValueStore';
-import { tauriKeybindingsRepository } from './adapters/tauri/keybindingsRepository';
-import { tauriLogger } from './adapters/tauri/logger';
-import { tauriPreferencesRepository } from './adapters/tauri/preferencesRepository';
-import { tauriWindowChrome } from './adapters/tauri/windowChrome';
-import { tauriWindowManager } from './adapters/tauri/windowManager';
-import { webAppUpdater } from './adapters/web/appUpdater';
-import { webClipboard } from './adapters/web/clipboard';
-import { webFileSystem } from './adapters/web/fileSystem';
-import { webHttp } from './adapters/web/http';
-import { webImageProcessor } from './adapters/web/imageProcessor';
-import { webKeyValueStore } from './adapters/web/keyValueStore';
-import { webKeybindingsRepository } from './adapters/web/keybindingsRepository';
-import { webLogger } from './adapters/web/logger';
-import { webPreferencesRepository } from './adapters/web/preferencesRepository';
-import { webWindowChrome } from './adapters/web/windowChrome';
-import { webWindowManager } from './adapters/web/windowManager';
-import { isTauri } from './env';
-import type { AppUpdaterPort } from './ports/appUpdater';
-import type { ClipboardPort } from './ports/clipboard';
-import type { FileSystemPort } from './ports/fileSystem';
-import type { HttpPort } from './ports/http';
-import type { ImageProcessorPort } from './ports/imageProcessor';
-import type { KeyValueStorePort } from './ports/keyValueStore';
-import type { KeybindingsRepositoryPort } from './ports/keybindingsRepository';
-import type { LoggerPort } from './ports/logger';
-import type { PreferencesRepositoryPort } from './ports/preferencesRepository';
-import type { WindowChromePort } from './ports/windowChrome';
-import type { WindowManagerPort } from './ports/windowManager';
+import * as adapters from '@platform-adapters';
+
+import { getPlatformTarget } from './env';
 
 export { getPlatformTarget, isTauri } from './env';
 export type { PlatformTarget } from './env';
@@ -81,12 +55,12 @@ export type {
   ImageInfo,
   ImageProcessorPort,
 } from './ports/imageProcessor';
+export type { LoggerPort, LogLevel } from './ports/logger';
 export type {
   AppUpdateInfo,
   AppUpdaterPort,
   UpdateProgress,
 } from './ports/appUpdater';
-export type { LoggerPort, LogLevel } from './ports/logger';
 export type {
   KeybindingRecord,
   KeybindingsRepositoryPort,
@@ -97,166 +71,33 @@ export type {
   PreferenceType,
 } from './ports/preferencesRepository';
 
-let windowManagerInstance: WindowManagerPort | null = null;
-
 /**
- * Adaptador de ventanas del target activo.
+ * Chequeo de coherencia: el target compilado tiene que coincidir con el host
+ * real. Si no coinciden, la app va a fallar en el primer uso de una capacidad
+ * nativa, y ese error sería críptico ("undefined is not a function" adentro de
+ * `@tauri-apps`). Acá el diagnóstico llega antes y dice qué pasó.
  *
- * Resolución perezosa y cacheada: al momento de importar este módulo el runtime
- * de Tauri podría no haber inyectado todavía sus globals, así que decidimos en
- * el primer uso real. Sigue siendo síncrono — seguro para el gesto del usuario.
+ * Solo en desarrollo: en producción el artefacto ya está fijado y el chequeo
+ * sería ruido.
  */
-export function getWindowManager(): WindowManagerPort {
-  if (!windowManagerInstance) {
-    windowManagerInstance = isTauri() ? tauriWindowManager : webWindowManager;
+if (import.meta.env.DEV) {
+  const host = getPlatformTarget();
+  if (adapters.ADAPTER_TARGET !== host) {
+    console.error(
+      `[platform] Build compilada para "${adapters.ADAPTER_TARGET}" pero corriendo en "${host}". ` +
+        `Usá "npm run dev" para escritorio o "npm run dev:web" para el navegador.`,
+    );
   }
-  return windowManagerInstance;
 }
 
-let keyValueStoreInstance: KeyValueStorePort | null = null;
-
-/**
- * Almacenamiento clave/valor persistente del target activo.
- *
- * Escritorio: un archivo JSON por store (`@tauri-apps/plugin-store`).
- * Web: claves con prefijo en `localStorage`.
- */
-export function getKeyValueStore(): KeyValueStorePort {
-  if (!keyValueStoreInstance) {
-    keyValueStoreInstance = isTauri() ? tauriKeyValueStore : webKeyValueStore;
-  }
-  return keyValueStoreInstance;
-}
-
-let fileSystemInstance: FileSystemPort | null = null;
-
-/**
- * Entrada/salida de archivos hacia el usuario del target activo.
- *
- * Escritorio: diálogos nativos del SO. Web: descarga del navegador.
- */
-export function getFileSystem(): FileSystemPort {
-  if (!fileSystemInstance) {
-    fileSystemInstance = isTauri() ? tauriFileSystem : webFileSystem;
-  }
-  return fileSystemInstance;
-}
-
-let httpInstance: HttpPort | null = null;
-
-/**
- * Descarga de binarios del target activo.
- *
- * Escritorio: por Rust, sin CORS. Web: `fetch`, sujeto a CORS.
- */
-export function getHttp(): HttpPort {
-  if (!httpInstance) {
-    httpInstance = isTauri() ? tauriHttp : webHttp;
-  }
-  return httpInstance;
-}
-
-let loggerInstance: LoggerPort | null = null;
-
-/**
- * Sumidero persistente de logs del target activo.
- *
- * Escritorio: archivo de log de la app. Web: buffer en memoria acotado.
- */
-export function getLogger(): LoggerPort {
-  if (!loggerInstance) {
-    loggerInstance = isTauri() ? tauriLogger : webLogger;
-  }
-  return loggerInstance;
-}
-
-let keybindingsRepositoryInstance: KeybindingsRepositoryPort | null = null;
-
-/**
- * Persistencia de atajos personalizados del target activo.
- *
- * Escritorio: tabla `keybindings` de SQLite. Web: puerto de clave/valor.
- */
-export function getKeybindingsRepository(): KeybindingsRepositoryPort {
-  if (!keybindingsRepositoryInstance) {
-    keybindingsRepositoryInstance = isTauri()
-      ? tauriKeybindingsRepository
-      : webKeybindingsRepository;
-  }
-  return keybindingsRepositoryInstance;
-}
-
-let preferencesRepositoryInstance: PreferencesRepositoryPort | null = null;
-
-/**
- * Preferencias de usuario persistidas del target activo.
- *
- * Escritorio: tabla `user_preferences` de SQLite. Web: puerto de clave/valor.
- */
-export function getPreferencesRepository(): PreferencesRepositoryPort {
-  if (!preferencesRepositoryInstance) {
-    preferencesRepositoryInstance = isTauri()
-      ? tauriPreferencesRepository
-      : webPreferencesRepository;
-  }
-  return preferencesRepositoryInstance;
-}
-
-let appUpdaterInstance: AppUpdaterPort | null = null;
-
-/**
- * Versión de la app y actualizaciones del target activo.
- *
- * Escritorio: plugin-updater + relanzar el proceso.
- * Web: sin autoactualización (`supportsSelfUpdate()` es `false`).
- */
-export function getAppUpdater(): AppUpdaterPort {
-  if (!appUpdaterInstance) {
-    appUpdaterInstance = isTauri() ? tauriAppUpdater : webAppUpdater;
-  }
-  return appUpdaterInstance;
-}
-
-let windowChromeInstance: WindowChromePort | null = null;
-
-/**
- * Control del marco de la ventana actual del target activo.
- *
- * Escritorio: barra de título propia (la app corre sin decoraciones del SO).
- * Web: el navegador es el dueño; `hasCustomChrome()` es `false`.
- */
-export function getWindowChrome(): WindowChromePort {
-  if (!windowChromeInstance) {
-    windowChromeInstance = isTauri() ? tauriWindowChrome : webWindowChrome;
-  }
-  return windowChromeInstance;
-}
-
-let imageProcessorInstance: ImageProcessorPort | null = null;
-
-/**
- * Inspección y compresión de imágenes del target activo.
- *
- * Escritorio: codificador WebP de Rust (`libwebp-sys`).
- * Web: `canvas.toDataURL('image/webp')`, nativo del navegador.
- */
-export function getImageProcessor(): ImageProcessorPort {
-  if (!imageProcessorInstance) {
-    imageProcessorInstance = isTauri() ? tauriImageProcessor : webImageProcessor;
-  }
-  return imageProcessorInstance;
-}
-
-let clipboardInstance: ClipboardPort | null = null;
-
-/**
- * Lectura del portapapeles del target activo.
- *
- * Escritorio: comando Rust (`arboard`). Web: Async Clipboard API.
- */
-export function getClipboard(): ClipboardPort {
-  if (!clipboardInstance) {
-    clipboardInstance = isTauri() ? tauriClipboard : webClipboard;
-  }
-  return clipboardInstance;
-}
+export const getWindowManager = () => adapters.windowManager;
+export const getWindowChrome = () => adapters.windowChrome;
+export const getKeyValueStore = () => adapters.keyValueStore;
+export const getFileSystem = () => adapters.fileSystem;
+export const getHttp = () => adapters.http;
+export const getLogger = () => adapters.logger;
+export const getAppUpdater = () => adapters.appUpdater;
+export const getImageProcessor = () => adapters.imageProcessor;
+export const getClipboard = () => adapters.clipboard;
+export const getKeybindingsRepository = () => adapters.keybindingsRepository;
+export const getPreferencesRepository = () => adapters.preferencesRepository;

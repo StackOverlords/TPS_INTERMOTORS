@@ -41,11 +41,14 @@ export const webWindowChrome: WindowChromePort = {
   },
 
   async isMaximized() {
-    return document.fullscreenElement !== null;
+    // Truthiness, no `!== null`: donde `fullscreenElement` viene `undefined`
+    // (entornos que no implementan la API completa) la comparación estricta
+    // daría `true` y reportaría maximizado sin estarlo.
+    return Boolean(document.fullscreenElement);
   },
 
   async onMaximizeChange(handler: (maximized: boolean) => void) {
-    const onChange = () => handler(document.fullscreenElement !== null);
+    const onChange = () => handler(Boolean(document.fullscreenElement));
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
   },
