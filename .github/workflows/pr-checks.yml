@@ -1,0 +1,30 @@
+name: PR Checks
+
+# El repo no tenia ningun workflow que corriera en pull requests: los tres
+# existentes son builds manuales o por tag. Este es el primero que valida un PR
+# antes de mergear.
+on:
+  pull_request:
+    branches: [development, master, main]
+
+jobs:
+  checks:
+    name: Tipos y tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Trinquete: no exige cero errores (el repo arrastra deuda preexistente),
+      # solo que no crezca. Ver scripts/typecheck-ratchet.sh
+      - name: Typecheck (trinquete)
+        run: npm run typecheck:ci
+
+      - name: Tests
+        run: npm test
