@@ -6,13 +6,12 @@ import "./index.css";
 import Navigation from "./navigation/Navigation.tsx";
 // import { Toaster as Sonner } from "./components/atoms/sonner.tsx";
 import "@/config/zodI18nConfig.ts";
-import { HotkeysProvider, useHotkeys } from "react-hotkeys-hook";
+import { HotkeysProvider } from "react-hotkeys-hook";
 import { Toaster } from "./components/atoms/toaster.tsx";
 import { ZoomManager } from "./components/common/ZoomManager.tsx";
 import TitleBar from "./components/common/TitleBar.tsx";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
 // import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
-import { useDebugLogWindow } from "./hooks/useSecondaryWindow";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
 import { queryClient } from "./lib/reactQueryConfig.ts";
 // import { useThemeStore } from "./stores/themeStore.ts";
@@ -35,25 +34,6 @@ initializeKeybindingStore().catch((error) => {
 });
 
 function App() {
-  const debugLogWindow = useDebugLogWindow();
-
-  // Atajos de teclado globales para abrir el panel de debug
-  useHotkeys(
-    "ctrl+shift+d, meta+shift+d",
-    () => {
-      debugLogWindow.toggle();
-    },
-    { enableOnFormTags: true }
-  );
-
-  useHotkeys(
-    "f12",
-    () => {
-      debugLogWindow.toggle();
-    },
-    { enableOnFormTags: true }
-  );
-
   // ✅ Forzar guardado de tabs antes de cerrar la aplicación
   // Esto previene pérdida de datos cuando el usuario cierra antes de los 300ms del debounce
   useEffect(() => {

@@ -1,38 +1,19 @@
 /**
- * Puerto: destino persistente de logs de la aplicación.
+ * Puerto: destino de los logs de la aplicación.
  *
- * NO reemplaza a `console.*` —que sigue siendo el canal de desarrollo— sino al
- * sumidero que sobrevive a la sesión y alimenta el Panel de Debug.
+ * Es el sumidero al que van los ~570 `Logger.*` / `logger.*` repartidos por la
+ * app. NO reemplaza a `console.*`, que sigue siendo el canal de desarrollo.
  *
- * Escritorio: archivo de log de la app (`plugin-log` / comandos Rust).
- * Web: no existe un archivo; se guarda un buffer en memoria acotado, que se
- * pierde al recargar. Es la degradación honesta — el navegador no da acceso al
- * disco, y para diagnóstico real en web el destino correcto es el backend.
+ * Escritorio: archivo de log de la app (`plugin-log`), útil para soporte
+ * ("mandame el app.log"). Web: `console`, que es lo único que hay.
+ *
+ * Solo escribe. La lectura se eliminó junto con el Panel de Debug: nadie
+ * consumía los logs desde la app, y sostener un buffer en memoria en web era
+ * pagar complejidad por una función que no se usaba.
  */
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
 export interface LoggerPort {
   write(level: LogLevel, message: string): void;
-
-  /** `true` si el target puede recuperar logs pasados. */
-  canReadLogs(): boolean;
-
-  /**
-   * Todo el log disponible como texto plano, una entrada por línea.
-   *
-   * Se devuelve texto y no entradas estructuradas porque es el formato real en
-   * los dos targets: en escritorio el archivo ya es texto, y el Panel de Debug
-   * filtra por línea. Estructurarlo para volver a aplanarlo no agrega nada.
-   */
-  readLogText(): Promise<string>;
-
-  /**
-   * Ruta del archivo de log, para mostrarla en la UI.
-   * `null` donde no hay archivo (web).
-   */
-  getLogLocation(): Promise<string | null>;
-
-  /** Borra los logs acumulados. */
-  clearLogs(): Promise<void>;
 }

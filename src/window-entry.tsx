@@ -93,7 +93,8 @@ registerDefaultWindowComponents();
 const rootElement = document.getElementById("window-root");
 
 // Componentes que no requieren autenticación
-const NO_AUTH_COMPONENTS = ["debug-log"];
+// Todas las ventanas secundarias requieren sesión.
+const NO_AUTH_COMPONENTS: string[] = [];
 
 // Detectar si el componente actual requiere auth
 const params = new URLSearchParams(window.location.search);
