@@ -13,16 +13,25 @@
 
 import type { LoggerPort, LogLevel } from '@/platform/ports/logger';
 
-const writers: Record<LogLevel, (...args: unknown[]) => void> = {
-  trace: console.debug,
-  debug: console.debug,
-  info: console.info,
-  warn: console.warn,
-  error: console.error,
+/**
+ * Nivel del puerto → método de consola.
+ *
+ * `trace` va a `console.debug` a propósito: `console.trace` imprime el stack
+ * completo en cada línea y vuelve ilegible el panel.
+ */
+const CONSOLE_METHOD: Record<LogLevel, 'debug' | 'info' | 'warn' | 'error'> = {
+  trace: 'debug',
+  debug: 'debug',
+  info: 'info',
+  warn: 'warn',
+  error: 'error',
 };
 
 export const webLogger: LoggerPort = {
   write(level: LogLevel, message: string): void {
-    writers[level](`[${level.toUpperCase()}] ${message}`);
+    // Se resuelve el método EN CADA ESCRITURA, no al cargar el módulo. Guardar
+    // la referencia de entrada deja al logger inmune a cualquier parche
+    // posterior de `console` (una herramienta de monitoreo, por ejemplo).
+    console[CONSOLE_METHOD[level]](`[${level.toUpperCase()}] ${message}`);
   },
 };
