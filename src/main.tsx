@@ -52,9 +52,11 @@ if (import.meta.env.VITE_DEV_PLUGINS === "1") {
 // Best-effort: errores aislados por plugin (no tumban la app ni el bootstrap dev).
 import("./plugins/loadExternalPlugins")
   .then(({ loadExternalPlugins }) =>
-    import("./plugins/sources/TauriPluginSource").then(({ TauriPluginSource }) =>
+    // La fuente la resuelve el target: comandos Rust en escritorio, endpoints
+    // del backend en web. El pipeline de carga es el mismo en los dos.
+    import("./plugins/sources").then(({ getPluginSource }) =>
       import("./plugins/plugin-manager").then(({ PluginManager }) =>
-        loadExternalPlugins(new TauriPluginSource(), PluginManager)
+        loadExternalPlugins(getPluginSource(), PluginManager)
       )
     )
   )

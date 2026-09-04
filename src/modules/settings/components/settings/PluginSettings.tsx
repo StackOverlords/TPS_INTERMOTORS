@@ -47,9 +47,9 @@ import {
 import { toast } from "sonner";
 import {
   getBootstrapLoadResults,
+  getPluginSource,
   loadExternalPlugins,
   PluginManager,
-  TauriPluginSource,
 } from "@/plugins";
 import type { ExternalPluginRef, LoadResult } from "@/plugins";
 
@@ -68,7 +68,8 @@ interface PluginRow {
 // Singleton de la fuente de plugins
 // ---------------------------------------------------------------------------
 
-const source = new TauriPluginSource();
+// Resuelto por target: Rust en escritorio, HTTP en web.
+const source = getPluginSource();
 
 // Los LoadResults del bootstrap (badges de error de carga) se leen vía
 // `getBootstrapLoadResults()` del módulo `@/plugins/bootstrapLoadResults`,
