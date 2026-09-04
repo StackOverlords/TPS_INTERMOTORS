@@ -11,6 +11,10 @@ const appVersion = JSON.parse(
   readFileSync(resolve(__dirname, 'package.json'), 'utf-8'),
 ).version as string;
 
+// Target del artefacto. Sin la variable => 'tauri', para que los comandos que
+// invoca Tauri (`npm run dev`, `npm run build`) sigan funcionando sin cambios.
+const buildTarget = process.env.BUILD_TARGET === 'web' ? 'web' : 'tauri';
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -20,6 +24,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Selecciona el conjunto de adaptadores EN BUILD. El bundle de cada
+      // target no contiene el codigo del otro: el artefacto web no arrastra
+      // ni una linea de @tauri-apps.
+      '@platform-adapters': path.resolve(
+        __dirname,
+        `./src/platform/adapters/${buildTarget}/index.ts`,
+      ),
     },
   },
   server: {
