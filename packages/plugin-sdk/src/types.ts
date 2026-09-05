@@ -39,10 +39,53 @@ const CAPABILITY = {
   EVENTS: "events",
   STORAGE: "storage",
   KEYBINDINGS: "keybindings",
+
+  // ── Capacidades que NO existen en todos los targets ──────────────────────
+  //
+  // Las de arriba las provee el host en cualquier lado. Las de acá dependen de
+  // dónde corre la app, y son las que hacen que un plugin ande en escritorio y
+  // no en el navegador.
+  //
+  // El kernel compara estas contra lo que el target provee y no activa el
+  // plugin si falta alguna REQUERIDA. Ver `src/plugins/core/capabilities.ts`.
+
+  /** Imprimir un documento por el flujo normal del sistema. Disponible en ambos. */
+  PRINTING: "printing",
+
+  /**
+   * Acceso crudo a una impresora: puerto serie/USB, ESC/POS, cajón de dinero.
+   * SOLO escritorio: el navegador no expone puertos sin permiso explícito del
+   * usuario por dispositivo (WebSerial/WebUSB, y solo en Chromium sobre HTTPS).
+   */
+  PRINTING_RAW: "printing.raw",
+
+  /**
+   * Llamar a APIs de terceros directamente desde el plugin.
+   * SOLO escritorio: en el navegador rige CORS y el servidor ajeno tendría que
+   * autorizar explícitamente el origen de la app. Para integrarse con un
+   * servicio externo desde web, la vía es el backend propio.
+   */
+  HTTP_EXTERNAL: "http.external",
+
+  /**
+   * Leer y escribir archivos arbitrarios del usuario.
+   * SOLO escritorio. En web solo hay descarga y selector de archivos, que ya
+   * cubre `printing` y la API de storage.
+   */
+  FILESYSTEM: "filesystem",
 } as const;
 
 /** Unión de todas las capacidades disponibles en el host TPS. */
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];
+
+/**
+ * Dónde puede correr un plugin.
+ *
+ * `desktop` es la app Tauri; `web` es la app servida desde el backend.
+ * Comparten TODO el código de negocio: la diferencia son las capacidades
+ * nativas que el host puede ofrecer.
+ */
+export type PluginTarget = "desktop" | "web";
 
 export { CAPABILITY };
 
@@ -75,6 +118,17 @@ export interface PluginManifest {
   requires: Capability[];
   /** Capacidades opcionales — el plugin funciona sin ellas pero las aprovecha si están. */
   optional?: Capability[];
+  /**
+   * Targets donde el plugin puede correr. Omitir = ambos.
+   *
+   * En general NO hace falta declararlo: el kernel ya deduce la compatibilidad
+   * comparando `requires` contra lo que cada target provee. Un plugin que pide
+   * `printing.raw` queda excluido de web solo, sin que el autor haga nada.
+   *
+   * Sirve para restricciones que NO son técnicas: un plugin que funcionaría en
+   * los dos pero que por decisión de producto solo se ofrece en escritorio.
+   */
+  targets?: PluginTarget[];
   /**
    * IDs de otros plugins de los que depende este plugin.
    * El kernel activa las dependencias primero (ya implementado en excalidraw PluginManager).

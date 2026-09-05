@@ -19,6 +19,8 @@
  */
 
 import { registerRemotes, loadRemote } from "@module-federation/runtime";
+
+import { checkPluginCompatibility } from "./core/capabilities";
 import type { Plugin } from "@tps/plugin-sdk";
 import { logger } from "@/utils/logger";
 import type { PluginSource } from "./sources/PluginSource";
@@ -205,6 +207,41 @@ async function loadSinglePlugin(
     }
 
     const pluginId = plugin.manifest.id;
+
+    // ── 3.5 Compatibilidad con el target ──────────────────────────────────────
+    //
+    // Un plugin puede pedir capacidades que este target no ofrece: impresora
+    // por puerto serie, HTTP a terceros, filesystem. En escritorio existen; en
+    // web no. Sin este filtro el plugin se activaría igual y reventaría al
+    // primer uso, con un error críptico adentro de Module Federation.
+    //
+    // Se marca SKIPPED, no FAILED: no está roto, simplemente no aplica acá. La
+    // UI de gestión lo muestra con el motivo en vez de como un error.
+    //
+    // El chequeo va DESPUÉS de loadRemote porque el manifiesto viaja dentro del
+    // bundle. Para filtrarlo antes de la descarga, el backend tendría que
+    // exponer `requires` y `targets` en el listado; hoy no lo hace.
+    const compat = checkPluginCompatibility(plugin.manifest);
+
+    if (!compat.compatible) {
+      logger.info(
+        `[loadExternalPlugins] Plugin "${pluginId}" omitido: ${compat.reason}`
+      );
+      return {
+        id: pluginId,
+        name,
+        status: LOAD_STATUS.SKIPPED,
+        error: compat.reason,
+      };
+    }
+
+    if (compat.degraded.length > 0) {
+      // El plugin corre igual: declaró estas como opcionales.
+      logger.warn(
+        `[loadExternalPlugins] Plugin "${pluginId}" corre sin ` +
+          `${compat.degraded.join(", ")} en este target.`
+      );
+    }
 
     // ── 4. Guard de idempotencia: register ────────────────────────────────────
     if (manager.isRegistered(pluginId)) {
