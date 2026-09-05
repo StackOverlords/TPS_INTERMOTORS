@@ -41,18 +41,23 @@
  */
 
 import apiClient from '@/services/axios';
+import { environment } from '@/utils/environment';
 
 import type { ExternalPluginRef, PluginSource } from './PluginSource';
 
 /**
- * Prefijo bajo el que el backend sirve los bundles de los plugins.
+ * Endpoint bajo el que el backend sirve los bundles.
  *
- * Es una ruta RELATIVA a propósito: sirviendo el SPA desde el `public/` del
- * backend, plugins y app comparten origen y no interviene CORS. Si algún día
- * los bundles se mudan a un CDN, este es el único punto a cambiar — y ahí sí
- * hará falta `Access-Control-Allow-Origin` en ese host.
+ * Va separado del CRUD (`/plugins`) para que no se mezclen: acá el `{path}`
+ * final acepta barras, porque Module Federation pide el `remoteEntry.js` y
+ * después sus chunks con rutas relativas de profundidad arbitraria.
+ *
+ * Se construye sobre `environment.apiUrl`, que sirviendo el SPA desde el
+ * `public/` del backend es relativo (`/api/v1`): mismo origen, sin CORS. Si
+ * algún día los bundles se mudan a un CDN, este es el único punto a cambiar
+ * —y ahí sí hará falta `Access-Control-Allow-Origin` en ese host.
  */
-const PLUGIN_ASSETS_BASE = '/plugins';
+const PLUGIN_ASSETS_PATH = 'plugin-assets';
 
 /** Endpoint de administración de plugins, relativo al `baseURL` de la API. */
 const PLUGINS_ENDPOINT = '/plugins';
@@ -74,9 +79,9 @@ interface ApiExternalPlugin {
 /**
  * Construye la URL pública del `remoteEntry.js` desde el path relativo.
  *
- * Se encodea POR SEGMENTO, igual que el adapter de escritorio: los `/` deben
- * sobrevivir para que los chunks relativos del plugin (`./assets/x.js`)
- * resuelvan contra el directorio correcto.
+ * El backend devuelve `entry` como `<id>/<archivo>`, igual que Rust. Los `/`
+ * deben sobrevivir al encodeo para que los chunks relativos del plugin
+ * (`./assets/x.js`) resuelvan contra el directorio correcto.
  */
 function buildPluginUrl(relativePath: string): string {
   const encoded = relativePath
@@ -85,7 +90,9 @@ function buildPluginUrl(relativePath: string): string {
     .map(encodeURIComponent)
     .join('/');
 
-  return `${PLUGIN_ASSETS_BASE}/${encoded}`;
+  const base = environment.apiUrl.replace(/\/$/, '');
+
+  return `${base}/${PLUGIN_ASSETS_PATH}/${encoded}`;
 }
 
 function toExternalPluginRef(raw: ApiExternalPlugin): ExternalPluginRef {
