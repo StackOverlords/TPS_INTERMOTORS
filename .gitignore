@@ -44,3 +44,6 @@ src/utils/__test_logFormatter.ts
 *createSaleScreenUnificado.tsx
 .claude
 .atl
+# Bundles empaquetados de plugins demo: son artefactos de build,
+# se regeneran con `npm run build` dentro de cada demo-plugin.
+demo-plugins/*.zip
