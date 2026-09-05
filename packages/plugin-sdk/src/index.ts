@@ -12,6 +12,7 @@
 
 // Re-exportar todo el contrato
 export type {
+  PluginTarget,
   // Tipos fundamentales
   Capability,
   Plugin,
