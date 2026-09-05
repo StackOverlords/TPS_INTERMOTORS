@@ -7,8 +7,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   useSidebar,
 } from "@/components/atoms/sidebar";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
@@ -24,6 +22,7 @@ import { LogOut, Settings, SquarePlus, CopyMinus } from "lucide-react";
 import { useMemo, useState } from "react";
 import ButtonItem from "../components/ButtonItem";
 import HeaderTagRoute from "../components/HeaderTagRoute";
+import { Separator } from "@/components/atoms/separator";
 import NavItem from "../components/NavItem";
 import logoLight from "@/assets/images/logo_light.webp";
 import logoDark from "@/assets/images/darkmodeweb.webp";
@@ -32,6 +31,39 @@ import { queryClient } from "@/lib/reactQueryConfig";
 import { usePluginSidebarSections, usePluginSettingsActions } from "@/plugins";
 import type { SidebarSection, SettingsAction, IconProps } from "@tps/plugin-sdk";
 import type { ComponentType } from "react";
+
+/**
+ * Adapta una `SidebarSection` del SDK al `RouteType` que espera HeaderTagRoute.
+ *
+ * Los dos describen "un grupo con ítems", pero con vocabularios distintos: el
+ * SDK habla de `label` e `items`, la navegación interna de `name` y
+ * `subRoutes`. La traducción vive acá, en el borde, para que ni el SDK tenga
+ * que conocer la navegación de TPS ni al revés.
+ *
+ * `type: "protected"` es correcto: las secciones de plugin solo se pintan con
+ * sesión iniciada, y el filtrado por rol ya ocurrió antes de llegar acá.
+ *
+ * OJO: HeaderTagRoute usa `route.name` como clave de expandido/colapsado. Si un
+ * plugin nombra su sección igual que un módulo nativo, los dos se abren y
+ * cierran juntos. Es el mismo esquema que ya usan las rutas nativas entre sí.
+ */
+function pluginSectionToRoute(section: SidebarSection): RouteType {
+  return {
+    name: section.label,
+    type: "protected",
+    icon: section.icon,
+    isHeader: true,
+    showSidebar: true,
+    subRoutes: section.items.map((item) => ({
+      path: item.path,
+      name: item.label,
+      type: "protected" as const,
+      icon: item.icon,
+      isHeader: false,
+      showSidebar: true,
+    })),
+  };
+}
 
 const AppSidebar = () => {
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
@@ -173,49 +205,36 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Secciones de plugins — renderizadas de forma aditiva después de las rutas estáticas.
-            Cada SidebarSection del SDK se mapea a un SidebarGroup propio con su label e ítems.
-            Mapeo de campos SDK → TPS:
-              section.label  → SidebarGroupLabel (texto visible)
-              section.icon   → ícono del grupo (opcional, ComponentType<IconProps>)
-              section.items  → RouteConfig[] → NavItem por cada ítem
-                item.path    → href del NavItem
-                item.label   → children del NavItem
-                item.icon    → icon prop del NavItem (ComponentType<IconProps>)
-            El filtrado por rol ya fue aplicado en filteredPluginSections (roles de RouteConfig.roles). */}
-        {filteredPluginSections.map((section: SidebarSection) => {
-          const SectionIcon = section.icon as ComponentType<IconProps> | undefined;
-          return (
-            <SidebarGroup key={section.id}>
-              <div className="flex items-center px-1 mt-2 mb-2">
-                <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0 flex items-center gap-1.5">
-                  {SectionIcon && <SectionIcon className="h-3.5 w-3.5" />}
-                  {section.label}
-                </SidebarGroupLabel>
-              </div>
-              <SidebarGroupContent className="px-1">
-                <SidebarMenu>
-                  {section.items.map((item) => {
-                    const ItemIcon = item.icon as ComponentType<IconProps> | undefined;
-                    return (
-                      <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton asChild>
-                          <NavItem
-                            href={item.path}
-                            icon={ItemIcon}
-                            handleNavigation={handleNavigation}
-                          >
-                            {item.label}
-                          </NavItem>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+        {/* Secciones de plugins, aditivas después de las rutas estáticas.
+
+            Se renderizan con el MISMO HeaderTagRoute que los módulos nativos:
+            pastilla colapsable con chevron, no un rótulo plano. Antes salían
+            como SidebarGroupLabel, o sea con el aspecto de "PRINCIPAL" y
+            "GENERAL", y un plugin quedaba visualmente como ciudadano de
+            segunda al lado de CAJA o VENTAS.
+
+            El filtrado por rol ya se aplicó en filteredPluginSections. */}
+        {filteredPluginSections.length > 0 && (
+          <SidebarGroup>
+            {/* Separador: los plugins se ven como los módulos nativos, pero
+                sigue quedando claro dónde termina el sistema y dónde empieza
+                lo que alguien instaló. */}
+            <Separator className="my-1" />
+            <SidebarGroupContent className="px-1">
+              <SidebarMenu>
+                {filteredPluginSections.map((section: SidebarSection) => (
+                  <HeaderTagRoute
+                    key={section.id}
+                    route={pluginSectionToRoute(section)}
+                    expandedHeaders={expandedHeaders}
+                    toggleHeader={toggleHeader}
+                    handleNavigation={handleNavigation}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border p-0">
