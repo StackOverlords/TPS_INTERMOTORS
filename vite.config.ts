@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { federation } from '@module-federation/vite';
 import { defineConfig } from 'vite';
 import path, { resolve } from 'path';
 import { readFileSync } from 'fs';
@@ -17,7 +18,26 @@ const buildTarget = process.env.BUILD_TARGET === 'web' ? 'web' : 'tauri';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Module Federation host — always-on desde Fase 4.
+    // Los remotes dinámicos se registran en runtime via registerRemotes() (sin rebuild).
+    // build.target "esnext" (ya definido abajo) es requerido por el remoteEntry ESM.
+    federation({
+      name: 'host',
+      // Vacío: los plugins externos se registran en runtime con @module-federation/runtime.
+      remotes: {},
+      shared: {
+        react: { singleton: true, requiredVersion: '19.1.0' },
+        'react-dom': { singleton: true, requiredVersion: '19.1.0' },
+        'react/jsx-runtime': { singleton: true, requiredVersion: '19.1.0' },
+        'react-router-dom': { singleton: true, requiredVersion: '7.6.3' },
+        zustand: { singleton: true, requiredVersion: '5.0.6' },
+        '@tps/plugin-sdk': { singleton: true, requiredVersion: '*' },
+      },
+    }),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },

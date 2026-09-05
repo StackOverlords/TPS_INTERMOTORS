@@ -2,6 +2,7 @@ import SplashScreen from "@/components/common/SplashScreen";
 import { useCloseSecondaryWindowsOnExit } from "@/hooks/useCloseSecondaryWindowsOnExit";
 import BranchSelection from "@/modules/auth/screens/BranchScreen";
 import NotFound from "@/modules/shared/screens/NotFound";
+import { useRegistryRoutes } from "@/plugins";
 import authSDK from "@/services/sdk-simple-auth";
 import { useTabStore } from "@/states/tabStore";
 import { environment } from "@/utils/environment";
@@ -12,10 +13,16 @@ import protectedRoutes from "./Protected.Route";
 import { publicRoutes } from "./Public.Route";
 import RouteRenderer from "./RouteRenderer";
 import type RouteType from "./RouteType";
+import type { UserRole } from "@/hooks/useUserRole";
 
 const Navigation = () => {
   // Auto-cerrar ventanas secundarias cuando se cierra la app
   useCloseSecondaryWindowsOnExit();
+
+  // Rutas aportadas por plugins — actualizadas reactivamente cuando un plugin
+  // llama a api.registerRoutes(). useSyncExternalStore garantiza consistencia
+  // en Concurrent Mode y evita tearing.
+  const registryRoutes = useRegistryRoutes();
   // console.log(authSDK.getState().user?.sucursales)
   const closeAllTabs = useTabStore((state) => state.closeAllTabs);
 
@@ -95,7 +102,27 @@ const Navigation = () => {
     return routes;
   });
 
-  const allRoutes = [...publicRoutes, ...mapProtectedRoutes];
+  // Adaptador RouteConfig (SDK) → RouteType (TPS).
+  // Mapeo de campos:
+  //   SDK `component` → RouteType `element`  (ComponentType)
+  //   SDK `path`      → RouteType `path`     (string)
+  //   SDK `label`     → RouteType `name`     (string visible en sidebar/tabs)
+  //   SDK `icon`      → RouteType `icon`     (ComponentType, compatible)
+  //   SDK `roles`     → RouteType `role`     (string[] cast a UserRole[] — el guard de roles
+  //                                           de RouteRenderer filtra por hasRouteAccess,
+  //                                           que compara strings; el cast es seguro)
+  // Las rutas de plugins son siempre `type: "protected"` — un plugin no puede registrar
+  // rutas públicas (login, etc.) a través del SDK.
+  const pluginRoutes: RouteType[] = registryRoutes.map((rc) => ({
+    path: rc.path,
+    element: rc.component,
+    name: rc.label,
+    type: "protected" as const,
+    icon: rc.icon,
+    role: rc.roles as UserRole[] | undefined,
+  }));
+
+  const allRoutes = [...publicRoutes, ...mapProtectedRoutes, ...pluginRoutes];
   return (
     <Routes>
       {allRoutes.map((route, index) => (

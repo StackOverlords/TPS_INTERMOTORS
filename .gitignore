@@ -12,8 +12,13 @@ dist
 dist-ssr
 *.local
 
-# Diagnosticos generados por Module Federation (se regeneran en cada build)
+# Artefactos y diagnosticos de Module Federation (se regeneran en cada build)
+.mf
 .mf/
+@mf-types
+
+# plugin-sdk emite .d.ts a ./dist (tsc --noEmit en el flujo normal); nunca en src
+packages/plugin-sdk/src/*.d.ts
 
 # Editor directories and files
 .vscode/*

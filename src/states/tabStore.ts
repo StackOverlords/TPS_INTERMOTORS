@@ -20,6 +20,13 @@ export interface Tab {
     mode?: string;
     originalPath?: string;
   };
+  /**
+   * ID de la ruta en el RouteRegistry (aportada por plugins).
+   * Solo presente en tabs creadas desde una ruta de plugin.
+   * Las tabs estáticas nativas no setean este campo — es ADITIVO y opcional.
+   * Persiste con el resto de la tab (es un string serializable).
+   */
+  routeId?: string;
 }
 
 interface TabState {
@@ -269,6 +276,10 @@ export const useTabStore = create<TabState>()(
           metadata: tab.metadata,
           instanceId: tab.instanceId,
           pinned: tab.pinned,
+          // routeId es un string serializable — se persiste para que las tabs de plugin
+          // sobrevivan a recargas. Los plugins necesitan registrarse de nuevo (y registrar
+          // sus rutas) antes de que la UI intente navegar a esas rutas.
+          routeId: tab.routeId,
           // Omitir icon intencionalmente
         })),
       }),

@@ -21,7 +21,11 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://*:* https://*:* ws://*:* wss://*:*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://* https://*; frame-src 'self' blob:; media-src 'self' blob: data:;",
+      "csp": "default-src 'self' asset: http://asset.localhost plugin: http://plugin.localhost ipc: http://ipc.localhost; connect-src 'self' ipc: http://ipc.localhost http://*:* https://*:* ws://*:* wss://*:* plugin: http://plugin.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' asset: http://asset.localhost plugin: http://plugin.localhost; style-src 'self' 'unsafe-inline' asset: http://asset.localhost plugin: http://plugin.localhost; img-src 'self' data: blob: http://* https://* asset: http://asset.localhost plugin: http://plugin.localhost; frame-src 'self' blob: asset: http://asset.localhost plugin: http://plugin.localhost; media-src 'self' blob: data: asset: http://asset.localhost plugin: http://plugin.localhost;",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**/*"]
+      },
       "capabilities": ["default"]
     },
     "withGlobalTauri": true
