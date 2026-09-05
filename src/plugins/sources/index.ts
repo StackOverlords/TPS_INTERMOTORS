@@ -47,6 +47,10 @@ export function getPluginSource(): PluginSource {
   return instance;
 }
 
-export type { ExternalPluginRef, PluginSource } from './PluginSource';
+export type {
+  ExternalPluginRef,
+  PluginBundle,
+  PluginSource,
+} from './PluginSource';
 export { HttpPluginSource } from './HttpPluginSource';
 export { TauriPluginSource } from './TauriPluginSource';

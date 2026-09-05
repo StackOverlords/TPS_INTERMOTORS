@@ -15,7 +15,11 @@ export { usePluginSettingsActions } from "./hooks/usePluginSettingsActions";
 // Fase 4: loader de plugins externos + abstracción de fuente
 export { loadExternalPlugins } from "./loadExternalPlugins";
 export type { LoadResult } from "./loadExternalPlugins";
-export type { PluginSource, ExternalPluginRef } from "./sources/PluginSource";
+export type {
+  PluginSource,
+  PluginBundle,
+  ExternalPluginRef,
+} from "./sources/PluginSource";
 export {
   getPluginSource,
   HttpPluginSource,

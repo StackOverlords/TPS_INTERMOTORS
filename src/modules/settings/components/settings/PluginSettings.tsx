@@ -3,9 +3,13 @@
  *
  * Fase 4 Batch D: pantalla completa de gestión de plugins.
  *
+ * Sirve a los DOS targets: toda la diferencia entre escritorio y web queda del
+ * lado de `PluginSource`, así que esta pantalla no importa nada de Tauri.
+ *
  * Responsabilidades:
- * - Listar plugins instalados (TauriPluginSource.list())
- * - Instalar desde directorio/archivo (plugin-dialog)
+ * - Listar plugins instalados (PluginSource.list())
+ * - Instalar lo que devuelva PluginSource.pickBundle() — carpeta en escritorio,
+ *   zip en web
  * - Activar/Desactivar en vivo (setEnabled + loadExternalPlugins / deactivate)
  * - Desinstalar con confirmación (AlertDialog)
  * - Mostrar errores de carga del bootstrap (LoadResult.status === "failed")
@@ -32,7 +36,6 @@ import {
   TooltipTrigger,
 } from "@/components/atoms/tooltip";
 import { cn } from "@/lib/utils";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -123,19 +126,16 @@ const PluginSettings = () => {
 
   const handleInstall = async () => {
     try {
-      const selected = await openDialog({
-        directory: true,
-        multiple: false,
-        title: "Seleccioná la carpeta del plugin",
-      });
+      // El selector lo abre la fuente, no esta pantalla: en escritorio es el
+      // diálogo nativo de Tauri y en web un `<input type="file">`. Cuando esto
+      // vivía acá, la pantalla importaba `@tauri-apps/plugin-dialog` directo y
+      // la instalación en web era imposible.
+      const bundle = await source.pickBundle();
 
-      if (!selected) return;
+      if (!bundle) return;
 
-      const path = selected;
-      if (!path) return;
-
-      setInstallingId(path);
-      const newRef = await source.install(path);
+      setInstallingId(bundle.label);
+      const newRef = await source.install(bundle);
       toast.success(`Plugin "${newRef.name}" instalado correctamente`);
       await loadPlugins();
     } catch (err) {

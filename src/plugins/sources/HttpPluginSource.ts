@@ -43,7 +43,11 @@
 import apiClient from '@/services/axios';
 import { environment } from '@/utils/environment';
 
-import type { ExternalPluginRef, PluginSource } from './PluginSource';
+import type {
+  ExternalPluginRef,
+  PluginBundle,
+  PluginSource,
+} from './PluginSource';
 
 /**
  * Endpoint bajo el que el backend sirve los bundles.
@@ -118,10 +122,66 @@ export class HttpPluginSource implements PluginSource {
     return data.map(toExternalPluginRef);
   }
 
-  async install(source: string): Promise<ExternalPluginRef> {
+  /**
+   * Selector de archivo del navegador.
+   *
+   * Un `<input type="file">` fuera del DOM alcanza: nunca se muestra, solo se
+   * usa por su `click()`, que abre el selector nativo del sistema.
+   *
+   * ⚠️ El `click()` va en la primera sentencia, ANTES de cualquier `await`.
+   * Igual que `window.open()`, el navegador solo lo permite mientras dura la
+   * tarea del gesto del usuario, y si se pasó lo descarta EN SILENCIO: no
+   * lanza, simplemente no abre nada.
+   */
+  pickBundle(): Promise<PluginBundle | null> {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip,application/zip';
+
+    const picked = new Promise<PluginBundle | null>((resolve) => {
+      // `cancel` avisa que el usuario cerró el selector sin elegir. Sin él la
+      // promesa quedaría colgada para siempre y con ella el handler que espera.
+      input.addEventListener('cancel', () => resolve(null), { once: true });
+
+      input.addEventListener(
+        'change',
+        () => {
+          const file = input.files?.[0];
+          resolve(file ? { kind: 'file', file, label: file.name } : null);
+        },
+        { once: true },
+      );
+    });
+
+    input.click();
+
+    return picked;
+  }
+
+  async install(bundle: PluginBundle): Promise<ExternalPluginRef> {
+    if (bundle.kind !== 'file') {
+      throw new Error(
+        'El instalador web espera un archivo .zip; el navegador no puede leer rutas del disco.',
+      );
+    }
+
+    // Multipart, no JSON: el backend valida `file` como archivo subido. Mandar
+    // un path en el body —como hacía antes— devolvía 422 siempre, porque del
+    // lado del servidor esa ruta no existe.
+    const body = new FormData();
+    body.append('file', bundle.file);
+
     const { data } = await apiClient.post<ApiExternalPlugin>(
       PLUGINS_ENDPOINT,
-      { source },
+      body,
+      // ⚠️ Pisar el Content-Type acá NO es ceremonia: `apiClient` trae
+      // `application/json` por defecto, y con ese header axios 1.x serializa el
+      // FormData a JSON (`transformRequest` → `formDataToJSON`). El archivo se
+      // pierde EN SILENCIO y el backend responde 422 "file required".
+      //
+      // No hace falta armar el boundary: al ver un FormData, el adapter XHR
+      // borra este header y deja que el navegador ponga el suyo, con boundary.
+      { headers: { 'Content-Type': 'multipart/form-data' } },
     );
     return toExternalPluginRef(data);
   }

@@ -37,6 +37,41 @@ export interface ExternalPluginRef {
 }
 
 // ---------------------------------------------------------------------------
+// PluginBundle — lo que hay que instalar, en la forma que cada target puede dar
+// ---------------------------------------------------------------------------
+
+/**
+ * Bundle de plugin listo para instalar.
+ *
+ * Existe porque los dos targets NO pueden nombrar un bundle de la misma manera,
+ * y fingir que sí rompía la instalación en web:
+ *
+ * - Escritorio elige una CARPETA del disco y Rust la lee. Lo único que viaja
+ *   por el IPC es su path.
+ * - El navegador no tiene paths. `<input type="file">` entrega un `File`; su
+ *   `.name` es solo el nombre, nunca una ruta que el servidor pueda abrir. Por
+ *   eso el backend recibe el zip por multipart, no un string.
+ *
+ * El discriminante `kind` deja que cada adapter rechace explícitamente lo que
+ * no sabe manejar, en vez de mandarlo al backend y comerse un 422.
+ */
+export type PluginBundle =
+  | {
+      kind: 'path';
+      /** Ruta absoluta de la carpeta del plugin en el disco del usuario. */
+      path: string;
+      /** Texto para mostrar mientras instala. */
+      label: string;
+    }
+  | {
+      kind: 'file';
+      /** Zip elegido por el usuario. Debe traer `manifest.json` en la raíz. */
+      file: File;
+      /** Texto para mostrar mientras instala. */
+      label: string;
+    };
+
+// ---------------------------------------------------------------------------
 // PluginSource — interfaz de la fuente de plugins
 // ---------------------------------------------------------------------------
 
@@ -56,13 +91,31 @@ export interface PluginSource {
   list(): Promise<ExternalPluginRef[]>;
 
   /**
-   * Instala un plugin desde la fuente indicada.
+   * Abre el selector nativo del target y devuelve lo que el usuario eligió.
    *
-   * @param source - URL, path o identificador de marketplace del plugin a instalar.
-   * @returns La referencia del plugin recién instalado (habilitado por defecto).
-   * @throws Si la instalación falla (URL inaccesible, manifiesto inválido, etc.).
+   * Vive en la fuente, y no en la UI, por la misma razón que los puertos de
+   * `src/platform`: la pantalla de ajustes no tiene por qué saber si detrás hay
+   * un diálogo de Tauri o un `<input type="file">`. Antes lo sabía —importaba
+   * `@tauri-apps/plugin-dialog` directo— y eso dejaba la instalación web muerta.
+   *
+   * ⚠️ REGLA DE GESTO DEL USUARIO: la implementación web abre el selector en su
+   * PRIMERA sentencia, antes de cualquier `await`. Un `await` previo termina la
+   * tarea del gesto y el navegador descarta el `click()` SIN lanzar error. Misma
+   * regla que `window.open()` en `platform/adapters/web/windowManager.ts`.
+   *
+   * @returns El bundle elegido, o `null` si el usuario canceló.
    */
-  install(source: string): Promise<ExternalPluginRef>;
+  pickBundle(): Promise<PluginBundle | null>;
+
+  /**
+   * Instala un plugin desde el bundle indicado.
+   *
+   * @param bundle - Lo devuelto por `pickBundle()` de ESTA misma fuente.
+   * @returns La referencia del plugin recién instalado (habilitado por defecto).
+   * @throws Si el `kind` no corresponde al target, o si la instalación falla
+   *         (manifiesto inválido, zip corrupto, red caída, etc.).
+   */
+  install(bundle: PluginBundle): Promise<ExternalPluginRef>;
 
   /**
    * Desinstala un plugin por su ID.

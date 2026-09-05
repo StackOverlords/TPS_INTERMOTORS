@@ -45,7 +45,12 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import type { ExternalPluginRef, PluginSource } from './PluginSource';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import type {
+  ExternalPluginRef,
+  PluginBundle,
+  PluginSource,
+} from './PluginSource';
 
 // ---------------------------------------------------------------------------
 // Plugin URL builder (custom scheme `plugin://`)
@@ -148,8 +153,36 @@ export class TauriPluginSource implements PluginSource {
     return raw.map(toExternalPluginRef);
   }
 
-  async install(source: string): Promise<ExternalPluginRef> {
-    const raw = await invoke<RustExternalPlugin>('install_plugin', { source });
+  /**
+   * Diálogo nativo de carpeta.
+   *
+   * Pide una CARPETA, no un zip: Rust lee el `manifest.json` y copia el
+   * contenido a `plugins_dir`. Descomprimir de este lado no aportaría nada.
+   */
+  async pickBundle(): Promise<PluginBundle | null> {
+    const selected = await openDialog({
+      directory: true,
+      multiple: false,
+      title: 'Seleccioná la carpeta del plugin',
+    });
+
+    if (!selected) return null;
+
+    return { kind: 'path', path: selected, label: selected };
+  }
+
+  async install(bundle: PluginBundle): Promise<ExternalPluginRef> {
+    // No debería pasar —cada UI usa el `pickBundle()` de su propia fuente—
+    // pero si pasa, es mejor un error claro acá que un panic en Rust.
+    if (bundle.kind !== 'path') {
+      throw new Error(
+        'El instalador de escritorio espera la carpeta del plugin, no un archivo.',
+      );
+    }
+
+    const raw = await invoke<RustExternalPlugin>('install_plugin', {
+      source: bundle.path,
+    });
     return toExternalPluginRef(raw);
   }
 
