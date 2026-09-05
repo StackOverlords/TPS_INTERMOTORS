@@ -31,10 +31,12 @@ import { isTauriEnvironment } from "@/utils/environment";
  *   printing        Los dos targets. En web sale por el visor del navegador;
  *                   en escritorio, por el del sistema.
  *
- *   printing.raw    Solo escritorio. Impresora térmica por puerto serie/USB,
- *                   ESC/POS, cajón de dinero. El navegador no abre un puerto
- *                   sin permiso explícito del usuario POR DISPOSITIVO
- *                   (WebSerial/WebUSB, solo Chromium y solo sobre HTTPS).
+ *   printing.raw    Escritorio siempre; en web DEPENDE DEL NAVEGADOR. Se
+ *                   resuelve preguntándole al navegador, no con una constante:
+ *                   ver `soportaPuertosDeHardware()` más abajo.
+ *
+ *   http            Los dos targets: es el cliente HTTP del host, que ya lleva
+ *                   el token. Es la vía para hablar con el backend propio.
  *
  *   http.external   Solo escritorio. En web rige CORS: el servicio de impuestos
  *                   tendría que autorizar el origen de la app, cosa que no va a
@@ -46,40 +48,70 @@ import { isTauriEnvironment } from "@/utils/environment";
  * navegador) y en escritorio es mala idea (una copia del certificado por
  * máquina). Eso va en el backend; el plugin orquesta y muestra.
  *
- * Es decir: un plugin de facturación bien hecho probablemente NO necesita
- * `http.external` — necesita hablar con el backend propio, que es mismo origen.
- * Sí puede necesitar `printing.raw` para la impresora fiscal.
+ * Es decir: un plugin de facturación bien hecho NO necesita `http.external`
+ * —necesita `http` contra el backend propio— y puede necesitar `printing.raw`
+ * para la impresora fiscal.
  */
 
-/** Capacidades que el host ofrece en cada target. */
+/**
+ * ¿Este navegador puede abrir un puerto de hardware?
+ *
+ * Se pregunta en vez de asumir. La sonda de facturación mostró la
+ * contradicción: en Chromium `'serial' in navigator` da true mientras la tabla
+ * declaraba `printing.raw: false`. El host estaba mintiendo sobre algo que el
+ * navegador demostrablemente tiene.
+ *
+ * Lo que la detección NO garantiza: que el usuario vaya a conceder el permiso.
+ * WebSerial y WebUSB lo piden POR DISPOSITIVO y dentro de un gesto. Por eso
+ * `printing.raw` conviene pedirla en `optional` y no en `requires`, incluso
+ * ahora que web puede ofrecerla.
+ *
+ * En escritorio ni se consulta: lo resuelve el host por IPC, sin el navegador
+ * de por medio.
+ */
+function soportaPuertosDeHardware(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  // Chromium expone las dos; Firefox y Safari, ninguna.
+  return "serial" in navigator || "usb" in navigator;
+}
+
+/** Lo que el host ofrece en cualquier target. */
+const CAPABILIDADES_BASE: readonly Capability[] = [
+  CAPABILITY.VIEWS,
+  CAPABILITY.NAVIGATION,
+  CAPABILITY.TABS,
+  CAPABILITY.SETTINGS,
+  CAPABILITY.NOTIFICATIONS,
+  CAPABILITY.COMMANDS,
+  CAPABILITY.EVENTS,
+  CAPABILITY.STORAGE,
+  CAPABILITY.KEYBINDINGS,
+  CAPABILITY.HTTP,
+  CAPABILITY.PRINTING,
+];
+
+/**
+ * Capacidades que el host ofrece en cada target.
+ *
+ * Se calcula al importar el módulo, no en cada llamada: ni el target ni las
+ * APIs del navegador cambian durante la vida de la página.
+ */
 const CAPABILITIES_BY_TARGET: Record<PluginTarget, readonly Capability[]> = {
   desktop: [
-    CAPABILITY.VIEWS,
-    CAPABILITY.NAVIGATION,
-    CAPABILITY.TABS,
-    CAPABILITY.SETTINGS,
-    CAPABILITY.NOTIFICATIONS,
-    CAPABILITY.COMMANDS,
-    CAPABILITY.EVENTS,
-    CAPABILITY.STORAGE,
-    CAPABILITY.KEYBINDINGS,
-    CAPABILITY.PRINTING,
+    ...CAPABILIDADES_BASE,
     CAPABILITY.PRINTING_RAW,
     CAPABILITY.HTTP_EXTERNAL,
     CAPABILITY.FILESYSTEM,
   ],
   web: [
-    CAPABILITY.VIEWS,
-    CAPABILITY.NAVIGATION,
-    CAPABILITY.TABS,
-    CAPABILITY.SETTINGS,
-    CAPABILITY.NOTIFICATIONS,
-    CAPABILITY.COMMANDS,
-    CAPABILITY.EVENTS,
-    CAPABILITY.STORAGE,
-    CAPABILITY.KEYBINDINGS,
-    CAPABILITY.PRINTING,
-    // Sin PRINTING_RAW, HTTP_EXTERNAL ni FILESYSTEM: ver la nota de arriba.
+    ...CAPABILIDADES_BASE,
+    // Condicional, no fija: Chromium expone WebSerial/WebUSB y el resto no.
+    // Declararla siempre haría que un plugin se activara en Firefox para
+    // fallar al primer uso; declararla nunca renuncia a algo que funciona.
+    ...(soportaPuertosDeHardware() ? [CAPABILITY.PRINTING_RAW] : []),
+    // Sin HTTP_EXTERNAL ni FILESYSTEM: CORS y falta de acceso al disco no se
+    // arreglan preguntando. Ver la nota de arriba.
   ],
 };
 

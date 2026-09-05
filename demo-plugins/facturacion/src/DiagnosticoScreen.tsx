@@ -101,14 +101,26 @@ export function createDiagnosticoScreen(api: PluginAPI) {
         // ── El límite: red hacia afuera ──────────────────────────────────────
 
         await probar(
-          "fetch al backend propio",
-          "Mismo origen: acá viven la firma y el envío al SIN",
+          "api.http (backend propio, autenticado)",
+          "Acá viven la firma del certificado y el envío al SIN",
+          async () => {
+            // Esta es la vía buena. Va por el cliente del host, así que lleva
+            // el token de sesión sin que el plugin sepa nada de sesiones.
+            const plugins = await api.http.get<unknown[]>("/plugins");
+            return `200 — respondió con ${plugins.length} plugin(s)`;
+          },
+        );
+
+        await probar(
+          "fetch crudo al backend propio",
+          "Lo mismo pero sin el cliente del host: NO lleva el token",
           async () => {
             const r = await fetch("/api/v1/plugins", {
               headers: { Accept: "application/json" },
             });
-            // 401 también es una respuesta válida: significa que LLEGÓ.
-            return `HTTP ${r.status} — el request salió y volvió`;
+            return r.status === 401
+              ? `HTTP 401 — llegó, pero sin sesión. Por esto existe api.http`
+              : `HTTP ${r.status}`;
           },
         );
 
@@ -157,6 +169,7 @@ export function createDiagnosticoScreen(api: PluginAPI) {
           "commands",
           "events",
           "keybindings",
+          "http",
           "printing",
           "printing.raw",
           "http.external",

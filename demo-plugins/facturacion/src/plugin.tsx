@@ -55,6 +55,7 @@ const plugin = definePlugin({
       CAPABILITY.COMMANDS,
       CAPABILITY.STORAGE,
       CAPABILITY.EVENTS,
+      CAPABILITY.HTTP,
       CAPABILITY.PRINTING,
     ],
 

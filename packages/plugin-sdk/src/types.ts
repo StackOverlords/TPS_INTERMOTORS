@@ -40,6 +40,19 @@ const CAPABILITY = {
   STORAGE: "storage",
   KEYBINDINGS: "keybindings",
 
+  /**
+   * Hablar con el BACKEND PROPIO de la app, ya autenticado.
+   *
+   * Disponible en los dos targets: por debajo es el mismo cliente HTTP del
+   * host, así que el plugin hereda el token, el refresh de sesión y el formato
+   * de errores sin saber nada de eso.
+   *
+   * No confundir con `http.external`, que es llamar a un servicio AJENO. Esta
+   * es la vía correcta para un plugin de facturación: la firma con certificado
+   * y el envío al servicio de impuestos viven del lado del servidor.
+   */
+  HTTP: "http",
+
   // ── Capacidades que NO existen en todos los targets ──────────────────────
   //
   // Las de arriba las provee el host en cualquier lado. Las de acá dependen de
@@ -54,8 +67,14 @@ const CAPABILITY = {
 
   /**
    * Acceso crudo a una impresora: puerto serie/USB, ESC/POS, cajón de dinero.
-   * SOLO escritorio: el navegador no expone puertos sin permiso explícito del
-   * usuario por dispositivo (WebSerial/WebUSB, y solo en Chromium sobre HTTPS).
+   *
+   * En escritorio siempre. En web DEPENDE DEL NAVEGADOR: Chromium expone
+   * WebSerial y WebUSB, Firefox y Safari no. Además exige contexto seguro y un
+   * permiso que el usuario concede POR DISPOSITIVO, dentro de un gesto.
+   *
+   * Por eso el host la resuelve consultando al navegador y no con una
+   * constante por target. Conviene pedirla en `optional` y no en `requires`:
+   * exigirla deja al plugin fuera de todo lo que no sea Chromium.
    */
   PRINTING_RAW: "printing.raw",
 
@@ -536,6 +555,14 @@ export interface PluginAPI {
    */
   storage: PluginStorageAPI;
 
+  // ── Red ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Cliente HTTP contra el backend propio, ya autenticado.
+   * Requiere capability "http".
+   */
+  http: PluginHttpAPI;
+
   // ── Introspección ────────────────────────────────────────────────────────
 
   /**
@@ -543,6 +570,70 @@ export interface PluginAPI {
    * Util para código condicional basado en capabilities opcionales.
    */
   hasCapability(capability: Capability): boolean;
+}
+
+// ---------------------------------------------------------------------------
+// PluginHttpAPI
+// ---------------------------------------------------------------------------
+
+/** Opciones por request. Deliberadamente mínimas. */
+export interface PluginHttpOptions {
+  /** Query string. Los valores se serializan como los manda el cliente del host. */
+  params?: Record<string, unknown>;
+  /** Cabeceras extra. La de autorización la pone el host: no la pises. */
+  headers?: Record<string, string>;
+  /** Corta el request. Mismo `AbortSignal` del navegador. */
+  signal?: AbortSignal;
+}
+
+/**
+ * Acceso HTTP al backend propio de la app.
+ *
+ * ## Por qué existe
+ *
+ * Sin esto un plugin no podía hablar con el backend, que para algo como
+ * facturación es TODO su trabajo. `fetch` crudo devolvía 401 —no lleva el
+ * token— y el cliente del host no se podía importar: no es un módulo
+ * compartido de Module Federation y el alias `@/` no existe en el build del
+ * plugin.
+ *
+ * La salida por izquierda era leer el token de `localStorage` y armar el
+ * header a mano. Funciona, y por eso mismo hay que dar la vía buena: si no,
+ * cada plugin reinventa esa pieza y todos se rompen juntos el día que cambie
+ * el manejo de sesión.
+ *
+ * ## Qué hereda
+ *
+ * Por debajo es el cliente HTTP del host, así que el plugin recibe gratis el
+ * token, la renovación de sesión y el formato de errores. Las URLs van
+ * RELATIVAS a la base de la API (`"/facturas"`, no la URL completa).
+ *
+ * ## Qué NO es
+ *
+ * No sirve para llamar a servicios ajenos: eso es `http.external`, que en web
+ * no existe porque rige CORS. Para integrarse con el servicio de impuestos, el
+ * camino es un endpoint del backend propio.
+ *
+ * ## Errores
+ *
+ * Lanzan. Un 4xx o 5xx llega como excepción, no como valor de retorno; los
+ * métodos devuelven el cuerpo ya deserializado.
+ *
+ * @example
+ * ```ts
+ * const facturas = await api.http.get<Factura[]>("/facturas", {
+ *   params: { sucursal: 3 },
+ * });
+ *
+ * await api.http.post("/facturas", { items, cliente });
+ * ```
+ */
+export interface PluginHttpAPI {
+  get<T>(url: string, options?: PluginHttpOptions): Promise<T>;
+  post<T>(url: string, body?: unknown, options?: PluginHttpOptions): Promise<T>;
+  put<T>(url: string, body?: unknown, options?: PluginHttpOptions): Promise<T>;
+  patch<T>(url: string, body?: unknown, options?: PluginHttpOptions): Promise<T>;
+  delete<T>(url: string, options?: PluginHttpOptions): Promise<T>;
 }
 
 // ---------------------------------------------------------------------------

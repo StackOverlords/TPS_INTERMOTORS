@@ -49,6 +49,10 @@ export type {
 
   // Storage
   PluginStorageAPI,
+
+  // Red
+  PluginHttpAPI,
+  PluginHttpOptions,
 } from "./types.js";
 
 // Re-exportar la constante de capabilities (valor de runtime, útil en manifiestos)

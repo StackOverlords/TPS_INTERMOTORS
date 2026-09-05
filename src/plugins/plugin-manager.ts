@@ -41,7 +41,10 @@ import type {
   PromptOptions,
   PromptResult,
   PluginStorageAPI,
+  PluginHttpAPI,
+  PluginHttpOptions,
 } from "@tps/plugin-sdk";
+import apiClient from "@/services/axios";
 import { RouteRegistry } from "./core/route-registry";
 import {
   getCapabilitiesForTarget,
@@ -205,6 +208,92 @@ class PluginStorageImpl implements PluginStorageAPI {
       "[PluginManager] PluginStorageImpl.clear() no está implementado en Fase 2. " +
         "Los datos del plugin persisten hasta que se limpien manualmente."
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PluginHttpAPI implementación
+// ---------------------------------------------------------------------------
+
+/**
+ * Acceso HTTP al backend propio, sobre el cliente del host.
+ *
+ * Existe porque un plugin no tenía forma de hablar con el backend: `fetch`
+ * crudo devuelve 401 —no lleva el token— y el cliente del host no se puede
+ * importar desde un plugin externo, porque no es un módulo compartido de
+ * Module Federation y el alias `@/` no existe en su build.
+ *
+ * Delegar en `apiClient` en vez de armar un cliente propio no es pereza: es lo
+ * que hace que el plugin herede el token, la renovación de sesión y el formato
+ * de errores. Un cliente aparte se desincronizaría en el primer cambio de
+ * autenticación, y el bug aparecería recién cuando expire una sesión.
+ *
+ * Se devuelve el cuerpo ya deserializado y los errores se dejan propagar: el
+ * plugin decide si reintentar o avisarle al usuario.
+ */
+class PluginHttpImpl implements PluginHttpAPI {
+  // Campo explícito y no propiedad de parámetro: el proyecto compila con
+  // `erasableSyntaxOnly`, que prohíbe la forma corta.
+  private readonly pluginId: string;
+
+  constructor(pluginId: string) {
+    this.pluginId = pluginId;
+  }
+
+  get<T>(url: string, options?: PluginHttpOptions): Promise<T> {
+    return this.send<T>("get", url, undefined, options);
+  }
+
+  post<T>(url: string, body?: unknown, options?: PluginHttpOptions): Promise<T> {
+    return this.send<T>("post", url, body, options);
+  }
+
+  put<T>(url: string, body?: unknown, options?: PluginHttpOptions): Promise<T> {
+    return this.send<T>("put", url, body, options);
+  }
+
+  patch<T>(url: string, body?: unknown, options?: PluginHttpOptions): Promise<T> {
+    return this.send<T>("patch", url, body, options);
+  }
+
+  delete<T>(url: string, options?: PluginHttpOptions): Promise<T> {
+    return this.send<T>("delete", url, undefined, options);
+  }
+
+  private async send<T>(
+    method: "get" | "post" | "put" | "patch" | "delete",
+    url: string,
+    body: unknown,
+    options?: PluginHttpOptions,
+  ): Promise<T> {
+    // La cabecera de autorización la pone el interceptor del host. Si el
+    // plugin manda la suya, pisarla lo dejaría hablando con una sesión que no
+    // es la del usuario, así que se descarta acá y no en el interceptor,
+    // donde ya sería tarde para avisar.
+    const headers = { ...options?.headers };
+
+    for (const clave of Object.keys(headers)) {
+      if (clave.toLowerCase() === "authorization") {
+        delete headers[clave];
+        logger.warn(
+          `[PluginManager] El plugin "${this.pluginId}" intentó fijar su propia ` +
+            `cabecera Authorization. Se ignoró: la sesión la maneja el host.`,
+        );
+      }
+    }
+
+    const config = {
+      params: options?.params,
+      headers,
+      signal: options?.signal,
+    };
+
+    const response =
+      method === "get" || method === "delete"
+        ? await apiClient[method]<T>(url, config)
+        : await apiClient[method]<T>(url, body, config);
+
+    return response.data;
   }
 }
 
@@ -717,6 +806,7 @@ export class PluginManagerClass {
   private createPluginAPI(pluginId: string, entry: PluginEntry): PluginAPI {
     const manager = this;
     const storageImpl = new PluginStorageImpl(pluginId);
+    const httpImpl = new PluginHttpImpl(pluginId);
 
     const api: PluginAPI = {
       // ── Vistas y navegación ─────────────────────────────────────────────
@@ -1005,6 +1095,11 @@ export class PluginManagerClass {
       // CABLEADO: TauriStorageAdapter scoped al pluginId.
 
       storage: storageImpl,
+
+      // ── Red ───────────────────────────────────────────────────────────────
+      // CABLEADO: el cliente HTTP del host, con su token y su refresh.
+
+      http: httpImpl,
 
       // ── Introspección ─────────────────────────────────────────────────────
 
