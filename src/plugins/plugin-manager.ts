@@ -47,7 +47,7 @@ import { logger } from "@/utils/logger";
 import authSDK from "@/services/sdk-simple-auth";
 import { useThemeStore } from "@/stores/themeStore";
 import { useTabStore } from "@/states/tabStore";
-import { createTauriStorage } from "@/stores/tauriPluginAdapterStore";
+import { createPlatformStorage } from "@/stores/platformStateStorage";
 import { toast } from "sonner";
 import { usePluginDialogStore } from "./stores/pluginDialogStore";
 
@@ -140,16 +140,18 @@ interface PluginEventListener {
 // ---------------------------------------------------------------------------
 
 /**
- * Implementación del PluginStorageAPI sobre createTauriStorage.
- * El store se llama "plugin-{pluginId}.json" → namespacing automático.
- * Serializa a JSON (Tauri Store maneja la persistencia).
+ * Implementación del PluginStorageAPI sobre el puerto de almacenamiento.
+ *
+ * El store se llama "plugin-{pluginId}.json" → namespacing automático por
+ * plugin. Quién persiste realmente lo decide el target: un archivo JSON en
+ * disco en escritorio, `localStorage` en web.
  */
 class PluginStorageImpl implements PluginStorageAPI {
-  private readonly storage: ReturnType<typeof createTauriStorage>;
+  private readonly storage: ReturnType<typeof createPlatformStorage>;
 
   constructor(pluginId: string) {
-    // Nombre de archivo único por plugin → namespacing automático
-    this.storage = createTauriStorage(`plugin-${pluginId}.json`);
+    // Nombre de store único por plugin → namespacing automático
+    this.storage = createPlatformStorage(`plugin-${pluginId}.json`);
   }
 
   async get<T>(key: string): Promise<T | undefined> {
@@ -176,8 +178,10 @@ class PluginStorageImpl implements PluginStorageAPI {
   }
 
   async clear(): Promise<void> {
-    // createTauriStorage no expone clear() directo — usamos la Store subyacente.
-    // TODO Fase 3: si se necesita un clear() eficiente, exponer clearStore() en createTauriStorage.
+    // El StateStorage de zustand no expone clear(). El puerto de clave/valor
+    // SÍ lo tiene (`KeyValueStore.clear()`), así que la vía limpia es usar
+    // getKeyValueStore().open(...) directamente en vez de pasar por el puente
+    // de zustand. Queda pendiente.
     // Por ahora, no-op seguro: los datos quedan hasta desinstalación manual.
     logger.warn(
       "[PluginManager] PluginStorageImpl.clear() no está implementado en Fase 2. " +
