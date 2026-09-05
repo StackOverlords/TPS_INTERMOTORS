@@ -16,7 +16,11 @@ export { usePluginSettingsActions } from "./hooks/usePluginSettingsActions";
 export { loadExternalPlugins } from "./loadExternalPlugins";
 export type { LoadResult } from "./loadExternalPlugins";
 export type { PluginSource, ExternalPluginRef } from "./sources/PluginSource";
-export { TauriPluginSource } from "./sources/TauriPluginSource";
+export {
+  getPluginSource,
+  HttpPluginSource,
+  TauriPluginSource,
+} from "./sources";
 export {
   setBootstrapLoadResults,
   getBootstrapLoadResults,
