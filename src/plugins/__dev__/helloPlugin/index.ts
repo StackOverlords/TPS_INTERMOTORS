@@ -59,7 +59,9 @@ export function getDevHelloApi(): PluginAPI | null {
  * Crea el componente de la vista con la api inyectada.
  * Retorna un ComponentType sin props (como requiere RouteConfig.component).
  */
-function createHelloViewComponent(api: PluginAPI): () => React.ReactElement {
+// React.FC en vez de `() => ReactElement`: el tipo desnudo no declara
+// `displayName`, que se asigna mas abajo para React DevTools.
+function createHelloViewComponent(api: PluginAPI): React.FC {
   return function HelloViewRoute() {
     return createElement(HelloView, { api });
   };

@@ -93,7 +93,14 @@ function enqueueRequest<T>(
   buildRequest: (resolve: (value: T) => void) => DialogRequest
 ): Promise<T> {
   return new Promise<T>((resolve) => {
-    const request = buildRequest(resolve as (value: boolean | PromptResult) => void);
+    // `resolve` es `(value: T) => void` y el request lo espera con el union
+    // concreto. TypeScript rechaza el cast directo porque los callbacks son
+    // contravariantes en su parametro; se pasa por `unknown`, que es lo que
+    // el cast ya asumia. Cada llamador instancia T con el tipo que
+    // corresponde a su tipo de dialogo, asi que en la practica coincide.
+    const request = buildRequest(
+      resolve as unknown as (value: T) => void,
+    );
     const { activeRequest } = get();
 
     if (activeRequest === null) {
