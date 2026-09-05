@@ -16,7 +16,7 @@
  * - getTheme: CABLEADO → lee useThemeStore.getState().resolvedTheme.
  * - storage: CABLEADO → crea TauriStorageAdapter scoped por pluginId.
  * - registerKeybinding: STUB seguro → TODO Fase 3 (cablear a keybindingsService).
- * - hasCapability: CABLEADO → verifica contra HOST_CAPABILITIES.
+ * - hasCapability: CABLEADO → verifica contra las capabilities del target activo.
  *
  * PROHIBIDO en esta fase:
  * - Modificar Navigation.tsx, Protected.Route.ts, appSidebar.tsx.
@@ -43,6 +43,10 @@ import type {
   PluginStorageAPI,
 } from "@tps/plugin-sdk";
 import { RouteRegistry } from "./core/route-registry";
+import {
+  getCapabilitiesForTarget,
+  getCurrentTarget,
+} from "./core/capabilities";
 import { logger } from "@/utils/logger";
 import authSDK from "@/services/sdk-simple-auth";
 import { useThemeStore } from "@/stores/themeStore";
@@ -57,23 +61,22 @@ import { usePluginDialogStore } from "./stores/pluginDialogStore";
 // ---------------------------------------------------------------------------
 
 /**
- * Conjunto de capabilities que TPS soporta actualmente.
- * El kernel las valida contra el manifest.requires del plugin.
+ * Capabilities que ofrece el host EN ESTE TARGET.
  *
- * Fase 2: views, navigation, settings, notifications, commands, events, storage.
- * Fase 3 agregará: tabs, keybindings (cuando esté cableado).
+ * Se deriva de `core/capabilities.ts`, que es la única fuente de verdad. Antes
+ * había acá un set propio y CIEGO AL TARGET, heredado de la Fase 2: declaraba
+ * las mismas capabilities corriera donde corriera y no incluía `printing`.
+ * Resultado: un plugin que pedía `printing` —perfectamente soportado en los dos
+ * targets— se registraba pero el manager se negaba a activarlo.
+ *
+ * Tener dos listas era el problema de fondo, no el ítem que faltaba: cualquier
+ * capability nueva había que acordarse de agregarla en los dos lados.
+ *
+ * Se calcula una vez: el target no cambia durante la vida de la página.
  */
-const HOST_CAPABILITIES = new Set<Capability>([
-  "views",
-  "navigation",
-  "settings",
-  "notifications",
-  "commands",
-  "events",
-  "storage",
-  "tabs",          // Fase 3: cableado a tabStore (getActiveTab/onTabChange implementados)
-  "keybindings",   // Fase 3 Batch 5: registry aislado de plugins + PluginKeybindingHost listener
-]);
+const HOST_CAPABILITIES = new Set<Capability>(
+  getCapabilitiesForTarget(getCurrentTarget()),
+);
 
 // ---------------------------------------------------------------------------
 // Tipos internos del manager
@@ -128,6 +131,21 @@ interface ManagerEvent {
   pluginId: string;
   manifest: PluginManifest;
 }
+
+/**
+ * Resultado de `activate()`.
+ *
+ * Existe para que el caller pueda DECIR qué pasó. Con `Promise<void>`, un
+ * plugin que no arrancaba por falta de capabilities y uno cuyo `activate()`
+ * lanzaba se veían exactamente igual desde afuera —`isActive === false`— y el
+ * error que le llegaba al usuario enumeraba las dos causas posibles sin
+ * comprometerse con ninguna.
+ */
+export type ActivationResult =
+  | { ok: true }
+  | { ok: false; reason: "not-registered" }
+  | { ok: false; reason: "missing-capabilities"; missing: Capability[] }
+  | { ok: false; reason: "activate-threw"; error: unknown };
 
 /** Listener registrado en el bus pub/sub entre plugins. */
 interface PluginEventListener {
@@ -422,19 +440,24 @@ export class PluginManagerClass {
    * 3. Llamar a plugin.activate(api).
    * 4. Emitir evento de activación al bus del manager.
    *
+   * Devuelve POR QUÉ falló, en vez de solo dejar `isActive` en false. El caller
+   * no puede deducirlo mirando el estado: "capability faltante" y "activate()
+   * lanzó" se ven idénticos desde afuera, y el mensaje al usuario terminaba
+   * enumerando las dos causas sin saber cuál fue.
+   *
    * @param pluginId - ID del plugin a activar.
    */
-  async activate(pluginId: string): Promise<void> {
+  async activate(pluginId: string): Promise<ActivationResult> {
     const entry = this.plugins.get(pluginId);
 
     if (!entry) {
       logger.warn(`[PluginManager] Plugin "${pluginId}" no está registrado.`);
-      return;
+      return { ok: false, reason: "not-registered" };
     }
 
     if (entry.isActive) {
       logger.info(`[PluginManager] Plugin "${pluginId}" ya está activo. No-op.`);
-      return;
+      return { ok: true };
     }
 
     // Verificar capabilities requeridas
@@ -444,7 +467,11 @@ export class PluginManagerClass {
         `[PluginManager] Plugin "${pluginId}" requiere capabilities que el host no soporta: ` +
           `[${missingCapabilities.join(", ")}]. Plugin NO activado.`
       );
-      return;
+      return {
+        ok: false,
+        reason: "missing-capabilities",
+        missing: missingCapabilities,
+      };
     }
 
     // Crear PluginAPI scoped a este plugin
@@ -468,8 +495,12 @@ export class PluginManagerClass {
       logger.info(
         `[PluginManager] Plugin "${pluginId}" (${entry.plugin.manifest.name}) activado correctamente.`
       );
+
+      return { ok: true };
     } catch (error) {
       logger.error(`[PluginManager] Error al activar plugin "${pluginId}":`, error);
+
+      return { ok: false, reason: "activate-threw", error };
     }
   }
 

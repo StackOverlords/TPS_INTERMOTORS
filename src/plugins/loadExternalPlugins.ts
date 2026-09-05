@@ -24,7 +24,40 @@ import { checkPluginCompatibility } from "./core/capabilities";
 import type { Plugin } from "@tps/plugin-sdk";
 import { logger } from "@/utils/logger";
 import type { PluginSource } from "./sources/PluginSource";
-import type { PluginManagerClass } from "./plugin-manager";
+import type { ActivationResult, PluginManagerClass } from "./plugin-manager";
+
+/**
+ * Traduce el fallo de activación a algo accionable.
+ *
+ * Antes acá se enumeraban TODAS las causas posibles porque el manager no decía
+ * cuál había sido. Un mensaje que lista dos hipótesis no ayuda a nadie: manda a
+ * revisar las capabilities cuando en realidad reventó el `activate()` del
+ * plugin, o al revés.
+ */
+function describeActivationFailure(
+  pluginId: string,
+  result: Extract<ActivationResult, { ok: false }>,
+): string {
+  switch (result.reason) {
+    case "not-registered":
+      return `El plugin "${pluginId}" no estaba registrado al intentar activarlo.`;
+
+    case "missing-capabilities":
+      return (
+        `El plugin "${pluginId}" pide capabilities que este target no ofrece: ` +
+        `[${result.missing.join(", ")}]. Se registró pero no se activó.`
+      );
+
+    case "activate-threw": {
+      const detalle =
+        result.error instanceof Error
+          ? result.error.message
+          : String(result.error);
+
+      return `El activate() del plugin "${pluginId}" lanzó un error: ${detalle}`;
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Tipos públicos
@@ -274,19 +307,14 @@ async function loadSinglePlugin(
       return { id: pluginId, name, status: LOAD_STATUS.SKIPPED };
     }
 
-    await manager.activate(pluginId);
+    const activation = await manager.activate(pluginId);
 
-    // Verificar activación exitosa (capability negotiation puede rechazar)
-    if (!manager.isActive(pluginId)) {
+    if (!activation.ok) {
       return {
         id: pluginId,
         name,
         status: LOAD_STATUS.FAILED,
-        error:
-          `El plugin "${pluginId}" fue registrado pero no pudo activarse. ` +
-          `Causas posibles: capabilities requeridas no disponibles ` +
-          `[${plugin.manifest.requires?.join(", ") ?? "ninguna"}], ` +
-          `o error en plugin.activate(api).`,
+        error: describeActivationFailure(pluginId, activation),
       };
     }
 
