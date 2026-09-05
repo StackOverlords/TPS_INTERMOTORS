@@ -36,6 +36,7 @@ import {
   TooltipTrigger,
 } from "@/components/atoms/tooltip";
 import { cn } from "@/lib/utils";
+import { logger } from "@/utils/logger";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -132,7 +133,14 @@ const PluginSettings = () => {
       // la instalación en web era imposible.
       const bundle = await source.pickBundle();
 
-      if (!bundle) return;
+      if (!bundle) {
+        // Cancelar no merece un toast, pero SÍ dejar rastro: cuando el portal
+        // de archivos de GTK devolvía null habiendo selección, esta rama se
+        // tomaba en silencio y no había forma de distinguirla de un usuario
+        // que efectivamente cerró el diálogo.
+        logger.info("[PluginSettings] Instalación cancelada: no se eligió ningún archivo.");
+        return;
+      }
 
       setInstallingId(bundle.label);
       const newRef = await source.install(bundle);

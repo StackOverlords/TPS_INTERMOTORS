@@ -173,4 +173,61 @@ describe('HttpPluginSource.pickBundle', () => {
 
     await expect(pendiente).resolves.toBeNull();
   });
+
+  it('se queda con el archivo aunque llegue un "cancel" con selección', async () => {
+    // El caso real que rompía la instalación: con el portal de archivos de GTK
+    // el evento `cancel` llega TAMBIÉN habiendo selección. Al resolver null sin
+    // mirar, el usuario elegía el zip y no pasaba absolutamente nada: ni error,
+    // ni request, ni pista.
+    let input!: HTMLInputElement;
+    vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(
+      function (this: HTMLInputElement) {
+        input = this;
+      },
+    );
+
+    const pendiente = source.pickBundle();
+
+    const dt = new DataTransfer();
+    dt.items.add(new File(['PK'], 'facturacion-1.0.0.zip'));
+    input.files = dt.files;
+
+    // Solo `cancel`, sin `change`: lo que hace el portal.
+    input.dispatchEvent(new Event('cancel'));
+
+    await expect(pendiente).resolves.toMatchObject({
+      kind: 'file',
+      label: 'facturacion-1.0.0.zip',
+    });
+  });
+
+  it('el input está en el documento cuando se abre el selector', async () => {
+    // Un input desprendido abre el diálogo igual, pero no todos los entornos
+    // despachan `change` sobre un elemento fuera del árbol.
+    let estabaEnElDocumento = false;
+    vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(
+      function (this: HTMLInputElement) {
+        estabaEnElDocumento = document.body.contains(this);
+      },
+    );
+
+    void source.pickBundle();
+
+    expect(estabaEnElDocumento).toBe(true);
+  });
+
+  it('saca el input del documento al terminar', async () => {
+    let input!: HTMLInputElement;
+    vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(
+      function (this: HTMLInputElement) {
+        input = this;
+      },
+    );
+
+    const pendiente = source.pickBundle();
+    input.dispatchEvent(new Event('cancel'));
+    await pendiente;
+
+    expect(document.body.contains(input)).toBe(false);
+  });
 });

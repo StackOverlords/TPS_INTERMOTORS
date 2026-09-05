@@ -125,29 +125,54 @@ export class HttpPluginSource implements PluginSource {
   /**
    * Selector de archivo del navegador.
    *
-   * Un `<input type="file">` fuera del DOM alcanza: nunca se muestra, solo se
-   * usa por su `click()`, que abre el selector nativo del sistema.
+   * ⚠️ El `click()` va antes de cualquier `await`. Igual que `window.open()`,
+   * el navegador solo lo permite mientras dura la tarea del gesto del usuario,
+   * y si se pasó lo descarta EN SILENCIO: no lanza, simplemente no abre nada.
    *
-   * ⚠️ El `click()` va en la primera sentencia, ANTES de cualquier `await`.
-   * Igual que `window.open()`, el navegador solo lo permite mientras dura la
-   * tarea del gesto del usuario, y si se pasó lo descarta EN SILENCIO: no
-   * lanza, simplemente no abre nada.
+   * ## Dos cosas que parecen paranoia y no lo son
+   *
+   * **El input va DENTRO del documento.** Un input desprendido abre el diálogo
+   * igual, pero no todos los entornos despachan `change` sobre un elemento que
+   * no está en el árbol. Se agrega oculto y se saca al terminar.
+   *
+   * **`cancel` NO significa "el usuario canceló".** Con el portal de archivos
+   * de GTK —el diálogo de escritorio en Linux, que no es el selector propio de
+   * Chromium— el evento también llega habiendo selección. Resolver `null` al
+   * verlo dejaba la instalación muerta sin una sola señal: el usuario elegía el
+   * zip, no pasaba nada, y no había error ni request. Por eso los dos handlers
+   * deciden mirando `input.files`, no el nombre del evento.
    */
   pickBundle(): Promise<PluginBundle | null> {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip,application/zip';
+    input.style.display = 'none';
+    document.body.appendChild(input);
 
     const picked = new Promise<PluginBundle | null>((resolve) => {
-      // `cancel` avisa que el usuario cerró el selector sin elegir. Sin él la
-      // promesa quedaría colgada para siempre y con ella el handler que espera.
-      input.addEventListener('cancel', () => resolve(null), { once: true });
+      const loElegido = (): PluginBundle | null => {
+        const file = input.files?.[0];
+        return file ? { kind: 'file', file, label: file.name } : null;
+      };
+
+      const terminar = (bundle: PluginBundle | null) => {
+        input.remove();
+        // `resolve` se queda con la primera llamada: si los dos eventos
+        // llegan, gana el que haya traído un archivo.
+        resolve(bundle);
+      };
+
+      input.addEventListener('change', () => terminar(loElegido()), {
+        once: true,
+      });
 
       input.addEventListener(
-        'change',
+        'cancel',
         () => {
-          const file = input.files?.[0];
-          resolve(file ? { kind: 'file', file, label: file.name } : null);
+          // Se difiere un turno para darle lugar al `change` cuando el portal
+          // emite los dos. Si de verdad no hubo selección, `loElegido()` da
+          // null y la promesa se cierra igual: nadie queda esperando.
+          setTimeout(() => terminar(loElegido()), 0);
         },
         { once: true },
       );
