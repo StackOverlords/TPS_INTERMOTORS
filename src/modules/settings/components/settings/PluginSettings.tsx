@@ -144,7 +144,34 @@ const PluginSettings = () => {
 
       setInstallingId(bundle.label);
       const newRef = await source.install(bundle);
-      toast.success(`Plugin "${newRef.name}" instalado correctamente`);
+
+      // Instalar deja el bundle en el servidor, pero NO lo mete al manager de
+      // esta sesión. Sin este paso el plugin quedaba instalado y habilitado y
+      // aun así no aparecía en el sidebar hasta recargar, que es cuando
+      // main.tsx corre el bootstrap. La ruta de "activar" ya hacía esto; la de
+      // "instalar" se lo había salteado.
+      if (PluginManager.isRegistered(newRef.id)) {
+        // Reinstalar una versión nueva de algo YA cargado no se puede resolver
+        // en caliente: el manager lo tiene registrado y Module Federation tiene
+        // el remote cacheado por nombre, así que seguiría corriendo el código
+        // viejo. Es mejor decirlo que fingir que se actualizó.
+        toast.success(`Plugin "${newRef.name}" actualizado en el servidor`, {
+          description:
+            "Recargá la app para que corra la versión nueva: la anterior sigue en memoria.",
+        });
+      } else {
+        const results = await loadExternalPlugins(source, PluginManager);
+        const result = results.find((r) => r.id === newRef.id);
+
+        if (result?.status === "failed") {
+          toast.error(`Plugin "${newRef.name}" instalado, pero no se pudo cargar`, {
+            description: result.error,
+          });
+        } else {
+          toast.success(`Plugin "${newRef.name}" instalado y activado`);
+        }
+      }
+
       await loadPlugins();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
