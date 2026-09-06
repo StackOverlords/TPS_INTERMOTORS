@@ -150,11 +150,15 @@ const PluginSettings = () => {
       // aun así no aparecía en el sidebar hasta recargar, que es cuando
       // main.tsx corre el bootstrap. La ruta de "activar" ya hacía esto; la de
       // "instalar" se lo había salteado.
-      if (PluginManager.isRegistered(newRef.id)) {
-        // Reinstalar una versión nueva de algo YA cargado no se puede resolver
-        // en caliente: el manager lo tiene registrado y Module Federation tiene
-        // el remote cacheado por nombre, así que seguiría corriendo el código
-        // viejo. Es mejor decirlo que fingir que se actualizó.
+      // La condición es isActive, NO isRegistered. Un plugin desinstalado en
+      // esta misma sesión seguía figurando como registrado —el manager no lo
+      // sacaba del mapa—, así que reinstalarlo caía en la rama de "ya cargado"
+      // y nunca se activaba: instalado, habilitado e Inactivo a la vez.
+      if (PluginManager.isActive(newRef.id)) {
+        // Reinstalar una versión nueva de algo que YA ESTÁ CORRIENDO no se
+        // puede resolver en caliente: Module Federation tiene el remote
+        // cacheado por nombre, así que seguiría ejecutándose el código viejo.
+        // Es mejor decirlo que fingir que se actualizó.
         toast.success(`Plugin "${newRef.name}" actualizado en el servidor`, {
           description:
             "Recargá la app para que corra la versión nueva: la anterior sigue en memoria.",
@@ -257,10 +261,10 @@ const PluginSettings = () => {
     setIsUninstalling(true);
 
     try {
-      // Desactivar primero si está activo
-      if (PluginManager.isActive(id)) {
-        await PluginManager.deactivate(id);
-      }
+      // Desregistrar, no solo desactivar: desactivar deja la entrada en el
+      // manager, y esa entrada fantasma —de un plugin cuyos archivos ya no
+      // existen— rompía la reinstalación posterior en la misma sesión.
+      await PluginManager.unregister(id);
       await source.uninstall(id);
       toast.success(`Plugin "${name}" desinstalado`);
       await loadPlugins();

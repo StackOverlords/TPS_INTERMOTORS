@@ -731,6 +731,29 @@ export class PluginManagerClass {
   }
 
   /**
+   * Saca el plugin del manager por completo.
+   *
+   * `deactivate()` limpia todo lo que el plugin registró pero DEJA la entrada
+   * en el mapa, y está bien: desactivar es reversible, después se reactiva.
+   * Desinstalar no lo es, y sin esto quedaba un fantasma.
+   *
+   * El fantasma no era teórico: `isRegistered()` seguía devolviendo true para
+   * un plugin cuyos archivos ya no existían en el servidor, y la pantalla de
+   * ajustes lo usaba para decidir si cargar un plugin recién instalado. Al
+   * reinstalar algo previamente desinstalado en la misma sesión, se lo trataba
+   * como "ya cargado" y nunca se activaba: aparecía instalado, habilitado e
+   * Inactivo al mismo tiempo.
+   */
+  async unregister(pluginId: string): Promise<void> {
+    if (!this.plugins.has(pluginId)) return;
+
+    await this.deactivate(pluginId);
+    this.plugins.delete(pluginId);
+
+    logger.info(`[PluginManager] Plugin "${pluginId}" desregistrado.`);
+  }
+
+  /**
    * Activa todos los plugins registrados en orden de registro.
    * Útil para inicialización al startup de la app.
    */

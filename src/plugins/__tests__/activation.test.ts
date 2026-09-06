@@ -101,6 +101,68 @@ describe('activación y capabilities', () => {
     expect(resultado).toEqual({ ok: false, reason: 'not-registered' });
   });
 
+  it('unregister lo saca del manager, no solo lo desactiva', async () => {
+    // `deactivate` deja la entrada en el mapa a propósito: desactivar es
+    // reversible. Desinstalar no lo es, y la entrada fantasma que quedaba
+    // rompía la reinstalación posterior dentro de la misma sesión.
+    const p = plugin([CAPABILITY.VIEWS]);
+
+    PluginManager.register(p);
+    await PluginManager.activate(p.manifest.id);
+
+    await PluginManager.deactivate(p.manifest.id);
+    expect(PluginManager.isRegistered(p.manifest.id)).toBe(true);
+
+    await PluginManager.unregister(p.manifest.id);
+    expect(PluginManager.isRegistered(p.manifest.id)).toBe(false);
+  });
+
+  it('unregister desactiva antes de sacar, para que el plugin limpie', async () => {
+    let limpio = false;
+
+    const p = definePlugin({
+      manifest: {
+        id: `com.rhleone.test-${Math.random().toString(36).slice(2, 10)}`,
+        name: 'test',
+        version: '1.0.0',
+        sdkVersion: '^0.1.0',
+        requires: [CAPABILITY.VIEWS],
+      },
+      activate: () => {},
+      deactivate: () => {
+        limpio = true;
+      },
+    });
+
+    PluginManager.register(p);
+    await PluginManager.activate(p.manifest.id);
+    await PluginManager.unregister(p.manifest.id);
+
+    expect(limpio).toBe(true);
+    expect(PluginManager.isActive(p.manifest.id)).toBe(false);
+  });
+
+  it('unregister sobre algo que no está no explota', async () => {
+    await expect(
+      PluginManager.unregister('com.rhleone.inexistente'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('un plugin desregistrado se puede volver a registrar y activar', async () => {
+    // El caso exacto que fallaba: desinstalar y reinstalar en la misma sesión.
+    const p = plugin([CAPABILITY.VIEWS]);
+
+    PluginManager.register(p);
+    await PluginManager.activate(p.manifest.id);
+    await PluginManager.unregister(p.manifest.id);
+
+    PluginManager.register(p);
+    const resultado = await PluginManager.activate(p.manifest.id);
+
+    expect(resultado).toEqual({ ok: true });
+    expect(PluginManager.isActive(p.manifest.id)).toBe(true);
+  });
+
   it('hasCapability coincide con lo que el target declara', async () => {
     // Si `hasCapability` y el gate de activación miraran listas distintas, un
     // plugin podría activarse y después ver `false` en la capability que pidió.
