@@ -16,6 +16,7 @@ import {
 } from "./windows/WindowRegistry";
 import { useThemeStore } from "./stores/themeStore.ts";
 import { useAppearanceStore } from "./stores/appearanceStore.ts";
+import { applyCachedColorTheme } from "./themes/applyColorTheme.ts";
 
 // Detect if this entry point is running in a secondary window.
 // Todas las ventanas secundarias se abren con ?windowId=... en la URL
@@ -27,6 +28,9 @@ const isSecondaryWindow = platformWindows.isSecondaryWindow();
 // so it's already correctly configured for secondary windows (validateOnStartup: false).
 // We re-export it here for the AuthSDKContext.Provider — no need to create a second instance.
 export const windowAuthSDK = isSecondaryWindow ? authSDK : undefined;
+
+// Tema de color: el mismo que la ventana principal, y en vivo si cambia allá.
+applyCachedColorTheme();
 
 try {
   useThemeStore.getState().initializeTheme();

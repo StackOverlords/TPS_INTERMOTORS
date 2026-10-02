@@ -27,6 +27,7 @@ import { Badge } from "@/components/atoms/badge";
 import { Separator } from "@/components/atoms/separator";
 import { Slider } from "@/components/atoms/slider";
 import ThemeCard from "../ThemeCard";
+import ColorThemePicker from "../ColorThemePicker";
 // import { useRef } from "react"; // Comentado - para funcionalidades futuras
 import { useTheme } from "@/hooks/useTheme";
 import { useAppearance } from "@/hooks/useAppearance";
@@ -280,6 +281,9 @@ const AppearanceSettings = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tema de color (paletas con contraste garantizado + importar de VS Code) */}
+      <ColorThemePicker />
 
       {/* Color Scheme */}
       {/* <Card>

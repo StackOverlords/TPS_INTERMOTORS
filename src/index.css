@@ -86,6 +86,13 @@
 
   }
 
+  /* El fondo del documento sigue al tema: con zoom o en los bordes de la
+     ventana se veía el blanco/negro por defecto del navegador. */
+  html,
+  body {
+    background-color: hsl(var(--background));
+  }
+
   /* Aplicar fuente activa a todo el documento */
   * {
     font-family: var(--font-family-active);
