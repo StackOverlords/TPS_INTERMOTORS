@@ -1,5 +1,7 @@
 import { Button } from "@/components/atoms/button";
-import MarkdownPreview from "@uiw/react-markdown-preview";
+// Variante sin resaltado de sintaxis: la normal incluye refractor con todos
+// los lenguajes de Prism (~580 KB) para unas notas de versión.
+import MarkdownPreview from "@uiw/react-markdown-preview/nohighlight";
 import {
   AlertCircle,
   Calendar,

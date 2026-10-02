@@ -30,7 +30,9 @@ export class ApiService {
       `API Response: ${method.toUpperCase()} ${url}`,
       {
         status: response.status,
-        dataSize: JSON.stringify(response.data).length,
+        // Content-Length del servidor: serializar la respuesta completa solo
+        // para medirla costaba un JSON.stringify extra por petición.
+        dataSize: response.headers?.["content-length"] ?? "n/d",
       },
       "API",
     );
