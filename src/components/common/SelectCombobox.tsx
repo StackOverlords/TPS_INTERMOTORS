@@ -8,9 +8,27 @@ import {
   Transition,
 } from "@headlessui/react";
 import { Check, ChevronDown, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDebounce } from "use-debounce";
+
+/**
+ * Mantiene la posición del desplegable mientras está abierto. Solo se monta
+ * con el desplegable abierto: calcula la posición antes de pintarlo y escucha
+ * scroll/resize únicamente en ese lapso.
+ */
+function DropdownPositioner({ update }: { update: () => void }) {
+  useLayoutEffect(() => {
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true); // true: scroll de cualquier contenedor
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [update]);
+  return null;
+}
 
 interface Option {
   id: string | number;
@@ -77,6 +95,7 @@ export function ComboboxSelect({
   );
   const enterPressCountRef = useRef(0); // Contar cuántas veces se presiona Enter en secuencia
   const lastOpenStateRef = useRef(false); // Track del último estado de apertura
+  const openRef = useRef(false); // ¿El desplegable está abierto? (lo setea el render de Combobox)
 
   const baseOptions = useMemo(() => {
     // Ordenar las opciones alfabéticamente por optionTag
@@ -129,8 +148,12 @@ export function ComboboxSelect({
     };
   }, []);
 
+  // Solo con el desplegable abierto. Antes cada combobox (hay decenas en las
+  // pestañas montadas) escuchaba TODO scroll de la app y, aun cerrado, medía el
+  // input (getBoundingClientRect fuerza un reflow) y se re-renderizaba: cambiar
+  // de pestaña o desplazar una tabla recalculaba todos.
   const calculatePosition = () => {
-    if (!comboboxInputRef.current) return;
+    if (!openRef.current || !comboboxInputRef.current) return;
 
     const inputRect = comboboxInputRef.current.getBoundingClientRect();
     const viewport = {
@@ -162,30 +185,27 @@ export function ComboboxSelect({
       ? inputRect.bottom + 4 // 4px de separación debajo
       : inputRect.top - maxHeight - 4; // 4px de separación arriba
 
-    setDropdownPosition({
-      showBelow,
-      left,
-      top,
-      width: inputRect.width,
-      maxHeight,
-    });
+    const next = { showBelow, left, top, width: inputRect.width, maxHeight };
+    // Sin cambios no hay re-render.
+    setDropdownPosition((prev) =>
+      prev.showBelow === next.showBelow &&
+      prev.left === next.left &&
+      prev.top === next.top &&
+      prev.width === next.width &&
+      prev.maxHeight === next.maxHeight
+        ? prev
+        : next
+    );
   };
 
+  // Identidad estable para DropdownPositioner, con la versión más reciente.
+  const calculatePositionRef = useRef(calculatePosition);
+  calculatePositionRef.current = calculatePosition;
+  const updatePosition = useCallback(() => calculatePositionRef.current(), []);
+
+  // La altura estimada depende de cuántas opciones hay (búsqueda, carga).
   useEffect(() => {
     calculatePosition();
-  }, [filteredOptions.length]);
-
-  useEffect(() => {
-    const handleResize = () => calculatePosition();
-    const handleScroll = () => calculatePosition();
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll, true); // true para capturar scroll en cualquier contenedor
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll, true);
-    };
   }, [filteredOptions.length]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,6 +284,8 @@ export function ComboboxSelect({
       disabled={disabled}
     >
       {({ open }) => {
+        openRef.current = open;
+
         // Detectar cambios en el estado de apertura
         if (lastOpenStateRef.current !== open) {
           lastOpenStateRef.current = open;
@@ -393,6 +415,8 @@ export function ComboboxSelect({
             {portalContainer &&
               open &&
               createPortal(
+                <>
+                <DropdownPositioner update={updatePosition} />
                 <Transition
                   show={open}
                   as="div"
@@ -469,7 +493,8 @@ export function ComboboxSelect({
                       ))
                     )}
                   </ComboboxOptions>
-                </Transition>,
+                </Transition>
+                </>,
                 portalContainer
               )}
           </div>
