@@ -1,7 +1,3 @@
-import CreateSaleScreen from "@/modules/sales/screens/createSaleScreen";
-import SaleDetailScreen from "@/modules/sales/screens/saleDetailScreen";
-import SaleEditScreen from "@/modules/sales/screens/saleEditScreen";
-import SalesListScreen from "@/modules/sales/screens/salesListScreen";
 import {
   BarChart3,
   DollarSign,
@@ -12,9 +8,15 @@ import {
 } from "lucide-react";
 import type RouteType from "./RouteType";
 import { salesListViewConfig } from "@/modules/sales/config/sale.config";
-import MostSoldScreen from "@/modules/reports/screens/sales/mostSoldScreen";
-import TopRevenueScreen from "@/modules/reports/screens/sales/TopRevenueScreen";
-import GeneralReportScreen from "@/modules/reports/screens/sales/GeneralSaleReportScreen";
+import { lazyScreen } from "./lazyScreen";
+
+const CreateSaleScreen = lazyScreen(() => import("@/modules/sales/screens/createSaleScreen"));
+const SaleDetailScreen = lazyScreen(() => import("@/modules/sales/screens/saleDetailScreen"));
+const SaleEditScreen = lazyScreen(() => import("@/modules/sales/screens/saleEditScreen"));
+const SalesListScreen = lazyScreen(() => import("@/modules/sales/screens/salesListScreen"));
+const MostSoldScreen = lazyScreen(() => import("@/modules/reports/screens/sales/mostSoldScreen"));
+const TopRevenueScreen = lazyScreen(() => import("@/modules/reports/screens/sales/TopRevenueScreen"));
+const GeneralReportScreen = lazyScreen(() => import("@/modules/reports/screens/sales/GeneralSaleReportScreen"));
 
 const salesProtectedRoutes: RouteType[] = [
   {

@@ -1,13 +1,3 @@
-import QuotationCreateScreen from "@/modules/quotations/screens/quotationCreateScreen";
-import QuotationDetailScreen from "@/modules/quotations/screens/quotationDetailScreen";
-import QuotationEditScreen from "@/modules/quotations/screens/quotationEditScreen";
-import QuotationListScreen from "@/modules/quotations/screens/quotationListScreen";
-import QuotationReportGeneralScreen from "@/modules/quotations/screens/reports/QuotationReportGeneralScreen";
-import QuotationReportConversionScreen from "@/modules/quotations/screens/reports/QuotationReportConversionScreen";
-import QuotationReportTopClientesScreen from "@/modules/quotations/screens/reports/QuotationReportTopClientesScreen";
-import QuotationReportProductosScreen from "@/modules/quotations/screens/reports/QuotationReportProductosScreen";
-import QuotationReportAbiertasScreen from "@/modules/quotations/screens/reports/QuotationReportAbiertasScreen";
-import QuotationReportDesempenoScreen from "@/modules/quotations/screens/reports/QuotationReportDesempenoScreen";
 import {
   BarChart3,
   Clock,
@@ -22,6 +12,18 @@ import {
 } from "lucide-react";
 import type RouteType from "./RouteType";
 import { quotationsListViewConfig } from "@/modules/quotations/config/quotation.config";
+import { lazyScreen } from "./lazyScreen";
+
+const QuotationCreateScreen = lazyScreen(() => import("@/modules/quotations/screens/quotationCreateScreen"));
+const QuotationDetailScreen = lazyScreen(() => import("@/modules/quotations/screens/quotationDetailScreen"));
+const QuotationEditScreen = lazyScreen(() => import("@/modules/quotations/screens/quotationEditScreen"));
+const QuotationListScreen = lazyScreen(() => import("@/modules/quotations/screens/quotationListScreen"));
+const QuotationReportGeneralScreen = lazyScreen(() => import("@/modules/quotations/screens/reports/QuotationReportGeneralScreen"));
+const QuotationReportConversionScreen = lazyScreen(() => import("@/modules/quotations/screens/reports/QuotationReportConversionScreen"));
+const QuotationReportTopClientesScreen = lazyScreen(() => import("@/modules/quotations/screens/reports/QuotationReportTopClientesScreen"));
+const QuotationReportProductosScreen = lazyScreen(() => import("@/modules/quotations/screens/reports/QuotationReportProductosScreen"));
+const QuotationReportAbiertasScreen = lazyScreen(() => import("@/modules/quotations/screens/reports/QuotationReportAbiertasScreen"));
+const QuotationReportDesempenoScreen = lazyScreen(() => import("@/modules/quotations/screens/reports/QuotationReportDesempenoScreen"));
 
 const quotationsProtectedRoutes: RouteType[] = [
   {

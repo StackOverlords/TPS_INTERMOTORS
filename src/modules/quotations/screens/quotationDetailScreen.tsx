@@ -36,7 +36,7 @@ import { useQuotationGetById } from "../hooks/useQuotationGetById";
 import { useQuotationPDF } from "../hooks/useQuotationPDF";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRenderer } from "@/hooks/useViewRenderer";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 import CartModeConversionModal from "@/modules/shoppingCart/components/CartModeConversionModal";
 import { useQuotationImport } from "@/modules/shoppingCart/hooks/useQuotationImport";
 import authSDK from "@/services/sdk-simple-auth";
@@ -57,7 +57,7 @@ const QuotationDetailScreen = () => {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [showClearCartConfirm, setShowClearCartConfirm] =
     useState<boolean>(false);
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
 
   const {
     data: quotationData,

@@ -12,8 +12,10 @@ import salesProtectedRoutes from "./Sales.Route";
 import settingsProtectedRoutes from "./Settings.Route";
 import transfersProtectedRoutes from "./Transfers.Route";
 import usersProtectedRoutes from "./Users.Route";
-import Dashboard from "@/modules/dashboard/screens/dashboard";
-import ChatScreen from "@/modules/messaging/screens/ChatScreen";
+import { lazyScreen } from "./lazyScreen";
+
+const Dashboard = lazyScreen(() => import("@/modules/dashboard/screens/dashboard"));
+const ChatScreen = lazyScreen(() => import("@/modules/messaging/screens/ChatScreen"));
 
 const protectedRoutes: RouteType[] = [
   {

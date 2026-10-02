@@ -1,10 +1,12 @@
 import { CirclePlus, Package, RotateCcw, Table2 } from "lucide-react";
 import type RouteType from "./RouteType";
-import ReturnListScreen from "@/modules/returns/screens/returnListScreen";
-import ReturnDetailScreen from "@/modules/returns/screens/returnDetailScreen";
-import ReturnCreateScreen from "@/modules/returns/screens/returnCreateScreen";
-import ReturnEditScreen from "@/modules/returns/screens/returnEditScreen";
 import { returnsListViewConfig } from "@/modules/returns/config/return.config";
+import { lazyScreen } from "./lazyScreen";
+
+const ReturnListScreen = lazyScreen(() => import("@/modules/returns/screens/returnListScreen"));
+const ReturnDetailScreen = lazyScreen(() => import("@/modules/returns/screens/returnDetailScreen"));
+const ReturnCreateScreen = lazyScreen(() => import("@/modules/returns/screens/returnCreateScreen"));
+const ReturnEditScreen = lazyScreen(() => import("@/modules/returns/screens/returnEditScreen"));
 
 const returnsProtectedRoutes: RouteType[] = [
     {

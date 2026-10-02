@@ -1,11 +1,13 @@
 import { transferListConfig } from "@/modules/transfers/config/transfer.config";
-import CreateTransfer from "@/modules/transfers/screens/CreateTransfer";
-import EditTransfer from "@/modules/transfers/screens/EditTransfer";
-import TransferDetailScreen from "@/modules/transfers/screens/TransferDetailScreen";
-import TransferListScreen from "@/modules/transfers/screens/TransferListScreen";
-import TransferRequestCreatePage from "@/modules/transfers/screens/TransferRequestCreatePage";
 import { ArrowLeftRight, Package, Pencil, Plus, Shuffle, Table2 } from "lucide-react";
 import type RouteType from "./RouteType";
+import { lazyScreen } from "./lazyScreen";
+
+const CreateTransfer = lazyScreen(() => import("@/modules/transfers/screens/CreateTransfer"));
+const EditTransfer = lazyScreen(() => import("@/modules/transfers/screens/EditTransfer"));
+const TransferDetailScreen = lazyScreen(() => import("@/modules/transfers/screens/TransferDetailScreen"));
+const TransferListScreen = lazyScreen(() => import("@/modules/transfers/screens/TransferListScreen"));
+const TransferRequestCreatePage = lazyScreen(() => import("@/modules/transfers/screens/TransferRequestCreatePage"));
 
 // Transferencias entre sucursales
 const transfersProtectedRoutes: RouteType[] = [

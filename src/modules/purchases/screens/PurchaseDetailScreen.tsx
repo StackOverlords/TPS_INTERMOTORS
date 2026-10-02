@@ -12,14 +12,14 @@ import PurchaseOverview from "../components/purchaseDetail/PurchaseOverview";
 import PurchaseProducts from "../components/purchaseDetail/PurchaseProducts";
 import { usePurchaseById } from "../hooks/usePurchaseById";
 import { usePurchaseDelete } from "../hooks/usePurchaseDelete";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 import { formatColumnNumber } from "@/utils/formaters";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const PurchaseDetailScreen = () => {
   // const navigate = useNavigate();
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
 
   const { value: purchaseId, isValid: isValidPurchaseId } =
     useValidatedRouteParam({

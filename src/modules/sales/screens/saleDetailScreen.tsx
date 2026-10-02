@@ -35,13 +35,13 @@ import SaleProductsSection from "../components/saleDetail/SaleProducts";
 import { useDeleteSale } from "../hooks/useDeleteSale";
 import { useSaleGetById } from "../hooks/useSaleGetById";
 import { useSalePDF } from "../hooks/useSalePDF";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRenderer } from "@/hooks/useViewRenderer";
 
 const SaleDetailScreen = () => {
   // const navigate = useNavigate()
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
 
   const { value: saleCod, isValid: isValidSaleCod } = useValidatedRouteParam({
     paramName: "saleCod",

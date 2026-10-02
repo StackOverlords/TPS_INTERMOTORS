@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTabActive } from "../tabs/useTabActive";
+import { useIsInsideTab } from "@/contexts/TabActiveContext";
 import { useTabHotkeys } from "../tabs/useTabHotkeys";
 
 interface UseKeyboardNavigationProps<T, E extends HTMLElement = HTMLElement> {
@@ -144,7 +145,15 @@ export const useKeyboardNavigation = <T, E extends HTMLElement = HTMLElement>({
   const effectiveRowCount = rowCount ?? items.length;
 
   const isTabActive = useTabActive(screenPath);
-  const isHotkeysEnabled = enableHotkeys && !isDragging && isTabActive;
+  // Dentro de una pestaña, los atajos (useTabHotkeys) ya ignoran las teclas
+  // mientras la pestaña está oculta, así que `enabled` no depende de si está
+  // activa: si dependiera, cada cambio de pestaña des-registraría y volvería a
+  // registrar los atajos, y el HotkeysProvider re-renderizaría todas las
+  // pantallas y tablas montadas. Fuera de pestañas (ventanas secundarias) se
+  // conserva el criterio anterior.
+  const isInsideTab = useIsInsideTab();
+  const isHotkeysEnabled =
+    enableHotkeys && !isDragging && (isInsideTab || isTabActive);
 
   // 🆕 Refs para gestionar el comportamiento del scroll inicial
   const hasEverBeenFocused = useRef(false); // Track si alguna vez se activó la tabla

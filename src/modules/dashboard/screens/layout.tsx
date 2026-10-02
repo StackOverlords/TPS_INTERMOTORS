@@ -5,14 +5,19 @@ import { useCartUiStore } from "@/modules/shoppingCart/store/cartUiStore";
 import { MessagingProvider } from "@/modules/messaging/hooks/MessagingProvider";
 import { ChatFloatingWindow } from "@/modules/messaging/components/ChatFloatingWindow";
 import { ChatSidePanel } from "@/modules/messaging/components/ChatSidePanel";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import AppSidebar from "./appSidebar";
 import TopNav from "./top-nav";
 import { useChatUIStore } from "@/modules/messaging/stores/ChatUiStore";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
 
-export default function Layout() {
-  const { isOpen, close, toggle } = useCartUiStore();
+// memo: RouteRenderer usa useLocation y se re-renderiza en cada navegación;
+// sin memo arrastraba todo el layout (sidebar, top bar, chat y pestañas).
+// Layout no recibe props, así que solo se re-renderiza por sus propios stores.
+export default memo(function Layout() {
+  const isOpen = useCartUiStore((s) => s.isOpen);
+  const close = useCartUiStore((s) => s.close);
+  const toggle = useCartUiStore((s) => s.toggle);
   const chatViewMode = useChatUIStore((s) => s.viewMode);
   const chatIsOpen = useChatUIStore((s) => s.isOpen);
   const [mounted, setMounted] = useState(false);
@@ -61,4 +66,4 @@ export default function Layout() {
       </MessagingProvider>
     </WebSocketProvider>
   );
-}
+});

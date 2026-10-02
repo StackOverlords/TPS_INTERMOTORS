@@ -2,7 +2,7 @@ import { Minus, Square, Copy, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getWindowChrome } from "@/platform";
 import TabBar from "../tabs/TabBar";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions, useTabRouteSync } from "@/hooks/useTabNavigation";
 import { useCommands } from "@/keybindings";
 import { Button } from "../atoms/button";
 import { useShowTabBar } from "@/hooks/tabs/useShowTabBar";
@@ -93,7 +93,9 @@ const TitleBar = () => {
     }
   };
 
-  const { nextTab, previousTab, closeCurrentTab } = useTabNavigation();
+  // Única instancia de la sincronización URL → tabs (el TitleBar siempre está montado).
+  useTabRouteSync();
+  const { nextTab, previousTab, closeCurrentTab } = useTabActions();
 
   // Comandos de teclado para navegación de tabs
   useCommands(

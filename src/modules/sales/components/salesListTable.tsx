@@ -39,7 +39,7 @@ import type {
   SalesGetAllResponse,
 } from "../types/salesGetResponse";
 import { useCustomTable } from "@/hooks/useCustomTable";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 
 interface SalesListTableProps {
   data: SalesGetAllResponse;
@@ -72,7 +72,7 @@ const SalesListTable: React.FC<SalesListTableProps> = ({
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null);
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
   const handleSeeDetails = useCallback(
     (sale: any) => {
       navigateWithTab(`/dashboard/sales/${sale.id}`, {

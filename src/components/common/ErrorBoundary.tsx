@@ -16,6 +16,17 @@ interface ErrorBoundaryState {
 }
 
 /**
+ * Fallo al descargar el chunk de una pantalla (code splitting). En web pasa
+ * tras un deploy que reemplazó los archivos; reintentar no sirve, hay que
+ * recargar para traer la versión nueva.
+ */
+function isChunkLoadError(error: Error): boolean {
+  return /dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i.test(
+    error.message,
+  );
+}
+
+/**
  * Límite de errores de React reutilizable.
  *
  * Reemplaza a las clases `ErrorBoundary` que cada pantalla se definía por su
@@ -45,10 +56,37 @@ export class ErrorBoundary extends React.Component<
 
   private handleRetry = () => this.setState({ error: null });
 
+  private handleReload = () => window.location.reload();
+
   render() {
     const { error } = this.state;
     if (!error) return this.props.children;
     if (this.props.fallback) return this.props.fallback;
+
+    if (isChunkLoadError(error)) {
+      return (
+        <div className="p-4">
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>No se pudo cargar esta pantalla</AlertTitle>
+            <AlertDescription className="space-y-3">
+              <p className="text-sm">
+                Puede haber una versión nueva de la aplicación o un problema de
+                conexión. Guarda lo que tengas abierto en otras pestañas y recarga.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={this.handleRetry}>
+                  Reintentar
+                </Button>
+                <Button size="sm" onClick={this.handleReload}>
+                  Recargar
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
 
     return (
       <div className="p-4">
