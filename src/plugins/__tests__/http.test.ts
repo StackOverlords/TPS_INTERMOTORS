@@ -155,6 +155,31 @@ describe('api.http', () => {
     expect(Object.keys(headers)).toHaveLength(0);
   });
 
+  it.each([
+    'https://impuestos.example.com/facturas',
+    'HTTP://impuestos.example.com/facturas',
+    '//impuestos.example.com/facturas',
+    '  https://impuestos.example.com/facturas',
+  ])('rechaza la URL absoluta %s: el token del usuario no sale del backend propio', async (url) => {
+    // Con una URL absoluta axios ignora baseURL y el interceptor del host le
+    // pone el token igual: la sesión del usuario terminaría en un tercero.
+    const api = await apiDeUnPluginActivo();
+
+    await expect(api.http.get(url)).rejects.toThrow('http.external');
+    await expect(api.http.post(url, {})).rejects.toThrow('relativas a la API');
+    expect(cliente.get).not.toHaveBeenCalled();
+    expect(cliente.post).not.toHaveBeenCalled();
+  });
+
+  it('pide a axios no aceptar URLs absolutas (segunda defensa)', async () => {
+    cliente.get.mockResolvedValue({ data: null });
+
+    const api = await apiDeUnPluginActivo();
+    await api.http.get('/facturas');
+
+    expect(cliente.get.mock.calls[0][1]).toMatchObject({ allowAbsoluteUrls: false });
+  });
+
   it('deja propagar el error para que el plugin decida', async () => {
     cliente.post.mockRejectedValue(new Error('HTTP 422'));
 

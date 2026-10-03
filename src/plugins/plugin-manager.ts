@@ -231,6 +231,17 @@ class PluginStorageImpl implements PluginStorageAPI {
  * Se devuelve el cuerpo ya deserializado y los errores se dejan propagar: el
  * plugin decide si reintentar o avisarle al usuario.
  */
+/**
+ * URL absoluta (`https://…`, `http:…`) o relativa al protocolo (`//host/…`).
+ *
+ * Con cualquiera de las dos, axios IGNORA `baseURL` y el interceptor del host le
+ * pone igual el token del usuario: la sesión terminaría en el servidor de un
+ * tercero. Es el error natural de quien confunde `http` con `http.external`
+ * (p. ej. llamar directo al servicio de impuestos desde un plugin de
+ * facturación), así que se corta acá con un mensaje que lo explica.
+ */
+const URL_ABSOLUTA = /^\s*(?:[a-z][a-z\d+\-.]*:|\/\/)/i;
+
 class PluginHttpImpl implements PluginHttpAPI {
   // Campo explícito y no propiedad de parámetro: el proyecto compila con
   // `erasableSyntaxOnly`, que prohíbe la forma corta.
@@ -266,6 +277,18 @@ class PluginHttpImpl implements PluginHttpAPI {
     body: unknown,
     options?: PluginHttpOptions,
   ): Promise<T> {
+    if (URL_ABSOLUTA.test(url)) {
+      logger.warn(
+        `[PluginManager] El plugin "${this.pluginId}" intentó usar api.http con ` +
+          `una URL absoluta (${url}). Se bloqueó para no enviar el token del usuario.`,
+      );
+      throw new Error(
+        `api.http solo acepta rutas del backend propio, relativas a la API ` +
+          `(p. ej. "/facturas"), y recibió "${url}". Para servicios externos ` +
+          `usa la capability "http.external".`,
+      );
+    }
+
     // La cabecera de autorización la pone el interceptor del host. Si el
     // plugin manda la suya, pisarla lo dejaría hablando con una sesión que no
     // es la del usuario, así que se descarta acá y no en el interceptor,
@@ -286,6 +309,9 @@ class PluginHttpImpl implements PluginHttpAPI {
       params: options?.params,
       headers,
       signal: options?.signal,
+      // Segunda defensa: aunque algo se cuele por la validación de arriba,
+      // axios combina SIEMPRE con baseURL y el request no sale del backend propio.
+      allowAbsoluteUrls: false,
     };
 
     const response =
