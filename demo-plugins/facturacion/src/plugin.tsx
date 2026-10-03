@@ -2,6 +2,7 @@ import { CAPABILITY, definePlugin, type PluginAPI } from "@tps/plugin-sdk";
 import { FileTextIcon } from "lucide-react";
 
 import { createDiagnosticoScreen } from "./DiagnosticoScreen";
+import { desmontarEstilos, montarEstilos } from "./estilos";
 
 /**
  * Plugin sonda de facturación.
@@ -33,9 +34,9 @@ import { createDiagnosticoScreen } from "./DiagnosticoScreen";
  */
 
 const PLUGIN_ID = "com.rhleone.facturacion";
+
 const ROUTE_ID = "facturacion.diagnostico";
 const ROUTE_PATH = "/facturacion/diagnostico";
-const CMD_ABRIR = "facturacion.abrirDiagnostico";
 
 const plugin = definePlugin({
   manifest: {
@@ -64,6 +65,10 @@ const plugin = definePlugin({
   },
 
   activate(api: PluginAPI): void {
+    // El host no inyecta CSS de remotes (verificado en el loader de plugins).
+    // El plugin se hace cargo de su propio ciclo de vida de estilos.
+    montarEstilos();
+
     const DiagnosticoRoute = createDiagnosticoScreen(api);
 
     api.registerRoutes([
@@ -94,9 +99,23 @@ const plugin = definePlugin({
       ],
     });
 
-    api.registerCommand(CMD_ABRIR, () => {
-      api.openRoute?.(ROUTE_PATH);
-    });
+    // ── Comandos para abrir las pantallas: PENDIENTES del SDK ───────────────
+    //
+    // Acá había un `api.registerCommand(..., () => api.openRoute?.(path))`.
+    // Estaba roto: `openRoute` no existe en `PluginAPI` ni lo implementa el
+    // host, y el `?.` hacía que el comando no hiciera NADA sin avisar.
+    //
+    // El contrato del SDK no expone hoy ninguna forma de navegar:
+    // `registerRoutes` y `registerSidebarSection` registran, y `getActiveTab` /
+    // `onTabChange` solo leen. No hay un "abrir esta ruta".
+    //
+    // Se quitan en vez de dejarlos fingiendo: un comando que aparece y no
+    // responde es peor que un comando ausente. La pantalla se alcanza por la
+    // sección "Facturación" del sidebar, que sí funciona.
+    //
+    // Para reponerlos, el SDK necesita primero un método de navegación real
+    // (por ejemplo `openRoute(path: string): void`) declarado en `PluginAPI` e
+    // implementado por el host en `src/plugins/`.
 
     // La impresora por puerto no existe en web. Se consulta en vez de asumir:
     // el plugin sigue siendo útil sin ella.
@@ -110,6 +129,9 @@ const plugin = definePlugin({
   },
 
   deactivate(): void {
+    // Simétrico a montarEstilos() en activate(): si no lo hacemos acá, el
+    // <style> queda fantasma en el head del host tras desinstalar.
+    desmontarEstilos();
     console.info("[facturacion] desactivado");
   },
 });
