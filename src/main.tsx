@@ -21,6 +21,7 @@ import { flushTabStorage } from "./states/tabStore.ts";
 import { getWindowManager } from "@/platform";
 import { PluginDialogHost } from "./plugins/components/PluginDialogHost.tsx";
 import { PluginKeybindingHost } from "./plugins/components/PluginKeybindingHost.tsx";
+import { startExternalPlugins } from "./plugins/bootstrapExternalPlugins.ts";
 import { useEffect } from "react";
 import { applyCachedColorTheme } from "./themes/applyColorTheme.ts";
 import "./stores/colorThemeStore.ts";
@@ -55,30 +56,8 @@ if (import.meta.env.VITE_DEV_PLUGINS === "1") {
 // ✨ [PRODUCTION] Cargar plugins externos instalados vía Module Federation.
 // Siempre activo — los plugins externos son primera clase, no solo dev.
 // Best-effort: errores aislados por plugin (no tumban la app ni el bootstrap dev).
-import("./plugins/loadExternalPlugins")
-  .then(({ loadExternalPlugins }) =>
-    // La fuente la resuelve el target: comandos Rust en escritorio, endpoints
-    // del backend en web. El pipeline de carga es el mismo en los dos.
-    import("./plugins/sources").then(({ getPluginSource }) =>
-      import("./plugins/plugin-manager").then(({ PluginManager }) =>
-        loadExternalPlugins(getPluginSource(), PluginManager)
-      )
-    )
-  )
-  .then((results) =>
-    // Exponer los resultados a la UI de gestión (badges de error de carga).
-    // Import dinámico: módulo liviano, no arrastra la pantalla PluginSettings.
-    import("./plugins/bootstrapLoadResults").then(({ setBootstrapLoadResults }) => {
-      setBootstrapLoadResults(results);
-      const failed = results.filter((r) => r.status === "failed");
-      if (failed.length > 0) {
-        logger.warn("[external-plugins] Plugins con error:", failed);
-      }
-    })
-  )
-  .catch((e) => {
-    logger.error("[external-plugins] bootstrap failed:", e);
-  });
+// En web espera a que haya sesión: ver plugins/bootstrapExternalPlugins.ts.
+startExternalPlugins();
 
 function App() {
   // ✅ Forzar guardado de tabs antes de cerrar la aplicación
