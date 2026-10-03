@@ -151,10 +151,16 @@ export async function loadExternalPlugins(
       enabledRefs.map((r) => r.id).join(", ")
   );
 
+  // Las descargas arrancan TODAS juntas: cada remote son varios archivos
+  // (remoteEntry + chunks) y bajarlos de a uno sumaba la latencia de todos.
+  // Registrar y activar sigue siendo de a uno y en el orden de la lista, por si
+  // un plugin depende de otro ya registrado.
+  const downloads = enabledRefs.map((ref) => downloadPluginModule(ref));
+
   const results: LoadResult[] = [];
 
-  for (const ref of enabledRefs) {
-    const result = await loadSinglePlugin(ref, manager);
+  for (const [index, ref] of enabledRefs.entries()) {
+    const result = await loadSinglePlugin(ref, downloads[index], manager);
     results.push(result);
   }
 
@@ -183,20 +189,19 @@ interface EnabledPluginRef {
   entry: string;
 }
 
+/** Resultado de descargar el módulo de un remote. Nunca rechaza. */
+type DownloadResult =
+  | { ok: true; mod: { default: Plugin } | null | undefined }
+  | { ok: false; error: unknown };
+
 /**
- * Carga, registra y activa un único plugin externo.
- * Aísla errores: cualquier fallo retorna LoadResult con status "failed".
- * Nunca propaga excepciones — permite que el loop principal continúe.
- *
- * @param ref     - Referencia al plugin externo (id, name, entry ya como URL plugin://).
- * @param manager - Instancia del PluginManager para register/activate.
- * @returns       LoadResult para este plugin.
+ * Registra el remote y descarga su módulo `./plugin`, sin registrarlo ni
+ * activarlo. Se llama para todos los plugins a la vez; nunca rechaza, así que
+ * una descarga que falla mientras otra todavía se procesa no queda como
+ * promesa rechazada sin manejar.
  */
-async function loadSinglePlugin(
-  ref: EnabledPluginRef,
-  manager: PluginManagerClass
-): Promise<LoadResult> {
-  const { id, name, entry } = ref;
+function downloadPluginModule(ref: EnabledPluginRef): Promise<DownloadResult> {
+  const { name, entry } = ref;
 
   try {
     // ── 1. Registrar remote (idempotente via Set) ─────────────────────────────
@@ -211,7 +216,36 @@ async function loadSinglePlugin(
     // ── 2. Cargar el módulo del remote ────────────────────────────────────────
     // El remote DEBE exponer "./plugin" en su vite.config.
     // loadRemote<T> retorna T | null | undefined según el runtime.
-    const mod = await loadRemote<{ default: Plugin }>(`${name}/plugin`);
+    return loadRemote<{ default: Plugin }>(`${name}/plugin`).then(
+      (mod): DownloadResult => ({ ok: true, mod }),
+      (error: unknown): DownloadResult => ({ ok: false, error }),
+    );
+  } catch (error) {
+    return Promise.resolve({ ok: false, error });
+  }
+}
+
+/**
+ * Registra y activa un único plugin externo ya descargado (o en descarga).
+ * Aísla errores: cualquier fallo retorna LoadResult con status "failed".
+ * Nunca propaga excepciones — permite que el loop principal continúe.
+ *
+ * @param ref      - Referencia al plugin externo (id, name, entry ya como URL plugin://).
+ * @param download - La descarga de su módulo, iniciada por `downloadPluginModule`.
+ * @param manager  - Instancia del PluginManager para register/activate.
+ * @returns        LoadResult para este plugin.
+ */
+async function loadSinglePlugin(
+  ref: EnabledPluginRef,
+  download: Promise<DownloadResult>,
+  manager: PluginManagerClass
+): Promise<LoadResult> {
+  const { id, name } = ref;
+
+  try {
+    const downloaded = await download;
+    if (!downloaded.ok) throw downloaded.error;
+    const mod = downloaded.mod;
 
     if (!mod?.default) {
       return {
