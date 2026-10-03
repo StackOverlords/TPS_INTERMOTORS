@@ -29,6 +29,37 @@ rm -rf "$LARAVEL_PATH/public/assets"
 cp -r dist/assets "$LARAVEL_PATH/public/assets"
 cp dist/index.html dist/window.html "$LARAVEL_PATH/public/"
 
+# Module Federation emite su bootstrap en la RAIZ de dist/, no en assets/, y el
+# index.html lo pide desde la raiz del sitio:
+#
+#   <script type="module" src="/mf-entry-bootstrap-0-<hash>.js"></script>
+#
+# Copiar solo assets/ dejaba ese archivo afuera. Como Laravel tiene un fallback
+# de SPA, el pedido no daba 404: devolvia el index.html con Content-Type
+# text/html, y el navegador rechazaba el modulo con
+# "Expected a JavaScript-or-Wasm module script". La app no arrancaba.
+#
+# Se limpian los anteriores por el mismo motivo que assets/: el nombre lleva
+# hash y si no, se acumula un bootstrap por cada deploy.
+rm -f "$LARAVEL_PATH"/public/mf-entry-bootstrap-*.js
+cp dist/mf-entry-bootstrap-*.js "$LARAVEL_PATH/public/"
+
+# Verificacion: que no quede ningun modulo referenciado por el index.html sin
+# su archivo. Es barato y ataja justo el error de MIME de arriba, que en el
+# navegador aparece lejos de su causa.
+faltantes=0
+while read -r ref; do
+  if [[ ! -f "$LARAVEL_PATH/public/$ref" ]]; then
+    echo "ERROR: index.html referencia /$ref y no se publico" >&2
+    faltantes=1
+  fi
+done < <(grep -oE '(src|href)="/[^"]+\.(js|css)"' "$LARAVEL_PATH/public/index.html" \
+         | sed -E 's/.*="\/([^"]+)"/\1/')
+
+if [[ "$faltantes" -ne 0 ]]; then
+  exit 1
+fi
+
 echo "==> Listo. $(du -sh "$LARAVEL_PATH/public/assets" | cut -f1) en public/assets"
 echo
 echo "El backend necesita las rutas del SPA en routes/web.php:"
