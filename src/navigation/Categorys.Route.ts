@@ -1,6 +1,8 @@
-import TableCreateCategory from "@/modules/categories/components/TableCreateCategory";
 import { FolderOpen, TableCellsMerge } from "lucide-react";
 import type RouteType from "./RouteType";
+import { lazyScreen } from "./lazyScreen";
+
+const TableCreateCategory = lazyScreen(() => import("@/modules/categories/components/TableCreateCategory"));
 
 const categoryProtectedRoutes: RouteType[] = [
   {

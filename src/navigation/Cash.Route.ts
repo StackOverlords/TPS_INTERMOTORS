@@ -1,9 +1,11 @@
 import { ClipboardList, Landmark, List, Tags, TrendingUp } from "lucide-react";
-import CashSessionDetailScreen from "@/modules/caja/screens/CashSessionDetailScreen";
-import CashSessionListScreen from "@/modules/caja/screens/CashSessionListScreen";
-import ExpenseTypesScreen from "@/modules/caja/screens/ExpenseTypesScreen";
-import CashFlowReportScreen from "@/modules/caja/screens/CashFlowReportScreen";
 import type RouteType from "./RouteType";
+import { lazyScreen } from "./lazyScreen";
+
+const CashSessionDetailScreen = lazyScreen(() => import("@/modules/caja/screens/CashSessionDetailScreen"));
+const CashSessionListScreen = lazyScreen(() => import("@/modules/caja/screens/CashSessionListScreen"));
+const ExpenseTypesScreen = lazyScreen(() => import("@/modules/caja/screens/ExpenseTypesScreen"));
+const CashFlowReportScreen = lazyScreen(() => import("@/modules/caja/screens/CashFlowReportScreen"));
 
 const cashProtectedRoutes: RouteType[] = [
   {

@@ -47,7 +47,7 @@ import { usePurchasesPaginated } from "../hooks/usePurchasesPaginated";
 import type { PurchaseGet } from "../types/PurchaseGet";
 import { useKeyboardNavigation } from "@/hooks/keyBindings/useKeyboardNavigation";
 import { useCommands } from "@/keybindings";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 import { formatColumnNumber } from "@/utils/formaters";
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -63,7 +63,7 @@ const PurchaseListScreen = () => {
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);
   const [showFilters, setShowFilters] = useState<boolean>(true);
   const [searchMode, setSearchMode] = useState<"realtime" | "manual">("manual");
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
   const {
     filters,
     debouncedFilters,

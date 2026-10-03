@@ -22,6 +22,11 @@ import { getWindowManager } from "@/platform";
 import { PluginDialogHost } from "./plugins/components/PluginDialogHost.tsx";
 import { PluginKeybindingHost } from "./plugins/components/PluginKeybindingHost.tsx";
 import { useEffect } from "react";
+import { applyCachedColorTheme } from "./themes/applyColorTheme.ts";
+import "./stores/colorThemeStore.ts";
+
+// Tema de color guardado, antes del primer render (sin parpadeo de colores por defecto).
+applyCachedColorTheme();
 
 // try {
 //   useThemeStore.getState().initializeTheme();

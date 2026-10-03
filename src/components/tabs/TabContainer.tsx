@@ -1,12 +1,23 @@
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import NotFound from "@/modules/shared/screens/NotFound";
+import { preloadScreens } from "@/navigation/lazyScreen";
 import protectedRoutes from "@/navigation/Protected.Route";
 import type RouteType from "@/navigation/RouteType";
 import { useRegistryRoutes } from "@/plugins";
 import { useTabStore } from "@/states/tabStore";
 import { useTabsConfigStore } from "@/stores/tabsConfigStore";
-import React, { useMemo, useRef } from "react";
+import { Loader2 } from "lucide-react";
+import React, { Suspense, useEffect, useMemo, useRef } from "react";
 import { matchPath } from "react-router";
 import TabContent from "./TabContent";
+import TabRouterScope from "./TabRouterScope";
+
+/** Se ve solo la primera vez que se abre una pantalla cuyo chunk aún no llegó. */
+const ScreenFallback = () => (
+  <div className="flex h-full items-center justify-center text-muted-foreground">
+    <Loader2 className="size-5 animate-spin" aria-label="Cargando pantalla" />
+  </div>
+);
 
 const TabContainer: React.FC = () => {
   // Optimizado: Solo suscribirse a lo que realmente necesitamos
@@ -15,6 +26,32 @@ const TabContainer: React.FC = () => {
 
   // Keep-Alive: Trackear qué tabs han sido visitadas
   const mountedTabsRef = useRef<Set<string>>(new Set());
+  const lastUsedRef = useRef(new Map<string, number>());
+  const useCounterRef = useRef(0);
+
+  // Elemento de pantalla por tab, reutilizado entre renders. Al cambiar de
+  // pestaña, TabContent se re-renderiza por `isActive`; si recibiera un
+  // elemento nuevo, React volvería a renderizar la pantalla entera (tabla,
+  // filtros, menús) aunque nada de ella cambió. Con el mismo elemento, solo se
+  // actualiza lo que lee contextos que sí cambiaron.
+  const screenElementsRef = useRef(
+    new Map<string, { Component: React.ComponentType; routePath: string; element: React.ReactElement }>(),
+  );
+  const getScreenElement = (tabId: string, Component: React.ComponentType, routePath: string) => {
+    const cached = screenElementsRef.current.get(tabId);
+    if (cached && cached.Component === Component && cached.routePath === routePath) {
+      return cached.element;
+    }
+    const element = (
+      <ErrorBoundary name={`tab ${routePath}`}>
+        <Suspense fallback={<ScreenFallback />}>
+          <Component />
+        </Suspense>
+      </ErrorBoundary>
+    );
+    screenElementsRef.current.set(tabId, { Component, routePath, element });
+    return element;
+  };
 
   // Rutas aportadas por plugins — reactivas vía useSyncExternalStore.
   // Se re-calculan cuando un plugin registra o des-registra rutas, sin reload.
@@ -47,6 +84,13 @@ const TabContainer: React.FC = () => {
 
     return [...flatten(protectedRoutes), ...pluginAsRouteType];
   }, [registryRoutes]);
+
+  // Las pantallas se cargan bajo demanda (lazyScreen). Tras el arranque se
+  // precargan en segundo plano para que abrir cualquier pestaña sea inmediato.
+  useEffect(
+    () => preloadScreens(flatRoutes.map((route) => route.element)),
+    [flatRoutes],
+  );
 
   // Cache persistente (no se recrea en cada render)
   const routeCacheRef = useRef(new Map<string, RouteType | null>());
@@ -90,11 +134,19 @@ const TabContainer: React.FC = () => {
     mountedTabsRef.current.add(activeTabId);
   }
 
+  // Orden de uso para la expulsión LRU. El Set de montadas conserva el orden de
+  // montaje (y con él el orden en el DOM, que no conviene mover); sin este
+  // registro la expulsión era FIFO y podía desmontar la pestaña más usada.
+  if (activeTabId && lastUsedRef.current.get(activeTabId) !== useCounterRef.current) {
+    lastUsedRef.current.set(activeTabId, ++useCounterRef.current);
+  }
+
   // Limpiar tabs que ya no existen en el store
   const existingTabIds = new Set(tabs.map((t) => t.id));
   mountedTabsRef.current.forEach((tabId) => {
     if (!existingTabIds.has(tabId)) {
       mountedTabsRef.current.delete(tabId);
+      lastUsedRef.current.delete(tabId);
     }
   });
 
@@ -103,14 +155,23 @@ const TabContainer: React.FC = () => {
   if (mountedTabsRef.current.size > MAX_MOUNTED_TABS) {
     const mountedArray = Array.from(mountedTabsRef.current);
     const evictable = mountedArray.filter((tabId) => {
+      // Nunca la que se está mostrando.
+      if (tabId === activeTabId) return false;
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab) return true;
       const route = findMatchingRoute(tab.path);
       return !route?.keepAlive;
     });
+    const lastUsed = (tabId: string) => lastUsedRef.current.get(tabId) ?? 0;
+    evictable.sort((a, b) => lastUsed(a) - lastUsed(b));
     const excess = mountedTabsRef.current.size - MAX_MOUNTED_TABS;
     evictable.slice(0, excess).forEach((tabId) => mountedTabsRef.current.delete(tabId));
   }
+
+  // Los elementos cacheados solo de las tabs que siguen montadas.
+  screenElementsRef.current.forEach((_, tabId) => {
+    if (!mountedTabsRef.current.has(tabId)) screenElementsRef.current.delete(tabId);
+  });
 
   // Obtener componentes de todas las tabs que deben estar montadas
   const tabComponents = useMemo(() => {
@@ -146,7 +207,9 @@ const TabContainer: React.FC = () => {
           isActive={tabId === activeTabId}
           routePath={routePath}
         >
-          <Component />
+          <TabRouterScope active={tabId === activeTabId}>
+            {getScreenElement(tabId, Component, routePath)}
+          </TabRouterScope>
         </TabContent>
       ))}
 

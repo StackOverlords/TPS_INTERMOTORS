@@ -39,7 +39,7 @@ import type {
   QuotationGetAllResponse,
 } from "../../types/quotationGet.types";
 import { useCustomTable } from "@/hooks/useCustomTable";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 
 interface QuotationsListTableProps {
   data: QuotationGetAllResponse;
@@ -69,7 +69,7 @@ const QuotationsListTable: React.FC<QuotationsListTableProps> = ({
   handleDeleteSale,
 }) => {
   // const navigate = useNavigate()
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
   const user = authSDK.getCurrentUser();
   const tableRef = useRef<HTMLTableElement>(null);
   const [isDraggingColumn, setIsDraggingColumn] = useState(false);

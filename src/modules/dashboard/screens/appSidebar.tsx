@@ -19,11 +19,13 @@ import { useTabStore } from "@/states/tabStore";
 import { useThemeStore } from "@/stores/themeStore";
 import { filterRoutesByRole } from "@/utils/permissions";
 import { LogOut, Settings, SquarePlus, CopyMinus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useLocation } from "react-router";
 import ButtonItem from "../components/ButtonItem";
 import HeaderTagRoute from "../components/HeaderTagRoute";
 import { Separator } from "@/components/atoms/separator";
 import NavItem from "../components/NavItem";
+import { isNavItemActive, routeContainsPath } from "../components/sidebarActive";
 import logoLight from "@/assets/images/logo_light.webp";
 import logoDark from "@/assets/images/darkmodeweb.webp";
 import { Button } from "@/components/atoms/button";
@@ -31,6 +33,10 @@ import { queryClient } from "@/lib/reactQueryConfig";
 import { usePluginSidebarSections, usePluginSettingsActions } from "@/plugins";
 import type { SidebarSection, SettingsAction, IconProps } from "@tps/plugin-sdk";
 import type { ComponentType } from "react";
+
+// WIP: treasury/alerts deshabilitado hasta que el backend esté listo.
+// Constante de módulo: un objeto nuevo en cada render anularía el memo de los grupos.
+const EMPTY_BADGES: Record<string, number> = {};
 
 /**
  * Adapta una `SidebarSection` del SDK al `RouteType` que espera HeaderTagRoute.
@@ -66,14 +72,15 @@ function pluginSectionToRoute(section: SidebarSection): RouteType {
 }
 
 const AppSidebar = () => {
+  // La ubicación se lee UNA vez acá; cada grupo recibe solo lo que necesita.
+  const { pathname } = useLocation();
   const [expandedHeaders, setExpandedHeaders] = useState<string[]>([]);
   const { setOpenMobile, isMobile } = useSidebar();
   const { available } = useUpdateChecker();
   const { rol: userRole } = useUserRole();
-  // WIP: treasury/alerts deshabilitado hasta que el backend esté listo
-  const badgeMap: Record<string, number> = {};
+  const badgeMap = EMPTY_BADGES;
   const closeAllTabs = useTabStore((state) => state.closeAllTabs);
-  const { resolvedTheme } = useThemeStore();
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   // Hooks reactivos del sistema de plugins (Fase 3)
   const pluginSidebarSections = usePluginSidebarSections();
@@ -101,6 +108,16 @@ const AppSidebar = () => {
       .filter((section) => section.items.length > 0);
   }, [pluginSidebarSections, userRole]);
 
+  // Memoizado: HeaderTagRoute es memo, y un RouteType nuevo por render lo anularía.
+  const pluginRoutes = useMemo(
+    () =>
+      filteredPluginSections.map((section) => ({
+        id: section.id,
+        route: pluginSectionToRoute(section),
+      })),
+    [filteredPluginSections],
+  );
+
   /**
    * Filtra las acciones de settings de plugins.
    * SettingsAction no tiene campo `roles` en el SDK — se exponen todas.
@@ -110,11 +127,11 @@ const AppSidebar = () => {
     return pluginSettingsActions;
   }, [pluginSettingsActions]);
 
-  const handleNavigation = () => {
+  const handleNavigation = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
     }
-  };
+  }, [isMobile, setOpenMobile]);
 
   const handleLogout = async () => {
     try {
@@ -126,13 +143,13 @@ const AppSidebar = () => {
     }
   };
 
-  const toggleHeader = (headerName: string) => {
+  const toggleHeader = useCallback((headerName: string) => {
     setExpandedHeaders((prev) =>
       prev.includes(headerName)
         ? prev.filter((name) => name !== headerName)
         : [...prev, headerName]
     );
-  };
+  }, []);
 
   const toggleExpandCollapse = () => {
     if (expandedHeaders.length > 0) {
@@ -195,7 +212,9 @@ const AppSidebar = () => {
                 <HeaderTagRoute
                   handleNavigation={handleNavigation}
                   toggleHeader={toggleHeader}
-                  expandedHeaders={expandedHeaders}
+                  isExpanded={expandedHeaders.includes(route.name)}
+                  activePath={routeContainsPath(route, pathname) ? pathname : null}
+                  userRole={userRole}
                   key={`${route.name}-${index}`}
                   route={route}
                   badgeMap={badgeMap}
@@ -222,11 +241,13 @@ const AppSidebar = () => {
             <Separator className="my-1" />
             <SidebarGroupContent className="px-1">
               <SidebarMenu>
-                {filteredPluginSections.map((section: SidebarSection) => (
+                {pluginRoutes.map(({ id, route }) => (
                   <HeaderTagRoute
-                    key={section.id}
-                    route={pluginSectionToRoute(section)}
-                    expandedHeaders={expandedHeaders}
+                    key={id}
+                    route={route}
+                    isExpanded={expandedHeaders.includes(route.name)}
+                    activePath={routeContainsPath(route, pathname) ? pathname : null}
+                    userRole={userRole}
                     toggleHeader={toggleHeader}
                     handleNavigation={handleNavigation}
                   />
@@ -249,6 +270,7 @@ const AppSidebar = () => {
                 handleNavigation={handleNavigation}
                 icon={Settings}
                 badge={available ? 1 : null}
+                isActive={isNavItemActive("/dashboard/settings", pathname)}
               >
                 Configuración
               </NavItem>

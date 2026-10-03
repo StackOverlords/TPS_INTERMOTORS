@@ -19,7 +19,7 @@ import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import { productsService } from "@/modules/products/services/productService";
 import authSDK from "@/services/sdk-simple-auth";
@@ -59,7 +59,7 @@ import type { TransferCreate } from "../types/transferCreate.types";
 const EditTransfer = () => {
   const navigate = useNavigate();
   const { id: transferId } = useParams();
-  const { closeCurrentTab } = useTabNavigation();
+  const { closeCurrentTab } = useTabActions();
   const user = authSDK.getCurrentUser();
   const { selectedBranchId } = useBranchStore();
   const tableRef = useRef<TransferDetailTableRef>(null);

@@ -68,7 +68,7 @@ import type { TableShoppingCartRef } from "@/modules/shoppingCart/components/tab
 import { useUpdateProductImage } from "../hooks/mutations/useUpdateProductImage";
 import { base64ToFile } from "@/utils/base64Utils";
 import { useTabHotkeys } from "@/hooks/tabs/useTabHotkeys";
-import { useTabNavigation } from "@/hooks/useTabNavigation";
+import { useTabActions } from "@/hooks/useTabNavigation";
 
 const SCREEN_PATH = "/dashboard/productos";
 
@@ -77,7 +77,7 @@ const ProductListScreen = () => {
   const tableShoppingCartRef = useRef<TableShoppingCartRef>(null);
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   // const navigate = useNavigate()
-  const { navigateWithTab } = useTabNavigation();
+  const { navigateWithTab } = useTabActions();
   const user = authSDK.getCurrentUser();
 
   const { config, isFeatureEnabled, getTableBehaviorValue, getBehaviorValue } =

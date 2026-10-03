@@ -1,7 +1,3 @@
-import AccountsReceivableListScreen from "@/modules/accountsReceivable/screens/AccountsReceivableListScreen";
-import AccountsReceivableGeneralReportScreen from "@/modules/accountsReceivable/screens/AccountsReceivableGeneralReportScreen";
-import AccountsReceivablePaidReportScreen from "@/modules/accountsReceivable/screens/AccountsReceivablePaidReportScreen";
-import AccountsReceivableByCustomerReportScreen from "@/modules/accountsReceivable/screens/AccountsReceivableByCustomerReportScreen";
 import {
   FolderOpen,
   TableCellsMerge,
@@ -10,6 +6,12 @@ import {
   User,
 } from "lucide-react";
 import type RouteType from "./RouteType";
+import { lazyScreen } from "./lazyScreen";
+
+const AccountsReceivableListScreen = lazyScreen(() => import("@/modules/accountsReceivable/screens/AccountsReceivableListScreen"));
+const AccountsReceivableGeneralReportScreen = lazyScreen(() => import("@/modules/accountsReceivable/screens/AccountsReceivableGeneralReportScreen"));
+const AccountsReceivablePaidReportScreen = lazyScreen(() => import("@/modules/accountsReceivable/screens/AccountsReceivablePaidReportScreen"));
+const AccountsReceivableByCustomerReportScreen = lazyScreen(() => import("@/modules/accountsReceivable/screens/AccountsReceivableByCustomerReportScreen"));
 
 const accountsReceivable: RouteType[] = [
   {

@@ -1,14 +1,3 @@
-import UpdateSettings from "@/modules/settings/components/settings/UpdateSettings";
-import BranchesScreen from "@/modules/settings/screens/branchesScreen";
-import BrandsScreen from "@/modules/settings/screens/brandsScreen";
-import CategoriesScreen from "@/modules/settings/screens/categoriesScreen";
-import CustomersScreen from "@/modules/settings/screens/customersScreen";
-import MeasurementsScreen from "@/modules/settings/screens/measurementScreen";
-import OriginsScreen from "@/modules/settings/screens/OriginsScreen";
-import ProvidersScreen from "@/modules/settings/screens/providersScreen";
-import SettingsScreen from "@/modules/settings/screens/settingsScreen";
-import SubcategoriesScreen from "@/modules/settings/screens/subcategoriesScreen";
-import VehicleBrandsScreen from "@/modules/settings/screens/vehicleBrandScreen";
 import {
   Car,
   FolderOpen,
@@ -24,8 +13,21 @@ import {
   Users,
 } from "lucide-react";
 import type RouteType from "./RouteType";
-import EmployeesScreen from "@/modules/settings/screens/employeesScreen";
-import PermissionsScreen from "@/modules/permissions/screens/PermissionsScreen";
+import { lazyScreen } from "./lazyScreen";
+
+const UpdateSettings = lazyScreen(() => import("@/modules/settings/components/settings/UpdateSettings"));
+const BranchesScreen = lazyScreen(() => import("@/modules/settings/screens/branchesScreen"));
+const BrandsScreen = lazyScreen(() => import("@/modules/settings/screens/brandsScreen"));
+const CategoriesScreen = lazyScreen(() => import("@/modules/settings/screens/categoriesScreen"));
+const CustomersScreen = lazyScreen(() => import("@/modules/settings/screens/customersScreen"));
+const MeasurementsScreen = lazyScreen(() => import("@/modules/settings/screens/measurementScreen"));
+const OriginsScreen = lazyScreen(() => import("@/modules/settings/screens/OriginsScreen"));
+const ProvidersScreen = lazyScreen(() => import("@/modules/settings/screens/providersScreen"));
+const SettingsScreen = lazyScreen(() => import("@/modules/settings/screens/settingsScreen"));
+const SubcategoriesScreen = lazyScreen(() => import("@/modules/settings/screens/subcategoriesScreen"));
+const VehicleBrandsScreen = lazyScreen(() => import("@/modules/settings/screens/vehicleBrandScreen"));
+const EmployeesScreen = lazyScreen(() => import("@/modules/settings/screens/employeesScreen"));
+const PermissionsScreen = lazyScreen(() => import("@/modules/permissions/screens/PermissionsScreen"));
 
 const settingsProtectedRoutes: RouteType[] = [
   {

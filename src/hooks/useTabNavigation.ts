@@ -4,50 +4,43 @@ import { useTabStore } from '@/states/tabStore';
 import { useUserRole } from '@/hooks/useUserRole';
 import { hasRouteAccess } from '@/utils/permissions';
 import { RouteRegistry, useRegistryRoutes } from '@/plugins';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import type { RouteConfig } from '@tps/plugin-sdk';
+import { useCallback, useEffect, useRef } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 
+// =============================================================================
+// Resolución de rutas (estáticas + plugin), sin suscripciones de React
+// =============================================================================
 
-//Hook para manejar la navegación con el sistema de tabs
+type RouteInfo = { name: string; icon?: any };
 
-export const useTabNavigation = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+let flatCache: { plugins: RouteConfig[]; routes: RouteType[] } | undefined;
+const routeInfoCache = new Map<string, RouteInfo>();
 
-  //Optimizado Selectores específicos en lugar de desestructurar todo
-  const tabs = useTabStore(state => state.tabs);
-  const activeTabId = useTabStore(state => state.activeTabId);
-  const setActiveTab = useTabStore(state => state.setActiveTab);
-  // removeTab, addTab, findTabByPath, updateTab se obtienen directamente del store donde se necesitan
+const flatten = (routes: RouteType[]): RouteType[] => {
+  const result: RouteType[] = [];
+  routes.forEach(route => {
+    if (route.path) {
+      result.push(route);
+    }
+    if (route.subRoutes) {
+      result.push(...flatten(route.subRoutes));
+    }
+  });
+  return result;
+};
 
-  // Rol del usuario para verificar permisos antes de crear tabs
-  const { rol: userRole } = useUserRole();
-
-  // Bandera para prevenir recreación de tabs después de cerrar
-  const isClosingTabRef = useRef(false);
-
-  // Rutas aportadas por plugins — reactivas vía useSyncExternalStore.
-  // Se re-calculan cuando un plugin registra o des-registra rutas, sin reload.
-  const registryRoutes = useRegistryRoutes();
-
-  // Cache de rutas aplanadas (estáticas + plugin) — se recalcula cuando el registry cambia.
-  const flatRoutes = useMemo(() => {
-    const flatten = (routes: RouteType[]): RouteType[] => {
-      const result: RouteType[] = [];
-      routes.forEach(route => {
-        if (route.path) {
-          result.push(route);
-        }
-        if (route.subRoutes) {
-          result.push(...flatten(route.subRoutes));
-        }
-      });
-      return result;
-    };
-
+/**
+ * Rutas aplanadas (estáticas + plugin). Se recalcula solo cuando el
+ * RouteRegistry cambia: `getAllRoutes()` devuelve la misma referencia mientras
+ * ningún plugin registre o des-registre rutas.
+ */
+function getFlatRoutes(): RouteType[] {
+  const plugins = RouteRegistry.getAllRoutes();
+  if (flatCache?.plugins !== plugins) {
     // Adaptar RouteConfig (SDK) → RouteType para que findRouteInfo/findRouteByPath
     // resuelvan nombre, icono y permisos de las rutas de plugin igual que las estáticas.
-    const pluginAsRouteType: RouteType[] = registryRoutes.map(rc => ({
+    const pluginAsRouteType: RouteType[] = plugins.map(rc => ({
       path: rc.path,
       element: rc.component,
       name: rc.label,
@@ -55,79 +48,92 @@ export const useTabNavigation = () => {
       icon: rc.icon,
       role: rc.roles as RouteType['role'],
     }));
+    flatCache = { plugins, routes: [...flatten(protectedRoutes), ...pluginAsRouteType] };
+    // Una ruta de plugin nueva puede cambiar lo que resuelve un path ya cacheado.
+    routeInfoCache.clear();
+  }
+  return flatCache.routes;
+}
 
-    return [...flatten(protectedRoutes), ...pluginAsRouteType];
-  }, [registryRoutes]);
+// Función para encontrar el nombre e icono de una ruta
+// Soporta rutas dinámicas y extrae parámetros para mostrar en el título
+function findRouteInfo(path: string, displayCode?: string): RouteInfo {
+  const flatRoutes = getFlatRoutes();
 
-  // Cache de rutas ya resueltas.
-  // Se invalida explícitamente cuando flatRoutes cambia (nueva ruta de plugin registrada).
-  const routeInfoCache = useRef(new Map<string, { name: string; icon?: any }>());
-  useMemo(() => {
-    // flatRoutes es el único origen de routeInfoCache — si cambia, el cache es stale.
-    routeInfoCache.current.clear();
-  }, [flatRoutes]);
+  // Verificar cache primero (solo si no hay displayCode custom)
+  if (!displayCode && routeInfoCache.has(path)) {
+    return routeInfoCache.get(path)!;
+  }
 
-  // Función para encontrar el nombre e icono de una ruta
-  // Soporta rutas dinámicas y extrae parámetros para mostrar en el título
-  const findRouteInfo = useCallback((path: string, displayCode?: string): { name: string; icon?: any } => {
-    // Verificar cache primero (solo si no hay displayCode custom)
-    if (!displayCode && routeInfoCache.current.has(path)) {
-      return routeInfoCache.current.get(path)!;
+  for (const route of flatRoutes) {
+    // Intentar match exacto
+    if (route.path === path) {
+      const info = { name: route.name, icon: route.icon };
+      if (!displayCode) routeInfoCache.set(path, info);
+      return info;
     }
 
-    // Buscar en rutas aplanadas (más eficiente)
-    for (const route of flatRoutes) {
-      // Intentar match exacto
-      if (route.path === path) {
-        const info = { name: route.name, icon: route.icon };
-        if (!displayCode) routeInfoCache.current.set(path, info);
+    // Intentar match con parámetros dinámicos usando matchPath correctamente
+    if (route.path) {
+      const match = matchPath({ path: route.path, end: true }, path);
+      if (match) {
+        // Si tiene parámetros, agregarlos al nombre del tab
+        const paramValues = Object.values(match.params).filter(Boolean);
+
+        // Usar displayCode si existe, sino usar parámetro extraído
+        const displayValue = displayCode || paramValues[0];
+
+        // Crear un nombre descriptivo con el parámetro
+        const displayName = displayValue
+          ? `${route.name}: ${displayValue}`
+          : route.name;
+
+        const info = { name: displayName, icon: route.icon };
+        if (!displayCode) routeInfoCache.set(path, info);
         return info;
       }
-
-      // Intentar match con parámetros dinámicos usando matchPath correctamente
-      if (route.path) {
-        const match = matchPath({ path: route.path, end: true }, path);
-        if (match) {
-          // Si tiene parámetros, agregarlos al nombre del tab
-          const params = match.params;
-          const paramValues = Object.values(params).filter(Boolean);
-
-          // Usar displayCode si existe, sino usar parámetro extraído
-          const displayValue = displayCode || paramValues[0];
-
-          // Crear un nombre descriptivo con el parámetro
-          const displayName = displayValue
-            ? `${route.name}: ${displayValue}`
-            : route.name;
-
-          const info = { name: displayName, icon: route.icon };
-          if (!displayCode) routeInfoCache.current.set(path, info);
-          return info;
-        }
-      }
     }
+  }
 
-    const fallback = { name: 'Sin título', icon: undefined };
-    if (!displayCode) routeInfoCache.current.set(path, fallback);
-    return fallback;
-  }, [flatRoutes]);
+  const fallback = { name: 'Sin título', icon: undefined };
+  if (!displayCode) routeInfoCache.set(path, fallback);
+  return fallback;
+}
 
-
-  // Busca la ruta completa (con roles) para verificar permisos
-  const findRouteByPath = useCallback((path: string): RouteType | undefined => {
-    for (const route of flatRoutes) {
-      if (route.path === path) return route;
-      if (route.path) {
-        const match = matchPath({ path: route.path, end: true }, path);
-        if (match) return route;
-      }
+// Busca la ruta completa (con roles) para verificar permisos
+function findRouteByPath(path: string): RouteType | undefined {
+  for (const route of getFlatRoutes()) {
+    if (route.path === path) return route;
+    if (route.path) {
+      const match = matchPath({ path: route.path, end: true }, path);
+      if (match) return route;
     }
-    return undefined;
-  }, [flatRoutes]);
+  }
+  return undefined;
+}
 
+// Bandera para prevenir recreación de tabs después de cerrar. Es global (no
+// por instancia del hook) porque quien cierra y quien sincroniza la ruta con
+// las tabs pueden ser componentes distintos.
+let isClosingTab = false;
+
+// =============================================================================
+// Hooks
+// =============================================================================
+
+/**
+ * Acciones de navegación con tabs.
+ *
+ * No se suscribe a la lista de tabs ni a la tab activa: lee el store en el
+ * momento de la acción. Las pantallas que solo necesitan `navigateWithTab`
+ * deben usar este hook; así no se re-renderizan cada vez que se abre, cierra
+ * o cambia una tab (antes, cada tabla montada en segundo plano se volvía a
+ * renderizar en cada cambio de pestaña).
+ */
+export const useTabActions = () => {
+  const navigate = useNavigate();
 
   //Navegar a una ruta y crear/activar un tab
-
   const navigateWithTab = useCallback((path: string, options?: { newTab?: boolean; instanceId?: string; displayCode?: string; replace?: boolean }) => {
     const state = useTabStore.getState();
     const instanceId = options?.instanceId;
@@ -167,12 +173,11 @@ export const useTabNavigation = () => {
     }
 
     navigate(path, { replace: options?.replace });
-  }, [navigate, findRouteInfo]);
+  }, [navigate]);
 
-  
   //Navegar al siguiente tab
-  
   const nextTab = useCallback(() => {
+    const { tabs, activeTabId, setActiveTab } = useTabStore.getState();
     if (tabs.length === 0) return;
 
     const currentIndex = tabs.findIndex(tab => tab.id === activeTabId);
@@ -183,12 +188,11 @@ export const useTabNavigation = () => {
       setActiveTab(nextTab.id);
       navigate(nextTab.path);
     }
-  }, [tabs, activeTabId, setActiveTab, navigate]);
+  }, [navigate]);
 
-  
   //Navegar al tab anterior
-  
   const previousTab = useCallback(() => {
+    const { tabs, activeTabId, setActiveTab } = useTabStore.getState();
     if (tabs.length === 0) return;
 
     const currentIndex = tabs.findIndex(tab => tab.id === activeTabId);
@@ -199,13 +203,11 @@ export const useTabNavigation = () => {
       setActiveTab(prevTab.id);
       navigate(prevTab.path);
     }
-  }, [tabs, activeTabId, setActiveTab, navigate]);
-
+  }, [navigate]);
 
   //Cerrar tab actual o una tab específica
-
   const closeCurrentTab = useCallback((tabIdToClose?: string) => {
-    // ✅ FIX: Obtener estado fresco directamente del store
+    // Obtener estado fresco directamente del store
     const state = useTabStore.getState();
     const targetTabId = tabIdToClose || state.activeTabId;
 
@@ -225,7 +227,7 @@ export const useTabNavigation = () => {
     }
 
     // Activar bandera para prevenir recreación de tab
-    isClosingTabRef.current = true;
+    isClosingTab = true;
 
     // Remover la tab actual o específica
     // IMPORTANTE: removeTab actualiza automáticamente el activeTabId al siguiente tab disponible
@@ -247,41 +249,52 @@ export const useTabNavigation = () => {
 
     // Desactivar bandera en el siguiente tick (mínimo delay necesario)
     requestAnimationFrame(() => {
-      isClosingTabRef.current = false;
+      isClosingTab = false;
     });
   }, [navigate]);
 
+  return { navigateWithTab, nextTab, previousTab, closeCurrentTab };
+};
 
-  //Migrar tabs antiguos y recuperar iconos desde localStorage (solo una vez al montar)
+/**
+ * Sincroniza la URL con las tabs: si se navega sin `navigateWithTab`, crea o
+ * activa la tab correspondiente. Debe montarse UNA sola vez (lo hace el
+ * TitleBar); antes corría una vez por cada pantalla que usaba el hook.
+ */
+export const useTabRouteSync = () => {
+  const location = useLocation();
+
+  // Rol del usuario para verificar permisos antes de crear tabs
+  const { rol: userRole } = useUserRole();
+
+  // Rutas aportadas por plugins: re-sincronizar cuando un plugin registra
+  // rutas (p. ej. una tab de plugin restaurada antes de que el plugin cargue).
+  const registryRoutes = useRegistryRoutes();
+
+  //Migrar tabs antiguos y recuperar iconos (solo una vez al montar)
   const hasMigratedRef = useRef(false);
 
   useEffect(() => {
-    // Solo ejecutar una vez al montar
     if (hasMigratedRef.current) return;
     hasMigratedRef.current = true;
 
-    // Agrupar todas las actualizaciones en un solo batch
-    const tabsToUpdate = tabs.filter(tab =>
+    const state = useTabStore.getState();
+    const tabsToUpdate = state.tabs.filter(tab =>
       tab.title === tab.path ||
       tab.title.startsWith('/') ||
       !tab.icon
     );
 
-    if (tabsToUpdate.length > 0) {
-      const state = useTabStore.getState();
-      tabsToUpdate.forEach(tab => {
-        const routeInfo = findRouteInfo(tab.path);
-        state.updateTab(tab.id, {
-          title: routeInfo.name,
-          icon: routeInfo.icon
-        });
+    tabsToUpdate.forEach(tab => {
+      const routeInfo = findRouteInfo(tab.path);
+      state.updateTab(tab.id, {
+        title: routeInfo.name,
+        icon: routeInfo.icon
       });
-    }
+    });
   }, []);
 
-
-  // Optimizado Si navegamos sin usar navigateWithTab, esto crea/activa el tab automáticamente
-  // Reducción de dependencias para evitar ejecuciones innecesarias
+  // Si navegamos sin usar navigateWithTab, esto crea/activa el tab automáticamente
   useEffect(() => {
     const currentPath = location.pathname;
 
@@ -291,7 +304,7 @@ export const useTabNavigation = () => {
     }
 
     // Si estamos cerrando una tab, no crear tabs nuevas
-    if (isClosingTabRef.current) {
+    if (isClosingTab) {
       return;
     }
 
@@ -344,14 +357,21 @@ export const useTabNavigation = () => {
         state.setActiveTab(existingTab.id);
       }
     }
-    // Solo depende de location.pathname, findRouteInfo, findRouteByPath y userRole
-  }, [location.pathname, findRouteInfo, findRouteByPath, userRole]);
+  }, [location.pathname, userRole, registryRoutes]);
+};
+
+/**
+ * API completa (compatibilidad): sincronización + acciones + estado de tabs.
+ * Se re-renderiza con cada cambio de tabs; en pantallas usar `useTabActions`.
+ */
+export const useTabNavigation = () => {
+  useTabRouteSync();
+  const actions = useTabActions();
+  const tabs = useTabStore(state => state.tabs);
+  const activeTabId = useTabStore(state => state.activeTabId);
 
   return {
-    navigateWithTab,
-    nextTab,
-    previousTab,
-    closeCurrentTab,
+    ...actions,
     currentTab: tabs.find(tab => tab.id === activeTabId),
     tabs,
   };

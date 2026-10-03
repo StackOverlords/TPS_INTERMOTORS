@@ -1,7 +1,3 @@
-import CreateProduct from "@/modules/products/screens/CreateProduct";
-import ProductDetailScreen from "@/modules/products/screens/ProductDetailScreen";
-import ProductEditScreen from "@/modules/products/screens/ProductEditScreen";
-import ProductListScreen from "@/modules/products/screens/ProductListScreen";
 import {
   AreaChartIcon,
   BoxIcon,
@@ -13,10 +9,16 @@ import {
 } from "lucide-react";
 import type RouteType from "./RouteType";
 import { productsListViewConfig } from "@/modules/products/config/product.config";
-import ProductoStockReports from "@/modules/products/screens/ProductoStockReports";
-import UtilidadesReportScreen from "@/modules/products/screens/UtilidadesReportScreen";
-import InventarioReportScreen from "@/modules/products/screens/InventarioReportScreen";
-import KardexReportScreen from "@/modules/reports/screens/products/KardexReportScreen";
+import { lazyScreen } from "./lazyScreen";
+
+const CreateProduct = lazyScreen(() => import("@/modules/products/screens/CreateProduct"));
+const ProductDetailScreen = lazyScreen(() => import("@/modules/products/screens/ProductDetailScreen"));
+const ProductEditScreen = lazyScreen(() => import("@/modules/products/screens/ProductEditScreen"));
+const ProductListScreen = lazyScreen(() => import("@/modules/products/screens/ProductListScreen"));
+const ProductoStockReports = lazyScreen(() => import("@/modules/products/screens/ProductoStockReports"));
+const UtilidadesReportScreen = lazyScreen(() => import("@/modules/products/screens/UtilidadesReportScreen"));
+const InventarioReportScreen = lazyScreen(() => import("@/modules/products/screens/InventarioReportScreen"));
+const KardexReportScreen = lazyScreen(() => import("@/modules/reports/screens/products/KardexReportScreen"));
 
 const productosProtectedRoutes: RouteType[] = [
   {

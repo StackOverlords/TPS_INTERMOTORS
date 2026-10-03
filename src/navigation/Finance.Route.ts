@@ -1,8 +1,4 @@
-import CxPListScreen from "@/modules/cxp/screens/CxPListScreen";
 // import CxPProjectionScreen from "@/modules/cxp/screens/CxPProjectionScreen"; // backend sin datos aún
-import CxPGeneralReportScreen from "@/modules/cxp/screens/CxPGeneralReportScreen";
-import CxPBySupplierReportScreen from "@/modules/cxp/screens/CxPBySupplierReportScreen";
-import CxPRankingReportScreen from "@/modules/cxp/screens/CxPRankingReportScreen";
 // import AlertsScreen from "@/modules/alerts/screens/AlertsScreen"; // backend WIP
 // import TreasuryDashboardScreen from "@/modules/treasury/screens/TreasuryDashboardScreen"; // backend WIP
 import {
@@ -13,6 +9,12 @@ import {
   Trophy,
 } from "lucide-react";
 import type RouteType from "./RouteType";
+import { lazyScreen } from "./lazyScreen";
+
+const CxPListScreen = lazyScreen(() => import("@/modules/cxp/screens/CxPListScreen"));
+const CxPGeneralReportScreen = lazyScreen(() => import("@/modules/cxp/screens/CxPGeneralReportScreen"));
+const CxPBySupplierReportScreen = lazyScreen(() => import("@/modules/cxp/screens/CxPBySupplierReportScreen"));
+const CxPRankingReportScreen = lazyScreen(() => import("@/modules/cxp/screens/CxPRankingReportScreen"));
 
 const financeRoutes: RouteType[] = [
   {

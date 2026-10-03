@@ -9,15 +9,17 @@ import {
   Truck,
 } from "lucide-react";
 import type RouteType from "./RouteType";
-import OrderListScreen from "@/modules/orders/screens/orderListScreen";
-import OrderCreateScreen from "@/modules/orders/screens/orderCreateScreen";
-import OrderEditScreen from "@/modules/orders/screens/orderEditScreen";
-import OrderDetailScreen from "@/modules/orders/screens/orderDetailScreen";
 import { ordersListViewConfig } from "@/modules/orders/config/order.config";
-import OrderGeneralReportScreen from "@/modules/reports/screens/orders/orderGeneralReportScreen";
-import OrderTopProveedoresReportScreen from "@/modules/reports/screens/orders/orderTopProvidersReportScreen";
-import OrderTiempoMedioReportScreen from "@/modules/reports/screens/orders/orderTiempoMedioReportScreen";
-import OrderCartListScreen from "@/modules/orderCart/screens/orderCartListScreen";
+import { lazyScreen } from "./lazyScreen";
+
+const OrderListScreen = lazyScreen(() => import("@/modules/orders/screens/orderListScreen"));
+const OrderCreateScreen = lazyScreen(() => import("@/modules/orders/screens/orderCreateScreen"));
+const OrderEditScreen = lazyScreen(() => import("@/modules/orders/screens/orderEditScreen"));
+const OrderDetailScreen = lazyScreen(() => import("@/modules/orders/screens/orderDetailScreen"));
+const OrderGeneralReportScreen = lazyScreen(() => import("@/modules/reports/screens/orders/orderGeneralReportScreen"));
+const OrderTopProveedoresReportScreen = lazyScreen(() => import("@/modules/reports/screens/orders/orderTopProvidersReportScreen"));
+const OrderTiempoMedioReportScreen = lazyScreen(() => import("@/modules/reports/screens/orders/orderTiempoMedioReportScreen"));
+const OrderCartListScreen = lazyScreen(() => import("@/modules/orderCart/screens/orderCartListScreen"));
 
 const ordersProtectedRoutes: RouteType[] = [
   {

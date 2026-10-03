@@ -1,7 +1,8 @@
 import type RouteType from "@/navigation/RouteType";
 import NavItem from "./NavItem";
+import { isNavItemActive } from "./sidebarActive";
 import { ChevronRight } from "lucide-react";
-import { useLocation, matchPath } from "react-router";
+import { matchPath } from "react-router";
 import { cn } from "@/lib/utils";
 import {
   SidebarMenuButton,
@@ -10,47 +11,43 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/atoms/sidebar";
-import { useEffect } from "react";
-import { useUserRole } from "@/hooks/useUserRole";
+import { memo, useEffect } from "react";
+import type { UserRole } from "@/hooks/useUserRole";
 import { hasRouteAccess } from "@/utils/permissions";
 
 const HeaderTagRoute = ({
   route,
-  expandedHeaders,
+  isExpanded,
+  activePath,
+  userRole,
   toggleHeader,
   handleNavigation,
   badgeMap,
 }: {
   route: RouteType;
-  expandedHeaders: string[];
+  isExpanded: boolean;
+  /** Ruta actual si pertenece a este grupo; si no, `null`. */
+  activePath: string | null;
+  userRole: UserRole;
   toggleHeader: (headerName: string) => void;
   handleNavigation: () => void;
   badgeMap?: Record<string, number>;
 }) => {
-  const location = useLocation();
-  const { rol: userRole } = useUserRole();
   const hasSubRoutes = route.subRoutes && route.subRoutes.length > 0;
 
   // Verificar si está en alguna subruta usando matchPath para manejar parámetros
-  const isInSubRoute = hasSubRoutes
-    ? (route.subRoutes ?? []).some(
-        (subRoute) =>
-          subRoute.path &&
-          matchPath({ path: subRoute.path, end: false }, location.pathname)
-      )
-    : false;
+  const isInSubRoute = hasSubRoutes ? activePath !== null : false;
 
   // Verificar si está en una subruta que NO se muestra en el sidebar
-  const isInHiddenSubRoute = hasSubRoutes
-    ? (route.subRoutes ?? []).some(
-        (subRoute) =>
-          subRoute.path &&
-          !subRoute.showSidebar &&
-          matchPath({ path: subRoute.path, end: false }, location.pathname)
-      )
-    : false;
-
-  const isExpanded = expandedHeaders.includes(route.name);
+  const isInHiddenSubRoute =
+    hasSubRoutes && activePath !== null
+      ? (route.subRoutes ?? []).some(
+          (subRoute) =>
+            subRoute.path &&
+            !subRoute.showSidebar &&
+            matchPath({ path: subRoute.path, end: false }, activePath)
+        )
+      : false;
 
   // Auto-expandir cuando navegas a una subruta visible, pero permitir colapsarlo manualmente
   useEffect(() => {
@@ -70,6 +67,7 @@ const HeaderTagRoute = ({
             href={route.path || "/"}
             icon={route.icon}
             handleNavigation={handleNavigation}
+            isActive={isNavItemActive(route.path || "/", activePath)}
           >
             {route.name}
           </NavItem>
@@ -135,6 +133,7 @@ const HeaderTagRoute = ({
                     icon={subRoute.icon}
                     handleNavigation={handleNavigation}
                     badge={subRoute.path ? (badgeMap?.[subRoute.path] ?? null) : null}
+                    isActive={isNavItemActive(subRoute.path || "#", activePath)}
                   >
                     {subRoute.name}
                   </NavItem>
@@ -146,4 +145,4 @@ const HeaderTagRoute = ({
     </SidebarMenuItem>
   );
 };
-export default HeaderTagRoute;
+export default memo(HeaderTagRoute);

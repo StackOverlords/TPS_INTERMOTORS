@@ -1,8 +1,12 @@
-import { UserDetailScreen, CreateUserScreen, EditUserScreen } from "@/modules/users";
 import { userDetailsConfig, userListConfig } from "@/modules/users/config/user.config";
-import UserListScreen from "@/modules/users/screens/UserListScreen";
 import { BoxIcon, UserCogIcon, UserPlus, Users } from "lucide-react";
 import type RouteType from "./RouteType";
+import { lazyScreen } from "./lazyScreen";
+
+const UserListScreen = lazyScreen(() => import("@/modules/users/screens/UserListScreen"));
+const UserDetailScreen = lazyScreen(() => import("@/modules/users/screens/UserDetailScreen"));
+const CreateUserScreen = lazyScreen(() => import("@/modules/users/screens/CreateUserScreen"));
+const EditUserScreen = lazyScreen(() => import("@/modules/users/screens/EditUserScreen"));
 
 const usuariosProtectedRoutes: RouteType[] = [
   {

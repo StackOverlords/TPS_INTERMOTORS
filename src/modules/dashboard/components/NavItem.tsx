@@ -1,28 +1,29 @@
 import { Badge } from "@/components/atoms/badge";
 import { cn } from "@/lib/utils";
-import React from "react";
-import { Link, matchPath, useLocation } from "react-router";
+import React, { memo } from "react";
+import { Link } from "react-router";
 
+/**
+ * Ítem del menú lateral. No lee la ubicación: el sidebar la lee una sola vez y
+ * le pasa `isActive`, así que al navegar solo se re-renderizan los ítems que
+ * cambian de estado (antes cada ítem usaba useLocation y el menú entero se
+ * re-renderizaba en cada navegación o cambio de pestaña).
+ */
 const NavItem = ({
   href,
   icon: Icon,
   children,
   handleNavigation,
   badge,
+  isActive,
 }: {
   href: string;
   icon: any;
   children: React.ReactNode;
   handleNavigation: () => void;
   badge?: number | null;
+  isActive: boolean;
 }) => {
-  const { pathname } = useLocation();
-
-  // Para /dashboard usamos coincidencia exacta
-  // Para otras rutas también usamos exacta para evitar conflictos
-  const match = matchPath({ path: href, end: true }, pathname);
-  const isActive = Boolean(match);
-
   return (
     <Link
       to={href}
@@ -48,4 +49,4 @@ const NavItem = ({
   );
 };
 
-export default NavItem;
+export default memo(NavItem);

@@ -1,8 +1,3 @@
-import CreatePurchase from "@/modules/purchases/screens/CreatePurchase";
-import EditPurchase from "@/modules/purchases/screens/EditPurchase";
-import PurchaseDetailScreen from "@/modules/purchases/screens/PurchaseDetailScreen";
-import PurchaseListScreen from "@/modules/purchases/screens/PurchaseListScreen";
-import UpdatePrices from "@/modules/purchases/screens/UpdatePrices";
 import {
   DollarSign,
   Package,
@@ -13,9 +8,16 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type RouteType from "./RouteType";
-import PurchaseGeneralReportScreen from "@/modules/reports/screens/purchases/purchaseGeneralReportScreen";
-import PurchaseMasCompradoReportScreen from "@/modules/reports/screens/purchases/purchaseMasCompradoReportScreen";
-import PurchaseMayorCostoReportScreen from "@/modules/reports/screens/purchases/purchaseMayorCostoReportScreen";
+import { lazyScreen } from "./lazyScreen";
+
+const CreatePurchase = lazyScreen(() => import("@/modules/purchases/screens/CreatePurchase"));
+const EditPurchase = lazyScreen(() => import("@/modules/purchases/screens/EditPurchase"));
+const PurchaseDetailScreen = lazyScreen(() => import("@/modules/purchases/screens/PurchaseDetailScreen"));
+const PurchaseListScreen = lazyScreen(() => import("@/modules/purchases/screens/PurchaseListScreen"));
+const UpdatePrices = lazyScreen(() => import("@/modules/purchases/screens/UpdatePrices"));
+const PurchaseGeneralReportScreen = lazyScreen(() => import("@/modules/reports/screens/purchases/purchaseGeneralReportScreen"));
+const PurchaseMasCompradoReportScreen = lazyScreen(() => import("@/modules/reports/screens/purchases/purchaseMasCompradoReportScreen"));
+const PurchaseMayorCostoReportScreen = lazyScreen(() => import("@/modules/reports/screens/purchases/purchaseMayorCostoReportScreen"));
 
 const purchasesProtectedRoutes: RouteType[] = [
   {
