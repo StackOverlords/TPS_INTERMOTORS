@@ -1,7 +1,0 @@
-{
-  "id": "com.rhleone.facturacion",
-  "name": "facturacionPlugin",
-  "displayName": "Facturación (sonda)",
-  "version": "1.0.0",
-  "entry": "remoteEntry.js"
-}
