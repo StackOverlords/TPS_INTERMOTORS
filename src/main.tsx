@@ -22,6 +22,7 @@ import { getWindowManager } from "@/platform";
 import { PluginDialogHost } from "./plugins/components/PluginDialogHost.tsx";
 import { PluginKeybindingHost } from "./plugins/components/PluginKeybindingHost.tsx";
 import { startExternalPlugins } from "./plugins/bootstrapExternalPlugins.ts";
+import { serveSessionToSecondaryWindows } from "./services/secondaryWindowSession.ts";
 import { useEffect } from "react";
 import { applyCachedColorTheme } from "./themes/applyColorTheme.ts";
 import "./stores/colorThemeStore.ts";
@@ -58,6 +59,10 @@ if (import.meta.env.VITE_DEV_PLUGINS === "1") {
 // Best-effort: errores aislados por plugin (no tumban la app ni el bootstrap dev).
 // En web espera a que haya sesión: ver plugins/bootstrapExternalPlugins.ts.
 startExternalPlugins();
+
+// Las ventanas secundarias que arrancan sin sesión vigente (token vencido) se
+// la piden a esta, que es la única que renueva tokens.
+serveSessionToSecondaryWindows();
 
 function App() {
   // ✅ Forzar guardado de tabs antes de cerrar la aplicación

@@ -5,6 +5,7 @@ import NotFound from "@/modules/shared/screens/NotFound";
 import { useRegistryRoutes } from "@/plugins";
 import authSDK from "@/services/sdk-simple-auth";
 import { useTabStore } from "@/states/tabStore";
+import { getWindowManager } from "@/platform";
 import { environment } from "@/utils/environment";
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
@@ -60,6 +61,9 @@ const Navigation = () => {
       if (!possible.user) {
         // Limpiar todas las tabs cuando el usuario cierra sesión o la sesión expira
         closeAllTabs();
+        // Y cerrar las ventanas secundarias: sin sesión quedaban abiertas sin
+        // poder cargar nada.
+        getWindowManager().closeAllSecondary().catch(() => {});
         setAuthState({ user: null, selectedBranch: null });
       } else {
         setAuthState({
