@@ -170,6 +170,22 @@ export default defineConfig({
   esbuild:{
     drop: [ 'debugger'],
   },
+  // Desarrollo: pre-optimizar TODAS las dependencias al arrancar el servidor.
+  // El escáner por defecto no llega a las que solo usan las ventanas
+  // secundarias o las pantallas bajo demanda (p. ej. @radix-ui/react-toggle-group
+  // del selector de productos). Vite las descubría al abrir esa ventana y
+  // forzaba "optimized dependencies changed. reloading" en TODAS las páginas:
+  // la ventana quedaba en blanco y, al recargarse la principal, cerraba las
+  // secundarias. Solo afecta a `vite` dev, no al build.
+  optimizeDeps: {
+    entries: [
+      'index.html',
+      'window.html',
+      'src/**/*.{ts,tsx}',
+      '!src/**/__tests__/**',
+      '!src/**/*.{test,spec}.{ts,tsx}',
+    ],
+  },
   // Clear screen on rebuild
   clearScreen: false,
   // Only expose VITE_* and Tauri's build-context TAURI_ENV_* vars to the client.
