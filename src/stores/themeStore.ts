@@ -16,9 +16,23 @@ const getSystemTheme = (): ResolvedTheme => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+/**
+ * Copia síncrona del tema resuelto para el script inline de index.html y
+ * window.html, que pinta el fondo correcto ANTES de cargar el JS. El store
+ * persiste en el almacenamiento de la plataforma (un archivo en escritorio),
+ * que ese script no puede leer: sin esta copia cada ventana arrancaba en claro
+ * y, con el tema oscuro, se veía un fogonazo blanco al abrirla.
+ */
+export const RESOLVED_THEME_CACHE_KEY = 'theme-resolved'
+
 const applyTheme = (resolvedTheme: ResolvedTheme) => {
   const root = document.documentElement
   root.style.colorScheme = resolvedTheme
+  try {
+    localStorage.setItem(RESOLVED_THEME_CACHE_KEY, resolvedTheme)
+  } catch {
+    // Sin localStorage solo se pierde el arranque sin parpadeo.
+  }
 
   if (resolvedTheme === 'dark') {
     root.classList.add('dark')

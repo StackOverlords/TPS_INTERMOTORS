@@ -22,6 +22,24 @@ import {
 
 const MAIN_WINDOW_LABEL = 'main';
 
+/**
+ * Fondo actual de la ventana que abre la secundaria (respeta tema y tema de
+ * color), como RGB para la ventana nativa. `undefined` si no se puede leer.
+ */
+function openerBackgroundColor(): [number, number, number] | undefined {
+  if (typeof document === 'undefined') return undefined;
+  for (const element of [document.body, document.documentElement]) {
+    if (!element) continue;
+    const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(
+      getComputedStyle(element).backgroundColor,
+    );
+    if (match && (match[4] === undefined || Number(match[4]) > 0)) {
+      return [Number(match[1]), Number(match[2]), Number(match[3])];
+    }
+  }
+  return undefined;
+}
+
 function buildUrl(config: SecondaryWindowConfig): string {
   const queryString = new URLSearchParams({
     windowId: config.windowId,
@@ -68,6 +86,7 @@ async function createWebviewWindow(
   } = config;
 
   const url = buildUrl(config);
+  const backgroundColor = openerBackgroundColor();
 
   const options = {
     url,
@@ -82,6 +101,9 @@ async function createWebviewWindow(
     alwaysOnTop,
     decorations,
     transparent,
+    // Fondo nativo mientras el webview carga: sin esto Tauri pinta la ventana
+    // blanca hasta el primer frame (fogonazo blanco con el tema oscuro).
+    ...(backgroundColor && !transparent ? { backgroundColor } : {}),
   };
 
   // Siempre destruir la ventana existente antes de crear una nueva.

@@ -6,7 +6,9 @@ import {
 import { createRoot } from "react-dom/client";
 import { AuthSDKContext } from "./contexts/AuthSDKContext.tsx";
 import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.tsx";
-import { WebSocketProvider } from "./contexts/WebSocketContext.tsx";
+import { ErrorBoundary } from "./components/common/ErrorBoundary.tsx";
+import { Button } from "./components/atoms/button.tsx";
+import { ensureSecondaryWindowSession } from "./services/secondaryWindowSession.ts";
 import "./index.css";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
 import authSDK from "./services/sdk-simple-auth.ts";
@@ -107,34 +109,59 @@ const requiresAuth = componentId
   ? !NO_AUTH_COMPONENTS.includes(componentId)
   : true;
 
+/**
+ * Si algo falla fuera del ErrorBoundary de cada selector (layout, providers,
+ * barra de título), la ventana quedaba en blanco y, sin la barra de título ni
+ * bordes nativos (decorations: false), ni siquiera se podía cerrar.
+ */
+const windowCrashFallback = (
+  <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-background p-6 text-center text-foreground">
+    <p className="text-base font-semibold">Esta ventana tuvo un problema al cargarse</p>
+    <p className="text-sm text-muted-foreground">
+      Puedes recargarla, o cerrarla y volver a abrirla desde la ventana principal.
+    </p>
+    <div className="flex gap-2">
+      <Button size="sm" onClick={() => window.location.reload()}>
+        Recargar
+      </Button>
+      <Button size="sm" variant="outline" onClick={() => void platformWindows.closeCurrentWindow()}>
+        Cerrar ventana
+      </Button>
+    </div>
+  </div>
+);
+
 if (rootElement) {
   const mount = () => {
     createRoot(rootElement).render(
-      requiresAuth ? (
-        <AuthSDKContext.Provider value={windowAuthSDK ?? authSDK}>
-          <TaskNotificationsProvider>
-            <WebSocketProvider>
+      <ErrorBoundary name="ventana secundaria" fallback={windowCrashFallback}>
+        {requiresAuth ? (
+          <AuthSDKContext.Provider value={windowAuthSDK ?? authSDK}>
+            <TaskNotificationsProvider>
+              {/* WindowLayout trae su propio WebSocketProvider: uno acá afuera
+                  abría una segunda conexión por ventana que nadie usaba. */}
               <WindowLayout>
                 <WindowComponentRenderer />
               </WindowLayout>
-            </WebSocketProvider>
-          </TaskNotificationsProvider>
-        </AuthSDKContext.Provider>
-      ) : (
-        <WindowComponentRenderer />
-      )
+            </TaskNotificationsProvider>
+          </AuthSDKContext.Provider>
+        ) : (
+          <WindowComponentRenderer />
+        )}
+      </ErrorBoundary>
     );
   };
 
   if (isSecondaryWindow && requiresAuth) {
-    authSDK.ready
-      .then(() => {
-        mount();
-      })
+    // Espera la sesión restaurada y, si el token guardado venció, pide una
+    // vigente a la ventana principal antes de montar. Mientras tanto se ve el
+    // indicador de carga que trae window.html (no una pantalla en blanco).
+    ensureSecondaryWindowSession()
       .catch((error) => {
-        console.error("[WindowEntry] ❌ SDK ready failed:", error);
-        mount();
-      });
+        console.error("[WindowEntry] ❌ No se pudo preparar la sesión:", error);
+        return false;
+      })
+      .finally(mount);
   } else {
     mount();
   }

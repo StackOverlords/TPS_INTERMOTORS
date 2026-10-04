@@ -6,47 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Secondary Window - TPS Intermotors</title>
     <script>
-      (function() {
+      // Tema antes del primer pintado: sin esto la ventana se ve blanca hasta
+      // que carga el JS (y con tema oscuro, un fogonazo blanco al abrirla).
+      // El tema se guarda en el store de la plataforma (un archivo en
+      // escritorio), que no se puede leer desde acá: el themeStore deja una
+      // copia síncrona en localStorage ("theme-resolved").
+      (function () {
+        var root = document.documentElement;
+        var theme = null;
+        try { theme = localStorage.getItem('theme-resolved'); } catch (e) {}
+        if (theme !== 'dark') theme = 'light';
+        if (theme === 'dark') root.classList.add('dark');
+        root.style.colorScheme = theme;
+        // Tema de color (Configuración > Apariencia): mismo caché que src/themes/applyColorTheme.ts.
         try {
-          const stored = localStorage.getItem('theme-storage');
-          
-          if (!stored) {
-            // Si no hay tema guardado, usar light por defecto
-            document.documentElement.style.colorScheme = 'light';
-            return;
-          }
-
-          const state = JSON.parse(stored).state;
-          const theme = state.theme || 'light';
-          
-          // Resolver el tema (system -> light/dark real)
-          let resolvedTheme;
-          if (theme === 'system') {
-            resolvedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches 
-              ? 'dark' 
-              : 'light';
-          } else {
-            resolvedTheme = theme;
-          }
-          
-          document.documentElement.style.colorScheme = resolvedTheme;
-          
-          if (resolvedTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-          
-          console.log('[WindowHTML] Tema inicializado:', resolvedTheme, '(configurado:', theme + ')');
-        } catch (e) {
-          console.error('[WindowHTML] Error inicializando tema:', e);
-          document.documentElement.style.colorScheme = 'light';
-        }
+          var vars = JSON.parse(localStorage.getItem('intermotors:color-theme-vars') || 'null');
+          if (vars) for (var key in vars) if (key.indexOf('--') === 0) root.style.setProperty(key, vars[key]);
+        } catch (e) {}
       })();
     </script>
+    <!-- Fondo y carga mientras llega el JS. No compite con index.css: usa
+         var(--background) y el valor fijo es solo el respaldo hasta que cargue. -->
+    <style id="boot-theme">
+      html, body { margin: 0; background-color: hsl(var(--background, 0 0% 100%)); }
+      html.dark, html.dark body { background-color: hsl(var(--background, 220 13% 16%)); }
+      .boot-loader { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font: 14px system-ui, sans-serif; color: #6b7280; }
+      html.dark .boot-loader { color: #9ca3af; }
+      .boot-loader span { width: 32px; height: 32px; border-radius: 50%; border: 3px solid currentColor; border-top-color: transparent; animation: boot-spin .8s linear infinite; }
+      @keyframes boot-spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
-    <div id="window-root"></div>
+    <div id="window-root"><div class="boot-loader" role="status"><span></span>Cargando…</div></div>
     <script type="module" src="/src/window-entry.tsx"></script>
   </body>
 </html>
