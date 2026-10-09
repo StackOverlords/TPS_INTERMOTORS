@@ -1,3 +1,49 @@
+# Novedades — v1.11.0
+
+---
+
+## Nuevas funcionalidades
+
+### Más rápida
+
+- Las pantallas se cargan a medida que las abres: la app arranca más rápido.
+- Cambiar de pestaña ya no recarga lo que tenías abierto.
+- El menú lateral, los listados y los selectores responden con más fluidez.
+
+---
+
+### Temas de color
+
+- Nueva opción en **Configuración → Apariencia → Tema de color**: elige un tema predefinido o importa uno de VS Code.
+- Los colores mantienen siempre un contraste legible, en modo claro y oscuro.
+- Con el modo oscuro, abrir la app o una ventana ya no muestra un destello blanco.
+
+---
+
+### Plugins
+
+- Nueva sección **Configuración → Plugins** para gestionar extensiones. Esta versión no incluye ningún plugin.
+
+---
+
+## Correcciones
+
+<details>
+<summary><strong>Ventanas secundarias — pantalla en blanco al abrirlas</strong></summary>
+
+Las ventanas secundarias (selector de productos, compras, pedidos, cotizaciones…) podían quedar en blanco al abrirlas. Ahora muestran "Cargando…" desde el primer momento y, si algo falla, ofrecen recargar o cerrar la ventana. Al cerrar sesión desde la ventana principal, las secundarias se cierran.
+
+</details>
+
+<details>
+<summary><strong>Sesión — se cerraba sola</strong></summary>
+
+La sesión ya no se cierra al suspender la PC, al perder internet por un momento ni al trabajar con varias ventanas abiertas. Al volver a abrir la app con la sesión vencida, se renueva automáticamente en vez de pedir iniciar sesión otra vez. Solo se cierra si el servidor la revoca.
+
+</details>
+
+---
+
 # Novedades — v1.4.2
 
 ---
