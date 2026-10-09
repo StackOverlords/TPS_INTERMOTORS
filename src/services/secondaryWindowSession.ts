@@ -3,17 +3,14 @@
  *
  * Una ventana secundaria lee la sesión del IndexedDB compartido. Si el access
  * token guardado ya venció (PC suspendida, app en segundo plano), arranca sin
- * sesión: antes eso la dejaba haciendo requests sin token, o directamente
- * borraba la sesión de toda la app (ver `sdk-simple-auth.ts`).
- *
- * La ventana principal es la única que renueva tokens. Así que la secundaria
- * le pide la sesión y la principal responde con una vigente, renovándola
- * primero si hace falta. El canal es el del WindowManager (eventos de Tauri en
- * escritorio, BroadcastChannel en web): no sale de la app.
+ * sesión. El SDK (`instanceRole: 'secondary'`) se la pide a la principal por
+ * tabSync (BroadcastChannel); esto hace lo mismo por el canal del
+ * WindowManager (eventos de Tauri en escritorio), por si BroadcastChannel no
+ * llegara entre ventanas nativas. Si el SDK ya la consiguió, no hace nada.
  */
 
 import { getWindowManager } from "@/platform";
-import authSDK, { onSecondaryWindowTokenExpired } from "./sdk-simple-auth";
+import authSDK from "./sdk-simple-auth";
 
 const REQUEST_TOPIC = "auth:session-request";
 const RESPONSE_EVENT = "auth:session";
@@ -100,13 +97,5 @@ function requestSessionFromMain(timeoutMs = 4000): Promise<boolean> {
         return windows.broadcast(REQUEST_TOPIC, { windowId } satisfies SessionRequest);
       })
       .catch(() => finish(false));
-  });
-}
-
-// Si el token vence con la ventana abierta, en vez de cerrar la sesión de toda
-// la app (lo que hacía el SDK), se pide una nueva a la principal.
-if (getWindowManager().isSecondaryWindow()) {
-  onSecondaryWindowTokenExpired(() => {
-    void requestSessionFromMain();
   });
 }

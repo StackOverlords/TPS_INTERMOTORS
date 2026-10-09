@@ -22,7 +22,6 @@ const auth = vi.hoisted(() => ({
   accessToken: 'access-1' as string | null,
   getValidAccessToken: vi.fn(),
   applyRemoteSession: vi.fn(),
-  expiredHandler: null as (() => void) | null,
 }));
 
 const on = (map: Map<string, Set<Handler>>, key: string, handler: Handler) => {
@@ -55,9 +54,6 @@ vi.mock('../sdk-simple-auth', () => ({
     getValidAccessToken: auth.getValidAccessToken,
     applyRemoteSession: auth.applyRemoteSession,
   },
-  onSecondaryWindowTokenExpired: (handler: () => void) => {
-    auth.expiredHandler = handler;
-  },
 }));
 
 const USER = { id: 7, name: 'Caja 1' };
@@ -79,7 +75,6 @@ beforeEach(() => {
   bus.windowEvents.clear();
   auth.user = null;
   auth.tokens = null;
-  auth.expiredHandler = null;
   auth.getValidAccessToken.mockImplementation(async () => auth.accessToken);
 });
 
@@ -160,22 +155,5 @@ describe('ventana secundaria', () => {
     await expect(result).resolves.toBe(false);
     expect(auth.applyRemoteSession).not.toHaveBeenCalled();
     expect(listeners(bus.windowEvents, 'w1:auth:session')).toBe(0);
-  });
-
-  it('si vence el token con la ventana abierta, pide una sesión nueva', async () => {
-    await loadAs('w1');
-    const requested = vi.fn();
-    on(bus.topics, 'auth:session-request', requested);
-
-    expect(auth.expiredHandler).toBeTypeOf('function');
-    auth.expiredHandler!();
-    await flush();
-
-    expect(requested).toHaveBeenCalledWith({ windowId: 'w1' });
-  });
-
-  it('la principal no registra el handler de vencimiento', async () => {
-    await loadAs(null);
-    expect(auth.expiredHandler).toBeNull();
   });
 });

@@ -1,71 +1,38 @@
 /**
- * Tests del guard de sesión compartida en ventanas secundarias.
+ * Configuración del SDK según la ventana.
  *
- * Se usa el SDK instalado de verdad: el guard parchea internos suyos
- * (`storageManager.clearAll`, `handleTokenExpiration`), y si una versión nueva
- * los renombra, estos tests tienen que fallar en vez de que el guard deje de
- * aplicarse sin que nadie se entere.
+ * Las ventanas secundarias comparten la sesión (IndexedDB) con la principal.
+ * Con `instanceRole: 'secondary'` el SDK no renueva tokens ni borra esa sesión
+ * por su cuenta (antes lo hacía y cerraba la sesión de toda la app), y si su
+ * token vence se la pide a la principal.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { AuthSDK } from 'sdk-simple-auth';
-import { createAuthSDK, onSecondaryWindowTokenExpired } from '../sdk-simple-auth';
+import { createAuthSDK } from '../sdk-simple-auth';
 
-type Internals = {
-  storageManager: { clearAll: () => Promise<void> };
-  handleTokenExpiration: () => Promise<void>;
-  config: { tokenRefresh: { enabled: boolean } };
+type Config = {
+  instanceRole: 'primary' | 'secondary';
+  tokenRefresh: { enabled: boolean };
+  tabSync: { enabled: boolean; channelName: string };
 };
 
-const internals = (sdk: AuthSDK) => sdk as unknown as Internals;
-
-afterEach(() => {
-  vi.restoreAllMocks();
-  onSecondaryWindowTokenExpired(() => {});
-});
+const configOf = (sdk: AuthSDK) => (sdk as unknown as { config: Config }).config;
 
 describe('createAuthSDK', () => {
-  it('la versión instalada del SDK tiene los internos que parchea el guard', () => {
-    const sdk = internals(createAuthSDK(false));
+  it('principal: renueva tokens y es dueña de la sesión compartida', () => {
+    const config = configOf(createAuthSDK(false));
 
-    expect(typeof sdk.storageManager?.clearAll).toBe('function');
-    expect(typeof sdk.handleTokenExpiration).toBe('function');
+    expect(config.instanceRole).toBe('primary');
+    expect(config.tokenRefresh.enabled).toBe(true);
   });
 
-  it('principal: renueva tokens y deja el SDK sin tocar', () => {
-    const sdk = internals(createAuthSDK(false));
+  it('secundaria: no renueva ni borra la sesión, la pide a la principal', () => {
+    const config = configOf(createAuthSDK(true));
 
-    expect(sdk.config.tokenRefresh.enabled).toBe(true);
-    expect(Object.hasOwn(sdk, 'handleTokenExpiration')).toBe(false);
-    expect(Object.hasOwn(sdk.storageManager, 'clearAll')).toBe(false);
-  });
-
-  it('secundaria: no renueva (lo hace solo la principal)', () => {
-    expect(internals(createAuthSDK(true)).config.tokenRefresh.enabled).toBe(false);
-  });
-
-  it('secundaria: no puede borrar la sesión compartida', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const sdk = internals(createAuthSDK(true));
-    const original = Object.getPrototypeOf(sdk.storageManager).clearAll as () => Promise<void>;
-    const originalSpy = vi.spyOn(Object.getPrototypeOf(sdk.storageManager), 'clearAll');
-
-    await sdk.storageManager.clearAll();
-
-    expect(sdk.storageManager.clearAll).not.toBe(original);
-    expect(originalSpy).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledOnce();
-  });
-
-  it('secundaria: si vence el token pide sesión en vez de cerrar la de toda la app', async () => {
-    const onExpired = vi.fn();
-    onSecondaryWindowTokenExpired(onExpired);
-    const auth = createAuthSDK(true);
-    const logout = vi.spyOn(auth, 'logout').mockResolvedValue(undefined);
-
-    await internals(auth).handleTokenExpiration();
-
-    expect(onExpired).toHaveBeenCalledOnce();
-    expect(logout).not.toHaveBeenCalled();
+    expect(config.instanceRole).toBe('secondary');
+    expect(config.tokenRefresh.enabled).toBe(false);
+    // El pedido de sesión viaja por tabSync: tiene que estar activo.
+    expect(config.tabSync).toMatchObject({ enabled: true, channelName: 'tps-auth-sync' });
   });
 });
