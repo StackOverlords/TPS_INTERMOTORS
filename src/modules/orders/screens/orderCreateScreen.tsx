@@ -29,13 +29,22 @@ import { Textarea } from "@/components/atoms/textarea";
 import { ComboboxSelect } from "@/components/common/SelectCombobox";
 import ShortcutKey from "@/components/common/ShortcutKey";
 import TooltipButton from "@/components/common/TooltipButton";
-import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import {
+  showErrorToast,
+  showInfoToast,
+  showSuccessToast,
+} from "@/hooks/use-toast-enhanced";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { useViewConfig } from "@/hooks/useViewConfig";
 import { cn } from "@/lib/utils";
 import { OrderCartTransferButton } from "@/modules/orderCart/components/OrderCartTransferButton";
 import { useOrderCart } from "@/modules/orderCart/hooks/useOrderCart";
+import {
+  orderedQuantitiesByProduct,
+  planOrderCartRemovals,
+  resolveOrderCartOnOrderRegistered,
+} from "@/modules/orderCart/utils/orderCartAfterOrder";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
 import { productsService } from "@/modules/products/services/productService";
 import authSDK from "@/services/sdk-simple-auth";
@@ -80,11 +89,6 @@ import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuan
 import { ProtectedAction } from "@/components/common/ProtectedAction";
 import { PERMISSIONS } from "@/lib/permissions";
 
-interface ImportedOrderCartQuantity {
-  importedQuantity: number;
-  draftQuantityBeforeImport: number;
-}
-
 const OrderCreateScreen = () => {
   const configuraciones = {
     inputs: false,
@@ -109,16 +113,17 @@ const OrderCreateScreen = () => {
   // Hook de detalles de orden (pasar exchangeRate)
   const orderDetailsHook = useOrderDetails(false, exchangeRate);
 
-  const { isFeatureEnabled } = useViewConfig("orders-list");
-  const [importedOrderCartQuantities, setImportedOrderCartQuantities] = useState<
-    Map<number, ImportedOrderCartQuantity>
-  >(() => new Map());
+  const { isFeatureEnabled, getBehaviorValue } = useViewConfig("orders-list");
+  // Productos que ya se trajeron del carrito a este borrador (para no traerlos dos veces).
+  const [importedOrderCartIds, setImportedOrderCartIds] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [isImportingOrderCart, setIsImportingOrderCart] = useState(false);
 
   const importedOrderCartIdsInDraft = new Set(
     orderDetailsHook.details
       .map((detail) => detail.id_producto)
-      .filter((productId) => importedOrderCartQuantities.has(productId)),
+      .filter((productId) => importedOrderCartIds.has(productId)),
   );
 
   const { data: orderTypesData } = useOrderTypes();
@@ -313,7 +318,7 @@ const OrderCreateScreen = () => {
 
       if (canClearDetails) {
         orderDetailsHook.clearDetails();
-        setImportedOrderCartQuantities(new Map());
+        setImportedOrderCartIds(new Set());
       }
     },
     [getValues, reset]
@@ -359,7 +364,7 @@ const OrderCreateScreen = () => {
       (item) =>
         selectedIds.includes(item.product.id) &&
         !(
-          importedOrderCartQuantities.has(item.product.id) &&
+          importedOrderCartIds.has(item.product.id) &&
           draftQuantities.has(item.product.id)
         ),
     );
@@ -394,16 +399,10 @@ const OrderCreateScreen = () => {
       );
 
       const addedProductIds = orderDetailsHook.addMultipleProducts(payload);
-      setImportedOrderCartQuantities((currentQuantities) => {
-        const nextQuantities = new Map(currentQuantities);
-        selectedItems.forEach((item) =>
-          nextQuantities.set(item.product.id, {
-            importedQuantity: item.cantidad,
-            draftQuantityBeforeImport:
-              draftQuantities.get(item.product.id) ?? 0,
-          }),
-        );
-        return nextQuantities;
+      setImportedOrderCartIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        selectedItems.forEach((item) => nextIds.add(item.product.id));
+        return nextIds;
       });
 
       setTimeout(() => {
@@ -447,40 +446,47 @@ const OrderCreateScreen = () => {
 
     createOrder(dataWithTC, {
       onSuccess: (createdOrder) => {
-        const submittedQuantities = new Map(
-          data.detalles.map((detail) => [
-            detail.id_producto,
-            Number(detail.cantidad),
-          ]),
+        // Lista de compras: lo pedido sale de la lista de la sucursal, venga
+        // de "Traer del carrito" o agregado a mano. Descontar o quitar se
+        // configura en la vista (Configuración → Vistas → Lista de Pedidos).
+        const cartMode = resolveOrderCartOnOrderRegistered(
+          getBehaviorValue("orderCartOnOrderRegistered"),
         );
-        const fulfilledOrderCartQuantities = Array.from(
-          importedOrderCartQuantities,
-        )
-          .map(
-            ([
-              productId,
-              { importedQuantity, draftQuantityBeforeImport },
-            ]) => ({
-              productId,
-              cantidad: Math.min(
-                importedQuantity,
-                Math.max(
-                  0,
-                  (submittedQuantities.get(productId) ?? 0) -
-                    draftQuantityBeforeImport,
-                ),
-              ),
-            }),
-          )
-          .filter(({ cantidad }) => cantidad > 0);
-
-        orderCart.removeQuantities(fulfilledOrderCartQuantities);
-        setImportedOrderCartQuantities(new Map());
+        const cartRemovals = planOrderCartRemovals(
+          orderCart.items,
+          orderedQuantitiesByProduct(data.detalles),
+          cartMode,
+        );
+        orderCart.removeQuantities(
+          cartRemovals.map(({ item, cantidad }) => ({
+            productId: item.product.id,
+            cantidad,
+          })),
+        );
+        setImportedOrderCartIds(new Set());
 
         showSuccessToast({
           title: "Pedido Exitoso",
           description: `Pedido #${createdOrder.nro} realizado con éxito`,
         });
+
+        if (cartRemovals.length > 0) {
+          const { restoreRemovals } = orderCart;
+          const productos =
+            cartRemovals.length === 1 ? "1 producto" : `${cartRemovals.length} productos`;
+          showInfoToast({
+            title: "Lista de compras actualizada",
+            description:
+              cartMode === "remove"
+                ? `Se quitaron ${productos} de la lista.`
+                : `Se descontó lo pedido de ${productos} de la lista.`,
+            duration: 10000,
+            action: {
+              label: "Deshacer",
+              onClick: () => restoreRemovals(cartRemovals),
+            },
+          });
+        }
 
         const currentTab = tabs.find((t) => t.id === activeTabId);
 

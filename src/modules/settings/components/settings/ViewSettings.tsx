@@ -360,6 +360,41 @@ const ViewSettings = () => {
                             </div>
                           )}
 
+                          {selectedView.behaviors.orderCartOnOrderRegistered !==
+                            undefined && (
+                            <div className="space-y-1.5 p-2 border border-border rounded">
+                              <Label className="text-xs font-semibold text-foreground">
+                                Lista de compras al registrar un pedido
+                              </Label>
+                              <Select
+                                value={getBehaviorValue("orderCartOnOrderRegistered")}
+                                onValueChange={(value) =>
+                                  handleBehaviorChange(
+                                    "orderCartOnOrderRegistered",
+                                    value
+                                  )
+                                }
+                                disabled={isUpdating}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="subtract">
+                                    Descontar lo pedido
+                                  </SelectItem>
+                                  <SelectItem value="remove">
+                                    Quitar de la lista
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground">
+                                Se aplica a los productos del pedido que estén en
+                                la lista de compras de la sucursal.
+                              </p>
+                            </div>
+                          )}
+
                           {selectedView.behaviors.openDetailsIn !==
                             undefined && (
                             <div className="space-y-1.5 p-2 border border-border rounded">

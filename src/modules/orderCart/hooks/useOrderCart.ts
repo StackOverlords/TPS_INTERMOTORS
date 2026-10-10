@@ -6,7 +6,7 @@ import {
   NULL_ORDER_CART,
 } from "../store/orderCartRegistry";
 import type { OrderCartItem } from "../types/orderCart.types";
-import type { OrderCartQuantity } from "../types/orderCart.types";
+import type { OrderCartQuantity, OrderCartRemoval } from "../types/orderCart.types";
 
 export interface UseOrderCartResult {
   items: OrderCartItem[];
@@ -19,6 +19,7 @@ export interface UseOrderCartResult {
   removeItem: (productId: number) => void;
   removeMany: (productIds: number[]) => void;
   removeQuantities: (quantities: OrderCartQuantity[]) => void;
+  restoreRemovals: (removals: OrderCartRemoval[]) => void;
   clear: () => void;
 }
 
@@ -51,6 +52,7 @@ export function useOrderCart(branchId?: number): UseOrderCartResult {
   const removeItem = useStore(store, (s) => s.removeItem);
   const removeMany = useStore(store, (s) => s.removeMany);
   const removeQuantities = useStore(store, (s) => s.removeQuantities);
+  const restoreRemovals = useStore(store, (s) => s.restoreRemovals);
   const clear = useStore(store, (s) => s.clear);
 
   return {
@@ -63,6 +65,7 @@ export function useOrderCart(branchId?: number): UseOrderCartResult {
     removeItem,
     removeMany,
     removeQuantities,
+    restoreRemovals,
     clear,
   };
 }

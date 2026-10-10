@@ -51,6 +51,10 @@ export interface ViewBehaviorsConfig {
   // Seguridad y permisos
   requireConfirmationOnDelete?: boolean;
   allowBulkActions?: boolean;
+
+  // Lista de compras (carrito de pedido) al registrar un pedido:
+  // 'subtract' descuenta lo pedido, 'remove' quita los productos de la lista.
+  orderCartOnOrderRegistered?: 'subtract' | 'remove';
 }
 
 // =============================================================================

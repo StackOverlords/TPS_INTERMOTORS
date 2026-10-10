@@ -192,6 +192,10 @@ export const ordersListViewConfig: ViewConfiguration = {
     // Configuraciones por defecto
     defaultSearchMode: 'manual',
 
+    // Lista de compras al registrar un pedido (lo lee orderCreateScreen):
+    // 'subtract' descuenta lo pedido; 'remove' quita los productos de la lista.
+    orderCartOnOrderRegistered: 'subtract',
+
     // Comportamiento de filtros (de búsqueda, NO de tabla)
     autoApplyFilters: false,
     clearFiltersOnMount: false,

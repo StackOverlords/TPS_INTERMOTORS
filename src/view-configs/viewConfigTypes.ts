@@ -137,6 +137,10 @@ export interface ViewBehaviorsConfig {
   requireConfirmationOnDelete?: boolean;
   requireConfirmationOnBulkDelete?: boolean;
 
+  // Lista de compras (carrito de pedido) al registrar un pedido:
+  // 'subtract' descuenta lo pedido, 'remove' quita los productos de la lista.
+  orderCartOnOrderRegistered?: 'subtract' | 'remove';
+
   // Carrito de compras (específico de productos)
   autoCloseModalOnAddToCart?: boolean;
   showSuccessToastOnAddToCart?: boolean;

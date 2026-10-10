@@ -28,6 +28,21 @@ export interface OrderCartQuantity {
   cantidad: number;
 }
 
+/**
+ * Qué hace un pedido registrado con la lista de compras de su sucursal.
+ * Configurable por vista (`orders-list`, comportamiento
+ * `orderCartOnOrderRegistered`):
+ * - `subtract`: descuenta lo pedido; si se pidió menos, queda el resto.
+ * - `remove`: quita de la lista todo producto que entró en el pedido.
+ */
+export type OrderCartOnOrderRegistered = "subtract" | "remove";
+
+/** Lo que un pedido sacó de una línea: la línea como estaba y cuánto se sacó. Alcanza para deshacerlo. */
+export interface OrderCartRemoval {
+  item: OrderCartItem;
+  cantidad: number;
+}
+
 export interface OrderCartState {
   items: OrderCartItem[];
   /**
@@ -52,6 +67,11 @@ export interface OrderCartActions {
   removeMany: (productIds: number[]) => void;
   /** Descuenta solo la cantidad que quedó registrada en el pedido. */
   removeQuantities: (quantities: OrderCartQuantity[]) => void;
+  /**
+   * Devuelve a la lista lo que sacó un pedido ("Deshacer"). Suma sobre lo que
+   * haya ahora, así no pisa cambios hechos mientras tanto.
+   */
+  restoreRemovals: (removals: OrderCartRemoval[]) => void;
   clear: () => void;
 }
 

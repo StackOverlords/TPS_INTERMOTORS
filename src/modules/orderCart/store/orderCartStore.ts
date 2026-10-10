@@ -7,6 +7,7 @@ import type {
   OrderCartProduct,
   OrderCartStore,
 } from "../types/orderCart.types";
+import { restoreOrderCartRemovals } from "../utils/orderCartAfterOrder";
 
 type PersistedOrderCart = Pick<OrderCartStore, "items">;
 
@@ -105,6 +106,10 @@ export const createOrderCartStore = (scopeKey: string) =>
                   : [];
               }),
             });
+          },
+
+          restoreRemovals: (removals) => {
+            set({ items: restoreOrderCartRemovals(get().items, removals) });
           },
 
           clear: () => set({ items: [] }),
