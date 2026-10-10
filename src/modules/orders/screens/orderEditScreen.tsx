@@ -79,6 +79,7 @@ import { useTabStore } from "@/states/tabStore";
 import { useValidatedRouteParam } from "@/hooks/useValidatedRouteParam";
 import { useViewRendererWithTempData } from "@/hooks/useViewRendererWithTempData";
 import { EditableQuantity } from "@/modules/shoppingCart/components/editableQuantity";
+import { documentExchangeRate } from "@/utils/exchangeRate";
 
 const OrderEditScreen = () => {
   const configuraciones = {
@@ -274,6 +275,10 @@ const OrderEditScreen = () => {
 
     // Establecer detalles en el hook
     orderDetailsHook.setOrderDetails(detallesUI);
+
+    // El T.C. que se muestra es el del pedido, no el último que se escribió en esta PC.
+    const documentRate = documentExchangeRate(order.detalles);
+    if (documentRate) setExchangeRate(documentRate);
     const resetData: OrderUpdate = {
       fecha: order.fecha?.slice(0, 10) ?? "",
       nro_comprobante: order.comprobante ?? "",
@@ -321,11 +326,6 @@ const OrderEditScreen = () => {
     hasInitialized,
     isUsingTempData,
   ]);
-
-  // Guardar tipo de cambio en localStorage
-  useEffect(() => {
-    localStorage.setItem("order_exchange_rate", exchangeRate.toString());
-  }, [exchangeRate]);
 
   // Función para convertir entre monedas
   const handleConvertCurrency = () => {
@@ -1026,11 +1026,12 @@ const OrderEditScreen = () => {
                                   buttonClassName="w-20"
                                   inputClassName="text-center"
                                   showEditIcon={false}
-                                  onSubmit={(value) =>
-                                    setExchangeRate(
-                                      parseFloat(value.toString()) || 0
-                                    )
-                                  }
+                                  onSubmit={(value) => {
+                                    const rate =
+                                      parseFloat(value.toString()) || 0;
+                                    setExchangeRate(rate);
+                                    orderDetailsHook.applyExchangeRate(rate);
+                                  }}
                                   validate={(val) => {
                                     const num = parseFloat(val);
                                     return !isNaN(num) && num >= 0;

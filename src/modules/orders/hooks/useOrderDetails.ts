@@ -400,6 +400,13 @@ export const useOrderDetails = <
     setDetails([]);
   }, []);
 
+  /** Aplica un T.C. a todas las líneas (cambio explícito del usuario). */
+  const applyExchangeRate = useCallback((rate: number) => {
+    setDetails((prev) =>
+      prev.map((d) => ({ ...d, tc_compra: roundTo5Decimals(rate) })),
+    );
+  }, []);
+
   // ==================== ESTABLECER DETALLES ====================
   const setOrderDetails = useCallback((newDetails: T[]) => {
     // Normalizar valores al establecer
@@ -431,6 +438,7 @@ export const useOrderDetails = <
     getOrderDetails,
     clearDetails,
     setOrderDetails,
+    applyExchangeRate,
     getTotalCosto,
     getTotalAlt,
   };

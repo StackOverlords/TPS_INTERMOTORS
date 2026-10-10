@@ -68,14 +68,25 @@ export const usePurchaseDetails = <
 ) => {
   const [details, setDetails] = useState<T[]>([]);
 
+  // Al crear, el T.C. del formulario es el de todas las líneas. Al editar no:
+  // cada línea conserva el T.C. con que se registró y solo cambia si el
+  // usuario lo cambia a propósito (applyExchangeRate).
   useEffect(() => {
+    if (isEditMode) return;
     setDetails((prev) =>
       prev.map((d) => ({
         ...d,
         tc_compra: roundTo5Decimals(exchangeRate),
       })),
     );
-  }, [exchangeRate]);
+  }, [exchangeRate, isEditMode]);
+
+  /** Aplica un T.C. a todas las líneas (cambio explícito del usuario). */
+  const applyExchangeRate = useCallback((rate: number) => {
+    setDetails((prev) =>
+      prev.map((d) => ({ ...d, tc_compra: roundTo5Decimals(rate) })),
+    );
+  }, []);
 
   // ==================== FUNCIONES DE CÁLCULO ====================
   /**
@@ -543,9 +554,11 @@ export const usePurchaseDetails = <
       precio_venta: roundTo5Decimals(Number(detail.precio_venta)),
       inc_p_venta_alt: roundTo5Decimals(Number(detail.inc_p_venta_alt)),
       precio_venta_alt: roundTo5Decimals(Number(detail.precio_venta_alt)),
-      tc_compra: roundTo5Decimals(exchangeRate),
+      tc_compra: roundTo5Decimals(
+        isEditMode ? Number(detail.tc_compra ?? exchangeRate) : exchangeRate,
+      ),
     })) as any;
-  }, [details, exchangeRate]);
+  }, [details, exchangeRate, isEditMode]);
 
   // ==================== LIMPIAR DETALLES ====================
   /**
@@ -595,6 +608,7 @@ export const usePurchaseDetails = <
     loadFromOrder,
     clearDetails,
     setDetailsComplete,
+    applyExchangeRate,
 
     // Cálculos
     getTotalCosto,
