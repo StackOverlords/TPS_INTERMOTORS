@@ -54,39 +54,28 @@ jobs:
           script: |
             const version = process.env.VERSION;
             const variantLabel = process.env.VARIANT_LABEL;
-            // Los instaladores llevan la versión sin la variante (1.12.0, no 1.12.0-t1).
+            // Las notas salen de la primera sección de RELEASE_NOTES.md (desde
+            // su "# Versión X" hasta el siguiente título de primer nivel). Se
+            // muestran tal cual dentro de la app: solo Markdown, sin HTML ni
+            // emojis (la 1.11.0 y la 1.12.0 muestran el HTML como texto).
             const appVersion = version.replace(/-t[12]$/, '');
-
-            const body = [
-              `## 🚀 Nueva versión v${version}`,
-              ``,
-              `---`,
-              ``,
-              `## ✨ Novedades`,
-              ``,
-              `### 🛒 Lista de compras — se actualiza al registrar un pedido`,
-              `- Al registrar cualquier pedido, los productos que estén en la lista de compras de esa sucursal se actualizan solos.`,
-              `- En **Configuración → Vistas → Pedidos → Lista de Pedidos** se elige: **descontar lo pedido** (por defecto) o **quitar el producto de la lista**.`,
-              `- Un aviso indica cuántos productos cambiaron y ofrece **Deshacer**.`,
-              ``,
-              `---`,
-              ``,
-              `## 🐛 Errores corregidos`,
-              ``,
-              // Solo Markdown, sin HTML: la app 1.11.0 y la 1.12.0 muestran el
-              // HTML de las notas como texto.
-              `- [x] Transferencias: ya no se pueden agregar productos sin stock en la sucursal de origen.`,
-              `- [x] Transferencias: el selector de productos mostraba el stock de CENTRAL en vez del de la sucursal de origen.`,
-              `- [x] Transferencias: si no se puede enviar, recibir o rechazar, el aviso explica el motivo (por ejemplo, stock insuficiente en origen).`,
-              `- [x] Compras y pedidos: al editar, el tipo de cambio mostraba el último valor escrito en la PC y, en compras, lo aplicaba a todas las líneas al guardar. Ahora se respeta el del documento.`,
-              ``,
-              `---`,
-              ``,
-              `### 📦 Instalación`,
-              ``,
-              `- **Windows MSI**: \`Intermotors_${appVersion}_x64_en-US.msi\``,
-              `- **Windows NSIS**: \`Intermotors_${appVersion}_x64-setup.exe\``,
-            ].join('\n');
+            const fs = require('fs');
+            const changelog = fs.readFileSync('RELEASE_NOTES.md', 'utf8');
+            const heading = changelog.match(/^# (.+)$/m);
+            const headingVersion = heading ? heading[1].trim().split(/\s+/).pop().replace(/^v/, '') : null;
+            if (headingVersion !== appVersion) {
+              throw new Error(
+                `RELEASE_NOTES.md debe empezar con la sección de la ${appVersion} ` +
+                `(encontrado: "${heading ? heading[1] : 'ningún título'}").`
+              );
+            }
+            const afterHeading = changelog.slice(heading.index + heading[0].length);
+            const nextHeading = afterHeading.search(/^# /m);
+            const body = (nextHeading === -1 ? afterHeading : afterHeading.slice(0, nextHeading))
+              .trim()
+              .replace(/\n+-{3,}$/, '')
+              .trim();
+            if (!body) throw new Error(`La sección de la ${appVersion} en RELEASE_NOTES.md está vacía.`);
 
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,

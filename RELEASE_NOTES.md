@@ -1,3 +1,29 @@
+# Versión 1.13.0
+
+Esta versión reúne todo lo publicado el 9 y el 10 de octubre (versiones 1.11.0, 1.12.0 y 1.13.0).
+
+### Novedades
+
+- **Aviso de actualización al iniciar sesión.** Cuando hay una versión nueva, la pantalla de inicio de sesión lo indica y permite ver sus novedades o actualizar en el momento. Actualizar es opcional: también se puede hacer después desde Configuración > Actualizaciones.
+- **Novedades de cada versión.** Después de actualizar, la aplicación muestra una sola vez los cambios incluidos.
+- **Tipografía.** La aplicación usa la fuente Montserrat, incluida en la instalación: se ve igual sin conexión. Se puede cambiar en Configuración > Apariencia > Tipo de fuente.
+- **Lista de compras.** Al registrar un pedido, los productos pedidos se descuentan de la lista de compras de la sucursal, o se quitan de ella, según lo elegido en Configuración > Vistas > Pedidos > Lista de Pedidos. Un aviso indica cuántos productos cambiaron y permite deshacer el cambio.
+- **Temas de color.** En Configuración > Apariencia > Tema de color se puede elegir un tema predefinido o importar uno de VS Code. Los colores mantienen un contraste legible en modo claro y oscuro.
+- **Rendimiento.** La aplicación arranca más rápido, las pantallas se cargan a medida que se abren y cambiar de pestaña ya no recarga su contenido. El menú lateral, los listados y los selectores responden con más fluidez.
+- **Plugins.** Nueva sección Configuración > Plugins para gestionar extensiones. Esta versión no incluye ningún plugin.
+
+### Correcciones
+
+- **Transferencias.** Ya no se pueden agregar productos sin stock en la sucursal de origen. El selector de productos muestra el stock de la sucursal de origen; antes mostraba el de CENTRAL. Si una transferencia no se puede enviar, recibir o rechazar, el aviso indica el motivo.
+- **Compras y pedidos.** Al editar, se respeta el tipo de cambio con que se registró el documento. Antes se mostraba el último valor usado en la PC y, en compras, se aplicaba a todas las líneas al guardar.
+- **Sesión.** Ya no se cierra al suspender la PC, al perder la conexión por un momento ni al trabajar con varias ventanas abiertas. Si venció mientras la aplicación estaba cerrada, se renueva al abrirla.
+- **Ventanas secundarias.** Ya no quedan en blanco al abrirlas y, si algo falla, permiten recargar o cerrar la ventana. Al cerrar sesión, se cierran.
+- **Avisos.** En la aplicación de escritorio, los avisos aparecían sobre la barra de título y desplazaban el contenido de la ventana.
+- **Actualizaciones.** Si una actualización falla, el aviso muestra el motivo en lugar de un mensaje genérico.
+- **Notas de versión.** La lista de correcciones se mostraba como texto con etiquetas en lugar de una lista.
+
+---
+
 # Novedades — v1.12.0
 
 ---
