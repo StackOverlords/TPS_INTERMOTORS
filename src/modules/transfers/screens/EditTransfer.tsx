@@ -21,7 +21,10 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useProductSelectorWindow } from "@/hooks/useSecondaryWindow";
 import { useTabActions } from "@/hooks/useTabNavigation";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
-import { productsService } from "@/modules/products/services/productService";
+import {
+  fetchOriginLots,
+  notifyProductNotAdded,
+} from "../utils/transferOriginStock";
 import authSDK from "@/services/sdk-simple-auth";
 import { useBranchStore } from "@/states/branchStore";
 import { formatCurrency } from "@/utils/formaters";
@@ -389,27 +392,15 @@ const EditTransfer = () => {
   };
 
   const handleAddProductItem = async (product: ProductGet) => {
-    try {
-      const stockData = await productsService.getStock({
-        producto: product.id,
-        sucursal:
-          transferData?.sucursal_origen_id || Number(selectedBranchId) || 1,
-        resto_only: 0,
-      });
-      if (stockData.length > 0) {
-        // Ordenar FIFO: más antiguo primero para reflejar el costo real por lote
-        const lotsAsc = [...stockData].sort(
-          (a, b) =>
-            new Date(a.fecha_adquisicion).getTime() -
-            new Date(b.fecha_adquisicion).getTime()
-        );
-        transferDetailsHook.addProduct(product, 0, lotsAsc);
-      } else {
-        transferDetailsHook.addProduct(product, 0);
-      }
-    } catch {
-      transferDetailsHook.addProduct(product, 0);
+    const origin = await fetchOriginLots(
+      product.id,
+      transferData?.sucursal_origen_id || Number(selectedBranchId) || 1,
+    );
+    if (origin.status !== "available") {
+      notifyProductNotAdded(product.descripcion, origin, sucursalOrigenNombre);
+      return;
     }
+    transferDetailsHook.addProduct(product, 0, origin.lots);
     setTimeout(() => {
       tableRef.current?.focusFirstQuantityInput();
     }, 100);
