@@ -7,6 +7,8 @@ interface ToastOptions {
   description?: string;
   variant?: ToastVariant;
   duration?: number;
+  /** Botón dentro del aviso, p. ej. "Deshacer". */
+  action?: { label: string; onClick: () => void };
 }
 
 const variantMap = {
@@ -21,9 +23,10 @@ const callToast = ({
   description,
   variant = "info",
   duration,
+  action,
 }: ToastOptions) => {
   const fn = variantMap[variant] ?? sonnerToast;
-  return fn(title, { description, duration });
+  return fn(title, { description, duration, action });
 };
 
 // Misma API que antes — ningún componente que los use necesita cambiar

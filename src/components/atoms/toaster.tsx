@@ -56,6 +56,12 @@ export function Toaster() {
           info: "border-toast-info-border text-toast-info-foreground [background:var(--toast-bg-info)]",
           title: "text-sm font-semibold",
           description: "text-xs opacity-90 mt-0.5",
+          // Botón de acción del aviso (p. ej. "Deshacer").
+          actionButton: [
+            "shrink-0 whitespace-nowrap rounded-md border border-current/20 bg-background/70",
+            "px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background",
+            "focus:outline-none focus:ring-2",
+          ].join(" "),
           closeButton: [
             "absolute right-2 top-2 rounded-md p-1 text-foreground/50",
             "opacity-0 transition-opacity hover:text-foreground",
