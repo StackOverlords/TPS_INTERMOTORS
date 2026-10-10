@@ -1,3 +1,37 @@
+# Novedades — v1.12.0
+
+---
+
+## Nuevas funcionalidades
+
+### Lista de compras — se actualiza al registrar un pedido
+
+- Al registrar cualquier pedido, los productos que estén en la lista de compras de esa sucursal se actualizan solos, sin importar cómo se agregaron al pedido.
+- En **Configuración → Vistas → Pedidos → Lista de Pedidos** se elige el comportamiento: **descontar lo pedido** (por defecto: si había 10 y se pidieron 6, quedan 4) o **quitar el producto de la lista**.
+- Un aviso indica cuántos productos cambiaron y ofrece **Deshacer**.
+
+---
+
+## Correcciones
+
+<details>
+<summary><strong>Transferencias — productos sin stock en la sucursal de origen</strong></summary>
+
+- Ya no se pueden agregar productos sin stock en la sucursal de origen. Antes se agregaban igual y, al recibir la transferencia, aparecía en el destino stock que no salió de ningún lote.
+- El selector de productos muestra el stock de la sucursal de origen. Antes mostraba el de CENTRAL, y un producto con stock podía aparecer con 0.
+- Si no se puede enviar, recibir o rechazar una transferencia, el aviso explica el motivo (por ejemplo, stock insuficiente en origen) en vez de un "intenta nuevamente" genérico.
+
+</details>
+
+<details>
+<summary><strong>Compras y pedidos — el tipo de cambio cambiaba al editar</strong></summary>
+
+Al editar una compra o un pedido, el tipo de cambio mostraba el último valor escrito en esa PC y no el del documento; en compras, al guardar, se aplicaba a todas las líneas. Ahora se muestra el tipo de cambio con que se registró el documento, cada línea conserva el suyo y solo cambia si se modifica a propósito.
+
+</details>
+
+---
+
 # Novedades — v1.11.0
 
 ---
