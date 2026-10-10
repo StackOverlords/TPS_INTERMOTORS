@@ -9,6 +9,9 @@ import { TaskNotificationsProvider } from "./contexts/TaskNotificationsContext.t
 import { ErrorBoundary } from "./components/common/ErrorBoundary.tsx";
 import { Button } from "./components/atoms/button.tsx";
 import { ensureSecondaryWindowSession } from "./services/secondaryWindowSession.ts";
+// Montserrat va empaquetada: la CSP de escritorio solo permite fuentes de 'self'
+// (Google Fonts quedaría bloqueado) y la app tiene que verse igual sin internet.
+import "@fontsource-variable/montserrat";
 import "./index.css";
 import { initializeKeybindingStore } from "./keybindings/index.ts";
 import authSDK from "./services/sdk-simple-auth.ts";

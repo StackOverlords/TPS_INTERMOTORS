@@ -372,7 +372,7 @@ const AppearanceSettings = () => {
               <span className="text-sm">Tipo de fuente</span>
               <Badge variant="outline">
                 {fontFamily === "sans"
-                  ? "Sistema (Default)"
+                  ? "Montserrat (predeterminada)"
                   : fontFamily === "mono"
                     ? "Monospace"
                     : "Serif"}
@@ -384,7 +384,7 @@ const AppearanceSettings = () => {
                 size="sm"
                 onClick={() => setFontFamily("sans")}
               >
-                Sistema (Default)
+                Montserrat (predeterminada)
               </Button>
               <Button
                 variant={fontFamily === "mono" ? "default" : "outline"}
