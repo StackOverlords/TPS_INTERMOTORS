@@ -22,7 +22,8 @@ import ProductFilters from "@/modules/products/components/productList/productFil
 import { useProductsPaginated } from "@/modules/products/hooks/queries/useProductsPaginated";
 import { useProductFilters } from "@/modules/products/hooks/useProductFilters";
 import type { ProductGet } from "@/modules/products/types/ProductGet";
-import { useBranchStore } from "@/states/branchStore";
+import authSDK from "@/services/sdk-simple-auth";
+import { getBranchKey, useBranchStore } from "@/states/branchStore";
 import { formatCell } from "@/utils/formatCell";
 import { formatCurrency } from "@/utils/formaters";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -78,6 +79,12 @@ export interface ProductSelectorConfig {
   validateStock: boolean;
   selectedItems: SelectedItem[];
   simpleMode: boolean;
+  /**
+   * Sucursal cuyo stock se muestra. Si falta, se usa la sucursal seleccionada.
+   * Las transferencias pasan su sucursal de ORIGEN: el stock que importa es
+   * el que sale, no el de la sucursal donde está parado el usuario.
+   */
+  branchId?: number;
 }
 
 /** Producto elegido junto con la cantidad que pidió el usuario. */
@@ -100,6 +107,21 @@ export const ProductSelector = ({
 }: ProductSelectorProps) => {
   const selectedBranchId = useBranchStore((s) => s.selectedBranchId);
   const queryClient = useQueryClient();
+
+  // Hidratar el branch store desde localStorage — en ventanas secundarias de Tauri
+  // el store arranca con selectedBranchId: null porque restoreForUser() nunca se llama,
+  // y el stock caía en la sucursal 1 (CENTRAL) sin importar dónde estaba el usuario.
+  useEffect(() => {
+    const user = authSDK.getCurrentUser();
+    useBranchStore.getState().restoreForUser(user?.id ?? "");
+  }, []);
+
+  // Leído en el primer render para no consultar CENTRAL mientras el store hidrata.
+  const [savedBranchId] = useState(() =>
+    localStorage.getItem(getBranchKey(authSDK.getCurrentUser()?.id)),
+  );
+  const stockBranchId =
+    config.branchId || Number(selectedBranchId ?? savedBranchId) || 1;
 
   // Siempre invalidar cache de productos al montar la ventana.
   // Esto evita que un error cacheado de React Query (staleTime: 5min) persista
@@ -135,7 +157,7 @@ export const ProductSelector = ({
     setPageSize,
     setFilters,
     resetFilters,
-  } = useProductFilters(Number(selectedBranchId) || 1, 10);
+  } = useProductFilters(stockBranchId, 10);
 
   const activeFilters =
     searchMode === "realtime" ? debouncedFilters : appliedFilters;
@@ -159,7 +181,9 @@ export const ProductSelector = ({
           setFilters({
             pagina: parsed.pagina ?? 1,
             pagina_registros: parsed.pagina_registros ?? 10,
-            sucursal: parsed.sucursal ?? 0,
+            // La sucursal nunca se restaura: un filtro viejo mostraría el
+            // stock de otra sucursal.
+            sucursal: stockBranchId,
             descripcion: parsed.descripcion || "",
             codigo_oem: parsed.codigo_oem || "",
             codigo_upc: parsed.codigo_upc || "",

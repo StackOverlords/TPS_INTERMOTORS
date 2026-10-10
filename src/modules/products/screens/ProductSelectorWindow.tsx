@@ -34,6 +34,7 @@ const ProductSelectorWindow: React.FC = () => {
     }
 
     const id = params.get("windowId") || "product-selector-default";
+    const branchId = Number(params.get("branchId")) || undefined;
 
     return {
       windowId: id,
@@ -47,6 +48,7 @@ const ProductSelectorWindow: React.FC = () => {
         validateStock: params.get("validateStock") !== "false",
         simpleMode: params.get("simpleMode") === "true",
         selectedItems,
+        branchId,
       } satisfies ProductSelectorConfig,
     };
   }, []);

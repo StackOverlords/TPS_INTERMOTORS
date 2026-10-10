@@ -355,6 +355,7 @@ export interface UseProductSelectorWindowConfig {
   validateStock?: boolean; // Si debe validar stock (false para cotizaciones/compras...)
   selectedItems?: SelectedItem[];
   simpleMode?: boolean;
+  branchId?: number; // Sucursal cuyo stock se muestra (por defecto, la seleccionada)
 }
 
 // Array constante para evitar recreaciones
@@ -380,6 +381,7 @@ export function useProductSelectorWindow(
     validateStock = false,
     simpleMode = false,
     selectedItems = [],
+    branchId,
   } = config;
 
   // Generar windowId único
@@ -422,6 +424,7 @@ export function useProductSelectorWindow(
       onlyWithStock: String(onlyWithStock ?? false),
       selectedItems: JSON.stringify(selectedItems),
       ...(initialFilters ? { filters: JSON.stringify(initialFilters) } : {}),
+      ...(branchId ? { branchId: String(branchId) } : {}),
       multiSelect: String(multiSelect),
     },
     listenToEvents: PRODUCT_SELECTOR_EVENTS as unknown as string[], // ✅ Referencia constante

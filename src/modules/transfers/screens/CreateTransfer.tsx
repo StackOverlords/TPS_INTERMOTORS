@@ -415,6 +415,7 @@ const CreateTransfer = () => {
       handleAddProductItem(product);
     },
     onlyWithStock: false,
+    branchId: Number(selectedBranchId) || 1,
   });
 
   const toggleSelectorMode = () => {

@@ -432,6 +432,7 @@ const EditTransfer = () => {
       handleAddProductItem(product);
     },
     onlyWithStock: false,
+    branchId: transferData?.sucursal_origen_id || Number(selectedBranchId) || 1,
   });
 
   const toggleSelectorMode = () => {
