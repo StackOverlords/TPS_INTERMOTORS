@@ -6,6 +6,7 @@ import { Switch } from "@/components/atoms/switch";
 import ConfirmationModal from "@/components/common/confirmationModal";
 import TooltipButton from "@/components/common/TooltipButton";
 import { showErrorToast, showSuccessToast } from "@/hooks/use-toast-enhanced";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import useConfirmMutation from "@/hooks/useConfirmMutation";
 import { useBranchStore } from "@/states/branchStore";
 import { PackageSearch, RefreshCcw, Search, Zap } from "lucide-react";
@@ -141,12 +142,12 @@ const TransferListScreen = () => {
     });
   };
 
-  const handleSendError = (_error: unknown, Id: number) => {
-    showErrorToast({
-      title: "Error al enviar transferencia",
-      description: `No se pudo enviar la Transferencia #${Id}. Por favor, intenta nuevamente`,
-      duration: 5000,
-    });
+  // El backend dice por qué (p. ej. stock insuficiente en origen): reintentar
+  // no siempre sirve, así que se muestra su mensaje en vez de uno genérico.
+  const { handleError } = useErrorHandler();
+
+  const handleSendError = (error: unknown, Id: number) => {
+    handleError({ error, customTitle: `No se pudo enviar la Transferencia #${Id}` });
   };
 
   const {
@@ -165,12 +166,8 @@ const TransferListScreen = () => {
     });
   };
 
-  const handleAcceptError = (_error: unknown, Id: number) => {
-    showErrorToast({
-      title: "Error al recibir transferencia",
-      description: `No se pudo recibir la Transferencia #${Id}. Por favor, intenta nuevamente`,
-      duration: 5000,
-    });
+  const handleAcceptError = (error: unknown, Id: number) => {
+    handleError({ error, customTitle: `No se pudo recibir la Transferencia #${Id}` });
   };
 
   const {
@@ -193,12 +190,8 @@ const TransferListScreen = () => {
     });
   };
 
-  const handleRefuseError = (_error: unknown, Id: number) => {
-    showErrorToast({
-      title: "Error al rechazar transferencia",
-      description: `No se pudo rechazar la Transferencia #${Id}. Por favor, intenta nuevamente`,
-      duration: 5000,
-    });
+  const handleRefuseError = (error: unknown, Id: number) => {
+    handleError({ error, customTitle: `No se pudo rechazar la Transferencia #${Id}` });
   };
 
   const {
