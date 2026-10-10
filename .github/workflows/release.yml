@@ -54,6 +54,8 @@ jobs:
           script: |
             const version = process.env.VERSION;
             const variantLabel = process.env.VARIANT_LABEL;
+            // Los instaladores llevan la versión sin la variante (1.12.0, no 1.12.0-t1).
+            const appVersion = version.replace(/-t[12]$/, '');
 
             const body = [
               `## 🚀 Nueva versión v${version}`,
@@ -71,21 +73,19 @@ jobs:
               ``,
               `## 🐛 Errores corregidos`,
               ``,
-              `<details><summary>Ver lista completa de correcciones</summary>`,
-              `<ul>`,
-              `  <li><input type="checkbox" checked> Transferencias: ya no se pueden agregar productos sin stock en la sucursal de origen.</li>`,
-              `  <li><input type="checkbox" checked> Transferencias: el selector de productos mostraba el stock de CENTRAL en vez del de la sucursal de origen.</li>`,
-              `  <li><input type="checkbox" checked> Transferencias: si no se puede enviar, recibir o rechazar, el aviso explica el motivo (por ejemplo, stock insuficiente en origen).</li>`,
-              `  <li><input type="checkbox" checked> Compras y pedidos: al editar, el tipo de cambio mostraba el último valor escrito en la PC y, en compras, lo aplicaba a todas las líneas al guardar. Ahora se respeta el del documento.</li>`,
-              `</ul>`,
-              `</details>`,
+              // Solo Markdown, sin HTML: la app 1.11.0 y la 1.12.0 muestran el
+              // HTML de las notas como texto.
+              `- [x] Transferencias: ya no se pueden agregar productos sin stock en la sucursal de origen.`,
+              `- [x] Transferencias: el selector de productos mostraba el stock de CENTRAL en vez del de la sucursal de origen.`,
+              `- [x] Transferencias: si no se puede enviar, recibir o rechazar, el aviso explica el motivo (por ejemplo, stock insuficiente en origen).`,
+              `- [x] Compras y pedidos: al editar, el tipo de cambio mostraba el último valor escrito en la PC y, en compras, lo aplicaba a todas las líneas al guardar. Ahora se respeta el del documento.`,
               ``,
               `---`,
               ``,
               `### 📦 Instalación`,
               ``,
-              `- **Windows MSI**: \`TPS-Intermotors_${version}_x64_en-US.msi\``,
-              `- **Windows NSIS**: \`TPS-Intermotors_${version}_x64-setup.exe\``,
+              `- **Windows MSI**: \`Intermotors_${appVersion}_x64_en-US.msi\``,
+              `- **Windows NSIS**: \`Intermotors_${appVersion}_x64-setup.exe\``,
             ].join('\n');
 
             const { data } = await github.rest.repos.createRelease({

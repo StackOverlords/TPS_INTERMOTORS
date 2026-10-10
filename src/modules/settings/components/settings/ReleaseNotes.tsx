@@ -146,8 +146,14 @@ export default function ReleaseNotes({
                 {/* Contenido del markdown */}
                 {releaseNotes && (
                   <div>
+                    {/* La variante nohighlight no trae rehype-raw: sin
+                        skipHtml={false} el HTML de las notas (<details>,
+                        <ul>…) se muestra como texto. Las viñetas las borra
+                        el preflight de Tailwind. */}
                     <MarkdownPreview
                       source={releaseNotes}
+                      skipHtml={false}
+                      className="[&_ul]:list-disc [&_ol]:list-decimal"
                       style={{
                         backgroundColor: "transparent",
                         color: resolvedTheme === "dark" ? "#f9fafb" : "#374151",
