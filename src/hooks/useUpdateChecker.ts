@@ -1,7 +1,8 @@
+import { fetchReleaseNotes } from '@/modules/updates/api/releaseNotes';
+import { describeUpdateError } from '@/modules/updates/utils/updateError';
 import { getAppUpdater } from '@/platform';
 import { environment } from '@/utils/environment';
 
-import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface UpdateState {
@@ -39,7 +40,16 @@ const INITIAL_STATE: UpdateState = {
   supportsSelfUpdate: false,
 };
 
-export const useUpdateChecker = () => {
+export interface UseUpdateCheckerOptions {
+  /**
+   * Sin versión nueva, traer de GitHub las notas de la versión instalada
+   * (las muestra Configuración > Actualizaciones). El login no las usa: así no
+   * gasta una consulta a la API de GitHub, que limita a 60 por hora por IP.
+   */
+  loadCurrentNotes?: boolean;
+}
+
+export const useUpdateChecker = ({ loadCurrentNotes = true }: UseUpdateCheckerOptions = {}) => {
   const [updateState, setUpdateState] = useState<UpdateState>(INITIAL_STATE);
 
   const checkForUpdates = useCallback(async (silent = true) => {
@@ -87,22 +97,14 @@ export const useUpdateChecker = () => {
       let currentVersionNotes: string | null = null;
       let currentVersionDate: string | null = null;
 
-      try {
-        // El tag incluye la variante (ej. v1.1.29-t1).
-        const tagWithVariant = environment.variant
-          ? `v${currentVersion}-${environment.variant}`
-          : `v${currentVersion}`;
-
-        const response = await axios.get(
-          `https://api.github.com/repos/StackOverlords/TPS_INTERMOTORS/releases/tags/${tagWithVariant}`
-        );
-
-        if (response.status === 200) {
-          currentVersionNotes = response.data.body || null;
-          currentVersionDate = response.data.published_at || null;
+      if (loadCurrentNotes) {
+        try {
+          const release = await fetchReleaseNotes(currentVersion, environment.variant);
+          currentVersionNotes = release.notes;
+          currentVersionDate = release.date;
+        } catch (err) {
+          console.error('Error fetching current version release notes:', err);
         }
-      } catch (err) {
-        console.error('Error fetching current version release notes:', err);
       }
 
       setUpdateState(prev => ({
@@ -117,9 +119,7 @@ export const useUpdateChecker = () => {
         error: silent ? prev.error : 'Ya estás en la última versión',
       }));
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? `Error: ${error.message}`
-        : `Error al verificar actualizaciones: ${JSON.stringify(error)}`;
+      const errorMessage = `No se pudo buscar actualizaciones: ${describeUpdateError(error)}`;
 
       setUpdateState(prev => ({
         ...prev,
@@ -127,7 +127,7 @@ export const useUpdateChecker = () => {
         error: errorMessage,
       }));
     }
-  }, []);
+  }, [loadCurrentNotes]);
 
   useEffect(() => {
     checkForUpdates();
@@ -175,10 +175,8 @@ export const useUpdateChecker = () => {
         ...prev,
         isDownloading: false,
         isInstalling: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Error al descargar/instalar actualización',
+        // Tauri rechaza con un string: sin esto se perdía el motivo real.
+        error: `No se pudo actualizar: ${describeUpdateError(error)}`,
       }));
     }
   }, []);

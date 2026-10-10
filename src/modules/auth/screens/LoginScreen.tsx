@@ -22,6 +22,10 @@ import { useBranchStore } from "@/states/branchStore";
 import logoLight from "@/assets/images/logo_light.webp";
 import logoDark from "@/assets/images/darkmodeweb.webp";
 import { useThemeStore } from "@/stores/themeStore";
+import { useUpdateChecker } from "@/hooks/useUpdateChecker";
+import { LoginUpdateNotice } from "@/modules/updates/components/LoginUpdateNotice";
+import { VersionNotesDialog } from "@/modules/updates/components/VersionNotesDialog";
+import { displayVersion } from "@/modules/updates/utils/version";
 
 const LoginScreen = ({
   className,
@@ -32,6 +36,11 @@ const LoginScreen = ({
   const { resolvedTheme } = useThemeStore();
 
   const { mutate: signIn, isPending, isError } = useLogin();
+  const update = useUpdateChecker({ loadCurrentNotes: false });
+  const [showUpdateNotes, setShowUpdateNotes] = useState(false);
+  // Mientras se actualiza no se inicia sesión: la app se reinicia al terminar.
+  const isUpdating = update.isDownloading || update.isInstalling;
+  const showUpdateNotice = update.supportsSelfUpdate && update.available;
 
   const {
     register,
@@ -77,7 +86,7 @@ const LoginScreen = ({
           />
         </header>
 
-        <div className={cn("flex flex-col", className)} {...props}>
+        <div className={cn("flex flex-col gap-4", className)} {...props}>
           <Card className="p-4">
             <CardHeader className="text-center pb-6">
               <CardTitle className="text-xl font-semibold text-foreground">
@@ -117,7 +126,7 @@ const LoginScreen = ({
                       placeholder="Ingresa tu usuario"
                       autoComplete="username"
                       className={`pl-10 h-10 ${errors.usuario ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}`}
-                      disabled={isPending || isSubmitting}
+                      disabled={isPending || isSubmitting || isUpdating}
                       {...register("usuario")}
                       autoFocus
                     />
@@ -146,7 +155,7 @@ const LoginScreen = ({
                       autoComplete="current-password"
                       data-form-type="password"
                       className={`pl-10 h-10 ${errors.clave ? "border-red-300 focus:border-red-500 focus:ring-red-500" : ""}`}
-                      disabled={isPending || isSubmitting}
+                      disabled={isPending || isSubmitting || isUpdating}
                       {...register("clave")}
                     />
                     {2 < 1 && (
@@ -154,7 +163,7 @@ const LoginScreen = ({
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        disabled={isPending || isSubmitting}
+                        disabled={isPending || isSubmitting || isUpdating}
                       >
                         {showPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -175,7 +184,7 @@ const LoginScreen = ({
                 <Button
                   type="submit"
                   className="w-full h-8"
-                  disabled={isPending || isSubmitting}
+                  disabled={isPending || isSubmitting || isUpdating}
                 >
                   {isPending || isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -201,6 +210,18 @@ const LoginScreen = ({
               </div> */}
             </CardContent>
           </Card>
+          {showUpdateNotice && (
+            <LoginUpdateNotice
+              version={update.latestVersion}
+              currentVersion={update.currentVersion}
+              isDownloading={update.isDownloading}
+              isInstalling={update.isInstalling}
+              progress={update.downloadProgress}
+              error={update.error}
+              onUpdate={update.downloadAndInstall}
+              onShowNotes={() => setShowUpdateNotes(true)}
+            />
+          )}
           {/* <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 [&_a]:hover:text-primary  ">
             Al hacer clic en continuar, aceptas nuestros{" "}
             <a href="#">Términos de servicio</a> y{" "}
@@ -208,6 +229,21 @@ const LoginScreen = ({
           </div> */}
         </div>
       </div>
+      <VersionNotesDialog
+        open={showUpdateNotes}
+        onClose={() => setShowUpdateNotes(false)}
+        title={`Novedades de la versión ${displayVersion(update.latestVersion)}`}
+        description={`Tienes la ${displayVersion(update.currentVersion)}. Actualizar es opcional.`}
+        notes={update.releaseNotes || "Esta versión no tiene notas publicadas."}
+        secondary={{ label: "Más tarde", onClick: () => setShowUpdateNotes(false) }}
+        primary={{
+          label: "Actualizar ahora",
+          onClick: () => {
+            setShowUpdateNotes(false);
+            void update.downloadAndInstall();
+          },
+        }}
+      />
     </main>
   );
 };

@@ -19,6 +19,7 @@ import logger from "./utils/logger.ts";
 // import { useAppearanceStore } from "./stores/appearanceStore.ts";
 import { flushTabStorage } from "./states/tabStore.ts";
 import { getWindowManager } from "@/platform";
+import { WhatsNewDialog } from "@/modules/updates/components/WhatsNewDialog";
 import { PluginDialogHost } from "./plugins/components/PluginDialogHost.tsx";
 import { PluginKeybindingHost } from "./plugins/components/PluginKeybindingHost.tsx";
 import { startExternalPlugins } from "./plugins/bootstrapExternalPlugins.ts";
@@ -106,6 +107,7 @@ function App() {
         <HotkeysProvider initiallyActiveScopes={["default", "esc-key"]}>
           <TooltipProvider>
             <Toaster />
+            <WhatsNewDialog />
             <PluginDialogHost />
             <PluginKeybindingHost />
             <ZoomManager />
