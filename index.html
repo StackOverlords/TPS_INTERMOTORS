@@ -25,16 +25,9 @@
         } catch (e) {}
       })();
     </script>
-    <!-- Fondo y carga mientras llega el JS. No compite con index.css: usa
-         var(--background) y el valor fijo es solo el respaldo hasta que cargue. -->
-    <style id="boot-theme">
-      html, body { margin: 0; background-color: hsl(var(--background, 0 0% 100%)); }
-      html.dark, html.dark body { background-color: hsl(var(--background, 220 13% 16%)); }
-      .boot-loader { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font: 14px system-ui, sans-serif; color: #6b7280; }
-      html.dark .boot-loader { color: #9ca3af; }
-      .boot-loader span { width: 32px; height: 32px; border-radius: 50%; border: 3px solid currentColor; border-top-color: transparent; animation: boot-spin .8s linear infinite; }
-      @keyframes boot-spin { to { transform: rotate(360deg); } }
-    </style>
+    <!-- Fondo y carga mientras llega el JS (ver src/boot-theme.css). Va en un
+         archivo y no en línea: ver la nota al principio de ese archivo. -->
+    <link rel="stylesheet" href="/src/boot-theme.css" />
   </head>
   <body>
     <div id="root"></div>
