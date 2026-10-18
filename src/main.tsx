@@ -2,10 +2,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import { TooltipProvider } from "./components/atoms/tooltip.tsx";
-// Montserrat va empaquetada: la CSP de escritorio solo permite fuentes de 'self'
-// (Google Fonts quedaría bloqueado) y la app tiene que verse igual sin internet.
-import "@fontsource-variable/montserrat";
 import "./index.css";
+import "@/config/fontFaces.ts";
 import Navigation from "./navigation/Navigation.tsx";
 // import { Toaster as Sonner } from "./components/atoms/sonner.tsx";
 import "@/config/zodI18nConfig.ts";

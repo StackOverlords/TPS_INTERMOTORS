@@ -26,12 +26,31 @@ import { Button } from "@/components/atoms/button";
 import { Badge } from "@/components/atoms/badge";
 import { Separator } from "@/components/atoms/separator";
 import { Slider } from "@/components/atoms/slider";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/atoms/select";
+import {
+  FONT_OPTIONS,
+  FONT_SOURCE_LABELS,
+  getFontOption,
+  type FontFamilyId,
+  type FontSource,
+} from "@/config/fontCatalog";
 import ThemeCard from "../ThemeCard";
 import ColorThemePicker from "../ColorThemePicker";
 // import { useRef } from "react"; // Comentado - para funcionalidades futuras
 import { useTheme } from "@/hooks/useTheme";
 import { useAppearance } from "@/hooks/useAppearance";
 import { ColorPicker } from "@/components/common/ColorPicker";
+
+const FONT_GROUPS: FontSource[] = ["system", "bundled", "windows"];
 
 const AppearanceSettings = () => {
   const { theme, setTheme } = useTheme();
@@ -56,6 +75,8 @@ const AppearanceSettings = () => {
     tableColors,
     setTableColor,
   } = useAppearance();
+
+  const activeFont = getFontOption(fontFamily);
 
   /* 
  (Para funcionalidades futuras)
@@ -371,36 +392,49 @@ const AppearanceSettings = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm">Tipo de fuente</span>
               <Badge variant="outline">
-                {fontFamily === "sans"
-                  ? "Montserrat (predeterminada)"
-                  : fontFamily === "mono"
-                    ? "Monospace"
-                    : "Serif"}
+                {FONT_SOURCE_LABELS[activeFont.source]}
               </Badge>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={fontFamily === "sans" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFontFamily("sans")}
-              >
-                Montserrat (predeterminada)
-              </Button>
-              <Button
-                variant={fontFamily === "mono" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFontFamily("mono")}
-              >
-                Monospace
-              </Button>
-              <Button
-                variant={fontFamily === "serif" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFontFamily("serif")}
-              >
-                Serif
-              </Button>
+            <Select
+              value={activeFont.id}
+              onValueChange={(value) => setFontFamily(value as FontFamilyId)}
+            >
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                {FONT_GROUPS.map((source, index) => (
+                  <SelectGroup key={source}>
+                    {index > 0 && <SelectSeparator />}
+                    <SelectLabel>{FONT_SOURCE_LABELS[source]}</SelectLabel>
+                    {FONT_OPTIONS.filter((option) => option.source === source).map(
+                      (option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {/* El estilo va en el span del texto: index.css aplica la fuente activa con `*` */}
+                          <span style={{ fontFamily: option.stack }}>
+                            {option.label}
+                          </span>
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="rounded-md border bg-muted/40 p-3">
+              <p className="text-sm" style={{ fontFamily: activeFont.stack }}>
+                Filtro de aceite 0W-20 · Cód. FA-1029 · Bs 1.234,50
+              </p>
+              <p className="text-xs text-muted-foreground" style={{ fontFamily: activeFont.stack }}>
+                ABCDEFGHIJKLMNÑOPQRSTUVWXYZ abcdefghijklmnñopqrstuvwxyz 0123456789
+              </p>
             </div>
+            {activeFont.source === "windows" && (
+              <p className="text-xs text-muted-foreground">
+                Esta fuente viene con Windows. En otros sistemas se usa la fuente
+                del sistema en su lugar.
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

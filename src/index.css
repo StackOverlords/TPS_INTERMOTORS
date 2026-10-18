@@ -28,10 +28,10 @@
 
     /*
        FUENTES DEL SISTEMA (System Font Stacks)
- Fuente Sans-Serif (DEFAULT): Montserrat, empaquetada con @fontsource-variable
- (ver main.tsx). El resto es el stack de Tailwind, de respaldo. */
+ Fuente Sans-Serif del sistema (font stack original de Tailwind CSS).
+ Las fuentes empaquetadas, Montserrat incluida, se eligen desde config/fontCatalog.ts */
     --font-sans:
-      "Montserrat Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
       Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
       "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
       "Noto Color Emoji";

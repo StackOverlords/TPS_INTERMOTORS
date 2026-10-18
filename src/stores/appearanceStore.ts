@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { appearanceStorage } from './platformStateStorage';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { DEFAULT_FONT_ID, getFontOption, type FontFamilyId } from '@/config/fontCatalog';
 
 // Definimos los tipos aqui ,, pendiente de cambiar a otro archivo
-type FontFamily = 'sans' | 'mono' | 'serif';
+type FontFamily = FontFamilyId;
 type FontSize = 'small' | 'medium' | 'large';
 type ContentWidth = 'compact' | 'standard' | 'wide';
 type BorderRadius = 'none' | 'sm' | 'md' | 'lg';
@@ -59,7 +60,7 @@ interface AppearanceStore extends AppearanceSettings {
 
 // aqui los valores por defecto que se usara
 const defaultSettings: AppearanceSettings = {
-  fontFamily: 'sans',
+  fontFamily: DEFAULT_FONT_ID,
   fontSize: 'medium',
   highContrast: false,
   focusWidth: 2,
@@ -83,14 +84,8 @@ const defaultSettings: AppearanceSettings = {
 const applyTypography = (fontFamily: FontFamily, fontSize: FontSize) => {
   const root = document.documentElement;
 
-  // Cambiar la variable css de fuente activa
-  const fontMap = {
-    sans: 'var(--font-sans)',
-    mono: 'var(--font-mono)',
-    serif: 'var(--font-serif)'
-  }
-
-  root.style.setProperty('--font-family-active', fontMap[fontFamily]);
+  // Cambiar la variable css de fuente activa (el catalogo resuelve ids desconocidos al default)
+  root.style.setProperty('--font-family-active', getFontOption(fontFamily).stack);
 
   // Cambiar tamaño de fuente
   const sizeMap = {
