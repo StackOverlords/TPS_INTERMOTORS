@@ -1,3 +1,12 @@
+# Versión 1.14.0
+
+### Novedades
+
+- **Más fuentes para elegir.** En Configuración > Apariencia > Tipo de fuente hay ahora una lista con más de 30 fuentes, cada una con su vista previa. Están agrupadas en tres secciones: las del sistema, las incluidas en la instalación (se ven igual en cualquier PC y sin conexión) y las que trae Windows.
+- **Vuelve la fuente de siempre.** La aplicación usa otra vez la fuente del sistema, la misma que antes de la versión 1.13.0. Montserrat sigue disponible en la lista para quien prefiera usarla.
+
+---
+
 # Versión 1.13.0
 
 Esta versión reúne todo lo publicado el 9 y el 10 de octubre (versiones 1.11.0, 1.12.0 y 1.13.0).
